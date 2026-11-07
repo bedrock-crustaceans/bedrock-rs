@@ -2,6 +2,7 @@
 //! are read (identifier, use duration, durability dependants, storage, kinetic weapons, swing
 //! sounds, the wearable stack size) and the crate's own check of trigger events.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::version::{FormatVersion, known};
 
 use super::component::{
@@ -9,9 +10,9 @@ use super::component::{
     MaxStackSize, Shooter, StorageItem, SwingSounds, UseModifiers, Wearable, WearableSlot,
 };
 use super::legacy::ItemFormat;
-use super::{Item, texts};
+use super::{Item, codes};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::id::syntax::has_namespace;
 use bedrock_addon_core::load::LoadContext;
@@ -34,15 +35,6 @@ fn push(
             .at(full)
             .phase(Phase::Validate),
     );
-}
-
-/// A fixed text.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every code takes its text as an Option"
-)]
-fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
 }
 
 /// The path of the component `name`.
@@ -70,9 +62,7 @@ pub(crate) fn validate(
             d,
             at,
             &["description", "identifier"],
-            DiagnosticCode::NamespaceRule {
-                text: fixed(texts::IDENTIFIER),
-            },
+            DiagnosticCode::from(&codes::IDENTIFIER),
             Severity::Error,
         );
     }
@@ -96,9 +86,7 @@ pub(crate) fn validate(
                 d,
                 at,
                 &components(name),
-                DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::ItemUseDurationRequired { component: name }),
-                },
+                codes::USE_DURATION_REQUIRED.with([name]).into(),
                 // The game's validator logs this with validation code 1, which the content
                 // log writes at the warning level and which does not make the load fail: a
                 // warning, the item loads.
@@ -123,9 +111,7 @@ pub(crate) fn validate(
                 d,
                 at,
                 &components(name),
-                DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::ItemDurabilityRequired { component: name }),
-                },
+                codes::DURABILITY_REQUIRED.with([name]).into(),
                 // Validation code 1 again: a warning, the item loads.
                 Severity::Warning,
             );
@@ -137,9 +123,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:bundle_interaction"),
-            DiagnosticCode::MissingRequiredField {
-                text: fixed(texts::BUNDLE_NEEDS_STORAGE),
-            },
+            DiagnosticCode::from(&codes::BUNDLE_NEEDS_STORAGE),
             // Validation code 1 again: a warning, the item loads.
             Severity::Warning,
         );
@@ -151,9 +135,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:storage_item"),
-            DiagnosticCode::InvalidValue {
-                text: fixed(texts::STORAGE_NEEDS_STACK_OF_ONE),
-            },
+            DiagnosticCode::from(&codes::STORAGE_NEEDS_STACK_OF_ONE),
             Severity::Error,
         );
     }
@@ -171,9 +153,7 @@ pub(crate) fn validate(
             d,
             at,
             &components("minecraft:swing_sounds"),
-            DiagnosticCode::MissingRequiredField {
-                text: fixed(texts::SWING_SOUNDS_EMPTY),
-            },
+            DiagnosticCode::from(&codes::SWING_SOUNDS_EMPTY),
             Severity::Error,
         );
     }
@@ -188,12 +168,11 @@ pub(crate) fn validate(
         // error.
         let full = at.child("components").child("minecraft:wearable");
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::ItemWearableStackSize {
-                    component: "minecraft:wearable",
-                    slot: wearable.slot.name(),
-                }),
-            })
+            Diagnostic::error(
+                codes::WEARABLE_STACK_SIZE
+                    .with(["minecraft:wearable", wearable.slot.name()])
+                    .into(),
+            )
             .at(full)
             .phase(Phase::Validate),
         );
@@ -209,9 +188,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
             d,
             at,
             &path,
-            DiagnosticCode::MissingRequiredField {
-                text: fixed(texts::KINETIC_NEEDS_USE_MODIFIERS),
-            },
+            DiagnosticCode::from(&codes::KINETIC_NEEDS_USE_MODIFIERS),
             Severity::Error,
         );
     }
@@ -225,9 +202,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
             d,
             at,
             &path,
-            DiagnosticCode::MissingRequiredField {
-                text: fixed(texts::KINETIC_NEEDS_CONDITION),
-            },
+            DiagnosticCode::from(&codes::KINETIC_NEEDS_CONDITION),
             Severity::Error,
         );
     }
@@ -240,9 +215,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
                 d,
                 at,
                 &[path[0], path[1], name, "max_duration"],
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::ItemKineticZeroDuration { condition: name }),
-                },
+                codes::KINETIC_ZERO_DURATION.with([name, name]).into(),
                 Severity::Error,
             );
         }
@@ -251,9 +224,7 @@ fn kinetic_rules(kinetic: &KineticWeapon, use_modifiers: bool, at: &JsonPath, d:
                 d,
                 at,
                 &[path[0], path[1], name],
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::ItemKineticSpeedExclusive { condition: name }),
-                },
+                codes::KINETIC_SPEED_EXCLUSIVE.with([name]).into(),
                 Severity::Error,
             );
         }
@@ -296,7 +267,7 @@ fn triggers(item: &Item, at: &JsonPath, d: &mut Diagnostics) {
         }
         // The game has no line for this, so the information is the crate's own.
         d.push(
-            Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
                 .at(full)
                 .phase(Phase::Validate)
                 .detail(

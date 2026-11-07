@@ -2,7 +2,7 @@
 //! duplicate error, beta documents beside stable ones, and
 //! `Placed::default_path`. Row `b12`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::biome::Biome;
 use bedrock_addon::id::BiomeId;
@@ -67,7 +67,8 @@ fn b12_duplicate_identifier() {
     let duplicates: Vec<_> = stack
         .biomes()
         .diagnostics()
-        .filter(|d| matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. }))
+        // By legacy name: the variant and the definitions that were it.
+        .filter(|d| d.code.name() == "DuplicateIdentifier")
         .cloned()
         .collect();
     assert_eq!(duplicates.len(), 1, "{duplicates:#?}");

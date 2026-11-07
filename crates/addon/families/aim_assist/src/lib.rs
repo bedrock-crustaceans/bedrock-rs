@@ -13,10 +13,10 @@ pub use preset::{AimAssistPreset, ExclusionSettings};
 
 mod categories;
 mod checks;
+pub mod codes;
 mod link;
 mod preset;
 mod read;
-mod texts;
 
 #[cfg(test)]
 mod tests;

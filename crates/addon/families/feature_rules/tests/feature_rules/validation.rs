@@ -1,7 +1,7 @@
 //! Validation on one file: an unknown pass, the structural errors
 //! and the runtime scatter checks.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 
 use super::common::*;
 
@@ -27,10 +27,7 @@ fn r04_an_unknown_placement_pass_is_logged_and_the_rule_still_loads() {
 #[test]
 fn rule_4_pass_names_are_compared_exactly() {
     let document = loads(&rule("1.13.0", "Surface_Pass", None));
-    assert!(has(document.diagnostics(), |c| matches!(
-        c,
-        DiagnosticCode::InvalidValue { .. }
-    )));
+    assert!(has(document.diagnostics(), |c| c.name() == "InvalidValue"));
     for pass in bedrock_addon_family_feature_rules::PlacementPass::ALL {
         let document = loads(&rule("1.13.0", pass.name(), None));
         assert!(

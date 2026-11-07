@@ -2,7 +2,7 @@
 //! and the group-name lint run in `StackSet::link`. Their bodies are written against it; the checkers themselves are tested in
 //! `src/item/catalog/tests.rs`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity, codes};
 use bedrock_addon::pack::{PackRepository, PackSelection, WorldPacks};
 
 use super::stacks::*;
@@ -52,7 +52,7 @@ fn m10_an_item_placed_outside_its_own_category_and_group_is_two_warnings() {
         found
             .iter()
             .filter(|f| f.severity > Severity::Info)
-            .all(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. }))
+            .all(|f| f.code.name() == "InvalidValue")
     );
 }
 
@@ -70,7 +70,7 @@ fn a_new_group_name_no_lang_file_defines_is_an_info() {
     let found = link(&fixture_packs("m10_category_group_warnings"));
     let lints: Vec<_> = found
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::UnresolvedLangKey))
+        .filter(|f| f.is(&codes::UNRESOLVED_LANG_KEY))
         .collect();
     assert_eq!(lints.len(), 1, "{found:#?}");
     assert_eq!(lints[0].severity, Severity::Info);

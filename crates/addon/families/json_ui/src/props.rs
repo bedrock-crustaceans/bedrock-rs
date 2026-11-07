@@ -1,7 +1,9 @@
 //! The property tables of the control factory: which internal component reads which key, with
 //! what getter, and which components each control type is made of.
 
+use super::codes;
 use super::control::{AnimationType, ControlType};
+use bedrock_addon_core::diagnostic::CodeDef;
 
 /// An internal UI component: a fixed set of keys the factory reads.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -71,9 +73,9 @@ pub(crate) enum Miss {
     /// without a game text, the crate's own finding.
     CrateOwn,
     /// A fixed vanilla text.
-    Fixed(&'static str),
+    Fixed(&'static CodeDef<0>),
     /// A vanilla text with the value in it.
-    Format(&'static str),
+    Format(&'static CodeDef<1>),
 }
 
 const ANCHOR: EnumRule = EnumRule {
@@ -88,33 +90,33 @@ const ANCHOR: EnumRule = EnumRule {
         "bottom_middle",
         "bottom_right",
     ],
-    miss: Miss::Format("Unrecognized anchor or alignment value: '{}'"),
+    miss: Miss::Format(&codes::ANCHOR_UNRECOGNIZED),
 };
 pub(crate) const ORIENTATION: EnumRule = EnumRule {
     values: &["horizontal", "vertical", "none"],
-    miss: Miss::Format("Unknown Orientation value: {}"),
+    miss: Miss::Format(&codes::ORIENTATION_UNKNOWN),
 };
 const TEXT_ALIGNMENT: EnumRule = EnumRule {
     values: &["left", "right", "center"],
-    miss: Miss::Fixed("JSON UI parse failure - Text Alignment value invalid."),
+    miss: Miss::Fixed(&codes::TEXT_ALIGNMENT_INVALID),
 };
 const DRAGGABLE: EnumRule = EnumRule {
     values: &["not_draggable", "horizontal", "vertical", "both"],
-    miss: Miss::Format("Unknown draggable value: {}"),
+    miss: Miss::Format(&codes::DRAGGABLE_UNKNOWN),
 };
 const PRIORITY_RULE: EnumRule = EnumRule {
     values: &["default", "show_when_controls_are_hidden"],
-    miss: Miss::Format("Unknown priority rule value: {}"),
+    miss: Miss::Format(&codes::PRIORITY_RULE_UNKNOWN),
 };
 const TOGGLE_MANAGER: EnumRule = EnumRule {
     values: &["clear", "select", "gather", "default"],
-    miss: Miss::Format("Unknown toggle manager behavior type value: {}"),
+    miss: Miss::Format(&codes::TOGGLE_MANAGER_UNKNOWN),
 };
 // The game's slider code logs the text its toggle code uses, so a slider's miss carries the
 // toggle's wording.
 const SLIDER_MANAGER: EnumRule = EnumRule {
     values: &["gather"],
-    miss: Miss::Format("Unknown toggle manager behavior type value: {}"),
+    miss: Miss::Format(&codes::TOGGLE_MANAGER_UNKNOWN),
 };
 const CLIP_DIRECTION: EnumRule = EnumRule {
     values: &["left", "right", "up", "down", "center"],
@@ -126,13 +128,13 @@ const FONT_SIZE: EnumRule = EnumRule {
 };
 const FOCUS_NAVIGATION: EnumRule = EnumRule {
     values: &["", "none", "stop", "contained", "custom"],
-    miss: Miss::Fixed("Invalid Input for Focus Navigation"),
+    miss: Miss::Fixed(&codes::FOCUS_NAVIGATION_INVALID),
 };
 const DEBUG_COLOR: EnumRule = EnumRule {
     values: &[
         "red", "black", "white", "gray", "blue", "green", "yellow", "purple",
     ],
-    miss: Miss::Fixed("unrecognized debug color specified: "),
+    miss: Miss::Fixed(&codes::DEBUG_COLOR_UNRECOGNIZED),
 };
 const GRADIENT_DIRECTION: EnumRule = EnumRule {
     values: &["vertical", "horizontal"],

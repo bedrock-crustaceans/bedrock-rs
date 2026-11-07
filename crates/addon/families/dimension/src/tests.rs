@@ -1,6 +1,7 @@
 //! Unit tests of the dimension family's chain.
 
 use crate::history::DimensionFamily;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::versioning::check_chain;
 
 #[test]
@@ -45,7 +46,7 @@ fn the_shadowed_definition_note() {
     );
     let found = crate::shadowed(&origin);
     let long = Diagnostic::new(
-        DiagnosticCode::ShadowedDefinition { text: None },
+        DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
         Severity::Info,
         Phase::Validate,
         Location::new(Some(pack), Some(path), JsonPath::new(), None),

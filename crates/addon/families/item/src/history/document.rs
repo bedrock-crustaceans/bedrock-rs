@@ -24,6 +24,7 @@ use super::component::{
     LegacyRepairable, LegacyStorageItem, OnUse, OnUseOn, RenderOffsets, UseDuration, Weapon,
 };
 use super::gate;
+use crate::codes;
 use crate::component::{
     AllowOffHand, BlockPlacer, BundleInteraction, CanDestroyInCreative, Compostable, Cooldown,
     Damage, DamageAbsorption, Digger, DisplayName, Durability, DurabilitySensor, Dyeable,
@@ -35,9 +36,9 @@ use crate::component::{
 };
 use crate::deprecated::ItemDeprecatedData;
 use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
-use crate::texts;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::load::LoadContext;
 
@@ -225,9 +226,7 @@ fn interact_button(
         return Some(Component::InteractButton(button));
     }
     // Neither: a type error, the item refused (the chain's refusal is `typed`'s).
-    d.push(Diagnostic::error(DiagnosticCode::InvalidType {
-        text: None,
-    }));
+    d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
     None
 }
 
@@ -254,7 +253,11 @@ fn custom_list(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) -> Op
             {
                 if !element.is_string() {
                     let path = JsonPath::new().index(index);
-                    d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(path));
+                    d.push(
+                        Diagnostic::of(&core_codes::INVALID_TYPE)
+                            .severity(Severity::Info)
+                            .at(path),
+                    );
                 }
             }
             Some(Component::CustomComponentList(CustomComponentList {
@@ -284,9 +287,7 @@ fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) ->
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let Some(array) = json.as_ref().and_then(Value::as_array) else {
         // No list: a type error, the item refused.
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType {
-            text: None,
-        }));
+        d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
         return None;
     };
     let mut components = Vec::new();
@@ -313,7 +314,11 @@ fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) ->
                     .filter(|(member, _)| !["name", "data"].contains(&member.as_str()))
                 {
                     let path = JsonPath::new().index(i).child(member.as_str());
-                    d.push(Diagnostic::warn(DiagnosticCode::MemberNotKept { text: None }).at(path));
+                    d.push(
+                        Diagnostic::of(&core_codes::MEMBER_NOT_KEPT)
+                            .severity(Severity::Warning)
+                            .at(path),
+                    );
                 }
                 Some(CustomComponentEntry { name, data })
             })
@@ -324,7 +329,7 @@ fn custom_entries(slice: JsonSlice<'_>, _: &LoadContext, d: &mut Diagnostics) ->
         } else {
             // Neither shape: a type error, the item refused.
             let path = JsonPath::new().index(i);
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(path));
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(path));
         }
     }
     // `d` is the component's own list, whose paths are below the component: the list is its
@@ -523,7 +528,7 @@ pub(crate) fn parse_parts(
         // stable document without a registered component is routed to the legacy format
         // before this; a beta document is not routed.
         let missing = match &shell.components {
-            None => Some(DiagnosticCode::MissingRequiredField { text: None }),
+            None => Some(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD)),
             Some(components) if components.is_empty() => Some(
                 bedrock_addon_core::diagnostic::cereal::too_few_components(1),
             ),
@@ -547,10 +552,7 @@ pub(crate) fn parse_parts(
         Some(NullRule::Absent) => raw.retain(|_, json| !is_null(json)),
         Some(NullRule::Rejected) => {
             for key in raw.keys().filter(|key| is_null(&raw[*key])) {
-                found.push(
-                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                        .at(at_components.child(key)),
-                );
+                found.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at_components.child(key)));
             }
             raw.retain(|_, json| !is_null(json));
         }
@@ -613,9 +615,7 @@ pub(crate) fn parse_parts(
                 // checks refuse): its finding does not say that the component goes whole.
                 // The game writes no line for the dropped component, so this summary is the
                 // crate's own information.
-                own.push(Diagnostic::info(DiagnosticCode::DroppedComponent {
-                    text: None,
-                }));
+                own.push(Diagnostic::of(&core_codes::DROPPED_COMPONENT));
             }
             let kept = own.take_unknown();
             for mut diagnostic in own {
@@ -656,7 +656,7 @@ pub(crate) fn parse_parts(
                 Severity::Info
             };
             found.push(
-                Diagnostic::error(DiagnosticCode::UnrecognizedComponent { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_COMPONENT)
                     .severity(severity)
                     .at(path),
             );
@@ -712,7 +712,7 @@ pub(crate) fn parse_parts(
         // two deprecated side-car names alone: `events` is an unknown member there, an error
         // in the strict slice. Held, and written back.
         found.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                 .severity(unknown)
                 .at(cx.at.child("events")),
         );
@@ -770,7 +770,7 @@ fn level_sound_events(
         if let Some(name) = name
             && load.level_sound_event(name.as_str()).is_none()
         {
-            d.push(Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None }).at(path));
+            d.push(Diagnostic::of(&core_codes::INVALID_ENUM_VALUE).at(path));
         }
     };
     let at = |members: &[&str]| {
@@ -840,28 +840,23 @@ fn side_car(
         if let Some(value) = written {
             d.unknown_mut().put(at, "__deprecated_components", value);
             d.push(
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .severity(unknown)
                     .at(at.child("__deprecated_components")),
             );
         }
-        for (key, value, text) in [
+        for (key, value, code) in [
             (
                 "deprecated_component_data",
                 data,
-                texts::DEPRECATED_COMPONENT_DATA_DEPRECATED,
+                &codes::DEPRECATED_COMPONENT_DATA_DEPRECATED,
             ),
-            ("legacy_data", legacy_data, texts::LEGACY_DATA_DEPRECATED),
+            ("legacy_data", legacy_data, &codes::LEGACY_DATA_DEPRECATED),
         ] {
             if value.is_some() {
                 // A deprecated member is an error under both error masks and rejects the
                 // item.
-                d.push(
-                    Diagnostic::error(DiagnosticCode::DeprecatedMember {
-                        text: Some(VanillaText::Fixed(text)),
-                    })
-                    .at(at.child(key)),
-                );
+                d.push(Diagnostic::error(code.into()).at(at.child(key)));
             }
         }
         return out;
@@ -875,7 +870,7 @@ fn side_car(
             // know, a warning-level line in the content log while the item loads.
             d.unknown_mut().put(at, key, value);
             d.push(
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .severity(unknown)
                     .at(at.child(key)),
             );
@@ -888,19 +883,14 @@ fn side_car(
             // "member \"{}\" is deprecated" when the member is in a JSON input. That
             // deprecation line is an error under every error mask, so the item is refused
             // and the finding is an error. The 1.26.30 names above are graded the same.
-            d.push(
-                Diagnostic::error(DiagnosticCode::DeprecatedMember {
-                    text: Some(VanillaText::Fixed(texts::DEPRECATED_COMPONENTS_DEPRECATED)),
-                })
-                .at(path.clone()),
-            );
+            d.push(Diagnostic::of(&codes::DEPRECATED_COMPONENTS_DEPRECATED).at(path.clone()));
             out = ItemDeprecatedData::from_value(&value, &path, d);
         } else {
             // No struct below 1.20.30 binds the member: the game does not read it. The crate
             // does not hold it either, since the written item has one member of this name,
             // the one the steps fill; it is noted where it is.
             let _ = value;
-            d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(path));
+            d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(path));
         }
     }
     out
@@ -931,7 +921,7 @@ fn description_era(
     // item loads; from 1.26.30 the strict slice's error.
     let unknown = |d: &mut Diagnostics, key: &str| {
         d.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                 .severity(severity)
                 .at(at.child(key)),
         );
@@ -965,18 +955,14 @@ fn description_era(
         if let Some(group) = &menu.group {
             if group.chars().count() > 256 {
                 d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Fixed(texts::GROUP_LENGTH)),
-                    })
-                    .at(at.child("menu_category").child("group")),
+                    Diagnostic::of(&codes::GROUP_LENGTH)
+                        .at(at.child("menu_category").child("group")),
                 );
             } else if version >= V1_21_60 && !bedrock_addon_core::id::syntax::has_namespace(group) {
                 // A group without a namespace fails to load from 1.21.60.
                 d.push(
-                    Diagnostic::error(DiagnosticCode::NamespaceRule {
-                        text: Some(VanillaText::Fixed(texts::GROUP_NAMESPACE)),
-                    })
-                    .at(at.child("menu_category").child("group")),
+                    Diagnostic::of(&codes::GROUP_NAMESPACE)
+                        .at(at.child("menu_category").child("group")),
                 );
             }
         }
@@ -1045,15 +1031,16 @@ fn unbind_members(
             d.unknown_mut().put(&JsonPath::new(), member, value.clone());
         }
         let code = if engine {
-            DiagnosticCode::FieldSinceEngine {
-                since: if member == "type" {
-                    known::V1_21_130
-                } else {
-                    known::V1_26_10
-                },
-            }
+            let since = if member == "type" {
+                known::V1_21_130
+            } else {
+                known::V1_26_10
+            };
+            core_codes::FIELD_SINCE_ENGINE
+                .with([since.to_string()])
+                .into()
         } else {
-            DiagnosticCode::UnrecognizedField { text: None }
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD)
         };
         let path = JsonPath::new().child(member);
         // A member the struct of this version does not bind is a member the schema does not
@@ -1110,7 +1097,7 @@ fn check_component(
             path.push(part);
         }
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
                 .severity(severity)
                 .at(path),
         );
@@ -1126,7 +1113,7 @@ fn check_component(
     let bound = |d: &mut Diagnostics, member: Option<JsonPath>, severity: Severity| match member {
         Some(member) => {
             d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                Diagnostic::of(&core_codes::INVALID_VALUE)
                     .severity(severity)
                     .at(member),
             );
@@ -1163,12 +1150,7 @@ fn check_component(
                 // the finding's (the game's own constraint text is not known).
                 let slot = std::mem::replace(&mut c.slot, "none".to_owned());
                 let path = JsonPath::new().child("slot");
-                d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::ItemEnchantSlot { slot }),
-                    })
-                    .at(path),
-                );
+                d.push(Diagnostic::error(codes::ENCHANT_SLOT.with([slot]).into()).at(path));
                 return false;
             }
             true
@@ -1257,14 +1239,16 @@ fn check_component(
                 // schema does not know, a warning-level line in the content log, and the
                 // item loads.
                 let path = JsonPath::new().child("max_damage");
-                d.push(Diagnostic::warn(DiagnosticCode::InvalidValue { text: None }).at(path));
+                d.push(
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Warning)
+                        .at(path),
+                );
             }
             if c.max_durability.is_none() {
                 // Required: a missing required member, the item refused.
                 let path = JsonPath::new().child("max_durability");
-                d.push(
-                    Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None }).at(path),
-                );
+                d.push(Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD).at(path));
                 return false;
             }
             true
@@ -1276,7 +1260,11 @@ fn check_component(
                 // it instead is open).
                 c.repair_items = None;
                 let path = JsonPath::new().child("repair_items");
-                d.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(path));
+                d.push(
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Info)
+                        .at(path),
+                );
             }
             true
         }
@@ -1468,12 +1456,7 @@ fn drop_minecraft_names<T>(list: &mut Vec<T>, name: fn(&T) -> &str, d: &mut Diag
             // The moves of the reader are still pending on the component's own list, and
             // go no further than it: the finding is told at the file's index here.
             let path = d.source_of(&held);
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(texts::CUSTOM_COMPONENT_NAMESPACE)),
-                })
-                .at(path),
-            );
+            d.push(Diagnostic::of(&codes::CUSTOM_COMPONENT_NAMESPACE).at(path));
         }
         index += 1;
         i += usize::from(keep);

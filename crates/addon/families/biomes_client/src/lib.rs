@@ -14,8 +14,9 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use bedrock_addon_core::__private::Sealed;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
@@ -260,11 +261,9 @@ fn only(diagnostic: Diagnostic) -> Diagnostics {
 fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
     let malformed = |message: String| {
         BiomesCopy::Failed(only(
-            Diagnostic::info(DiagnosticCode::MalformedInput {
-                message,
-                text: None,
-            })
-            .in_file(&origin),
+            Diagnostic::of(builders::syntax(message))
+                .severity(Severity::Info)
+                .in_file(&origin),
         ))
     };
     let prepared = match Prepared::new(bytes) {
@@ -281,7 +280,9 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
             BiomesCopy::Layer(RawLayer::new(origin, json), Diagnostics::default())
         }
         Ok(_) => BiomesCopy::Failed(only(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None }).in_file(&origin),
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
+                .in_file(&origin),
         )),
         Err(error) => malformed(error.kind.to_string()),
     }
@@ -292,7 +293,7 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> BiomesCopy {
     let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
     if cx.is_base_game_pack && cx.world_base_game_version.includes(&STOP_LOADING_VANILLA) {
-        let skipped = Diagnostic::info(DiagnosticCode::VanillaBiomesClientSkipped).in_file(&origin);
+        let skipped = Diagnostic::of(&core_codes::VANILLA_BIOMES_CLIENT_SKIPPED).in_file(&origin);
         return BiomesCopy::Skipped(only(skipped));
     }
     // The copy is read with the numbers no double holds clamped, so neither its layer
@@ -317,7 +318,7 @@ fn flag(object: &VObject, key: &str, at: &JsonPath, notes: &mut Notes<'_>) -> bo
         Some(value) if value.is_null() => false,
         Some(value) => value.as_bool().unwrap_or_else(|| {
             notes.info(
-                DiagnosticCode::InvalidType { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
                 child(at, &[key]),
             );
             false
@@ -513,8 +514,7 @@ fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
                 .is_some_and(|flag| flag.value().is_true())
         {
             read.push(
-                Diagnostic::info(DiagnosticCode::NoEffect { text: None })
-                    .at(child(at, &["remove_all_prior_fog"])),
+                Diagnostic::of(&core_codes::NO_EFFECT).at(child(at, &["remove_all_prior_fog"])),
             );
         }
         // the predicate sees an entry only when a lower file has the key; a first
@@ -522,8 +522,7 @@ fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
         let first = !prior.is_some_and(|prior| prior.get(key).is_some_and(Value::is_object));
         if first && members.contains("fog_identifier") && !members.contains("fog_ids_to_merge") {
             read.push(
-                Diagnostic::info(DiagnosticCode::LegacyFogIgnored)
-                    .at(child(at, &["fog_identifier"])),
+                Diagnostic::of(&core_codes::LEGACY_FOG_IGNORED).at(child(at, &["fog_identifier"])),
             );
         }
     }
@@ -565,8 +564,7 @@ pub(crate) fn merge(copies: Vec<BiomesCopy>) -> Merged<LegacyClientBiomes, RawLa
                 // every entry of the lower files is gone.
                 for lower in &layers {
                     diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
-                            .in_file(&lower.origin),
+                        Diagnostic::of(&core_codes::SHADOWED_DEFINITION).in_file(&lower.origin),
                     );
                 }
                 origins.clear();
@@ -620,7 +618,7 @@ fn read_entry(read: &mut Read<'_>, members: &Members<'_>) -> LegacyClientBiome {
     let water_surface_transparency =
         number_of(read, members, "water_surface_transparency").map(|(value, at)| {
             if !(0.0..=1.0).contains(&value) {
-                read.push(Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at));
+                read.push(Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at));
             }
             value.clamp(0.0, 1.0)
         });
@@ -700,8 +698,9 @@ fn read(
             }
         }
         // without `biomes` nothing is applied.
-        None if any => diagnostics
-            .push(Diagnostic::info(DiagnosticCode::NoEffect { text: None }).phase(Phase::Validate)),
+        None if any => {
+            diagnostics.push(Diagnostic::of(&core_codes::NO_EFFECT).phase(Phase::Validate));
+        }
         None => {}
     }
     value.merged = merged.into();

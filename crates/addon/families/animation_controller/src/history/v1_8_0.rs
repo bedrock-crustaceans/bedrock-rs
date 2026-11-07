@@ -11,10 +11,9 @@ use super::super::{
     ParticleEffect as LatestParticleEffect, State as LatestState, StateAnimation, StateVariable,
     Transition as LatestTransition,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::json::node_tree::{
-    CHILD_NOT_VALID, Group, Hit, Kind, Node, Pattern, Walk, text,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{
     Molang, MolangFields, MolangSource, MolangVisitor, RawVersion, Step,
@@ -399,7 +398,7 @@ fn upgrade_state(
                             .child(&set.animation)
                             .index(index);
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                            Diagnostic::of(&core_codes::DROPPED_FIELD)
                                 .at(at)
                                 .phase(Phase::Upgrade),
                         );
@@ -420,7 +419,7 @@ fn upgrade_state(
         for index in read..parameters.inputs.len() {
             let at = at.child(&parameters.key).index(index);
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(at)
                     .phase(Phase::Upgrade),
             );
@@ -433,11 +432,10 @@ fn upgrade_state(
         // fails the 1.10 schema.
         let at = at.child(&parameters.key);
         diagnostics.push(
-            Diagnostic::error(DiagnosticCode::UnrecognizedField {
-                text: text(CHILD_NOT_VALID, &[&parameters.key]),
-            })
-            .at(at.clone())
-            .phase(Phase::Upgrade),
+            Diagnostic::of(core_codes::CHILD_NOT_VALID.with([parameters.key.as_str()]))
+                .severity(Severity::Error)
+                .at(at.clone())
+                .phase(Phase::Upgrade),
         );
     }
     let transitions = state.transitions.map(|list| {

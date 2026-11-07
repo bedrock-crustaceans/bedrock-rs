@@ -7,9 +7,8 @@
 //! document order of their findings); this module answers what each step asks of one node.
 //! Block events are typed and take only the finding; particle events take nothing from here.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, EVENT_BOTH_RANDOMIZE_AND_SEQUENCE, JsonPath, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::json::Value;
 
 /// The members of an event node that hold nested nodes, in the order the explicit-stack
@@ -75,8 +74,5 @@ pub fn has_collection(node: &Value) -> bool {
 /// [`Diagnostic::phase`].
 #[must_use]
 pub fn sequence_ignored(node_at: &JsonPath) -> Diagnostic {
-    Diagnostic::warn(DiagnosticCode::IgnoredMember {
-        text: Some(VanillaText::Fixed(EVENT_BOTH_RANDOMIZE_AND_SEQUENCE)),
-    })
-    .at(node_at.child("sequence"))
+    Diagnostic::of(&codes::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE).at(node_at.child("sequence"))
 }

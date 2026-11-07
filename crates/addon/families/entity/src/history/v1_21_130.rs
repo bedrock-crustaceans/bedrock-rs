@@ -1,5 +1,6 @@
 //! Format 1.21.130: the struct and the step to 1.26.0.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -240,7 +241,7 @@ fn breedable_split(members: &mut dyn Members, at: &JsonPath, told: &mut Told) {
                     }
                     _ if entry.is_empty() => {}
                     _ => told.note(
-                        DiagnosticCode::MissingRequiredField { text: None },
+                        DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
                         entry_at,
                     ),
                 }

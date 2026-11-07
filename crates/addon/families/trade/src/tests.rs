@@ -1,8 +1,6 @@
-//! Unit tests of the module's private parts: the texts' arity, and where a failed typed parse
-//! is reported.
+//! Unit tests of the module's private parts: where a failed typed parse is reported.
 
 use super::read::scalar_member;
-use super::texts;
 use bedrock_addon_core::diagnostic::JsonPathSegment;
 
 /// `scalar_member` of the path `segments`: an all-digit segment is an array index, any other a
@@ -83,13 +81,6 @@ fn a_scalar_member_is_found_by_its_place_in_the_path() {
         ]),
         None
     );
-}
-
-#[test]
-fn every_formatted_text_has_one_placeholder_per_argument() {
-    for (template, arity) in texts::FORMATTED {
-        assert_eq!(template.matches("{}").count(), *arity, "{template}");
-    }
 }
 
 #[test]

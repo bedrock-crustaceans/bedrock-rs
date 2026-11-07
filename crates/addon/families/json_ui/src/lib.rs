@@ -18,6 +18,7 @@ pub use globals::{COLOR_VARIABLES, ENGINE_VARIABLES, GlobalVariables};
 pub use key::{DefKey, DefRef};
 
 mod chain;
+pub mod codes;
 mod control;
 mod expr;
 mod globals;
@@ -212,26 +213,21 @@ impl UiPackErrorKind {
         }
     }
 
-    /// The English text of the vanilla resource pack, with `{}` for each argument.
+    /// The English text of the vanilla resource pack, with `{}` for each argument: the
+    /// sentence of the kind's definition in [`codes`].
     // The vanilla resource pack's `texts/en_US.lang` has these lines; the `missingArrayName`
     // line ends with a space there.
     pub fn template(self) -> &'static str {
         match self {
-            Self::InvalidChildNames => {
-                "{}: Child controls must have unique names: {}In the future this will be an error and this file won't load."
-            }
-            Self::ParseError => "{}: Unable to parse UI JSON file with stack: {}",
-            Self::MissingControl => "{}: Can't find the control: {}",
-            Self::MissingControlTarget => {
-                "{} ({}): Can't find the control '{}' during operation '{}'"
-            }
-            Self::MissingArrayName => {
-                "{} ({}): Missing either the field 'array_name' or 'control_name'. "
-            }
-            Self::MissingCondition => "{} ({}): Missing condition on operation '{}'.",
-            Self::MissingValue => "{} ({}): Missing the value for the operation '{}'.",
-            Self::MissingOperation => "{} ({}): Missing operation.",
-            Self::InvalidOperationName => "{} ({}): Invalid operation '{}'.",
+            Self::InvalidChildNames => codes::PACK_INVALID_CHILD_NAMES.template(),
+            Self::ParseError => codes::PACK_PARSE_ERROR.template(),
+            Self::MissingControl => codes::PACK_MISSING_CONTROL.template(),
+            Self::MissingControlTarget => codes::PACK_MISSING_CONTROL_TARGET.template(),
+            Self::MissingArrayName => codes::PACK_MISSING_ARRAY_NAME.template(),
+            Self::MissingCondition => codes::PACK_MISSING_CONDITION.template(),
+            Self::MissingValue => codes::PACK_MISSING_VALUE.template(),
+            Self::MissingOperation => codes::PACK_MISSING_OPERATION.template(),
+            Self::InvalidOperationName => codes::PACK_INVALID_OPERATION_NAME.template(),
         }
     }
 }

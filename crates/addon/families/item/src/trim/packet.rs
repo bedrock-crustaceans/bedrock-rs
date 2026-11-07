@@ -1,8 +1,9 @@
 //! The decoded payload of `TrimDataPacket`. The addon never
 //! decodes the packet: the caller converts the protocol crate's packet into these values.
 
-use super::{FormatCode, TrimData, TrimMaterial, TrimPattern, texts};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, VanillaText};
+use super::{FormatCode, TrimData, TrimMaterial, TrimPattern};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::id::{ItemId, TrimMaterialId, TrimPatternId};
 
 /// One pattern of the payload's `TrimPattern List`.
@@ -31,14 +32,9 @@ pub struct MaterialEntry {
 /// finding is a kept error: an error that rejects nothing.
 fn duplicate_template(index: usize, item: &ItemId) -> Diagnostic {
     let at = JsonPath::new().child("patterns").index(index);
-    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-        text: Some(VanillaText::Formatted {
-            template: texts::DUPLICATE_TEMPLATE,
-            args: vec![item.as_str().to_owned()],
-        }),
-    })
-    .at(at)
-    .into_kept()
+    Diagnostic::error(codes::DUPLICATE_TEMPLATE.with([item.as_str()]).into())
+        .at(at)
+        .into_kept()
 }
 
 impl TrimData {

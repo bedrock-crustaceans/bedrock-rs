@@ -9,10 +9,12 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod write;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
@@ -142,14 +144,13 @@ impl UiTextureInfo {
 }
 
 /// An `InvalidValue` at `path`: an information of the crate's own (the loader is silent) or
-/// the text of the game's debug assert.
-fn invalid(d: &mut Diagnostics, text: Option<&'static str>, path: &[&str]) {
+/// the text of the game's debug assert (a definition of `codes`).
+fn invalid(d: &mut Diagnostics, code: &'static CodeDef<0>, path: &[&str]) {
     d.push(
-        Diagnostic::info(DiagnosticCode::InvalidValue {
-            text: text.map(VanillaText::Fixed),
-        })
-        .at(JsonPath::new().with(path))
-        .phase(Phase::Validate),
+        Diagnostic::of(code)
+            .severity(Severity::Info)
+            .at(JsonPath::new().with(path))
+            .phase(Phase::Validate),
     );
 }
 
@@ -199,7 +200,7 @@ impl UiTextureInfo {
                 Err(path) => {
                     // The sheet is rejected; the finding names the failing member.
                     let path: Vec<&str> = path.iter().map(String::as_str).collect();
-                    invalid(d, None, &path);
+                    invalid(d, &core_codes::INVALID_VALUE, &path);
                     Self::RejectedAseprite(root.clone())
                 }
             }
@@ -292,11 +293,11 @@ fn read_nineslice(root: &Value, d: &mut Diagnostics) -> Nineslice {
         match nineslice.nineslice_size {
             None if size.is_null() => {}
             // Neither a number nor an array of four: ignored.
-            None => invalid(d, None, &["nineslice_size"]),
+            None => invalid(d, &core_codes::INVALID_VALUE, &["nineslice_size"]),
             Some(read) => {
                 if size.is_bool() {
                     // The game counts a bool as numeric and reads it as 1 or 0.
-                    invalid(d, None, &["nineslice_size"]);
+                    invalid(d, &core_codes::INVALID_VALUE, &["nineslice_size"]);
                 }
                 let negative = match read {
                     SliceSize::All(all) => all < 0.0,
@@ -304,7 +305,7 @@ fn read_nineslice(root: &Value, d: &mut Diagnostics) -> Nineslice {
                 };
                 if negative {
                     // A debug assertion in vanilla; the value is kept.
-                    invalid(d, Some("NineSlice cannot be negative"), &["nineslice_size"]);
+                    invalid(d, &codes::NEGATIVE_NINESLICE, &["nineslice_size"]);
                 }
             }
         }
@@ -316,11 +317,11 @@ fn read_nineslice(root: &Value, d: &mut Diagnostics) -> Nineslice {
         match nineslice.base_size {
             None if size.is_null() => {}
             // Not an array of at least two: ignored.
-            None => invalid(d, None, &["base_size"]),
+            None => invalid(d, &core_codes::INVALID_VALUE, &["base_size"]),
             Some(base) => {
                 if base.iter().any(|side| *side < 0.0) {
                     // A debug assertion in vanilla; the value is kept.
-                    invalid(d, Some("UV Base size can't be negative!"), &["base_size"]);
+                    invalid(d, &codes::NEGATIVE_BASE_SIZE, &["base_size"]);
                 }
             }
         }
@@ -501,7 +502,7 @@ fn combine(parsed: Vec<FileCopy<UiTextureInfo>>, cx: &StackCx<'_>) -> Files<UiTe
     });
     for (_, (pack, path)) in orphans {
         builder.push_diagnostic(file_finding(
-            DiagnosticCode::IgnoredFile { text: None },
+            DiagnosticCode::from(&core_codes::IGNORED_FILE),
             Severity::Info,
             pack,
             path,
@@ -597,10 +598,7 @@ mod tests {
         let (on, d) = nineslice(r#"{ "nineslice_size": true }"#);
         assert_eq!(on.nineslice_size, Some(SliceSize::All(1.0)));
         assert_eq!(d.len(), 1);
-        assert!(matches!(
-            d.iter().next().unwrap().code,
-            DiagnosticCode::InvalidValue { text: None }
-        ));
+        assert!(d.iter().next().unwrap().is(&core_codes::INVALID_VALUE));
         let (off, _) = nineslice(r#"{ "nineslice_size": false }"#);
         assert_eq!(off.nineslice_size, Some(SliceSize::All(0.0)));
     }

@@ -10,8 +10,8 @@
 
 pub mod history;
 
+pub mod codes;
 mod read;
-mod texts;
 mod types;
 mod validate;
 mod write;
@@ -22,7 +22,7 @@ mod cost;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity, VanillaText,
+    Code, Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity,
 };
 use bedrock_addon_core::document::{
     Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry,
@@ -37,7 +37,6 @@ use bedrock_addon_core::versioning::{
     Envelope, EnvelopeCheck, Family, Loaded, MissingVersion, NoComponents, RangeModel, ValidateCx,
 };
 use history::{CullingFamily, CullingHistory};
-use texts::{FAILED_INTERNAL, FAILED_TO_PARSE, MISSING_OBJECT, formatted};
 
 pub use types::{Condition, CullingRule, CullingRules, Description, Facing, GeometryPart, Rule};
 
@@ -89,7 +88,6 @@ impl Family for CullingFamily {
         if !failed {
             return;
         }
-        let missing_object = || formatted(MISSING_OBJECT, &[path.as_str()]);
         let found = std::mem::take(diagnostics);
         let mut envelope = false;
         let mut above = false;
@@ -101,44 +99,35 @@ impl Family for CullingFamily {
                 // raises on core's definitions); the plain forms by the variant without a text
                 // or core's plain definition.
                 let root = finding.location.json_path.is_empty();
-                let use_format = matches!(
-                    &finding.code,
-                    DiagnosticCode::UnsupportedVersion {
-                        text: Some(VanillaText::UseFormatVersion { .. })
-                    }
-                ) || finding.code.is(&core_codes::USE_FORMAT_VERSION);
-                let plain_unknown = matches!(
-                    &finding.code,
-                    DiagnosticCode::UnrecognizedField { text: None }
-                ) || finding.code.is(&core_codes::UNRECOGNIZED_FIELD);
+                let use_format = finding.is(&core_codes::USE_FORMAT_VERSION);
+                let plain_unknown = finding.is(&core_codes::UNRECOGNIZED_FIELD);
                 match finding.code.name() {
                     "UnsupportedVersion" if use_format => {
-                        finding.code = DiagnosticCode::UnsupportedVersion {
-                            text: Some(missing_object()),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            codes::MISSING_OBJECT_UNSUPPORTED_VERSION.with([path.as_str()]),
+                        );
                     }
                     "UnsupportedVersion" => {
-                        finding.code = DiagnosticCode::UnsupportedVersion {
-                            text: Some(VanillaText::NoParserForVersion {
-                                version: document.map(written_version).unwrap_or_default(),
-                            }),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            core_codes::NO_PARSER_FOR_VERSION
+                                .with([document.map(written_version).unwrap_or_default()]),
+                        );
                         above = true;
                     }
                     "MissingFormatVersion" => {
-                        finding.code = DiagnosticCode::MissingFormatVersion {
-                            text: Some(missing_object()),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            codes::MISSING_OBJECT_MISSING_FORMAT_VERSION.with([path.as_str()]),
+                        );
                     }
                     "MalformedFormatVersion" => {
-                        finding.code = DiagnosticCode::MalformedFormatVersion {
-                            text: Some(missing_object()),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            codes::MISSING_OBJECT_MALFORMED_FORMAT_VERSION.with([path.as_str()]),
+                        );
                     }
                     "MissingPayload" => {
-                        finding.code = DiagnosticCode::MissingPayload {
-                            text: Some(missing_object()),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            codes::MISSING_OBJECT_MISSING_PAYLOAD.with([path.as_str()]),
+                        );
                     }
                     "MalformedInput" | "EmptyDocument" | "PayloadKeyMismatch"
                     | "UnknownPayloadKey"
@@ -150,9 +139,9 @@ impl Family for CullingFamily {
                         if plain_unknown && finding.location.json_path.len() == 1 =>
                     {
                         // A third root member: the envelope is not exactly two members.
-                        finding.code = DiagnosticCode::UnrecognizedField {
-                            text: Some(missing_object()),
-                        };
+                        finding.code = DiagnosticCode::from(
+                            codes::MISSING_OBJECT_UNRECOGNIZED_FIELD.with([path.as_str()]),
+                        );
                     }
                     _ if finding.phase == Phase::Validate => validate = true,
                     _ => parse = true,
@@ -161,11 +150,20 @@ impl Family for CullingFamily {
             diagnostics.push(finding);
         }
         if envelope {
-            diagnostics.push(closing(MISSING_OBJECT, path, Phase::Parse));
+            diagnostics.push(closing(
+                codes::MISSING_OBJECT_DOCUMENT_REJECTED.with([path.as_str()]),
+                Phase::Parse,
+            ));
         } else if above || parse {
-            diagnostics.push(closing(FAILED_TO_PARSE, path, Phase::Parse));
+            diagnostics.push(closing(
+                codes::FAILED_TO_PARSE.with([path.as_str()]),
+                Phase::Parse,
+            ));
         } else if validate {
-            diagnostics.push(closing(FAILED_INTERNAL, path, Phase::Validate));
+            diagnostics.push(closing(
+                codes::FAILED_INTERNAL.with([path.as_str()]),
+                Phase::Validate,
+            ));
         }
     }
 }
@@ -206,11 +204,8 @@ impl JsonDefinition for CullingRules {
 }
 
 /// A closing line of vanilla's for a culling file that was skipped.
-fn closing(template: &'static str, path: &PackPath, phase: Phase) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(formatted(template, &[path.as_str()])),
-    })
-    .phase(phase)
+fn closing(code: Code, phase: Phase) -> Diagnostic {
+    Diagnostic::of(code).phase(phase)
 }
 
 /// The `format_version` of a document as vanilla's "no parser available" text prints it:

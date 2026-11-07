@@ -5,10 +5,10 @@
 
 use indexmap::IndexMap;
 
+use super::super::codes;
 use super::super::read::{
     LocatorForm, read_locators, read_poly_mesh, read_render_group_id, read_texture_mesh,
 };
-use super::super::texts::CAPE_DROPPED;
 use super::super::walk::Leaves;
 use super::super::{
     Bone as NewBone, BoneLegacy, Cube as NewCube, CubeUv, Description, Geometry as NewGeometry,
@@ -16,10 +16,8 @@ use super::super::{
 };
 use super::v0_0_0::{SHARED_GEOMETRY_MEMBERS, read_root};
 use super::{settle, v1_12_0, walk_for};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span,
-};
-use bedrock_addon_core::json::node_tree::{ABOVE_MAX_VERSION, Group, Node, Walk, text};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Span};
+use bedrock_addon_core::json::node_tree::{Group, Node, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
@@ -227,15 +225,12 @@ impl VersionStruct for GeometryFile {
             // The version node's maximum: 1.11.1 up to 1.12.0 fails the schema.
             walk.enter("format_version");
             walk.error(
-                DiagnosticCode::UnsupportedVersion {
-                    text: text(
-                        ABOVE_MAX_VERSION,
-                        &[
-                            &cx.original_version.to_string(),
-                            &MAX_FORMAT_VERSION.to_string(),
-                        ],
-                    ),
-                },
+                codes::ABOVE_MAX_VERSION
+                    .with([
+                        cx.original_version.to_string(),
+                        MAX_FORMAT_VERSION.to_string(),
+                    ])
+                    .into(),
                 Span { offset: 0, len: 0 },
             );
             walk.leave();
@@ -271,11 +266,9 @@ impl Upgrade for GeometryFile {
                 if g.cape.is_some() {
                     let at = JsonPath::new().child(&key).child("cape");
                     cx.diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField {
-                            text: text(CAPE_DROPPED, &[]),
-                        })
-                        .at(at)
-                        .phase(Phase::Upgrade),
+                        Diagnostic::of(&codes::CAPE_DROPPED)
+                            .at(at)
+                            .phase(Phase::Upgrade),
                     );
                 }
                 let (identifier, parent) = match key.rsplit_once(':') {

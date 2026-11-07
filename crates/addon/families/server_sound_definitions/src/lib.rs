@@ -7,13 +7,14 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 mod types;
 mod validate;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, JsonDocument, JsonPlaced, NoBeta, Origin,
     Registry, RegistryBuilder, Rejected,
@@ -99,11 +100,6 @@ impl Family for MetadataFamily {
 /// The game names this one file; it never lists the directory.
 pub(crate) const METADATA_PATH: &str = "sounds/sound_definitions.json";
 
-/// Vanilla's text for a sound event name that is registered already: an error in the sound
-/// log area, printed once.
-const DUPLICATE: &str =
-    "Duplicate server sound definition for sound event '{}'; the later definition will be ignored.";
-
 impl bedrock_addon_core::__private::Sealed for SoundMetadata {}
 
 /// `read` of the text the family reads: of a member written twice, the last copy is the one
@@ -166,15 +162,10 @@ fn duplicate(file: &Origin, name: &str, index: usize) -> Diagnostic {
     let at = JsonPath::new()
         .child(MetadataFamily::PAYLOAD_KEY)
         .index(index);
-    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-        text: Some(VanillaText::Formatted {
-            template: DUPLICATE,
-            args: vec![name.to_owned()],
-        }),
-    })
-    .at(at)
-    .phase(Phase::Validate)
-    .in_file(file)
+    Diagnostic::of(codes::DUPLICATE.with([name]))
+        .at(at)
+        .phase(Phase::Validate)
+        .in_file(file)
 }
 
 /// Combines the files, lowest pack first: the first definition of a name is kept, compared
@@ -257,7 +248,7 @@ pub const LOADER: CollectionLoader<Registry<SoundMetadata>, FileCopy<SoundMetada
 
 #[cfg(test)]
 mod tests {
-    use super::validate::{NEEDS_NAMESPACE, namespace_text, no_whitespace};
+    use super::validate::{namespace_code, no_whitespace};
     use super::*;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
@@ -334,14 +325,14 @@ mod tests {
 
     #[test]
     fn the_namespace_rule_follows_the_two_regexes() {
-        let text = |name: &str| namespace_text(name).map(|text| text.to_string());
+        let text = |name: &str| namespace_code(name).map(|code| code.to_string());
         assert_eq!(text("demo:click"), None);
         assert_eq!(text("a:b"), None);
         assert_eq!(text(":a:b"), None);
         for unprefixed in ["click", ":click", "demo:", ":", "", "minecraft:"] {
             assert_eq!(
                 text(unprefixed).as_deref(),
-                Some(NEEDS_NAMESPACE),
+                Some(codes::NEEDS_NAMESPACE.template()),
                 "{unprefixed}"
             );
         }

@@ -5,14 +5,14 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use crate::codes;
 use crate::read::{MOBS, detached_origin};
-use crate::texts::PARENT_NOT_DEFINED;
 use crate::validate::missing_bone_parents;
 use crate::{FileContribution, Geometry, Inherited};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::{Contribution, Document, Notice, Rejected};
 use bedrock_addon_core::id::GeometryId;
-use bedrock_addon_core::json::node_tree::text;
 use bedrock_addon_core::pack_identity::PackPath;
 
 /// What a geometry gives the geometries that inherit from it.
@@ -119,17 +119,12 @@ pub(crate) fn inherit(files: &mut [FileContribution]) {
                 above = Ok(Some((slot, node)));
             } else {
                 let code = if cycle {
-                    DiagnosticCode::ReferenceCycle { text: None }
+                    DiagnosticCode::from(&core_codes::REFERENCE_CYCLE)
                 } else {
-                    DiagnosticCode::UnresolvedReference {
-                        text: text(
-                            PARENT_NOT_DEFINED,
-                            &[
-                                &geometry.description.identifier,
-                                geometry.parent().unwrap_or_default(),
-                            ],
-                        ),
-                    }
+                    DiagnosticCode::from(codes::PARENT_NOT_DEFINED.with([
+                        geometry.description.identifier.as_str(),
+                        geometry.parent().unwrap_or_default(),
+                    ]))
                 };
                 failed.push((slot, code));
                 settled.insert(slot, Parent::NotBuilt);

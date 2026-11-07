@@ -6,6 +6,7 @@
 use facet::Facet;
 
 use super::{PoiTag, PoiType};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
@@ -39,12 +40,12 @@ pub(crate) fn is_poi_name(text: &str) -> bool {
 fn name(value: &Value, at: JsonPath, d: &mut Diagnostics) -> bool {
     match value.as_string() {
         None => {
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
             false
         }
         Some(text) => {
             if !is_poi_name(text.as_str()) {
-                d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at));
+                d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(at));
             }
             true
         }
@@ -68,7 +69,7 @@ fn names(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool 
     };
     let at = at.child(key);
     let Some(list) = value.as_array() else {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
+        d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
         return false;
     };
     let mut typed = true;
@@ -91,8 +92,8 @@ fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
         .map(|number| number.to_u64().is_some_and(|n| u8::try_from(n).is_ok()));
     let code = match integer {
         Some(true) => return true,
-        Some(false) => DiagnosticCode::InvalidValue { text: None },
-        None => DiagnosticCode::InvalidType { text: None },
+        Some(false) => DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        None => DiagnosticCode::from(&core_codes::INVALID_TYPE),
     };
     d.push(Diagnostic::error(code).at(at.child(key)));
     false
@@ -128,7 +129,7 @@ fn parse_strict<'a, T: Facet<'a>>(
             // The game's parser reports an unknown member, which this slice's strict mask makes
             // an error that refuses the file.
             d.push(
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .at(cx.at.join(&path))
                     .severity(cx.load.grade(Class::Unknown)),
             );

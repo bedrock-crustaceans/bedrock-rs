@@ -8,10 +8,10 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 
 mod read;
-mod texts;
 mod types;
 mod validate;
 mod write;
@@ -19,7 +19,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, builders};
 use bedrock_addon_core::document::{
     Document, Files, JsonDocument, Origin, Rejected, UnknownMembers, VersionInfo,
 };
@@ -174,10 +174,7 @@ fn payload_at() -> JsonPath {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(builders::syntax("not UTF-8 JSON within the nesting limit"))
 }
 
 /// A rejection with one finding.

@@ -1,8 +1,9 @@
 //! Reading an atomic client entity as the game's cereal parse does under its strict error mask:
 //! typed, with every unknown member, wrong type and failed constraint an error.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
 use bedrock_addon_core::json::{
     ClampedText, EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, Width,
@@ -15,12 +16,7 @@ use bedrock_addon_core::versioning::{
 use bedrock_addon_shared_visual::ControllerUse;
 use facet::Facet;
 
-use super::AtomicClientEntity;
-
-/// The text of the namespace constraint.
-const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-/// The text of a numeric constraint with a minimum of 0.
-const NOT_NEGATIVE_TEXT: &str = "the input must be a number >= 0";
+use super::{AtomicClientEntity, codes};
 
 const AABB: &str = "minecraft:aabb_dimensions";
 const CLIPPING: &str = "minecraft:companion_block_clipping";
@@ -153,9 +149,9 @@ impl VersionStruct for AtomicClientEntity {
                 at.append(&path);
                 // A key of `components` is a component; anywhere else it is a member.
                 let code = if is_component(&path) {
-                    DiagnosticCode::UnrecognizedComponent { text: None }
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT)
                 } else {
-                    DiagnosticCode::UnrecognizedField { text: None }
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD)
                 };
                 d.push(Diagnostic::error(code).at(at));
             }
@@ -163,30 +159,20 @@ impl VersionStruct for AtomicClientEntity {
         let description_at = cx.at.child("description");
         if !has_namespace(entity.description.identifier.as_str()) {
             // A namespace is required: the identifier matches `^(?:.)+:(?:.)+$`.
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(NAMESPACE_TEXT)),
-                })
-                .at(description_at.child("identifier")),
-            );
+            d.push(Diagnostic::of(&codes::NAMESPACE_TEXT).at(description_at.child("identifier")));
         }
         let controllers = entity.description.render_controllers.iter().flatten();
         for (index, controller) in controllers.enumerate() {
             if matches!(controller, ControllerUse::Conditional(_)) {
                 // The list holds plain strings; the `{ name: condition }` form is no string.
                 let at = description_at.child("render_controllers").index(index);
-                d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
+                d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
             }
         }
         for (members, value) in not_negative(&entity) {
             // The minimum is 0.0, inclusive.
             if value < 0.0 {
-                d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Fixed(NOT_NEGATIVE_TEXT)),
-                    })
-                    .at(cx.at.with(&members)),
-                );
+                d.push(Diagnostic::of(&codes::NOT_NEGATIVE_TEXT).at(cx.at.with(&members)));
             }
         }
         let errors = d

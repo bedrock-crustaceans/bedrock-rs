@@ -1,6 +1,6 @@
 //! What the `spawn_rules` and `spawn_groups` families share: the 1.8.0 condition and its filters,
-//! the spawn rules a condition gives, the readers of the hand-written parsers, the texts of the
-//! loaders and the steps of loading one spawn file. A family composes these; the crate depends on
+//! the spawn rules a condition gives, the readers of the hand-written parsers, the codes of the
+//! loaders (`codes`) and the steps of loading one spawn file. A family composes these; the crate depends on
 //! `bedrock_addon_core` and `bedrock_addon_shared_shapes` only.
 //!
 //! The two families stay two crates over this one. The game reads both files with the one hand
@@ -17,18 +17,16 @@
 //! The Molang check of the conditions' `tags` ([`validate::molang`]) is on only with this
 //! crate's `molang` feature, which each family forwards from its own.
 
+pub mod codes;
 pub mod condition;
 pub mod legacy;
 pub mod load;
 pub mod read;
 pub mod rules;
-pub mod texts;
 pub mod validate;
 
 #[cfg(test)]
 mod helper_pins;
-#[cfg(test)]
-mod tests;
 
 pub use condition::{
     AboveBlockFilter, Condition, DelayFilter, DensityLimit, DifficultyFilter, Herd, MobEventFilter,

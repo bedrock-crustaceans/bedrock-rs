@@ -1,10 +1,10 @@
 //! The rules that judge one loaded document. The checks over several documents run when the
 //! group combines (`resolve.rs`).
 
+use super::codes;
 use super::{PoiTag, PoiType};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::{BlockId, PoiTagId};
 
 /// The rules of a POI type, `at` its payload.
@@ -14,7 +14,7 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
     // the crate's own note is an information.
     if value.blocks.is_empty() {
         d.push(
-            Diagnostic::info(DiagnosticCode::PoiNoBlocks)
+            Diagnostic::of(&core_codes::POI_NO_BLOCKS)
                 .at(blocks.clone())
                 .phase(Phase::Validate),
         );
@@ -25,7 +25,7 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
     for (i, block) in std::mem::take(&mut value.blocks).into_iter().enumerate() {
         if kept.contains(&block) {
             d.push(
-                Diagnostic::info(DiagnosticCode::NoEffect { text: None })
+                Diagnostic::of(&core_codes::NO_EFFECT)
                     .at(blocks.index(i))
                     .phase(Phase::Validate),
             );
@@ -36,18 +36,9 @@ pub(crate) fn poi_type(value: &mut PoiType, at: &JsonPath, d: &mut Diagnostics) 
     value.blocks = kept;
 }
 
-/// What a tag of a cycle is told, with the tag's name: the phrasing of the game's own unit
-/// test of tag cycles (vanilla has no text for it outside a test).
-pub(crate) const PART_OF_A_CYCLE: &str = "{} was a part of a cycle";
-
 /// The `ReferenceCycle` code of `tag`.
 pub(crate) fn part_of_a_cycle(tag: &PoiTagId) -> DiagnosticCode {
-    DiagnosticCode::ReferenceCycle {
-        text: Some(VanillaText::Formatted {
-            template: PART_OF_A_CYCLE,
-            args: vec![tag.as_str().to_owned()],
-        }),
-    }
+    DiagnosticCode::from(codes::PART_OF_A_CYCLE.with([tag.as_str().to_owned()]))
 }
 
 /// The rules of a POI tag, `at` its payload.

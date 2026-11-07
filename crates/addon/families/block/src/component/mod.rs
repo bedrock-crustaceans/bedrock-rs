@@ -43,9 +43,8 @@ pub use visual::{
 use bedrock_addon_derive::Components;
 
 use super::history::BlockFamily;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
@@ -343,7 +342,8 @@ fn keep_instances(
         path.push(&instance);
         path.push(&member);
         d.push(
-            Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                .severity(Severity::Error)
                 .severity(unknown)
                 .at(path),
         );

@@ -4,12 +4,11 @@
 
 use std::collections::HashSet;
 
+use super::codes;
 use super::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, JsonPath, Phase};
 use bedrock_addon_core::document::{Document, MergeCx};
 use bedrock_addon_core::id::ItemId;
 
@@ -140,15 +139,10 @@ impl<'a> Merger<'a> {
     fn resolves(&self, item: &CatalogItem, at: JsonPath, cx: &mut MergeCx<'_, CatalogKey>) -> bool {
         if has_bad_aux(&item.name) {
             cx.push_diagnostic(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Formatted {
-                        template: "Invalid aux value in item ID \"{}\"",
-                        args: vec![item.name.as_str().to_owned()],
-                    }),
-                })
-                .at(at)
-                .phase(Phase::Validate)
-                .in_file(cx.origin()),
+                Diagnostic::of(codes::INVALID_AUX.with([item.name.as_str()]))
+                    .at(at)
+                    .phase(Phase::Validate)
+                    .in_file(cx.origin()),
             );
             return false;
         }
@@ -156,17 +150,13 @@ impl<'a> Merger<'a> {
             // The lookup drops the item without a message; the game's
             // link pass (`LinkedAssetValidator`) holds every catalogue item and logs the miss
             // at the content log's error level, dropping nothing more.
-            let text = bedrock_addon_core::diagnostic::validator::validator_text(
-                bedrock_addon_core::diagnostic::validator::Validator::Missing,
-                &at,
-                1,
-                item.name.as_str(),
-            );
-            let unresolved =
-                Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
-                    .at(at)
-                    .phase(Phase::Validate)
-                    .in_file(cx.origin());
+            let breadcrumb = bedrock_addon_core::diagnostic::validator::breadcrumb(&at, 1);
+            let unresolved = Diagnostic::of(
+                codes::MISSING_ITEM.with([breadcrumb, item.name.as_str().to_owned()]),
+            )
+            .at(at)
+            .phase(Phase::Validate)
+            .in_file(cx.origin());
             cx.push_diagnostic(unresolved.detail(DiagnosticDetail::Reference {
                 kind: "item",
                 id: item.name.as_str().to_owned(),
@@ -191,12 +181,12 @@ impl<'a> Merger<'a> {
         }
         let aux = item.name.aux().unwrap_or(0);
         if !self.used.insert((item.name.clone(), aux)) {
-            cx.push_diagnostic(Diagnostic::error(DiagnosticCode::IdentifierCollision {
-                    text: Some(VanillaText::Formatted {
-                        template: "You can only add an item to the crafting item catalog once. Found duplicate {}",
-                        args: vec![item.name.as_str().to_owned()],
-                    }),
-                }).at(at).phase(Phase::Validate).in_file(cx.origin()));
+            cx.push_diagnostic(
+                Diagnostic::of(codes::DUPLICATE_ITEM.with([item.name.as_str()]))
+                    .at(at)
+                    .phase(Phase::Validate)
+                    .in_file(cx.origin()),
+            );
             return;
         }
         cx.claim(CatalogKey::Item {

@@ -1,6 +1,6 @@
 //! The validation rules and the parse-time gates: fixtures `v01`–`v05`, `v07`–`v14`, `v16`–`v20`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::document::ComponentRef;
 use bedrock_addon::families::item::ItemFormat;
 use bedrock_addon::families::item::component::{
@@ -68,10 +68,11 @@ fn v02_foil() {
         ),
         &third_party(),
     );
-    assert!(has(both.diagnostics(), |c| matches!(
-        c,
-        DiagnosticCode::DuplicateComponentVersion { old, new } if old == "minecraft:foil" && new == "minecraft:glint"
-    )));
+    assert!(has(both.diagnostics(), |c| c
+        .args_of(&codes::DUPLICATE_COMPONENT_VERSION)
+        .is_some_and(
+            |args| args[0] == "minecraft:foil" && args[1] == "minecraft:glint"
+        )));
 }
 
 #[test]
@@ -88,12 +89,7 @@ fn v03_the_custom_component_list() {
     );
     // 1.20.80 without the Beta APIs: the toggle text, not loaded
     let d = rejects(&item("1.20.80", "demo:x", list), &third_party());
-    assert!(has(&d, |c| matches!(
-        c,
-        DiagnosticCode::MissingToggles {
-            text: Some(VanillaText::TurnOnToggleBefore { .. })
-        }
-    )));
+    assert!(has(&d, |c| c.is(&codes::TURN_ON_TOGGLE_BEFORE)));
     let mut beta = third_party();
     beta.beta_apis = true;
     loads(&item("1.20.80", "demo:x", list), &beta);

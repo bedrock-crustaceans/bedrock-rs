@@ -19,7 +19,7 @@ impl LegacyStep<1, 16, 0> for BlockPayload {
         for flag in ["is_experimental", "register_to_creative_menu"] {
             if block.description.shift_remove(flag).is_some() {
                 let at = JsonPath::new().with(&["minecraft:block", "description", flag]);
-                dropped_field(&at, None, cx.diagnostics);
+                dropped_field(&at, cx.diagnostics);
             }
         }
         Legacy(block)

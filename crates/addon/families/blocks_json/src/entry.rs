@@ -3,11 +3,10 @@
 
 use facet_value::VObject;
 
-use super::texts::{
-    BAD_BLOCKSHAPE, BAD_CARRIED_TEXTURES, BAD_TEXTURES, CUSTOM_BLOCKSHAPE, formatted,
-};
+use super::codes::{self, BAD_CARRIED_TEXTURES, BAD_TEXTURES};
 use super::{ClientBlock, FaceBools3, FaceBools6, FaceTextures, Isotropic, block_shape_value};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
 
 /// The six members the client reads; every other member of an entry is ignored.
@@ -46,12 +45,12 @@ pub(super) fn read(
     let mut block = ClientBlock::default();
     let mut requested_shape = None;
     if let Some(value) = object.get("textures") {
-        block.textures = textures(value, BAD_TEXTURES, block_name, &at("textures"), d);
+        block.textures = textures(value, &BAD_TEXTURES, block_name, &at("textures"), d);
     }
     if let Some(value) = object.get("carried_textures") {
         block.carried_textures = textures(
             value,
-            BAD_CARRIED_TEXTURES,
+            &BAD_CARRIED_TEXTURES,
             block_name,
             &at("carried_textures"),
             d,
@@ -68,11 +67,9 @@ pub(super) fn read(
             // error and loads the entry without a shape, so it is a kept error: the finding is
             // an error although the file still loads.
             d.push_kept_error(
-                Diagnostic::error(DiagnosticCode::IgnoredMember {
-                    text: Some(formatted(CUSTOM_BLOCKSHAPE, &[block_name])),
-                })
-                .at(at("blockshape"))
-                .phase(Phase::Validate),
+                Diagnostic::of(codes::CUSTOM_BLOCKSHAPE.with([block_name]))
+                    .at(at("blockshape"))
+                    .phase(Phase::Validate),
             );
         }
     }
@@ -108,7 +105,7 @@ pub(super) fn unread_members(object: &VObject, key: &str, d: &mut Diagnostics) {
         }
         let at = JsonPath::new().child(key).child(name);
         d.push(
-            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+            Diagnostic::of(&core_codes::IGNORED_MEMBER)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -120,7 +117,7 @@ pub(super) fn unread_members(object: &VObject, key: &str, d: &mut Diagnostics) {
 /// count (6 or 3) and each face must be a string.
 fn textures(
     value: &Value,
-    template: &'static str,
+    code: &'static CodeDef<1>,
     block_name: &str,
     at: &JsonPath,
     d: &mut Diagnostics,
@@ -155,11 +152,9 @@ fn textures(
     });
     if read.is_none() {
         d.push(
-            Diagnostic::warn(DiagnosticCode::InvalidType {
-                text: Some(formatted(template, &[block_name])),
-            })
-            .at(at.clone())
-            .phase(Phase::Validate),
+            Diagnostic::of(code.with([block_name]))
+                .at(at.clone())
+                .phase(Phase::Validate),
         );
     }
     read
@@ -179,7 +174,8 @@ fn isotropic(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Isotro
     }
     let Some(object) = value.as_object() else {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Validate),
         );
@@ -212,7 +208,8 @@ fn isotropic(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Isotro
     };
     if matched != object.len() {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Validate),
         );
@@ -244,11 +241,9 @@ fn blockshape(
 
 /// The invalid-blockshape warning for `block_name` at `at`.
 pub(super) fn bad_blockshape(block_name: &str, at: JsonPath) -> Diagnostic {
-    Diagnostic::warn(DiagnosticCode::InvalidValue {
-        text: Some(formatted(BAD_BLOCKSHAPE, &[block_name])),
-    })
-    .at(at)
-    .phase(Phase::Validate)
+    Diagnostic::of(codes::BAD_BLOCKSHAPE.with([block_name]))
+        .at(at)
+        .phase(Phase::Validate)
 }
 
 /// `ambient_occlusion_exponent`: a number; a boolean is read as 1.0 or 0.0 and anything else is
@@ -260,7 +255,8 @@ fn ambient_occlusion(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Optio
     }
     if let Some(flag) = value.as_bool() {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Validate),
         );
@@ -268,7 +264,8 @@ fn ambient_occlusion(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Optio
     }
     let Some(number) = value.as_number() else {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Validate),
         );
@@ -284,7 +281,8 @@ fn ambient_occlusion(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Optio
     // refuse. A number beyond `f32` is clamped rather than refused so that one oversized value
     // does not cost the file its other values, and the written text reads back to the same value.
     d.push(
-        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+        Diagnostic::of(&core_codes::INVALID_VALUE)
+            .severity(Severity::Info)
             .at(at.clone())
             .phase(Phase::Validate),
     );
@@ -302,7 +300,8 @@ fn sound(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<String> {
         return Some(name.as_str().to_owned());
     }
     d.push(
-        Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+        Diagnostic::of(&core_codes::INVALID_TYPE)
+            .severity(Severity::Info)
             .at(at.clone())
             .phase(Phase::Validate),
     );

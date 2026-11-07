@@ -6,6 +6,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod component;
 pub mod history;
 

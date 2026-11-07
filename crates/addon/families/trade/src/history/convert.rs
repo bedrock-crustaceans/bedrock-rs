@@ -3,7 +3,10 @@
 
 use super::v0::TradeItem;
 use crate::Quantity;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::UpgradeCx;
@@ -18,7 +21,8 @@ pub(super) fn quantity(json: &Value, at: &JsonPath, d: &mut Diagnostics) -> Opti
     let Some(read) = parse_range(json) else {
         // Not taken, and said: the item is written without the member.
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
         );
@@ -32,7 +36,8 @@ pub(super) fn quantity(json: &Value, at: &JsonPath, d: &mut Diagnostics) -> Opti
     let beyond = [min, max].iter().any(|n| u32::try_from(*n).is_err());
     if read.min < 1 || read.max < 1 || read.inexact || beyond {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
         );
@@ -43,7 +48,7 @@ pub(super) fn quantity(json: &Value, at: &JsonPath, d: &mut Diagnostics) -> Opti
     // finding).
     if read.swapped || (read.max.max(1) < min && wrote_max) {
         d.push(
-            Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+            Diagnostic::of(&core_codes::CLAMPED_VALUE)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
         );
@@ -308,7 +313,7 @@ pub(super) fn biomes_to_filters(item: &mut TradeItem) {
 ///   (`InvalidValue` at the name): each adds nothing.
 pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mut UpgradeCx<'_>) {
     let member = |key: &str| at.child(key);
-    let dropped = DiagnosticCode::DroppedField { text: None };
+    let dropped = DiagnosticCode::from(&core_codes::DROPPED_FIELD);
     // The game's legacy parser and slice upgrade read and drop these silently and log nothing
     // of them, so the crate reports an information.
     let note = |code, at| Diagnostic::info(code).at(at).phase(Phase::Upgrade);
@@ -329,8 +334,10 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
                 .filter(|key| material && key.as_str() != "function")
             {
                 let path = member("functions").index(index).child(key.as_str());
-                cx.diagnostics
-                    .push(note(DiagnosticCode::UnrecognizedField { text: None }, path));
+                cx.diagnostics.push(note(
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    path,
+                ));
             }
         }
     }
@@ -355,7 +362,7 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
             // A list without a name makes no filter and goes with the member: noted (the
             // game makes none of it either).
             cx.diagnostics.push(note(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 at_biomes.clone(),
             ));
         }
@@ -364,11 +371,11 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
             match element.as_string() {
                 Some(name) if known(name.as_str()) => any = true,
                 Some(_) => cx.diagnostics.push(note(
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     at_element.clone(),
                 )),
                 None => cx.diagnostics.push(note(
-                    DiagnosticCode::InvalidType { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
                     at_element.clone(),
                 )),
             }
@@ -378,13 +385,13 @@ pub(super) fn tell_lost(item: &TradeItem, expanded: bool, at: &JsonPath, cx: &mu
             any = true;
         } else {
             cx.diagnostics.push(note(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 at_biomes.clone(),
             ));
         }
     } else {
         cx.diagnostics.push(note(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             at_biomes.clone(),
         ));
     }

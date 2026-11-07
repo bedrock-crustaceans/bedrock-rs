@@ -3,7 +3,7 @@
 
 #![cfg(feature = "block")]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, StackSet, WorldPacks};
 
@@ -88,12 +88,11 @@ fn f19_multi_block_places_block_must_be_a_starting_multi_block_part() {
         "{d:#?}"
     );
     assert!(
-        !d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
-                && f.location
-                    .path
-                    .as_ref()
-                    .is_some_and(|p| p.as_str().contains("door.json"))),
+        !d.iter().any(|f| f.code.name() == "InvalidValue"
+            && f.location
+                .path
+                .as_ref()
+                .is_some_and(|p| p.as_str().contains("door.json"))),
         "the door block itself is valid"
     );
 }

@@ -157,7 +157,8 @@ pub fn paths(diagnostics: &[&Diagnostic]) -> Vec<String> {
 /// Whether the rejection ends with vanilla's closing line `text`.
 pub fn closes_with(diagnostics: &Diagnostics, text: &str) -> bool {
     diagnostics.iter().last().is_some_and(|d| {
-        matches!(d.code, DiagnosticCode::DocumentRejected { .. })
+        // By legacy name: the variant and the definitions that were it.
+        d.code.name() == "DocumentRejected"
             && d.severity == Severity::Error
             && d.code.to_string() == text
     })

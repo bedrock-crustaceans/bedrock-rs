@@ -1,11 +1,10 @@
 //! The schema rules a typed parse cannot express (node ranges, array lengths, engine gates) and
 //! the readers' own findings of the shared types, walked member by member.
 
-use super::read::{
-    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, FLOAT_OUT_OF_RANGE, INT_OUT_OF_RANGE, RANGE_MAX_OUT_OF_RANGE,
-    RANGE_MIN_OUT_OF_RANGE, formatted, not_valid_here,
-};
+use super::codes;
+use super::read::not_valid_here;
 use super::values::{BlockList, Chance, ChanceList, JsonInt};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::FormatVersion;
@@ -128,8 +127,9 @@ impl Check for ValidateCx<'_> {
         if let Some(JsonInt(v, _)) = value
             && !(min..=max).contains(&v)
         {
-            let text = formatted(INT_OUT_OF_RANGE, &[&v, &min, &max]);
-            self.error(key, DiagnosticCode::InvalidValue { text: Some(text) });
+            let code =
+                core_codes::OUTSIDE_RANGE.with([v.to_string(), min.to_string(), max.to_string()]);
+            self.error(key, code.into());
         }
     }
 
@@ -141,8 +141,9 @@ impl Check for ValidateCx<'_> {
         if let Some(v) = value
             && !(min..=max).contains(&v)
         {
-            let text = formatted(FLOAT_OUT_OF_RANGE, &[&v, &min, &max]);
-            self.error(key, DiagnosticCode::InvalidValue { text: Some(text) });
+            let code =
+                core_codes::OUTSIDE_RANGE.with([v.to_string(), min.to_string(), max.to_string()]);
+            self.error(key, code.into());
         }
     }
 
@@ -152,13 +153,13 @@ impl Check for ValidateCx<'_> {
         };
         let at = self.path(key);
         self.diagnostics.extend(range.check(&at));
-        for (end, template) in [
-            (range.min, RANGE_MIN_OUT_OF_RANGE),
-            (range.max, RANGE_MAX_OUT_OF_RANGE),
+        for (end, line) in [
+            (range.min, &codes::RANGE_MIN_OUT_OF_RANGE),
+            (range.max, &codes::RANGE_MAX_OUT_OF_RANGE),
         ] {
             if !(min..=max).contains(&end) {
-                let text = formatted(template, &[&end, &min, &max]);
-                self.error(key, DiagnosticCode::InvalidValue { text: Some(text) });
+                let code = line.with([end.to_string(), min.to_string(), max.to_string()]);
+                self.error(key, code.into());
                 return;
             }
         }
@@ -172,14 +173,14 @@ impl Check for ValidateCx<'_> {
         let Some(len) = len else {
             return;
         };
-        let text = if len < min {
-            formatted(ARRAY_TOO_SMALL, &[&len, &min])
+        let code = if len < min {
+            core_codes::ARRAY_TOO_SMALL.with([len.to_string(), min.to_string()])
         } else if let Some(max) = max.filter(|&max| len > max) {
-            formatted(ARRAY_TOO_LARGE, &[&len, &max])
+            core_codes::ARRAY_TOO_LARGE.with([len.to_string(), max.to_string()])
         } else {
             return;
         };
-        self.error(key, DiagnosticCode::InvalidValue { text: Some(text) });
+        self.error(key, code.into());
     }
 
     fn chance(&mut self, key: &str, value: Option<&Chance>) {

@@ -29,7 +29,8 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::BiomeFamily;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{
@@ -117,7 +118,7 @@ where
     let _ = mode;
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let unrecognized = |path: JsonPath| {
-        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
             .at(path)
             .severity(cx.grade(Class::Unknown))
     };

@@ -14,6 +14,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod bindings;
+pub mod codes;
 mod events;
 
 pub use bindings::{
@@ -22,7 +23,8 @@ pub use bindings::{
     SoundRange, SoundRef, SoundVariants,
 };
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
@@ -57,7 +59,7 @@ fn cleared_tables(json: &Value, target: &Value, found: &mut Diagnostics) {
     let at = JsonPath::new().child("entity_sounds").child("entities");
     // A copy without the section inserts nothing.
     if fork::has_member(json, "entity_sounds") && own.is_null() && !lower.is_null() {
-        found.push(Diagnostic::info(DiagnosticCode::SoundsJsonTableCleared).at(at));
+        found.push(Diagnostic::of(&core_codes::SOUNDS_JSON_TABLE_CLEARED).at(at));
         return;
     }
     for name in fork::member_names(own) {
@@ -66,7 +68,7 @@ fn cleared_tables(json: &Value, target: &Value, found: &mut Diagnostics) {
         let lower_key = fork::member(fork::member(fork::member(lower, &name), "variants"), "key");
         if fork::has_member(entity, "variants") && key.is_null() && !lower_key.is_null() {
             let at = at.child(&name).child("variants").child("key");
-            found.push(Diagnostic::info(DiagnosticCode::SoundsJsonTableCleared).at(at));
+            found.push(Diagnostic::of(&core_codes::SOUNDS_JSON_TABLE_CLEARED).at(at));
         }
     }
 }
@@ -140,8 +142,10 @@ fn check_variant_keys(value: &SoundBindings, cx: Option<&LoadContext>, found: &m
     }
     let _ = cx;
     let fields = u32::try_from(keys.len()).unwrap_or(u32::MAX);
-    found
-        .push(Diagnostic::info(DiagnosticCode::MolangNotChecked { fields }).phase(Phase::Validate));
+    found.push(
+        Diagnostic::of(core_codes::MOLANG_NOT_CHECKED.with([fields.to_string()]))
+            .phase(Phase::Validate),
+    );
 }
 
 /// Merges the copies of `sounds.json` and reads the result.

@@ -1,7 +1,8 @@
 //! Reading [`SoundMetadataFile`]: the one struct's `VersionStruct`, its payload read strictly.
 
 use super::{SoundMetadataFile, V1_26_60};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members,
     parse_with_rules, reject_nulls,
@@ -47,16 +48,13 @@ impl VersionStruct for SoundMetadataFile {
         let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
         if json.as_ref().is_some_and(|json| !json.is_array()) {
             // The payload is the array itself.
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(cx.at.clone()));
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(cx.at.clone()));
             return None;
         }
         let mistyped = json.as_ref().map(mistyped_tags).unwrap_or_default();
         if !mistyped.is_empty() {
             for at in &mistyped {
-                d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                        .at(cx.at.join(at)),
-                );
+                d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(cx.at.join(at)));
             }
             return None;
         }
@@ -95,7 +93,8 @@ impl VersionStruct for SoundMetadataFile {
         d.unknown_mut().absorb(&cx.at, kept);
         for (path, _) in &unknown {
             d.push(
-                Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Error)
                     .at(cx.at.join(path)),
             );
         }

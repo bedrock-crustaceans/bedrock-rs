@@ -138,13 +138,7 @@ fn below_floor(diagnostics: &Diagnostics, version: &str) -> DiagnosticCode {
 fn b01_1_12_0_name_keyed() {
     let found = rejected(&fixture("b01_1_12_0_name_keyed/plains.json"), &context());
     let hint = below_floor(&found, "1.12.0");
-    assert_eq!(
-        hint,
-        DiagnosticCode::BiomeFormatHint {
-            version: None,
-            surface_components: false
-        }
-    );
+    assert_eq!(hint, DiagnosticCode::from(&codes::BIOME_FORMAT_HINT_LEGACY));
 }
 
 /// `b02_1_13_0_tag_components`: format 1.13.0 (tags as empty components) is below the floor,
@@ -158,10 +152,9 @@ fn b02_1_13_0_tag_components() {
     let hint = below_floor(&found, "1.13.0");
     assert_eq!(
         hint,
-        DiagnosticCode::BiomeFormatHint {
-            version: Some(FormatVersion::new(1, 13, 0)),
-            surface_components: false
-        }
+        DiagnosticCode::from(
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 13, 0).to_string()])
+        )
     );
 }
 
@@ -172,10 +165,9 @@ fn b03_1_20_60_tags() {
     let hint = below_floor(&found, "1.20.60");
     assert_eq!(
         hint,
-        DiagnosticCode::BiomeFormatHint {
-            version: Some(FormatVersion::new(1, 20, 60)),
-            surface_components: false
-        }
+        DiagnosticCode::from(
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 20, 60).to_string()])
+        )
     );
 }
 
@@ -814,10 +806,10 @@ fn b16_1_20_60_surface_components() {
     let hint = below_floor(&found, "1.20.60");
     assert_eq!(
         hint,
-        DiagnosticCode::BiomeFormatHint {
-            version: Some(FormatVersion::new(1, 20, 60)),
-            surface_components: true
-        }
+        DiagnosticCode::from(
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
+                .with([FormatVersion::new(1, 20, 60).to_string()])
+        )
     );
     assert!(hint.to_string().ends_with(
         "and replace minecraft:surface_parameters / minecraft:*_surface with minecraft:surface_builder)"
@@ -885,10 +877,7 @@ fn b20_noise_gradient_specifier_checks() {
     let found = rejected(&gradient(""), &context());
     let errors_found = errors(&found);
     assert_eq!(errors_found.len(), 1, "{found:#?}");
-    assert!(matches!(
-        errors_found[0].code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(errors_found[0].code.is(&codes::INVALID_VALUE));
     assert_eq!(errors_found[0].location.json_path.to_string(), at);
     // `noise` by pack area.
     let one = |noise: &str| gradient(&specifier(0.0, 1.0, Some(noise)));
@@ -911,10 +900,7 @@ fn b20_noise_gradient_specifier_checks() {
     let spaced = rejected(&one("a b:c"), &context());
     let spaced = errors(&spaced);
     assert_eq!(spaced.len(), 1);
-    assert!(matches!(
-        spaced[0].code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(spaced[0].code.is(&codes::INVALID_VALUE));
     assert_eq!(
         spaced[0].location.json_path.to_string(),
         format!("{at}/0/noise")

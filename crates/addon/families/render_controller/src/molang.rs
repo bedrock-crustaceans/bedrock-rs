@@ -159,9 +159,9 @@ pub(crate) fn run(
 mod check {
     use super::{MolangOutcome, MolangRun, PARSED_SOURCE, SCHEMA_VALUE};
     use crate::read::controller_of;
+    use bedrock_addon_core::diagnostic::codes as core_codes;
     use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Location, Phase,
-        Severity,
+        Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity,
     };
     use bedrock_addon_core::molang::{
         MolangCheck, MolangContext, MolangFieldMut, MolangFields, ReportRules, Side, visit_fields,
@@ -255,9 +255,10 @@ mod check {
                     .is_some_and(|s| s == JsonPathSegment::Key("arrays"));
                 if in_array {
                     diagnostics.push(
-                        Diagnostic::error(DiagnosticCode::InvalidMolang {
-                            expression: format!("{ERROR_PARSING}{}", source.as_str()),
-                        })
+                        Diagnostic::of(
+                            core_codes::INVALID_MOLANG
+                                .with([format!("{ERROR_PARSING}{}", source.as_str())]),
+                        )
                         .at(field.path.clone())
                         .phase(Phase::Validate),
                     );
@@ -267,9 +268,9 @@ mod check {
                     // read as keeps the note alone: the reader has
                     // told the number at the member already.
                     diagnostics.push(
-                        Diagnostic::error(DiagnosticCode::InvalidMolang {
-                            expression: source.as_str().to_owned(),
-                        })
+                        Diagnostic::of(
+                            core_codes::INVALID_MOLANG.with([source.as_str().to_owned()]),
+                        )
                         .at(field.path.clone())
                         .phase(Phase::Validate),
                     );

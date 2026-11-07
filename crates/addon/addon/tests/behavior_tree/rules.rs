@@ -4,8 +4,9 @@
 use std::fmt::Write as _;
 use std::time::{Duration, Instant};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity, codes};
 use bedrock_addon::document::Content;
+use bedrock_addon::families::behavior_tree::codes as bt_codes;
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -44,10 +45,8 @@ fn text_that_is_not_utf8_is_malformed() {
     let rejected = parse_bytes(&bytes).unwrap_err();
     let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
     // not a text of vanilla's: its reader does not check the encoding
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput { text: None, .. }
-    ));
+    assert!(finding.is(&codes::SYNTAX));
+    assert_eq!(finding.vanilla(), None);
 }
 
 #[test]
@@ -64,16 +63,7 @@ fn only_a_file_of_no_bytes_is_an_empty_document() {
     // white space is text that is not JSON: vanilla logs its parse error
     let rejected = rejected("  \n");
     let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput {
-            text: Some(VanillaText::Formatted {
-                template: "parse error:\n{}",
-                ..
-            }),
-            ..
-        }
-    ));
+    assert!(finding.is(&bt_codes::PARSE_ERROR));
     assert_eq!(rejected.diagnostics.len(), 1);
     // a null document parses: it has no name
     for text in ["null", "5", "\"text\""] {
@@ -121,10 +111,8 @@ fn a_tree_nested_past_the_limit_is_rejected_quickly() {
     let just_over = nested(63, "5").replace(": 5}", ": []}");
     let rejected = rejected(&just_over);
     let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput { text: None, .. }
-    ));
+    assert!(finding.is(&codes::SYNTAX));
+    assert_eq!(finding.vanilla(), None);
     assert_eq!(rejected.diagnostics.len(), 1);
     // and far more, quickly: no recursion happens
     let started = Instant::now();
@@ -407,9 +395,7 @@ fn an_element_of_a_position_of_numbers() {
     assert!(finding.kept);
     assert_eq!(
         finding.code,
-        DiagnosticCode::InvalidType {
-            text: Some(VanillaText::Fixed("Expected Number."))
-        }
+        DiagnosticCode::from(&bt_codes::EXPECTED_NUMBER)
     );
     assert_eq!(finding.code.to_string(), "Expected Number.");
     assert_eq!(findings.len(), 1);

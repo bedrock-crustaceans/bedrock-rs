@@ -8,6 +8,7 @@
 
 use super::lexer::{Lexed, cook, lex};
 use super::{ImportKind, ScriptSyntaxKind};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::version::known;
 
 /// The import sites of `source` as `(kind, specifier)`.
@@ -1131,7 +1132,7 @@ fn a_plugin_whose_script_files_the_walk_left_unread_is_told_once() {
     assert_eq!(
         found,
         [(
-            &DiagnosticCode::FileNotLoaded,
+            &DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
             Severity::Info,
             "scripts/main.js".to_owned()
         )],
@@ -1176,10 +1177,7 @@ fn m9_on_an_engine_before_1_26_30_the_relaxed_form_refuses_the_manifest_and_no_s
         })
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].0,
-        DiagnosticCode::MalformedPropertyVersion { .. }
-    ));
+    assert!(found[0].0.is(&core_codes::DEPENDENCY_INVALID_VERSION));
     assert_eq!(
         (found[0].1, found[0].2.as_str(), found[0].3.as_str()),
         (Severity::Error, "manifest.json", "dependencies/0/version")

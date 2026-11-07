@@ -1,65 +1,20 @@
-//! The game's own texts for this family, with `{}` where the game
-//! formats an argument, and the two small text readers the load needs: translation keys of a
+//! The family's unresolved-reference finding and the two small text readers the load needs: translation keys of a
 //! `.lang` file and the name key of a piece.
 
 use std::collections::HashMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, VanillaText,
-};
-
-pub(super) const META_NOT_FOUND: &str = "Could not find expected metafile json file {}";
-pub(super) const META_NOT_PARSED: &str = "Could not parse metafile json file {}";
-pub(super) const GEOMETRY_NOT_FOUND: &str = "Missing expected geometry file {}";
-pub(super) const GEOMETRY_NOT_PARSED: &str = "Could not parse geometry file {}";
-pub(super) const GEOMETRY_NAME_NOT_FOUND: &str = "Couldn't find geometry name {} on {}.";
-pub(super) const SIDE_NOT_ARM_OR_LEG: &str = "Trying to assign the side attribute to a piece that is not an arm or leg (pieceType: {}, side: '{}')";
-pub(super) const ANIMATION_FILE_MISSING: &str =
-    "Trying to parse emote {} with missing anim file: {}";
-pub(super) const ANIMATION_NOT_IN_FILE: &str =
-    "Animation {} declared by emote piece {} was not found in file {}";
-pub(super) const EMOTE_INVALID: &str =
-    "Trying to parse invalid emote animation definition with pieceId {}";
-
-/// Every template of the family with the number of arguments it takes.
-#[cfg(test)]
-pub(super) const TEMPLATES: &[(&str, usize)] = &[
-    (META_NOT_FOUND, 1),
-    (META_NOT_PARSED, 1),
-    (GEOMETRY_NOT_FOUND, 1),
-    (GEOMETRY_NOT_PARSED, 1),
-    (GEOMETRY_NAME_NOT_FOUND, 2),
-    (SIDE_NOT_ARM_OR_LEG, 2),
-    (ANIMATION_FILE_MISSING, 2),
-    (ANIMATION_NOT_IN_FILE, 3),
-    (EMOTE_INVALID, 1),
-];
-
-/// The game's text `template` with `args`.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every caller fills a code's optional text"
-)]
-pub(super) fn vanilla<const N: usize>(
-    template: &'static str,
-    args: [&str; N],
-) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    })
-}
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath};
 
 /// An unresolved reference at `at`, with the name it could not be resolved to.
 pub(super) fn unresolved(
     kind: &'static str,
     name: &str,
-    text: Option<VanillaText>,
+    code: DiagnosticCode,
     at: JsonPath,
 ) -> Diagnostic {
     // Every caller sets the severity it means (an information of the crate's own, or an error
     // the game logs for a missing geometry name or animation); the helper's own is the least.
-    Diagnostic::info(DiagnosticCode::UnresolvedReference { text })
+    Diagnostic::info(code)
         .at(at)
         .detail(DiagnosticDetail::Reference {
             kind,

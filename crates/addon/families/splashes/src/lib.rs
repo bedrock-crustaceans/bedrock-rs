@@ -7,7 +7,10 @@
 mod read;
 
 use bedrock_addon_core::diagnostic::builders::file_finding;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
+};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
@@ -114,11 +117,8 @@ fn read_splashes(origin: Origin, bytes: &[u8]) -> Result<Document<Splashes>, Rej
     let mut root = match read(bytes) {
         Ok(root) => root,
         Err(message) => {
-            let code = DiagnosticCode::MalformedInput {
-                message: message.to_string(),
-                text: None,
-            };
-            return Err(unversioned::reject(origin, Diagnostic::error(code)));
+            let found = Diagnostic::of(builders::syntax(message.to_string()));
+            return Err(unversioned::reject(origin, found));
         }
     };
     let mut diagnostics = Diagnostics::default();
@@ -189,7 +189,7 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
                     origins.clear();
                     if lower {
                         diagnostics.push(file_finding(
-                            DiagnosticCode::SplashesReplaced,
+                            DiagnosticCode::from(&core_codes::SPLASHES_REPLACED),
                             Severity::Info,
                             &layer.origin().pack,
                             &layer.origin().path,
@@ -210,7 +210,7 @@ fn combine_splashes(parsed: Vec<FileCopy<Splashes>>, _: &StackCx<'_>) -> Merged<
     if let (true, Some(top)) = (pool.is_empty(), last) {
         // The stack has the file and the full game is left without a splash.
         diagnostics.push(file_finding(
-            DiagnosticCode::NoSplashes,
+            DiagnosticCode::from(&core_codes::NO_SPLASHES),
             Severity::Info,
             &top.pack,
             &top.path,

@@ -11,21 +11,22 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod grammar;
 mod lint;
 mod read;
-mod texts;
 mod write;
 
 #[cfg(test)]
 mod tests;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FunctionPath;
 
 use crate::read::{first_word, trimmed};
 use crate::read::{not_found, parse_function, parse_tick};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, Merge, Merged, NoBeta,
     Placed, Registry, RegistryBuilder, Rejected, unversioned,
@@ -224,9 +225,7 @@ fn parse_function_file(
     let origin = unversioned::origin(pack, side, path);
     let Some(name) = function_name(key) else {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::error(DiagnosticCode::IgnoredFile {
-            text: None,
-        }));
+        diagnostics.push(Diagnostic::of(&core_codes::IGNORED_FILE).severity(Severity::Error));
         diagnostics.locate(&origin);
         return (None, Err(Rejected::new(origin, diagnostics)));
     };

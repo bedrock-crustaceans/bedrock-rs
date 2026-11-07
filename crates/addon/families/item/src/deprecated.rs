@@ -1,5 +1,6 @@
 //! The item side-car `ItemDeprecatedData` (JSON `__deprecated_components`).
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::shared::EventTrigger;
 use facet_value::VObject;
 
@@ -83,7 +84,10 @@ impl ItemDeprecatedData {
     pub(crate) fn from_value(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Self {
         let mut out = Self::default();
         let Some(object) = value.as_object() else {
-            d.push(note(DiagnosticCode::InvalidType { text: None }, at.clone()));
+            d.push(note(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at.clone(),
+            ));
             return out;
         };
         'members: for (key, member) in object {
@@ -105,11 +109,14 @@ impl ItemDeprecatedData {
                             .filter(|(other, _)| other.as_str() != inner)
                         {
                             let path = at.child(key).child(other.as_str());
-                            d.push(note(DiagnosticCode::MemberNotKept { text: None }, path));
+                            d.push(note(
+                                DiagnosticCode::from(&core_codes::MEMBER_NOT_KEPT),
+                                path,
+                            ));
                         }
                     } else {
                         let path = at.child(key);
-                        d.push(note(DiagnosticCode::InvalidType { text: None }, path));
+                        d.push(note(DiagnosticCode::from(&core_codes::INVALID_TYPE), path));
                         out.extra.insert(key.to_owned(), member.clone());
                     }
                     continue 'members;
@@ -136,7 +143,7 @@ impl ItemDeprecatedData {
                                 full.push(key);
                                 full.append(&path);
                                 d.push(note(
-                                    DiagnosticCode::UnrecognizedField { text: None },
+                                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                                     full,
                                 ));
                             }
@@ -149,7 +156,10 @@ impl ItemDeprecatedData {
                 }
                 _ => {
                     let path = at.child(key);
-                    d.push(note(DiagnosticCode::UnrecognizedField { text: None }, path));
+                    d.push(note(
+                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                        path,
+                    ));
                     out.extra.insert(key.to_owned(), member.clone());
                 }
             }

@@ -3,10 +3,12 @@
 
 use std::collections::HashMap;
 
+use super::codes;
 use super::{KeyFilter, LangFile, LangLayout, Language, Line, Translations};
 use crate::scan::{BOM, End, Kind, scan};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Span, VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity, Span,
 };
 
 /// Bytes as text: vanilla copies bytes without decoding them.
@@ -26,30 +28,23 @@ fn stored_key(key: &str) -> String {
 // '%s'.` and `… Null character …`, both
 // `ContentLogHelper::_contentLog(true, LogLevel::Warning, LogArea::Localization, …)`.
 fn no_equals(line: usize, key: &str, end: End, span: Span) -> Diagnostic {
-    let template = match end {
-        End::LineFeed => {
-            "Line: {} - Invalid lang file format. New line character was found while parsing key: '{}'."
-        }
-        End::Terminator => {
-            "Line: {} - Invalid lang file format. Null character was found while parsing key: '{}'."
-        }
+    let line = line.to_string();
+    let code = match end {
+        End::LineFeed => codes::NEW_LINE_IN_KEY.with([line.as_str(), key]),
+        End::Terminator => codes::NULL_IN_KEY.with([line.as_str(), key]),
     };
-    Diagnostic::warn(DiagnosticCode::MalformedInput {
-        message: "a line without `=`".to_owned(),
-        text: Some(VanillaText::Formatted {
-            template,
-            args: vec![line.to_string(), key.to_owned()],
-        }),
-    })
-    .at(JsonPath::new().child(key))
-    .span(span)
+    Diagnostic::of(code)
+        .detail(DiagnosticDetail::Syntax("a line without `=`".to_owned()))
+        .at(JsonPath::new().child(key))
+        .span(span)
 }
 
 /// L13: the key was defined on line `earlier` already. The last definition wins, as in
 /// vanilla, which says nothing.
 // `vanilla = "silent, last wins"`: `try_emplace` then an assign
 fn duplicate(key: &str, earlier: usize, span: Span) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+    Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+        .severity(Severity::Info)
         .at(JsonPath::new().child(key))
         .span(span)
         .detail(DiagnosticDetail::Reference {
@@ -128,10 +123,10 @@ impl LangFile {
                     // `vanilla = "bytes copied, no decoding"`.
                     if !decoded {
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::MalformedInput {
-                                message: "a key or value that is not UTF-8".to_owned(),
-                                text: None,
-                            })
+                            Diagnostic::of(
+                                core_codes::SYNTAX.with(["a key or value that is not UTF-8"]),
+                            )
+                            .severity(Severity::Info)
                             .at(JsonPath::new().child(&stored))
                             .span(segment.span),
                         );
@@ -141,7 +136,8 @@ impl LangFile {
                     // `vanilla = "silent; '=' becomes a key character"`
                     if key.starts_with('=') {
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                            Diagnostic::of(&core_codes::INVALID_VALUE)
+                                .severity(Severity::Info)
                                 .at(JsonPath::new().child(&stored))
                                 .span(segment.span),
                         );
@@ -153,7 +149,7 @@ impl LangFile {
                     // information.
                     if key.ends_with(' ') || value.starts_with(b" ") {
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::LangKeyTrailingSpace)
+                            Diagnostic::of(&core_codes::LANG_KEY_TRAILING_SPACE)
                                 .at(JsonPath::new().child(&stored))
                                 .span(segment.span),
                         );
@@ -163,14 +159,15 @@ impl LangFile {
                     }
                     if tab_cuts_text(&trailing) {
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+                            Diagnostic::of(&core_codes::IGNORED_MEMBER)
                                 .at(JsonPath::new().child(&stored))
                                 .span(segment.span),
                         );
                     }
                     if odd_placeholder(&value) {
                         diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                            Diagnostic::of(&core_codes::INVALID_VALUE)
+                                .severity(Severity::Info)
                                 .at(JsonPath::new().child(&stored))
                                 .span(segment.span),
                         );

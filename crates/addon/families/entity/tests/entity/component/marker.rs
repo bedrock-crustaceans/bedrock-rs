@@ -1,6 +1,6 @@
 //! Marker components: `{}`, a stray member kept and reported.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
     EntityComponent, InputGroundControlled, IsBaby, IsHiddenWhenInvisible, RendersWhenInvisible,
@@ -82,7 +82,7 @@ fn e27_marker_with_a_stray_member_keeps_it_and_reports_unrecognized_field() {
     let (marker, d) = strict::<RotationLockedToVehicle>(&fixture("e27_marker_stray_member.json"));
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        |c| c.name() == "UnrecognizedField",
         Severity::Warning,
         "stray"
     ));
@@ -115,12 +115,7 @@ fn a_marker_that_is_not_an_object_is_a_warning_in_the_lenient_conversion() {
     let (value, d) = read_as::<UsesLegacyAmbientSounds>("[]", ConvertMode::Lenient);
     assert!(value.is_none(), "dropped");
     assert_eq!(d.len(), 1, "{d:?}");
-    assert!(has(
-        &d,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
-        Severity::Info,
-        ""
-    ));
+    assert!(has(&d, |c| c.name() == "InvalidValue", Severity::Info, ""));
 }
 
 /// A marker the step of row `row` inserts reads as written there: `{}`.

@@ -6,7 +6,8 @@
 //! pack's `minecraft:trial_chambers` stays effective and the game's record gets the text. J3,
 //! the spacing/separation check on the parser test's own input (`parser-9.json`).
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
+use bedrock_addon::families::jigsaw;
 use bedrock_addon::families::jigsaw::StructureSet;
 use bedrock_addon::id::StructureSetId;
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -51,7 +52,7 @@ fn j1(stack: &PackStack<Behavior>) -> Vec<Diagnostic> {
         .jigsaw()
         .structure_sets
         .diagnostics()
-        .filter(|f| matches!(f.code, DiagnosticCode::DuplicateIdentifier { .. }))
+        .filter(|f| f.code.is(&jigsaw::codes::SET_ALREADY_REGISTERED))
         .cloned()
         .collect()
 }
@@ -116,7 +117,7 @@ fn j3_the_parser_test_s_set_with_too_much_separation_is_refused() {
     let d = rejected::<StructureSet>("worldgen/structure_sets/trail_ruins.json", &text);
     let found: Vec<_> = d
         .iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. }))
+        .filter(|f| f.code.name() == "InvalidValue")
         .collect();
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].severity, Severity::Error);

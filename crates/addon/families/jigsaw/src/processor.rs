@@ -353,7 +353,6 @@ bedrock_addon_core::impl_no_molang!(
 #[cfg(test)]
 mod validate_tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::DiagnosticCode;
     use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::id::BlockId;
 
@@ -377,8 +376,7 @@ mod validate_tests {
         let findings = list_with_a_nan_probability().validate(&LoadContext::detached());
         assert!(
             findings.iter().any(|finding| {
-                finding.severity == Severity::Error
-                    && matches!(finding.code, DiagnosticCode::MalformedInput { .. })
+                finding.severity == Severity::Error && finding.code.name() == "MalformedInput"
             }),
             "an unwritable value validated clean: {findings:?}"
         );

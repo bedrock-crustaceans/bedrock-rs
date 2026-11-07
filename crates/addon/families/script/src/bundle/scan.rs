@@ -4,11 +4,13 @@
 // here is linear in the files and their import sites: names are looked up in maps, the graph
 // is walked with a work list.
 
+use crate::codes;
 use std::collections::{BTreeSet, HashMap};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, NotFoundHint,
-    Phase, ReferenceHint, Severity, Span, VanillaText,
+    Phase, ReferenceHint, Severity, Span,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
@@ -299,7 +301,7 @@ pub(super) fn build(parts: Parts<'_>) -> ScriptBundle {
             // Nothing of a pack without a script module ever runs.
             if !bundle.files.is_empty() {
                 findings.push(
-                    DiagnosticCode::ScriptFileNotLoadable,
+                    DiagnosticCode::from(&core_codes::SCRIPT_FILE_NOT_LOADABLE),
                     Severity::Info,
                     None,
                     None,
@@ -352,7 +354,7 @@ struct Scanned<'a> {
 fn not_loadable(outside: &[PackPath], findings: &mut Findings) {
     for path in outside {
         findings.push(
-            DiagnosticCode::ScriptFileNotLoadable,
+            DiagnosticCode::from(&core_codes::SCRIPT_FILE_NOT_LOADABLE),
             Severity::Info,
             Some(path),
             None,
@@ -372,7 +374,7 @@ fn run(
     if !options.imports {
         // The caller asked for no import checks, so the bundle says that nothing was checked.
         findings.push(
-            DiagnosticCode::ScriptsNotChecked,
+            DiagnosticCode::from(&core_codes::SCRIPTS_NOT_CHECKED),
             Severity::Info,
             None,
             None,
@@ -386,7 +388,9 @@ fn run(
         if kept > 0 {
             // One note for the bundle: `ScriptContent::parsed` says which files.
             findings.push(
-                DiagnosticCode::ScriptSyntaxNotChecked { files: kept },
+                DiagnosticCode::from(
+                    core_codes::SCRIPT_SYNTAX_NOT_CHECKED.with([kept.to_string()]),
+                ),
                 Severity::Info,
                 None,
                 None,
@@ -410,17 +414,19 @@ fn entry(
     host: &dyn ScriptHost,
     findings: &mut Findings,
 ) -> Option<usize> {
-    let not_supported = |entry: &str| VanillaText::PluginEntryNotSupported {
-        plugin: host.plugin().to_owned(),
-        entry: entry.to_owned(),
-        runtime: "JavaScript".to_owned(),
+    let not_supported = |entry: &str| {
+        [
+            host.plugin().to_owned(),
+            entry.to_owned(),
+            "JavaScript".to_owned(),
+        ]
     };
     let Some(raw) = host.entry() else {
         // No entry at all: vanilla prints the empty entry.
         findings.push(
-            DiagnosticCode::MissingRequiredField {
-                text: Some(not_supported("")),
-            },
+            DiagnosticCode::from(
+                codes::PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD.with(not_supported("")),
+            ),
             Severity::Error,
             None,
             None,
@@ -435,9 +441,9 @@ fn entry(
     // The extension of `entry` is not the three bytes `.js`.
     if extension(&raw.replace('\\', "/")) != ".js" {
         findings.push(
-            DiagnosticCode::InvalidValue {
-                text: Some(not_supported(raw)),
-            },
+            DiagnosticCode::from(
+                codes::PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE.with(not_supported(raw)),
+            ),
             Severity::Error,
             None,
             None,
@@ -447,12 +453,10 @@ fn entry(
     let Some(found) = found else {
         // The main file is missing, with the file that differs only in case when there is one.
         let mut finding = findings.make(
-            DiagnosticCode::UnresolvedReference {
-                text: Some(VanillaText::PluginMissingMainFile {
-                    plugin: host.plugin().to_owned(),
-                    main: main.as_str().to_owned(),
-                }),
-            },
+            DiagnosticCode::from(
+                codes::PLUGIN_MISSING_MAIN_FILE
+                    .with([host.plugin().to_string(), main.as_str().to_string()]),
+            ),
             Severity::Error,
             None,
             None,
@@ -471,7 +475,7 @@ fn entry(
 /// only, so the crate reports it as an information.
 fn entry_outside_root(findings: &mut Findings) {
     findings.push(
-        DiagnosticCode::ScriptEntryOutsideRoot,
+        DiagnosticCode::from(&core_codes::SCRIPT_ENTRY_OUTSIDE_ROOT),
         Severity::Info,
         None,
         None,
@@ -729,18 +733,6 @@ fn hint(
 }
 
 /// The findings of the files, in name order.
-/// The crate's own line for a file that is not UTF-8 and that nothing imports. The arguments are the file's
-/// name below `scripts/` and the line of the first bad byte.
-// The engine never reads such a file, so its own sentence for invalid UTF-8 is not quoted.
-const UNREAD_NOT_UTF8: &str =
-    "{} is not UTF-8 at line {}; nothing imports the file, so the engine never reads it";
-
-/// The crate's own line for a reached file that is not UTF-8 behind a syntax error. The arguments are as
-/// for [`UNREAD_NOT_UTF8`].
-// The engine reports the first error of a file and stops, so a syntax error before the bad
-// bytes is the one it reports.
-const NOT_UTF8_AFTER_ERROR: &str = "{} is not UTF-8 at line {}; a syntax error comes before it";
-
 #[allow(
     clippy::too_many_lines,
     reason = "one block per rule, in the order a reader looks them up"
@@ -779,27 +771,19 @@ fn report(
                 .as_ref()
                 .is_some_and(|syntax| syntax.at.offset < error.offset);
             let file = name.as_str().to_owned();
-            let text = if !reached {
+            let line = error.line.to_string();
+            let code = if !reached {
                 // The engine never reads the file, so it prints nothing about it.
-                VanillaText::Formatted {
-                    template: UNREAD_NOT_UTF8,
-                    args: vec![file, error.line.to_string()],
-                }
+                codes::UNREAD_NOT_UTF8.with([file, line])
             } else if earlier {
                 // The engine stops at the file's first error, which is the one before.
-                VanillaText::Formatted {
-                    template: NOT_UTF8_AFTER_ERROR,
-                    args: vec![file, error.line.to_string()],
-                }
+                codes::NOT_UTF8_AFTER_ERROR.with([file, line])
             } else {
                 // What the engine prints when it loads the file.
-                VanillaText::ScriptInvalidUtf8 {
-                    file,
-                    line: error.line,
-                }
+                codes::SCRIPT_INVALID_UTF8.with([file, line])
             };
             findings.push(
-                DiagnosticCode::ScriptSyntaxError { text: Some(text) },
+                DiagnosticCode::from(code),
                 severity,
                 path,
                 Some(error.offset),
@@ -808,7 +792,7 @@ fn report(
         if let Some(syntax) = &content.syntax {
             // The message is `QuickJS`'s own, which nothing here reproduces.
             findings.push(
-                DiagnosticCode::ScriptSyntaxError { text: None },
+                DiagnosticCode::from(&core_codes::SCRIPT_SYNTAX_ERROR),
                 whole,
                 path,
                 Some(syntax.at.offset),
@@ -819,7 +803,7 @@ fn report(
             if import.resolution == Resolution::CrashesEngine {
                 // A crash specifier is reported in every file.
                 findings.push(
-                    DiagnosticCode::ScriptImportCrashesEngine,
+                    DiagnosticCode::from(&core_codes::SCRIPT_IMPORT_CRASHES_ENGINE),
                     Severity::Error,
                     path,
                     at,
@@ -840,12 +824,10 @@ fn report(
                 // The engine's `QuickJS` has no import attributes and wants the
                 // statement to end after the specifier.
                 findings.push(
-                    DiagnosticCode::ScriptSyntaxError {
-                        text: Some(VanillaText::ScriptExpectingSemicolon {
-                            file: name.as_str().to_owned(),
-                            line: import.line,
-                        }),
-                    },
+                    DiagnosticCode::from(
+                        codes::SCRIPT_EXPECTING_SEMICOLON
+                            .with([name.as_str().to_string(), import.line.to_string()]),
+                    ),
                     whole,
                     path,
                     at,
@@ -860,22 +842,23 @@ fn report(
                     // import of a statically reached file ("ReferenceError: Import [..] not
                     // found."), an information otherwise.
                     let _ = reach.overflowed.contains(&(index, site));
-                    findings.push(
-                        DiagnosticCode::ScriptImportNotFound {
-                            specifier: looked_up.clone(),
-                            hint: *hint,
-                        },
+                    let mut finding = findings.make(
+                        DiagnosticCode::from(
+                            core_codes::SCRIPT_IMPORT_NOT_FOUND.with([looked_up.clone()]),
+                        ),
                         severity,
                         path,
                         at,
                     );
+                    finding.detail = hint.map(|hint| Box::new(DiagnosticDetail::NotFound(hint)));
+                    findings.out.push(finding);
                 }
                 // An `@…` name that is neither a native module of the context nor a file.
                 Resolution::Unrecognized { name: module } => {
                     findings.push(
-                        DiagnosticCode::ScriptModuleUnrecognized {
-                            module: module.clone(),
-                        },
+                        DiagnosticCode::from(
+                            core_codes::SCRIPT_MODULE_UNRECOGNIZED.with([module.clone()]),
+                        ),
                         severity,
                         path,
                         at,
@@ -884,10 +867,10 @@ fn report(
                 // A native module no pack file may import.
                 Resolution::Restricted { name: module } => {
                     findings.push(
-                        DiagnosticCode::ScriptModuleRestricted {
-                            module: module.clone(),
-                            referrer: name.as_str().to_owned(),
-                        },
+                        DiagnosticCode::from(
+                            core_codes::SCRIPT_MODULE_RESTRICTED
+                                .with([module.clone(), name.as_str().to_owned()]),
+                        ),
                         severity,
                         path,
                         at,
@@ -896,7 +879,7 @@ fn report(
                 // A dynamic import whose specifier is not a literal cannot be checked.
                 Resolution::NotChecked if import.kind == ImportKind::DynamicNonLiteral => {
                     findings.push(
-                        DiagnosticCode::ScriptImportNotChecked,
+                        DiagnosticCode::from(&core_codes::SCRIPT_IMPORT_NOT_CHECKED),
                         Severity::Info,
                         path,
                         at,
@@ -914,7 +897,7 @@ fn report(
             // the crate reports them as an information.
             for at in evals {
                 findings.push(
-                    DiagnosticCode::ScriptEvalWithoutCapability,
+                    DiagnosticCode::from(&core_codes::SCRIPT_EVAL_WITHOUT_CAPABILITY),
                     Severity::Info,
                     path,
                     Some(at.offset),
@@ -925,7 +908,7 @@ fn report(
         // reports it as an information.
         for at in metas {
             findings.push(
-                DiagnosticCode::ScriptImportMetaEmpty,
+                DiagnosticCode::from(&core_codes::SCRIPT_IMPORT_META_EMPTY),
                 Severity::Info,
                 path,
                 Some(at.offset),

@@ -8,6 +8,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 
 mod entry;
@@ -16,7 +17,6 @@ mod link;
 mod resolve;
 mod shape;
 mod tables;
-mod texts;
 mod version;
 mod write;
 

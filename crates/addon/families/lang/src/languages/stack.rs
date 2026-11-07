@@ -2,6 +2,7 @@
 //! `texts/language_names.json`, merged lowest pack first as vanilla merges them, with our
 //! stack-level lints.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, ListedFile, LoadContext, StackCx, Walk, WalkFile,
 };
@@ -105,7 +106,7 @@ pub(super) fn keyword_findings(facts: &KeywordFacts<'_>) -> Vec<Diagnostic> {
             }
             let at = JsonPath::new().child(keyword);
             found.push(finding(
-                DiagnosticCode::IgnoredMember { text: None },
+                DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
                 Severity::Info,
                 facts.pack,
                 file.path.clone(),
@@ -131,7 +132,7 @@ pub(super) fn keyword_findings(facts: &KeywordFacts<'_>) -> Vec<Diagnostic> {
         }
         let at = JsonPath::new().child("header").child(field);
         found.push(finding(
-            DiagnosticCode::UnresolvedLangKey,
+            DiagnosticCode::from(&core_codes::UNRESOLVED_LANG_KEY),
             Severity::Info,
             facts.pack,
             PackPath::from_static("manifest.json"),
@@ -215,7 +216,7 @@ fn combine_languages(parsed: Vec<TextsFile>, cx: &StackCx<'_>) -> Merged<Languag
     for (origin, language, _) in &lang_files {
         if !value.contains(language) {
             diagnostics.push(finding(
-                DiagnosticCode::IgnoredFile { text: None },
+                DiagnosticCode::from(&core_codes::IGNORED_FILE),
                 Severity::Info,
                 &origin.pack,
                 origin.path.clone(),
@@ -292,7 +293,7 @@ fn other_file_findings(
                     let folder = PackPath::new(&format!("{TEXTS}/{code}"))
                         .unwrap_or_else(|_| listed.path.clone());
                     diagnostics.push(finding(
-                        DiagnosticCode::IgnoredFile { text: None },
+                        DiagnosticCode::from(&core_codes::IGNORED_FILE),
                         Severity::Info,
                         pack,
                         folder,
@@ -305,7 +306,7 @@ fn other_file_findings(
                 // `vanilla = "silent per-file overlay
                 // (ResourcePack::getResource)"`.
                 diagnostics.push(finding(
-                    DiagnosticCode::ShadowedDefinition { text: None },
+                    DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
                     Severity::Info,
                     pack,
                     listed.path.clone(),
@@ -323,7 +324,7 @@ fn other_file_findings(
         if in_capital && !capital.contains(&pack) {
             capital.push(pack);
             diagnostics.push(finding(
-                DiagnosticCode::IgnoredFile { text: None },
+                DiagnosticCode::from(&core_codes::IGNORED_FILE),
                 Severity::Info,
                 pack,
                 PackPath::from_static(TEXTS_CAPITAL),

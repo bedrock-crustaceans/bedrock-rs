@@ -2,11 +2,10 @@
 //! which both parsers apply where they read it (so a finding is at the member's path in the
 //! file as written), and `F::validate`: the rules on the loaded table.
 
-use super::texts::{NUM_TO_SELECT, WEIGHT_NO_EFFECT, formatted};
+use super::codes;
 use super::{ItemList, TradeTable};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// `num_to_select` above the group's number of trades: vanilla's legacy parser logs the text
@@ -15,11 +14,9 @@ use bedrock_addon_core::versioning::ValidateCx;
 pub(crate) fn selects_too_many(selects: i32, trades: usize, at: &JsonPath) -> Option<Diagnostic> {
     let too_many = usize::try_from(selects).is_ok_and(|n| n > trades);
     too_many.then(|| {
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(formatted(NUM_TO_SELECT, &[&selects, &trades])),
-        })
-        .at(at.clone())
-        .phase(Phase::Validate)
+        Diagnostic::of(codes::NUM_TO_SELECT.with([selects.to_string(), trades.to_string()]))
+            .at(at.clone())
+            .phase(Phase::Validate)
     })
 }
 
@@ -34,12 +31,10 @@ pub(crate) fn weight_without_effect(
     severity: Severity,
 ) -> Option<Diagnostic> {
     (selects == -1).then(|| {
-        Diagnostic::error(DiagnosticCode::NoEffect {
-            text: Some(VanillaText::Fixed(WEIGHT_NO_EFFECT)),
-        })
-        .severity(severity)
-        .at(at.clone())
-        .phase(Phase::Validate)
+        Diagnostic::of(&codes::WEIGHT_NO_EFFECT)
+            .severity(severity)
+            .at(at.clone())
+            .phase(Phase::Validate)
     })
 }
 
@@ -51,7 +46,7 @@ pub(crate) fn validate(table: &mut TradeTable, cx: &mut ValidateCx<'_>) {
     let tiers_at = JsonPath::of_keys(["tiers"]);
     if table.tiers.is_empty() {
         cx.diagnostics.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
                 .at(tiers_at.clone())
                 .phase(Phase::Validate),
         );

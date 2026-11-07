@@ -2,9 +2,7 @@
 //! `language_names/` fixtures, the locale fallback and the login code
 //! check (V7).
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Placed, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
@@ -90,10 +88,7 @@ fn object_root_gives_its_member_values_in_key_order_deviation() {
     let document = languages("object_root");
     assert_eq!(codes(&document), ["en_US", "xx_YY"]);
     let finding = only(document.diagnostics());
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(at(finding), "");
 }
@@ -103,10 +98,7 @@ fn scalar_root_gives_no_codes_deviation() {
     let document = languages("scalar_root");
     assert!(document.codes.is_empty());
     let finding = only(document.diagnostics());
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
 }
 
@@ -116,10 +108,7 @@ fn number_element_is_skipped_with_a_warning_deviation() {
     let document = languages("number_element");
     assert!(document.codes.is_empty());
     let finding = only(document.diagnostics());
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(at(finding), "0");
 }
@@ -130,10 +119,7 @@ fn bool_element_is_skipped_with_a_warning_deviation() {
     let document = languages("bool_element");
     assert!(document.codes.is_empty());
     let finding = only(document.diagnostics());
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
 }
 
@@ -146,7 +132,7 @@ fn every_element_that_is_no_string_is_skipped_and_the_strings_are_kept() {
     let found: Vec<String> = document.diagnostics().iter().map(at).collect();
     assert_eq!(found, ["1", "2", "3", "4", "5"]);
     assert!(document.diagnostics().iter().all(|d| {
-        matches!(d.code, DiagnosticCode::InvalidType { text: None }) && d.severity == Severity::Info
+        d.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE) && d.severity == Severity::Info
     }));
 }
 
@@ -168,10 +154,7 @@ fn a_code_of_another_form_is_accepted_with_an_info_deviation() {
     let found: Vec<&Diagnostic> = document.diagnostics().iter().collect();
     assert_eq!(found.len(), 2, "{found:#?}");
     for finding in &found {
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::InvalidValue { text: None }
-        ));
+        assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE));
         assert_eq!(finding.severity, Severity::Info);
     }
     assert_eq!(at(found[0]), "1");
@@ -212,10 +195,7 @@ fn a_file_that_does_not_parse_is_rejected() {
     for bytes in [&b"[\"en_US\""[..], b"", b"not json", b"\xFF\xFE"] {
         let rejected = languages_bytes(bytes).expect_err("no JSON");
         let finding = only(&rejected.diagnostics);
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::MalformedInput { text: None, .. }
-        ));
+        assert!(finding.is(&bedrock_addon_core::diagnostic::codes::SYNTAX));
         assert_eq!(finding.severity, Severity::Info);
         assert!(names_bytes(bytes).is_err());
     }
@@ -322,7 +302,7 @@ fn three_elements_uses_the_first_two_with_vanillas_assert_text_deviation() {
     let (code, path) = name_entry_warning(document.diagnostics());
     assert_eq!(path, "0");
     assert!(
-        matches!(code, DiagnosticCode::InvalidValue { text: Some(VanillaText::Fixed(text)) } if *text == NAME_ENTRY),
+        code.is(&bedrock_addon_family_lang::codes::NAME_ENTRY_SHAPE_INVALID_VALUE),
         "{code:?}"
     );
     assert_eq!(code.to_string(), NAME_ENTRY);
@@ -339,7 +319,9 @@ fn an_entry_that_is_no_array_is_skipped_deviation() {
     for finding in found {
         assert_eq!(finding.severity, Severity::Info);
         assert!(
-            matches!(&finding.code, DiagnosticCode::InvalidType { text: Some(VanillaText::Fixed(text)) } if *text == NAME_ENTRY),
+            finding
+                .code
+                .is(&bedrock_addon_family_lang::codes::NAME_ENTRY_SHAPE_INVALID_TYPE),
             "{:?}",
             finding.code
         );
@@ -350,16 +332,18 @@ fn an_entry_that_is_no_array_is_skipped_deviation() {
 fn a_short_entry_reads_its_missing_elements_as_empty() {
     let one = names_bytes(br#"[["en_US"]]"#).unwrap();
     assert_eq!(pairs(&one), [("en_US", "")]);
-    assert!(matches!(
-        name_entry_warning(one.diagnostics()).0,
-        DiagnosticCode::InvalidValue { .. }
-    ));
+    assert!(
+        name_entry_warning(one.diagnostics())
+            .0
+            .is(&bedrock_addon_family_lang::codes::NAME_ENTRY_SHAPE_INVALID_VALUE)
+    );
     let none = names_bytes(br"[[]]").unwrap();
     assert_eq!(pairs(&none), [("", "")]);
-    assert!(matches!(
-        name_entry_warning(none.diagnostics()).0,
-        DiagnosticCode::InvalidValue { .. }
-    ));
+    assert!(
+        name_entry_warning(none.diagnostics())
+            .0
+            .is(&bedrock_addon_family_lang::codes::NAME_ENTRY_SHAPE_INVALID_VALUE)
+    );
 }
 
 #[test]
@@ -376,7 +360,7 @@ fn the_elements_of_a_pair_are_read_as_vanilla_reads_any_value_as_a_string() {
         .diagnostics()
         .iter()
         .filter(|f| {
-            matches!(f.code, DiagnosticCode::InvalidType { text: None })
+            f.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE)
                 && f.severity == Severity::Info
         })
         .map(|f| f.location.json_path.to_string())
@@ -390,10 +374,7 @@ fn a_names_root_that_is_no_array_is_read_as_vanilla_iterates_it_deviation() {
     let object = names_bytes(br#"{"b": ["xx_YY", "Second"], "a": ["en_US", "First"]}"#).unwrap();
     assert_eq!(pairs(&object), [("en_US", "First"), ("xx_YY", "Second")]);
     let finding = only(object.diagnostics());
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&bedrock_addon_core::diagnostic::codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
     let scalar = names_bytes(b"5").unwrap();
     assert!(scalar.entries.is_empty());

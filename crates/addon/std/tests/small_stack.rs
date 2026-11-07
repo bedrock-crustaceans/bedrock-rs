@@ -16,7 +16,6 @@
 use std::fs;
 use std::path::Path;
 
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::families::script::{ScriptBundle, ScriptPath};
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, StackSet, WorldPacks};
@@ -193,9 +192,11 @@ fn load_script_world(main: &str) -> Loaded {
             let file = &bundle.files[&ScriptPath::new("main.js")];
             Loaded {
                 parsed: file.content.as_ref().unwrap().parsed,
-                not_checked: bundle.findings().find_map(|finding| match finding.code {
-                    DiagnosticCode::ScriptSyntaxNotChecked { files } => Some(files),
-                    _ => None,
+                not_checked: bundle.findings().find_map(|finding| {
+                    finding
+                        .code
+                        .args_of(&bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED)
+                        .and_then(|args| args.first()?.parse().ok())
                 }),
             }
         })

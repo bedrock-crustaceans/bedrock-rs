@@ -3,7 +3,9 @@
 
 use bedrock_addon_core::diagnostic::JsonPath;
 #[cfg(feature = "molang")]
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
+#[cfg(feature = "molang")]
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// `at` followed by `keys`.
@@ -52,11 +54,10 @@ pub fn molang<T: bedrock_addon_core::molang::MolangFields>(
         // The crate's own information: below Molang 4 an empty text has no parser line ("No
         // tokens found in expression" is logged from version 4 only).
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::InvalidMolang {
-                expression: expression.unwrap_or_default(),
-            })
-            .at(at)
-            .phase(Phase::Validate),
+            Diagnostic::of(core_codes::INVALID_MOLANG.with([expression.unwrap_or_default()]))
+                .severity(Severity::Info)
+                .at(at)
+                .phase(Phase::Validate),
         );
     }
 }

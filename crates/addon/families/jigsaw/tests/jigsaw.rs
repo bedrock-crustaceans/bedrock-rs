@@ -3,8 +3,5 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-#[path = "jigsaw/texts.rs"]
-mod texts;
-
 #[path = "jigsaw/scalars.rs"]
 mod scalars;

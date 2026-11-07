@@ -12,6 +12,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 pub use atmosphere::{AtmosphereSettings, HorizonBlendStops};
 pub use color_grading::{
@@ -74,9 +75,9 @@ pub use link::{Targets, Texture, check as check_links};
 use std::collections::HashSet;
 use std::convert::Infallible;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
 };
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -850,7 +851,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> SettingsFile {
 /// `ShadowedDefinition` at the information level: a definition a higher-priority pack hides.
 /// The game says nothing about it, so the finding is the crate's own.
 fn shadowed(origin: &Origin, at: JsonPath) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+    Diagnostic::of(&core_codes::SHADOWED_DEFINITION)
         .at(at)
         .phase(Phase::Validate)
         .in_file(origin)
@@ -919,15 +920,10 @@ impl<T: Definition + Clone> IdentifierMap<T> {
             let origin = document.origin().clone();
             let mut diagnostics = document.diagnostics().clone();
             diagnostics.push(
-                Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-                    text: Some(VanillaText::Formatted {
-                        template: "Identifier {} already exists in resource pack",
-                        args: vec![id.as_str().to_owned()],
-                    }),
-                })
-                .at(JsonPath::new())
-                .phase(Phase::Validate)
-                .in_file(&origin),
+                Diagnostic::of(codes::IDENTIFIER_IN_PACK.with([id.as_str()]))
+                    .at(JsonPath::new())
+                    .phase(Phase::Validate)
+                    .in_file(&origin),
             );
             self.builder.push(Contribution::Rejected(
                 None,
@@ -959,19 +955,13 @@ pub(crate) fn unresolved_default<T: Definition>(
     if registry.contains(id) {
         return None;
     }
-    let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::Formatted {
-            template: "Could not find any matching settings for {} identifier '{}'",
-            args: vec![noun.to_owned(), id.as_str().to_owned()],
-        }),
-    })
-    .phase(Phase::Validate)
-    .into_kept()
-    .detail(DiagnosticDetail::Reference {
-        kind: <T::Kind as Kind>::NAME,
-        id: id.as_str().to_owned(),
-        hint: None,
-    });
+    let finding = Diagnostic::of(codes::NO_MATCHING_SETTINGS.with([noun, id.as_str()]))
+        .phase(Phase::Validate)
+        .detail(DiagnosticDetail::Reference {
+            kind: <T::Kind as Kind>::NAME,
+            id: id.as_str().to_owned(),
+            hint: None,
+        });
     Some(finding)
 }
 
@@ -1093,11 +1083,7 @@ fn capability_hints(shipping: &HashSet<PackRef>, stack: &StackCx<'_>) -> Diagnos
         if recent && !capable && !entry.context.is_base_game_pack && shipping.contains(&entry.pack)
         {
             hints.push(Diagnostic::new(
-                DiagnosticCode::CapabilityHint {
-                    text: Some(VanillaText::Fixed(
-                        "render configuration files are only used when Vibrant Visuals is available; add the \"pbr\" capability",
-                    )),
-                },
+                DiagnosticCode::from(&codes::PBR_CAPABILITY_HINT),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(Some(entry.pack.clone()), None, JsonPath::new(), None),
@@ -1126,7 +1112,7 @@ fn ignored_files(stack: &StackCx<'_>) -> Diagnostics {
                 || (DIRECTORIES.contains(&directory) && !is_read(&file.key));
             if ignored {
                 infos.push(Diagnostic::new(
-                    DiagnosticCode::IgnoredFile { text: None },
+                    DiagnosticCode::from(&core_codes::IGNORED_FILE),
                     Severity::Info,
                     Phase::Validate,
                     Location::new(

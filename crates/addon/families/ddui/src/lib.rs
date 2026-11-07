@@ -7,6 +7,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 pub use catalogue::{Binding, Catalogue, ChildSet, ControlRule};
 pub use component::Component;
@@ -39,9 +40,9 @@ use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::known;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
-    VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
 };
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::document::{
@@ -121,19 +122,6 @@ pub(crate) const ROOTS: &str = "ddui/root";
 pub(crate) const COMPOSITIONS: &str = "ddui/composition";
 /// `ddui/styling`: `minecraft:ui-style` documents.
 pub(crate) const STYLES: &str = "ddui/styling";
-
-/// The client's text for a file whose bytes could not be read; `{}` is the file.
-const UNREAD: &str = "Failed to load the contents of DataDrivenUI file {}; it will be skipped.";
-
-/// The loader's text for a file whose payload member is not the directory's.
-const MISSING_OBJECT: &str = "Failed to parse DataDrivenUI file. Missing object \"{}\"";
-/// The loader's closing line of a file the typed load or a validator failed.
-const FAILED_TO_LOAD: &str = "Failed to load DataDrivenUI file";
-/// The text for a `format_version` string that is no version; the document input logs it
-/// itself, not the loader.
-const MALFORMED_VERSION: &str = "Malformed format version";
-/// The client's text for an extension point no loaded root declares.
-const NOT_DEFINED: &str = "extension_point '{}' is not defined.";
 
 impl Family for RootFamily {
     const NAME: &'static str = "data-driven UI root";
@@ -303,19 +291,12 @@ fn version_at() -> JsonPath {
 
 /// The loader's "Missing object" error for family `F`.
 fn missing_object<F: Family>() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MissingPayload {
-        text: Some(VanillaText::Formatted {
-            template: MISSING_OBJECT,
-            args: vec![F::PAYLOAD_KEY.to_owned()],
-        }),
-    })
+    Diagnostic::of(codes::MISSING_OBJECT.with([F::PAYLOAD_KEY]))
 }
 
 /// The loader's closing line.
 fn failed_to_load() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed(FAILED_TO_LOAD)),
-    })
+    Diagnostic::of(&codes::FAILED_TO_LOAD)
 }
 
 /// A document the envelope stage refused, with its findings.
@@ -371,20 +352,16 @@ fn stage<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
     // text.
     let picked = FormatVersionInput::pick(document.text);
     let note = if envelope.member_count() != 2 {
-        Some(Diagnostic::info(DiagnosticCode::MalformedInput {
-            message: format!(
-                "{} root members, not \"format_version\" and a payload member",
-                envelope.member_count()
-            ),
-            text: Some(VanillaText::DocumentMemberCount),
-        }))
-    } else if picked.is_malformed() {
         Some(
-            Diagnostic::info(DiagnosticCode::MalformedFormatVersion {
-                text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
-            })
-            .at(version_at()),
+            Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT)
+                .severity(Severity::Info)
+                .detail(DiagnosticDetail::Syntax(format!(
+                    "{} root members, not \"format_version\" and a payload member",
+                    envelope.member_count()
+                ))),
         )
+    } else if picked.is_malformed() {
+        Some(Diagnostic::of(&codes::MALFORMED_VERSION).at(version_at()))
     } else {
         None
     };
@@ -405,12 +382,7 @@ fn stage<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
     }
     let PickedVersion::Version { input, written } = picked else {
         // No version in the input and none from the caller.
-        diagnostics.push(
-            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoValidVersion),
-            })
-            .at(version_at()),
-        );
+        diagnostics.push(Diagnostic::of(&codes::NO_VALID_VERSION).at(version_at()));
         return Stage {
             parsed: refused(diagnostics),
             typed: true,
@@ -437,11 +409,7 @@ fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     for mut finding in found {
         // By legacy name: the variant and the definitions that were it.
         if matches!(finding.code.name(), "BetaFeaturesNotEnabled") {
-            finding.code = DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: version.to_owned(),
-                }),
-            };
+            finding.code = core_codes::NO_PARSER_FOR_VERSION.with([version]).into();
         }
         diagnostics.push(finding);
     }
@@ -464,10 +432,11 @@ fn place(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
 fn unreadable<F: Family>() -> Diagnostics {
     let message = "not UTF-8 JSON within the nesting limit".to_owned();
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
-        message: message.clone(),
-        text: Some(VanillaText::DocumentJson { message }),
-    }));
+    diagnostics.push(
+        Diagnostic::of(core_codes::DOCUMENT_JSON.with([message.as_str()]))
+            .severity(Severity::Info)
+            .detail(DiagnosticDetail::Syntax(message)),
+    );
     diagnostics.push(missing_object::<F>());
     diagnostics
 }
@@ -739,7 +708,7 @@ const WALK: Walk = Walk::json_tree_in(&[ROOTS, COMPOSITIONS, STYLES])
     .top_down()
     .directory_major()
     .in_pack(reached)
-    .read_error(UNREAD);
+    .read_error(codes::UNREAD.template());
 
 /// Parses one walked file by its directory.
 fn parse_walk_file(walked: &WalkFile, cx: &LoadContext) -> UiFile {
@@ -801,7 +770,7 @@ fn ignored_files<T: Definition>(
             }
             let ignored = Origin::file(pack.pack.clone(), PackSide::Resource, file.path.clone());
             registry.push_diagnostic(
-                Diagnostic::info(DiagnosticCode::IgnoredFile { text: None })
+                Diagnostic::of(&core_codes::IGNORED_FILE)
                     .phase(Phase::Validate)
                     .in_file(&ignored),
             );
@@ -814,20 +783,15 @@ fn not_defined(origin: &Origin, name: &str, span: Option<Span>) -> Diagnostic {
     let mut at = JsonPath::of_keys([CompositionFamily::PAYLOAD_KEY]);
     at.push("attribs");
     at.push("extension_point");
-    let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-        text: Some(VanillaText::Formatted {
-            template: NOT_DEFINED,
-            args: vec![name.to_owned()],
-        }),
-    })
-    .at(at)
-    .phase(Phase::Validate)
-    .in_file(origin)
-    .detail(DiagnosticDetail::Reference {
-        kind: "extension point",
-        id: name.to_owned(),
-        hint: None,
-    });
+    let finding = Diagnostic::of(codes::NOT_DEFINED.with([name]))
+        .at(at)
+        .phase(Phase::Validate)
+        .in_file(origin)
+        .detail(DiagnosticDetail::Reference {
+            kind: "extension point",
+            id: name.to_owned(),
+            hint: None,
+        });
     match span {
         Some(span) => finding.span(span),
         None => finding,
@@ -837,14 +801,7 @@ fn not_defined(origin: &Origin, name: &str, span: Option<Span>) -> Diagnostic {
 /// `findings` with `finding` before the loader's closing line, which it adds when there is
 /// none: the validator's messages come before the closing line.
 fn before_closing_line(findings: &mut Diagnostics, finding: Diagnostic, origin: &Origin) {
-    let closing = |f: &Diagnostic| {
-        matches!(
-            &f.code,
-            DiagnosticCode::DocumentRejected {
-                text: Some(VanillaText::Fixed(FAILED_TO_LOAD))
-            }
-        )
-    };
+    let closing = |f: &Diagnostic| f.is(&codes::FAILED_TO_LOAD);
     let mut kept: Vec<Diagnostic> = std::mem::take(findings)
         .into_iter()
         .filter(|f| !closing(f))

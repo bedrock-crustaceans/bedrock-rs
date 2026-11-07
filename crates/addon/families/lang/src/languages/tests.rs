@@ -1,12 +1,13 @@
 //! Unit tests of what only the crate can reach: the pack-keyword rules (L5, L6) over every
 //! combination of header name and description, and the walk.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackType};
 use uuid::Uuid;
 
 use super::Language;
 use super::stack::{KeywordFacts, LangFacts, keyword_findings};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::version::SemVersion;
 
 fn lang(code: &str) -> Language {
@@ -97,11 +98,8 @@ fn the_findings_carry_no_vanilla_text() {
         files: &[file("en_US", false, true)],
     });
     assert_eq!(found.len(), 2);
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::IgnoredMember { text: None }
-    ));
-    assert!(matches!(found[1].code, DiagnosticCode::UnresolvedLangKey));
+    assert!(found[0].is(&core_codes::IGNORED_MEMBER));
+    assert!(found[1].is(&core_codes::UNRESOLVED_LANG_KEY));
 }
 
 #[test]

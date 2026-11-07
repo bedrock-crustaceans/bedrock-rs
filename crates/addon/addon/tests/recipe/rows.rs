@@ -2,7 +2,7 @@
 //! rows are in `stack.rs`, item-id and `data` rows in `ingredients.rs` and `molang.rs`, rows that
 //! need the item registry in `link.rs`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::families::recipe::{
     Ingredient, Output, PotionMix, Recipe, Unlock, UnlockContext, input_count_allowed,
     unlock_required,
@@ -143,7 +143,11 @@ fn shaped_format_version_99_loads_with_an_info() {
     let above: Vec<_> = document
         .diagnostics()
         .iter()
-        .filter(|d| matches!(&d.code, DiagnosticCode::FormatVersionAboveEngine { version } if version == "99.0.0"))
+        .filter(|d| {
+            d.code
+                .args_of(&bedrock_addon::diagnostic::codes::FORMAT_VERSION_ABOVE_ENGINE)
+                .is_some_and(|args| args[0] == "99.0.0")
+        })
         .collect();
     assert_eq!(above.len(), 1, "{:#?}", document.diagnostics());
     assert_eq!(above[0].severity, Severity::Info);

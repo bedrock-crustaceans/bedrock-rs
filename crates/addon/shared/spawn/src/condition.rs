@@ -4,11 +4,10 @@
 
 use facet_value::{VArray, VObject};
 
+use super::codes;
 use super::read::{self, child, element, finding, wrong_type};
-use super::texts;
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
@@ -298,48 +297,26 @@ pub(crate) struct ReadCx<'a> {
 
 impl ReadCx<'_> {
     /// A warning with vanilla's formatted text naming the identifier.
-    fn formatted(
-        &mut self,
-        code: fn(Option<VanillaText>) -> DiagnosticCode,
-        template: &'static str,
-        at: &JsonPath,
-    ) {
-        let text = VanillaText::Formatted {
-            template,
-            args: vec![self.identifier.to_owned()],
-        };
+    fn formatted(&mut self, code: &'static CodeDef<1>, at: &JsonPath) {
         // The legacy parsers log each condition text at code 2, level 2 in both masks.
-        finding(code(Some(text)), Severity::Warning, at, self.d);
-    }
-
-    /// A warning with a fixed vanilla text.
-    fn fixed(
-        &mut self,
-        code: fn(Option<VanillaText>) -> DiagnosticCode,
-        text: &'static str,
-        at: &JsonPath,
-    ) {
-        // Code 2, level 2 as above.
         finding(
-            code(Some(VanillaText::Fixed(text))),
+            code.with([self.identifier]).into(),
             Severity::Warning,
             at,
             self.d,
         );
     }
 
-    /// The object-form warning of a key vanilla reads only from an object.
-    fn object_form(&mut self, template: &'static str, at: &JsonPath) {
-        self.formatted(|text| DiagnosticCode::InvalidType { text }, template, at);
+    /// A warning with a fixed vanilla text.
+    fn fixed(&mut self, code: &'static CodeDef<0>, at: &JsonPath) {
+        // Code 2, level 2 as above.
+        finding(code.into(), Severity::Warning, at, self.d);
     }
-}
 
-fn invalid_value(text: Option<VanillaText>) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue { text }
-}
-
-fn missing(text: Option<VanillaText>) -> DiagnosticCode {
-    DiagnosticCode::MissingRequiredField { text }
+    /// The object-form warning of a key vanilla reads only from an object.
+    fn object_form(&mut self, code: &'static CodeDef<1>, at: &JsonPath) {
+        self.formatted(code, at);
+    }
 }
 
 /// The members of `object` other than `known`, each an `UnrecognizedField` warning (the
@@ -371,7 +348,7 @@ pub fn members(
             // The crate's own information: the legacy parsers read the keys they know and never
             // walk the members.
             finding(
-                DiagnosticCode::UnrecognizedField { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                 Severity::Info,
                 &child(at, key.as_str()),
                 d,
@@ -390,7 +367,7 @@ pub(crate) fn read_condition(
     cx: &mut ReadCx<'_>,
 ) -> Option<Condition> {
     let Some(object) = value.as_object() else {
-        wrong_type(at, None, cx.d);
+        wrong_type(at, cx.d);
         return None;
     };
     let get = |key: &str| object.get(key);
@@ -467,7 +444,7 @@ pub(crate) fn read_condition(
 
 fn weight(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<Weight> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::WEIGHT_OBJECT, at);
+        cx.object_form(&codes::WEIGHT_OBJECT, at);
         return None;
     };
     Some(Weight {
@@ -478,7 +455,7 @@ fn weight(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<Weight> {
         rarity: o.contains_key("rarity").then(|| {
             let at = child(at, "rarity");
             read::int(o.get("rarity"), &at, cx.d).unwrap_or_else(|| {
-                wrong_type(&at, None, cx.d);
+                wrong_type(&at, cx.d);
                 5
             })
         }),
@@ -488,7 +465,7 @@ fn weight(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<Weight> {
 
 fn density_limit(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<DensityLimit> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::DENSITY_OBJECT, at);
+        cx.object_form(&codes::DENSITY_OBJECT, at);
         return None;
     };
     Some(DensityLimit {
@@ -547,7 +524,7 @@ fn descriptor(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Block
 fn above_block(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<AboveBlockFilter> {
     // Not an object: vanilla ignores it silently; the crate warns.
     let Some(o) = value.as_object() else {
-        wrong_type(at, None, d);
+        wrong_type(at, d);
         return None;
     };
     let blocks = o
@@ -584,7 +561,7 @@ fn one_or_many<T>(
                     list.push(read_one(o, &at, cx));
                     places.push(i);
                 }
-                None => wrong_type(&at, None, cx.d),
+                None => wrong_type(&at, cx.d),
             }
         }
         // What is told of an entry from here on is at the index the file has.
@@ -594,7 +571,7 @@ fn one_or_many<T>(
     if let Some(o) = value.as_object() {
         return Some(OneOrMany::One(read_one(o, at, cx)));
     }
-    wrong_type(at, None, cx.d);
+    wrong_type(at, cx.d);
     None
 }
 
@@ -633,7 +610,12 @@ fn permutation(o: &VObject, at: &JsonPath, cx: &mut ReadCx<'_>) -> Permutation {
     // A weight below 1 is left out of the weighted pick without a word; the crate adds an
     // information.
     if weight.unwrap_or(1) < 1 {
-        finding(invalid_value(None), Severity::Info, &child(at, "weight"), d);
+        finding(
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Severity::Info,
+            &child(at, "weight"),
+            d,
+        );
     }
     Permutation {
         weight,
@@ -646,7 +628,7 @@ fn permutation(o: &VObject, at: &JsonPath, cx: &mut ReadCx<'_>) -> Permutation {
 
 fn brightness(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<BrightnessFilter> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::BRIGHTNESS_OBJECT, at);
+        cx.object_form(&codes::BRIGHTNESS_OBJECT, at);
         return None;
     };
     Some(BrightnessFilter {
@@ -666,7 +648,7 @@ fn int_range(
     o: &VObject,
     at: &JsonPath,
     cx: &mut ReadCx<'_>,
-    swapped: &'static str,
+    swapped: &'static CodeDef<0>,
 ) -> RangeFilter {
     let range = RangeFilter {
         min: read::int(o.get("min"), &child(at, "min"), cx.d),
@@ -675,30 +657,30 @@ fn int_range(
     };
     let (min, max) = range.ends();
     if min > max {
-        cx.fixed(invalid_value, swapped, at);
+        cx.fixed(swapped, at);
     }
     range
 }
 
 fn height(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFilter> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::HEIGHT_OBJECT, at);
+        cx.object_form(&codes::HEIGHT_OBJECT, at);
         return None;
     };
-    Some(int_range(o, at, cx, texts::HEIGHT_SWAPPED))
+    Some(int_range(o, at, cx, &codes::HEIGHT_SWAPPED))
 }
 
 fn distance(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFilter> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::DISTANCE_OBJECT, at);
+        cx.object_form(&codes::DISTANCE_OBJECT, at);
         return None;
     };
-    let range = int_range(o, at, cx, texts::DISTANCE_SWAPPED);
+    let range = int_range(o, at, cx, &codes::DISTANCE_SWAPPED);
     // The spawn distances are clamped after the swap; the crate adds an information.
     let (min, max) = sorted(range.ends());
     if min < 0 || max > cx.profile.distance_cap {
         finding(
-            DiagnosticCode::ClampedValue { text: None },
+            DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
             Severity::Info,
             at,
             cx.d,
@@ -709,11 +691,7 @@ fn distance(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFi
 
 fn world_age(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<WorldAgeFilter> {
     let Some(o) = value.as_object() else {
-        cx.fixed(
-            |text| DiagnosticCode::InvalidType { text },
-            texts::WORLD_AGE_OBJECT,
-            at,
-        );
+        cx.fixed(&codes::WORLD_AGE_OBJECT, at);
         return None;
     };
     let filter = WorldAgeFilter {
@@ -722,24 +700,24 @@ fn world_age(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<WorldA
         extra: unknown_members(o, &["min", "max"], at, cx.d),
     };
     if filter.min.unwrap_or(0) > filter.max.unwrap_or(u64::MAX) {
-        cx.fixed(invalid_value, texts::WORLD_AGE_SWAPPED, at);
+        cx.fixed(&codes::WORLD_AGE_SWAPPED, at);
     }
     Some(filter)
 }
 
 fn delay(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<DelayFilter> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::DELAY_OBJECT, at);
+        cx.object_form(&codes::DELAY_OBJECT, at);
         return None;
     };
     let min = read::int(o.get("min"), &child(at, "min"), cx.d);
     let max = read::int(o.get("max"), &child(at, "max"), cx.d);
     if min.unwrap_or(0) > max.unwrap_or(0) {
-        cx.formatted(invalid_value, texts::DELAY_SWAPPED, at);
+        cx.formatted(&codes::DELAY_SWAPPED, at);
     }
     let identifier = read::string(o.get("identifier"), &child(at, "identifier"), cx.d);
     if identifier.as_deref().is_none_or(str::is_empty) {
-        cx.formatted(missing, texts::DELAY_WITHOUT_IDENTIFIER, at);
+        cx.formatted(&codes::DELAY_WITHOUT_IDENTIFIER, at);
     }
     Some(DelayFilter {
         min,
@@ -752,7 +730,7 @@ fn delay(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<DelayFilte
 
 fn mob_event(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<MobEventFilter> {
     let Some(o) = value.as_object() else {
-        cx.object_form(texts::MOB_EVENT_OBJECT, at);
+        cx.object_form(&codes::MOB_EVENT_OBJECT, at);
         return None;
     };
     Some(MobEventFilter {
@@ -764,11 +742,11 @@ fn mob_event(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<MobEve
 fn village(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<VillageFilter> {
     // Not an object: vanilla ignores it silently; the crate warns.
     let Some(o) = value.as_object() else {
-        wrong_type(at, None, cx.d);
+        wrong_type(at, cx.d);
         return None;
     };
     if o.get("distance").is_none_or(Value::is_null) {
-        cx.fixed(missing, texts::VILLAGE_DISTANCE_MISSING, at);
+        cx.fixed(&codes::VILLAGE_DISTANCE_MISSING, at);
     }
     Some(VillageFilter {
         distance: read::uint(o.get("distance"), &child(at, "distance"), cx.d),
@@ -784,7 +762,7 @@ fn village(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<VillageF
 fn difficulty(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<DifficultyFilter> {
     // Not an object: peaceful..hard without a message in vanilla; the crate warns.
     let Some(o) = value.as_object() else {
-        wrong_type(at, None, d);
+        wrong_type(at, d);
         return None;
     };
     let mut end = |key: &str| {
@@ -800,7 +778,7 @@ fn difficulty(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Diffi
                 .is_none()
         {
             finding(
-                DiagnosticCode::InvalidEnumValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
                 Severity::Info,
                 &at,
                 d,
@@ -831,7 +809,7 @@ fn biome_filter(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Fil
         }
         Err(error) => {
             let path = at.join(&error.path);
-            wrong_type(&path, None, d);
+            wrong_type(&path, d);
             None
         }
     }

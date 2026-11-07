@@ -11,7 +11,8 @@ use super::super::read::{LocatorForm, read_locators, read_render_group_id};
 use super::super::walk::{GEOMETRY, Leaves};
 use super::super::{GeometryLegacy, Locator};
 use super::{settle, v1_8_0, walk_for};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -279,7 +280,7 @@ impl VersionStruct for GeometryFile {
 fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
     let at = at.child(member);
     cx.diagnostics.push(
-        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+        Diagnostic::of(&core_codes::DROPPED_FIELD)
             .at(at)
             .phase(Phase::Upgrade),
     );
@@ -290,7 +291,7 @@ fn removed(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
 fn rewritten(cx: &mut UpgradeCx<'_>, at: &JsonPath, member: &str) {
     let at = at.child(member);
     cx.diagnostics.push(
-        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+        Diagnostic::of(&core_codes::VALUE_REWRITTEN)
             .at(at)
             .phase(Phase::Upgrade),
     );
@@ -344,7 +345,7 @@ fn cubes(slots: Vec<CubeSlot>, cx: &mut UpgradeCx<'_>, at: &JsonPath) -> Vec<v1_
             // Noted at the index the file has the element at (the crate's own note; vanilla is silent).
             let gone = at.child("cubes").index(slots[index].0);
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(gone)
                     .phase(Phase::Upgrade),
             );

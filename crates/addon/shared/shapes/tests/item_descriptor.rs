@@ -4,7 +4,8 @@
 
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangSource, SourceForm};
@@ -98,13 +99,23 @@ fn a_wrong_shape_is_kept_and_reported_as_invalid_type() {
         // on: a kept error.
         assert_eq!(finding.severity, Severity::Error);
         assert!(finding.kept);
-        let DiagnosticCode::InvalidType {
-            text: Some(VanillaText::ItemDescriptorShape { value }),
-        } = &finding.code
-        else {
-            panic!("{json}: {:?}", finding.code)
-        };
-        assert_eq!(value, &common::normalised(json));
+        // By legacy name: the variant and the definitions that were it.
+        assert_eq!(
+            finding.code.name(),
+            "InvalidType",
+            "{json}: {:?}",
+            finding.code
+        );
+        assert_eq!(
+            finding.code.vanilla(),
+            Some(
+                VanillaText::ItemDescriptorShape {
+                    value: common::normalised(json)
+                }
+                .to_string()
+            ),
+            "{json}"
+        );
     }
 }
 
@@ -143,10 +154,7 @@ fn o4_several_keys_take_item_name_tags_item_tag_in_that_order_with_an_informatio
     let found = d.check(&JsonPath::new());
     assert_eq!(found.len(), 1);
     let finding = found.iter().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(finding.is(&core_codes::INVALID_VALUE));
     // The game's constructor logs nothing for several keys, so the crate reports an information.
     assert_eq!(finding.severity, Severity::Info);
     // The other keys are kept and written after the chosen one.

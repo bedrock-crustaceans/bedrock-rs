@@ -5,9 +5,9 @@
 //! conversions (`From` impls in [`older`](super::older), the `ExperienceReward` fold) are on the
 //! types.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::write_payload;
 use facet_value::{VArray, VObject};
@@ -50,7 +50,10 @@ pub fn interact_1_13_0(value: &mut Value, d: &mut Diagnostics) {
             if let Some(member) = object.remove(key) {
                 if had_on_interact {
                     let here = at.child(key);
-                    d.push(warning(DiagnosticCode::DroppedField { text: None }, &here));
+                    d.push(warning(
+                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                        &here,
+                    ));
                 } else {
                     trigger.insert(key, member);
                 }
@@ -163,12 +166,11 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
         // The game logs this at the error level and keeps the document with the default taken: a
         // kept error.
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::NotAValidValue {
-                    value: text.as_str().to_owned(),
-                    member: "should_bounce",
-                }),
-            })
+            Diagnostic::error(
+                codes::NOT_A_VALID_VALUE
+                    .with([text.as_str(), "should_bounce"])
+                    .into(),
+            )
             .at(JsonPath::new().child("should_bounce")),
         );
         object.insert("should_bounce", Value::from("no"));
@@ -180,14 +182,14 @@ pub fn projectile_1_26_40(value: &mut Value, d: &mut Diagnostics) {
         if damage.contains_key("difficulty_randomization") {
             damage.remove("semi_random_diff_damage");
             d.push(warning(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
             ));
         } else {
             if old.as_bool().is_none() {
                 // The crate's own: not a bool, so `false` (`none`) is used, with a finding.
                 d.push(warning(
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     &JsonPath::new().with(&["on_hit", "impact_damage", "semi_random_diff_damage"]),
                 ));
             }
@@ -309,11 +311,7 @@ mod tests {
         assert!(of(&found, "array").is_empty());
         let dropped = of(&found, "with_on_interact");
         assert_eq!(dropped.len(), 2, "event and target dropped: {dropped:?}");
-        assert!(
-            dropped
-                .iter()
-                .all(|f| matches!(f.code, DiagnosticCode::DroppedField { .. }))
-        );
+        assert!(dropped.iter().all(|f| f.is(&core_codes::DROPPED_FIELD)));
     }
 
     #[test]
@@ -362,14 +360,10 @@ mod tests {
         assert!(
             non_bool
                 .iter()
-                .all(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
-                    && f.severity == Severity::Info)
+                .all(|f| f.is(&core_codes::INVALID_VALUE) && f.severity == Severity::Info)
         );
         let both = of(&found, "both_members");
-        assert!(
-            both.iter()
-                .any(|f| matches!(f.code, DiagnosticCode::DroppedField { .. }))
-        );
+        assert!(both.iter().any(|f| f.is(&core_codes::DROPPED_FIELD)));
     }
 
     #[test]

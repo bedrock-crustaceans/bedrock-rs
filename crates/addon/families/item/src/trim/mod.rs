@@ -7,7 +7,6 @@
 mod filter;
 mod packet;
 mod table;
-mod texts;
 
 pub use filter::ItemTags;
 pub use packet::{MaterialEntry, PatternEntry};

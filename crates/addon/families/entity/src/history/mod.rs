@@ -60,8 +60,9 @@ pub mod v1_26_40;
 pub mod v1_26_50;
 pub mod v1_8_0;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -236,7 +237,7 @@ fn object_member(
     if let Some(object) = value.as_object() {
         return Ok(Some(members(object)));
     }
-    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(cx.at.child(key)));
+    d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(cx.at.child(key)));
     Err(Invalid)
 }
 
@@ -265,7 +266,7 @@ impl LegacyPayload for Payload {
                 Severity::Error
             };
             d.push(
-                Diagnostic::error(DiagnosticCode::MissingIdentifier { text: None })
+                Diagnostic::of(&core_codes::MISSING_IDENTIFIER)
                     .at(cx.at.child("description"))
                     .span(span_of(payload))
                     .severity(severity),
@@ -286,10 +287,7 @@ impl LegacyPayload for Payload {
                 // the typed slice from 1.21.89 refuses the entity (cereal's
                 // "expected an object" is an error, and the entity's level-3 "failed to load" line
                 // follows): an error.
-                d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                        .at(groups_at.child(name)),
-                );
+                d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(groups_at.child(name)));
                 false
             });
         }
@@ -307,7 +305,8 @@ impl LegacyPayload for Payload {
             // `true` skips the rewrites all the same, which is told (an information, the game
             // does not read the value).
             d.push(
-                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
                     .at(cx.at.child("do_not_upgrade")),
             );
         }
@@ -374,7 +373,7 @@ pub(crate) fn into_latest(payload: &Payload, cx: &mut UpgradeCx<'_>) -> Entity {
     let Ok(text) = bedrock_addon_core::json::to_json(&written) else {
         // A non-finite number cannot come from JSON text, so this is not reached.
         cx.diagnostics.push(
-            Diagnostic::error(DiagnosticCode::InternalError)
+            Diagnostic::of(&core_codes::INTERNAL_ERROR)
                 .at(at)
                 .phase(Phase::Upgrade),
         );

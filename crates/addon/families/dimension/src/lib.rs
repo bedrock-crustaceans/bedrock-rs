@@ -4,6 +4,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 mod read;
 mod types;
@@ -13,7 +14,8 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice, Origin,
     Registry, RegistryBuilder, default_path_flat,
@@ -39,7 +41,7 @@ pub use types::{
 /// `ShadowedDefinition` (info) at a dropped document: a later file of the same pack that
 /// defines a dimension the pack already defined.
 fn shadowed(origin: &Origin) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+    Diagnostic::of(&core_codes::SHADOWED_DEFINITION)
         .phase(Phase::Validate)
         .in_file(origin)
 }
@@ -143,12 +145,10 @@ fn registered_from_script(id: &DimensionId, stack: &StackCx<'_>) -> bool {
 fn replaced_registration(id: &DimensionId, origin: &Origin) -> Diagnostic {
     let at = JsonPath::new().with(&["minecraft:dimension", "description", "identifier"]);
     // The game logs this at the content log's warning level.
-    Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
-        text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
-            template: "Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'",
-            args: vec![id.as_str().to_owned(), origin.pack.id().uuid.to_string()],
-        }),
-    })
+    Diagnostic::of(
+        codes::REPLACED_REGISTRATION
+            .with([id.as_str().to_owned(), origin.pack.id().uuid.to_string()]),
+    )
     .at(at)
     .phase(Phase::Validate)
     .in_file(origin)

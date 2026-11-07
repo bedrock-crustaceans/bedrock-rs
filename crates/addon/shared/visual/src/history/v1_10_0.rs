@@ -2,7 +2,8 @@
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangSource, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::UpgradeCx;
@@ -191,7 +192,7 @@ fn elements(
         } else {
             // The game joins the string elements and skips the ones that are not strings.
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(element_at)
                     .phase(Phase::Upgrade),
             );
@@ -241,7 +242,7 @@ fn has_cased_literal(text: &str) -> bool {
 /// the file's: the game's own lower-casing, reported as an information because the game
 /// discards the original case itself.
 fn literal_folded(at: JsonPath) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+    Diagnostic::of(&core_codes::VALUE_REWRITTEN)
         .at(at)
         .phase(Phase::Upgrade)
 }

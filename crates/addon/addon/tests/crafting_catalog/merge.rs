@@ -2,7 +2,8 @@
 //! `bp.crafting_catalog()`: each directory's packs are a stack (index = load order, vanilla
 //! first), `merge/items.json` is the item registry, `expected_merge.json` the four categories.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Severity, codes};
+use bedrock_addon::families::crafting_catalog;
 use bedrock_addon::families::crafting_catalog::{CatalogKey, CategoryName};
 use bedrock_addon::id::ItemId;
 use bedrock_addon::load::LoadOptions;
@@ -101,10 +102,7 @@ fn m05_a_duplicate_is_dropped_with_vanilla_s_error_and_the_first_placement_wins(
         )]
     );
     let finding = merged.diagnostics().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::IdentifierCollision { .. }
-    ));
+    assert!(finding.is(&crafting_catalog::codes::DUPLICATE_ITEM));
     assert_eq!(
         finding
             .location
@@ -155,10 +153,7 @@ fn m07_an_unknown_item_is_dropped_with_the_validators_error() {
     assert_eq!(merged.value(), &expected_merge("m07_unknown_item"));
     let findings: Vec<_> = merged.diagnostics().collect();
     assert_eq!(findings.len(), 1, "{findings:#?}");
-    assert!(matches!(
-        findings[0].code,
-        DiagnosticCode::UnresolvedReference { .. }
-    ));
+    assert!(findings[0].is(&crafting_catalog::codes::MISSING_ITEM));
     assert_eq!(
         findings[0].code.to_string(),
         "-> categories[0] -> groups[0] -> items[1]:  Missing referenced asset custom:not_a_valid_item"
@@ -224,10 +219,7 @@ fn m12_without_a_base_catalogue_the_add_on_files_merge_with_one_warning_deviatio
     assert_eq!(merged.value(), &expected_merge("m12_no_base_catalog"));
     let findings: Vec<_> = merged.diagnostics().collect();
     assert_eq!(findings.len(), 1, "{findings:#?}");
-    assert!(matches!(
-        findings[0].code,
-        DiagnosticCode::UnresolvedReference { text: None }
-    ));
+    assert!(findings[0].is(&codes::UNRESOLVED_REFERENCE));
     assert_eq!(findings[0].severity, Severity::Info);
     assert!(matches!(
         findings[0].detail.as_deref(),

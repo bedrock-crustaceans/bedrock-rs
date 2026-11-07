@@ -155,9 +155,8 @@ mod codec {
     use crate::value::Description;
     use crate::write::{self, Object, Written};
     use crate::{V1_21_80, V1_21_120, V1_26_0};
-    use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
-    };
+    use bedrock_addon_core::diagnostic::codes as core_codes;
+    use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -719,7 +718,7 @@ mod codec {
                     at.push("waves");
                     at.push("sampleWidth");
                     cx.diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        Diagnostic::of(&core_codes::DROPPED_FIELD)
                             .at(at)
                             .phase(Phase::Upgrade),
                     );

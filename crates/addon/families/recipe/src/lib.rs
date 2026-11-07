@@ -7,6 +7,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod ingredient;
 mod read;
 mod types;
@@ -15,7 +16,7 @@ mod write;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, Phase};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, default_path,
@@ -202,14 +203,10 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Recipes {
                 }
                 Err(rejected) => (rejected.origin, rejected.diagnostics),
             };
-            let finding = Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-                text: read::formatted(
-                    "JSON: {} has duplicate identifier in same pack: {}",
-                    [path.as_str().to_owned(), id.as_str().to_owned()],
-                ),
-            })
-            .phase(Phase::Validate)
-            .in_file(&origin);
+            let finding =
+                Diagnostic::of(codes::DUPLICATE_IDENTIFIER.with([path.as_str(), id.as_str()]))
+                    .phase(Phase::Validate)
+                    .in_file(&origin);
             diagnostics.push(finding);
             builder.push(Contribution::Rejected(
                 Some(id),

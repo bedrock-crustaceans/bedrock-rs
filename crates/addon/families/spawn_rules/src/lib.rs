@@ -7,9 +7,9 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod legacy;
 mod simplified;
-mod texts;
 mod validate;
 
 pub use bedrock_addon_shared_spawn::{
@@ -234,7 +234,7 @@ pub(crate) fn parse_rules(
     cx: &LoadContext,
 ) -> FileLoad<SpawnRules> {
     let origin = origin(pack, side, path);
-    let (identifier, result) = load_file(&origin, bytes, texts::FAILED_RULES, |text, origin| {
+    let (identifier, result) = load_file(&origin, bytes, &codes::FAILED_RULES, |text, origin| {
         let version = file_version(JsonSlice::new(text));
         if simplified_selected(version, cx) {
             load_family::<SimplifiedFamily, _>(text, cx, origin, SpawnRules::Simplified)

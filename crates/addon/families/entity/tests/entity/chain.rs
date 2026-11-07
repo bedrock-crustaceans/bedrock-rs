@@ -92,14 +92,17 @@ fn below_the_floor_is_unsupported_with_the_floor_text() {
 fn above_the_engine_is_unsupported_with_vanillas_resource_pack_text() {
     let document = super::common::parse(&doc("1.26.61", MINIMAL)).unwrap_err();
     let found = with_code(&document.diagnostics, "UnsupportedVersion");
-    assert_eq!(
-        found[0].code,
-        DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::ActorAboveEngine {
-                version: "1.26.61".to_owned(),
-                engine: v("1.26.60"),
-            })
-        }
+    let legacy = DiagnosticCode::UnsupportedVersion {
+        text: Some(VanillaText::ActorAboveEngine {
+            version: "1.26.61".to_owned(),
+            engine: v("1.26.60"),
+        }),
+    };
+    assert!(
+        found[0].is(&bedrock_addon_family_entity::codes::ACTOR_ABOVE_ENGINE)
+            && bedrock_addon_core::diagnostic::testing::same_line(&found[0].code, &legacy),
+        "{:?}",
+        found[0].code
     );
 }
 

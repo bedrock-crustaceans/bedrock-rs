@@ -11,10 +11,10 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod patch;
 mod read;
 mod stack;
-mod texts;
 mod types;
 mod write;
 

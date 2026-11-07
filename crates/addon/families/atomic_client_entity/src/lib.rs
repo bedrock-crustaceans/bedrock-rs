@@ -4,13 +4,15 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 #[cfg(test)]
 mod tests;
 
 use bedrock_addon_core::__private::Sealed;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Severity, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -431,7 +433,7 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
     for mut finding in found {
         // By legacy name: the variant and the definitions that were it.
         let malformed = matches!(finding.code.name(), "MalformedFormatVersion");
-        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None })
+        if finding.is(&core_codes::MISSING_PAYLOAD)
             || finding
                 .code
                 .is(&bedrock_addon_core::diagnostic::codes::MISSING_PAYLOAD)
@@ -443,9 +445,7 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
         placed.push(finding);
         if malformed {
             // The game writes "Malformed format version", then the "no valid version" text.
-            let mut missing = Diagnostic::error(DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoValidVersion),
-            });
+            let mut missing = Diagnostic::of(&core_codes::NO_VALID_VERSION);
             missing.location = location;
             placed.push(missing);
         }
@@ -460,13 +460,12 @@ fn member_count(text: &str) -> Option<Diagnostic> {
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(&cleaned).ok()?;
     let root = root.as_object()?;
     (root.get("format_version").is_none() && root.len() != 2).then(|| {
-        Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: format!(
+        Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT).detail(DiagnosticDetail::Syntax(
+            format!(
                 "{} root members, not \"format_version\" and a payload member",
                 root.len()
             ),
-            text: Some(VanillaText::DocumentMemberCount),
-        })
+        ))
     })
 }
 
@@ -486,12 +485,7 @@ fn parse_file(
         let diagnostics: Diagnostics = [found].into_iter().collect();
         Rejected::new(origin.clone(), place(diagnostics, &origin))
     };
-    let malformed = |message: &str| {
-        reject(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: message.to_owned(),
-            text: None,
-        }))
-    };
+    let malformed = |message: &str| reject(Diagnostic::of(builders::syntax(message)));
     let prepared = match Prepared::new(bytes) {
         Ok(prepared) => prepared,
         Err(PrepareError::NotUtf8(_)) => {
@@ -553,7 +547,7 @@ fn combine(
         parsed,
         CombineRule::LastLoadedWins {
             replaced: Some(Notice {
-                code: DiagnosticCode::AtomicClientEntityShadowed,
+                code: DiagnosticCode::from(&core_codes::ATOMIC_CLIENT_ENTITY_SHADOWED),
                 severity: Severity::Info,
             }),
         },

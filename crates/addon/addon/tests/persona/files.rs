@@ -4,7 +4,8 @@
 
 use std::cell::RefCell;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Severity, codes};
+use bedrock_addon::families::persona::codes as persona_codes;
 use bedrock_addon::families::persona::{
     BUILTIN_PACK, PersonaPiece, PersonaPieces, PieceSource, name_key,
 };
@@ -157,10 +158,7 @@ fn pg02_g3_a_model_of_the_array_layout_is_not_found() {
     );
     assert_eq!(text_of(&pieces, "UnresolvedReference"), NOT_ON);
     let finding = pieces.report().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::UnresolvedReference { .. }
-    ));
+    assert!(finding.is(&persona_codes::GEOMETRY_NAME_NOT_FOUND));
     assert!(matches!(
         finding.detail.as_deref(),
         Some(DiagnosticDetail::Reference { kind: "geometry", id, .. }) if id == "geometry.hat"
@@ -357,13 +355,11 @@ fn g1_a_geometry_file_that_cannot_be_read() {
         text_of(&pieces, "ReadError"),
         "Missing expected geometry file pieces/hat/hat.geometry.json"
     );
-    assert!(pieces.report().any(|found| matches!(
-        found.code,
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::PermissionDenied,
-            ..
-        }
-    )));
+    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
+        && matches!(
+            found.detail.as_deref(),
+            Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+        )));
     assert!(only(&pieces).geometry.is_none());
 }
 
@@ -885,13 +881,11 @@ fn a1_an_animation_file_that_cannot_be_read() {
             "error ReadError {META} animation_sources/0/animationFile"
         )]
     );
-    assert!(pieces.report().any(|found| matches!(
-        found.code,
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::PermissionDenied,
-            ..
-        }
-    )));
+    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
+        && matches!(
+            found.detail.as_deref(),
+            Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+        )));
 }
 
 #[test]
@@ -914,13 +908,11 @@ fn a1_an_animation_file_the_pack_does_not_list_is_never_asked_for() {
             "error ReadError {META} animation_sources/0/animationFile"
         )]
     );
-    assert!(pieces.report().any(|found| matches!(
-        found.code,
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::NotFound,
-            ..
-        }
-    )));
+    assert!(pieces.report().any(|found| found.code.name() == "ReadError"
+        && matches!(
+            found.detail.as_deref(),
+            Some(DiagnosticDetail::Io(std::io::ErrorKind::NotFound))
+        )));
     assert_eq!(*watched.read.borrow(), [META, "texts/en_US.lang"]);
 }
 
@@ -1291,10 +1283,11 @@ fn ps04_s4_a_piece_s_texts_without_en_us() {
         &[("texts/de_DE.lang", "persona.offer.title=Hut\n")],
     );
     assert_eq!(found(&other), ["info IgnoredFile pieces/hat/texts"]);
-    assert!(other.report().any(
-        |found| matches!(found.code, DiagnosticCode::IgnoredFile { .. })
-            && found.severity == Severity::Info
-    ));
+    assert!(
+        other
+            .report()
+            .any(|found| found.is(&codes::IGNORED_FILE) && found.severity == Severity::Info)
+    );
     assert_eq!(only(&other).texts, None);
     assert_eq!(only(&other).offer_title, None);
 
@@ -1378,7 +1371,7 @@ fn s3_a_name_no_text_translates() {
     let pieces = crate::common::load(&unnamed);
     assert_eq!(found(&pieces), [format!("info UnresolvedLangKey {META}")]);
     let finding = pieces.report().next().unwrap();
-    assert!(matches!(finding.code, DiagnosticCode::UnresolvedLangKey));
+    assert!(finding.is(&codes::UNRESOLVED_LANG_KEY));
     assert!(matches!(
         finding.detail.as_deref(),
         Some(DiagnosticDetail::Reference { id, .. }) if id == "persona.wig.title"
@@ -1584,10 +1577,7 @@ fn a_file_nested_past_the_reader_s_bound_is_no_json() {
     let reader_s = |pieces: &PersonaPieces| -> Vec<String> {
         pieces
             .report()
-            .filter_map(|found| match &found.code {
-                DiagnosticCode::MalformedInput { message, .. } => Some(message.clone()),
-                _ => None,
-            })
+            .filter_map(|found| found.syntax_message().map(str::to_owned))
             .collect()
     };
     let too_deep = format!("nesting too deep at byte {}", 10 + MAX_JSON_DEPTH - 1);

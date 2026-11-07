@@ -2,14 +2,17 @@
 //! file (byte-order mark, depth, members written twice, the root) and the helpers that read
 //! one level of a file at file offsets.
 
+use crate::codes;
 use std::collections::HashMap;
 
 use facet_json::RawJson;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Span,
 };
 use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value, parse_at};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -70,13 +73,28 @@ impl<'d> Sink<'d> {
         at: JsonPath,
         span: Option<Span>,
     ) {
+        self.push_with(phase, code, severity, at, span, None);
+    }
+
+    /// [`push_in`](Self::push_in) with what the finding carries beyond its code.
+    fn push_with(
+        &mut self,
+        phase: Phase,
+        code: DiagnosticCode,
+        severity: Severity,
+        at: JsonPath,
+        span: Option<Span>,
+        detail: Option<DiagnosticDetail>,
+    ) {
         let span = span.filter(|_| !self.secret);
-        self.d.push(Diagnostic::new(
+        let mut finding = Diagnostic::new(
             code,
             severity,
             phase,
             Location::new(None, self.path.clone(), at, span),
-        ));
+        );
+        finding.detail = detail.map(Box::new);
+        self.d.push(finding);
     }
 
     /// A note of the crate's own that the `kind` named `id` at `at` resolves to nothing: an
@@ -85,7 +103,7 @@ impl<'d> Sink<'d> {
     pub fn reference(&mut self, kind: &'static str, id: &str, at: JsonPath, span: Option<Span>) {
         let span = span.filter(|_| !self.secret);
         let mut finding = Diagnostic::new(
-            DiagnosticCode::UnresolvedReference { text: None },
+            DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
             Severity::Info,
             Phase::Validate,
             Location::new(None, self.path.clone(), at, span),
@@ -116,35 +134,29 @@ impl<'d> Sink<'d> {
         self.push(code, Severity::Info, at, span);
     }
 
-    /// The text the server prints when the file cannot be parsed.
-    // The text is "Failed to parse JSON in file '%s'"; for `commands.json` it is followed by
-    // ":  malformed input". Vanilla names the sibling `variables.json` for a
-    // `permissions.json`.
-    fn parse_failed(&self) -> VanillaText {
-        if self.commands {
-            VanillaText::Formatted {
-                template: commands::MALFORMED,
-                args: vec![self.name.clone()],
-            }
-        } else {
-            VanillaText::ConfigParseFailed {
-                file: self.name.clone(),
-            }
-        }
+    /// The line the server prints when the file cannot be parsed, under the variant of the
+    /// finding: "Failed to parse JSON in file '%s'", and for `commands.json` followed by
+    /// ":  malformed input". Vanilla names the sibling `variables.json` for a `permissions.json`.
+    fn parse_failed(&self, empty: bool) -> DiagnosticCode {
+        let file = self.name.as_str();
+        DiagnosticCode::from(match (self.commands, empty) {
+            (true, false) => codes::COMMANDS_MALFORMED_MALFORMED_INPUT.with([file]),
+            (true, true) => codes::COMMANDS_MALFORMED_EMPTY_DOCUMENT.with([file]),
+            (false, false) => codes::CONFIG_PARSE_FAILED_MALFORMED_INPUT.with([file]),
+            (false, true) => codes::CONFIG_PARSE_FAILED_EMPTY_DOCUMENT.with([file]),
+        })
     }
 
     /// The file exists but could not be opened.
     // The text is "Failed to open file '%s'".
     pub fn unreadable(&mut self, kind: std::io::ErrorKind) {
-        let text = Some(VanillaText::ConfigOpenFailed {
-            file: self.name.clone(),
-        });
-        self.push_in(
+        self.push_with(
             Phase::Read,
-            DiagnosticCode::ReadError { kind, text },
+            DiagnosticCode::from(codes::CONFIG_OPEN_FAILED.with([self.name.as_str()])),
             Severity::Error,
             JsonPath::new(),
             None,
+            Some(DiagnosticDetail::Io(kind)),
         );
     }
 
@@ -155,12 +167,14 @@ impl<'d> Sink<'d> {
         } else {
             message
         };
-        let text = Some(self.parse_failed());
-        self.push(
-            DiagnosticCode::MalformedInput { message, text },
+        let code = self.parse_failed(false);
+        self.push_with(
+            Phase::Parse,
+            code,
             Severity::Error,
             JsonPath::new(),
             span,
+            Some(DiagnosticDetail::Syntax(message)),
         );
     }
 }
@@ -245,7 +259,7 @@ pub(super) fn value(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) ->
         let mut path = at.clone();
         path.append(&clamped.path);
         sink.warn(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             path,
             clamped.span,
         );
@@ -299,13 +313,8 @@ pub(super) fn with_root(
     let text = &*text;
     if text.trim().is_empty() {
         // An empty file is a parse failure.
-        let text = Some(sink.parse_failed());
-        sink.push(
-            DiagnosticCode::EmptyDocument { text },
-            Severity::Error,
-            JsonPath::new(),
-            None,
-        );
+        let code = sink.parse_failed(true);
+        sink.push(code, Severity::Error, JsonPath::new(), None);
         return false;
     }
     let clean = match twice {
@@ -434,7 +443,7 @@ fn read_folder(
     if folder.stray_commands {
         // `config/default/commands.json` is not read.
         Sink::new(Some(name), COMMANDS_FILE, d).info(
-            DiagnosticCode::IgnoredFile { text: None },
+            DiagnosticCode::from(&core_codes::IGNORED_FILE),
             JsonPath::new(),
             None,
         );
@@ -462,7 +471,7 @@ fn shadowing(default: &PackScriptConfig, gaps: &[(&str, Gap)], d: &mut Diagnosti
         ];
         for (_, file) in parts.into_iter().filter(|(lacking, _)| *lacking) {
             Sink::new(Some(name), file, d).warn(
-                DiagnosticCode::PackConfigShadowsDefault,
+                DiagnosticCode::from(&core_codes::PACK_CONFIG_SHADOWS_DEFAULT),
                 JsonPath::new(),
                 None,
             );

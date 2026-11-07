@@ -22,6 +22,7 @@ use super::component::ClientBiomeComponent;
 use super::read::PAYLOAD_KEY;
 use super::{Beta, ClientBiome};
 use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, Document, Rejected,
@@ -160,7 +161,7 @@ where
     map.insert_typed(C::from(component.into_set()), true);
     note(
         cx,
-        DiagnosticCode::SynthesizedComponent,
+        DiagnosticCode::from(&core_codes::SYNTHESIZED_COMPONENT),
         component_path(T::NAME),
     );
 }
@@ -192,7 +193,7 @@ pub(crate) fn change<T>(
     map.insert_typed(OlderComponent::Newest(component.into_set()), synthesized);
     note(
         cx,
-        DiagnosticCode::SynthesizedComponent,
+        DiagnosticCode::from(&core_codes::SYNTHESIZED_COMPONENT),
         component_path(T::NAME),
     );
 }

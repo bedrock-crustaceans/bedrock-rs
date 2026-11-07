@@ -1,6 +1,7 @@
 //! The dimension document's types and their inherent items.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use super::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::{BiomeId, DimensionId};
 use bedrock_addon_core::schema::{self, Schema};
@@ -226,15 +227,10 @@ impl Dimension {
         let origin = document.origin();
         let at = JsonPath::new().with(&["minecraft:dimension", "description", "identifier"]);
         // The game logs this at the content log's warning level.
-        Diagnostic::warn(DiagnosticCode::InvalidValue {
-            text: Some(bedrock_addon_core::diagnostic::VanillaText::Formatted {
-                template: "Dimension '{}' from pack id '{}' was invalid and could not be created!",
-                args: vec![
-                    document.description.identifier.as_str().to_owned(),
-                    origin.pack.id().uuid.to_string(),
-                ],
-            }),
-        })
+        Diagnostic::of(codes::CREATION_FAILED.with([
+            document.description.identifier.as_str().to_owned(),
+            origin.pack.id().uuid.to_string(),
+        ]))
         .at(at)
         .phase(Phase::Validate)
         .in_file(origin)

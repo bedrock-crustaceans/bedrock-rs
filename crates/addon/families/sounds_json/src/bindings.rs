@@ -1,28 +1,17 @@
 //! `sounds.json`: which sound each game event plays, for the world, for blocks and for
 //! entities.
 
+use super::codes;
 use indexmap::IndexMap;
 
 use super::events::{LEGACY_AMBIENT_EVENTS, is_level_sound_event};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::json::kit::sound::read::{integer, string};
 use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
-
-/// Vanilla's text for a table without its `events` object.
-const EXPECTED_EVENTS: &str = "Expected \"events\" object";
-/// Vanilla's text for `individual_named_sounds` without its `sounds` object.
-const EXPECTED_SOUNDS: &str = "Expected \"sounds\" object";
-/// Vanilla's text for a variant map without a key.
-const EXPECTED_KEY: &str = "Expected \"key\" expression for entity with sound variants";
-/// Vanilla's text for a variant key without a map.
-const EXPECTED_MAP: &str = "Expected \"map\" list for entity with sound variant key";
-/// Vanilla's text for a block sound whose `base` names no block sound.
-const UNKNOWN_BASE: &str = "Unknown block base sound '{}'";
-/// Vanilla's text for a block sound whose `base` chain returns to a sound it passed.
-const RECURSIVE_BASE: &str = "Block base sound '{}' is recursively used";
 
 /// The event bindings of the resource packs, `sounds.json` (`#[doc(alias)]` `sounds.json`):
 /// which sound definition each level sound event plays.
@@ -306,7 +295,10 @@ fn parse_range(value: &Value, range: &mut SoundRange, report: &mut Reporter<'_>)
             if value.is_bool() {
                 // A bool is numeric in the game's jsoncpp variant; the crate reports it as an
                 // information.
-                report.here(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+                report.here(
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    Severity::Info,
+                );
             }
             let bound = fork::as_float(value, 0.0);
             *range = SoundRange {
@@ -425,7 +417,10 @@ fn read_sound(
     if !matches!(fork::stored(value), Stored::Null | Stored::String) {
         // A number or array reads as `""` and a bool as its spelling; the game says nothing, so
         // the crate reports it as an information.
-        report.here(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+        report.here(
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Severity::Info,
+        );
     }
     SoundRef {
         sound: fork::to_text(value),
@@ -434,9 +429,6 @@ fn read_sound(
     }
 }
 
-/// Vanilla's text for an event name it does not know.
-const NOT_AN_EVENT: &str = "Event name '{}' is not a valid LevelSoundEvent";
-
 /// The finding of an event name vanilla does not know; the name is the
 /// lower-cased key. In an `events` table the game writes vanilla's text to the content log at
 /// the error level, drops the entry and loads the file: a kept error; `interactive_sounds`
@@ -444,14 +436,14 @@ const NOT_AN_EVENT: &str = "Event name '{}' is not a valid LevelSoundEvent";
 /// own.
 fn unknown_event(name: &str, logged: bool, report: &mut Reporter<'_>) {
     if logged {
-        report.kept(DiagnosticCode::UnknownSound {
-            text: Some(VanillaText::Formatted {
-                template: NOT_AN_EVENT,
-                args: vec![name.to_owned()],
-            }),
-        });
+        report.kept(DiagnosticCode::from(
+            codes::NOT_AN_EVENT.with([name.to_owned()]),
+        ));
     } else {
-        report.here(DiagnosticCode::UnknownSound { text: None }, Severity::Info);
+        report.here(
+            DiagnosticCode::from(&core_codes::UNKNOWN_SOUND),
+            Severity::Info,
+        );
     }
 }
 
@@ -474,9 +466,7 @@ fn read_event_sounds(
         if !events_optional {
             // The game writes an error line to the content log; the table is skipped and the
             // file loads: a kept error.
-            report.kept(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(EXPECTED_EVENTS)),
-            });
+            report.kept(DiagnosticCode::from(&codes::EXPECTED_EVENTS));
         }
         return table;
     }
@@ -531,9 +521,7 @@ fn read_named_sounds(
         } else {
             // The game writes an error line to the content log and the file loads: a kept
             // error.
-            report.kept(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(EXPECTED_SOUNDS)),
-            });
+            report.kept(DiagnosticCode::from(&codes::EXPECTED_SOUNDS));
         }
     }
     for event in LEGACY_AMBIENT_EVENTS {
@@ -684,18 +672,12 @@ fn read_block_sounds(
         let code = match end {
             ChainEnd::Clean => continue,
             ChainEnd::Missing(_) if !whole => continue,
-            ChainEnd::Missing(last) => DiagnosticCode::UnresolvedReference {
-                text: Some(VanillaText::Formatted {
-                    template: UNKNOWN_BASE,
-                    args: vec![blocks[last].base.clone()],
-                }),
-            },
-            ChainEnd::Cycle(entry) => DiagnosticCode::ReferenceCycle {
-                text: Some(VanillaText::Formatted {
-                    template: RECURSIVE_BASE,
-                    args: vec![name_at(&blocks, entry)],
-                }),
-            },
+            ChainEnd::Missing(last) => {
+                DiagnosticCode::from(codes::UNKNOWN_BASE.with([blocks[last].base.clone()]))
+            }
+            ChainEnd::Cycle(entry) => {
+                DiagnosticCode::from(codes::RECURSIVE_BASE.with([name_at(&blocks, entry)]))
+            }
         };
         let block = name_at(&blocks, index);
         // The game writes an error line to the content log and the file loads: a kept error.
@@ -737,17 +719,13 @@ fn read_variants<T>(
     let key = if key.is_null() {
         if !map.is_empty() {
             // The game writes an error line to the content log: a kept error.
-            report.kept(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(EXPECTED_KEY)),
-            });
+            report.kept(DiagnosticCode::from(&codes::EXPECTED_KEY));
         }
         None
     } else {
         if map.is_empty() {
             // The game writes an error line to the content log: a kept error.
-            report.kept(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(EXPECTED_MAP)),
-            });
+            report.kept(DiagnosticCode::from(&codes::EXPECTED_MAP));
         }
         // The entry's `__molang_version` as an integer defaulting to 0, narrowed to a 16-bit
         // integer as the game narrows it.
@@ -885,7 +863,7 @@ fn read_interactive_entities(value: &Value, report: &mut Reporter<'_>) -> Intera
             // the key is parsed with Molang version 0.
             report.at(
                 "variants",
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
             );
         }

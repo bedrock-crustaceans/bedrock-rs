@@ -1,16 +1,18 @@
 //! Feature types that place other features: aggregates, sequences, weighted and conditional
 //! choices, layouts, searches and filters.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VArray;
 
 use super::Description;
 use super::Rules;
+use super::codes;
 use super::molang::{WORLD_GEN, Walk, walk};
 use super::validate::Check;
 use super::values::{JsonInt, pair, weight_of, weight_value};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{StrictError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -317,7 +319,7 @@ impl Rules for ConditionalListFeature {
         {
             check.error(
                 "early_out_scheme",
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
             );
         }
     }
@@ -329,11 +331,7 @@ impl Rules for RectLayoutFeature {
         if self.ratio_of_empty_space.is_some_and(|r| r >= 1.0) {
             check.kept(
                 "ratio_of_empty_space",
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(
-                        "100% or above empty space is nonsensical for this feature.",
-                    )),
-                },
+                DiagnosticCode::from(&codes::EMPTY_SPACE),
             );
         }
         check.each("feature_areas", &self.feature_areas, |check, area| {
@@ -392,14 +390,7 @@ impl Rules for HeightDifferenceFilterFeature {
         // Logged at level 3 while the feature stays registered: a kept error. The client
         // checks this only when no bound is set, and fails nothing.
         if diffs.iter().all(|(_, value)| value.is_none()) {
-            check.kept(
-                "",
-                DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::Fixed(
-                        "height_difference_filter_feature: No height differences specified",
-                    )),
-                },
-            );
+            check.kept("", DiagnosticCode::from(&codes::NO_HEIGHT_DIFFERENCES));
         }
     }
 }

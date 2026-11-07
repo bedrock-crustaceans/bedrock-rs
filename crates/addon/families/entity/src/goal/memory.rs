@@ -8,7 +8,8 @@
 // member's type, the crate picks the type that reads the members the game's own packs write.
 
 use crate::component::descriptor_tags;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
@@ -197,7 +198,7 @@ impl Goal for MemoryLookAtEntity {
             .as_ref()
             .is_some_and(|v| [v.x, v.y].iter().any(|a| !(0.0..=360.0).contains(a)))
         {
-            c.reject("look_angle", None);
+            c.reject("look_angle", &core_codes::INVALID_VALUE);
             self.look_angle = None;
         }
         c.required("target_entity", self.target_entity.is_some());
@@ -767,13 +768,13 @@ impl GenericGoal<'_> {
 /// finding. The game writes no content-log line for this, so the crate reports it as an
 /// information.
 pub(crate) fn suffix_missing(at: JsonPath) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::GenericGoalSuffixMissing).at(at)
+    Diagnostic::of(&core_codes::GENERIC_GOAL_SUFFIX_MISSING).at(at)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 
     /// `v06_generic_goal_suffix`: a missing suffix and a 33-character suffix are
     /// refused; a 32-character one is a named goal.
@@ -806,7 +807,10 @@ mod tests {
             GenericGoal::No
         );
         let d = suffix_missing(JsonPath::new());
-        assert_eq!(d.code, DiagnosticCode::GenericGoalSuffixMissing);
+        assert_eq!(
+            d.code,
+            DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING)
+        );
         assert_eq!(d.severity, Severity::Info);
         assert!(!d.kept);
         for key in [
@@ -817,7 +821,7 @@ mod tests {
             assert_eq!(
                 finding.map(|d| (d.code, d.severity, d.kept)),
                 Some((
-                    DiagnosticCode::GenericGoalSuffixMissing,
+                    DiagnosticCode::from(&core_codes::GENERIC_GOAL_SUFFIX_MISSING),
                     Severity::Info,
                     false
                 )),

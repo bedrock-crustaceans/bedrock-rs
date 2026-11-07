@@ -1,7 +1,8 @@
 //! The checks vanilla's loader runs before it parses the payload, in
 //! vanilla's order: a valid version, the floor, the payload key, the engine.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, codes};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity, codes};
+use bedrock_addon_family_crafting_catalog::codes as crafting_catalog;
 
 use super::common::*;
 
@@ -193,7 +194,10 @@ fn l3_above_the_engine_is_an_error_naming_the_version() {
     let found = rejects(&root(&format!(r#""format_version": "1.27.0", {PAYLOAD}"#)));
     let error = one_error(&found);
     assert!(
-        matches!(&error.code, DiagnosticCode::FormatVersionAboveEngine { version } if version == "1.27.0")
+        error
+            .code
+            .args_of(&codes::FORMAT_VERSION_ABOVE_ENGINE)
+            .is_some_and(|args| args[0] == "1.27.0")
     );
     assert_eq!(found.iter().count(), 1, "{found:#?}");
 }
@@ -204,10 +208,7 @@ fn a_prerelease_version_is_an_ordinary_version() {
     let below = rejects(&root(&format!(
         r#""format_version": "1.21.60-beta.1", {PAYLOAD}"#
     )));
-    assert!(matches!(
-        one_error(&below).code,
-        DiagnosticCode::UnsupportedVersion { .. }
-    ));
+    assert!(one_error(&below).is(&crafting_catalog::BELOW_FLOOR));
     let document = loads(&root(&format!(
         r#""format_version": "1.21.70-beta.1", {PAYLOAD}"#
     )));

@@ -1,8 +1,8 @@
 //! The tick list (`functions/tick.json`, vanilla's `_loadTickFiles` and
 //! `_addTickFunctionsFromJson`): fixtures f16 to f21, the tick half of f24, and the merge.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
-use bedrock_addon::families::function::{QueueOrder, TickFunction};
+use bedrock_addon::diagnostic::Severity;
+use bedrock_addon::families::function::{QueueOrder, TickFunction, codes};
 use bedrock_addon::id::FunctionPath;
 use bedrock_addon::pack::{Behavior, PackStack};
 
@@ -182,14 +182,11 @@ fn f20_a_tick_list_that_is_not_json_is_skipped() {
     assert_eq!(findings.len(), 2);
     for finding in findings {
         assert_eq!(finding.severity, Severity::Error);
-        let DiagnosticCode::MalformedInput {
-            message,
-            text: Some(VanillaText::Formatted { args, .. }),
-        } = &finding.code
-        else {
+        let Some(args) = finding.code.args_of(&codes::TICK_NOT_JSON) else {
             panic!("{:?}", finding.code);
         };
         // The file name is the literal `tick.json`; the second argument is the reader's errors.
+        let message = args[1].clone();
         assert_eq!(args[..], ["tick.json".to_owned(), message.clone()]);
         assert!(!message.is_empty());
         assert!(

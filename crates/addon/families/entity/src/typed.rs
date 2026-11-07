@@ -2,9 +2,8 @@
 //! behind the scalar pre-pass, under the scalar rules every slice of the family reads by, and
 //! the finding of a read that fails.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, JsonPath, JsonPathSegment, Severity, Span,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, JsonPathSegment, Severity, Span};
 use bedrock_addon_core::json::{JsonSlice, NullRule, ScalarFailure, parse_with_rules, span_at};
 use facet::Facet;
 
@@ -111,7 +110,7 @@ pub(crate) fn finding(
     // A scalar no arm of an untagged enum takes: a type error at the enum, spanned as facet
     // spans a member it fails: the member's key (for a list element the scalar's own span,
     // the one core carries).
-    let finding = Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+    let finding = Diagnostic::of(&core_codes::INVALID_TYPE)
         .at(refused.path.clone())
         .severity(severity);
     let span = as_written.and_then(|slice| {
@@ -153,10 +152,7 @@ mod tests {
     fn a_refused_member_is_spanned_at_its_key() {
         let text = r#"{"effect_duration": "soon"}"#;
         let found = refused(text);
-        assert!(matches!(
-            found.code,
-            DiagnosticCode::InvalidType { text: None }
-        ));
+        assert!(found.is(&core_codes::INVALID_TYPE));
         assert_eq!(found.location.span, span_of(text, r#""effect_duration""#));
     }
 

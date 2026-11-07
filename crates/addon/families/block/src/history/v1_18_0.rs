@@ -1,11 +1,14 @@
 //! Format 1.18.0: `block_collision` and `aim_collision` (the 1.18.0 renames),
 //! `block_light_filter`, `crafting_table` without `grid_size`.
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::Severity;
 use indexmap::IndexMap;
 
 use super::legacy::{BlockPayload, component_path, input_check_failed, number};
 use super::ops::{clamp, int, missing_field, number_member, real, unwrap, whole};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
@@ -72,7 +75,7 @@ impl LegacyStep<1, 18, 0> for BlockPayload {
         // unwrap's): the crate reports it as an information.
         for (section, name) in collision {
             d.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(component_path(section, name))
                     .phase(Phase::Upgrade),
             );
@@ -187,14 +190,9 @@ impl LegacyStep<1, 18, 0> for BlockPayload {
 /// on with the value: a kept error at the component.
 fn thrown_away(section: Option<usize>, name: &str, d: &mut Diagnostics) {
     d.push_kept_error(
-        Diagnostic::error(DiagnosticCode::DroppedField {
-            text: Some(VanillaText::Formatted {
-                template: "Members of component {} will be thrown away as part of the upgrade",
-                args: vec![name.to_owned()],
-            }),
-        })
-        .at(component_path(section, name))
-        .phase(Phase::Upgrade),
+        Diagnostic::of(codes::MEMBERS_THROWN_AWAY.with([name.to_owned()]))
+            .at(component_path(section, name))
+            .phase(Phase::Upgrade),
     );
 }
 
@@ -349,13 +347,14 @@ fn convert_ticking(
         let ticks = (end.max(0.0) * 20.0).min(f64::from(u32::MAX));
         if end < 0.0 || (end * 20.0).round() > f64::from(u32::MAX) {
             d.push(
-                Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                Diagnostic::of(&core_codes::CLAMPED_VALUE)
                     .at(at.clone())
                     .phase(Phase::Upgrade),
             );
         } else if (ticks - ticks.round()).abs() > TICK_TOLERANCE {
             d.push(
-                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
                     .at(at.clone())
                     .phase(Phase::Upgrade),
             );

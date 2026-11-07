@@ -7,17 +7,15 @@
 
 use indexmap::IndexMap;
 
-use crate::texts::{INVALID_UV_ROTATION, NO_NAMESPACE_CUSTOM};
+use crate::codes;
 use crate::walk::{Leaves, has_geometry_name};
 use crate::{
     Bone, Cube, CubeUv, Description, FaceUv, Faces, Geometry, ItemDisplayTransform,
     ItemDisplayTransforms, Locator, PolyMesh, Polys, TextureMesh,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
-use bedrock_addon_core::json::node_tree::{
-    ARRAY_TOO_LARGE, ARRAY_TOO_SMALL, Group, Hit, Kind, NOT_ALLOWED_REGEX, Node, OUTSIDE_RANGE,
-    Pattern, Walk, text,
-};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// What the schema of a file's era declares beyond the 1.12 members.
@@ -99,9 +97,7 @@ fn read_geometries(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<Vec<Geom
         // whose every element the lenient read left out (below 1.19.30, each with its
         // information) held its elements when it was validated and loads, with no geometry.
         walk.error(
-            DiagnosticCode::InvalidValue {
-                text: text(ARRAY_TOO_SMALL, &["0", "1"]),
-            },
+            core_codes::ARRAY_TOO_SMALL.with(["0", "1"]).into(),
             node.span(),
         );
         return None;
@@ -179,9 +175,7 @@ fn read_identifier(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<String> 
             .map_or(identifier.as_str(), |(_, name)| name)
     } else if identifier.contains(':') {
         walk.error(
-            DiagnosticCode::InvalidValue {
-                text: text(NO_NAMESPACE_CUSTOM, &[&identifier]),
-            },
+            codes::NO_NAMESPACE_CUSTOM.with([identifier.clone()]).into(),
             node.span(),
         );
         return None;
@@ -189,7 +183,10 @@ fn read_identifier(walk: &mut Walk, node: Node<'_>, era: Era) -> Option<String> 
         identifier.as_str()
     };
     if !has_geometry_name(name) {
-        walk.error(DiagnosticCode::InvalidValue { text: None }, node.span());
+        walk.error(
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            node.span(),
+        );
         return None;
     }
     Some(identifier)
@@ -251,12 +248,9 @@ pub(crate) fn read_render_group_id(walk: &mut Walk, node: Node<'_>) -> Option<u3
     let value = walk.int(node)?;
     let Ok(id) = u32::try_from(value) else {
         walk.error(
-            DiagnosticCode::InvalidValue {
-                text: text(
-                    OUTSIDE_RANGE,
-                    &[&value.to_string(), "0", &i32::MAX.to_string()],
-                ),
-            },
+            core_codes::OUTSIDE_RANGE
+                .with([value.to_string(), "0".to_owned(), i32::MAX.to_string()])
+                .into(),
             node.span(),
         );
         return None;
@@ -357,9 +351,7 @@ fn read_uv_rotation(walk: &mut Walk, node: Node<'_>) -> Option<i32> {
     if quarter.is_none() {
         // The game logs an error, uses rotation 0 and loads the geometry: a kept error.
         walk.push_kept(
-            DiagnosticCode::InvalidValue {
-                text: text(INVALID_UV_ROTATION, &[node.text()]),
-            },
+            codes::INVALID_UV_ROTATION.with([node.text()]).into(),
             node.span(),
         );
     }
@@ -414,7 +406,7 @@ fn read_locator_vector(walk: &mut Walk, node: Node<'_>) -> Option<Vector> {
         return Some(Vector::Read(vector));
     }
     walk.push(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&core_codes::INVALID_VALUE),
         Severity::Info,
         node.span(),
     );
@@ -457,7 +449,7 @@ fn read_locator(walk: &mut Walk, node: Node<'_>, form: LocatorForm) -> Option<Lo
                 // Left out for a vector of another length (the crate's own information): the
                 // vector's finding does not say that the locator's other members go with it.
                 walk.push(
-                    DiagnosticCode::DroppedField { text: None },
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     node.span(),
                 );
@@ -521,9 +513,9 @@ fn read_polys(walk: &mut Walk, node: Node<'_>) -> Option<Polys> {
             // The valid values are regexes searched in the value.
             if !(value.contains("tri_list") || value.contains("quad_list")) {
                 walk.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(NOT_ALLOWED_REGEX, &[&value, "tri_list, quad_list"]),
-                    },
+                    core_codes::NOT_ALLOWED_REGEX
+                        .with([value.as_str(), "tri_list, quad_list"])
+                        .into(),
                     node.span(),
                 );
                 return None;
@@ -534,15 +526,13 @@ fn read_polys(walk: &mut Walk, node: Node<'_>) -> Option<Polys> {
             .list(node, |walk, poly| {
                 let vertices = walk.list(poly, Walk::indices)?;
                 let n = vertices.len();
-                let (template, bound) = match n {
-                    0..3 => (ARRAY_TOO_SMALL, "3"),
+                let (def, bound) = match n {
+                    0..3 => (&core_codes::ARRAY_TOO_SMALL, "3"),
                     3..=4 => return Some(vertices),
-                    _ => (ARRAY_TOO_LARGE, "4"),
+                    _ => (&core_codes::ARRAY_TOO_LARGE, "4"),
                 };
                 walk.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(template, &[&n.to_string(), bound]),
-                    },
+                    def.with([n.to_string(), bound.to_owned()]).into(),
                     poly.span(),
                 );
                 None

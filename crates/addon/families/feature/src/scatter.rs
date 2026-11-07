@@ -5,10 +5,11 @@ use facet::Facet;
 
 use super::Description;
 use super::Rules;
+use super::codes;
 use super::molang::{SCATTER, Walk};
-use super::read::{formatted, parse_strict, required_child};
+use super::read::{parse_strict, required_child};
 use super::validate::Check;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFieldSpec, MolangFields, MolangVisitor, Step};
@@ -198,16 +199,12 @@ impl MolangFields for ScatterFeature {
 
 // ---- runtime checks --------------------------------------------------------------------------
 
-/// "%s must be provided, …": vanilla's text for an absent or empty coordinate.
-const MUST_BE_PROVIDED: &str =
-    "{} must be provided, either as a Molang expression string or as a sub-object";
-
 /// A `ScatterParamValue` finding with vanilla's text at `key`: a kept error. The client logs
 /// each such line at level 3 and goes on with the replacement value (for the iterations, the
 /// percent and fraction chances, a missing coordinate, `step_size` and `grid_offset`), so the
 /// feature stays loaded.
-fn scatter_warning(check: &mut ValidateCx<'_>, key: &str, text: VanillaText) {
-    check.kept(key, DiagnosticCode::ScatterParamValue { text: Some(text) });
+fn scatter_warning(check: &mut ValidateCx<'_>, key: &str, code: Code) {
+    check.kept(key, code.into());
 }
 
 /// The client's checks on a scatter constant, and its replacement values, applied to the
@@ -215,11 +212,7 @@ fn scatter_warning(check: &mut ValidateCx<'_>, key: &str, text: VanillaText) {
 /// `step_size`, `grid_offset`) fails the whole schema.
 pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut ScatterParams) {
     if matches!(distribution.iterations, Molang::Const(c) if c < 0.0) {
-        scatter_warning(
-            check,
-            "iterations",
-            VanillaText::Fixed("Bad value for iterations - should be >= 0"),
-        );
+        scatter_warning(check, "iterations", Code::from(&codes::ITERATIONS_NEGATIVE));
         distribution.iterations = Molang::Const(1.0);
     }
     match &mut distribution.scatter_chance {
@@ -227,9 +220,7 @@ pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut Scatt
             scatter_warning(
                 check,
                 "scatter_chance",
-                VanillaText::Fixed(
-                    "Bad value for scatter_chance - should be between 0 and 100 (exclusive)",
-                ),
+                Code::from(&codes::SCATTER_CHANCE_PERCENT),
             );
             *c = 100.0;
         }
@@ -243,9 +234,7 @@ pub(crate) fn scatter_rules(check: &mut ValidateCx<'_>, distribution: &mut Scatt
                 scatter_warning(
                     check,
                     "scatter_chance",
-                    VanillaText::Fixed(
-                        "Bad value for scatter_chance - denominator should be greater than the numerator",
-                    ),
+                    Code::from(&codes::SCATTER_CHANCE_FRACTION),
                 );
                 ratio.denominator = 1;
             }
@@ -270,14 +259,19 @@ fn coordinate_rules(check: &mut ValidateCx<'_>, key: &str, coordinate: Option<&C
     };
     if empty {
         // The finding is for an absent or empty member.
-        scatter_warning(check, key, formatted(MUST_BE_PROVIDED, &[&key]));
+        scatter_warning(check, key, codes::MUST_BE_PROVIDED.with([key]));
         return;
     }
     let Some(CoordinateRange::Object(range)) = coordinate else {
         return;
     };
     check.nested(key, |check| {
-        check.check_int("step_size", range.step_size.map(crate::JsonInt::from), 1, i32::MAX);
+        check.check_int(
+            "step_size",
+            range.step_size.map(crate::JsonInt::from),
+            1,
+            i32::MAX,
+        );
         check.check_int(
             "grid_offset",
             range.grid_offset.map(crate::JsonInt::from),
@@ -286,28 +280,20 @@ fn coordinate_rules(check: &mut ValidateCx<'_>, key: &str, coordinate: Option<&C
         );
         if !range.distribution.is_grid() {
             if range.step_size.is_some() {
-                scatter_warning(
-                    check,
-                    "step_size",
-                    VanillaText::Fixed("step_size is only valid when distribution is fixed_grid or jittered_grid"),
-                );
+                scatter_warning(check, "step_size", Code::from(&codes::STEP_SIZE_NOT_GRID));
             }
             if range.grid_offset.is_some() {
                 scatter_warning(
                     check,
                     "grid_offset",
-                    VanillaText::Fixed("grid_offset is only valid when distribution is fixed_grid or jittered_grid"),
+                    Code::from(&codes::GRID_OFFSET_NOT_GRID),
                 );
             }
         }
         if let [Molang::Const(min), Molang::Const(max)] = &range.extent
             && max <= min
         {
-            scatter_warning(
-                check,
-                "extent",
-                VanillaText::Fixed("Bad value for extent - maximum must be greater than minimum"),
-            );
+            scatter_warning(check, "extent", Code::from(&codes::EXTENT_ORDER));
         }
     });
 }

@@ -4,7 +4,7 @@
 
 use std::fmt::Write as _;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, NotFoundHint, Severity};
+use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, NotFoundHint, Severity};
 use bedrock_addon::families::script::{
     ImportKind, NativeModuleAccess, Resolution, ScanOptions, ScriptBundle, ScriptHost, ScriptPath,
     ScriptRoot, ScriptSyntaxKind,
@@ -293,7 +293,9 @@ fn a_bundle_says_once_how_many_files_the_parser_was_kept_from() {
         .collect();
     let expected = if checked {
         vec![(
-            DiagnosticCode::ScriptSyntaxNotChecked { files: 2 },
+            DiagnosticCode::from(
+                bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED.with([2.to_string()]),
+            ),
             Severity::Info,
             None,
         )]
@@ -303,7 +305,10 @@ fn a_bundle_says_once_how_many_files_the_parser_was_kept_from() {
     };
     assert_eq!(notes, expected);
     assert_eq!(
-        DiagnosticCode::ScriptSyntaxNotChecked { files: 2 }.to_string(),
+        DiagnosticCode::from(
+            bedrock_addon::diagnostic::codes::SCRIPT_SYNTAX_NOT_CHECKED.with([2.to_string()])
+        )
+        .to_string(),
         "syntax of 2 script files not checked: nested too deeply for the parser"
     );
     // A bundle whose files are all read says nothing.
@@ -577,10 +582,10 @@ fn l10_l11_unknown_and_restricted_modules_by_how_they_are_imported() {
     let restricted = bundle.findings().nth(2).unwrap();
     assert_eq!(
         restricted.code,
-        DiagnosticCode::ScriptModuleRestricted {
-            module: "@minecraft/server-bindings".to_owned(),
-            referrer: "main.js".to_owned(),
-        }
+        DiagnosticCode::from(
+            bedrock_addon::diagnostic::codes::SCRIPT_MODULE_RESTRICTED
+                .with(["@minecraft/server-bindings", "main.js"])
+        )
     );
     assert_eq!(
         bundle.main().unwrap().imports()[4].resolution,
@@ -678,9 +683,14 @@ fn l18_a_static_import_of_an_overlong_path_is_an_error_too() {
     );
     let looked_up: Vec<String> = bundle
         .findings()
-        .map(|finding| match &finding.code {
-            DiagnosticCode::ScriptImportNotFound { specifier, .. } => specifier.clone(),
-            other => panic!("{other:?}"),
+        .map(|finding| {
+            match finding
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND)
+            {
+                Some([specifier]) => specifier.clone(),
+                _ => panic!("{:?}", finding.code),
+            }
         })
         .collect();
     assert_eq!(looked_up, [".js", ""]);
@@ -789,10 +799,13 @@ fn every_hint_and_the_file_it_points_at() {
     let first = bundle.findings().next().unwrap();
     assert_eq!(
         first.code,
-        DiagnosticCode::ScriptImportNotFound {
-            specifier: "scripts/lib/b.js".to_owned(),
-            hint: Some(NotFoundHint::ScriptsPrefix),
-        }
+        DiagnosticCode::from(
+            bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND.with(["scripts/lib/b.js"])
+        )
+    );
+    assert_eq!(
+        first.detail.as_deref(),
+        Some(&DiagnosticDetail::NotFound(NotFoundHint::ScriptsPrefix))
     );
     assert_eq!(
         first.code.to_string(),

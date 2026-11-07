@@ -4,7 +4,7 @@
 //! member, as the file has it. Every test loads a legacy document of the version the step
 //! upgrades from through `Block::parse`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity};
+use bedrock_addon::diagnostic::{Phase, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::json::Value;
 
@@ -24,7 +24,8 @@ fn misread(version: &str, payload: &str) -> (Vec<String>, Value) {
         .filter(|f| {
             f.phase == Phase::Upgrade
                 && f.severity == Severity::Info
-                && matches!(f.code, DiagnosticCode::InvalidType { .. })
+                // By legacy name: the variant and the definitions that were it.
+                && f.code.name() == "InvalidType"
         })
         .map(|f| f.location.json_path.to_string())
         .collect();

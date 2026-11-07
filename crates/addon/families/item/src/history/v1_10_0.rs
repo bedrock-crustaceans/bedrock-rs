@@ -2,6 +2,7 @@
 //! component-based check rejects (below 1.16.100, 1.16.101–1.16.x, and later documents
 //! whose `components` name no registered component).
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::BuiltIns;
 use bedrock_addon_core::schema;
@@ -14,15 +15,13 @@ use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
 use super::document::Description;
+use crate::codes;
 use crate::legacy::{
     ItemFormat, LegacyCamera, LegacyEffect, LegacyFood, LegacyFormatItem, LegacyItemData,
     LegacySeed, number, seed_warning,
 };
 use crate::read::is_component_based;
-use crate::texts;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 
 /// An item in the legacy item format (no `SemVersion`
 /// reaches its readers, so one shape serves 1.10 to 1.16.0).
@@ -59,7 +58,7 @@ impl VersionStruct for Item {
         d.extend_with_unknown(found);
         let mut shell = shell?;
         if let Err(reason) = is_component_based(payload, cx.written) {
-            d.push(Diagnostic::info(DiagnosticCode::LegacyItemFormat { reason }).at(cx.at.clone()));
+            d.push(Diagnostic::of(core_codes::LEGACY_ITEM_FORMAT.with([reason])).at(cx.at.clone()));
         }
         if let Some(menu) = shell.description.menu_category.take()
             && let Ok(value) = write_payload(&menu)
@@ -72,12 +71,7 @@ impl VersionStruct for Item {
             None => LegacyFormatItem::default(),
             Some(value) => {
                 let Some(object) = value.as_object() else {
-                    d.push(
-                        Diagnostic::error(DiagnosticCode::InvalidType {
-                            text: Some(VanillaText::Fixed(texts::COMPONENTS_NOT_OBJECT)),
-                        })
-                        .at(at),
-                    );
+                    d.push(Diagnostic::of(&codes::COMPONENTS_NOT_OBJECT).at(at));
                     return None;
                 };
                 read_format_item(
@@ -123,7 +117,7 @@ fn told(code: DiagnosticCode, at: JsonPath, d: &mut Diagnostics) {
 
 /// A value of another JSON type than the member's: an `InvalidType` information at `at`.
 fn wrong_type(at: JsonPath, d: &mut Diagnostics) {
-    told(DiagnosticCode::InvalidType { text: None }, at, d);
+    told(DiagnosticCode::from(&core_codes::INVALID_TYPE), at, d);
 }
 
 /// A JSON number as the double it spells.
@@ -142,11 +136,11 @@ fn as_int(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<i32> {
     };
     let whole = number.trunc();
     if whole < f64::from(i32::MIN) || whole > f64::from(i32::MAX) {
-        told(DiagnosticCode::InvalidValue { text: None }, at, d);
+        told(DiagnosticCode::from(&core_codes::INVALID_VALUE), at, d);
         return None;
     }
     if number.fract() != 0.0 {
-        told(DiagnosticCode::InvalidValue { text: None }, at, d);
+        told(DiagnosticCode::from(&core_codes::INVALID_VALUE), at, d);
     }
     Some(whole as i32)
 }
@@ -296,13 +290,11 @@ fn read_food(
                         // The game logs an unknown effect name at the content log's error
                         // level and adds the effect on: a kept error.
                         d.push_kept_error(
-                            Diagnostic::error(DiagnosticCode::InvalidValue {
-                                text: Some(VanillaText::ItemLegacyEffectName {
-                                    item: identifier.to_owned(),
-                                    what: "effect",
-                                    name: name.clone(),
-                                }),
-                            })
+                            Diagnostic::error(
+                                codes::LEGACY_EFFECT_NAME
+                                    .with([identifier, "effect", name.as_str()])
+                                    .into(),
+                            )
                             .at(path.clone()),
                         );
                     }
@@ -334,13 +326,11 @@ fn read_food(
                         // The game logs an unknown name in `remove_effects` at the error
                         // level and the loop goes on: a kept error.
                         d.push_kept_error(
-                            Diagnostic::error(DiagnosticCode::InvalidValue {
-                                text: Some(VanillaText::ItemLegacyEffectName {
-                                    item: identifier.to_owned(),
-                                    what: "remove_effect",
-                                    name: name.clone(),
-                                }),
-                            })
+                            Diagnostic::error(
+                                codes::LEGACY_EFFECT_NAME
+                                    .with([identifier, "remove_effect", name.as_str()])
+                                    .into(),
+                            )
                             .at(path),
                         );
                     }

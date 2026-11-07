@@ -1,15 +1,15 @@
 //! `minecraft:collision_box` of the 1.26.60 document: `true` / `false` or up to 16
 //! boxes, each by `origin`/`size` (the 1.26.20 reading) or by `min`/`max`.
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::Value;
 use facet::Facet;
 use facet_json::RawJson;
 
 use super::BlockComponent;
 use super::types::{FULL_ORIGIN, FULL_SIZE, Vec3};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -155,7 +155,7 @@ pub(crate) fn read_collision_box(
     };
     if version >= V1_26_60 {
         if one {
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at.clone()));
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at.clone()));
             return false;
         }
         newest_constraint(boxes, at, d);
@@ -176,7 +176,8 @@ pub(crate) fn read_collision_box(
                     Severity::Info
                 };
                 d.push(
-                    Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None })
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                        .severity(Severity::Error)
                         .severity(severity)
                         .at(path),
                 );
@@ -203,7 +204,7 @@ pub(crate) fn legacy_constraint(
     at: &JsonPath,
 ) -> Option<Diagnostic> {
     if boxes.len() > MAX_BOXES {
-        return Some(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
+        return Some(Diagnostic::of(&core_codes::INVALID_VALUE).at(at.clone()));
     }
     let ranged = boxes
         .iter()
@@ -212,20 +213,12 @@ pub(crate) fn legacy_constraint(
     if ranged && inside {
         return None;
     }
-    let template = if one {
-        "\"origin\" + \"size\", must be inside the following limit: {} and {}"
+    let limit = if one {
+        &codes::BOX_LIMIT_ONE
     } else {
-        "The total of each \"origin\" + \"size\" pair, must be inside the following limit: {} and {}"
+        &codes::BOX_LIMIT_EACH
     };
-    Some(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted {
-                template,
-                args: vec!["(0, 0, 0)".to_owned(), "(16, 24, 16)".to_owned()],
-            }),
-        })
-        .at(at.clone()),
-    )
+    Some(Diagnostic::of(limit.with(["(0, 0, 0)", "(16, 24, 16)"])).at(at.clone()))
 }
 
 /// The 1.26.60 constraint: at most 16 boxes; each member in its
@@ -233,7 +226,7 @@ pub(crate) fn legacy_constraint(
 /// `MIN_BOUNDS`–`MAX_BOUNDS`. Each break is an error.
 fn newest_constraint(boxes: &[CollisionBoundingBox], at: &JsonPath, d: &mut Diagnostics) {
     if boxes.len() > MAX_BOXES {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
+        d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(at.clone()));
         return;
     }
     // The union of the boxes that are no combined `origin`/`size` + `min`/`max` box: the
@@ -249,18 +242,11 @@ fn newest_constraint(boxes: &[CollisionBoundingBox], at: &JsonPath, d: &mut Diag
         ] {
             if !in_ranges(value, ranges) {
                 let member = path.child(name);
-                d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(member));
+                d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(member));
             }
         }
         if (b.origin.is_some() || b.size.is_some()) && b.has_min_max() {
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(
-                        "\"origin\"/\"size\" cannot be combined with \"min\"/\"max\"",
-                    )),
-                })
-                .at(path),
-            );
+            d.push(Diagnostic::of(&codes::BOX_FORMS_MIXED).at(path));
             continue;
         }
         union.push(b.corners());
@@ -268,12 +254,12 @@ fn newest_constraint(boxes: &[CollisionBoundingBox], at: &JsonPath, d: &mut Diag
     // The union must lie within the bounds; the game's one message is "Invalid box bounds"
     // inserted at the start of the area text.
     if !union.iter().all(|corners| within(*corners)) {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Formatted {
-                    template: "Invalid box boundsThe area covered by all boxes must be within {} to {}",
-                    args: vec!["(0, 0, 0)".to_owned(), "(16, 24, 16)".to_owned()],
-                }),
-            }).at(at.clone()));
+        d.push(
+            Diagnostic::of(
+                codes::BOX_BOUNDS.with(["(0, 0, 0)".to_owned(), "(16, 24, 16)".to_owned()]),
+            )
+            .at(at.clone()),
+        );
     }
 }
 

@@ -359,7 +359,7 @@ fn a_single_newest_definitions_file_keeps_the_json_it_read() {
 /// no JSON gives no struct, and says why (it gave `None` and no finding).
 #[test]
 fn a_struct_given_a_text_that_is_no_json_says_so() {
-    use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
+    use bedrock_addon::diagnostic::{Diagnostics, JsonPath, Severity};
     use bedrock_addon::families::sound_definitions::history::{v1_0_0, v1_14_0, v1_20_20};
     use bedrock_addon::json::JsonSlice;
     use bedrock_addon::load::LoadContext;
@@ -380,7 +380,7 @@ fn a_struct_given_a_text_that_is_no_json_says_so() {
         d.iter()
             .map(|f| {
                 (
-                    matches!(f.code, DiagnosticCode::MalformedInput { .. }),
+                    f.is(&bedrock_addon::diagnostic::codes::SYNTAX),
                     f.severity,
                     f.location.json_path.to_string(),
                 )

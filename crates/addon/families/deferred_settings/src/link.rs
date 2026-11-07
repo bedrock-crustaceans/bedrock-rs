@@ -8,8 +8,9 @@
 //! `DeferredSettings::defaults`.
 
 use super::DeferredSettings;
+use super::codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
@@ -84,12 +85,7 @@ pub fn check(settings: &DeferredSettings, targets: &dyn Targets) -> Diagnostics 
         // The game logs the line at the error level and goes on to the next entry, so the
         // finding is a kept error.
         d.push(kept_error(
-            DiagnosticCode::UnresolvedReference {
-                text: Some(VanillaText::Formatted {
-                    template: "{} is not a block",
-                    args: vec![block.as_str().to_owned()],
-                }),
-            },
+            codes::NOT_A_BLOCK.with([block.as_str()]).into(),
             origin,
             &["minecraft:local_light_settings", block.as_str()],
             "block",
@@ -105,34 +101,19 @@ pub fn check(settings: &DeferredSettings, targets: &dyn Targets) -> Diagnostics 
             continue;
         };
         let code = match targets.texture(texture) {
-            Texture::Missing => DiagnosticCode::TextureNotFound {
-                text: Some(VanillaText::Formatted {
-                    template: "Resource pack caustics texture could not be loaded. No texture could be found at \"{}\".",
-                    args: vec![texture.to_owned()],
-                }),
-            },
+            Texture::Missing => &codes::CAUSTICS_NOT_FOUND,
             // An undecodable image and one that does not divide into frames, each with the
             // game's text.
-            Texture::Undecodable => DiagnosticCode::InvalidTexture {
-                text: Some(VanillaText::Formatted {
-                    template: "Caustics texture \"{}\" provided in resource pack could not be loaded due to an unknown error. Ensure the texture is a valid image and is in one of the supported image formats.",
-                    args: vec![texture.to_owned()],
-                }),
-            },
+            Texture::Undecodable => &codes::CAUSTICS_UNDECODABLE,
             Texture::Image { width, height } if width == 0 || height % width != 0 => {
-                DiagnosticCode::InvalidTexture {
-                    text: Some(VanillaText::Formatted {
-                        template: "Caustics texture \"{}\" provided in resource pack does not evenly divide into frames. Ensure the texture height is evenly divisible by the width.",
-                        args: vec![texture.to_owned()],
-                    }),
-                }
+                &codes::CAUSTICS_FRAMES
             }
             Texture::Image { .. } => continue,
         };
         // The game logs the chosen text at the error level and falls back to
         // "renderer/caustics", so the finding is a kept error.
         d.push(kept_error(
-            code,
+            code.with([texture]).into(),
             document.origin(),
             &["minecraft:water_settings", "caustics", "texture"],
             "texture",

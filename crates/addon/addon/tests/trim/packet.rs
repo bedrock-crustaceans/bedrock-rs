@@ -1,7 +1,8 @@
 //! The registries a client builds from the decoded payload of a
 //! `TrimDataPacket`, the lists a server sends, and vanilla's one content-log text (V3).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity};
+use bedrock_addon::diagnostic::{Phase, Severity};
+use bedrock_addon::families::item::codes as item_codes;
 use bedrock_addon::families::item::trim::{FormatCode, TrimData};
 
 use super::common::{
@@ -200,10 +201,7 @@ fn v3_a_template_item_sent_twice_is_overwritten_with_a_kept_error_in_vanillas_wo
     let findings: Vec<_> = data.diagnostics().iter().collect();
     assert_eq!(findings.len(), 1, "{findings:?}");
     let finding = findings[0];
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::DuplicateIdentifier { text: Some(_) }
-    ));
+    assert!(finding.code.is(&item_codes::DUPLICATE_TEMPLATE));
     assert_eq!((finding.severity, finding.kept), (Severity::Error, true));
     assert_eq!(finding.phase, Phase::Parse);
     assert_eq!(finding.location.json_path.to_string(), "patterns/2");

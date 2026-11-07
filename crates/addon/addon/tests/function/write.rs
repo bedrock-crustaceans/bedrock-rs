@@ -2,6 +2,7 @@
 //! lines only), the Value level of a tick list, the default paths and the files that are no
 //! function.
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use bedrock_addon::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::function::{
@@ -203,7 +204,7 @@ fn only_a_file_at_functions_name_mcfunction_parses_as_a_function() {
         assert_eq!(finding.severity, Severity::Error, "{path}");
         assert_eq!(
             finding.code,
-            DiagnosticCode::IgnoredFile { text: None },
+            DiagnosticCode::from(&core_codes::IGNORED_FILE),
             "{path}"
         );
         assert_eq!(rejected.origin.path.as_str(), path);
@@ -305,10 +306,11 @@ fn a_tick_entry_that_is_no_string_is_reported_and_not_kept() {
         .iter()
         .map(|finding| {
             assert_eq!(finding.severity, Severity::Warning);
-            assert!(matches!(
-                finding.code,
-                DiagnosticCode::UnresolvedReference { text: Some(_) }
-            ));
+            assert!(
+                finding
+                    .code
+                    .is(&bedrock_addon::families::function::codes::TICK_NOT_FOUND)
+            );
             finding.location.json_path.to_string()
         })
         .collect();

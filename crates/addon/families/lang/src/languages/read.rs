@@ -2,17 +2,10 @@
 //! names and the locale fallback.
 
 use super::{Language, LanguageNames, Languages};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{Prepared, Value};
-
-/// Vanilla's assert text for a name entry that is not an array of two elements (V5). A debug
-/// assert, not a content-log line; the entry is read all the same.
-// `Bedrock::Diagnostics::handleAssert` in `_findAvailableLanguageNames`; the
-// spelling is vanilla's.
-const NAME_ENTRY_SHAPE: &str =
-    "Languange name entries should be an array with 2 elements, a code and a name";
 
 impl Languages {
     /// The base language: the first code. Every other language starts from a copy of its
@@ -91,10 +84,10 @@ fn root(bytes: &[u8]) -> Result<Value, Box<Diagnostic>> {
     let malformed = |message: String| {
         // vanilla skips such a copy without a word: ours, an information, the copy still
         // refused
-        Box::new(Diagnostic::info(DiagnosticCode::MalformedInput {
-            message,
-            text: None,
-        }))
+        Box::new(
+            Diagnostic::of(bedrock_addon_core::diagnostic::builders::syntax(message))
+                .severity(Severity::Info),
+        )
     };
     // Either failure of the gate is the one text.
     let prepared = Prepared::new(bytes)
@@ -122,7 +115,7 @@ fn elements<'v>(root: &'v Value, diagnostics: &mut Diagnostics) -> Vec<(JsonPath
             })
             .collect();
     }
-    diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }));
+    diagnostics.push(Diagnostic::of(&core_codes::INVALID_TYPE).severity(Severity::Info));
     let Some(object) = root.as_object() else {
         return Vec::new();
     };
@@ -170,7 +163,11 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
         // `vanilla = "asString(\"\"): … appended without an emptiness
         // check"`.
         let Some(code) = element.as_string() else {
-            diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at));
+            diagnostics.push(
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
+                    .at(at),
+            );
             continue;
         };
         let code = Language::new(code.as_str());
@@ -179,7 +176,11 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
         }
         // `vanilla = "accepted, no check"`.
         if !code.is_valid_code() {
-            diagnostics.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at));
+            diagnostics.push(
+                Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
+                    .at(at),
+            );
         }
         codes.push(code);
     }
@@ -202,12 +203,10 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
     let root = root(bytes)?;
     let mut diagnostics = Diagnostics::default();
     let mut entries = Vec::new();
-    let shape = || Some(VanillaText::Fixed(NAME_ENTRY_SHAPE));
     for (at, element) in elements(&root, &mut diagnostics) {
         // `vanilla = "handleAssert only"`.
         let Some(pair) = element.as_array() else {
-            diagnostics
-                .push(Diagnostic::info(DiagnosticCode::InvalidType { text: shape() }).at(at));
+            diagnostics.push(Diagnostic::of(&codes::NAME_ENTRY_SHAPE_INVALID_TYPE).at(at));
             continue;
         };
         // Ours: an element that is no string is read as vanilla reads it (a bool
@@ -216,13 +215,15 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
         for (index, part) in pair.as_slice().iter().take(2).enumerate() {
             if !part.is_string() {
                 let at = at.index(index);
-                diagnostics
-                    .push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(at));
+                diagnostics.push(
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Info)
+                        .at(at),
+                );
             }
         }
         if pair.len() != 2 {
-            diagnostics
-                .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: shape() }).at(at));
+            diagnostics.push(Diagnostic::of(&codes::NAME_ENTRY_SHAPE_INVALID_VALUE).at(at));
         }
         entries.push((
             Language::new(as_string(pair.first())),
@@ -252,6 +253,7 @@ pub(super) fn names_json(names: &LanguageNames) -> Vec<Vec<String>> {
 #[cfg(test)]
 mod gate_tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::DiagnosticCode;
 
     /// The finding of a copy that is no JSON, as `(code, span)`.
     fn refusal(bytes: &[u8]) -> (DiagnosticCode, Option<bedrock_addon_core::diagnostic::Span>) {

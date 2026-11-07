@@ -1,10 +1,12 @@
 //! Plugin discovery (vanilla's stage 2) and the hand-over to version resolution (stage 3).
 
+use crate::codes;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Write as _;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode as Code, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::SemVersion;
@@ -410,13 +412,11 @@ impl<'a> ScriptDiscovery<'a> {
             // The module's UUID and version were already brought by an earlier pack. The game
             // prints this as a `WARN [Scripting]` line, so the finding is a warning.
             run.finding(
-                Code::DuplicateIdentifier {
-                    text: Some(VanillaText::PluginModuleExists {
-                        plugin: run.plugin_name.clone(),
-                        uuid: module.module_uuid,
-                        version: key.2.to_string(),
-                    }),
-                },
+                Code::from(codes::PLUGIN_MODULE_EXISTS.with([
+                    run.plugin_name.clone(),
+                    module.module_uuid.to_string(),
+                    key.2.to_string(),
+                ])),
                 Severity::Warning,
                 &module.path,
             );
@@ -429,13 +429,11 @@ impl<'a> ScriptDiscovery<'a> {
         // warning.
         for skipped in &module.skipped {
             run.finding(
-                Code::MultipleScriptModules {
-                    plugin: format!(
-                        "{} - {}",
-                        module.pack_name,
-                        ScriptVersion::from(&skipped.version)
-                    ),
-                },
+                Code::from(core_codes::MULTIPLE_SCRIPT_MODULES.with([format!(
+                    "{} - {}",
+                    module.pack_name,
+                    ScriptVersion::from(&skipped.version)
+                )])),
                 Severity::Warning,
                 &skipped.path,
             );
@@ -525,12 +523,7 @@ impl<'a> Run<'a> {
         // sanitises to an empty name.
         let Some(runtime) = ScriptRuntime::from_language(module.language.as_deref()) else {
             self.finding(
-                Code::InvalidEnumValue {
-                    text: Some(VanillaText::PluginUnsupportedRuntime {
-                        plugin,
-                        runtime: String::new(),
-                    }),
-                },
+                Code::from(codes::PLUGIN_UNSUPPORTED_RUNTIME.with([plugin.clone(), String::new()])),
                 Severity::Error,
                 &module.path.child("language"),
             );
@@ -539,19 +532,19 @@ impl<'a> Run<'a> {
         // The entry must end in the extension the runtime's files have.
         let entry = module.entry.as_deref();
         if entry.is_none_or(|entry| extension_with_dot(entry) != runtime.extension()) {
-            let text = Some(VanillaText::PluginEntryNotSupported {
+            let args = [
                 plugin,
-                entry: entry.unwrap_or_default().to_owned(),
-                runtime: runtime.name().to_owned(),
-            });
+                entry.unwrap_or_default().to_owned(),
+                runtime.name().to_owned(),
+            ];
             match entry {
                 None => self.finding(
-                    Code::MissingRequiredField { text },
+                    Code::from(codes::PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD.with(args)),
                     Severity::Error,
                     &module.path,
                 ),
                 Some(_) => self.finding(
-                    Code::InvalidValue { text },
+                    Code::from(codes::PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE.with(args)),
                     Severity::Error,
                     &module.path.child("entry"),
                 ),
@@ -570,11 +563,7 @@ impl<'a> Run<'a> {
                 continue;
             };
             self.finding(
-                Code::DeprecatedMember {
-                    text: Some(VanillaText::PluginDependencyByUuid {
-                        plugin: self.plugin_name.clone(),
-                    }),
-                },
+                Code::from(codes::PLUGIN_DEPENDENCY_BY_UUID.with([self.plugin_name.clone()])),
                 Severity::Warning,
                 &dependency.path,
             );
@@ -593,12 +582,9 @@ impl<'a> Run<'a> {
         let main_found = files.contains(&main);
         if !main_found {
             self.finding(
-                Code::UnresolvedReference {
-                    text: Some(VanillaText::PluginMissingMainFile {
-                        plugin: self.plugin_name.clone(),
-                        main: main.clone(),
-                    }),
-                },
+                Code::from(
+                    codes::PLUGIN_MISSING_MAIN_FILE.with([self.plugin_name.clone(), main.clone()]),
+                ),
                 Severity::Error,
                 &module.path.child("entry"),
             );
@@ -636,7 +622,7 @@ impl<'a> Run<'a> {
                         // The game drops a rejected optional dependency without a log
                         // line.
                         self.finding(
-                            Code::DroppedField { text: None },
+                            Code::from(&core_codes::DROPPED_FIELD),
                             Severity::Info,
                             &dependency.path,
                         );
@@ -651,13 +637,11 @@ impl<'a> Run<'a> {
                 // The game accepts the name here and fails later, when it creates the
                 // context; the crate reports it with the dependency.
                 self.finding(
-                    Code::UnresolvedReference {
-                        text: Some(VanillaText::PluginUnknownModule {
-                            plugin: self.module.pack_name.clone(),
-                            module: self.plugin_name.clone(),
-                            dependency: name.to_owned(),
-                        }),
-                    },
+                    Code::from(codes::PLUGIN_UNKNOWN_MODULE.with([
+                        self.module.pack_name.clone(),
+                        self.plugin_name.clone(),
+                        name.to_string(),
+                    ])),
                     Severity::Error,
                     &dependency.path,
                 );
@@ -667,7 +651,7 @@ impl<'a> Run<'a> {
             if version.pre == "alpha" {
                 // The game lets an `alpha` selector through every gate.
                 self.finding(
-                    Code::ScriptAlphaDependency,
+                    Code::from(&core_codes::SCRIPT_ALPHA_DEPENDENCY),
                     Severity::Info,
                     &dependency.path,
                 );
@@ -691,45 +675,36 @@ impl<'a> Run<'a> {
         let dependency = format!("{name} - {version}");
         if name.starts_with(EDITOR_MODULES) && !cx.editor_world {
             // The editor modules are dropped from a world that is no editor world.
-            return Gate::Drop(Code::DroppedField {
-                text: Some(VanillaText::PluginNotEditorWorld {
-                    plugin,
-                    module: name.to_owned(),
-                }),
-            });
+            return Gate::Drop(Code::from(
+                codes::PLUGIN_NOT_EDITOR_WORLD.with([plugin.clone(), name.to_string()]),
+            ));
         }
         // A pack bundled with the game skips the next three gates.
         let gated = !cx.is_package_origin;
         if gated && !cx.beta_apis && name == GAMETEST_MODULE {
             // `server-gametest` needs the Beta APIs toggle at every version.
-            return Gate::Reject(Code::MissingToggles {
-                text: Some(VanillaText::PluginBetaApisModule {
-                    plugin,
-                    module: dependency,
-                }),
-            });
+            return Gate::Reject(Code::from(
+                codes::PLUGIN_BETA_APIS_MODULE.with([plugin.clone(), dependency.clone()]),
+            ));
         }
         if gated && !cx.beta_apis && version.is_beta() {
             // A beta version needs the Beta APIs toggle.
-            return Gate::Reject(Code::MissingToggles {
-                text: Some(VanillaText::PluginBetaApis { plugin, dependency }),
-            });
+            return Gate::Reject(Code::from(
+                codes::PLUGIN_BETA_APIS.with([plugin.clone(), dependency.clone()]),
+            ));
         }
         if gated && !cx.allow_internal && version.is_internal() {
             // An internal version is for development builds.
-            return Gate::Reject(Code::ScriptModulePermission {
-                text: Some(VanillaText::PluginInternalApis { plugin, dependency }),
-            });
+            return Gate::Reject(Code::from(
+                codes::PLUGIN_INTERNAL_APIS.with([plugin.clone(), dependency.clone()]),
+            ));
         }
         // The permission list allows the name itself, or every module with its `*`.
         if allowed.is_some_and(|allowed| !allowed.contains(name) && !allowed.contains(WILDCARD)) {
             // The module is not in the server's `allowed_modules`.
-            return Gate::Reject(Code::ScriptModulePermission {
-                text: Some(VanillaText::PluginModuleNotConfigured {
-                    plugin,
-                    module: name.to_owned(),
-                }),
-            });
+            return Gate::Reject(Code::from(
+                codes::PLUGIN_MODULE_NOT_CONFIGURED.with([plugin.clone(), name.to_string()]),
+            ));
         }
         Gate::Allow
     }
@@ -765,13 +740,13 @@ impl<'a> Run<'a> {
                     for entry in promoted {
                         // A request is promoted to the version the context serves.
                         self.finding(
-                            Code::ScriptModulePromoted {
-                                plugin: module.pack_name.clone(),
-                                module: name.to_owned(),
-                                from: entry.version.to_string(),
-                                to: version.to_string(),
-                                requested_by: by.clone(),
-                            },
+                            Code::from(core_codes::SCRIPT_MODULE_PROMOTED.with([
+                                module.pack_name.clone(),
+                                name.to_owned(),
+                                entry.version.to_string(),
+                                version.to_string(),
+                                by.clone(),
+                            ])),
                             Severity::Info,
                             &at(&entry),
                         );
@@ -792,15 +767,17 @@ impl<'a> Run<'a> {
                         } else {
                             at(&earlier)
                         };
+                        // One line per request, a comma between lines and none after the last.
+                        let requests = format!(
+                            "\n [{}] requested by [{}],\n [{}] requested by [{}]",
+                            earlier.version, earlier.by, later.version, later.by
+                        );
                         self.finding(
-                            Code::ScriptModuleVersionConflict {
-                                plugin: module.pack_name.clone(),
-                                module: name.to_owned(),
-                                requests: vec![
-                                    (earlier.version.to_string(), earlier.by),
-                                    (later.version.to_string(), later.by),
-                                ],
-                            },
+                            Code::from(core_codes::SCRIPT_MODULE_VERSION_CONFLICT.with([
+                                module.pack_name.clone(),
+                                name.to_owned(),
+                                requests,
+                            ])),
                             Severity::Error,
                             &place,
                         );
@@ -869,13 +846,11 @@ impl<'a> Run<'a> {
             let Some(entry) = catalog.module(name) else {
                 // The catalog has no such module: the request fails with the module's name.
                 self.finding(
-                    Code::UnresolvedReference {
-                        text: Some(VanillaText::PluginUnknownModule {
-                            plugin: module.pack_name.clone(),
-                            module: by,
-                            dependency: name.to_owned(),
-                        }),
-                    },
+                    Code::from(codes::PLUGIN_UNKNOWN_MODULE.with([
+                        module.pack_name.clone(),
+                        by.clone(),
+                        name.to_string(),
+                    ])),
                     Severity::Error,
                     written
                         .get(&(name, &version))
@@ -936,19 +911,24 @@ impl<'a> Run<'a> {
             .filter(|v| !entry.version.pre.is_empty() && v.version.pre == entry.version.pre)
             .map(|v| &v.version)
             .max()
-            .map(|version| (entry.version.pre.clone(), version.to_string()));
-        Code::ScriptModuleVersionUnavailable {
-            plugin: self.module.pack_name.clone(),
-            module: entry.by.clone(),
-            requested: entry.version.to_string(),
-            dependency: name.to_owned(),
+            .map_or_else(String::new, |version| {
+                format!("\nCurrent [{}] version is [{version}].", entry.version.pre)
+            });
+        let available = versions
+            .iter()
+            .filter(|v| !v.hidden)
+            .fold(String::new(), |mut out, v| {
+                let _ = write!(out, "\n{}", v.version);
+                out
+            });
+        Code::from(core_codes::SCRIPT_MODULE_VERSION_UNAVAILABLE.with([
+            self.module.pack_name.clone(),
+            entry.by.clone(),
+            entry.version.to_string(),
+            name.to_owned(),
             current,
-            available: versions
-                .iter()
-                .filter(|v| !v.hidden)
-                .map(|v| v.version.to_string())
-                .collect(),
-        }
+            available,
+        ]))
     }
 }
 

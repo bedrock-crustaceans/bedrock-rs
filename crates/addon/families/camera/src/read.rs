@@ -2,13 +2,14 @@
 //! shape check, then the bind constraints vanilla's cereal parse checks.
 
 use super::history::v1_19_50;
-use super::{CameraPreset, texts};
+use super::violation;
+use super::{CameraPreset, codes};
 use super::{V1_19_50, V1_26_50};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::chain_file::{self as file, document};
 use bedrock_addon_core::versioning::shape::{
-    Member, Shape, child, element, in_range, namespace_name, opt, req, violation,
+    Member, Shape, child, element, in_range, namespace_name, opt, req,
 };
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
@@ -137,7 +138,7 @@ impl Constrained<'_> {
             ("inherit_from", self.inherit_from),
         ] {
             if id.is_some_and(|id| !id.is_empty() && !namespace_name(id)) {
-                violation(texts::IDENTIFIER, child(at, key), d);
+                violation(&codes::IDENTIFIER, child(at, key), d);
                 passed = false;
             }
         }
@@ -190,7 +191,7 @@ fn horizontal_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool
         return false;
     }
     if limit[0] + limit[1] > 360.0 {
-        violation(texts::VECTOR_TOTAL, at.clone(), d);
+        violation(&codes::VECTOR_TOTAL, at.clone(), d);
         return false;
     }
     true
@@ -205,11 +206,11 @@ fn vertical_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
         reason = "vanilla compares the two components for equality"
     )]
     if x == y {
-        violation(texts::VECTOR_EQUAL, at.clone(), d);
+        violation(&codes::VECTOR_EQUAL, at.clone(), d);
         return false;
     }
     if x >= y {
-        violation(texts::VECTOR_ORDER, at.clone(), d);
+        violation(&codes::VECTOR_ORDER, at.clone(), d);
         return false;
     }
     each_ranged(&limit, (0.0, 180.0), at, d)
@@ -225,7 +226,7 @@ impl VersionStruct for v1_19_50::CameraPreset {
             text,
             &Shape::Object(members),
             Some("minecraft:camera_preset"),
-            texts::UNRECOGNIZED_FIELD,
+            codes::UNRECOGNIZED_FIELD.template(),
             cx,
             d,
         )?;
@@ -258,7 +259,7 @@ impl VersionStruct for CameraPreset {
             text,
             &Shape::Object(members),
             Some("minecraft:camera_preset"),
-            texts::UNRECOGNIZED_FIELD,
+            codes::UNRECOGNIZED_FIELD.template(),
             cx,
             d,
         )?;

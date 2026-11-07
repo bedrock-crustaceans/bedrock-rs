@@ -13,13 +13,13 @@ pub mod component;
 /// The older item formats, one struct per format version, and the chain between them.
 pub mod history;
 
+pub mod codes;
 mod deprecated;
 mod expressions;
 mod legacy;
 #[cfg(feature = "nbt")]
 mod network;
 mod read;
-mod texts;
 mod types;
 mod validate;
 pub(crate) mod write;
@@ -38,7 +38,8 @@ pub use legacy::{
 pub use read::loaded_identifier;
 pub use types::{BETA, Beta, Item, ItemDescription, MenuCategoryPresence, ModernItem};
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonDefinition, JsonDocument,
     JsonPlaced, Origin, Registry, RegistryBuilder, Rejected, default_path,
@@ -166,7 +167,8 @@ impl Family for ItemFamily {
                 item.legacy.left_empty_by_the_load = true;
                 let at = cx.at.child("components");
                 cx.diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Info)
                         .at(at)
                         .phase(Phase::Validate)
                         .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
@@ -180,17 +182,23 @@ impl Family for ItemFamily {
                 // says so where it is (an information of the crate's own; the game reads the
                 // older file and says nothing).
                 cx.diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Info)
                         .at(at)
                         .phase(Phase::Validate)
                         .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
-                            texts::NOT_IN_THE_NEWEST_FORMAT,
+                            NOT_IN_THE_NEWEST_FORMAT,
                         )),
                 );
             }
         }
     }
 }
+
+/// A member the strict 1.26.50 format does not bind, held from an older format (the crate's
+/// own text). The newest format refuses a document with such a member, so the item cannot be
+/// written as it is.
+const NOT_IN_THE_NEWEST_FORMAT: &str = "the newest format (1.26.50) does not bind this member and refuses a document with it: the item is written as a 1.26.0 document when that text reads back as the item, else not written";
 
 /// 1.26.30: the first modern slice.
 const FIRST_MODERN_SLICE: FormatVersion = known::V1_26_30;
@@ -259,12 +267,11 @@ fn combine(parsed: Vec<Contribution<Item>>, stack: &StackCx<'_>) -> Registry<Ite
         {
             let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
             builder.push_diagnostic(
-                Diagnostic::warn(DiagnosticCode::ShadowedDefinition {
-                    text: Some(VanillaText::Formatted {
-                        template: texts::OVERRIDDEN_BY_A_HIGHER_PACK,
-                        args: vec![id.as_str().to_owned()],
-                    }),
-                })
+                Diagnostic::warn(
+                    codes::OVERRIDDEN_BY_A_HIGHER_PACK
+                        .with([id.as_str()])
+                        .into(),
+                )
                 .at(path)
                 .phase(Phase::Validate)
                 .in_file(origin),
@@ -304,25 +311,19 @@ fn override_gate(
     // A data-driven item without a vanilla entry, or whose entry is legacy, is refused with
     // the matching text; the game writes no text for a legacy item over a data-driven
     // vanilla entry, so none is given for it.
-    let text = match (vanilla.get(&id).copied(), modern) {
+    let code = match (vanilla.get(&id).copied(), modern) {
         (Some(true), true) | (Some(false), false) => {
             return Contribution::Stable(id, document);
         }
-        (Some(true), false) => VanillaText::ItemVanillaIsComponentBased {
-            identifier,
-            version: written,
-        },
-        (Some(false) | None, true) => VanillaText::ItemVanillaIsLegacy {
-            identifier,
-            version: written,
-        },
-        (None, false) => VanillaText::ItemNonVanillaNamespace { identifier },
+        (Some(true), false) => codes::VANILLA_IS_COMPONENT_BASED.with([identifier, written]),
+        (Some(false) | None, true) => codes::VANILLA_IS_LEGACY.with([identifier, written]),
+        (None, false) => codes::NON_VANILLA_NAMESPACE.with([identifier]),
     };
     let origin = document.origin().clone();
     let mut diagnostics = document.diagnostics().clone();
     let path = JsonPath::new().with(&["minecraft:item", "description", "identifier"]);
     diagnostics.push(
-        Diagnostic::error(DiagnosticCode::NamespaceRule { text: Some(text) })
+        Diagnostic::error(code.into())
             .at(path)
             .phase(Phase::Validate)
             .in_file(&origin),
@@ -431,9 +432,7 @@ impl Content for Beta {
             DocumentRead::Stable(document) => {
                 let origin = document.origin().clone();
                 let mut diagnostics = document.diagnostics().clone();
-                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                    text: None,
-                }));
+                diagnostics.push(Diagnostic::of(&core_codes::UNSUPPORTED_VERSION));
                 Err(Rejected::new(origin, diagnostics))
             }
             DocumentRead::Rejected(_, rejected) => Err(rejected),

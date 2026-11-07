@@ -1,7 +1,7 @@
 //! Both ends of every range and every half of every compound condition of the loot walk
 //! (reviewers mutate each rule; a test here fails for each mutation).
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::document::{Content, Document, UnknownMembers};
 use bedrock_addon_core::json::{EncodeError, Unrepresentable};
 use bedrock_addon_core::load::{Experiment, LoadContext};
@@ -84,7 +84,7 @@ fn nesting_past_the_depth_limit_and_invalid_utf8_are_invalid_tables() {
     for bytes in [deep.as_bytes(), &b"{\"pools\": \"\xFF\"}"[..]] {
         let rejected = LootTable::parse(&table_path(), bytes, &cx()).unwrap_err();
         let error = rejected.diagnostics.first_error().unwrap();
-        assert!(matches!(error.code, DiagnosticCode::MalformedInput { .. }));
+        assert_eq!(error.code.name(), "MalformedInput");
         assert_eq!(
             text(&error.code),
             "Loot table for loot_tables/test.json is invalid."
@@ -410,10 +410,9 @@ fn an_entry_type_is_matched_exactly_and_printed_as_written() {
     );
     assert!(table.pools.as_deref().unwrap()[0].entries().is_empty());
     let found = findings(&table);
-    assert!(found.iter().all(
-        |d| matches!(d.code, DiagnosticCode::InvalidValue { text: Some(_) })
-            && d.severity == Severity::Error
-    ));
+    assert!(found.iter().all(|d| d.code.name() == "InvalidValue"
+        && d.code.vanilla().is_some()
+        && d.severity == Severity::Error));
     let given: Vec<String> = texts(&found)
         .into_iter()
         .map(|t| t.rsplit_once("Given: ").unwrap().1.to_owned())
@@ -521,10 +520,13 @@ fn a_function_name_is_split_at_its_last_colon_and_printed_as_written() {
     assert_eq!(kept[1].namespace.as_deref(), Some(":"));
     assert_eq!(kept[1].function_name(), ":furnace_smelt");
     let found = findings(&table);
-    assert!(found.iter().all(|d| matches!(
-        d.code,
-        DiagnosticCode::UnrecognizedComponent { text: Some(_) }
-    ) && d.severity == Severity::Error));
+    assert!(
+        found
+            .iter()
+            .all(|d| d.code.name() == "UnrecognizedComponent"
+                && d.code.vanilla().is_some()
+                && d.severity == Severity::Error)
+    );
     assert_eq!(
         texts(&found),
         [
@@ -744,10 +746,9 @@ fn a_banner_type_is_a_name_or_0_or_1() {
         ]
     );
     let found = findings(&table);
-    assert!(found.iter().all(
-        |d| matches!(d.code, DiagnosticCode::InvalidValue { text: Some(_) })
-            && d.severity == Severity::Error
-    ));
+    assert!(found.iter().all(|d| d.code.name() == "InvalidValue"
+        && d.code.vanilla().is_some()
+        && d.severity == Severity::Error));
     assert_eq!(
         texts(&found),
         [
@@ -901,12 +902,7 @@ fn a_pattern_without_a_name_is_dropped_with_vanillas_text() {
     let found = findings(&table);
     let unresolved: Vec<_> = found
         .iter()
-        .filter(|d| {
-            matches!(
-                d.code,
-                DiagnosticCode::UnresolvedReference { text: Some(_) }
-            )
-        })
+        .filter(|d| d.code.name() == "UnresolvedReference" && d.code.vanilla().is_some())
         .collect();
     assert_eq!(unresolved.len(), 4);
     assert!(

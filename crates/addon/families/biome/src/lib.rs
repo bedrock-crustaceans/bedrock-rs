@@ -6,10 +6,11 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod component;
 pub mod history;
 mod read;
-mod texts;
+
 mod validate;
 mod write;
 
@@ -32,7 +33,7 @@ pub use validate::blocks as block_references;
 use crate::component::child;
 use crate::history::{BiomeFamily, BiomeHistory};
 use crate::read::CEREAL;
-use crate::texts::{DUPLICATE, WORLD_GATE, fixed, text as formatted};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::borrow::Cow;
 
 use crate::component::{
@@ -43,7 +44,7 @@ use crate::component::{
 };
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, JsonDefinition,
@@ -276,9 +277,7 @@ impl Content for Beta {
                     mut diagnostics,
                     ..
                 } = document;
-                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                    text: None,
-                }));
+                diagnostics.push(Diagnostic::of(&core_codes::UNSUPPORTED_VERSION));
                 Err(Rejected::located(origin, diagnostics))
             }
         }
@@ -346,12 +345,8 @@ pub(crate) fn upgrade_document(
             Ok(Document::new(biome, origin, outcome.version, diagnostics))
         }
         Some(Loaded::Beta(_)) => {
-            let finding = Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: "beta".to_owned(),
-                }),
-            })
-            .in_file(&origin);
+            let finding =
+                Diagnostic::of(core_codes::NO_PARSER_FOR_VERSION.with(["beta"])).in_file(&origin);
             diagnostics.push(finding);
             Err(Rejected::new(origin, diagnostics))
         }
@@ -385,15 +380,8 @@ impl Parts {
 
 /// The text of a file, after the BOM, the UTF-8 and the depth check.
 fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<Cow<'b, str>, Rejected> {
-    let malformed = |message: &str| {
-        reject(
-            origin.clone(),
-            Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: message.to_owned(),
-                text: None,
-            }),
-        )
-    };
+    let malformed =
+        |message: &str| reject(origin.clone(), Diagnostic::of(builders::syntax(message)));
     // `new` never refuses an empty text: that is the chain's to report.
     let text = Prepared::new(bytes)
         .map_err(|error| match error {
@@ -407,13 +395,8 @@ fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<Cow<'b, str>, Rejected> 
 /// The world gate: outside a base-game pack, biomes need a world of base-game version
 /// 1.21.110 or later. A context without the world's version passes.
 fn world_gate(cx: &LoadContext) -> Option<Diagnostic> {
-    (!cx.is_base_game_pack && !cx.world_base_game_version.includes(&WORLD_GATE_VERSION)).then(
-        || {
-            Diagnostic::error(DiagnosticCode::IgnoredFile {
-                text: fixed(WORLD_GATE),
-            })
-        },
-    )
+    (!cx.is_base_game_pack && !cx.world_base_game_version.includes(&WORLD_GATE_VERSION))
+        .then(|| Diagnostic::of(&codes::WORLD_GATE))
 }
 
 /// The parse stage of one file: the world gate, then the chain's `parse_as_written`, with the
@@ -477,14 +460,7 @@ fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
     };
     let mut found = Diagnostics::default();
     for diagnostic in std::mem::take(&mut parsed.diagnostics) {
-        let floor = matches!(
-            diagnostic.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion { .. })
-            }
-        ) || diagnostic
-            .code
-            .is(&bedrock_addon_core::diagnostic::codes::NO_PARSER_FOR_VERSION);
+        let floor = diagnostic.is(&core_codes::NO_PARSER_FOR_VERSION);
         found.push(diagnostic);
         if floor && let Some(hint) = hint(text, written) {
             found.push(Diagnostic::info(hint));
@@ -509,10 +485,7 @@ fn hint(text: &str, version: FormatVersion) -> Option<DiagnosticCode> {
             .as_object()
             .is_some_and(|o| o.get("format_version").is_some())
         {
-            return Some(DiagnosticCode::BiomeFormatHint {
-                version: None,
-                surface_components: false,
-            });
+            return Some(DiagnosticCode::from(&core_codes::BIOME_FORMAT_HINT_LEGACY));
         }
     }
     if version < EXPERIMENTAL_FORMATS {
@@ -530,10 +503,12 @@ fn hint(text: &str, version: FormatVersion) -> Option<DiagnosticCode> {
                     || (key.starts_with("minecraft:") && key.ends_with("_surface"))
             })
         });
-    Some(DiagnosticCode::BiomeFormatHint {
-        version: Some(version),
-        surface_components,
-    })
+    let hint = if surface_components {
+        &core_codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
+    } else {
+        &core_codes::BIOME_FORMAT_HINT_EXPERIMENTAL
+    };
+    Some(hint.with([version.to_string()]).into())
 }
 
 /// A rejection with one finding.
@@ -591,15 +566,13 @@ fn combine(parsed: Vec<Contribution<Biome>>, stack: &StackCx<'_>) -> Registry<Bi
             let dropped = top.get(id).is_some_and(|&r| rank(&origin.pack) > r);
             if dropped && !is_base_game(stack, &origin.pack) {
                 duplicates.push(
-                    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-                        text: formatted(DUPLICATE, &[id.as_str()]),
-                    })
-                    .at(child(
-                        &JsonPath::new(),
-                        &["minecraft:biome", "description", "identifier"],
-                    ))
-                    .phase(Phase::Validate)
-                    .in_file(origin),
+                    Diagnostic::of(codes::DUPLICATE.with([id.as_str()]))
+                        .at(child(
+                            &JsonPath::new(),
+                            &["minecraft:biome", "description", "identifier"],
+                        ))
+                        .phase(Phase::Validate)
+                        .in_file(origin),
                 );
             }
         }

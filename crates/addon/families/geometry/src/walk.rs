@@ -3,13 +3,17 @@
 //! is removed and the file loads) and strictly from 1.19.30 (it fails the file). This module holds
 //! the rules of that walk, the legacy geometry-name pattern and the leaves only geometry reads.
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::json::node_tree::{
-    Failure, Lossy, Names, Node, Order, Pattern, Rules, Validation, Walk, text,
+    Failure, Lossy, Names, Node, Order, Pattern, Rules, Validation, Walk,
 };
 
-use crate::texts::{CHILD_REMOVED, INDEX_NOT_WHOLE, UV_TRUNCATED};
+use crate::codes;
+
+/// The crate's own text for a member below 1.19.30 that vanilla removes without a message: the
+/// lenient walk of core's node tree takes it as its text and raises it.
+const CHILD_REMOVED: &str = "child '{}' not valid here (removed; format_version < 1.19.30)";
 
 /// The rules of the game's geometry schemas: names as written, the members in the file's order
 /// (the loader runs `json::last_wins` first), lenient (`lenient`, below 1.19.30) or strict, an
@@ -102,12 +106,9 @@ impl Leaves for Walk {
             if value.fract() != 0.0 {
                 self.enter_index(index);
                 self.push(
-                    DiagnosticCode::InvalidValue {
-                        text: text(
-                            UV_TRUNCATED,
-                            &[&value.to_string(), &value.trunc().to_string()],
-                        ),
-                    },
+                    codes::UV_TRUNCATED
+                        .with([value.to_string(), value.trunc().to_string()])
+                        .into(),
                     Severity::Info,
                     element.span(),
                 );
@@ -151,9 +152,9 @@ impl Leaves for Walk {
             // The crate's own information either way.
             self.enter_index(index);
             self.push(
-                DiagnosticCode::InvalidValue {
-                    text: text(INDEX_NOT_WHOLE, &[&given.to_string(), &value.to_string()]),
-                },
+                codes::INDEX_NOT_WHOLE
+                    .with([given.to_string(), value.to_string()])
+                    .into(),
                 Severity::Info,
                 element.span(),
             );

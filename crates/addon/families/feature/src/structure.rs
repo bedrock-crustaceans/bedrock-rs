@@ -5,11 +5,12 @@ use facet::Facet;
 
 use super::Description;
 use super::Rules;
+use super::codes;
 use super::molang::walk;
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::JsonInt;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::{FormatVersion, known};
@@ -187,10 +188,7 @@ pub enum Surface {
 
 /// The client's text for an unknown `surface`, at every format (the backticks around `wall`
 /// are the game's).
-pub(crate) const SNAP_SURFACE: (&str, &str) = (
-    "surface",
-    "Bad value for surface - should be 'ceiling', 'floor', 'random_horizontal', or `wall`",
-);
+pub(crate) static SNAP_SURFACE: (&str, &CodeDef<0>) = ("surface", &codes::SNAP_SURFACE);
 
 // ---- version structs, Molang walk, rules -------------------------------------------------------
 
@@ -278,14 +276,6 @@ impl Rules for StructureTemplateFeature {
     }
 }
 
-/// "The max values of the Bounding Box must be greater than the min Values."
-const BOUNDING_BOX: &str =
-    "The max values of the Bounding Box must be greater than the min Values.";
-/// "Ragged Factor values must be [0,1] and min must be less than max."
-const RAGGED_RANGE: &str = "Ragged Factor values must be [0,1] and min must be less than max.";
-/// "Ragged Factor min must be leess than max" (sic).
-const RAGGED_ORDER: &str = "Ragged Factor min must be leess than max";
-
 impl Rules for BeardsAndShaversFeature {
     fn rules(&mut self, check: &mut ValidateCx<'_>) {
         check.check_len(
@@ -309,25 +299,23 @@ impl Rules for BeardsAndShaversFeature {
             .zip(&self.bounding_box_max)
             .any(|(min, max)| max <= min);
         if below {
-            check.kept("bounding_box_max", setter(BOUNDING_BOX));
+            check.kept("bounding_box_max", setter(&codes::BOUNDING_BOX));
         }
         let unit = |v: Option<f32>| v.is_none_or(|v| (0.0..=1.0).contains(&v));
         if !unit(self.beard_raggedness_min) || !unit(self.beard_raggedness_max) {
-            check.kept("beard_raggedness_min", setter(RAGGED_RANGE));
+            check.kept("beard_raggedness_min", setter(&codes::RAGGED_RANGE));
         } else if let (Some(min), Some(max)) =
             (self.beard_raggedness_min, self.beard_raggedness_max)
             && min >= max
         {
-            check.kept("beard_raggedness_min", setter(RAGGED_ORDER));
+            check.kept("beard_raggedness_min", setter(&codes::RAGGED_ORDER));
         }
     }
 }
 
-/// A setter's message as an `InvalidValue`.
-fn setter(text: &'static str) -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: Some(VanillaText::Fixed(text)),
-    }
+/// A setter's message.
+fn setter(code: &'static CodeDef<0>) -> DiagnosticCode {
+    DiagnosticCode::from(code)
 }
 
 impl Rules for SnapToSurfaceFeature {

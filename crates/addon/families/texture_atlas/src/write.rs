@@ -37,10 +37,9 @@ impl Content for TextureAtlas {
             let read = match read_lenient(bytes) {
                 Ok(read) => read,
                 Err(message) => {
-                    let code = DiagnosticCode::MalformedInput {
-                        message: message.to_string(),
-                        text: None,
-                    };
+                    let code = DiagnosticCode::from(
+                        bedrock_addon_core::diagnostic::builders::syntax(message.to_string()),
+                    );
                     diagnostics.push(Diagnostic::error(code).in_file(&origin));
                     return Err(unversioned::rejected(origin, diagnostics));
                 }

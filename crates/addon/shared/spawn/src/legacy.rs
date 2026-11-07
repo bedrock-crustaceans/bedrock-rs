@@ -4,13 +4,13 @@
 
 use facet_value::{VArray, VObject};
 
+use super::codes;
 use super::condition::{
     self, Condition, OneOrMany, Profile, ReadCx, members, put_extra, read_condition,
 };
-use super::read::{self, child, element, finding, wrong_type};
-use super::texts;
+use super::read::{self, child, element, finding, finding_with, wrong_type};
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -105,12 +105,8 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
     let root = match bedrock_addon_core::json::from_str_jsonc::<Value>(document.text) {
         Ok(root) => root,
         Err(error) => {
-            finding(
-                DiagnosticCode::MalformedInput {
-                    message: error.to_string(),
-                    text: None,
-                },
-                Severity::Error,
+            finding_with(
+                Diagnostic::of(builders::syntax(error.to_string())),
                 &JsonPath::new(),
                 d,
             );
@@ -118,12 +114,10 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
         }
     };
     let Some(root) = root.as_object() else {
-        finding(
-            DiagnosticCode::MalformedInput {
-                message: "the root is not an object".to_owned(),
-                text: Some(VanillaText::Fixed(texts::NOT_AN_OBJECT)),
-            },
-            Severity::Error,
+        finding_with(
+            Diagnostic::of(&codes::NOT_AN_OBJECT).detail(DiagnosticDetail::Syntax(
+                "the root is not an object".to_owned(),
+            )),
             &JsonPath::new(),
             d,
         );
@@ -144,11 +138,10 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
         .and_then(Value::as_string)
         .map(|s| s.as_str().to_owned());
     let Some(identifier) = identifier else {
-        let text = Some(VanillaText::Fixed(texts::MISSING_IDENTIFIER));
         if flavor == Flavor::Groups && payload.is_none() {
             // The payload key is absent, with vanilla's text.
             finding(
-                DiagnosticCode::MissingPayload { text },
+                DiagnosticCode::from(&codes::MISSING_IDENTIFIER_PAYLOAD),
                 Severity::Error,
                 &JsonPath::new(),
                 d,
@@ -157,7 +150,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
             let mut path = child(&at, "description");
             path.push("identifier");
             finding(
-                DiagnosticCode::MissingRequiredField { text },
+                DiagnosticCode::from(&codes::MISSING_IDENTIFIER),
                 Severity::Error,
                 &path,
                 d,
@@ -215,7 +208,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
                 // Not an array: vanilla ends the parse with no conditions and no message. For
                 // spawn rules the crate warns; a spawn group gets the `EmptyDocument` warning.
                 if flavor == Flavor::Rules && !value.is_null() {
-                    wrong_type(&conditions_at, None, d);
+                    wrong_type(&conditions_at, d);
                 }
                 None
             }

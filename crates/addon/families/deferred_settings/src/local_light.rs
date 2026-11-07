@@ -62,6 +62,7 @@ super::defaults! {
 mod codec {
     //! Reading and writing `minecraft:local_light_settings`.
 
+    use bedrock_addon_core::diagnostic::codes as core_codes;
     use indexmap::map::Entry;
 
     use super::{LightType, LocalLight, LocalLightSettings};
@@ -117,7 +118,7 @@ mod codec {
                     }
                     Entry::Occupied(mut entry) => {
                         d.push(node.finding(
-                            DiagnosticCode::DuplicateIdentifier { text: None },
+                            DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
                             Severity::Info,
                         ));
                         entry.insert(light);

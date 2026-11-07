@@ -2,6 +2,7 @@
 //! `Upgrade::upgrade` on `upgrade/<name>.before.json` and compares the written result with
 //! `<name>.after.json`, then checks the findings by code (and text where the row quotes it).
 
+use bedrock_addon::diagnostic::codes;
 use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon::families::block::history::{
     v1_16_0, v1_16_100, v1_18_0, v1_19_10, v1_19_20, v1_19_30, v1_19_40, v1_19_80, v1_20_10,
@@ -189,12 +190,7 @@ fn absorption_input_check() {
 fn s02_1_18_0_unwrap_all() {
     let d = compare::<v1_18_0::Block>("s02_1_18_0_unwrap_all", &context());
     assert!(
-        has(
-            &d,
-            |c| matches!(c, DiagnosticCode::DroppedField { text: None }),
-            Severity::Info,
-            ""
-        ),
+        has(&d, |c| c.is(&codes::DROPPED_FIELD), Severity::Info, ""),
         "{d:#?}"
     );
     // The unwrap's text is its own, not the collision upgrade's.
@@ -445,7 +441,15 @@ fn states_gate() {
 #[test]
 fn s06_1_19_40_rotation_part_visibility() {
     let d = compare::<v1_19_40::Block>("s06_1_19_40_rotation_part_visibility", &context());
-    assert!(d.iter().any(|f| matches!(&f.code, DiagnosticCode::DuplicateComponentVersion { old, new } if old == "minecraft:rotation" && new == "minecraft:transformation")), "{d:#?}");
+    assert!(
+        d.iter().any(|f| f
+            .code
+            .args_of(&codes::DUPLICATE_COMPONENT_VERSION)
+            .is_some_and(
+                |args| args[0] == "minecraft:rotation" && args[1] == "minecraft:transformation"
+            )),
+        "{d:#?}"
+    );
     assert!(has(
         &d,
         // By legacy name: the variant and the definitions that were it.
@@ -679,14 +683,12 @@ fn events_without_requirement() {
         &context(),
     );
     assert!(
-        d.iter().any(
-            |f| matches!(f.code, DiagnosticCode::MissingToggles { text: None })
-                && f.severity == Severity::Error
-                && f.location
-                    .json_path
-                    .to_string()
-                    .ends_with("components/minecraft:breathability")
-        ),
+        d.iter().any(|f| f.code.is(&codes::MISSING_TOGGLES)
+            && f.severity == Severity::Error
+            && f.location
+                .json_path
+                .to_string()
+                .ends_with("components/minecraft:breathability")),
         "{d:#?}"
     );
     let d = &d;

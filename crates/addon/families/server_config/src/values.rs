@@ -1,16 +1,14 @@
 //! Reading `variables.json` (name → any JSON) and `secrets.json` (name → string).
 
+use crate::codes;
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::Value;
 
 use super::SecretString;
 use super::read::{Sink, Twice, object, span, string, value, with_root};
-
-/// The server's text for a secret that is not a string, which it logs as a warning.
-pub(super) const SECRET_NOT_A_STRING: &str =
-    "Secret '{}' in file '{}' is not a string. Secrets can only be strings.";
 
 /// Reads one `variables.json`: every member, with whatever value it has. A root that is not
 /// an object gives no variables.
@@ -20,7 +18,11 @@ pub(super) fn variables(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, V
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server.
-            sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(root));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at,
+                span(root),
+            );
             return;
         };
         variables.reserve(members.len());
@@ -45,7 +47,11 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server. The sink keeps the span out.
-            sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(root));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at,
+                span(root),
+            );
             return;
         };
         secrets.reserve(members.len());
@@ -63,11 +69,11 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
         }
         skipped.sort_unstable_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         for (name, span) in skipped {
-            let text = Some(VanillaText::Formatted {
-                template: SECRET_NOT_A_STRING,
-                args: vec![name.to_owned(), sink.name.clone()],
-            });
-            sink.warn_logged(DiagnosticCode::InvalidType { text }, at.child(name), span);
+            sink.warn_logged(
+                DiagnosticCode::from(codes::SECRET_NOT_A_STRING.with([name, sink.name.as_str()])),
+                at.child(name),
+                span,
+            );
         }
     });
     secrets

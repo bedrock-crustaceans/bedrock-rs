@@ -3,9 +3,10 @@
 //! document a parsed file becomes.
 
 use super::types::{ParticleEffect, SoundEffect};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics};
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, PARSE_ERROR, Walk, text};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Walk};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
 };
@@ -33,10 +34,10 @@ pub struct Parsed<T> {
 /// not UTF-8, or is not valid JSON.
 pub fn text_of(bytes: &[u8]) -> Result<&str, Box<Diagnostic>> {
     let malformed = |message: String| {
-        Box::new(Diagnostic::error(DiagnosticCode::MalformedInput {
-            text: text(PARSE_ERROR, &[&message]),
-            message,
-        }))
+        Box::new(
+            Diagnostic::of(core_codes::PARSE_ERROR.with([message.as_str()]))
+                .detail(DiagnosticDetail::Syntax(message)),
+        )
     };
     let bytes = strip_bom(bytes);
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("nesting too deep".to_owned()))?;

@@ -26,9 +26,9 @@ pub use discover::{
 };
 pub use version::ScriptVersion;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode as Code, Diagnostics, JsonPath, Location, Phase, Severity,
-    VanillaText,
 };
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
@@ -287,7 +287,7 @@ impl ScriptModule {
             if legacy && native.has_optional {
                 // The legacy manifest parser has no `optional` key, so it ignores the member.
                 finding(
-                    Code::IgnoredMember { text: None },
+                    Code::from(&core_codes::IGNORED_MEMBER),
                     Severity::Info,
                     &native.at,
                     "optional",
@@ -300,12 +300,7 @@ impl ScriptModule {
                     // version it is left with (the same line it prints for `"abc"`).
                     refused = true;
                     finding(
-                        Code::MalformedPropertyVersion {
-                            text: Some(VanillaText::DependencyInvalidVersion {
-                                module: name.to_owned(),
-                                version: "0.0.0".to_owned(),
-                            }),
-                        },
+                        Code::from(core_codes::DEPENDENCY_INVALID_VERSION.with([name, "0.0.0"])),
                         Severity::Error,
                         &native.at,
                         "version",
@@ -315,9 +310,10 @@ impl ScriptModule {
                     // claims an older one: the game writes no line for this, so it is the
                     // crate's own lint, an information.
                     finding(
-                        Code::FieldSinceEngine {
-                            since: RELAXED_VERSION_SINCE,
-                        },
+                        Code::from(
+                            core_codes::FIELD_SINCE_ENGINE
+                                .with([RELAXED_VERSION_SINCE.to_string()]),
+                        ),
                         Severity::Info,
                         &native.at,
                         "version",

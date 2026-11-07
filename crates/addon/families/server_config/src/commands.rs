@@ -1,19 +1,13 @@
 //! Reading `config/commands.json` (the server's `commands` schema): unknown members are accepted, an invalid level name refuses the whole file,
 //! and of a member written twice the first stands.
 
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, Span};
 use bedrock_addon_core::json::JsonSlice;
 
 use super::read::{Sink, Twice, object, span, string, value, with_root};
 use super::{COMMANDS_FILE, CommandPermissionLevel, CommandsConfig, UnreadableFile};
-
-/// The two lines the server prints for a syntax error; `{}` is the file.
-pub(super) const MALFORMED: &str = "Failed to parse JSON in file '{}'\n:  malformed input";
-/// The two lines the server prints for a level name it does not know; `{}` are the file,
-/// the member and the value found.
-pub(super) const BAD_LEVEL: &str = "Failed to parse JSON in file '{}'\n -> {}:  This value is bound to 'command_permission_level' and expects one of the following strings: 'any', 'game_directors', 'admin', ... (3 others). Found: '{}'";
 
 const DEFAULT_PERMISSION_LEVEL: &str = "default_permission_level";
 const PERMISSION_LEVELS: &str = "permission_levels";
@@ -41,7 +35,7 @@ pub(super) fn read(
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             sink.push(
-                DiagnosticCode::InvalidType { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
                 Severity::Error,
                 at,
                 span(root),
@@ -65,7 +59,7 @@ pub(super) fn read(
                 _ => {
                     // Accepted silently by the server.
                     sink.info(
-                        DiagnosticCode::UnrecognizedField { text: None },
+                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                         here.clone(),
                         span(slice),
                     );
@@ -101,7 +95,7 @@ fn levels(
 ) -> bool {
     let Some(members) = object(slice) else {
         sink.push(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             at.clone(),
             span(slice),
@@ -143,7 +137,7 @@ fn level(
 ) -> Option<CommandPermissionLevel> {
     let Some(name) = string(slice) else {
         sink.push(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Severity::Error,
             at,
             span(slice),
@@ -152,16 +146,13 @@ fn level(
     };
     let level = CommandPermissionLevel::from_name(&name);
     if level.is_none() {
-        let text = root.then(|| VanillaText::Formatted {
-            template: BAD_LEVEL,
-            args: vec![sink.name.clone(), member_name(&at), name],
-        });
-        sink.push(
-            DiagnosticCode::InvalidEnumValue { text },
-            Severity::Error,
-            at,
-            span(slice),
-        );
+        // Only the root's member carries the server's line.
+        let code = if root {
+            DiagnosticCode::from(codes::BAD_LEVEL.with([sink.name.clone(), member_name(&at), name]))
+        } else {
+            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE)
+        };
+        sink.push(code, Severity::Error, at, span(slice));
     }
     level
 }

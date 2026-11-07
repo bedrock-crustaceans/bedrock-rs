@@ -8,10 +8,12 @@
 //! in the game's own entity files) and the game runs those entities, so it tolerates the miss and says
 //! nothing. An unknown filter test is the warning the game logs.
 
+use crate::codes;
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::Filter;
@@ -135,10 +137,6 @@ const FILTER_GROUP_KEYS: [&str; 8] = [
     "all_of", "all", "AND", "any_of", "any", "OR", "none_of", "NOT",
 ];
 
-/// Vanilla's text for a member of the older filter form that it maps to no test.
-// The game logs this text for a legacy filter member it cannot map.
-const INVALID_FILTER_MEMBER: &str = "Invalid EntityFilterGroup member found: {}";
-
 /// The key a suffixed generic goal (`minecraft:memory_behavior.move_to_position.<name>`) has
 /// in [`TRIGGERS`].
 const GENERIC_GOAL: &str = "minecraft:memory_behavior.move_to_position";
@@ -177,7 +175,7 @@ pub(crate) fn check(entity: &Entity, cx: &mut ValidateCx<'_>) {
 /// A reference of the entity to itself that names nothing, at `at`.
 fn unresolved(cx: &mut ValidateCx<'_>, at: JsonPath) {
     cx.diagnostics.push(
-        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
             .at(at)
             .phase(Phase::Validate),
     );
@@ -342,7 +340,6 @@ fn components(
 /// `EntityFilterGroup` member found", a warning at the member. The members of a test object
 /// are the shared check's.
 fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
-    use bedrock_addon_core::diagnostic::VanillaText;
     let mut pending = vec![(at.clone(), filters)];
     while let Some((at, filter)) = pending.pop() {
         if let Some(list) = filter.as_array() {
@@ -370,13 +367,8 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
                 // error. Whether the trigger itself survives is not observable, so the
                 // document keeps it.
                 cx.diagnostics.push_kept_error(
-                    Diagnostic::error(DiagnosticCode::UnrecognizedField {
-                        text: Some(VanillaText::Formatted {
-                            template: INVALID_FILTER_MEMBER,
-                            args: vec![key.to_owned()],
-                        }),
-                    })
-                    .at(at.child(key)),
+                    Diagnostic::error(codes::INVALID_FILTER_MEMBER.with([key]).into())
+                        .at(at.child(key)),
                 );
             }
         }

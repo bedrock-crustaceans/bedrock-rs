@@ -2,6 +2,7 @@
 //! history path; and values built in code.
 
 use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
@@ -143,12 +144,7 @@ fn k107_a_blob_written_under_its_deprecated_name_is_announced_at_the_member_of_t
             .filter(|f| f.code.name() == "ValueRewritten")
             .map(|f| {
                 assert!(
-                    matches!(
-                        f.code,
-                        bedrock_addon_core::diagnostic::DiagnosticCode::ValueRewritten {
-                            text: None
-                        }
-                    ),
+                    f.is(&core_codes::VALUE_REWRITTEN),
                     "a finding of ours has no text of the game's: {:?}",
                     f.code
                 );

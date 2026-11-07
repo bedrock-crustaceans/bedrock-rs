@@ -1,7 +1,10 @@
 //! Format 1.19.30: `display_name` is a literal or a localisation key.
 
-use super::legacy::{BlockPayload, string, text};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use super::legacy::{BlockPayload, string};
+use crate::codes;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
@@ -53,14 +56,9 @@ impl LegacyStep<1, 19, 30> for BlockPayload {
                         // The game logs this at the content log's error level and the value
                         // becomes `none`: a kept error.
                         cx.diagnostics.push_kept_error(
-                            Diagnostic::error(DiagnosticCode::InvalidValue {
-                                text: text(
-                                    "Block Menu Category should not have an empty value",
-                                    &[],
-                                ),
-                            })
-                            .at(at.clone())
-                            .phase(Phase::Upgrade),
+                            Diagnostic::of(&codes::MENU_CATEGORY_EMPTY)
+                                .at(at.clone())
+                                .phase(Phase::Upgrade),
                         );
                         (Some("none".to_owned()), true)
                     }
@@ -70,7 +68,8 @@ impl LegacyStep<1, 19, 30> for BlockPayload {
                         // `none`, hidden; each with no log. The game's own conversion of a
                         // category the format does not have any more: a note where the file has it.
                         cx.diagnostics.push(
-                            Diagnostic::info(DiagnosticCode::DeprecatedMember { text: None })
+                            Diagnostic::of(&core_codes::DEPRECATED_MEMBER)
+                                .severity(Severity::Info)
                                 .at(at.clone())
                                 .phase(Phase::Upgrade),
                         );
@@ -81,14 +80,9 @@ impl LegacyStep<1, 19, 30> for BlockPayload {
                         // The game logs this at the content log's error level and the value
                         // becomes `none`: a kept error.
                         cx.diagnostics.push_kept_error(
-                            Diagnostic::error(DiagnosticCode::InvalidValue {
-                                text: text(
-                                    "Block Menu Category has an invalid value of {}",
-                                    &[written],
-                                ),
-                            })
-                            .at(at.clone())
-                            .phase(Phase::Upgrade),
+                            Diagnostic::of(codes::MENU_CATEGORY_INVALID.with([written]))
+                                .at(at.clone())
+                                .phase(Phase::Upgrade),
                         );
                         (Some("none".to_owned()), true)
                     }

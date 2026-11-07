@@ -1,8 +1,10 @@
 //! Golden values of the crate's finding helpers, each built by hand the long way
 //! (`Diagnostic::new`): the helpers are written over core's builder and must give exactly these.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Kind, Location, Phase,
+    Severity,
 };
 
 fn at() -> JsonPath {
@@ -10,7 +12,7 @@ fn at() -> JsonPath {
 }
 
 fn code() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue { text: None }
+    DiagnosticCode::from(&core_codes::INVALID_VALUE)
 }
 
 /// The finding of `code` the long way.
@@ -31,13 +33,14 @@ fn same(left: &Diagnostic, right: &Diagnostic) {
 
 #[test]
 fn the_closing_line_and_the_load_error() {
-    let fixed = |text: &'static str| DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed(text)),
-    };
+    // A definition of the test's own: a closing line is a family's.
+    static CLOSING: CodeDef<0> =
+        CodeDef::new("spawn/closing", Kind::Closing, Class::Error, "closing")
+            .was("DocumentRejected");
     same(
-        &crate::load::closing("closing"),
+        &crate::load::closing(&CLOSING),
         &Diagnostic::new(
-            fixed("closing"),
+            DiagnosticCode::from(&CLOSING),
             Severity::Error,
             Phase::Validate,
             Location::default(),

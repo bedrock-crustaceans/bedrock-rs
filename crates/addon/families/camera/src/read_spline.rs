@@ -1,12 +1,13 @@
 //! Reading and writing camera spline files.
 
 use super::read::VEC3;
-use super::{CameraSpline, Spline, texts};
+use super::violation;
+use super::{CameraSpline, Spline, codes};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::shape::{
-    self, Member, Shape, child, element, namespace_name, opt, req, violation,
+    self, Member, Shape, child, element, namespace_name, opt, req,
 };
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 
@@ -63,7 +64,7 @@ fn spline_types(payload: &Value, at: &JsonPath, d: &mut Diagnostics) -> bool {
             .and_then(Value::as_string);
         if written.is_some_and(|name| !matches!(name.as_str(), "catmullrom" | "linear")) {
             let at = child(&element(&child(at, "splines"), i), "spline_type");
-            violation(texts::SPLINE_TYPE, at, d);
+            violation(&codes::SPLINE_TYPE, at, d);
             passed = false;
         }
     }
@@ -75,22 +76,22 @@ impl Spline {
     fn check(&self, at: &JsonPath, d: &mut Diagnostics) -> bool {
         let mut passed = true;
         if !namespace_name(&self.name) {
-            violation(texts::SPLINE_NAME, child(at, "name"), d);
+            violation(&codes::SPLINE_NAME, child(at, "name"), d);
             passed = false;
         }
         if self.total_time < 0.0 {
-            violation(texts::SPLINE_TOTAL_TIME, child(at, "total_time"), d);
+            violation(&codes::SPLINE_TOTAL_TIME, child(at, "total_time"), d);
             passed = false;
         }
         let frames = child(at, "progress_key_frames");
         for (i, frame) in self.progress_key_frames.iter().enumerate() {
             let at = element(&frames, i);
             if !(0.0..=1.0).contains(&frame.progress) {
-                violation(texts::SPLINE_PROGRESS, child(&at, "progress"), d);
+                violation(&codes::SPLINE_PROGRESS, child(&at, "progress"), d);
                 passed = false;
             }
             if frame.time < 0.0 {
-                violation(texts::SPLINE_PROGRESS_TIME, child(&at, "time"), d);
+                violation(&codes::SPLINE_PROGRESS_TIME, child(&at, "time"), d);
                 passed = false;
             }
         }
@@ -98,7 +99,7 @@ impl Spline {
         for (i, frame) in self.rotation_key_frames.iter().enumerate() {
             if frame.time < 0.0 {
                 let at = child(&element(&frames, i), "time");
-                violation(texts::SPLINE_ROTATION_TIME, at, d);
+                violation(&codes::SPLINE_ROTATION_TIME, at, d);
                 passed = false;
             }
         }

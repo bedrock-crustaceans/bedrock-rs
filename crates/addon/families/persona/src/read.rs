@@ -12,14 +12,15 @@
 //! A store-info file is read by the client's own JSON code: there `null` is absent and every
 //! finding is an information (the game says nothing).
 
+use super::codes;
 use super::names::{Named, Written};
-use super::text::{self, vanilla};
 use super::{
     AnimationSource, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceStoreInfo, PieceType,
     TextureSource, TintColor, TintColorOrString, Zones,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::kit::{Disposition, Node, Read};
@@ -80,8 +81,11 @@ pub(super) fn read_root(bytes: &[u8], findings: &mut Vec<Diagnostic>) -> Result<
     // with an information of the crate's own (the game's reader holds the infinity in
     // silence).
     for clamped in bedrock_addon_core::json::clamp_non_finite(&mut root, None) {
-        findings
-            .push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(clamped.path));
+        findings.push(
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(clamped.path),
+        );
     }
     Ok(root)
 }
@@ -298,7 +302,10 @@ impl Reader {
         if !color.as_str().is_empty() && !color.is_well_formed() {
             // The game reads what is there and logs nothing: an information of the
             // crate's own.
-            self.report(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+            self.report(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            );
         }
         Ok(color)
     }
@@ -333,7 +340,7 @@ impl Reader {
     fn no_texture(&mut self) {
         // The builder skips the entry in silence: an information of the crate's own.
         self.report(
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Info,
         );
     }
@@ -535,7 +542,7 @@ impl Reader {
         if meta.animation_sources.is_some() && meta.piece_type() != PieceType::Emote {
             self.report_at(
                 "animation_sources",
-                DiagnosticCode::IgnoredMember { text: None },
+                DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
                 Severity::Info,
             );
         }
@@ -553,23 +560,18 @@ impl Reader {
             }
             // A type that is no arm or leg has the game's text; an arm or leg with a side it
             // does not take is skipped in silence and has none.
-            let text = if piece_type.is_arm_or_leg() {
-                None
+            let code = if piece_type.is_arm_or_leg() {
+                DiagnosticCode::from(&core_codes::INVALID_VALUE)
             } else {
-                vanilla(
-                    text::SIDE_NOT_ARM_OR_LEG,
-                    [piece_type.name(), side.as_str()],
-                )
+                codes::SIDE_NOT_ARM_OR_LEG
+                    .with([piece_type.name(), side.as_str()])
+                    .into()
             };
             self.at.push("geometry_sources");
             self.at.push_index(index);
             // The game's text is not a content-log line (it goes to the error display only),
             // and the other case has no text at all. Both are informations of the crate's own.
-            self.report_at(
-                "side",
-                DiagnosticCode::InvalidValue { text },
-                Severity::Info,
-            );
+            self.report_at("side", code, Severity::Info);
             self.at.pop();
             self.at.pop();
         }
@@ -661,7 +663,7 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
     let Some(input) = FormatVersionInput::from_json(version) else {
         refuse(
             reader,
-            DiagnosticCode::MalformedFormatVersion { text: None },
+            DiagnosticCode::from(&core_codes::MALFORMED_FORMAT_VERSION),
             at_version,
         );
         return meta;
@@ -670,11 +672,8 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
         || input.version.map(|v| v.to_string()).unwrap_or_default(),
         |text| text.as_str().to_owned(),
     );
-    let unsupported = |written: &str| DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::NoParserForVersion {
-            version: written.to_owned(),
-        }),
-    };
+    let unsupported =
+        |written: &str| DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with([written]));
     let below = input
         .version
         .is_some_and(|v| v < META_VERSION || (input.prerelease && v == META_VERSION));
@@ -684,23 +683,20 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
         return meta;
     }
     if members.len() != 2 {
-        refuse(
-            reader,
-            DiagnosticCode::MalformedInput {
-                message: format!(
+        reader.read().push(
+            Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT)
+                .at(JsonPath::new())
+                .detail(DiagnosticDetail::Syntax(format!(
                     "{} root members, not \"format_version\" and a payload member",
                     members.len()
-                ),
-                text: Some(VanillaText::DocumentMemberCount),
-            },
-            JsonPath::new(),
+                ))),
         );
         return meta;
     }
     let Some(payload) = members.get(ENVELOPE) else {
         refuse(
             reader,
-            DiagnosticCode::MissingPayload { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_PAYLOAD),
             JsonPath::new(),
         );
         return meta;
@@ -756,7 +752,7 @@ pub(super) fn read_store_info(root: &Value, findings: &mut Vec<Diagnostic>) -> P
         if !set && !written_in(&store.extra, key) {
             reader.report_at(
                 key,
-                DiagnosticCode::MissingRequiredField { text: None },
+                DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
                 Severity::Info,
             );
         }

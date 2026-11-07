@@ -12,19 +12,18 @@ pub(crate) use era::{
 use std::borrow::Cow;
 
 use crate::GeometryFile;
+use crate::codes;
 use crate::history::v1_8_0::MAX_FORMAT_VERSION as KEYED_MAXIMUM;
 use crate::history::{GeometryHistory, VERSIONS};
 use crate::molang;
-use crate::texts::{
-    DID_NOT_VALIDATE, EXCEEDS_GAME_VERSION, INTERNAL_BLOCKS_FLOOR, NOT_AN_OBJECT, VERSION_NOT_VALID,
-};
 use crate::validate::{Place, first_bad_identifier, parse_time};
 use crate::walk::rules;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::node_tree::{Kind, Node, PARSE_ERROR, Walk, text};
+use bedrock_addon_core::json::node_tree::{Kind, Node, Walk};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
 };
@@ -49,9 +48,7 @@ fn member(name: &str) -> JsonPath {
 }
 
 fn did_not_validate(diagnostics: &mut Diagnostics) {
-    diagnostics.push(Diagnostic::error(DiagnosticCode::InvalidValue {
-        text: text(DID_NOT_VALIDATE, &[]),
-    }));
+    diagnostics.push(Diagnostic::of(&codes::DID_NOT_VALIDATE));
 }
 
 /// What the envelope of a file gave: the struct of its version, not upgraded.
@@ -78,10 +75,10 @@ pub(crate) enum Outcome<T> {
 /// The file's text after the BOM, the depth check and the JSON syntax check.
 fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a, str>> {
     let mut malformed = |message: String| {
-        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            text: text(PARSE_ERROR, &[&message]),
-            message,
-        }));
+        diagnostics.push(
+            Diagnostic::of(core_codes::PARSE_ERROR.with([message.clone()]))
+                .detail(DiagnosticDetail::Syntax(message)),
+        );
         Outcome::Failed
     };
     // Stripped, not `Prepared`: blanking would shift every span by three, so that switch is
@@ -122,9 +119,8 @@ fn read_version(
         .find_map(|(key, node)| (key == "format_version").then_some(node));
     let Some(node) = node else {
         // The crate's own finding: the game has no text for a missing version here.
-        diagnostics.push(Diagnostic::info(DiagnosticCode::MissingFormatVersion {
-            text: None,
-        }));
+        diagnostics
+            .push(Diagnostic::of(&core_codes::MISSING_FORMAT_VERSION).severity(Severity::Info));
         return (None, DEFAULT_VERSION, "1.0".to_owned());
     };
     let as_written = if node.kind() == Kind::String {
@@ -143,10 +139,8 @@ fn read_version(
     }
     // The crate's own information: the game has no text for this.
     diagnostics.push(
-        Diagnostic::info(DiagnosticCode::MalformedFormatVersion {
-            text: text(VERSION_NOT_VALID, &[&as_written]),
-        })
-        .at(member("format_version")),
+        Diagnostic::of(codes::VERSION_NOT_VALID.with([as_written.clone()]))
+            .at(member("format_version")),
     );
     (None, DEFAULT_VERSION, as_written)
 }
@@ -176,33 +170,26 @@ pub(crate) fn read_written(
         Kind::Null => return Outcome::Empty,
         Kind::Object => {}
         _ => {
-            diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: "the root is not an object".to_owned(),
-                text: text_fixed(NOT_AN_OBJECT),
-            }));
+            diagnostics.push(Diagnostic::of(&codes::NOT_AN_OBJECT).detail(
+                DiagnosticDetail::Syntax("the root is not an object".to_owned()),
+            ));
             return Outcome::Failed;
         }
     }
     let (written, effective, as_written) = read_version(root, diagnostics);
     if effective > cx.engine_version {
         diagnostics.push(
-            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: text(
-                    EXCEEDS_GAME_VERSION,
-                    &[&as_written, &cx.engine_version.to_string()],
-                ),
-            })
+            Diagnostic::of(
+                codes::EXCEEDS_GAME_VERSION
+                    .with([as_written.clone(), cx.engine_version.to_string()]),
+            )
             .at(member("format_version")),
         );
         return Outcome::Failed;
     }
     if place_of(path, cx).requires_minecraft_namespace() && effective < V1_19_30 {
-        diagnostics.push(
-            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: text(INTERNAL_BLOCKS_FLOOR, &[]),
-            })
-            .at(member("format_version")),
-        );
+        diagnostics
+            .push(Diagnostic::of(&codes::INTERNAL_BLOCKS_FLOOR).at(member("format_version")));
         return Outcome::Failed;
     }
     // The keyed door: a file that states a version the keyed layout ended before is read by
@@ -233,15 +220,6 @@ pub(crate) fn read_written(
         effective,
         stated,
     })
-}
-
-/// A vanilla text without arguments.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every code field is an `Option<VanillaText>`"
-)]
-fn text_fixed(template: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(template))
 }
 
 pub(crate) fn place_of(path: &PackPath, cx: &LoadContext) -> Place {
@@ -342,9 +320,7 @@ fn load_as(path: &PackPath, bytes: &[u8], cx: &LoadContext, keyed: bool) -> Load
     match read_written(path, bytes, cx, keyed, &mut diagnostics) {
         Outcome::Empty => {
             // Vanilla skips the file without a message.
-            diagnostics.push(Diagnostic::info(DiagnosticCode::EmptyDocument {
-                text: None,
-            }));
+            diagnostics.push(Diagnostic::of(&core_codes::EMPTY_DOCUMENT));
             Loaded {
                 finished: None,
                 version: unread,

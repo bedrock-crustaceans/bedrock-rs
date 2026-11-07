@@ -1,4 +1,4 @@
-//! Unit tests of the family's own functions: the texts, the `.lang` reader, and the cost of
+//! Unit tests of the family's own functions: the `.lang` reader, and the cost of
 //! each step that walks a pack or a file (on inputs built before the clock starts, at `n`
 //! against four times `n`, by the crate's one protocol: `bedrock_addon_core::test_cost`).
 
@@ -21,25 +21,11 @@ use super::load::{
 };
 use super::piece::PieceGeometry;
 use super::read::{RootError, read_meta, read_root};
-use super::text::{TEMPLATES, lang_entries, vanilla};
+use super::text::lang_entries;
 use super::{BUILTIN_PACK, PersonaPiece, PersonaPieces, PieceSource};
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::test_cost::{assert_each_linear_timed_at, time_of};
 use bedrock_addon_core::version::SemVersion;
-
-#[test]
-fn every_template_takes_the_arguments_it_is_given() {
-    for (template, arguments) in TEMPLATES {
-        assert_eq!(
-            template.matches("{}").count(),
-            *arguments,
-            "{template}: one `{{}}` per argument"
-        );
-        assert!(!template.contains('%'), "{template}: `{{}}`, not printf");
-    }
-    let text = vanilla("a {} b {} c", ["1", "2"]).expect("a text");
-    assert_eq!(text.to_string(), "a 1 b 2 c");
-}
 
 #[test]
 fn a_lang_file_s_keys() {

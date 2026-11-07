@@ -1,7 +1,7 @@
 //! One test per row of the fixtures: the fixture pack loaded through
 //! `scripts()` and compared, part by part, with its expected file.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::script::{Resolution, ScriptPath};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack};
@@ -275,10 +275,13 @@ fn no_import_crosses_packs_in_a_stack_of_three() {
     };
     assert_eq!([errors(0), errors(1), errors(2)], [0, 1, 0]);
     let finding = bundles[1].findings().next().expect("the finding");
-    assert!(matches!(
-        &finding.code,
-        DiagnosticCode::ScriptImportNotFound { specifier, hint: None } if specifier == "lib.js"
-    ));
+    assert_eq!(
+        finding
+            .code
+            .args_of(&bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND),
+        Some(&["lib.js".to_owned()][..])
+    );
+    assert!(finding.detail.is_none());
     assert_eq!(
         finding
             .location

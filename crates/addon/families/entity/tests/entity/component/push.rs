@@ -1,7 +1,7 @@
 //! `apply_knockback_rules` and `pushable_by_entity`, with their older shapes and the
 //! component-side upgrades of and
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::versioning::ConvertMode;
@@ -74,7 +74,7 @@ fn apply_knockback_rules_slowdown_scale_above_one_is_an_error() {
     assert!(value.is_none());
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+        |c| c.name() == "InvalidValue",
         Severity::Error,
         "presets/0/slowdown_scale"
     ));
@@ -88,7 +88,7 @@ fn deviation_apply_knockback_rules_empty_presets_is_an_error() {
     assert!(value.is_none());
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::InvalidValue { .. }),
+        |c| c.name() == "InvalidValue",
         Severity::Error,
         "presets"
     ));
@@ -128,7 +128,7 @@ fn a_floor_knockback_preset_does_not_know_the_1_26_30_members() {
     assert!(floor.is_some());
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        |c| c.name() == "UnrecognizedField",
         Severity::Warning,
         "presets/0/knockback_mode"
     ));
@@ -212,7 +212,7 @@ fn a_1_26_30_pushable_preset_does_not_know_require_collision_overlap() {
     assert!(old.is_some());
     assert!(has(
         &d,
-        |c| matches!(c, DiagnosticCode::UnrecognizedField { .. }),
+        |c| c.name() == "UnrecognizedField",
         Severity::Warning,
         "presets/0/require_collision_overlap"
     ));

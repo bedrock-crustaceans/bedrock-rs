@@ -3,10 +3,10 @@
 
 use indexmap::IndexMap;
 
-use super::texts;
+use super::codes;
 use super::types::TextureSet;
 use super::{locate, payload_at};
-use bedrock_addon_core::diagnostic::texts::fixed;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -57,9 +57,7 @@ pub(super) fn check_layer_images(sets: &mut PackSets, stack_index: usize, files:
                 .is_none()
             {
                 let at = payload_at().child(layer.key());
-                let code = DiagnosticCode::TextureNotFound {
-                    text: fixed(texts::SET_NO_IMAGE),
-                };
+                let code = DiagnosticCode::from(&codes::SET_NO_IMAGE);
                 // The game logs this at the content log's information level; the set is still
                 // replaced by the missing texture.
                 missing.push(Diagnostic::info(code).at(at).phase(Phase::Validate));
@@ -124,7 +122,9 @@ pub(super) fn capability_lints(packs: &[LintPack<'_>], d: &mut Diagnostics) {
             .as_ref()
             .is_some_and(|version| version.version >= PBR_REQUIRED_FROM);
         if !context.is_base_game_pack && from_required && !declares(pack, PBR) {
-            d.push(at_manifest(DiagnosticCode::VibrantVisualsDisabledByPack));
+            d.push(at_manifest(DiagnosticCode::from(
+                &core_codes::VIBRANT_VISUALS_DISABLED_BY_PACK,
+            )));
         }
         let ships_sets = pack
             .files
@@ -133,7 +133,9 @@ pub(super) fn capability_lints(packs: &[LintPack<'_>], d: &mut Diagnostics) {
             .any(|key| key.ends_with(TEXTURE_SET));
         if ships_sets && !any_renderer {
             // The game has no sentence for this lint; the text is core's.
-            d.push(at_manifest(DiagnosticCode::CapabilityHint { text: None }));
+            d.push(at_manifest(DiagnosticCode::from(
+                &core_codes::CAPABILITY_HINT,
+            )));
         }
     }
 }

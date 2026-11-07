@@ -2,16 +2,14 @@
 //! `_buildInheritanceTree`, and the checks and coercions of `Geometry::parse`
 //!.
 
+use super::codes;
 use super::read::{V1_12_0, V1_19_30};
-use super::texts::{
-    BONE_LOWER_CASED, BONE_PARENT_MISSING, BOUNDS_CLAMPED, EMBEDDED_TOO_OLD,
-    NEEDS_MINECRAFT_NAMESPACE, NO_NAMESPACE_CUSTOM, NO_NAMESPACE_INTERNAL, NO_POLYS_SECTION,
-    NOT_QUADS, NOT_TRIANGLES, PARENT_IS_SELF, TRANSFORM_OUT_OF_BOUNDS,
-};
 use super::walk::has_geometry_name;
 use super::{Bone, CubeUv, Geometry, GeometryFile, ItemDisplayTransform, PolyMesh, Polys};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::json::node_tree::text;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity,
+};
 use bedrock_addon_core::version::{FormatVersion, known};
 
 /// From this file version the `embedded` transform is read.
@@ -37,31 +35,27 @@ impl Place {
 
 /// A content-log error of the game's after which the geometry loads: a kept error, an
 /// error-level finding after which the game keeps the document.
-fn kept(diagnostics: &mut Diagnostics, code: DiagnosticCode, at: &JsonPath) {
-    diagnostics.push_kept_error(
-        Diagnostic::error(code)
-            .at(at.clone())
-            .phase(Phase::Validate),
-    );
+fn kept(diagnostics: &mut Diagnostics, code: Code, at: &JsonPath) {
+    diagnostics.push_kept_error(Diagnostic::of(code).at(at.clone()).phase(Phase::Validate));
 }
 
-/// The identifier rule of a file of 1.19.30 or later; the error's text when `identifier` breaks
-/// it.
-fn identifier_error(identifier: &str, place: Place) -> Option<(&'static str, &'static str)> {
+/// The identifier rule of a file of 1.19.30 or later; the error's definition when `identifier`
+/// breaks it.
+fn identifier_error(identifier: &str, place: Place) -> Option<(&'static CodeDef<1>, &'static str)> {
     if place.requires_minecraft_namespace() {
         // `isValidMinecraftNamespaceGeometryIdentifier`: `minecraft:` and a geometry name.
         let valid = identifier
             .strip_prefix("minecraft:")
             .is_some_and(has_geometry_name);
-        return (!valid).then_some((NEEDS_MINECRAFT_NAMESPACE, "minecraft"));
+        return (!valid).then_some((&codes::NEEDS_MINECRAFT_NAMESPACE, "minecraft"));
     }
     if !identifier.contains(':') {
         return None;
     }
     Some(if place.base_game {
-        (NO_NAMESPACE_INTERNAL, "internal")
+        (&codes::NO_NAMESPACE_INTERNAL, "internal")
     } else {
-        (NO_NAMESPACE_CUSTOM, "custom")
+        (&codes::NO_NAMESPACE_CUSTOM, "custom")
     })
 }
 
@@ -79,16 +73,14 @@ pub(crate) fn first_bad_identifier(
         return None;
     }
     file.geometries.iter().enumerate().find_map(|(index, g)| {
-        let (template, _) = identifier_error(&g.description.identifier, place)?;
+        let (def, _) = identifier_error(&g.description.identifier, place)?;
         let at = geometry_path(index)
             .child("description")
             .child("identifier");
         diagnostics.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: text(template, &[&g.description.identifier]),
-            })
-            .at(at.clone())
-            .phase(Phase::Validate),
+            Diagnostic::of(def.with([g.description.identifier.clone()]))
+                .at(at.clone())
+                .phase(Phase::Validate),
         );
         Some(index)
     })
@@ -156,12 +148,11 @@ fn clamp_bounds(
             *value = Some(clamped);
             at.push(member);
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::ClampedValue {
-                    text: text(
-                        BOUNDS_CLAMPED,
-                        &[name, &format!("{written:.6}"), &format!("{clamped:.6}")],
-                    ),
-                })
+                Diagnostic::of(codes::BOUNDS_CLAMPED.with([
+                    (*name).to_owned(),
+                    format!("{written:.6}"),
+                    format!("{clamped:.6}"),
+                ]))
                 .at(at.clone())
                 .phase(Phase::Validate),
             );
@@ -200,9 +191,7 @@ fn transforms(
         // The game logs an error, ignores the transform and loads the geometry: a kept error.
         kept(
             diagnostics,
-            DiagnosticCode::InvalidValue {
-                text: text(EMBEDDED_TOO_OLD, &[&identifier]),
-            },
+            codes::EMBEDDED_TOO_OLD.with([identifier.clone()]),
             at,
         );
         at.pop();
@@ -243,12 +232,18 @@ fn ranges(transform: &mut ItemDisplayTransform, at: &mut JsonPath, diagnostics: 
         // error.
         kept(
             diagnostics,
-            DiagnosticCode::InvalidValue {
-                text: text(
-                    TRANSFORM_OUT_OF_BOUNDS,
-                    &[noun, &x, &y, &z, &low, &low, &low, &high, &high, &high],
-                ),
-            },
+            codes::TRANSFORM_OUT_OF_BOUNDS.with([
+                noun.to_owned(),
+                x,
+                y,
+                z,
+                low.clone(),
+                low.clone(),
+                low,
+                high.clone(),
+                high.clone(),
+                high,
+            ]),
             at,
         );
         at.pop();
@@ -265,11 +260,9 @@ fn case_folded(
 ) {
     at.push(key);
     diagnostics.push(
-        Diagnostic::info(DiagnosticCode::InvalidValue {
-            text: text(BONE_LOWER_CASED, &[key, given, lower]),
-        })
-        .at(at.clone())
-        .phase(Phase::Validate),
+        Diagnostic::of(codes::BONE_LOWER_CASED.with([key, given, lower]))
+            .at(at.clone())
+            .phase(Phase::Validate),
     );
     at.pop();
 }
@@ -318,7 +311,7 @@ fn bones(geometry: &mut Geometry, at: &mut JsonPath, diagnostics: &mut Diagnosti
             // The game merges a lower-cased name into the bone it already has, without a
             // message; the crate's own information tells of it.
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DuplicateBone)
+                Diagnostic::of(&core_codes::DUPLICATE_BONE)
                     .at(at.clone())
                     .phase(Phase::Validate),
             );
@@ -328,7 +321,7 @@ fn bones(geometry: &mut Geometry, at: &mut JsonPath, diagnostics: &mut Diagnosti
             at.pop();
             at.push_index(replaced);
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(at.clone())
                     .phase(Phase::Validate),
             );
@@ -402,9 +395,11 @@ fn parents(
                 continue;
             }
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::UnresolvedReference {
-                    text: text(BONE_PARENT_MISSING, &[&bone.name, parent, identifier]),
-                })
+                Diagnostic::of(codes::BONE_PARENT_MISSING.with([
+                    bone.name.as_str(),
+                    parent,
+                    identifier,
+                ]))
                 .at(at.clone())
                 .phase(Phase::Validate),
             );
@@ -412,14 +407,12 @@ fn parents(
             // The self-parent text is a developer assertion the game raises when a model
             // instance is built, never a content-log line at load; a longer cycle has no text
             // of the game's. Both are informations of the crate's own.
-            let text = (parent_of[index] == Some(index))
-                .then(|| text(PARENT_IS_SELF, &[]))
-                .flatten();
-            diagnostics.push(
-                Diagnostic::info(DiagnosticCode::ReferenceCycle { text })
-                    .at(at.clone())
-                    .phase(Phase::Validate),
-            );
+            let finding = if parent_of[index] == Some(index) {
+                Diagnostic::of(&codes::PARENT_IS_SELF)
+            } else {
+                Diagnostic::of(&core_codes::REFERENCE_CYCLE).severity(Severity::Info)
+            };
+            diagnostics.push(finding.at(at.clone()).phase(Phase::Validate));
         }
         at.pop();
         at.pop();
@@ -438,23 +431,14 @@ fn poly_mesh(mesh: &PolyMesh, at: &JsonPath, diagnostics: &mut Diagnostics) {
         len(mesh.uvs.as_ref().map(Vec::len)),
     ];
     // The game logs these poly-mesh lines as errors and loads the geometry: kept errors.
-    let mut warn = |template: &'static str, args: &[&str]| {
-        kept(
-            diagnostics,
-            DiagnosticCode::InvalidValue {
-                text: text(template, args),
-            },
-            at,
-        );
-    };
+    let mut warn = |code: Code| kept(diagnostics, code, at);
     if counts[0] != counts[1] || counts[1] != counts[2] {
-        let [p, n, u] = counts.map(|n| n.to_string());
-        warn(NO_POLYS_SECTION, &[&p, &n, &u]);
+        warn(codes::NO_POLYS_SECTION.with(counts.map(|n| n.to_string())));
     }
     if kind.contains("tri_list") && counts[0] % 3 != 0 {
-        warn(NOT_TRIANGLES, &[]);
+        warn(Code::from(&codes::NOT_TRIANGLES));
     } else if !kind.contains("tri_list") && counts[0] % 4 != 0 {
-        warn(NOT_QUADS, &[]);
+        warn(Code::from(&codes::NOT_QUADS));
     }
 }
 
@@ -477,16 +461,11 @@ pub(crate) fn missing_bone_parents(
             .index(*index)
             .child("parent");
         diagnostics.push(
-            Diagnostic::info(DiagnosticCode::UnresolvedReference {
-                text: text(
-                    BONE_PARENT_MISSING,
-                    &[
-                        &bone.name,
-                        bone.parent.as_deref().unwrap_or_default(),
-                        &geometry.description.identifier,
-                    ],
-                ),
-            })
+            Diagnostic::of(codes::BONE_PARENT_MISSING.with([
+                bone.name.as_str(),
+                bone.parent.as_deref().unwrap_or_default(),
+                geometry.description.identifier.as_str(),
+            ]))
             .at(at.clone())
             .phase(Phase::Validate),
         );

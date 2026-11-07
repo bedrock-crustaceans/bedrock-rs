@@ -2,6 +2,7 @@
 //! responses, kept as JSON, are compiled with the item's other fields.
 
 use super::common::*;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// A 1.21.0 item with `events` and `components` (JSON object members).
 fn with_events(events: &str, components: &str) -> String {
@@ -71,7 +72,7 @@ fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
                     .diagnostics()
                     .iter()
                     .filter(|f| {
-                        f.code == DiagnosticCode::InvalidType { text: None }
+                        f.code == DiagnosticCode::from(&core_codes::INVALID_TYPE)
                             && f.severity == Severity::Warning
                             && f.location.json_path.to_string() == path
                     })
@@ -164,7 +165,8 @@ fn wrong_typed(
 ) -> Vec<(String, bedrock_addon_core::diagnostic::Severity, bool)> {
     d.iter()
         .filter(|f| {
-            f.code == bedrock_addon_core::diagnostic::DiagnosticCode::InvalidType { text: None }
+            f.code
+                == bedrock_addon_core::diagnostic::DiagnosticCode::from(&core_codes::INVALID_TYPE)
         })
         .map(|f| (f.location.json_path.to_string(), f.severity, f.kept))
         .collect()

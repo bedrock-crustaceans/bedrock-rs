@@ -1,9 +1,10 @@
 //! One settings file through its payload's version chain: the text checks, the public parse
 //! stage and the document or its rejection.
 
+use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{EnvelopeVersion, JsonSlice, Prepared};
@@ -21,21 +22,14 @@ pub(crate) type PayloadRequired = Option<FormatVersion>;
 /// The rejection of a file that is no text.
 fn unreadable(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    }));
+    diagnostics.push(Diagnostic::of(builders::syntax(
+        "not UTF-8 JSON within the nesting limit",
+    )));
     Rejected::located(origin, diagnostics)
 }
 
 /// The member that holds the version.
 const FORMAT_VERSION: &str = "format_version";
-/// The envelope's text for a `format_version` that is no version.
-const MALFORMED_VERSION: &str = "Malformed format version";
-/// The text of the game's payload-key check. Only development builds of the game print it;
-/// a release build is silent, so the crate uses the text for that case.
-const PAYLOAD_KEY_MISMATCH: &str =
-    "The payload key does not match the expected one. Expected: '{}'. Actual: '{}'.";
 
 /// The path of the root member `key`.
 fn member(key: &str) -> JsonPath {
@@ -180,12 +174,7 @@ fn envelope<F: Family>(text: &str, required: PayloadRequired) -> Result<Envelope
     let Some(keys) = root_keys(text) else {
         return Ok(passed);
     };
-    let malformed = || {
-        Diagnostic::error(DiagnosticCode::MalformedFormatVersion {
-            text: Some(VanillaText::Fixed(MALFORMED_VERSION)),
-        })
-        .at(member(FORMAT_VERSION))
-    };
+    let malformed = || Diagnostic::of(&codes::MALFORMED_VERSION).at(member(FORMAT_VERSION));
     let (written, array_version) = match &probe.format_version {
         EnvelopeVersion::Absent => (None, false),
         EnvelopeVersion::String(text) => (
@@ -207,20 +196,17 @@ fn envelope<F: Family>(text: &str, required: PayloadRequired) -> Result<Envelope
     };
     let versions = keys.iter().filter(|key| *key == FORMAT_VERSION).count();
     if keys.len() != 2 {
-        let code = if versions == 0 {
-            DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::DocumentMemberCount),
-            }
+        let finding = if versions == 0 {
+            Diagnostic::of(&codes::MEMBER_COUNT_WITHOUT_VERSION)
         } else {
-            DiagnosticCode::MalformedInput {
-                message: format!(
+            Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT).detail(DiagnosticDetail::Syntax(
+                format!(
                     "{} root members, not \"format_version\" and a payload member",
                     keys.len()
                 ),
-                text: Some(VanillaText::DocumentMemberCount),
-            }
+            ))
         };
-        return Err(Box::new(Diagnostic::error(code).at(JsonPath::new())));
+        return Err(Box::new(finding.at(JsonPath::new())));
     }
     if versions == 2 {
         return Err(Box::new(
@@ -231,10 +217,7 @@ fn envelope<F: Family>(text: &str, required: PayloadRequired) -> Result<Envelope
     let Some(written) = written.filter(|_| versions == 1) else {
         // Two members, neither the version.
         return Err(Box::new(
-            Diagnostic::error(DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoValidVersion),
-            })
-            .at(JsonPath::new()),
+            Diagnostic::of(&core_codes::NO_VALID_VERSION).at(JsonPath::new()),
         ));
     };
     // A version without a pre-release tag is printed in full; any other text as written.
@@ -274,13 +257,10 @@ fn foreign_payload<F: Family>(
     required: PayloadRequired,
 ) -> Diagnostic {
     let mismatch = || {
-        Diagnostic::error(DiagnosticCode::MissingPayload {
-            text: Some(VanillaText::Formatted {
-                template: PAYLOAD_KEY_MISMATCH,
-                args: vec![F::PAYLOAD_KEY.to_owned(), actual.to_owned()],
-            }),
-        })
-        .at(JsonPath::new())
+        // Only development builds of the game print the payload-key check's line; a release
+        // build is silent, so the crate uses the line for that case.
+        Diagnostic::of(core_codes::PAYLOAD_UNDER_OTHER_KEY.with([F::PAYLOAD_KEY, actual]))
+            .at(JsonPath::new())
     };
     if written.beta_literal {
         return mismatch();
@@ -293,18 +273,13 @@ fn foreign_payload<F: Family>(
                 .zip(required)
                 .is_some_and(|(version, from)| *version >= from);
             if required {
-                Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
-                    .at(member(F::PAYLOAD_KEY))
+                Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD).at(member(F::PAYLOAD_KEY))
             } else {
                 mismatch()
             }
         }
-        _ => Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::NoParserForVersion {
-                version: shown.unwrap_or_default().to_owned(),
-            }),
-        })
-        .at(member(FORMAT_VERSION)),
+        _ => Diagnostic::of(core_codes::NO_PARSER_FOR_VERSION.with([shown.unwrap_or_default()]))
+            .at(member(FORMAT_VERSION)),
     }
 }
 
@@ -320,15 +295,14 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
     let shown = envelope.shown.as_deref();
     let found = std::mem::take(diagnostics);
     for mut finding in found {
-        let text = Some(VanillaText::Fixed(MALFORMED_VERSION));
         if envelope.beta_literal {
             // By legacy name: the variant and the definitions that were it.
             match finding.code.name() {
                 "UnsupportedVersion" => {
-                    finding.code = DiagnosticCode::UnsupportedVersion { text };
+                    finding.code = DiagnosticCode::from(&codes::BETA_UNSUPPORTED);
                 }
                 "BetaFeaturesNotEnabled" => {
-                    finding.code = DiagnosticCode::BetaFeaturesNotEnabled { text };
+                    finding.code = DiagnosticCode::from(&codes::BETA_NOT_ENABLED);
                 }
                 _ => {}
             }
@@ -373,10 +347,9 @@ fn parse_stage<F: Family>(
     if envelope.array_version && parsed.value.is_some() {
         // The envelope reads `[1, 21, 40]`; the struct's own `format_version` member is a
         // string.
-        parsed.diagnostics.push(
-            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                .at(member(FORMAT_VERSION)),
-        );
+        parsed
+            .diagnostics
+            .push(Diagnostic::of(&core_codes::INVALID_TYPE).at(member(FORMAT_VERSION)));
         parsed.value = None;
     }
     parsed
@@ -472,7 +445,8 @@ pub(crate) fn unnamed(
 ) {
     if named(identifier).is_none() {
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::MissingIdentifier { text: None })
+            Diagnostic::of(&core_codes::MISSING_IDENTIFIER)
+                .severity(Severity::Info)
                 .at(cx.at.clone())
                 .phase(Phase::Validate),
         );

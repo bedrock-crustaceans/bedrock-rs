@@ -2,7 +2,7 @@
 //! member rules of geometry (pg05 to pg07) and rules M1 to M3, M8 to M12, M14 to
 //! M19, G4 to G6 and A6.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Severity, codes};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::persona::{
     ArmSize, BodySize, FaceFlag, GeometrySource, HexColor, Named, PersonaPiece, PersonaPieces,
@@ -724,13 +724,13 @@ fn m1_a_meta_file_that_cannot_be_read_is_skipped() {
     assert!(pieces.pieces.is_empty());
     assert_eq!(found(&pieces), ["error ReadError"]);
     let finding = first(&pieces, "ReadError");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::PermissionDenied,
-            ..
-        }
-    ));
+    assert!(
+        finding.code.name() == "ReadError"
+            && matches!(
+                finding.detail.as_deref(),
+                Some(DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+            )
+    );
     assert_eq!(
         message(&finding),
         "Could not find expected metafile json file pieces/hat/hat.meta.json"
@@ -1307,10 +1307,7 @@ fn a6_animation_sources_of_a_piece_that_is_no_emote_are_never_played() {
         )],
     );
     assert_eq!(found(&pieces), ["info IgnoredMember animation_sources"]);
-    assert!(matches!(
-        first(&pieces, "IgnoredMember").code,
-        DiagnosticCode::IgnoredMember { .. }
-    ));
+    assert!(first(&pieces, "IgnoredMember").is(&codes::IGNORED_MEMBER));
     // The entries are still checked and kept, as the game keeps them.
     assert_eq!(only(&pieces).animations.len(), 1);
     assert!(only(&pieces).emote.is_none());

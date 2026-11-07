@@ -166,17 +166,14 @@ fn same_pack_duplicates(
 
 #[test]
 fn the_duplicate_text_arrives_with_engine_1_26_40() {
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+    use bedrock_addon_core::diagnostic::{Severity, codes as core_codes};
     // Silent before 1.26.40 (the crate's own information, without text); from 1.26.40 the
     // game's level-3 text, and the second document is refused: an error.
     let before = same_pack_duplicates(known::V1_26_30);
     assert!(
         matches!(
             &before[..],
-            [(
-                DiagnosticCode::DuplicateIdentifier { text: None },
-                Severity::Info
-            )]
+            [(code, Severity::Info)] if code.is(&core_codes::DUPLICATE_IDENTIFIER)
         ),
         "{before:?}"
     );
@@ -184,10 +181,7 @@ fn the_duplicate_text_arrives_with_engine_1_26_40() {
     assert!(
         matches!(
             &from[..],
-            [(
-                DiagnosticCode::DuplicateIdentifier { text: Some(_) },
-                Severity::Error
-            )]
+            [(code, Severity::Error)] if code.is(&crate::codes::DUPLICATE)
         ),
         "{from:?}"
     );

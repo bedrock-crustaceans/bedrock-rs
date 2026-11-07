@@ -16,6 +16,7 @@ pub use function::{
     LootFunction, SpecificEnchant, StewEffect,
 };
 
+pub mod codes;
 mod condition;
 mod function;
 mod read;

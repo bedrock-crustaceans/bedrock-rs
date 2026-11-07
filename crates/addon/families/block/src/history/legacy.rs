@@ -3,11 +3,13 @@
 //! reads them. One payload serves every legacy version; each `vX_Y_Z::Block` is it at that
 //! version (`Legacy<BlockPayload, X, Y, Z>`).
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::CodeDef;
+use bedrock_addon_core::diagnostic::Severity;
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -106,12 +108,9 @@ impl BlockPayload {
         // component and goes on with the rename: a kept error.
         for index in duplicates {
             d.push_kept_error(
-                Diagnostic::error(DiagnosticCode::DuplicateComponentVersion {
-                    old: old.to_owned(),
-                    new: new.to_owned(),
-                })
-                .at(component_path(index, new))
-                .phase(Phase::Upgrade),
+                Diagnostic::of(core_codes::DUPLICATE_COMPONENT_VERSION.with([old, new, new, old]))
+                    .at(component_path(index, new))
+                    .phase(Phase::Upgrade),
             );
         }
         let mut moved = Vec::new();
@@ -153,7 +152,11 @@ impl BlockPayload {
 /// A member of the file that a step replaces by what it makes of another, as the game's own
 /// fixer does without a word: `DroppedField`, severity INFO: the game says nothing, so the finding is the crate's own.
 pub(crate) fn replaced(at: &JsonPath, d: &mut Diagnostics) {
-    ops::note(d, DiagnosticCode::DroppedField { text: None }, at.clone());
+    ops::note(
+        d,
+        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+        at.clone(),
+    );
 }
 
 /// Renames the member `old` of the component `name` (held in `members`) to `new`: block's
@@ -193,27 +196,6 @@ pub(crate) fn component_path(section: Option<usize>, name: &str) -> JsonPath {
     path
 }
 
-/// A vanilla text with arguments (`Some`, as the codes' `text` fields take it).
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the codes' text fields are options"
-)]
-pub(crate) fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|a| (*a).to_owned()).collect(),
-    })
-}
-
-/// A fixed vanilla text (`Some`, as the codes' `text` fields take it).
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the codes' text fields are options"
-)]
-pub(crate) fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
-}
-
 /// A step's input check failed: " -> minecraft:block ->
 /// components -> %s:  invalid component", then "Failed to upgrade to version '%s' from document
 /// version '%s'" and "Final json version '%s' failed to upgrade from document version '%s'";
@@ -227,34 +209,19 @@ pub(crate) fn input_check_failed(
     let at = component_path(None, name);
     let (to, original) = (to.to_string(), original.to_string());
     d.push(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: text(
-                " -> minecraft:block -> components -> {}:  invalid component",
-                &[name],
-            ),
-        })
-        .at(at.clone())
-        .phase(Phase::Upgrade),
+        Diagnostic::of(codes::INVALID_COMPONENT.with([name]))
+            .at(at.clone())
+            .phase(Phase::Upgrade),
     );
     d.push(
-        Diagnostic::error(DiagnosticCode::DocumentRejected {
-            text: text(
-                "Failed to upgrade to version '{}' from document version '{}'",
-                &[&to, &original],
-            ),
-        })
-        .at(at.clone())
-        .phase(Phase::Upgrade),
+        Diagnostic::of(codes::UPGRADE_FAILED.with([&to, &original]))
+            .at(at.clone())
+            .phase(Phase::Upgrade),
     );
     d.push(
-        Diagnostic::error(DiagnosticCode::DocumentRejected {
-            text: text(
-                "Final json version '{}' failed to upgrade from document version '{}'",
-                &[&to, &original],
-            ),
-        })
-        .at(at.clone())
-        .phase(Phase::Upgrade),
+        Diagnostic::of(codes::FINAL_UPGRADE_FAILED.with([&to, &original]))
+            .at(at.clone())
+            .phase(Phase::Upgrade),
     );
 }
 
@@ -264,18 +231,6 @@ pub(crate) fn object(value: &Value) -> Option<IndexMap<String, Value>> {
 }
 
 // ---- reading -----------------------------------------------------------------------------
-
-/// The legacy parser's structural texts, as the game words them.
-const MISSING_REQUIRED_FIELD: &str = " -> minecraft:block:  missing required field";
-const COMPONENTS_OBJECT: &str = " -> minecraft:block:  the 'components' member should be an object";
-const PERMUTATIONS_ARRAY: &str =
-    " -> minecraft:block:  the 'permutations' member should be an array";
-/// The texts of the legacy permutation reader.
-const PERMUTATIONS_ARRAY_OBJECT: &str = "Permutations requires an array object";
-const PERMUTATIONS_OBJECTS: &str = "Permutations requires an array of objects";
-/// The text of the legacy description reader.
-const STATES_OBJECT: &str = "Block description states must be an object";
-const PERMUTATION_OBJECT: &str = " -> minecraft:block -> permutations:  every permutation should be an object containing a 'components' member object";
 
 /// Each legacy struct is the payload at its version.
 impl LegacyPayload for BlockPayload {
@@ -308,7 +263,11 @@ impl LegacyPayload for BlockPayload {
             }
             let path = cx.at.child(&key);
             // The legacy reader ignores it with no log, so the crate reports it as an information.
-            d.push(Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(path));
+            d.push(
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
+                    .at(path),
+            );
             if let Some(value) = read_value(raw) {
                 d.unknown_mut().put(&cx.at, &key, value);
             }
@@ -344,16 +303,11 @@ impl BlockPayload {
             }
             path
         };
-        let structural = |d: &mut Diagnostics, message: &'static str, path: JsonPath| {
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidType {
-                    text: fixed(message),
-                })
-                .at(path),
-            );
+        let structural = |d: &mut Diagnostics, code: &'static CodeDef<0>, path: JsonPath| {
+            d.push(Diagnostic::of(code).at(path));
         };
         let Some(members) = object_members(payload.text) else {
-            structural(d, MISSING_REQUIRED_FIELD, at(None));
+            structural(d, &codes::MEMBER_MISSING, at(None));
             return None;
         };
         let mut block = Self::default();
@@ -363,24 +317,22 @@ impl BlockPayload {
                 "description" => {
                     found_description = true;
                     let Some(description) = read_value(raw).as_ref().and_then(object) else {
-                        structural(d, MISSING_REQUIRED_FIELD, at(Some("description")));
+                        structural(d, &codes::MEMBER_MISSING, at(Some("description")));
                         return None;
                     };
                     // The legacy description reader requires `states` to be an object.
                     if description.get("states").is_some_and(|s| !s.is_object()) {
                         let mut path = at(Some("description"));
                         path.push("states");
-                        structural(d, STATES_OBJECT, path);
+                        structural(d, &codes::STATES_OBJECT, path);
                         let identifier = description
                             .get("identifier")
                             .and_then(string)
                             .unwrap_or_default()
                             .to_owned();
                         d.push(
-                            Diagnostic::error(DiagnosticCode::InvalidType {
-                                text: self::text("Failed to parse block '{}' ", &[&identifier]),
-                            })
-                            .at(at(Some("description"))),
+                            Diagnostic::of(codes::PARSE_BLOCK_FAILED.with([&identifier]))
+                                .at(at(Some("description"))),
                         );
                         return None;
                     }
@@ -388,15 +340,19 @@ impl BlockPayload {
                 }
                 "components" => {
                     let Some(components) = read_components(raw, &at(Some("components")), d) else {
-                        structural(d, COMPONENTS_OBJECT, at(Some("components")));
+                        structural(d, &codes::COMPONENTS_OBJECT, at(Some("components")));
                         return None;
                     };
                     block.components = components;
                 }
                 "permutations" => {
                     let Some(entries) = array_elements(raw) else {
-                        structural(d, PERMUTATIONS_ARRAY, at(Some("permutations")));
-                        structural(d, PERMUTATIONS_ARRAY_OBJECT, at(Some("permutations")));
+                        structural(d, &codes::PERMUTATIONS_ARRAY, at(Some("permutations")));
+                        structural(
+                            d,
+                            &codes::PERMUTATIONS_ARRAY_OBJECT,
+                            at(Some("permutations")),
+                        );
                         return None;
                     };
                     for (index, entry) in entries.into_iter().enumerate() {
@@ -405,9 +361,9 @@ impl BlockPayload {
                         let mut kept_at = kept.child("permutations");
                         kept_at.push_index(index);
                         let Some(permutation) = read_permutation(entry, &path, &kept_at, d) else {
-                            structural(d, PERMUTATION_OBJECT, path.clone());
+                            structural(d, &codes::PERMUTATION_OBJECT, path.clone());
                             if object_members(entry).is_none() {
-                                structural(d, PERMUTATIONS_OBJECTS, path);
+                                structural(d, &codes::PERMUTATIONS_OBJECTS, path);
                             }
                             return None;
                         };
@@ -427,7 +383,7 @@ impl BlockPayload {
             }
         }
         if !found_description {
-            structural(d, MISSING_REQUIRED_FIELD, at(Some("description")));
+            structural(d, &codes::MEMBER_MISSING, at(Some("description")));
             return None;
         }
         Some(block)
@@ -530,13 +486,7 @@ fn read_components(
             // The game logs a duplicate component at the content log's error level and goes
             // on: a kept error.
             d.push_kept_error(
-                Diagnostic::error(DiagnosticCode::DroppedComponent {
-                    text: text_owned(
-                        "Duplicate component {} found. Please remove one of the duplicates.",
-                        &key,
-                    ),
-                })
-                .at(path),
+                Diagnostic::of(codes::DUPLICATE_COMPONENT.with([key.as_str()])).at(path),
             );
             continue;
         }
@@ -545,11 +495,6 @@ fn read_components(
         }
     }
     Some(components)
-}
-
-/// A text with one argument.
-fn text_owned(template: &'static str, arg: &str) -> Option<VanillaText> {
-    text(template, &[arg])
 }
 
 /// A JSON value from its text.
@@ -563,7 +508,8 @@ fn read_value(text: &str) -> Option<Value> {
 /// upgrade and the crate's own: the game converts only the well-formed shapes).
 pub(crate) fn misread(at: &JsonPath, d: &mut Diagnostics) {
     d.push(
-        Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+        Diagnostic::of(&core_codes::INVALID_TYPE)
+            .severity(Severity::Info)
             .at(at.clone())
             .phase(Phase::Upgrade),
     );

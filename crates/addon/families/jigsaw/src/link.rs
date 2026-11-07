@@ -2,13 +2,13 @@
 //! calls with the other families' registries. Every miss is an `UnresolvedReference` finding
 //! in `Phase::Link`, one per member, naming the kind and the name of what is missing.
 
+use super::codes;
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, GroupedPoolAlias, Jigsaw, PoolAlias,
     PoolElement, Processor, ProcessorRule,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
-    VanillaText,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::{
@@ -66,9 +66,9 @@ fn miss(
     at: &JsonPath,
     kind: &'static str,
     id: &str,
-    text: VanillaText,
+    code: Code,
 ) {
-    miss_at(out, origin, at, kind, id, text, Severity::Info);
+    miss_at(out, origin, at, kind, id, code, Severity::Info);
 }
 
 /// [`miss`] with `severity`.
@@ -78,10 +78,10 @@ fn miss_at(
     at: &JsonPath,
     kind: &'static str,
     id: &str,
-    text: VanillaText,
+    code: Code,
     severity: Severity,
 ) {
-    out.push(unresolved(origin, at, kind, id, text, severity));
+    out.push(unresolved(origin, at, kind, id, code, severity));
 }
 
 /// An `UnresolvedReference` at `severity` in the file of `origin`, at `at` with `text`, for
@@ -91,10 +91,10 @@ fn unresolved(
     at: &JsonPath,
     kind: &'static str,
     id: &str,
-    text: VanillaText,
+    code: Code,
     severity: Severity,
 ) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
+    Diagnostic::of(code)
         .severity(severity)
         .at(at.clone())
         .phase(Phase::Link)
@@ -116,15 +116,7 @@ fn missing_asset(
     kind: &'static str,
     id: &str,
 ) {
-    validator(
-        out,
-        origin,
-        at,
-        payload,
-        "{}:  Missing referenced asset {}",
-        kind,
-        id,
-    );
+    validator(out, origin, at, payload, &codes::MISSING_ASSET, kind, id);
 }
 
 /// The validator's `'{} Invalid asset path {}'` for a file
@@ -142,29 +134,26 @@ fn invalid_asset_path(
         origin,
         at,
         payload,
-        "{}:  Invalid asset path {}",
+        &codes::INVALID_ASSET_PATH,
         kind,
         id,
     );
 }
 
-/// The validator's line `template` for `id` at `at`.
+/// The validator's `line` for `id` at `at`.
 fn validator(
     out: &mut Diagnostics,
     origin: &Origin,
     at: &JsonPath,
     payload: &JsonPath,
-    template: &'static str,
+    line: &'static CodeDef<2>,
     kind: &'static str,
     id: &str,
 ) {
-    let text = VanillaText::Formatted {
-        template,
-        args: vec![vanilla_path(at, payload), id.to_owned()],
-    };
+    let code = line.with([vanilla_path(at, payload), id.to_owned()]);
     // The game's validator writes the line to the content log at the error level and
     // drops nothing.
-    miss_at(out, origin, at, kind, id, text, Severity::Error);
+    miss_at(out, origin, at, kind, id, code, Severity::Error);
 }
 
 /// `at` below `payload`, as vanilla's validator writes it: `-> key` per member, `[i]` after
@@ -305,10 +294,7 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                             &at_location,
                             STRUCTURE,
                             location.as_str(),
-                            VanillaText::Formatted {
-                                template: "[JIGSAW GENERATION FAILURE] Structure name [{}] referenced in template pool [{}] does not exist.",
-                                args: vec![location.as_str().to_owned(), id.as_str().to_owned()],
-                            },
+                            codes::STRUCTURE_MISSING.with([location.as_str(), id.as_str()]),
                         );
                         // The game's validator logs the file reference too, unless a pack
                         // holds the file.
@@ -348,10 +334,7 @@ fn link_pools(jigsaw: &Jigsaw, targets: &dyn Targets, out: &mut Diagnostics) {
                         &at_element.child("feature"),
                         FEATURE,
                         feature.as_str(),
-                        VanillaText::Formatted {
-                            template: "Cannot find 'feature' '{}' for 'feature_pool_element'. Make sure to include the 'namespace_name:' prefix.",
-                            args: vec![feature.as_str().to_owned()],
-                        },
+                        codes::FEATURE_MISSING.with([feature.as_str()]),
                     );
                 }
                 _ => {}
@@ -439,10 +422,7 @@ fn missing_block(
                 at,
                 BLOCK,
                 id.as_str(),
-                VanillaText::Formatted {
-                    template: "Cannot find block '{}'",
-                    args: vec![id.as_str().to_owned()],
-                },
+                codes::BLOCK_MISSING.with([id.as_str()]),
                 Severity::Error,
             )
             .into_kept(),

@@ -9,6 +9,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod fold;
 mod molang;
 mod read;
@@ -21,6 +22,7 @@ mod tests;
 
 use indexmap::IndexMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -212,13 +214,13 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileContribution {
 fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<RenderController> {
     // The crate's own note: the game replaces silently.
     let shadowed_notice = Notice {
-        code: DiagnosticCode::RenderControllerShadowed,
+        code: DiagnosticCode::from(&core_codes::RENDER_CONTROLLER_SHADOWED),
         severity: Severity::Info,
     };
     let mut builder = RegistryBuilder::new(
         CombineRule::TopWinsFallback {
             fallback: Some(Notice {
-                code: DiagnosticCode::RenderControllerFallback,
+                code: DiagnosticCode::from(&core_codes::RENDER_CONTROLLER_FALLBACK),
                 // The game keeps the lower one silently, so this is the crate's own information.
                 severity: Severity::Info,
             }),
@@ -230,7 +232,7 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
         stack.options,
     );
     let shadowed = |origin: &Origin| {
-        Diagnostic::info(DiagnosticCode::RenderControllerShadowed)
+        Diagnostic::of(&core_codes::RENDER_CONTROLLER_SHADOWED)
             .phase(Phase::Validate)
             .in_file(origin)
     };
@@ -240,9 +242,7 @@ fn combine(parsed: Vec<FileContribution>, stack: &StackCx<'_>) -> Registry<Rende
         bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
     {
         let file = Origin::file(pack.pack.clone(), PackSide::Resource, ignored.path.clone());
-        builder.push_diagnostic(
-            Diagnostic::info(DiagnosticCode::IgnoredFile { text: None }).in_file(&file),
-        );
+        builder.push_diagnostic(Diagnostic::of(&core_codes::IGNORED_FILE).in_file(&file));
     }
     // The effective definition of each name so far, to note the one a higher pack replaces
     // (one of the same pack is the tie's to note).

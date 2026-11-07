@@ -13,6 +13,7 @@
 use std::collections::HashSet;
 
 use super::chain::{Inherited, Lookups};
+use super::codes;
 use super::control::{AnimationType, ControlType};
 use super::expr::{Issue, tokenize};
 use super::layout::{Term, Unit, parse_axis};
@@ -22,7 +23,8 @@ use super::props::{
 use super::resolve::base_of;
 use super::value::{first_key, member, number, string_or_empty};
 use super::{Control, DefKey, DefRef, UiDefinitions};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, DiagnosticDetail};
 use bedrock_addon_core::json::Value;
 
 /// The note of a finding with the game's text: when the game would log it.
@@ -96,28 +98,6 @@ fn dynamic(value: &Value) -> bool {
     }
 }
 
-#[allow(clippy::unnecessary_wraps, reason = "fills the `text` field of a code")]
-fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
-}
-
-#[allow(clippy::unnecessary_wraps, reason = "fills the `text` field of a code")]
-fn formatted(template: &'static str, args: &[&str]) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    })
-}
-
-/// The type-mismatch texts of the game's typed property getters.
-const EXPECTED_STRING: &str = "JSON UI parse failure - expected a string.";
-const EXPECTED_BOOL: &str = "JSON UI parse failure - expected a bool.";
-const EXPECTED_NUMBER: &str = "JSON UI parse failure - expected a number.";
-const EXPECTED_ARRAY: &str = "JSON UI parse failure - expected an array.";
-const EXPECTED_ARRAY_OR_STRING: &str = "JSON UI parse failure - expected an array or a string.";
-const EXPECTED_ARRAY_OR_NUMBER: &str = "JSON UI parse failure - expected an array or a number.";
-const EXPECTED_OBJECT: &str = "JSON UI parse failure - expected an object.";
-
 /// What is known of the base of the control being checked.
 struct Base {
     /// The base did not resolve.
@@ -167,7 +147,8 @@ impl<'d> Cx<'_, 'd> {
         }
     }
 
-    fn raise(&mut self, path: &[String], code: DiagnosticCode) {
+    fn raise(&mut self, path: &[String], code: impl Into<DiagnosticCode>) {
+        let code = code.into();
         let detail = game_text(&code).then_some(DiagnosticDetail::Note(CREATION_TIME));
         self.found.push(Finding {
             file: self.control.source_file.clone(),
@@ -177,14 +158,14 @@ impl<'d> Cx<'_, 'd> {
         });
     }
 
-    fn raise_at(&mut self, path: &mut Vec<String>, key: &str, code: DiagnosticCode) {
+    fn raise_at(&mut self, path: &mut Vec<String>, key: &str, code: impl Into<DiagnosticCode>) {
         path.push(key.to_owned());
         self.raise(path, code);
         path.pop();
     }
 
-    fn wrong_type(&mut self, path: &mut Vec<String>, key: &str, text: &'static str) {
-        self.raise_at(path, key, DiagnosticCode::InvalidType { text: fixed(text) });
+    fn wrong_type(&mut self, path: &mut Vec<String>, key: &str, code: &'static CodeDef<0>) {
+        self.raise_at(path, key, code);
     }
 
     /// The definition a reference string names (`ns.name`, `name`, or either after an `@`).
@@ -221,22 +202,14 @@ impl<'d> Cx<'_, 'd> {
             // from, and is never built by itself.
             None if broken && animation_type.is_none() => {
                 failed = true;
-                self.raise(
-                    path,
-                    DiagnosticCode::MissingRequiredField {
-                        text: formatted(
-                            "Type not specified (or @-base not found) for control: {}",
-                            &[name],
-                        ),
-                    },
-                );
+                self.raise(path, codes::TYPE_NOT_SPECIFIED.with([name]));
             }
             None => {}
             Some(written) if dynamic(written) => {}
             Some(written) => match written.as_string() {
                 None => {
                     if member(own, "type").is_some() {
-                        self.wrong_type(path, "type", EXPECTED_STRING);
+                        self.wrong_type(path, "type", &codes::EXPECTED_STRING);
                     }
                 }
                 Some(text) => {
@@ -247,12 +220,7 @@ impl<'d> Cx<'_, 'd> {
                         self.raise_at(
                             path,
                             "type",
-                            DiagnosticCode::InvalidEnumValue {
-                                text: formatted(
-                                    "Type '{}' not recognized for control: {}",
-                                    &[text.as_str(), name],
-                                ),
-                            },
+                            codes::TYPE_NOT_RECOGNIZED.with([text.as_str(), name]),
                         );
                     }
                 }
@@ -263,12 +231,7 @@ impl<'d> Cx<'_, 'd> {
             let namespace = self.control.namespace.as_str();
             self.raise(
                 path,
-                DiagnosticCode::InvalidValue {
-                    text: formatted(
-                        "UIControlFactory parent control \"{}.{}\" failed to create child control \"{}.{}\", did you add a new type? Did you add it to the string-to-type function?",
-                        &[namespace, parent, namespace, name],
-                    ),
-                },
+                codes::CHILD_NOT_CREATED.with([namespace, parent, namespace, name]),
             );
         }
         let is_animation = written_type.is_none() && animation_type.is_some();
@@ -361,12 +324,12 @@ impl<'d> Cx<'_, 'd> {
             return;
         }
         if DEAD_KEYS.contains(&key) {
-            return self.raise_at(path, key, DiagnosticCode::UnusedProperty);
+            return self.raise_at(path, key, &core_codes::UNUSED_PROPERTY);
         }
         let kind = match props::lookup(control_type, key) {
             Lookup::Read(kind) => kind,
             // Only a type the game knows has components that can lack the key.
-            Lookup::Unused => return self.raise_at(path, key, DiagnosticCode::UnusedProperty),
+            Lookup::Unused => return self.raise_at(path, key, &core_codes::UNUSED_PROPERTY),
             Lookup::Unknown => return,
         };
         if dynamic(value) {
@@ -392,19 +355,17 @@ impl<'d> Cx<'_, 'd> {
     fn typed(&mut self, key: &str, value: &Value, kind: Kind, path: &mut Vec<String>) {
         let expected = match kind {
             Kind::Any => None,
-            Kind::Bool => (!value.is_bool() && !value.is_number()).then_some(EXPECTED_BOOL),
-            Kind::Number => (!value.is_number()).then_some(EXPECTED_NUMBER),
-            Kind::Str => (!value.is_string()).then_some(EXPECTED_STRING),
-            Kind::Array | Kind::Axes => (!value.is_array()).then_some(EXPECTED_ARRAY),
-            Kind::Object => (!value.is_object()).then_some(EXPECTED_OBJECT),
-            Kind::ArrayOrString => {
-                (!value.is_array() && !value.is_string()).then_some(EXPECTED_ARRAY_OR_STRING)
-            }
-            Kind::ArrayOrNumber => {
-                (!value.is_array() && !value.is_number()).then_some(EXPECTED_ARRAY_OR_NUMBER)
-            }
+            Kind::Bool => (!value.is_bool() && !value.is_number()).then_some(&codes::EXPECTED_BOOL),
+            Kind::Number => (!value.is_number()).then_some(&codes::EXPECTED_NUMBER),
+            Kind::Str => (!value.is_string()).then_some(&codes::EXPECTED_STRING),
+            Kind::Array | Kind::Axes => (!value.is_array()).then_some(&codes::EXPECTED_ARRAY),
+            Kind::Object => (!value.is_object()).then_some(&codes::EXPECTED_OBJECT),
+            Kind::ArrayOrString => (!value.is_array() && !value.is_string())
+                .then_some(&codes::EXPECTED_ARRAY_OR_STRING),
+            Kind::ArrayOrNumber => (!value.is_array() && !value.is_number())
+                .then_some(&codes::EXPECTED_ARRAY_OR_NUMBER),
             Kind::Enum(rule) => match value.as_string() {
-                None => Some(EXPECTED_STRING),
+                None => Some(&codes::EXPECTED_STRING),
                 Some(text) => {
                     self.enumerated(key, text.as_str(), rule, path);
                     None
@@ -421,14 +382,7 @@ impl<'d> Cx<'_, 'd> {
                     continue;
                 }
                 if let Err(error) = parse_axis(axis) {
-                    let (template, args) = error.text();
-                    self.raise_at(
-                        path,
-                        &index.to_string(),
-                        DiagnosticCode::InvalidValue {
-                            text: Some(VanillaText::Formatted { template, args }),
-                        },
-                    );
+                    self.raise_at(path, &index.to_string(), error.code());
                 }
             }
             path.pop();
@@ -440,13 +394,13 @@ impl<'d> Cx<'_, 'd> {
         if rule.values.contains(&text) {
             return;
         }
-        let text = match rule.miss {
+        let code = match rule.miss {
             Miss::Silent => return,
-            Miss::CrateOwn => None,
-            Miss::Fixed(fixed_text) => fixed(fixed_text),
-            Miss::Format(template) => formatted(template, &[text]),
+            Miss::CrateOwn => DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
+            Miss::Fixed(code) => code.into(),
+            Miss::Format(code) => code.with([text]).into(),
         };
-        self.raise_at(path, key, DiagnosticCode::InvalidEnumValue { text });
+        self.raise_at(path, key, code);
     }
 
     /// The keys with a code path of their own.
@@ -456,11 +410,7 @@ impl<'d> Cx<'_, 'd> {
                 // `ignored` is a bool, an integer or a binding.
                 let integral = number(value).is_some_and(|number| number.fract() == 0.0);
                 if !value.is_bool() && !integral {
-                    self.wrong_type(
-                        path,
-                        key,
-                        "An invalid value was provided for \"ignored\" field.",
-                    );
+                    self.wrong_type(path, key, &codes::IGNORED_INVALID);
                 }
             }
             "anims" => self.anims(value, path),
@@ -472,10 +422,7 @@ impl<'d> Cx<'_, 'd> {
                     self.unresolved(
                         path,
                         key,
-                        formatted(
-                            "gridItemTemplate control tree could not be created! Control: {}",
-                            &[name],
-                        ),
+                        codes::GRID_ITEM_TEMPLATE_NOT_CREATED.with([name]),
                         reference.as_str(),
                     );
                 }
@@ -493,38 +440,26 @@ impl<'d> Cx<'_, 'd> {
                     self.raise_at(
                         path,
                         key,
-                        DiagnosticCode::InvalidEnumValue {
-                            text: formatted("Unrecognized renderer: '{}'", &[renderer.as_str()]),
-                        },
+                        codes::RENDERER_UNRECOGNIZED.with([renderer.as_str()]),
                     );
                 }
             }
-            "state_controls" if !value.is_array() => self.wrong_type(
-                path,
-                key,
-                "JSON UI parse failure: Must define state_controls as an array!",
-            ),
-            "images" if !value.is_array() => self.wrong_type(
-                path,
-                key,
-                "JSON UI parse failure: Must define 'images' as an array!",
-            ),
-            "font_type" if !value.is_string() => self.wrong_type(
-                path,
-                key,
-                "JSON UI parse failure: Expected a string for 'font_type'.",
-            ),
-            "backup_font_type" if !value.is_string() => self.wrong_type(
-                path,
-                key,
-                "JSON UI parse failure: Expected a string for 'backup_font_type'.",
-            ),
+            "state_controls" if !value.is_array() => {
+                self.wrong_type(path, key, &codes::STATE_CONTROLS_NOT_ARRAY);
+            }
+            "images" if !value.is_array() => self.wrong_type(path, key, &codes::IMAGES_NOT_ARRAY),
+            "font_type" if !value.is_string() => {
+                self.wrong_type(path, key, &codes::FONT_TYPE_NOT_STRING);
+            }
+            "backup_font_type" if !value.is_string() => {
+                self.wrong_type(path, key, &codes::BACKUP_FONT_TYPE_NOT_STRING);
+            }
             "tiled" => {
                 // Silent in vanilla: anything but a bool and the four strings is "none".
                 let known = value.is_bool()
                     || matches!(string_or_empty(Some(value)), "x" | "y" | "xy" | "yx");
                 if !known {
-                    self.raise_at(path, key, DiagnosticCode::InvalidEnumValue { text: None });
+                    self.raise_at(path, key, &core_codes::INVALID_ENUM_VALUE);
                 }
             }
             _ => {}
@@ -535,14 +470,14 @@ impl<'d> Cx<'_, 'd> {
         &mut self,
         path: &mut Vec<String>,
         key: &str,
-        text: Option<VanillaText>,
+        code: impl Into<DiagnosticCode>,
         reference: &str,
     ) {
         path.push(key.to_owned());
         self.found.push(Finding {
             file: self.control.source_file.clone(),
             path: path.clone(),
-            code: DiagnosticCode::UnresolvedReference { text },
+            code: code.into(),
             detail: Some(DiagnosticDetail::Reference {
                 kind: "ui definition",
                 id: reference.to_owned(),
@@ -567,7 +502,7 @@ impl<'d> Cx<'_, 'd> {
                 self.unresolved(
                     path,
                     &index.to_string(),
-                    fixed("JSON UI parse failure: Invalid anim reference!"),
+                    &codes::INVALID_ANIM_REFERENCE,
                     reference,
                 );
             }
@@ -584,14 +519,10 @@ impl<'d> Cx<'_, 'd> {
         for issue in tokenize(text).1 {
             let code = match issue {
                 // A quote that is never closed.
-                Issue::UnclosedQuote => DiagnosticCode::InvalidValue {
-                    text: fixed("You didn't close your quotes >:( \n"),
-                },
-                Issue::BareHash => DiagnosticCode::InvalidValue {
-                    text: fixed("The # sign cannot be used without providing quotes around it!"),
-                },
+                Issue::UnclosedQuote => &codes::UNCLOSED_QUOTES,
+                Issue::BareHash => &codes::BARE_HASH,
                 // `<=`, `>=` and `%` are not operators.
-                Issue::UnsupportedOperator(_) => DiagnosticCode::UnsupportedOperator,
+                Issue::UnsupportedOperator(_) => &core_codes::UNSUPPORTED_OPERATOR,
             };
             self.raise_at(path, key, code);
         }
@@ -616,11 +547,7 @@ impl<'d> Cx<'_, 'd> {
     /// The `bindings` array: each entry's type, condition and names.
     fn bindings(&mut self, value: &Value, path: &mut Vec<String>) {
         let Some(entries) = value.as_array() else {
-            return self.wrong_type(
-                path,
-                "bindings",
-                "JSON UI parse failure: Must define bindings as an array.",
-            );
+            return self.wrong_type(path, "bindings", &codes::BINDINGS_NOT_ARRAY);
         };
         path.push("bindings".to_owned());
         for (index, entry) in entries.as_slice().iter().enumerate() {
@@ -643,7 +570,7 @@ impl<'d> Cx<'_, 'd> {
         entry: &'v Value,
         key: &str,
         values: &[&str],
-        unknown: &'static str,
+        unknown: &'static CodeDef<1>,
         fallback: &'static str,
         path: &mut Vec<String>,
     ) -> Option<&'v str> {
@@ -655,18 +582,12 @@ impl<'d> Cx<'_, 'd> {
         }
         match written.as_string() {
             None => {
-                self.wrong_type(path, key, EXPECTED_STRING);
+                self.wrong_type(path, key, &codes::EXPECTED_STRING);
                 Some(fallback)
             }
             Some(text) if values.contains(&text.as_str()) => Some(text.as_str()),
             Some(text) => {
-                self.raise_at(
-                    path,
-                    key,
-                    DiagnosticCode::InvalidEnumValue {
-                        text: formatted(unknown, &[text.as_str()]),
-                    },
-                );
+                self.raise_at(path, key, unknown.with([text.as_str()]));
                 Some(fallback)
             }
         }
@@ -677,7 +598,7 @@ impl<'d> Cx<'_, 'd> {
             entry,
             "binding_type",
             &["none", "global", "collection", "collection_details", "view"],
-            "Unknown binding type value: {}",
+            &codes::BINDING_TYPE_UNKNOWN,
             "global",
             path,
         );
@@ -692,7 +613,7 @@ impl<'d> Cx<'_, 'd> {
                 "visible",
                 "visibility_changed",
             ],
-            "Unknown binding condition value: {}",
+            &codes::BINDING_CONDITION_UNKNOWN,
             "none",
             path,
         );
@@ -703,51 +624,32 @@ impl<'d> Cx<'_, 'd> {
             path,
         );
         let missing = |key: &str| string_or_empty(member(entry, key)).is_empty();
-        let mut require = |cx: &mut Self, key: &str, text: &'static str| {
+        let mut require = |cx: &mut Self, key: &str, code: &'static CodeDef<0>| {
             if missing(key) {
-                cx.raise_at(
-                    path,
-                    key,
-                    DiagnosticCode::MissingRequiredField { text: fixed(text) },
-                );
+                cx.raise_at(path, key, code);
             }
         };
         match binding_type {
             Some("global" | "collection") => {
-                require(
-                    self,
-                    "binding_name",
-                    "JSON UI parse failure: Must define a binding name!",
-                );
+                require(self, "binding_name", &codes::NO_BINDING_NAME);
                 if binding_type == Some("collection") {
-                    require(
-                        self,
-                        "binding_collection_name",
-                        "JSON UI parse failure: Must define a collection name for the binding!",
-                    );
+                    require(self, "binding_collection_name", &codes::NO_COLLECTION_NAME);
                 }
             }
             Some("view") => {
                 require(
                     self,
                     "source_property_name",
-                    "JSON UI parse failure: Must define a source property name in the binding!",
+                    &codes::NO_SOURCE_PROPERTY_NAME,
                 );
                 require(
                     self,
                     "target_property_name",
-                    "JSON UI parse failure: Must define a target property name in the binding!",
+                    &codes::NO_TARGET_PROPERTY_NAME,
                 );
                 let set = |key: &str| member(entry, key).and_then(Value::as_bool) == Some(true);
                 if set("resolve_ancestor_scope") && set("resolve_sibling_scope") {
-                    self.raise(
-                        path,
-                        DiagnosticCode::InvalidValue {
-                            text: fixed(
-                                "JSON UI parse failure: resolve_ancestor_scope and resolve_sibling_scope cannot both be set!",
-                            ),
-                        },
-                    );
+                    self.raise(path, &codes::BOTH_SCOPES_SET);
                 }
             }
             // `none` adds no binding; `collection_details` requires nothing.
@@ -762,13 +664,7 @@ impl<'d> Cx<'_, 'd> {
         }
         path.push("factory".to_owned());
         if string_or_empty(member(value, "name")).is_empty() {
-            self.raise_at(
-                path,
-                "name",
-                DiagnosticCode::MissingRequiredField {
-                    text: fixed("JSON UI parse failure: The factory name should not be empty!"),
-                },
-            );
+            self.raise_at(path, "name", &codes::EMPTY_FACTORY_NAME);
         }
         if let Some(variables) = member(value, "factory_variables") {
             let all_variables = variables.as_array().is_some_and(|variables| {
@@ -781,11 +677,7 @@ impl<'d> Cx<'_, 'd> {
                 self.raise_at(
                     path,
                     "factory_variables",
-                    DiagnosticCode::InvalidValue {
-                        text: fixed(
-                            "JSON UI parse failure: factory_variables should all be strings of json variables created higher up the tree.",
-                        ),
-                    },
+                    &codes::FACTORY_VARIABLES_NOT_VARIABLES,
                 );
             }
         }
@@ -800,71 +692,36 @@ impl<'d> Cx<'_, 'd> {
 
     /// The focus component's keys.
     fn focus_mapping(&mut self, value: &Value, path: &mut Vec<String>) {
-        const DIRECTIONS: [(&str, &str); 4] = [
-            (
-                "focus_change_up",
-                "JSON UI parse failure: Up Override set to blank string. This is redundant as blank strings imply no override.",
-            ),
-            (
-                "focus_change_down",
-                "JSON UI parse failure: Down Override set to blank string. This is redundant as blank strings imply no override.",
-            ),
-            (
-                "focus_change_left",
-                "JSON UI parse failure: Left Override set to blank string. This is redundant as blank strings imply no override.",
-            ),
-            (
-                "focus_change_right",
-                "JSON UI parse failure: Right Override set to blank string. This is redundant as blank strings imply no override.",
-            ),
+        const DIRECTIONS: [(&str, &CodeDef<0>); 4] = [
+            ("focus_change_up", &codes::UP_OVERRIDE_BLANK),
+            ("focus_change_down", &codes::DOWN_OVERRIDE_BLANK),
+            ("focus_change_left", &codes::LEFT_OVERRIDE_BLANK),
+            ("focus_change_right", &codes::RIGHT_OVERRIDE_BLANK),
         ];
         let Some(entries) = value.as_array() else {
-            return self.wrong_type(
-                path,
-                "focus_mapping",
-                "JSON UI parse failure: Expected an array for property 'focus_mapping'.",
-            );
+            return self.wrong_type(path, "focus_mapping", &codes::FOCUS_MAPPING_NOT_ARRAY);
         };
         path.push("focus_mapping".to_owned());
         for (index, entry) in entries.as_slice().iter().enumerate() {
             let index = index.to_string();
             if !entry.is_object() {
-                self.wrong_type(
-                    path,
-                    &index,
-                    "JSON UI parse failure: Expected an object inside array for property 'focus_mapping'.",
-                );
+                self.wrong_type(path, &index, &codes::FOCUS_MAPPING_ENTRY_NOT_OBJECT);
                 continue;
             }
             path.push(index);
             if member(entry, "focus_identifier").is_none() {
-                self.raise_at(
-                    path,
-                    "focus_identifier",
-                    DiagnosticCode::MissingRequiredField {
-                        text: fixed("JSON UI parse failure: Expected a focus identifier."),
-                    },
-                );
+                self.raise_at(path, "focus_identifier", &codes::NO_FOCUS_IDENTIFIER);
             }
             if DIRECTIONS
                 .iter()
                 .all(|(direction, _)| member(entry, direction).is_none())
             {
-                self.raise(
-                    path,
-                    DiagnosticCode::MissingRequiredField {
-                        text: fixed("JSON UI parse failure: Expected a focus direction override."),
-                    },
-                );
+                self.raise(path, &codes::NO_FOCUS_DIRECTION);
             }
             for (direction, blank) in DIRECTIONS {
                 let written = member(entry, direction).and_then(Value::as_string);
                 if written.is_some_and(facet_value::VString::is_empty) {
-                    self.raise_at(
-                        path,
-                        direction,
-                        DiagnosticCode::InvalidValue { text: fixed(blank) },
-                    );
+                    self.raise_at(path, direction, blank);
                 }
             }
             path.pop();
@@ -891,9 +748,7 @@ impl<'d> Cx<'_, 'd> {
                     self.raise_at(
                         path,
                         "mapping_type",
-                        DiagnosticCode::InvalidEnumValue {
-                            text: formatted("Unrecognized mapping type String: {}", &[written]),
-                        },
+                        codes::MAPPING_TYPE_UNRECOGNIZED.with([written]),
                     );
                 }
             }
@@ -924,13 +779,7 @@ impl<'d> Cx<'_, 'd> {
                 && string_or_empty(Some(event)) != "button_event"
             {
                 path.push(index.to_string());
-                self.raise_at(
-                    path,
-                    "event_type",
-                    DiagnosticCode::InvalidEnumValue {
-                        text: fixed("Unrecognized sound event type.\n"),
-                    },
-                );
+                self.raise_at(path, "event_type", &codes::SOUND_EVENT_UNRECOGNIZED);
                 path.pop();
             }
         }
@@ -946,18 +795,14 @@ impl<'d> Cx<'_, 'd> {
             match written.as_string() {
                 None => {
                     if member(own, "anim_type").is_some() {
-                        self.wrong_type(path, "anim_type", EXPECTED_STRING);
+                        self.wrong_type(path, "anim_type", &codes::EXPECTED_STRING);
                     }
                 }
                 Some(text) => {
                     animation = AnimationType::from_name(text.as_str());
                     // Silent in vanilla: no animation is created.
                     if animation.is_none() && member(own, "anim_type").is_some() {
-                        self.raise_at(
-                            path,
-                            "anim_type",
-                            DiagnosticCode::InvalidEnumValue { text: None },
-                        );
+                        self.raise_at(path, "anim_type", &core_codes::INVALID_ENUM_VALUE);
                     }
                 }
             }
@@ -970,22 +815,13 @@ impl<'d> Cx<'_, 'd> {
             let unread = DEAD_ANIMATION_KEYS.contains(&key)
                 || animation.is_some_and(|animation| !props::animation_reads(animation, key));
             if unread {
-                self.raise_at(path, key, DiagnosticCode::UnusedProperty);
+                self.raise_at(path, key, &core_codes::UNUSED_PROPERTY);
             }
         }
         match animation {
             Some(AnimationType::FlipBook) => {
                 if member(own, "frame_count").and_then(number) == Some(0.0) {
-                    self.raise_at(
-                        path,
-                        "frame_count",
-                        DiagnosticCode::InvalidValue {
-                            text: formatted(
-                                "FrameCount must be non-zero! Problem found in UIControl{}",
-                                &[name],
-                            ),
-                        },
-                    );
+                    self.raise_at(path, "frame_count", codes::FRAME_COUNT_ZERO.with([name]));
                 }
                 if let Some(orientation) = member(own, "orientation").filter(|o| !dynamic(o)) {
                     self.typed(
@@ -1015,12 +851,7 @@ impl<'d> Cx<'_, 'd> {
             self.effective(effective, "to"),
         );
         let (Some(from), Some(to)) = endpoints else {
-            return self.raise(
-                path,
-                DiagnosticCode::MissingRequiredField {
-                    text: fixed("The animation needs to have a specified axis offset."),
-                },
-            );
+            return self.raise(path, &codes::NO_AXIS_OFFSET);
         };
         if dynamic(from) || dynamic(to) {
             return;
@@ -1040,10 +871,7 @@ impl<'d> Cx<'_, 'd> {
         let (Some(from), Some(to)) = (axes(from), axes(to)) else {
             return;
         };
-        let counts = [
-            "The animation needs to have the same number x values.",
-            "The animation needs to have the same number y values.",
-        ];
+        let counts = [&codes::X_COUNT_DIFFERS, &codes::Y_COUNT_DIFFERS];
         for ((from, to), count) in from.iter().zip(&to).zip(counts) {
             let (Some(from), Some(to)) = (from, to) else {
                 continue;
@@ -1051,17 +879,17 @@ impl<'d> Cx<'_, 'd> {
             let text = if from.len() != to.len() {
                 count
             } else if from.iter().zip(to).any(|(a, b)| a.negative != b.negative) {
-                "All value's operations need to match with each other."
+                &codes::OPERATIONS_DIFFER
             } else if from
                 .iter()
                 .zip(to)
                 .any(|(a, b)| !same_type(&a.unit, &b.unit))
             {
-                "All value's types need to match with each other."
+                &codes::TYPES_DIFFER
             } else {
                 continue;
             };
-            self.raise(path, DiagnosticCode::InvalidValue { text: fixed(text) });
+            self.raise(path, text);
         }
     }
 }

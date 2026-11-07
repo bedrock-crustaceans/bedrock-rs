@@ -5,7 +5,7 @@
 //! without a warning or an error and round-trips (written, read back equal, written the same).
 //! A runtime identifier the game does not hold is filled in by the crate.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::document::Content;
 
 use super::common::{cx, fixture, outcome, reparse, stable};
@@ -124,12 +124,13 @@ fn the_engine_s_experimental_field_template_names_an_unknown_component() {
     let refused = outcome(&text, &base_game);
     assert!(refused.value.is_none(), "{:#?}", refused.diagnostics);
     assert!(
-        refused.diagnostics.iter().any(|d| matches!(
-            d.code,
-            DiagnosticCode::UnrecognizedComponent { .. }
-        ) && d.severity == Severity::Error
-            && d.location.json_path.to_string()
-                == "minecraft:entity/components/test:experimental_component"),
+        refused
+            .diagnostics
+            .iter()
+            .any(|d| d.code.name() == "UnrecognizedComponent"
+                && d.severity == Severity::Error
+                && d.location.json_path.to_string()
+                    == "minecraft:entity/components/test:experimental_component"),
         "{:#?}",
         refused.diagnostics
     );

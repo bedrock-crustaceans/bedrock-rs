@@ -5,6 +5,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod component;
 pub mod history;
 
@@ -12,7 +13,6 @@ mod color;
 mod read;
 #[cfg(test)]
 mod tests;
-mod texts;
 mod validate;
 mod write;
 
@@ -31,17 +31,14 @@ use indexmap::IndexSet;
 use crate::component::child;
 use crate::history::{ClientBiomeFamily, ClientBiomeHistory, identifier_path};
 use crate::read::{MODERN, PAYLOAD_KEY};
-use crate::texts::{
-    CANNOT_LOAD, FAILED_TO_LOAD, INVALID_FILE, LEGACY_ROOT, LEGACY_SYNTAX, NO_VERSION_STRING,
-    formatted,
-};
 use std::borrow::Cow;
 
 use crate::component::{DryFoliageColor, SkyColor, SoundAddition, WaterAppearance};
 use bedrock_addon_core::__private::Sealed;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    VanillaText, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Notice, Origin,
@@ -380,21 +377,14 @@ impl Parts {
 
 /// "unsupported version: no parser available for version %s".
 fn no_parser(version: &str) -> DiagnosticCode {
-    DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::NoParserForVersion {
-            version: version.to_owned(),
-        }),
-    }
+    DiagnosticCode::from(core_codes::NO_PARSER_FOR_VERSION.with([version.to_string()]))
 }
 
 /// The text of a file, after the BOM, the UTF-8 and the depth check.
 fn text<'b>(bytes: &'b [u8], origin: &Origin) -> Result<Cow<'b, str>, Rejected> {
     let malformed = |message: &str| {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: message.to_owned(),
-            text: None,
-        }));
+        diagnostics.push(Diagnostic::of(builders::syntax(message)));
         diagnostics.locate(origin);
         Rejected::new(origin.clone(), diagnostics)
     };
@@ -436,7 +426,6 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     }
     for mut diagnostic in std::mem::take(&mut parsed.diagnostics) {
         let mut after = None;
-        let mut detail_moved = false;
         // The pipeline's lines, on core's definitions or the legacy variants.
         let plain_malformed_version = matches!(
             diagnostic.code,
@@ -454,9 +443,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
         ) || diagnostic.is(&core_codes::MISSING_REQUIRED_FIELD);
         let reworded = match &diagnostic.code {
             // The game clears the input's version and then finds none.
-            _ if plain_malformed_version => Some(DiagnosticCode::MalformedFormatVersion {
-                text: Some(VanillaText::NoValidVersion),
-            }),
+            _ if plain_malformed_version => Some(DiagnosticCode::from(&codes::NO_VALID_VERSION)),
             // Below the floor the game refuses the version in the legacy loader's own words;
             // below the legacy range it has no parser at all.
             _ if use_format => written.filter(|version| *version < FLOOR).map(|version| {
@@ -464,9 +451,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                 if version < LEGACY_SLICE {
                     no_parser(&version_text)
                 } else {
-                    DiagnosticCode::UnsupportedVersion {
-                        text: formatted(CANNOT_LOAD, &[path, &version_text]),
-                    }
+                    DiagnosticCode::from(codes::CANNOT_LOAD.with([path, version_text.as_str()]))
                 }
             }),
             // The game takes the first textual `format_version`: a document below 1.21.130
@@ -476,45 +461,32 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
                 && written.is_some_and(|version| version < MODERN)
                 && diagnostic.location.json_path.is_key("format_version") =>
             {
-                Some(DiagnosticCode::MissingRequiredField {
-                    text: formatted(NO_VERSION_STRING, &[path]),
-                })
+                Some(DiagnosticCode::from(codes::NO_VERSION_STRING.with([path])))
             }
-            // A text the legacy loader cannot read as a JSON object; the reader's message moves
-            // from the detail back into the code.
+            // A text the legacy loader cannot read as a JSON object; the reader's message stays
+            // the finding's detail.
             _ if diagnostic.is(&core_codes::DOCUMENT_JSON)
                 && scanned_version(text).is_some_and(|version| version < MODERN) =>
             {
-                let message = diagnostic.syntax_message().unwrap_or_default().to_owned();
-                let vanilla = if bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok() {
-                    formatted(LEGACY_ROOT, &[path])
+                let code = if bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok() {
+                    codes::LEGACY_ROOT.with([path])
                 } else {
-                    formatted(LEGACY_SYNTAX, &[&message])
+                    let message = diagnostic.syntax_message().unwrap_or_default();
+                    codes::LEGACY_SYNTAX.with([message])
                 };
-                detail_moved = true;
-                Some(DiagnosticCode::MalformedInput {
-                    message,
-                    text: vanilla,
-                })
+                Some(code.into())
             }
             // The content log line that follows "Invalid Client Biome file".
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::Fixed(INVALID_FILE)),
-                ..
-            } => {
-                after = Some(Diagnostic::error(DiagnosticCode::MalformedInput {
-                    message: "the document was not loaded".to_owned(),
-                    text: formatted(FAILED_TO_LOAD, &[path]),
-                }));
+            _ if diagnostic.is(&codes::INVALID_FILE) => {
+                after = Some(Diagnostic::of(codes::FAILED_TO_LOAD.with([path])).detail(
+                    DiagnosticDetail::Syntax("the document was not loaded".to_owned()),
+                ));
                 None
             }
             _ => None,
         };
         if let Some(code) = reworded {
             diagnostic.code = code;
-        }
-        if detail_moved {
-            diagnostic.detail = None;
         }
         found.push(diagnostic);
         found.extend(after);
@@ -526,7 +498,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
     {
         let mut at = JsonPath::new();
         at.push("format_version");
-        found.push(Diagnostic::info(DiagnosticCode::UnusualFormatVersion).at(at));
+        found.push(Diagnostic::of(&core_codes::UNUSUAL_FORMAT_VERSION).at(at));
     }
     parsed.diagnostics = found;
 }
@@ -687,7 +659,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
     let mut builder = RegistryBuilder::new(
         CombineRule::ClaimBeforeValidate {
             claimed: Some(Notice {
-                code: DiagnosticCode::ClientBiomeShadowsLowerPacks,
+                code: DiagnosticCode::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
                 severity: Severity::Info,
             }),
         },
@@ -720,7 +692,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
             if !seen.insert((rank, id.clone())) {
                 findings.extend(findings_of(&contribution));
                 findings.push(notice(
-                    DiagnosticCode::DuplicateIdentifier { text: None },
+                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     origin,
                 ));
@@ -728,7 +700,7 @@ fn combine(parsed: Vec<Contribution<ClientBiome>>, stack: &StackCx<'_>) -> Regis
             }
             if loaded && !claiming.contains(&index) {
                 findings.push(notice(
-                    DiagnosticCode::ShadowedDefinition { text: None },
+                    DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
                     Severity::Info,
                     origin,
                 ));

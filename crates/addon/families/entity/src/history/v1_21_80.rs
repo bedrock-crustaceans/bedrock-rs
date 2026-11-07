@@ -1,6 +1,7 @@
 //! Format 1.21.80: the struct and the step to 1.21.89.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use crate::codes;
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
 use super::Payload;
@@ -28,11 +29,7 @@ impl LegacyStep<1, 21, 80> for Payload {
                 groups.shift_remove(&name);
                 finding(
                     cx,
-                    DiagnosticCode::DroppedComponent {
-                        text: Some(VanillaText::NullGroupRemoved {
-                            group: name.clone(),
-                        }),
-                    },
+                    codes::NULL_GROUP_REMOVED.with([name.as_str()]).into(),
                     &JsonPath::new().with(&["component_groups", &name]),
                 );
             }

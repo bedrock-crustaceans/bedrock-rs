@@ -4,12 +4,13 @@
 //! document is parsed and walked by the Molang passes with the item's other fields; the JSON
 //! itself is written back as it was.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangFields, MolangList, MolangVersionSource, MolangVisitor,
     RawVersion, ReadField, ReaderKind, Step, read, read_list,
 };
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::event;
 
@@ -294,7 +295,7 @@ impl Collector<'_> {
         let mut at = self.at.clone();
         append(&mut at, path);
         let tell = |severity| {
-            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
                 .severity(severity)
                 .at(at.clone())
         };

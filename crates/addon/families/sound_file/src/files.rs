@@ -5,6 +5,7 @@
 
 use indexmap::IndexMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -244,7 +245,7 @@ fn index_listings<'a>(
                 None if served => {
                     // A file below `sounds/` with no audio extension is never read.
                     out.diagnostics.push(file_finding(
-                        DiagnosticCode::IgnoredFile { text: None },
+                        DiagnosticCode::from(&core_codes::IGNORED_FILE),
                         Severity::Info,
                         pack,
                         path,
@@ -266,7 +267,7 @@ fn index_listings<'a>(
                     // The same pack ships the name under an earlier extension.
                     if served {
                         out.diagnostics.push(file_finding(
-                            DiagnosticCode::ShadowedDefinition { text: None },
+                            DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
                             Severity::Info,
                             &asset.pack,
                             &asset.path,

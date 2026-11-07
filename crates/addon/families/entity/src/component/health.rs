@@ -4,8 +4,9 @@
 // Types and defaults follow the game's 1.26.50 schemas (1.21.130 for `burns_in_daylight`,
 // 1.26.40 for `ignore_cannot_be_attacked`).
 
+use crate::codes;
 use crate::component::descriptor_tags;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange};
@@ -143,16 +144,7 @@ impl Typed for Insomnia {
                 .is_some_and(|value| !value.is_null() && value.as_number().is_none())
         {
             cx.refuse(
-                DiagnosticCode::InvalidType {
-                    text: Some(VanillaText::Formatted {
-                        template: "{}: {}",
-                        args: vec![
-                            MEMBER.to_owned(),
-                            bedrock_addon_core::diagnostic::cereal::INVALID_NUMERIC_VALUE_TEXT
-                                .to_owned(),
-                        ],
-                    }),
-                },
+                DiagnosticCode::from(&codes::INSOMNIA_NOT_A_NUMBER),
                 &JsonPath::new().child(MEMBER),
             );
         }

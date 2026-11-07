@@ -3,8 +3,9 @@
 //! file is skipped; the crate's finding is one `InvalidValue` error carrying both texts, one per
 //! line.
 
+use super::codes;
 use super::{Dimension, DimensionHeight, V1_26_50};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The validation error text of every identifier failure (part B).
@@ -41,13 +42,9 @@ fn generator_rule(dimension: &Dimension, at: &JsonPath, cx: &mut ValidateCx<'_>)
         return;
     }
     cx.diagnostics.push_kept_error(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(
-                "minecraft:generation: generator_type unsupported",
-            )),
-        })
-        .at(at.with(&["components", "minecraft:generation", "generator_type"]))
-        .phase(Phase::Validate),
+        Diagnostic::of(&codes::GENERATOR_UNSUPPORTED)
+            .at(at.with(&["components", "minecraft:generation", "generator_type"]))
+            .phase(Phase::Validate),
     );
 }
 
@@ -154,13 +151,8 @@ fn error(
     validation: &'static str,
 ) {
     cx.diagnostics.push(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted {
-                template: "{}\n{}",
-                args: vec![content_log.to_owned(), validation.to_owned()],
-            }),
-        })
-        .at(at)
-        .phase(Phase::Validate),
+        Diagnostic::of(codes::VALIDATION_FAILED.with([content_log, validation]))
+            .at(at)
+            .phase(Phase::Validate),
     );
 }

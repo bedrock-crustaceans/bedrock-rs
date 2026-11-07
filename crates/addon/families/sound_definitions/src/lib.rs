@@ -16,13 +16,15 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod definitions;
 pub mod history;
 mod upgrade;
 
 use crate::upgrade::definition_path;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment,
+    Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
 use bedrock_addon_core::document::unversioned::lone;
 use bedrock_addon_core::document::{
@@ -94,33 +96,36 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     {
         let at = JsonPath::new().child("format_version");
         found.push(
-            Diagnostic::info(DiagnosticCode::FormatVersionAboveEngine {
-                version: version.to_string(),
-            })
+            Diagnostic::of(
+                core_codes::FORMAT_VERSION_ABOVE_ENGINE
+                    .with([version.to_string(), ENGINE_VERSION.to_string()]),
+            )
             .at(at),
         );
     }
     let report = upgrade::upgrade(&mut copy, found);
     if report.wrapper_lost {
         found.push(
-            Diagnostic::info(DiagnosticCode::SoundDefinitionsWrapperWithoutVersion)
+            Diagnostic::of(&core_codes::SOUND_DEFINITIONS_WRAPPER_WITHOUT_VERSION)
                 .at(definition_path("sound_definitions")),
         );
     }
     for name in &report.replaced {
         found.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(definition_path(name)),
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(definition_path(name)),
         );
     }
     // The definition's own `__use_legacy_max_distance` the 1.14.0 step writes `"true"` over,
     // as the game's does: noted at the member.
     for name in &report.flag_replaced {
         let at = definition_path(name).child("__use_legacy_max_distance");
-        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
+        found.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at));
     }
     for (name, member) in &report.zeroed {
         let at = definition_path(name).child(member);
-        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
+        found.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at));
     }
     // The entry `pitch` the 1.14.0 step removes. The game gives no message; the crate notes it
     // at the member, so that nothing an author wrote goes without a word.
@@ -132,7 +137,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
             upgrade::EntryPlace::Key(key) => at.push(key),
         }
         at.push("pitch");
-        found.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at));
+        found.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at));
     }
     let lower = target.map(|target| fork::member(target, "sound_definitions"));
     let Some(lower) = lower else {
@@ -140,7 +145,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     };
     if report.not_a_list && lower.as_object().is_some_and(|lower| !lower.is_empty()) {
         let at = JsonPath::new().child("sound_definitions");
-        found.push(Diagnostic::info(DiagnosticCode::SoundDefinitionsCleared).at(at));
+        found.push(Diagnostic::of(&core_codes::SOUND_DEFINITIONS_CLEARED).at(at));
     }
     let definitions = fork::member(&copy, "sound_definitions");
     if report.distances {
@@ -151,7 +156,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
             });
             if own.is_object() && resets {
                 found.push(
-                    Diagnostic::info(DiagnosticCode::DistanceResetByLegacyOverlay)
+                    Diagnostic::of(&core_codes::DISTANCE_RESET_BY_LEGACY_OVERLAY)
                         .at(definition_path(&name)),
                 );
             }
@@ -160,7 +165,7 @@ fn prepare_definitions(json: &Value, target: Option<&Value>, found: &mut Diagnos
     for name in &report.sounds_inserted {
         if !fork::member(fork::member(lower, name), "sounds").is_null() {
             found.push(
-                Diagnostic::info(DiagnosticCode::SoundsClearedByLegacyOverlay)
+                Diagnostic::of(&core_codes::SOUNDS_CLEARED_BY_LEGACY_OVERLAY)
                     .at(definition_path(name)),
             );
         }

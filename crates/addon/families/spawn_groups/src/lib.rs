@@ -5,6 +5,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod legacy;
 mod validate;
 
@@ -82,8 +83,6 @@ impl SpawnGroup {
     }
 }
 
-/// The closing line of a spawn-group file that failed.
-const FAILED_GROUPS: &str = "Failed to load spawn groups";
 /// The app-data directory of spawn groups (`SPAWN_GROUPS_FILE_TYPE`).
 const GROUPS_DIRECTORY: &str = "definitions/spawn_groups";
 
@@ -134,7 +133,7 @@ pub(crate) fn parse_group(
     cx: &LoadContext,
 ) -> FileLoad<SpawnGroup> {
     let origin = origin(pack, side, path);
-    let (identifier, result) = load_file(&origin, bytes, FAILED_GROUPS, |text, origin| {
+    let (identifier, result) = load_file(&origin, bytes, &codes::FAILED_GROUPS, |text, origin| {
         load_family::<GroupFamily, _>(text, cx, origin, std::convert::identity)
     });
     // A group without conditions is never registered.
@@ -171,7 +170,7 @@ impl JsonDocument for SpawnGroup {
         cx: &LoadContext,
     ) -> Result<Document<GroupHistory>, Rejected> {
         let origin = origin(PackRef::app_data(), PackSide::Behavior, path);
-        let (_, result) = load_file(&origin, bytes, FAILED_GROUPS, |text, origin| {
+        let (_, result) = load_file(&origin, bytes, &codes::FAILED_GROUPS, |text, origin| {
             load_family_as_written::<GroupFamily>(text, cx, origin)
         });
         result
@@ -270,10 +269,7 @@ mod tests {
         ] {
             let (read, written) = both_findings(text);
             assert!(
-                read.iter().any(|d| matches!(
-                    d.code,
-                    bedrock_addon_core::diagnostic::DiagnosticCode::DocumentRejected { .. }
-                )),
+                read.iter().any(|d| d.code.name() == "DocumentRejected"),
                 "{text}: {read:?}"
             );
             assert_eq!(written, read, "{text}");

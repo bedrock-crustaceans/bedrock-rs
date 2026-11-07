@@ -4,18 +4,15 @@
 use facet::Facet;
 
 use super::Description;
+use super::codes;
 use super::molang::{WORLD_GEN, Walk};
 use super::validate::Check;
 use super::values::{CarverRange, JsonInt};
 use super::{Rules, V1_13_0, strict_struct};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_shapes::BlockSpecifier;
-
-/// The client's text for a float range array of another length than two.
-const FLOAT_RANGE_ARRAY: &str =
-    "Float range array was not parsed. Float range arrays should have 2 values.";
 
 /// Declares one carver struct with the common members (and `replace_air_with` where given).
 macro_rules! carver {
@@ -105,12 +102,9 @@ fn range_rules(check: &mut ValidateCx<'_>, key: &str, range: Option<&CarverRange
             let at = check.path(key);
             check.diagnostics.extend(range.check(&at));
         }
-        Some(CarverRange::Unparsed(_)) => check.error(
-            key,
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(FLOAT_RANGE_ARRAY)),
-            },
-        ),
+        Some(CarverRange::Unparsed(_)) => {
+            check.error(key, DiagnosticCode::from(&codes::FLOAT_RANGE_ARRAY));
+        }
         None => {}
     }
 }

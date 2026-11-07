@@ -1,8 +1,9 @@
 //! The family rules of feature rules that need the loaded rule only; the identifier and file-name checks are the loader's (they need the
 //! path).
 
+use super::codes;
 use super::{CoordinateDistribution, CoordinateRange, FeatureRule, ScatterChance, ScatterParams};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::molang::{Molang, MolangSource};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_scatter::percent_in_range;
@@ -22,27 +23,17 @@ pub(crate) fn validate(rule: &mut FeatureRule, cx: &mut ValidateCx<'_>) {
 /// helpers), the document keeps what was written.
 fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>) {
     if matches!(params.iterations, Molang::Const(c) if c < 0.0) {
-        warn(
-            cx,
-            at.child("iterations"),
-            VanillaText::Fixed("Bad value for iterations - should be >= 0"),
-        );
+        warn(cx, at.child("iterations"), &codes::ITERATIONS_NEGATIVE);
     }
     match &params.scatter_chance {
-        Some(ScatterChance::Percent(Molang::Const(c))) if !percent_in_range(*c) => warn(
-            cx,
-            at.child("scatter_chance"),
-            VanillaText::Fixed(
-                "Bad value for scatter_chance - should be between 0 and 100 (exclusive)",
-            ),
-        ),
+        Some(ScatterChance::Percent(Molang::Const(c))) if !percent_in_range(*c) => {
+            warn(cx, at.child("scatter_chance"), &codes::SCATTER_CHANCE_RANGE);
+        }
         Some(ScatterChance::Fraction(fraction)) if fraction.denominator <= fraction.numerator => {
             warn(
                 cx,
                 at.child("scatter_chance"),
-                VanillaText::Fixed(
-                    "Bad value for scatter_chance - denominator should be greater than the numerator",
-                ),
+                &codes::SCATTER_CHANCE_FRACTION,
             );
         }
         _ => {}
@@ -57,14 +48,7 @@ fn scatter_checks(params: &ScatterParams, at: &JsonPath, cx: &mut ValidateCx<'_>
             Some(CoordinateRange::Single(_)) | None => {
                 {
                     // The game logs this for the expression form only.
-                    warn(
-                        cx,
-                        at,
-                        VanillaText::Formatted {
-                            template: "{} must be provided, either as a Molang expression string or as a sub-object",
-                            args: vec![key.to_owned()],
-                        },
-                    );
+                    warn(cx, at, codes::COORDINATE_REQUIRED.with([key]));
                 }
             }
         }
@@ -97,30 +81,14 @@ fn coordinate_checks(range: &CoordinateDistribution, at: &JsonPath, cx: &mut Val
     if !range.distribution.is_grid() {
         // The grid members mean something only to the two grid distributions.
         if range.step_size.is_some() {
-            warn(
-                cx,
-                at.child("step_size"),
-                VanillaText::Fixed(
-                    "step_size is only valid when distribution is fixed_grid or jittered_grid",
-                ),
-            );
+            warn(cx, at.child("step_size"), &codes::STEP_SIZE_NOT_GRID);
         }
         if range.grid_offset.is_some() {
-            warn(
-                cx,
-                at.child("grid_offset"),
-                VanillaText::Fixed(
-                    "grid_offset is only valid when distribution is fixed_grid or jittered_grid",
-                ),
-            );
+            warn(cx, at.child("grid_offset"), &codes::GRID_OFFSET_NOT_GRID);
         }
     }
     if range.extent_is_empty() {
-        warn(
-            cx,
-            at.child("extent"),
-            VanillaText::Fixed("Bad value for extent - maximum must be greater than minimum"),
-        );
+        warn(cx, at.child("extent"), &codes::EXTENT_EMPTY);
     }
 }
 
@@ -134,13 +102,10 @@ fn unknown_pass(rule: &FeatureRule, cx: &mut ValidateCx<'_>) {
     warn(
         cx,
         at,
-        VanillaText::Formatted {
-            template: "Feature rule identifier '{}' specifies unknown pass '{}'.",
-            args: vec![
-                rule.description.identifier.as_str().to_owned(),
-                rule.conditions.placement_pass.clone(),
-            ],
-        },
+        codes::UNKNOWN_PASS.with([
+            rule.description.identifier.as_str(),
+            rule.conditions.placement_pass.as_str(),
+        ]),
     );
 }
 
@@ -148,10 +113,7 @@ fn unknown_pass(rule: &FeatureRule, cx: &mut ValidateCx<'_>) {
 /// and keeps the rule: a kept error, an error-level finding after which the game keeps the
 /// document. The game logs the unknown pass and goes on; it logs each scatter check the same
 /// way and goes on with the replaced value, and the rule is inserted.
-fn warn(cx: &mut ValidateCx<'_>, at: JsonPath, text: VanillaText) {
-    cx.diagnostics.push_kept_error(
-        Diagnostic::error(DiagnosticCode::InvalidValue { text: Some(text) })
-            .at(at)
-            .phase(Phase::Validate),
-    );
+fn warn(cx: &mut ValidateCx<'_>, at: JsonPath, code: impl Into<Code>) {
+    cx.diagnostics
+        .push_kept_error(Diagnostic::of(code).at(at).phase(Phase::Validate));
 }

@@ -6,9 +6,9 @@ use facet::Facet;
 use facet_value::VObject;
 
 use super::{Checked, child};
+use crate::codes;
 use crate::color::{Color255Rgb, clamped_channels, is_rgb};
-use crate::texts::{COLOR, WATER_EMPTY, fixed};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
@@ -251,10 +251,7 @@ fn check_rgb(json: &Value, key: &'static str, d: &mut Diagnostics) {
 /// [`check_rgb`] for a value at `at`.
 fn check_rgb_value(value: &Value, at: &[&str], d: &mut Diagnostics) {
     if !is_rgb(value) {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidType { text: fixed(COLOR) })
-                .at(child(&JsonPath::new(), at)),
-        );
+        d.push(Diagnostic::of(&codes::COLOR).at(child(&JsonPath::new(), at)));
         return;
     }
     for index in clamped_channels(value) {
@@ -264,7 +261,8 @@ fn check_rgb_value(value: &Value, at: &[&str], d: &mut Diagnostics) {
         // The game clamps the channel without a log line; the crate tells the user with an
         // information.
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
                 .at(child(&JsonPath::new(), &path)),
         );
     }
@@ -286,16 +284,16 @@ fn check_color_or_map(
     };
     match object.get(COLOR_MAP) {
         None => d.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
                 .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
         ),
         Some(name) => match name.as_string() {
             None => d.push(
-                Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                Diagnostic::of(&core_codes::INVALID_TYPE)
                     .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
             ),
             Some(name) if !known(name.as_str()) => d.push(
-                Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
+                Diagnostic::of(&core_codes::INVALID_ENUM_VALUE)
                     .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
             ),
             Some(_) => {}
@@ -304,7 +302,7 @@ fn check_color_or_map(
     for (key, _) in object {
         if key.as_str() != COLOR_MAP {
             d.push(
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .at(child(&JsonPath::new(), &["color", key.as_str()]))
                     .severity(unknown),
             );
@@ -353,12 +351,7 @@ impl Checked for WaterAppearance {
             && object.get("surface_color").is_none()
             && object.get("surface_opacity").is_none()
         {
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: fixed(WATER_EMPTY),
-                })
-                .at(child(&JsonPath::new(), &[])),
-            );
+            d.push(Diagnostic::of(&codes::WATER_EMPTY).at(child(&JsonPath::new(), &[])));
         }
         check_rgb(json, "surface_color", d);
     }

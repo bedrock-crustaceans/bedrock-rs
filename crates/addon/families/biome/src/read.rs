@@ -8,7 +8,8 @@ use indexmap::IndexMap;
 
 use super::component::{BiomeComponent, Builder, SubsurfaceBuilder, SurfaceBuilder, child};
 use super::{Description, EnvironmentAttributes};
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
@@ -147,17 +148,14 @@ fn builder_bound(
         return;
     };
     if version < V1_26_30 && matches!(builder, Builder::NoiseGradient(_)) {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
-                .at(child(at, &["builder", "type"])),
-        );
+        d.push(Diagnostic::of(&core_codes::INVALID_ENUM_VALUE).at(child(at, &["builder", "type"])));
     }
 }
 
 /// An `UnrecognizedComponent` at `path`, graded by the slice's reading (the refusing error the
 /// game gives for an unknown member under the strict mask).
 fn unrecognized(path: JsonPath, cx: &LoadContext) -> Diagnostic {
-    Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None })
+    Diagnostic::of(&core_codes::UNRECOGNIZED_COMPONENT)
         .at(path)
         .severity(cx.grade(Class::Unknown))
 }
@@ -197,7 +195,13 @@ mod tests {
         assert_eq!(kept, ["typed minecraft:tags"]);
         let told: Vec<String> = d
             .iter()
-            .map(|f| format!("{:?} {}", f.code, f.location.json_path))
+            .map(|f| {
+                format!(
+                    "{} {}",
+                    bedrock_addon_core::diagnostic::testing::legacy_debug(f),
+                    f.location.json_path
+                )
+            })
             .collect();
         assert_eq!(
             told,

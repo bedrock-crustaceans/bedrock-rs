@@ -4,9 +4,8 @@ use bedrock_addon_core::molang::MolangSource;
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{Code, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
@@ -178,7 +177,7 @@ impl BlockDescriptor {
     /// unknown member by the reading the caller reads under).
     pub fn check(&self, at: &JsonPath, unknown: Severity) -> Diagnostics {
         let mut out = Diagnostics::default();
-        let text = match self {
+        let code = match self {
             Self::Block { extra, .. } | Self::Tags { extra, .. } => {
                 unrecognized(extra, at, unknown, &mut out);
                 return out;
@@ -193,21 +192,17 @@ impl BlockDescriptor {
                 unrecognized(extra, at, unknown, &mut out);
                 let block = name.as_ref().map_or("", BlockId::as_str).to_owned();
                 if states.is_empty() {
-                    VanillaText::BlockDescriptorNameAndTags { block }
+                    codes::BLOCK_DESCRIPTOR_NAME_AND_TAGS.with([block])
                 } else {
-                    VanillaText::BlockDescriptorTagsAndStates { block }
+                    codes::BLOCK_DESCRIPTOR_TAGS_AND_STATES.with([block])
                 }
             }
-            Self::Invalid(value) => invalid_text(value),
+            Self::Invalid(value) => invalid_code(value),
         };
         // Level 3 and the read goes on, a kept error: the game's descriptor proxy logs the two
         // texts and goes on with the tag expression; the block descriptor reader logs its own
         // and builds an empty descriptor.
-        out.push_kept_error(finding(
-            DiagnosticCode::InvalidValue { text: Some(text) },
-            Severity::Error,
-            at,
-        ));
+        out.push_kept_error(finding(DiagnosticCode::from(code), Severity::Error, at));
         out
     }
 
@@ -240,29 +235,25 @@ impl BlockDescriptor {
     }
 }
 
-/// The JSON reader's text for a value it rejects.
-fn invalid_text(value: &Value) -> VanillaText {
+/// The JSON reader's code for a value it rejects.
+fn invalid_code(value: &Value) -> Code {
     let rejected = match value.as_object() {
         Some(object) => BlockDescriptor::read_object(object).err(),
         None => None,
     };
     match rejected {
-        Some(Rejected::Name(name)) => VanillaText::BlockDescriptorName {
-            value: compact(&name),
-        },
-        Some(Rejected::State(state, state_value)) => VanillaText::BlockDescriptorStateType {
-            block: value
+        Some(Rejected::Name(name)) => codes::BLOCK_DESCRIPTOR_NAME.with([compact(&name)]),
+        Some(Rejected::State(state, state_value)) => codes::BLOCK_DESCRIPTOR_STATE_TYPE.with([
+            value
                 .as_object()
                 .and_then(|o| o.get("name"))
                 .and_then(Value::as_string)
                 .map(|n| n.as_str().to_owned())
                 .unwrap_or_default(),
             state,
-            state_type: jsoncpp_type(&state_value),
-        },
-        Some(Rejected::Shape) | None => VanillaText::BlockDescriptorShape {
-            value: compact(value),
-        },
+            jsoncpp_type(&state_value).to_string(),
+        ]),
+        Some(Rejected::Shape) | None => codes::BLOCK_DESCRIPTOR_SHAPE.with([compact(value)]),
     }
 }
 

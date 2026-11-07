@@ -1,6 +1,7 @@
 //! Golden values of the crate's finding helpers, each built by hand the long way
 //! (`Diagnostic::new`): the helpers are written over core's builder and must give exactly these.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -10,7 +11,7 @@ fn at() -> JsonPath {
 }
 
 fn code() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue { text: None }
+    DiagnosticCode::from(&core_codes::INVALID_VALUE)
 }
 
 /// The finding of `code` the long way.

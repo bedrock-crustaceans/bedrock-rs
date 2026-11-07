@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::load::LoadContext;
@@ -87,7 +87,8 @@ fn sg52_tags_shape_then_molang() {
     let d = document.diagnostics();
     assert!(
         d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
+            // By legacy name: the variant and the definitions that were it.
+            .any(|f| f.code.name() == "InvalidValue"
                 && f.code.to_string().ends_with("Cannot parse 5")),
         "{d:#?}"
     );

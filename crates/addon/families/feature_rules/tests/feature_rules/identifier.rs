@@ -1,7 +1,7 @@
 //! The identifier's namespace syntax and file name
 //! are checked against the file, logged and the rule kept.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::load::LoadContext;
 
 use super::common::*;
@@ -88,10 +88,7 @@ fn rule_3_the_name_after_the_last_colon_is_compared_case_sensitively() {
 fn rule_11_a_minecraft_identifier_outside_the_base_game_is_not_rejected() {
     let text = rule("1.13.0", "surface_pass", None).replace("demo:test", "minecraft:test");
     let document = load_at("feature_rules/test.json", &text, &LoadContext::detached()).unwrap();
-    assert!(!has(document.diagnostics(), |c| matches!(
-        c,
-        DiagnosticCode::InvalidValue { .. }
-    )));
+    assert!(!has(document.diagnostics(), |c| c.name() == "InvalidValue"));
 }
 
 // An object given to an identifier is a wrong type at the member, and reading it does not panic.

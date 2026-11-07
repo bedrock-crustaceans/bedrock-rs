@@ -3,9 +3,12 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
+
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
@@ -26,9 +29,6 @@ use bedrock_addon_core::load::sound::{
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::ENGINE_VERSION;
-
-/// Vanilla's text for a definition under the empty name.
-const NO_NAME: &str = "Cannot define a music definition with no name.";
 
 /// Game ticks per second, for the delays vanilla stores as ticks.
 const TICKS_PER_SECOND: f32 = 20.0;
@@ -253,12 +253,7 @@ pub(crate) fn read_root(
         report.enter(name);
         if name.is_empty() {
             // The game writes this line to the content log at the warning level.
-            report.vanilla(
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(NO_NAME)),
-                },
-                Severity::Warning,
-            );
+            report.vanilla(DiagnosticCode::from(&codes::NO_NAME), Severity::Warning);
             extra.insert(name.to_owned(), value.clone());
         } else if value.is_object() {
             out.insert(
@@ -267,7 +262,10 @@ pub(crate) fn read_root(
             );
         } else {
             // The game registers an empty music definition.
-            report.here(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+            report.here(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            );
             extra.insert(name.to_owned(), value.clone());
         }
         report.leave();
@@ -324,7 +322,7 @@ fn read_definition(value: &Value, report: &mut Reporter<'_>) -> MusicDefinition 
         // The game stores the values as given.
         report.at(
             "min_delay",
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
     }

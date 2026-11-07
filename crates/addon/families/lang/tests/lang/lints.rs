@@ -2,9 +2,7 @@
 //! both of its ends, on inline bytes. Vanilla loads every one of these files without a word,
 //! and the table is built exactly as vanilla builds it.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Severity};
 use bedrock_addon_family_lang::LangFile;
 
 use super::common::*;
@@ -34,7 +32,7 @@ fn tab_cuts(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::IgnoredMember { text: None })
+            d.is(&bedrock_addon_core::diagnostic::codes::IGNORED_MEMBER)
                 && d.severity == Severity::Info
         })
         .collect()
@@ -89,7 +87,7 @@ fn duplicates(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::DuplicateIdentifier { text: None })
+            d.is(&bedrock_addon_core::diagnostic::codes::DUPLICATE_IDENTIFIER)
                 && d.severity == Severity::Info
         })
         .collect()
@@ -158,7 +156,8 @@ fn spaces(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::LangKeyTrailingSpace) && d.severity == Severity::Info
+            d.is(&bedrock_addon_core::diagnostic::codes::LANG_KEY_TRAILING_SPACE)
+                && d.severity == Severity::Info
         })
         .collect()
 }
@@ -209,7 +208,7 @@ fn leading_equals(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::InvalidValue { text: None })
+            d.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE)
                 && d.severity == Severity::Info
         })
         .collect()
@@ -252,7 +251,7 @@ fn odd_placeholders(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::InvalidValue { text: None })
+            d.is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE)
                 && d.severity == Severity::Info
         })
         .collect()
@@ -322,8 +321,7 @@ fn not_utf8(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
     diagnostics
         .iter()
         .filter(|d| {
-            matches!(d.code, DiagnosticCode::MalformedInput { text: None, .. })
-                && d.severity == Severity::Info
+            d.is(&bedrock_addon_core::diagnostic::codes::SYNTAX) && d.severity == Severity::Info
         })
         .collect()
 }

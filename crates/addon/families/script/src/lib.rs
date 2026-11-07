@@ -5,6 +5,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 /// Script module metadata (`ModuleMetadata`, `ModuleVersion`, `Privilege`, …).
 pub mod meta;
 mod module;

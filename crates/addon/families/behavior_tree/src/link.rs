@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::read::{PAYLOAD, ROOT};
 use super::{BehaviorTree, Node};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
@@ -129,9 +130,9 @@ pub fn link(trees: &Registry<BehaviorTree>) -> Diagnostics {
     for (source, (tree, subtrees)) in nodes.into_iter().enumerate() {
         for (target, at) in subtrees {
             let code = match index.get(target) {
-                None => DiagnosticCode::UnresolvedReference { text: None },
+                None => DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
                 Some(&found) if component[found] == component[source] => {
-                    DiagnosticCode::ReferenceCycle { text: None }
+                    DiagnosticCode::from(&core_codes::REFERENCE_CYCLE)
                 }
                 Some(_) => continue,
             };

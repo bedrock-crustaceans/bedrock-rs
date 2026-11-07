@@ -8,10 +8,11 @@ use indexmap::IndexMap;
 
 use super::{
     ALLOWED_MC_INHERIT, CameraFile, CameraList, CameraPreset, CameraSpline, Cameras, Splines,
-    VANILLA_CAMERAS, texts,
+    VANILLA_CAMERAS, codes,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Notice, Registry, RegistryBuilder, Rejected,
@@ -149,40 +150,32 @@ fn invalid(document: &Document<CameraPreset>, end: End<'_>) -> Option<Diagnostic
     // Illegal override: a vanilla camera's `radius` is the game's.
     if VANILLA_CAMERAS.contains(&name) && document.radius.is_some() {
         return Some(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: texts::formatted(texts::ILLEGAL_OVERRIDE, &[name]),
-            })
-            .at(JsonPath::of_keys(["minecraft:camera_preset", "radius"]))
-            .phase(Phase::Validate)
-            .in_file(document.origin()),
+            Diagnostic::of(codes::ILLEGAL_OVERRIDE.with([name]))
+                .at(JsonPath::of_keys(["minecraft:camera_preset", "radius"]))
+                .phase(Phase::Validate)
+                .in_file(document.origin()),
         );
     }
     match end {
         End::Valid => None,
         End::Illegal(parent) => Some(
-            Diagnostic::error(DiagnosticCode::InvalidReference {
-                text: texts::formatted(texts::ILLEGAL_INHERITANCE, &[name, parent]),
-            })
-            .at(JsonPath::of_keys(inherit_from))
-            .phase(Phase::Validate)
-            .in_file(document.origin()),
+            Diagnostic::of(codes::ILLEGAL_INHERITANCE.with([name, parent]))
+                .at(JsonPath::of_keys(inherit_from))
+                .phase(Phase::Validate)
+                .in_file(document.origin()),
         ),
         End::Circular(repeated) => Some(
-            Diagnostic::error(DiagnosticCode::ReferenceCycle {
-                text: texts::formatted(texts::CIRCULAR, &[name, repeated]),
-            })
-            .at(JsonPath::of_keys(inherit_from))
-            .phase(Phase::Validate)
-            .in_file(document.origin()),
+            Diagnostic::of(codes::CIRCULAR.with([name, repeated]))
+                .at(JsonPath::of_keys(inherit_from))
+                .phase(Phase::Validate)
+                .in_file(document.origin()),
         ),
         End::Unknown(parent) => {
-            let unknown = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-                text: texts::formatted(texts::UNKNOWN_PARENT, &[name, parent]),
-            })
-            .at(JsonPath::of_keys(inherit_from))
-            .phase(Phase::Validate)
-            .in_file(document.origin())
-            .detail(preset_reference(parent));
+            let unknown = Diagnostic::of(codes::UNKNOWN_PARENT.with([name, parent]))
+                .at(JsonPath::of_keys(inherit_from))
+                .phase(Phase::Validate)
+                .in_file(document.origin())
+                .detail(preset_reference(parent));
             Some(unknown)
         }
     }
@@ -201,34 +194,28 @@ pub(crate) fn check_list(
     let cameras = ["minecraft:camera_list", "cameras"];
     let known = |id: &CameraPresetId| known_preset(id, defined, stack);
     if let Some(unknown) = list.cameras.iter().find(|id| !known(id)) {
-        let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-            text: texts::formatted(texts::LIST_UNKNOWN, &[name, unknown.as_str()]),
-        })
-        .at(JsonPath::of_keys(cameras))
-        .phase(Phase::Validate)
-        .in_file(list.origin())
-        .detail(preset_reference(unknown.as_str()));
+        let finding = Diagnostic::of(codes::LIST_UNKNOWN.with([name, unknown.as_str()]))
+            .at(JsonPath::of_keys(cameras))
+            .phase(Phase::Validate)
+            .in_file(list.origin())
+            .detail(preset_reference(unknown.as_str()));
         return Some(finding);
     }
     if list.cameras.is_empty() {
         return Some(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: texts::formatted(texts::LIST_EMPTY, &[name]),
-            })
-            .at(JsonPath::of_keys(cameras))
-            .phase(Phase::Validate)
-            .in_file(list.origin()),
+            Diagnostic::of(codes::LIST_EMPTY.with([name]))
+                .at(JsonPath::of_keys(cameras))
+                .phase(Phase::Validate)
+                .in_file(list.origin()),
         );
     }
     let mut seen = HashSet::new();
     let twice = list.cameras.iter().find(|id| !seen.insert(id.as_str()))?;
     Some(
-        Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-            text: texts::formatted(texts::LIST_DUPLICATE, &[name, twice.as_str()]),
-        })
-        .at(JsonPath::of_keys(cameras))
-        .phase(Phase::Validate)
-        .in_file(list.origin()),
+        Diagnostic::of(codes::LIST_DUPLICATE.with([name, twice.as_str()]))
+            .at(JsonPath::of_keys(cameras))
+            .phase(Phase::Validate)
+            .in_file(list.origin()),
     )
 }
 
@@ -240,14 +227,14 @@ pub(crate) fn duplicate_splines(files: &[Document<CameraSpline>]) -> Vec<Diagnos
     for file in files {
         for (i, spline) in file.splines.iter().enumerate() {
             if !seen.insert(spline.name.as_str()) {
-                let mut warning =
-                    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
-                        .at(JsonPath::of_keys([
-                            "minecraft:camera_custom_splines",
-                            "splines",
-                        ]))
-                        .phase(Phase::Validate)
-                        .in_file(file.origin());
+                let mut warning = Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+                    .severity(Severity::Info)
+                    .at(JsonPath::of_keys([
+                        "minecraft:camera_custom_splines",
+                        "splines",
+                    ]))
+                    .phase(Phase::Validate)
+                    .in_file(file.origin());
                 warning.location.json_path.push_index(i);
                 warning.location.json_path.push("name");
                 found.push(warning);
@@ -286,11 +273,13 @@ fn validator_line<T>(document: &Document<T>, path: &JsonPath, name: &str) -> Dia
         0,
         name,
     );
-    Diagnostic::error(DiagnosticCode::UnresolvedReference { text: Some(text) })
-        .at(path.clone())
-        .phase(Phase::Validate)
-        .in_file(document.origin())
-        .detail(preset_reference(name))
+    Diagnostic::error(DiagnosticCode::from(
+        core_codes::UNRESOLVED_REFERENCE_WORDED.with([text.to_string()]),
+    ))
+    .at(path.clone())
+    .phase(Phase::Validate)
+    .in_file(document.origin())
+    .detail(preset_reference(name))
 }
 
 /// The validator's line of a preset whose parent is unknown.
@@ -417,7 +406,7 @@ fn presets(
                         builder.push_diagnostic(finding);
                     }
                     builder.push_diagnostic(
-                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                        Diagnostic::of(&core_codes::SHADOWED_DEFINITION)
                             .phase(Phase::Validate)
                             .in_file(document.origin()),
                     );

@@ -1,7 +1,7 @@
 //! Every deliberate difference from vanilla, pinned (the `vanilla =` notes of the fixtures and the
 //! rules marked as ours).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 
 use super::common::{base_game, cx, doc, engine, error_at, kept_at, loads, rejects, with};
 
@@ -80,8 +80,7 @@ fn a_duplicate_across_packs_is_an_information_deviation() {
         stack
             .features()
             .diagnostics()
-            .any(|f| f.severity == Severity::Info
-                && matches!(f.code, DiagnosticCode::DuplicateIdentifier { text: None }))
+            .any(|f| f.severity == Severity::Info && f.is(&codes::DUPLICATE_IDENTIFIER))
     );
     assert!(
         stack

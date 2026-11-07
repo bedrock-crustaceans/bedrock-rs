@@ -23,6 +23,7 @@ pub use spline::{
     CameraSpline, ControlPoint, Easing, ProgressKeyFrame, RotationKeyFrame, Spline, SplineType,
 };
 
+pub mod codes;
 mod entity;
 mod list;
 mod preset;
@@ -32,15 +33,30 @@ mod read_list;
 mod read_spline;
 mod spline;
 mod stack;
-mod texts;
 mod validate;
 
 #[cfg(test)]
 mod tests;
 
+/// A constraint with its own line: an `InvalidValue` error at `at`.
+pub(crate) fn violation(line: &'static CodeDef<0>, at: JsonPath, d: &mut Diagnostics) {
+    d.push(bedrock_addon_core::versioning::shape::error(
+        DiagnosticCode::from(line),
+        at,
+    ));
+}
+
+/// The closing line of a failed file.
+fn closing_line(diagnostics: &mut Diagnostics, line: &'static CodeDef<0>) {
+    diagnostics.push(Diagnostic::of(line));
+}
+
 use std::convert::Infallible;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath,
+};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
     Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Registry, Rejected,
@@ -54,7 +70,7 @@ use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk, WalkFi
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::chain_file::{self as file, closing_line};
+use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
     NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, Versioned, parse_document,
@@ -252,7 +268,7 @@ impl Family for PresetFamily {
             // By legacy name: the variant and the definitions that were it.
             .any(|d| matches!(d.code.name(), "UnrecognizedField"));
         if failed && !unknown {
-            closing_line(diagnostics, texts::FAILED_PRESETS);
+            closing_line(diagnostics, &codes::FAILED_PRESETS);
         }
     }
 }
@@ -290,27 +306,19 @@ impl Family for ListFamily {
     ) {
         let found = std::mem::take(diagnostics);
         for mut finding in found {
-            // A syntax finding raised on a definition comes back to `MalformedInput`, its
-            // message from the detail or the line, for the list's sentence below.
-            if finding.code.name() == "MalformedInput"
-                && !matches!(finding.code, DiagnosticCode::MalformedInput { .. })
-            {
+            // A syntax finding gets the list's sentence ("Camera List file %s is not valid
+            // JSON: %s"), the reader's message from its detail or line kept as its detail.
+            if finding.code.name() == "MalformedInput" {
                 let message = finding.syntax_message().unwrap_or_default().to_owned();
-                finding.code = DiagnosticCode::MalformedInput {
-                    message,
-                    text: None,
-                };
-                finding.detail = None;
+                finding.code =
+                    DiagnosticCode::from(codes::LIST_NOT_JSON.with([path.as_str(), &message]));
+                finding.detail = Some(Box::new(DiagnosticDetail::Syntax(message)));
             }
             // By legacy name: the variant and the definitions that were it.
             if finding.code.name() == "UnsupportedVersion" {
                 // The version range is a constraint on the version string, not a slice of the
                 // chain: the game's text for it is not known, so neither generic text stands in.
-                finding.code = DiagnosticCode::UnsupportedVersion { text: None };
-            }
-            // "Camera List file %s is not valid JSON: %s"
-            if let DiagnosticCode::MalformedInput { message, text } = &mut finding.code {
-                *text = texts::formatted(texts::LIST_NOT_JSON, &[path.as_str(), message]);
+                finding.code = DiagnosticCode::from(&core_codes::UNSUPPORTED_VERSION);
             }
             diagnostics.push(finding);
         }
@@ -319,7 +327,7 @@ impl Family for ListFamily {
             // By legacy name: the variant and the definitions that were it.
             .any(|d| matches!(d.code.name(), "MalformedInput"));
         if failed && !not_json {
-            closing_line(diagnostics, texts::LIST_INVALID);
+            closing_line(diagnostics, &codes::LIST_INVALID);
         }
     }
 
@@ -354,7 +362,7 @@ impl Family for SplineFamily {
 
     fn close(diagnostics: &mut Diagnostics, _: Option<JsonSlice<'_>>, _: &PackPath, failed: bool) {
         if failed {
-            closing_line(diagnostics, texts::SPLINES_FAILED);
+            closing_line(diagnostics, &codes::SPLINES_FAILED);
         }
     }
 

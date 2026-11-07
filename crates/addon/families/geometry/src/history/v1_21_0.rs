@@ -5,9 +5,8 @@
 //! `shelf` member logs the "can only be used in a file version 1.26.40 or higher" text and
 //! fails the file; otherwise an object `fixed` is copied to `shelf` as it is.
 
-use super::super::texts::SHELF_TOO_OLD;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
-use bedrock_addon_core::json::node_tree::text;
+use super::super::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -36,9 +35,10 @@ impl Upgrade for GeometryFile {
                         .child("item_display_transforms")
                         .child("shelf");
                     cx.diagnostics.push(
-                        Diagnostic::error(DiagnosticCode::InvalidValue {
-                            text: text(SHELF_TOO_OLD, &[&geometry.description.identifier, "shelf"]),
-                        })
+                        Diagnostic::of(
+                            codes::SHELF_TOO_OLD
+                                .with([geometry.description.identifier.as_str(), "shelf"]),
+                        )
                         .at(at)
                         .phase(Phase::Upgrade),
                     );

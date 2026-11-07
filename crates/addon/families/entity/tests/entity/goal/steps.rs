@@ -1,7 +1,8 @@
 //! The goal parts of the step rows of: what the lenient conversion
 //! of a goal (a document below the goal's typed version) makes of the older shapes.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::shared::{EventTrigger, RangeForm};
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::goal;
@@ -275,11 +276,10 @@ fn e29b_look_at_goals_take_a_look_time_range() {
     assert_eq!(dropped.severity, Severity::Info);
     assert_eq!(
         dropped.code,
-        DiagnosticCode::DroppedField {
-            text: Some(VanillaText::Fixed(
-                "`target_distance` was removed by the 1.26.0 upgrade"
-            ))
-        }
+        DiagnosticCode::from(
+            core_codes::DROPPED_FIELD_WORDED
+                .with(["`target_distance` was removed by the 1.26.0 upgrade"])
+        )
     );
     assert_eq!(d.len(), 1, "{d:?}");
     for key in [

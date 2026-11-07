@@ -11,6 +11,7 @@
 pub use link::link as link_subtrees;
 
 mod builtin;
+pub mod codes;
 mod kinds;
 mod link;
 mod read;
@@ -23,6 +24,7 @@ use crate::read::parse_document;
 use bedrock_addon_core::id::BehaviorTreeId;
 use std::collections::{HashMap, HashSet};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase};
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{
@@ -610,10 +612,10 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
                 // Ours: paths are walked sorted, so the last path of the pack wins; vanilla
                 // says nothing (`AutomationBehaviorTreeGroup::addBehaviorTree`
                 // emplaces without a log): an information.
-                let code = DiagnosticCode::DuplicateIdentifier { text: None };
+                let code = DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER);
                 notice(code, &earlier.pack, &earlier.path)
             } else {
-                let code = DiagnosticCode::ShadowedDefinition { text: None };
+                let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
                 notice(code, &earlier.pack, &earlier.path)
             }
         }));
@@ -623,7 +625,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
         .filter_map(|(name, _)| claims.get(&BehaviorTreeId::parse(*name)))
         .filter(|claim| claim.loaded)
         .map(|claim| {
-            let code = DiagnosticCode::ShadowedByBuiltin;
+            let code = DiagnosticCode::from(&core_codes::SHADOWED_BY_BUILTIN);
             // Ours: `addBehaviorTree` emplaces the built-in tree without a
             // line, like a duplicate within a pack.
             notice(code, &claim.pack, &claim.path)
@@ -665,7 +667,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<BehaviorTr
         bedrock_addon_core::load::unread_files(stack, DIRECTORY, PackPath::is_json)
     {
         builder.push_diagnostic(notice(
-            DiagnosticCode::IgnoredFile { text: None },
+            DiagnosticCode::from(&core_codes::IGNORED_FILE),
             &pack.pack,
             &ignored.path,
         ));

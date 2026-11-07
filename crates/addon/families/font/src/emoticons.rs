@@ -7,13 +7,11 @@ use indexmap::IndexMap;
 use super::fields::{Fields, Written};
 use super::{Emoticon, EmoticonList};
 use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::array;
 use bedrock_addon_core::json::kit::fixed_path::Authored;
-
-/// The game's assert for an emoticon file it cannot use.
-pub(super) const MALFORMED: &str = "Malformed JSON";
 
 /// A base-16 `strtol` narrowed to a 32-bit integer, as the game reads an emoticon code: white
 /// space, a sign and `0x` are skipped, the hex digits that follow are the number and the rest is
@@ -109,9 +107,8 @@ impl Authored for EmoticonList {
                 diagnostics.push(Diagnostic::info(invalid()).at(at.child("code")));
             } else if !seen.insert(name.as_str()) {
                 // The first entry of a name stands.
-                diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("name")),
-                );
+                diagnostics
+                    .push(Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("name")));
             }
             if !matchable(&emoticon.name) {
                 // A name that can never be matched in text.

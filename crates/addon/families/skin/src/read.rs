@@ -1,9 +1,8 @@
 //! Reading `skins.json`.
 
-use super::{Skin, SkinPack};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use super::{Skin, SkinPack, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
 use bedrock_addon_core::json::{
@@ -16,9 +15,6 @@ pub(super) const MAX_PATH: usize = 1023;
 /// The most skins creator tools allow in a pack.
 const MAX_SKINS: usize = 80;
 
-/// Vanilla's content-log text for an entry of `skins` that is no object.
-const ENTRY_NOT_OBJECT: &str = "Invalid entry in skins.json - Every entry under 'skins' must be a json object - it has to start with an \"{\" and end with a \"}\"";
-
 const PACK_KEYS: [&str; 3] = ["serialize_name", "localization_name", "skins"];
 const STRING_KEYS: [&str; 5] = ["localization_name", "geometry", "texture", "type", "cape"];
 const PATCH_KEYS: [&str; 4] = [
@@ -30,7 +26,9 @@ const PATCH_KEYS: [&str; 4] = [
 
 /// A finding of the crate's own, the game being silent about it.
 fn note(at: JsonPath) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at)
+    Diagnostic::of(&core_codes::INVALID_VALUE)
+        .severity(Severity::Info)
+        .at(at)
 }
 
 /// The members of one object: a string member as its typed reading, a member of another
@@ -185,10 +183,7 @@ impl SkinPack {
                 } else {
                     // The game logs the line at the content log's error level and goes on to the
                     // next entry: a kept error.
-                    let code = DiagnosticCode::InvalidType {
-                        text: Some(VanillaText::Fixed(ENTRY_NOT_OBJECT)),
-                    };
-                    read.push(Diagnostic::error(code).at(at).into_kept());
+                    read.push(Diagnostic::of(&codes::ENTRY_NOT_OBJECT).at(at));
                 }
             }
             skins
@@ -196,13 +191,12 @@ impl SkinPack {
         // Creator tools want the two names equal; the game reads only one.
         if serialize_name.is_none() || serialize_name != localization_name {
             read.push(
-                Diagnostic::info(DiagnosticCode::SkinPackNameMismatch)
-                    .at(at.child("serialize_name")),
+                Diagnostic::of(&core_codes::SKIN_PACK_NAME_MISMATCH).at(at.child("serialize_name")),
             );
         }
         // A creator rule, not the game's.
         if skins.as_ref().is_some_and(|skins| skins.len() > MAX_SKINS) {
-            read.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule).at(skins_at));
+            read.push(Diagnostic::of(&core_codes::SKIN_PACK_CREATOR_RULE).at(skins_at));
         }
         let pack = Self {
             serialize_name,

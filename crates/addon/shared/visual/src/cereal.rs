@@ -9,7 +9,7 @@ use facet_json::RawJson;
 use indexmap::{IndexMap, IndexSet};
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span, VanillaText,
+    Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Span, builders,
     code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::json::{
@@ -19,17 +19,9 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::versioning::ParseCx;
 
+use crate::codes;
 use crate::{AnimateEntry, ControllerUse, is_molang_place};
-
-// ---- the texts vanilla's JSON schema checks print -----------------
-
-/// The text for an undeclared member, or a key that does not fully match its pattern.
-pub const CHILD_NOT_VALID: &str = "child '{}' not valid here.";
-/// The text for a required child without a member.
-pub const REQUIRED_CHILD: &str = bedrock_addon_core::diagnostic::cereal::REQUIRED_CHILD_TEXT;
-/// The string node's valid-value regexes.
-pub const NOT_ALLOWED_REGEX: &str =
-    "Value '{}' not allowed.  Must match at least one of the following regex patterns: {}";
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// The payload key of a client entity.
 pub const CLIENT_ENTITY: &str = "minecraft:client_entity";
@@ -87,32 +79,16 @@ pub struct OwnMember {
     pub refused: fn(&Described<'_>, Span) -> Diagnostic,
 }
 
-/// A vanilla text with its arguments.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every code field is an `Option<VanillaText>`"
-)]
-pub fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|arg| (*arg).to_owned()).collect(),
-    })
-}
-
 /// `"child '<key>' not valid here."` at `at` (the member itself).
 pub fn not_valid_here(key: &str, at: JsonPath) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::UnrecognizedField {
-        text: text(CHILD_NOT_VALID, &[key]),
-    })
-    .at(at)
+    Diagnostic::of(core_codes::CHILD_NOT_VALID.with([key]))
+        .severity(Severity::Error)
+        .at(at)
 }
 
 /// `"Required child <child> not found"` at `at` (the object that lacks it).
 pub fn required(child: &str, at: JsonPath) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MissingRequiredField {
-        text: text(REQUIRED_CHILD, &[child]),
-    })
-    .at(at)
+    Diagnostic::of(core_codes::REQUIRED_CHILD.with([child])).at(at)
 }
 
 /// `"unknown child schema option type.  Allowed types: <allowed>"` at `at`.
@@ -243,22 +219,14 @@ pub fn describe<'a>(
     else {
         // A document without the payload: vanilla has only a debug assertion here, so the
         // message is the crate's own.
-        d.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed("No entity definition to parse")),
-            })
-            .at(cx.at.clone()),
-        );
+        d.push(Diagnostic::of(&codes::NO_ENTITY_DEFINITION).at(cx.at.clone()));
         return None;
     };
     if profile.notes_other_payload && root.contains_key(profile.other_payload) {
         // A file with both payloads loads the client entity alone and the game says nothing.
         // The crate notes the payload that is not loaded, and not written, with an information
         // at the member, whatever it holds.
-        d.push(
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                .at(cx.at.with(&[profile.other_payload])),
-        );
+        d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(cx.at.with(&[profile.other_payload])));
     }
     let payload_json = root_json
         .and_then(|root| root.get(profile.payload))
@@ -743,11 +711,8 @@ fn object<'a>(
     match parse_at::<IndexMap<String, RawJson<'a>>>(slice) {
         Ok(members) => Some(members),
         Err(error) => {
-            let mut found = Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: error.error.kind.to_string(),
-                text: None,
-            })
-            .at(at.clone());
+            let mut found =
+                Diagnostic::of(builders::syntax(error.error.kind.to_string())).at(at.clone());
             found.location.span = Some(error.span);
             d.push(found);
             None
@@ -798,7 +763,7 @@ pub(crate) fn check_condition<'m>(
     for key in ignored {
         // Members after the one the game reads get a `DroppedField` information of the crate's
         // own; the game drops them without a message.
-        d.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.with(&[key])));
+        d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at.with(&[key])));
     }
 }
 
@@ -819,10 +784,8 @@ pub fn check_variables(
             d.push(not_valid_here(key, member_at));
         } else if value != "public" {
             d.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: text(NOT_ALLOWED_REGEX, &[value, "public"]),
-                })
-                .at(member_at),
+                Diagnostic::of(core_codes::NOT_ALLOWED_REGEX.with([value.as_str(), "public"]))
+                    .at(member_at),
             );
         }
     }
@@ -834,12 +797,7 @@ pub fn check_variables(
 /// An identifier that is empty names nothing.
 pub fn check_identifier(identifier: &str, at: &JsonPath, d: &mut Diagnostics) {
     if identifier.is_empty() {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed("Missing or invalid identifier")),
-            })
-            .at(at.with(&["identifier"])),
-        );
+        d.push(Diagnostic::of(&codes::MISSING_IDENTIFIER).at(at.with(&["identifier"])));
     }
 }
 

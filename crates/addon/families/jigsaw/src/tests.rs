@@ -12,28 +12,37 @@ use bedrock_addon_core::load::{LoadContext, StackCx, WalkFile};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::pack_identity::{PackRef, PackSide};
 
+/// The texts the identifier check logs for `id`, in its order.
+fn failure_texts(id: &str) -> Option<Vec<&'static str>> {
+    identifier_failure(id).map(|reasons| reasons.iter().map(|code| code.template()).collect())
+}
+
 #[test]
 fn identifier_failures_come_in_the_games_check_order() {
-    assert_eq!(identifier_failure("demo:ruin"), None);
+    assert_eq!(failure_texts("demo:ruin").as_deref(), None);
     assert_eq!(
-        identifier_failure("Demo:Ruin/Tower.v-2"),
+        failure_texts("Demo:Ruin/Tower.v-2").as_deref(),
         None,
         "case and punctuation pass"
     );
-    assert_eq!(identifier_failure(""), Some(&[][..]), "no text of its own");
     assert_eq!(
-        identifier_failure("invalid"),
+        failure_texts("").as_deref(),
+        Some(&[][..]),
+        "no text of its own"
+    );
+    assert_eq!(
+        failure_texts("invalid").as_deref(),
         Some(&["Identifier must have a namespace"][..])
     );
     for invalid in ["a:b:c", ":b", "a:"] {
         assert_eq!(
-            identifier_failure(invalid),
+            failure_texts(invalid).as_deref(),
             Some(&["Invalid identifier"][..]),
             "{invalid}"
         );
     }
     assert_eq!(
-        identifier_failure("de mo:ruin"),
+        failure_texts("de mo:ruin").as_deref(),
         Some(
             &[
                 "Identifier cannot have illegal characters",
@@ -42,7 +51,7 @@ fn identifier_failures_come_in_the_games_check_order() {
         )
     );
     assert_eq!(
-        identifier_failure("demo:ru\tin"),
+        failure_texts("demo:ru\tin").as_deref(),
         Some(
             &[
                 "Identifier cannot have illegal characters",
@@ -51,7 +60,7 @@ fn identifier_failures_come_in_the_games_check_order() {
         )
     );
     assert_eq!(
-        identifier_failure("minecraft:ruin"),
+        failure_texts("minecraft:ruin").as_deref(),
         None,
         "the minecraft namespace is allowed for every pack"
     );

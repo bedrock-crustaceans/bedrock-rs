@@ -1,9 +1,10 @@
 //! Family rules on the loaded documents: the spawn pool of standard spawn rules, the constraints
 //! and placement names of simplified spawn rules, and the Molang outcome of the `tags` members.
 
-use super::texts;
+use super::codes;
 use super::{SimplifiedSpawnRules, StandardSpawnRules};
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_spawn::legacy::RULES_KEY;
 use bedrock_addon_shared_spawn::read::finding;
@@ -19,18 +20,15 @@ pub(crate) fn standard(rules: &mut StandardSpawnRules, cx: &mut ValidateCx<'_>) 
     // specified for '%s'" goes only to the developer log.
     match rules.description.population_control.as_deref() {
         None | Some("") => finding(
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             Severity::Info,
             &at,
             cx.diagnostics,
         ),
         Some(name) if super::PopulationControl::from_name(name).is_none() => finding(
-            DiagnosticCode::InvalidEnumValue {
-                text: Some(VanillaText::Formatted {
-                    template: texts::NO_POPULATION_CONTROL,
-                    args: vec![rules.description.identifier.as_str().to_owned()],
-                }),
-            },
+            DiagnosticCode::from(
+                codes::NO_POPULATION_CONTROL.with([rules.description.identifier.as_str()]),
+            ),
             Severity::Info,
             &at,
             cx.diagnostics,

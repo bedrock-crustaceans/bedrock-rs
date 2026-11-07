@@ -1,7 +1,7 @@
 //! `boss`, `burns_in_daylight`, `damage_over_time`, `exhaustion_values`, `insomnia`,
 //! `ignore_cannot_be_attacked`: defaults, round trips, strict and lenient wrong types.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::{
@@ -155,11 +155,12 @@ fn a_wrong_typed_insomnia_threshold_carries_the_game_s_text() {
         })
         .collect();
     assert_eq!(found.len(), 1, "{d:?}");
-    let DiagnosticCode::InvalidType { text: Some(text) } = &found[0].code else {
-        panic!("no text: {d:?}")
-    };
+    assert!(
+        found[0].is(&bedrock_addon_family_entity::codes::INSOMNIA_NOT_A_NUMBER),
+        "{d:?}"
+    );
     assert_eq!(
-        text.to_string(),
+        found[0].code.to_string(),
         "days_until_insomnia: invalid numeric value"
     );
 }

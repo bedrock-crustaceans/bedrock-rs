@@ -1,10 +1,11 @@
 //! The loader stage and the document rules every type shares: versions, identifiers, payload
 //! keys, internal types (fixtures f07, f08, f11, f12; validation rules 1–3, 5–8, 10).
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, codes as core_codes};
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_feature::Feature;
+use bedrock_addon_family_feature::codes;
 
 use super::common::{base_game, cx, doc, engine, error_at, has_text, loads, rejects};
 
@@ -26,12 +27,10 @@ fn f07_any_type_at_1_12_0_is_unsupported() {
             .find(|f| f.severity == Severity::Error)
             .expect("an error");
         assert!(
-            matches!(
-                &finding.code,
-                DiagnosticCode::UnsupportedVersion {
-                    text: Some(VanillaText::NoParserForVersion { version })
-                } if version == "1.12.0"
-            ),
+            finding
+                .code
+                .args_of(&core_codes::NO_PARSER_FOR_VERSION)
+                .is_some_and(|args| args[0] == "1.12.0"),
             "{d:#?}"
         );
         assert_eq!(finding.location.json_path.to_string(), "format_version");
@@ -66,10 +65,7 @@ fn reject_bytes(bytes: &[u8]) -> bedrock_addon_core::diagnostic::Diagnostics {
 #[test]
 fn f11_the_four_loader_errors() {
     let d = reject_bytes(b"{ not json");
-    assert!(matches!(
-        d.iter().next().unwrap().code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    assert!(d.iter().next().unwrap().is(&codes::INVALID_JSON));
     assert!(has_text(
         &d,
         "[Feature Registry] Passed in contents could not be evaluated as valid JSON in the following file: features/x.json"
@@ -115,7 +111,10 @@ fn rule_10_an_unregistered_payload_key_is_unknown() {
     let d = rejects(&doc("1.13.0", "nope_feature", ""), &cx());
     let finding = d.iter().find(|f| f.severity == Severity::Error).unwrap();
     assert!(
-        matches!(&finding.code, DiagnosticCode::UnknownPayloadKey { name } if name == "minecraft:nope_feature")
+        finding
+            .code
+            .args_of(&core_codes::UNKNOWN_PAYLOAD_KEY)
+            .is_some_and(|args| args[0] == "minecraft:nope_feature")
     );
     assert!(has_text(
         &d,
@@ -131,10 +130,12 @@ fn a_type_newer_than_the_engine_is_an_unknown_payload_key() {
         r#""places_feature": "demo:y", "search_radius": 2, "max_allowed_upward_height_diff": 3"#,
     );
     let d = rejects(&json, &engine(1, 26, 20));
-    assert!(matches!(
-        d.iter().next().unwrap().code,
-        DiagnosticCode::UnknownPayloadKey { .. }
-    ));
+    assert!(
+        d.iter()
+            .next()
+            .unwrap()
+            .is(&core_codes::UNKNOWN_PAYLOAD_KEY)
+    );
     loads(&json, &engine(1, 26, 30));
 }
 

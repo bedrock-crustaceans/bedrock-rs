@@ -7,9 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon_family_lang::{KeyFilter, LangFile, Language, Translations};
 
 /// The fixture directory of the family.
@@ -248,16 +246,7 @@ pub type Finding = (String, String, String);
 
 /// The vanilla text a finding carries, rendered; empty when it carries none.
 pub fn vanilla_text(diagnostic: &Diagnostic) -> String {
-    let text: Option<&VanillaText> = match &diagnostic.code {
-        DiagnosticCode::MalformedInput { text, .. }
-        | DiagnosticCode::InvalidValue { text }
-        | DiagnosticCode::InvalidType { text }
-        | DiagnosticCode::IgnoredMember { text }
-        | DiagnosticCode::IgnoredFile { text }
-        | DiagnosticCode::DuplicateIdentifier { text } => text.as_ref(),
-        _ => None,
-    };
-    text.map(ToString::to_string).unwrap_or_default()
+    diagnostic.vanilla().unwrap_or_default()
 }
 
 /// The findings as `(code, severity, vanilla text)`, in order.

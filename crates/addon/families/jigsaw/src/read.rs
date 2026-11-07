@@ -8,14 +8,16 @@ use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::history::{MetadataFamily, MetadataHistory, v1_21_50};
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
     JigsawMetadata, JigsawStructure, MetadataRegistry, PoolElement, PositionPredicate, Processor,
     ProcessorList, ProcessorRule, StructureSet, TemplatePool, V1_21_50,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, Unknown, VersionInfo};
 use bedrock_addon_core::json::{
@@ -85,7 +87,7 @@ fn parse_typed<'a, T: Facet<'a>>(
                     // The game logs an unknown member at the content log's warning level and goes
                     // on: the slice's grade of an unknown member.
                     d.push(
-                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                             .severity(cx.load.grade(Class::Unknown))
                             .at(cx.at.join(&path)),
                     );
@@ -119,7 +121,7 @@ fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -
     error.into_diagnostic(&cx.at, |code, error| {
         // By legacy name: the variant and the definitions that were it.
         if matches!(code.name(), "InvalidType") && error.describes(UNKNOWN_TAG) {
-            DiagnosticCode::InvalidEnumValue { text: None }
+            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE)
         } else {
             code
         }
@@ -139,7 +141,7 @@ fn bounds<T: Schema>(value: &mut T, at: &JsonPath, d: &mut Diagnostics) {
 
 /// A bind constraint that failed: a member outside its bound, which fails the file as the game's parse does.
 fn violation(path: JsonPath, d: &mut Diagnostics) {
-    d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(path));
+    d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(path));
 }
 
 /// The member `key` of an object.
@@ -159,7 +161,7 @@ fn integer_or_object(value: Option<&Value>, at: JsonPath, d: &mut Diagnostics) -
     if integer || value.is_object() {
         return true;
     }
-    d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at));
+    d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
     false
 }
 
@@ -329,9 +331,7 @@ fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
         IntProvider::Value(_) => false,
     };
     if mismatch {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None }).at(at.child("type")),
-        );
+        d.push(Diagnostic::of(&core_codes::INVALID_ENUM_VALUE).at(at.child("type")));
     }
 }
 
@@ -505,12 +505,7 @@ pub(crate) fn parse_metadata(
     };
     // An empty string is not parsed as a version, so the game ends up with no version at all.
     if written.is_empty() {
-        return reject(
-            diagnostics,
-            Diagnostic::error(DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::NoValidVersion),
-            }),
-        );
+        return reject(diagnostics, Diagnostic::of(&core_codes::NO_VALID_VERSION));
     }
     let Some(input) = FormatVersionInput::parse(written) else {
         return reject(diagnostics, bad_leading_string(path));
@@ -518,11 +513,7 @@ pub(crate) fn parse_metadata(
     let Selection::Struct(index) = select::<MetadataFamily>(&input) else {
         return reject(
             diagnostics,
-            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: written.to_owned(),
-                }),
-            }),
+            Diagnostic::of(core_codes::NO_PARSER_FOR_VERSION.with([written.to_string()])),
         );
     };
     let effective = input.version.unwrap_or(V1_21_50);
@@ -531,7 +522,7 @@ pub(crate) fn parse_metadata(
             .get(index)
             .copied()
             .unwrap_or(effective);
-    diagnostics.push(Diagnostic::info(DiagnosticCode::SkippedCacheDocument));
+    diagnostics.push(Diagnostic::of(&core_codes::SKIPPED_CACHE_DOCUMENT));
     diagnostics.locate(&origin);
     let value = JigsawMetadata {
         format_version: written.to_owned(),
@@ -543,10 +534,5 @@ pub(crate) fn parse_metadata(
 
 /// "Failed to parse format version string of file %s; it will be skipped."
 fn bad_leading_string(path: &PackPath) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedFormatVersion {
-        text: Some(VanillaText::Formatted {
-            template: "Failed to parse format version string of file {}; it will be skipped.",
-            args: vec![path.as_str().to_owned()],
-        }),
-    })
+    Diagnostic::of(codes::BAD_FORMAT_VERSION_STRING.with([path.as_str().to_owned()]))
 }

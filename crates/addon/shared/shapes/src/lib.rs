@@ -23,6 +23,7 @@
 //!   the headers of the image formats the game reads ([`texture::image`]).
 //! - [`vec`](mod@vec): [`Vec3`] and [`Vec2`], a vector as an array or an object, as written.
 
+pub mod codes;
 pub mod color;
 pub mod descriptor;
 pub mod event;

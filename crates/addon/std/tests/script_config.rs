@@ -16,7 +16,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 #[cfg(unix)]
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::script::{
     CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,
@@ -256,13 +255,13 @@ fn sc25_unreadable_a_file_of_mode_000_is_a_read_error() {
     let config = read_script_config(config_dir.path()).unwrap();
     assert!(config.packs[MODULE].variables.is_empty());
     let finding = config.diagnostics().first_error().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::PermissionDenied,
-            ..
-        }
-    ));
+    assert_eq!(finding.code.name(), "ReadError");
+    assert_eq!(
+        finding.detail.as_deref(),
+        Some(&bedrock_addon::diagnostic::DiagnosticDetail::Io(
+            std::io::ErrorKind::PermissionDenied
+        ))
+    );
     assert_eq!(
         finding.code.to_string(),
         format!("Failed to open file 'config/{MODULE}/variables.json'")

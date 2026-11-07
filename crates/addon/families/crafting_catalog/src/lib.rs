@@ -9,6 +9,7 @@
 
 /// The catalogue as written at each format: the two structs of the chain and the document a
 /// file parses to before its step ([`CatalogHistory`](history::CatalogHistory)).
+pub mod codes;
 pub mod history;
 mod link;
 mod merge;
@@ -45,7 +46,7 @@ use crate::history::CatalogHistory;
 use crate::read::parse_catalog;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText, builders,
 };
 use bedrock_addon_core::document::{Document, JsonDocument, JsonPlaced, Origin, Rejected};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -206,13 +207,6 @@ pub enum CatalogKey {
     },
 }
 
-/// Vanilla's one text for a file without a valid `format_version`, and for one below 1.21.60.
-const VERSION_TEXT: &str = core_codes::VERSION_NOT_PROCESSABLE.template();
-
-/// Vanilla's text for a document whose payload member is not the catalogue's.
-const PAYLOAD_TEXT: &str =
-    "The crafting item catalog needs to have an object minecraft:crafting_items_catalog";
-
 /// The catalogue family of the version-chain machinery (hidden: only the loader names it).
 #[doc(hidden)]
 #[derive(Clone, Copy, Debug)]
@@ -336,16 +330,12 @@ impl JsonPlaced for CraftingCatalog {
 
 /// The error of a file without a valid `format_version`.
 fn no_valid_version() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MissingFormatVersion {
-        text: Some(VanillaText::Fixed(VERSION_TEXT)),
-    })
+    Diagnostic::of(&core_codes::VERSION_NOT_PROCESSABLE)
 }
 
 /// The error of a `format_version` below 1.21.60: vanilla's same text.
 fn below_floor() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::Fixed(VERSION_TEXT)),
-    })
+    Diagnostic::of(&codes::BELOW_FLOOR)
 }
 
 /// Gives the findings of a rejected envelope vanilla's codes, texts and order.
@@ -371,19 +361,10 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             continue;
         }
         // The pipeline's lines, on core's definitions or the legacy variants.
-        let member_count = matches!(
-            finding.code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ) || finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
-        let use_format = matches!(
-            finding.code,
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UseFormatVersion { .. }),
-            }
-        ) || finding.is(&core_codes::USE_FORMAT_VERSION);
+        let member_count = finding.is(&core_codes::DOCUMENT_MEMBER_COUNT)
+            || finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
+        let use_format = finding.is(&core_codes::USE_FORMAT_VERSION)
+            || finding.is(&core_codes::USE_FORMAT_VERSION);
         // the versioned parser's "no parser available for version".
         let no_parser = match &finding.code {
             DiagnosticCode::UnsupportedVersion {
@@ -413,13 +394,14 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             } else if floor {
                 below_floor()
             } else {
-                Diagnostic::error(DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::Fixed(PAYLOAD_TEXT)),
-                })
+                Diagnostic::of(&codes::NO_CATALOG_PAYLOAD)
             }),
             _ if use_format => diagnostics.push(below_floor()),
             _ if above_engine && let Some(version) = no_parser => {
-                finding.code = DiagnosticCode::FormatVersionAboveEngine { version };
+                finding.code = DiagnosticCode::from(
+                    core_codes::FORMAT_VERSION_ABOVE_ENGINE
+                        .with([version, ENGINE_VERSION.to_string()]),
+                );
                 diagnostics.push(finding);
             }
             _ => diagnostics.push(finding),
@@ -458,10 +440,10 @@ pub(crate) fn upgrade_document(
 /// vanilla either, so the version is cleared.
 fn unreadable(origin: Origin) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    }));
+    diagnostics.push(
+        Diagnostic::of(builders::syntax("not UTF-8 JSON within the nesting limit"))
+            .severity(Severity::Info),
+    );
     diagnostics.push(no_valid_version());
     Rejected::located(origin, diagnostics)
 }

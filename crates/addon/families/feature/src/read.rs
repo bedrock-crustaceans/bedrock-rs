@@ -6,19 +6,17 @@
 
 use facet::Facet;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+    Code, CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, SliceError, Value, parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::versioning::ParseCx;
 
+use crate::codes;
 use crate::family::{Fam, FeatureType, TypeFn, V1_13_0, with_type};
-use crate::texts::{
-    EMPTY_IDENTIFIER, INTERNAL_TYPE, INVALID_JSON, MISSING_IDENTIFIER, NOT_MINECRAFT,
-    NOT_NAMESPACED,
-};
 use crate::{Feature, history};
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::id::FeatureId;
@@ -29,33 +27,6 @@ use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
     Loaded, Parsed, file_version, finish, load, parse_as_written,
 };
-
-/// The client's text for a member the schema does not have.
-pub(crate) const NOT_VALID_HERE: &str = "child '{}' not valid here.";
-/// The client's text for a required member that is absent.
-pub(crate) const REQUIRED_CHILD: &str = bedrock_addon_core::diagnostic::cereal::REQUIRED_CHILD_TEXT;
-/// The client's text for an integer outside its node's range.
-pub(crate) const INT_OUT_OF_RANGE: &str = "Value '{}' outside valid range [{}, {}]";
-/// The client's text for a float outside its node's range.
-pub(crate) const FLOAT_OUT_OF_RANGE: &str = "Value '{}' outside valid range [{}, {}]";
-/// The client's text for an `IntRange` whose lower end is outside the node's range.
-pub(crate) const RANGE_MIN_OUT_OF_RANGE: &str =
-    "'range_min' with value '{}' outside valid range [{}, {}]";
-/// The client's text for an `IntRange` whose upper end is outside the node's range.
-pub(crate) const RANGE_MAX_OUT_OF_RANGE: &str =
-    "'range_max' with value '{}' outside valid range [{}, {}]";
-/// The client's text for an array below its minimum length.
-pub(crate) const ARRAY_TOO_SMALL: &str = "Array too small ({} < {})";
-/// The client's text for an array above its maximum length.
-pub(crate) const ARRAY_TOO_LARGE: &str = "Array too large ({} > {})";
-
-/// A `VanillaText::Formatted` of `template` with `args`.
-pub(crate) fn formatted(template: &'static str, args: &[&dyn std::fmt::Display]) -> VanillaText {
-    VanillaText::Formatted {
-        template,
-        args: args.iter().map(ToString::to_string).collect(),
-    }
-}
 
 /// The last member name of `path` as the file has it (`"y"` for
 /// `minecraft:scatter_feature/distribution/y`); an element's number for a path that ends at
@@ -71,19 +42,15 @@ pub(crate) fn last_key(path: &JsonPath) -> String {
 /// `UnrecognizedField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn not_valid_here(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
-    Diagnostic::error(DiagnosticCode::UnrecognizedField {
-        text: Some(formatted(NOT_VALID_HERE, &[&key])),
-    })
-    .at(at)
+    Diagnostic::of(core_codes::CHILD_NOT_VALID.with([key]))
+        .severity(Severity::Error)
+        .at(at)
 }
 
 /// `MissingRequiredField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn required_child(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
-    Diagnostic::error(DiagnosticCode::MissingRequiredField {
-        text: Some(formatted(REQUIRED_CHILD, &[&key])),
-    })
-    .at(at)
+    Diagnostic::of(core_codes::REQUIRED_CHILD.with([key])).at(at)
 }
 
 /// Parses `T` from `payload` strictly: a failed typed parse is one error at the failing member
@@ -98,12 +65,12 @@ pub(crate) fn parse_strict<'a, T: Facet<'a>>(
 }
 
 /// [`parse_strict`] with the setters' texts for members whose value is a name: an unknown name
-/// of the member `key` is `InvalidValue` with `text` (vanilla's "Bad value for …" messages).
+/// of the member `key` is the definition beside it (vanilla's "Bad value for …" messages).
 pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
     payload: JsonSlice<'a>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
-    texts: &[(&str, &'static str)],
+    texts: &[(&str, &'static CodeDef<0>)],
 ) -> Option<T> {
     // The null rule of the selected version, which the family declares (`ENVELOPE.input` is
     // `JsonCpp`): under rule N1 a member written as `null` is absent.
@@ -128,9 +95,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
             if finding.code.name() == "InvalidValue" {
                 let key = last_key(&finding.location.json_path);
                 if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
-                    finding.code = DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Fixed(message)),
-                    };
+                    finding.code = DiagnosticCode::from(*message);
                 }
             }
             d.push(finding);
@@ -163,13 +128,13 @@ fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
         // By legacy name: the variant and the definitions that were it.
         match code.name() {
             // The client's enum members reject an unknown name as a value.
-            "InvalidEnumValue" => DiagnosticCode::InvalidValue { text: None },
-            "MissingRequiredField" => DiagnosticCode::MissingRequiredField {
-                text: Some(formatted(REQUIRED_CHILD, &[&last_key(&at())])),
-            },
-            "UnrecognizedField" => DiagnosticCode::UnrecognizedField {
-                text: Some(formatted(NOT_VALID_HERE, &[&last_key(&at())])),
-            },
+            "InvalidEnumValue" => DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            "MissingRequiredField" => {
+                DiagnosticCode::from(core_codes::REQUIRED_CHILD.with([last_key(&at())]))
+            }
+            "UnrecognizedField" => {
+                DiagnosticCode::from(core_codes::CHILD_NOT_VALID.with([last_key(&at())]))
+            }
             _ => code,
         }
     })
@@ -217,23 +182,13 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
     let mut at = JsonPath::new();
     if T::SINCE_ENGINE.is_some_and(|since| stage.cx.engine_version < since) {
         // The engine has not registered the type.
-        d.push(
-            Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
-                name: stage.key.to_owned(),
-            })
-            .at(at),
-        );
+        d.push(Diagnostic::of(core_codes::UNKNOWN_PAYLOAD_KEY.with([stage.key.to_owned()])).at(at));
         return Err(d);
     }
     if T::INTERNAL && !stage.cx.is_base_game_pack {
         // An internal type is for the game's own packs.
         at.push(T::KEY);
-        d.push(
-            Diagnostic::error(DiagnosticCode::MissingToggles {
-                text: Some(formatted(INTERNAL_TYPE, &[&stage.key])),
-            })
-            .at(at),
-        );
+        d.push(Diagnostic::of(codes::INTERNAL_TYPE.with([stage.key])).at(at));
         return Err(d);
     }
     let version = file_version(JsonSlice::new(stage.text));
@@ -244,12 +199,7 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
         && let Some(version) = version
         && version < T::FLOOR
     {
-        d.push(
-            Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
-                name: stage.key.to_owned(),
-            })
-            .at(at),
-        );
+        d.push(Diagnostic::of(core_codes::UNKNOWN_PAYLOAD_KEY.with([stage.key.to_owned()])).at(at));
         return Err(d);
     }
     // Below the floor no parser's range matches: the client's "no parser available".
@@ -258,12 +208,7 @@ fn type_checks<T: FeatureType>(stage: &Stage<'_>) -> Result<(), Diagnostics> {
     {
         at.push("format_version");
         d.push(
-            Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::NoParserForVersion {
-                    version: version.to_string(),
-                }),
-            })
-            .at(at),
+            Diagnostic::of(core_codes::NO_PARSER_FOR_VERSION.with([version.to_string()])).at(at),
         );
         return Err(d);
     }
@@ -365,10 +310,10 @@ fn identify<'b>(
     let file = path.to_string();
     let invalid = |message: String| {
         let mut d = Diagnostics::default();
-        d.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message,
-            text: Some(formatted(INVALID_JSON, &[&file])),
-        }));
+        d.push(
+            Diagnostic::of(codes::INVALID_JSON.with([file.as_str()]))
+                .detail(DiagnosticDetail::Syntax(message)),
+        );
         d
     };
     let text = prepared
@@ -381,30 +326,22 @@ fn identify<'b>(
         &bedrock_addon_core::json::last_wins(text),
     )
     .map_err(|e| invalid(e.to_string()))?;
-    let one = |code: DiagnosticCode| {
+    let one = |code: Code| {
         let mut d = Diagnostics::default();
-        d.push(Diagnostic::error(code));
+        d.push(Diagnostic::of(code));
         d
     };
     let Some(identifier) = identifier_in(&root) else {
-        return Err(one(DiagnosticCode::MissingRequiredField {
-            text: Some(formatted(MISSING_IDENTIFIER, &[&file])),
-        }));
+        return Err(one(codes::MISSING_IDENTIFIER.with([file.as_str()])));
     };
     if identifier.is_empty() {
-        return Err(one(DiagnosticCode::InvalidValue {
-            text: Some(formatted(EMPTY_IDENTIFIER, &[&file])),
-        }));
+        return Err(one(codes::EMPTY_IDENTIFIER.with([file.as_str()])));
     }
     let Some((namespace, _)) = identifier.split_once(':') else {
-        return Err(one(DiagnosticCode::NamespaceRule {
-            text: Some(formatted(NOT_NAMESPACED, &[&identifier])),
-        }));
+        return Err(one(codes::NOT_NAMESPACED.with([identifier.as_str()])));
     };
     if source == FileSource::BuiltIn && namespace != "minecraft" {
-        return Err(one(DiagnosticCode::NamespaceRule {
-            text: Some(formatted(NOT_MINECRAFT, &[&identifier])),
-        }));
+        return Err(one(codes::NOT_MINECRAFT.with([identifier.as_str()])));
     }
     Ok((text, root, FeatureId::parse(identifier)))
 }
@@ -430,9 +367,9 @@ pub(crate) fn parse_file(
     };
     let Some((value, version, mut diagnostics)) = with_type(&key, LoadType(stage)) else {
         let mut d = Diagnostics::default();
-        d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
-            name: key.clone(),
-        }));
+        d.push(Diagnostic::of(
+            core_codes::UNKNOWN_PAYLOAD_KEY.with([key.clone()]),
+        ));
         return (Some(identifier), Err(Rejected::located(origin, d)));
     };
     diagnostics.locate(&origin);
@@ -463,9 +400,9 @@ pub(crate) fn parse_file_as_written(
     };
     let Some((value, version, mut diagnostics)) = with_type(&key, ParseType(stage)) else {
         let mut d = Diagnostics::default();
-        d.push(Diagnostic::error(DiagnosticCode::UnknownPayloadKey {
-            name: key.clone(),
-        }));
+        d.push(Diagnostic::of(
+            core_codes::UNKNOWN_PAYLOAD_KEY.with([key.clone()]),
+        ));
         return Err(Rejected::located(origin, d));
     };
     diagnostics.locate(&origin);

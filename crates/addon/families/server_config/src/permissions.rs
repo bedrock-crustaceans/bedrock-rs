@@ -5,6 +5,7 @@
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_family_script::meta;
@@ -34,7 +35,11 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
         let at = JsonPath::new();
         let Some(members) = object(root) else {
             // Silent on the server, every member absent.
-            sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(root));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at,
+                span(root),
+            );
             return;
         };
         for (name, raw) in &members {
@@ -54,7 +59,7 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
                 _ => {
                     // Ignored silently by the server.
                     sink.info(
-                        DiagnosticCode::UnrecognizedField { text: None },
+                        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                         at.clone(),
                         span(slice),
                     );
@@ -75,7 +80,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
     let Some(elements) = array(slice) else {
         // Silent on the server, the list is empty.
         sink.warn(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             at.clone(),
             span(slice),
         );
@@ -90,14 +95,22 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
         let at = at.index(index);
         let Some(module) = string(slice) else {
             // The string elements still apply.
-            sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(slice));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at,
+                span(slice),
+            );
             continue;
         };
         if module == WILDCARD_MODULE {
             wildcard.get_or_insert((at, span(slice)));
         } else if near_miss(&module) {
             // Matches nothing on the server.
-            sink.warn(DiagnosticCode::InvalidValue { text: None }, at, span(slice));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                at,
+                span(slice),
+            );
         }
         modules.push(module);
     }
@@ -105,7 +118,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
         && modules.len() > 1
     {
         // `*` allows every module, so the other elements say nothing.
-        sink.info(DiagnosticCode::NoEffect { text: None }, at, span);
+        sink.info(DiagnosticCode::from(&core_codes::NO_EFFECT), at, span);
     }
     modules
 }
@@ -132,7 +145,7 @@ fn module_permissions(
 ) {
     let Some(modules) = object(slice) else {
         sink.warn(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             at.clone(),
             span(slice),
         );
@@ -148,7 +161,11 @@ fn module_permissions(
             // The module has no settings; silent on the server. A
             // server-net entry that cannot be read denies the pack's egress here
             // (a deliberate deviation; vanilla: unrestricted).
-            sink.warn(DiagnosticCode::InvalidType { text: None }, at, span(slice));
+            sink.warn(
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                at,
+                span(slice),
+            );
             if is_net {
                 permissions.server_net = ServerNet::Denied;
             }
@@ -159,7 +176,7 @@ fn module_permissions(
         } else {
             // Kept, read by nothing.
             sink.info(
-                DiagnosticCode::NoEffect { text: None },
+                DiagnosticCode::from(&core_codes::NO_EFFECT),
                 at.clone(),
                 span(slice),
             );
@@ -206,7 +223,7 @@ fn level(
     if level.is_none() {
         // Silently unset on the server.
         sink.warn(
-            DiagnosticCode::InvalidEnumValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE),
             at,
             span(slice),
         );

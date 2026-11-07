@@ -14,12 +14,14 @@
 
 pub mod history;
 
+pub mod codes;
 mod molang;
 mod read;
 mod types;
 mod validate;
 mod write;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
 use bedrock_addon_core::document::{
     Content, Definition, Document, JsonContent, NoBeta, Notice, Origin, Placed, Registry, Rejected,
@@ -166,7 +168,7 @@ fn combine_controllers(
         "animation_controllers",
         controllers,
         Notice {
-            code: DiagnosticCode::AnimationControllerShadowed,
+            code: DiagnosticCode::from(&core_codes::ANIMATION_CONTROLLER_SHADOWED),
             severity: Severity::Info,
         },
     )

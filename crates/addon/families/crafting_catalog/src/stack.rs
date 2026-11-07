@@ -13,6 +13,7 @@
 //! feature no collection registers blocks: a name that is no item and could be a pack's block
 //! is kept without a warning, since the catalogue cannot know.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::{
     self, Accept, BuiltIns, CollectionLoader, FileCopy, Registration, StackCx, StackPack, Walk,
 };
@@ -21,7 +22,7 @@ use uuid::Uuid;
 
 use super::merge::{self, Items, Merger};
 use super::{CatalogKey, CraftingCatalog, PATH};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Phase};
 use bedrock_addon_core::document::{Document, Merge, Merged, Rejected};
 use bedrock_addon_core::id::{BlockId, ItemId, Kind, kind};
 
@@ -103,7 +104,7 @@ fn pack_index(file: &CatalogFile) -> Option<usize> {
 /// has a debug assert here and no content-log line, so the crate reports an information.
 // vanilla = "debug assert; no catalog loaded"
 fn no_base() -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+    Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
         .phase(Phase::Validate)
         .detail(DiagnosticDetail::Reference {
             kind: "base crafting item catalog",

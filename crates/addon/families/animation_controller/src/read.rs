@@ -3,17 +3,15 @@
 
 use indexmap::IndexMap;
 
+use super::codes;
 use super::history::{AnimationControllerHistory, v1_8_0};
 use super::{
     AnimationController, AnimationControllerFile, BlendTransition, EventString, State,
     StateAnimation, StateVariable, Transition,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
-use bedrock_addon_core::json::node_tree::{
-    Group, Hit, Kind, Node, Pattern, UNKNOWN_OPTION_TYPE, Walk, text,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
 use bedrock_addon_core::vanilla::ActorType;
@@ -43,12 +41,6 @@ pub(crate) const CONTROLLER_KEY: Pattern = Pattern::Prefixed {
     regex: r"controller\.animation\.[a-zA-Z0-9_.-]+",
 };
 
-/// `Error: ill-formatted/missing "format_version" field. Skipping.`
-const ILL_FORMATTED: &str = "Error: ill-formatted/missing \"format_version\" field. Skipping.";
-/// The "exceeds game version" text (two spaces before "Skipping", as the game writes it).
-const EXCEEDS_GAME: &str =
-    "Error: animation controller file format version: {} exceeds game version: {}.  Skipping.";
-
 /// What the format-version gate read.
 pub(crate) struct LoadedVersion {
     /// The version.
@@ -71,13 +63,9 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
         .and_then(|(_, node)| read_version(walk, *node));
     let Some(version) = version else {
         let code = if member.is_none() {
-            DiagnosticCode::MissingFormatVersion {
-                text: Some(VanillaText::Fixed(ILL_FORMATTED)),
-            }
+            DiagnosticCode::from(&codes::ILL_FORMATTED_MISSING_FORMAT_VERSION)
         } else {
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::Fixed(ILL_FORMATTED)),
-            }
+            DiagnosticCode::from(&codes::ILL_FORMATTED_UNSUPPORTED_VERSION)
         };
         walk.push(code, Severity::Error, member.map(|(_, n)| n.span()));
         return None;
@@ -89,9 +77,9 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
     );
     if version > engine {
         walk.push(
-            DiagnosticCode::UnsupportedVersion {
-                text: text(EXCEEDS_GAME, &[&version.to_string(), &engine.to_string()]),
-            },
+            DiagnosticCode::from(
+                codes::EXCEEDS_GAME.with([&version.to_string(), &engine.to_string()]),
+            ),
             Severity::Error,
             None,
         );
@@ -99,11 +87,7 @@ pub(crate) fn load_format_version(walk: &mut Walk, root: Node<'_>) -> Option<Loa
     }
     if version < V1_8_0 {
         walk.push(
-            DiagnosticCode::UnsupportedVersion {
-                text: Some(VanillaText::UnknownFormatVersion {
-                    version: version.to_string(),
-                }),
-            },
+            DiagnosticCode::from(codes::UNKNOWN_FORMAT_VERSION.with([version.to_string()])),
             Severity::Error,
             None,
         );
@@ -203,9 +187,7 @@ pub(crate) fn parse_as_written(
     let version = loaded.version;
     if version.is_pre_release() {
         walk.push(
-            DiagnosticCode::PrereleaseFormatVersion {
-                version: version.to_string(),
-            },
+            DiagnosticCode::from(core_codes::PRERELEASE_FORMAT_VERSION.with([version.to_string()])),
             Severity::Info,
             None,
         );
@@ -226,7 +208,7 @@ pub(crate) fn parse_as_written(
 fn non_canonical(walk: &mut Walk) {
     for (at, span) in std::mem::take(&mut walk.non_canonical) {
         walk.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::NonCanonicalMemberCase)
+            Diagnostic::of(&core_codes::NON_CANONICAL_MEMBER_CASE)
                 .at(at)
                 .span(span),
         );
@@ -244,9 +226,7 @@ pub(crate) fn controller_format_version(
     if node.kind() == Kind::Array {
         // A version node can only be parsed from a JSON string.
         walk.error(
-            DiagnosticCode::UnsupportedVersion {
-                text: text(UNKNOWN_OPTION_TYPE, &["SemVersion"]),
-            },
+            DiagnosticCode::from(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"])),
             node.span(),
         );
         return None;

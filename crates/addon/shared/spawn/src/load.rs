@@ -2,8 +2,11 @@
 //! the routing around a family's load, the rejection lines, and the combine rule of the
 //! registries.
 
-use super::texts;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
+use super::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Phase, builders,
+};
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Origin, Registry, RegistryBuilder, Rejected,
 };
@@ -51,23 +54,17 @@ pub(crate) fn first_format_version(value: &Value) -> Option<&Value> {
 /// not formatted as an object".
 pub(crate) fn not_an_object(root: &Value) -> Diagnostic {
     if first_format_version(root).is_none() {
-        error(DiagnosticCode::MissingFormatVersion {
-            text: Some(VanillaText::NoValidVersion),
-        })
+        error(DiagnosticCode::from(&core_codes::NO_VALID_VERSION))
     } else {
-        error(DiagnosticCode::MalformedInput {
-            message: "the root is not an object".to_owned(),
-            text: Some(VanillaText::Fixed(texts::NOT_AN_OBJECT)),
-        })
+        Diagnostic::of(&codes::NOT_AN_OBJECT).detail(DiagnosticDetail::Syntax(
+            "the root is not an object".to_owned(),
+        ))
     }
 }
 
 /// The text of a rejected document's closing line.
-pub fn closing(text: &'static str) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed(text)),
-    })
-    .phase(Phase::Validate)
+pub fn closing(code: &'static CodeDef<0>) -> Diagnostic {
+    Diagnostic::of(code).phase(Phase::Validate)
 }
 
 /// Gives every finding the document's pack and file; the checked envelope's missing payload
@@ -75,11 +72,7 @@ pub fn closing(text: &'static str) -> Diagnostic {
 pub fn locate(diagnostics: &mut Diagnostics, origin: &Origin) {
     // In place: the list keeps where the members of the document are in the file.
     for finding in diagnostics.iter_mut() {
-        if matches!(finding.code, DiagnosticCode::MissingPayload { text: None })
-            || finding
-                .code
-                .is(&bedrock_addon_core::diagnostic::codes::MISSING_PAYLOAD)
-        {
+        if finding.code.is(&core_codes::MISSING_PAYLOAD) {
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
         }
         finding.location.pack = Some(origin.pack.clone());
@@ -138,14 +131,14 @@ pub fn load_family_as_written<F: Family>(
 pub fn load_file<T>(
     origin: &Origin,
     bytes: &[u8],
-    closing_text: &'static str,
+    closing_code: &'static CodeDef<0>,
     load: impl FnOnce(&str, &Origin) -> (Option<String>, Result<Document<T>, Rejected>),
 ) -> (Option<String>, Result<Document<T>, Rejected>) {
     let reject = |finding: Diagnostic, closes: bool| {
         let mut diagnostics = Diagnostics::default();
         diagnostics.push(finding);
         if closes {
-            diagnostics.push(closing(closing_text));
+            diagnostics.push(closing(closing_code));
         }
         locate(&mut diagnostics, origin);
         Err(Rejected::new(origin.clone(), diagnostics))
@@ -153,10 +146,7 @@ pub fn load_file<T>(
     // The BOM is blanked, not cut, so every offset is an offset into the file as written; a
     // text that is not UTF-8 or nests too deeply is one finding either way.
     let Ok(prepared) = Prepared::new(bytes) else {
-        let malformed = error(DiagnosticCode::MalformedInput {
-            message: "not UTF-8 JSON within the nesting limit".to_owned(),
-            text: None,
-        });
+        let malformed = Diagnostic::of(builders::syntax("not UTF-8 JSON within the nesting limit"));
         return (None, reject(malformed, false));
     };
     let text = prepared.as_str();
@@ -173,7 +163,7 @@ pub fn load_file<T>(
     if !syntax_error && let Err(rejected) = &mut result {
         rejected
             .diagnostics
-            .push(closing(closing_text).in_file(origin));
+            .push(closing(closing_code).in_file(origin));
     }
     (identifier, result)
 }

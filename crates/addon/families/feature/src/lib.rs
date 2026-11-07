@@ -4,6 +4,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 pub use blocks::{
     AttachConditions, ExposedFace, FossilFeature, GeodeFeature, GrowingPlantFeature,
@@ -49,7 +50,6 @@ mod placement;
 mod read;
 mod scatter;
 mod structure;
-mod texts;
 mod tree;
 mod types;
 mod validate;
@@ -60,7 +60,8 @@ mod tests;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase, Severity};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Phase, Severity};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
@@ -75,10 +76,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::write_envelope;
 use family::{Fam, FeatureFn, FeatureType};
-use read::{
-    DuplicateText, FileSource, formatted, parse_file, parse_file_as_written, upgrade_document,
-};
-use texts::DUPLICATE;
+use read::{DuplicateText, FileSource, parse_file, parse_file_as_written, upgrade_document};
 
 #[cfg(test)]
 use family::{KEYS, TypeFn, with_type};
@@ -212,8 +210,12 @@ fn duplicate(origin: &Origin, id: &FeatureId, text: DuplicateText) -> Diagnostic
     } else {
         Severity::Info
     };
-    let text = text.then(|| formatted(DUPLICATE, &[&id.as_str()]));
-    Diagnostic::error(DiagnosticCode::DuplicateIdentifier { text })
+    let code = if text {
+        codes::DUPLICATE.with([id.as_str()])
+    } else {
+        Code::from(&core_codes::DUPLICATE_IDENTIFIER)
+    };
+    Diagnostic::of(code)
         .severity(severity)
         .phase(Phase::Validate)
         .in_file(origin)

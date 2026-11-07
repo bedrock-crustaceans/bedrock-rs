@@ -7,6 +7,7 @@ use crate::component::{
     AtmosphereIdentifier, BiomeMusic, ColorGradingIdentifier, LightingIdentifier, WaterIdentifier,
 };
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::Component as _;
 use bedrock_addon_core::id::{
     AtmosphereSettingsId, BiomeId, ColorGradingSettingsId, LightingSettingsId, MusicDefinitionId,
@@ -153,7 +154,7 @@ impl LegacyStep<1, 21, 70> for ClientBiomePayload<Component> {
         if !description.identifier.as_str().contains(':') {
             description.identifier =
                 BiomeId::parse(format!("minecraft:{}", description.identifier.as_str()));
-            note_identifier(cx, DiagnosticCode::IdentifierNamespaced);
+            note_identifier(cx, DiagnosticCode::from(&core_codes::IDENTIFIER_NAMESPACED));
         }
         if let Some(ids) = render_identifiers(cx.load, &description.identifier) {
             let early = cx.original_version < RENDER_UPGRADE_BEFORE;

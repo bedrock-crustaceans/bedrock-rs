@@ -196,11 +196,10 @@ fn the_too_deep_byte_of_a_file_with_a_bom_counts_from_after_the_mark() {
             folders: vec![folder],
             ..ScriptConfigFiles::default()
         });
-        let message = config.diagnostics().first_error().map(|f| match &f.code {
-            bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput { message, .. } => {
-                message.clone()
-            }
-            other => panic!("{name}: {other:?}"),
+        let message = config.diagnostics().first_error().map(|f| {
+            f.syntax_message()
+                .unwrap_or_else(|| panic!("{name}: {:?}", f.code))
+                .to_owned()
         });
         assert_eq!(
             message,

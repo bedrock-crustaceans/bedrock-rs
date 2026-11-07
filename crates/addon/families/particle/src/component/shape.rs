@@ -1,8 +1,8 @@
 //! The emitter shapes: where an emitter's particles appear and which way they leave.
 
 use super::types::{EmitterDirection, PlaneNormal};
+use crate::codes;
 use crate::read::{Members, Opt, Reader, object};
-use crate::texts;
 use bedrock_addon_core::molang::Molang;
 
 /// The offset or direction a shape has when the document does not write one.
@@ -47,7 +47,7 @@ fn box_shape(shape: &mut EmitterShapeBox, m: Members<'_>, r: &mut Reader<'_>) {
     }
     // The game writes this line to the content log at the error level.
     r.key("half_dimensions", |r| {
-        r.content_error(texts::OFFSET_REQUIRED);
+        r.content_error(&codes::OFFSET_REQUIRED);
     });
     if shape.surface_only.take().is_some() {
         r.unread("surface_only");

@@ -1,10 +1,11 @@
 //! Format 1.20.10: `geometry.bone_visibility` takes booleans and Molang.
 
+use crate::codes;
 use indexmap::IndexMap;
 
-use super::legacy::{BlockPayload, component_path, fixed, string};
+use super::legacy::{BlockPayload, component_path, string};
 use super::ops::{dropped_field, edit_object};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
@@ -42,11 +43,9 @@ impl LegacyStep<1, 20, 10> for BlockPayload {
         // full-block geometry: a kept error.
         for section in both {
             cx.diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: fixed("A block cannot have both a unit cube and a geometry component."),
-                })
-                .at(component_path(section, "minecraft:geometry"))
-                .phase(Phase::Upgrade),
+                Diagnostic::of(&codes::UNIT_CUBE_AND_GEOMETRY)
+                    .at(component_path(section, "minecraft:geometry"))
+                    .phase(Phase::Upgrade),
             );
         }
         // Op 2.
@@ -54,7 +53,7 @@ impl LegacyStep<1, 20, 10> for BlockPayload {
             convert_properties(&mut block, cx.diagnostics);
         } else if block.description.shift_remove("properties").is_some() {
             let at = JsonPath::new().with(&["minecraft:block", "description", "properties"]);
-            dropped_field(&at, None, cx.diagnostics);
+            dropped_field(&at, cx.diagnostics);
         }
         Legacy(block)
     }

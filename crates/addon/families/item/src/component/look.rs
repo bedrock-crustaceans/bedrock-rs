@@ -1,6 +1,7 @@
 //! What the item shows: `display_name`, `glint`, `hover_text_color`, `icon`,
 //! `interact_button`, `rarity`, `record`, `tags`.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
@@ -10,7 +11,7 @@ use indexmap::IndexMap;
 
 use super::ItemComponent;
 use super::value::{ValueComponent, value_component};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:display_name`: the item's name, or a localization key (JSON `{"value": text}`).
@@ -136,9 +137,7 @@ pub(crate) fn parse_interact_button(
     let value = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let button = value.as_ref().and_then(InteractButton::from_value);
     if button.is_none() {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType {
-            text: None,
-        }));
+        d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
     }
     button.map(ItemComponent::InteractButton)
 }

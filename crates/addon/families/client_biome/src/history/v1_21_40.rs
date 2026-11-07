@@ -11,6 +11,7 @@ use crate::component::{
     FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, child, parse_typed,
 };
 use crate::read::ComponentEra;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
@@ -96,7 +97,7 @@ impl Checked for AmbientSounds {
             let sound = json.as_object().and_then(|object| object.get(member));
             if sound.is_some_and(|sound| !sound.is_string()) {
                 d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
                         .at(child(&JsonPath::new(), &[member])),
                 );
             }
@@ -190,7 +191,7 @@ fn from_table<T>(
     } else if table(&format!("minecraft:{identifier}")).is_some() {
         note_component(
             cx,
-            DiagnosticCode::UpgradeTableMissedBareIdentifier,
+            DiagnosticCode::from(&core_codes::UPGRADE_TABLE_MISSED_BARE_IDENTIFIER),
             T::NAME,
         );
     }

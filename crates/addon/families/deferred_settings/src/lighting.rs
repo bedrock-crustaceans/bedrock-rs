@@ -260,9 +260,8 @@ mod codec {
     use crate::value::{Keyframes, Rgb8, Rgba8};
     use crate::write::{self, Object, Written};
     use crate::{V1_21_70, V1_21_80};
-    use bedrock_addon_core::diagnostic::{
-        Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
-    };
+    use bedrock_addon_core::diagnostic::codes as core_codes;
+    use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::version::FormatVersion;
@@ -691,7 +690,7 @@ mod codec {
         let mut dropped = |alpha: u8, at: JsonPath| {
             if alpha != u8::MAX {
                 cx.diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    Diagnostic::of(&core_codes::DROPPED_FIELD)
                         .at(at)
                         .phase(Phase::Upgrade),
                 );

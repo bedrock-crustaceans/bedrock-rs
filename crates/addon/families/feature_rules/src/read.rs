@@ -5,7 +5,8 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{FeatureRule, FeatureRuleConditions, FeatureRuleDescription};
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
     reject_nulls,
@@ -123,7 +124,7 @@ fn minimum(value: i32, min: i32, at: &JsonPath, d: &mut Diagnostics) -> bool {
     if value >= min {
         return true;
     }
-    d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
+    d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(at.clone()));
     false
 }
 
@@ -197,7 +198,7 @@ fn typed<T: for<'f> Facet<'f>>(
                     // Under the slice's error mask an unknown member is a level-2 content-log
                     // line, a warning that does not stop the load: the reading's grade.
                     d.push(
-                        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                             .severity(crate::READING.grade(Class::Unknown))
                             .at(full),
                     );

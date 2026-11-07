@@ -5,8 +5,10 @@
 //! Each does nothing when the members it converts are absent, so applying it twice is applying
 //! it once.
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::Unknown as Table;
 use bedrock_addon_core::json::Value;
@@ -40,7 +42,7 @@ fn half(json: &mut VObject, name: &str, d: &mut Diagnostics) -> Option<Value> {
     let value = json.remove(name).filter(|value| !value.is_null())?;
     let Some(number) = value.as_number() else {
         d.push(finding(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Phase::Upgrade,
             name,
         ));
@@ -50,7 +52,7 @@ fn half(json: &mut VObject, name: &str, d: &mut Diagnostics) -> Option<Value> {
     let float = number.to_f64_lossy() as f32;
     if float.is_infinite() {
         d.push(finding(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Phase::Upgrade,
             name,
         ));
@@ -95,11 +97,10 @@ pub(crate) fn look_time(json: &mut VObject, d: &mut Diagnostics) {
     if json.remove("target_distance").is_some() {
         // The game's upgrade drops it without a word, so the crate's own text is an information.
         let mut dropped = finding(
-            DiagnosticCode::DroppedField {
-                text: Some(VanillaText::Fixed(
-                    "`target_distance` was removed by the 1.26.0 upgrade",
-                )),
-            },
+            DiagnosticCode::from(
+                core_codes::DROPPED_FIELD_WORDED
+                    .with(["`target_distance` was removed by the 1.26.0 upgrade"]),
+            ),
             Phase::Upgrade,
             "target_distance",
         );
@@ -124,7 +125,7 @@ pub(crate) fn look_time(json: &mut VObject, d: &mut Diagnostics) {
             .is_some_and(|had| !had.is_null() && *had != range)
         {
             d.push(note(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 "look_time",
             ));
         }
@@ -156,7 +157,7 @@ pub(crate) fn ranged_interval(json: &mut VObject, d: &mut Diagnostics) {
     if min.is_some() || max.is_some() {
         if json.contains_key("attack_interval") {
             d.push(finding(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 Phase::Upgrade,
                 "attack_interval",
             ));
@@ -287,7 +288,7 @@ pub(crate) fn success_chance(json: &mut VObject, d: &mut Diagnostics) {
     if json.get("success_chance").is_some_and(Value::is_object) {
         json.remove("success_chance");
         d.push(finding(
-            DiagnosticCode::InvalidType { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
             Phase::Parse,
             "success_chance",
         ));
@@ -319,13 +320,9 @@ pub fn eat_block_pairs(goal: &mut EatBlock, is_block: impl Fn(&str) -> bool) -> 
             // The game looks the block up when it sets the goal up, in either reader, and logs
             // an error but keeps the entity: a kept error.
             out.push_kept_error(
-                Diagnostic::error(DiagnosticCode::UnresolvedReference {
-                    text: Some(VanillaText::EatBlockInvalidBlock {
-                        block: block.clone(),
-                    }),
-                })
-                .at(at)
-                .phase(Phase::Link),
+                Diagnostic::error(codes::EAT_BLOCK_INVALID_BLOCK.with([block.as_str()]).into())
+                    .at(at)
+                    .phase(Phase::Link),
             );
         }
         index += 1;
@@ -394,11 +391,9 @@ mod tests {
             finding.location.json_path.to_string(),
             "eat_and_replace_block_pairs/1"
         );
-        let DiagnosticCode::UnresolvedReference { text: Some(text) } = &finding.code else {
-            panic!("{finding:?}");
-        };
+        assert!(finding.is(&codes::EAT_BLOCK_INVALID_BLOCK), "{finding:?}");
         assert_eq!(
-            text.to_string(),
+            finding.code.to_string(),
             "Block demo:nothing on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block."
         );
         let pairs = goal.eat_and_replace_block_pairs.expect("pairs");

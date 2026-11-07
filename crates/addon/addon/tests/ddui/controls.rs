@@ -1,7 +1,7 @@
 //! V5, the parse under the strict error mask. Every finding is an error and the file
 //! is not loaded.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity, codes};
 use bedrock_addon::families::ddui::Component;
 use bedrock_addon::version::FormatVersion;
 
@@ -16,7 +16,7 @@ pub fn codes<'a>(
     d: impl IntoIterator<Item = &'a Diagnostic>,
 ) -> Vec<(Severity, &'static str, String)> {
     d.into_iter()
-        .filter(|f| !matches!(f.code, DiagnosticCode::DocumentRejected { .. }))
+        .filter(|f| f.code.name() != "DocumentRejected")
         .map(|f| (f.severity, f.code.name(), f.location.json_path.to_string()))
         .collect()
 }
@@ -37,7 +37,7 @@ fn refused_on(text: &str, engine: FormatVersion) -> Vec<(Severity, &'static str,
     assert_eq!(found(&d).last(), Some(&failed_to_load()), "{d:#?}");
     assert_eq!(
         d.iter()
-            .filter(|f| matches!(f.code, DiagnosticCode::DocumentRejected { .. }))
+            .filter(|f| f.code.name() == "DocumentRejected")
             .count(),
         1
     );
@@ -719,16 +719,14 @@ fn c12_container_item_is_gone_from_the_1_26_45_catalogue() {
                 (Severity::Info, "FieldUntilEngine", at.clone())
             ]
         );
-        let last: Vec<FormatVersion> = rejects(root_in(&text, &cx(E45, false)))
+        let last: Vec<String> = rejects(root_in(&text, &cx(E45, false)))
             .iter()
-            .filter_map(|f| match f.code {
-                DiagnosticCode::FieldUntilEngine { last } => Some(last),
-                _ => None,
-            })
+            .filter_map(|f| f.code.args_of(&codes::FIELD_UNTIL_ENGINE))
+            .map(|args| args[0].clone())
             .collect();
         assert_eq!(
             last,
-            [E20],
+            [E20.to_string()],
             "the 1.26.20 catalogue is the last with the type"
         );
         loads(root(&text));
@@ -767,14 +765,12 @@ fn c12_the_1_26_20_catalogue_refuses_the_later_types_and_names_their_engine() {
             hint(&format!("{}/children/0/component", child(1))),
         ]
     );
-    let since: Vec<FormatVersion> = d
+    let since: Vec<String> = d
         .iter()
-        .filter_map(|f| match f.code {
-            DiagnosticCode::FieldSinceEngine { since } => Some(since),
-            _ => None,
-        })
+        .filter_map(|f| f.code.args_of(&codes::FIELD_SINCE_ENGINE))
+        .map(|args| args[0].clone())
         .collect();
-    assert_eq!(since, [E45, E45]);
+    assert_eq!(since, [E45.to_string(), E45.to_string()]);
     // The engine just below 1.26.45 still reads with the 1.26.20 catalogue.
     assert_eq!(refused_on(&text, FormatVersion::new(1, 26, 44)).len(), 4);
     // A type that no later catalogue has gets no hint of a later engine: its hint names the

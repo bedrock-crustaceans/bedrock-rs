@@ -1,7 +1,7 @@
 //! `bp.features()`: the walk of `features/` top-down, the app's `definitions/features` after the
 //! packs, the first definition claiming its identifier (fixtures f10, f20).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::families::feature::Feature;
 use bedrock_addon::id::FeatureId;
 use bedrock_addon::load::{AppData, LoadOptions};
@@ -38,8 +38,7 @@ fn f10_the_top_pack_definition_wins_and_the_lower_one_is_reported() {
         .diagnostics()
         .filter(|f| {
             // An information: the game is silent.
-            matches!(f.code, DiagnosticCode::DuplicateIdentifier { text: None })
-                && f.severity == Severity::Info
+            f.is(&codes::DUPLICATE_IDENTIFIER) && f.severity == Severity::Info
         })
         .collect();
     assert_eq!(duplicates.len(), 1);
@@ -112,6 +111,6 @@ fn the_apps_definitions_come_after_every_pack() {
     assert!(
         !features
             .diagnostics()
-            .any(|f| matches!(f.code, DiagnosticCode::DuplicateIdentifier { .. }))
+            .any(|f| f.code.name() == "DuplicateIdentifier")
     );
 }

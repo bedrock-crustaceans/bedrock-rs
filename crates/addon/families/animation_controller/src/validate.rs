@@ -1,17 +1,15 @@
 //! The findings that are not schema failures: the controller reference stage the game logs
 //! (unknown state names), and the crate's own lints, where the game says nothing.
 
+use super::codes;
 use super::read::V1_17_30;
 use super::{AnimationControllerFile, State};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::json::node_tree::text;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::SemVersion;
 use bedrock_addon_shared_animation::validate::{command_version_unset, events};
 use bedrock_addon_shared_animation::walk::atof;
-
-/// `Error: state %s not found - defaulting to using state %d`.
-pub(crate) const STATE_NOT_FOUND: &str = "Error: state {} not found - defaulting to using state {}";
 
 /// Whether a transition text has a single-quoted literal with an upper-case letter.
 fn has_cased_literal(text: &str) -> bool {
@@ -38,9 +36,7 @@ pub(crate) fn controller_findings(
             .keys()
             .map(|n| n.to_ascii_lowercase())
             .collect();
-        let not_found = |name: &str| DiagnosticCode::UnresolvedReference {
-            text: text(STATE_NOT_FOUND, &[name, "0"]),
-        };
+        let not_found = |name: &str| codes::STATE_NOT_FOUND.with([name, "0"]);
         match &controller.initial_state {
             // Compared as written with the lower-cased names.
             Some(initial) if !names.iter().any(|n| n == initial) => {
@@ -49,14 +45,14 @@ pub(crate) fn controller_findings(
                 // not found - defaulting to using state %d" fires when an entity binds the
                 // controller, not at pack load, so the finding is an information with the text.
                 diagnostics.push(
-                    Diagnostic::info(not_found(initial))
+                    Diagnostic::of(not_found(initial))
                         .at(at)
                         .phase(Phase::Validate),
                 );
             }
             None if !names.iter().any(|n| n == "default") => {
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::ImplicitInitialState)
+                    Diagnostic::of(&core_codes::IMPLICIT_INITIAL_STATE)
                         .at(base.clone())
                         .phase(Phase::Validate),
                 );
@@ -86,16 +82,14 @@ fn state_findings(
         let target = transition.target.to_ascii_lowercase();
         if !names.contains(&target) {
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::UnresolvedReference {
-                    text: text(STATE_NOT_FOUND, &[&target, "0"]),
-                })
-                .at(at.clone())
-                .phase(Phase::Validate),
+                Diagnostic::of(codes::STATE_NOT_FOUND.with([&target, "0"]))
+                    .at(at.clone())
+                    .phase(Phase::Validate),
             );
         }
         if *written < V1_17_30 && has_cased_literal(transition.condition.as_str()) {
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::CaseFoldedTransition)
+                Diagnostic::of(&core_codes::CASE_FOLDED_TRANSITION)
                     .at(at)
                     .phase(Phase::Validate),
             );
@@ -112,7 +106,7 @@ fn state_findings(
         if !ordered {
             let at = base.child("variables").child(name).child("remap_curve");
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::UnorderedRemapCurve)
+                Diagnostic::of(&core_codes::UNORDERED_REMAP_CURVE)
                     .at(at)
                     .phase(Phase::Validate),
             );

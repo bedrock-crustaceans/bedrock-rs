@@ -8,7 +8,8 @@ use crate::molang::{SCATTER_LEGACY, Walk, member};
 use crate::read::{parse_strict, parse_strict_with};
 use crate::scatter::walk_params;
 use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
@@ -158,10 +159,7 @@ impl VersionStruct for SingleBlockFeature {
             .and_then(|json| json.as_object()?.get("places_block").cloned())
             .is_some_and(|value| value.is_array());
         if array {
-            d.push(
-                Diagnostic::error(DiagnosticCode::InvalidType { text: None })
-                    .at(cx.at.child("places_block")),
-            );
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(cx.at.child("places_block")));
             return None;
         }
         parse_strict(payload, cx, d)

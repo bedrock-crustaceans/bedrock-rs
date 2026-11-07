@@ -3,9 +3,10 @@
 use facet_value::VArray;
 use indexmap::IndexMap;
 
+use crate::codes;
 use crate::read::{Era, Members, Node, Opt, Reader, Writer, object};
-use crate::texts;
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
 use bedrock_addon_shared_shapes::OneOrMany;
@@ -21,7 +22,7 @@ impl Node for VectorEvents {
             return Some(Self::One(name.as_str().to_owned()));
         }
         let Some(elements) = value.as_array() else {
-            r.wrong_type(value, Some(texts::EVENT_FIELD));
+            r.wrong_type(value, Some(&codes::EVENT_FIELD));
             return None;
         };
         let mut names = Vec::with_capacity(elements.len());
@@ -32,7 +33,7 @@ impl Node for VectorEvents {
                     names.push(name.as_str().to_owned());
                     places.push(i);
                 }
-                None => r.index(i, |r| r.wrong_type(element, Some(texts::EVENT_ELEMENT))),
+                None => r.index(i, |r| r.wrong_type(element, Some(&codes::EVENT_ELEMENT))),
             }
         }
         r.kept(&places);
@@ -77,11 +78,11 @@ impl Node for EmitterDirection {
             Some("inwards") => Some(Self::Inwards),
             Some("outwards") => Some(Self::Outwards),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::InvalidValue { text: None });
+                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(texts::DIRECTION_INVALID));
+                r.wrong_type(value, Some(&codes::DIRECTION_INVALID));
                 None
             }
         }
@@ -131,11 +132,11 @@ impl Node for PlaneNormal {
             Some("y") => Some(Self::Y),
             Some("z") => Some(Self::Z),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::InvalidValue { text: None });
+                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(texts::PLANE_NORMAL_INVALID));
+                r.wrong_type(value, Some(&codes::PLANE_NORMAL_INVALID));
                 None
             }
         }
@@ -207,7 +208,7 @@ impl Node for ColorExpr {
             if hex(text).is_none() {
                 // A 1.20.80 document logs the line and keeps the document; the string stays
                 // as written.
-                r.warn(texts::COLOR_STRING);
+                r.warn(&codes::COLOR_STRING);
                 if r.legacy() {
                     return None;
                 }
@@ -218,11 +219,11 @@ impl Node for ColorExpr {
             Some(4) => <[Molang; 4]>::read(value, r, CHANNEL).map(Self::Rgba),
             Some(3) => <[Molang; 3]>::read(value, r, CHANNEL).map(Self::Rgb),
             Some(_) => {
-                r.wrong_type(value, Some(texts::COLOR_COUNT));
+                r.wrong_type(value, Some(&codes::COLOR_COUNT));
                 None
             }
             None => {
-                r.wrong_type(value, Some(texts::COLOR_SHAPE));
+                r.wrong_type(value, Some(&codes::COLOR_SHAPE));
                 None
             }
         }
@@ -294,7 +295,7 @@ impl Gradient {
 
 impl Node for Gradient {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let o = o.wrong(texts::GRADIENT);
+        let o = o.wrong(&codes::GRADIENT);
         let (read, written) = if let Some(elements) = value.as_array() {
             let read = Vec::<ColorExpr>::read(value, r, o)?;
             (Self::List(read), elements.len())
@@ -312,7 +313,7 @@ impl Node for Gradient {
         // A colour the legacy parser could not read spoils the gradient.
         if kept != written {
             if r.legacy() {
-                r.warn(texts::GRADIENT);
+                r.warn(&codes::GRADIENT);
             }
             return None;
         }
@@ -345,7 +346,7 @@ object! {
     /// JSON: `{"gradient": …, "interpolant": …}`, both required.
     pub struct ColorGradient {
         /// The colours (JSON `gradient`).
-        req gradient: Gradient = "gradient", Opt::NONE.missing(texts::GRADIENT);
+        req gradient: Gradient = "gradient", Opt::NONE.missing(&codes::GRADIENT);
         /// Where in the gradient the particle is, 0 to 1 for a list (JSON `interpolant`).
         req interpolant: Molang = "interpolant", Opt::required(0.0);
     }
@@ -371,7 +372,7 @@ impl Node for TintColor {
             ColorExpr::read(value, r, o).map(Self::Color)
         };
         if read.is_none() && r.legacy() {
-            r.warn(texts::INVALID_COLOR);
+            r.warn(&codes::INVALID_COLOR);
         }
         read
     }

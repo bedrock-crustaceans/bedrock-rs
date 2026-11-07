@@ -1,9 +1,11 @@
 //! JSON operations the legacy steps share.
 
+use crate::codes;
 use indexmap::IndexMap;
 
 use super::legacy::{component_path, number, string};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::json::Value;
 
 /// A JSON integer.
@@ -45,7 +47,7 @@ pub(crate) fn clamp(
     let clamped = value.clamp(min, max);
     if (clamped - value).abs() > f64::EPSILON {
         d.push(
-            Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+            Diagnostic::of(&core_codes::CLAMPED_VALUE)
                 .at(component_path(section, name))
                 .phase(Phase::Upgrade),
         );
@@ -58,27 +60,18 @@ pub(crate) fn clamp(
 /// level, removes the component and goes on, so the block still loads).
 pub(crate) fn missing_field(section: Option<usize>, name: &str, field: &str, d: &mut Diagnostics) {
     d.push_kept_error(
-        Diagnostic::error(DiagnosticCode::DroppedComponent {
-            text: Some(VanillaText::Formatted {
-                template: "Component {} is missing required field {}, component will be discarded",
-                args: vec![name.to_owned(), field.to_owned()],
-            }),
-        })
-        .at(component_path(section, name))
-        .phase(Phase::Upgrade),
+        Diagnostic::of(codes::COMPONENT_MISSING_FIELD.with([name.to_owned(), field.to_owned()]))
+            .at(component_path(section, name))
+            .phase(Phase::Upgrade),
     );
 }
 
 /// A member a step drops where the game's fixer drops it with no log (`DroppedField`, an
 /// information: the crate's own, since the game says nothing). A drop the game logs is told where it is, as the
 /// kept error it is.
-pub(crate) fn dropped_field(
-    path: &bedrock_addon_core::diagnostic::JsonPath,
-    text: Option<VanillaText>,
-    d: &mut Diagnostics,
-) {
+pub(crate) fn dropped_field(path: &bedrock_addon_core::diagnostic::JsonPath, d: &mut Diagnostics) {
     d.push(
-        Diagnostic::info(DiagnosticCode::DroppedField { text })
+        Diagnostic::of(&core_codes::DROPPED_FIELD)
             .at(path.clone())
             .phase(Phase::Upgrade),
     );

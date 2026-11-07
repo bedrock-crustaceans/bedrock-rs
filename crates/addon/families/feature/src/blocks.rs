@@ -5,12 +5,13 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::Description;
+use super::codes;
 use super::molang::{Walk, walk};
 use super::read::parse_strict_with;
 use super::validate::Check;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
 use super::{Rules, V1_13_0};
-use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostics, Severity};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, JsonType, StrictError, Value};
 use bedrock_addon_core::molang::MolangVisitor;
@@ -539,18 +540,9 @@ pub(crate) const SINGLE_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 21, 
 pub(crate) const MULTI_BLOCK_FORMAT: FormatVersion = known::V1_26_40;
 
 /// The setter texts of the named members of the block feature types.
-const GROWTH_DIRECTION: (&str, &str) = (
-    "growth_direction",
-    "Bad value for growth_direction - should be 'UP' or 'DOWN'",
-);
-const EXPOSED_FACE: (&str, &str) = (
-    "exposed_face",
-    "Bad value for exposed_face - should be 'up' or 'down'",
-);
-const VEGETATION_SURFACE: (&str, &str) = (
-    "surface",
-    "Bad value for surface - should be 'ceiling' or 'floor'",
-);
+static GROWTH_DIRECTION: (&str, &CodeDef<0>) = ("growth_direction", &codes::GROWTH_DIRECTION);
+static EXPOSED_FACE: (&str, &CodeDef<0>) = ("exposed_face", &codes::EXPOSED_FACE);
+static VEGETATION_SURFACE: (&str, &CodeDef<0>) = ("surface", &codes::VEGETATION_SURFACE);
 
 /// `impl Versioned + VersionStruct` with the setter texts of named members.
 macro_rules! named_struct {

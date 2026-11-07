@@ -3,8 +3,9 @@
 //! element by element, each one that fails told and left out so its field takes its default.
 //! The slice's `on_member_failure = DefaultAndTell` is implemented here.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
+    Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -42,7 +43,8 @@ pub(super) fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Op
                     d.push(
                         // The lenient isolation's notes are the crate's own (the game writes no
                         // content-log line for this): the legacy readers keep what they read in silence.
-                        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                        Diagnostic::of(&core_codes::INVALID_VALUE)
+                            .severity(Severity::Info)
                             .at(at.clone()),
                     );
                 }
@@ -60,16 +62,15 @@ pub(super) fn isolate<T: Typed>(object: &mut VObject, d: &mut Diagnostics) -> Op
             let nested = at.len() > 1;
             d.push(
                 // The crate's own, as above.
-                Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
+                Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
+                    .at(at.clone()),
             );
             if nested {
                 // The member goes whole for the value inside it: told at the member too, so
                 // what else it holds is known to be dropped (an information, the warning is
                 // the one above).
-                d.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                        .at(JsonPath::new().child(&key)),
-                );
+                d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(JsonPath::new().child(&key)));
             }
             object.remove(&key);
         }
@@ -173,13 +174,12 @@ fn isolate_elements<T: Typed>(object: &mut VObject, key: &str, d: &mut Diagnosti
                 }
                 told.push(
                     // The crate's own, as above.
-                    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()),
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Info)
+                        .at(at.clone()),
                 );
                 if inside {
-                    told.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
-                            .at(at_element.clone()),
-                    );
+                    told.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at_element.clone()));
                 }
             }
         }
@@ -209,7 +209,9 @@ fn element_finding(key: &str, place: usize, at: &JsonPath) -> Diagnostic {
         }
     }
     // The crate's own, as above.
-    Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(here.clone())
+    Diagnostic::of(&core_codes::INVALID_VALUE)
+        .severity(Severity::Info)
+        .at(here.clone())
 }
 
 /// [`strip_nested`] of the element `element` of the list `key`, read as the one element of its

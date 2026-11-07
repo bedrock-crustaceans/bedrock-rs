@@ -3,6 +3,7 @@
 //! an error and the file is skipped. The reader goes through the whole file and reports every
 //! one of them, each at its own place.
 
+use super::codes;
 use super::style::{
     BorderImageRepeat, BoxSize, FormLabelStyle, FormPanelStyle, FormTextFieldStyle, StyleColor,
     StyleComponents, StyleDescription, UiStyle,
@@ -11,8 +12,9 @@ use super::{
     Binding, Catalogue, ChildSet, Component, CompositionAttribs, CompositionDescription, Control,
     Layout, RootAttribs, RootDescription, UiComposition, UiRoot,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, builders,
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::id::syntax::has_namespace;
@@ -22,9 +24,6 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::Reading;
 use bedrock_addon_shared_shapes::color::hex_bytes;
 
-/// The client's text for an identifier that is not `namespace:name`.
-const NAMESPACE_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-
 /// Where `slice` is in the file.
 fn span_of(slice: JsonSlice<'_>) -> Span {
     let narrow = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
@@ -33,11 +32,6 @@ fn span_of(slice: JsonSlice<'_>) -> Span {
         len: narrow(slice.text.len()),
     }
 }
-
-/// The client's text for a number no double holds: it logs "Failed to parse the Minecraft
-/// Document JSON: {}" with rapidjson's "number too big" message.
-const NUMBER_TOO_BIG: &str =
-    "Failed to parse the Minecraft Document JSON: Number too big to be stored in double.";
 
 /// The byte ranges of the numbers of `text` whose positive exponent is past `308` plus the
 /// digits of their fraction, the point where rapidjson's number reader stops with its "number
@@ -182,17 +176,12 @@ impl Reader<'_> {
         &mut self,
         node: &Node<'_>,
         accept: fn(&str) -> bool,
-        text: Option<&'static str>,
+        refused: &'static CodeDef<0>,
     ) -> Option<String> {
         self.string(node).filter(|value| {
             let accepted = accept(value);
             if !accepted {
-                self.error(
-                    node,
-                    DiagnosticCode::InvalidValue {
-                        text: text.map(VanillaText::Fixed),
-                    },
-                );
+                self.error(node, DiagnosticCode::from(refused));
             }
             accepted
         })
@@ -206,13 +195,13 @@ impl Reader<'_> {
         key: &str,
         required: bool,
         accept: fn(&str) -> bool,
-        text: Option<&'static str>,
+        refused: &'static CodeDef<0>,
     ) -> Option<String> {
         let members = self.object(node)?;
         let mut value = None;
         for (name, member) in members.iter() {
             if name == key {
-                value = self.string_member(&member, accept, text);
+                value = self.string_member(&member, accept, refused);
             } else {
                 self.read().unknown_member(&member, Disposition::Keep);
             }
@@ -231,7 +220,7 @@ impl Reader<'_> {
             "identifier",
             true,
             has_namespace,
-            Some(NAMESPACE_TEXT),
+            &codes::NOT_NAMESPACED,
         )
     }
 
@@ -244,7 +233,7 @@ impl Reader<'_> {
                 markup = self.controls(&member, set);
                 if markup.as_ref().is_some_and(Vec::is_empty) {
                     // `markup` must hold at least one control.
-                    self.error(&member, DiagnosticCode::InvalidValue { text: None });
+                    self.error(&member, DiagnosticCode::from(&core_codes::INVALID_VALUE));
                     markup = None;
                 }
             } else {
@@ -286,10 +275,7 @@ impl Reader<'_> {
             let mut at = node.path().clone();
             at.append(&clamped.path);
             too_big = true;
-            let finding = Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
-            })
-            .at(at);
+            let finding = Diagnostic::of(&codes::NUMBER_TOO_BIG).at(at);
             self.read().push(match clamped.span {
                 Some(span) => finding.span(span),
                 None => finding,
@@ -298,14 +284,12 @@ impl Reader<'_> {
         // A finite value whose exponent rapidjson refuses all the same (`0e999`).
         for range in exponent_too_big(slice.text) {
             too_big = true;
-            let finding = Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(NUMBER_TOO_BIG)),
-            })
-            .at(node.path().clone())
-            .span(span_of(JsonSlice {
-                text: &slice.text[range.clone()],
-                offset: slice.offset + range.start,
-            }));
+            let finding = Diagnostic::of(&codes::NUMBER_TOO_BIG)
+                .at(node.path().clone())
+                .span(span_of(JsonSlice {
+                    text: &slice.text[range.clone()],
+                    offset: slice.offset + range.start,
+                }));
             self.read().push(finding);
         }
         if too_big {
@@ -323,13 +307,13 @@ impl Reader<'_> {
             return Some(component);
         }
         // No alternative of any variant has this constant: the file is skipped.
-        self.error(node, DiagnosticCode::InvalidValue { text: None });
+        self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
         if let Some(later) = known.and_then(|component| self.catalogue.later_with(component)) {
             self.report(
                 node,
-                DiagnosticCode::FieldSinceEngine {
-                    since: later.engine(),
-                },
+                core_codes::FIELD_SINCE_ENGINE
+                    .with([later.engine().to_string()])
+                    .into(),
                 Severity::Info,
             );
         } else if let Some(earlier) =
@@ -339,9 +323,9 @@ impl Reader<'_> {
             // hint.
             self.report(
                 node,
-                DiagnosticCode::FieldUntilEngine {
-                    last: earlier.engine(),
-                },
+                core_codes::FIELD_UNTIL_ENGINE
+                    .with([earlier.engine().to_string()])
+                    .into(),
                 Severity::Info,
             );
         }
@@ -357,7 +341,7 @@ impl Reader<'_> {
         // A type of the catalogue that is no alternative of this place's variant.
         let placed = match component {
             Some(component) if !self.catalogue.allows(set, component) => {
-                self.error(&named, DiagnosticCode::InvalidValue { text: None });
+                self.error(&named, DiagnosticCode::from(&core_codes::INVALID_VALUE));
                 false
             }
             _ => true,
@@ -400,20 +384,11 @@ impl Reader<'_> {
             // `attribs["name"]` as a string, and a missing key or another type throws out of
             // the whole load without a log line. The crate reports an error that refuses the
             // root instead.
-            self.error(node, DiagnosticCode::InvalidValue { text: None });
+            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
         }
         Some(control)
     }
 }
-
-/// The client's text for a padding that is no two-value box size.
-pub(crate) const BOX_SIZE_2_TEXT: &str = "Expected [top, right].";
-/// The text for a padding that is no four-value box size.
-pub(crate) const BOX_SIZE_4_TEXT: &str = "Expected [top, right, bottom, left].";
-/// The client's text for an RGBA colour that is neither four 0-255 values nor a hex string.
-pub(crate) const COLOR_RGBA_TEXT: &str = "Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF).";
-/// The client's text for an RGB colour that is neither three 0-255 values nor a hex string.
-pub(crate) const COLOR_RGB_TEXT: &str = "Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF).";
 
 /// Whether `text` is one JSON integer token: `-?(0|[1-9][0-9]*)`.
 fn integer_token(text: &str) -> bool {
@@ -489,13 +464,8 @@ impl Reader<'_> {
     }
 
     /// A conversion failure: `InvalidValue` with `text` at `node`.
-    fn unconverted(&mut self, text: &'static str, node: &Node<'_>) {
-        self.error(
-            node,
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(text)),
-            },
-        );
+    fn unconverted(&mut self, refused: &'static CodeDef<0>, node: &Node<'_>) {
+        self.error(node, DiagnosticCode::from(refused));
     }
 
     /// A box size: two or four integers. Another count is the conversion's error
@@ -513,9 +483,9 @@ impl Reader<'_> {
         };
         if size.is_none() {
             let text = if values.len() <= 2 {
-                BOX_SIZE_2_TEXT
+                &codes::BOX_SIZE_2
             } else {
-                BOX_SIZE_4_TEXT
+                &codes::BOX_SIZE_4
             };
             self.unconverted(text, node);
         }
@@ -538,9 +508,9 @@ impl Reader<'_> {
                 let near_rgb = text.chars().count() == 7;
                 self.unconverted(
                     if near_rgb {
-                        COLOR_RGB_TEXT
+                        &codes::COLOR_RGB
                     } else {
-                        COLOR_RGBA_TEXT
+                        &codes::COLOR_RGBA
                     },
                     node,
                 );
@@ -559,9 +529,9 @@ impl Reader<'_> {
                 };
                 if color.is_none() {
                     let text = if values.len() == 3 {
-                        COLOR_RGB_TEXT
+                        &codes::COLOR_RGB
                     } else {
-                        COLOR_RGBA_TEXT
+                        &codes::COLOR_RGBA
                     };
                     self.unconverted(text, node);
                 }
@@ -579,7 +549,7 @@ impl Reader<'_> {
         let name = self.string(node)?;
         let value = BorderImageRepeat::from_name(&name);
         if value.is_none() {
-            self.error(node, DiagnosticCode::InvalidValue { text: None });
+            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
         }
         value
     }
@@ -657,7 +627,7 @@ impl Reader<'_> {
             if !StyleComponents::KEYS.contains(&name) {
                 self.error(
                     &member,
-                    DiagnosticCode::UnrecognizedComponent { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
                 );
             }
         }
@@ -667,7 +637,7 @@ impl Reader<'_> {
             form_textfield: self.member(&members, textfield, Self::form_textfield),
         };
         if members.is_empty() {
-            self.error(node, DiagnosticCode::InvalidValue { text: None });
+            self.error(node, DiagnosticCode::from(&core_codes::INVALID_VALUE));
             return None;
         }
         Some(components)
@@ -686,12 +656,9 @@ fn with_payload<T>(
     let json = match bedrock_addon_core::json::from_str_borrowed_jsonc::<Value>(payload.text) {
         Ok(json) => json,
         Err(failure) => {
-            let finding = Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: failure.kind.to_string(),
-                text: None,
-            })
-            .at(at.clone())
-            .span(span_of(payload));
+            let finding = Diagnostic::of(builders::syntax(failure.kind.to_string()))
+                .at(at.clone())
+                .span(span_of(payload));
             reader.read().push(finding);
             return None;
         }
@@ -754,8 +721,13 @@ pub(crate) fn root(
                 "description" => identifier = reader.description(&member),
                 // `attribs` binds `root_point` alone, which must not be empty.
                 "attribs" => {
-                    root_point =
-                        reader.single(&member, "root_point", true, |text| !text.is_empty(), None);
+                    root_point = reader.single(
+                        &member,
+                        "root_point",
+                        true,
+                        |text| !text.is_empty(),
+                        &core_codes::INVALID_VALUE,
+                    );
                 }
                 "layout" => layout = reader.layout(&member, ChildSet::RootControl),
                 _ => reader.read().unknown_member(&member, Disposition::Keep),
@@ -802,7 +774,7 @@ pub(crate) fn composition(
                         "extension_point",
                         false,
                         |text| !text.is_empty(),
-                        None,
+                        &core_codes::INVALID_VALUE,
                     );
                 }
                 "layout" => layout = reader.layout(&member, ChildSet::PanelContent),

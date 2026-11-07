@@ -19,9 +19,10 @@ use indexmap::IndexMap;
 use super::component::{ParticleComponent, read_named};
 use super::curve::{Curve, named_map, object_member};
 use super::event::EventNode;
-use super::{BasicRenderParameters, Description, ParticleEffect, texts};
+use super::{BasicRenderParameters, Description, ParticleEffect, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
@@ -90,9 +91,9 @@ pub(crate) struct Opt {
     /// The legacy parser's default for the field: what a bad value becomes there.
     pub(crate) default: f32,
     /// The legacy parser's line for a value of the wrong type; `None` for the crate's own.
-    pub(crate) wrong: Option<&'static str>,
+    pub(crate) wrong: Option<&'static CodeDef<0>>,
     /// The legacy parser's line when the member is absent; `None` when it says nothing.
-    pub(crate) missing: Option<&'static str>,
+    pub(crate) missing: Option<&'static CodeDef<0>>,
     /// A Molang member of an event: the legacy parser reads it only from a string, says
     /// nothing about another value, and keeps an expression that does not compile.
     pub(crate) event: bool,
@@ -120,18 +121,18 @@ impl Opt {
 
     /// A field the legacy helper is told to require: "required field does not exist".
     pub(crate) const fn required(default: f32) -> Self {
-        Self::with_default(default).missing(texts::REQUIRED_MISSING)
+        Self::with_default(default).missing(&codes::REQUIRED_MISSING)
     }
 
-    /// The same field with `text` for a value of the wrong type.
-    pub(crate) const fn wrong(mut self, text: &'static str) -> Self {
-        self.wrong = Some(text);
+    /// The same field with `code` for a value of the wrong type.
+    pub(crate) const fn wrong(mut self, code: &'static CodeDef<0>) -> Self {
+        self.wrong = Some(code);
         self
     }
 
-    /// The same field with `text` for an absent member.
-    pub(crate) const fn missing(mut self, text: &'static str) -> Self {
-        self.missing = Some(text);
+    /// The same field with `code` for an absent member.
+    pub(crate) const fn missing(mut self, code: &'static CodeDef<0>) -> Self {
+        self.missing = Some(code);
         self
     }
 }
@@ -194,13 +195,16 @@ impl<'d> Reader<'d> {
     /// A content-log line of vanilla's, written by the legacy parser and by the reader of
     /// 1.20.80 documents: the document loads and the value takes its fallback, so the finding
     /// is a kept error.
-    pub(crate) fn warn(&mut self, text: &'static str) {
-        self.content_error(text);
+    pub(crate) fn warn(&mut self, code: &'static CodeDef<0>) {
+        self.content_error(code);
     }
 
     /// A value the crate changes without a line of vanilla's: an information.
     pub(crate) fn warn_ours(&mut self) {
-        self.push(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+        self.push(
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            Severity::Info,
+        );
     }
 
     /// A finding that refuses the document.
@@ -225,26 +229,26 @@ impl<'d> Reader<'d> {
     }
 
     /// `value`, at the current path, is of the wrong JSON type: a 1.20.80 document is refused
-    /// (the kit's wrong type); the legacy parser logs `text` (when it has one) and the caller
+    /// (the kit's wrong type); the legacy parser logs `code` (when it has one) and the caller
     /// takes the default.
-    pub(crate) fn wrong_type(&mut self, value: &Value, text: Option<&'static str>) {
-        match (self.era, text) {
+    pub(crate) fn wrong_type(&mut self, value: &Value, code: Option<&'static CodeDef<0>>) {
+        match (self.era, code) {
             (Era::Cereal, _) => {
                 if self.muted == 0 {
                     let node = self.node(value);
                     self.kit().wrong_type(&node);
                 }
             }
-            (Era::Legacy, Some(text)) => self.warn(text),
+            (Era::Legacy, Some(code)) => self.warn(code),
             (Era::Legacy, None) => self.warn_ours(),
         }
     }
 
     /// The required member `key` of `m` (the object at the current path) is absent: the
     /// 1.20.80 document is refused (the kit's missing member, at the member); the legacy
-    /// parser logs `text` there when it has one.
-    pub(crate) fn missing(&mut self, m: Members<'_>, key: &str, text: Option<&'static str>) {
-        match (self.era, text) {
+    /// parser logs `code` there when it has one.
+    pub(crate) fn missing(&mut self, m: Members<'_>, key: &str, code: Option<&'static CodeDef<0>>) {
+        match (self.era, code) {
             (Era::Cereal, _) => {
                 if self.muted > 0 {
                     return;
@@ -259,11 +263,11 @@ impl<'d> Reader<'d> {
                     }
                     // No object to read from: only the defaults of a value read silently.
                     None => self.key(key, |r| {
-                        r.error(DiagnosticCode::MissingRequiredField { text: None });
+                        r.error(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD));
                     }),
                 }
             }
-            (Era::Legacy, Some(text)) => self.key(key, |r| r.warn(text)),
+            (Era::Legacy, Some(code)) => self.key(key, |r| r.warn(code)),
             (Era::Legacy, None) => {}
         }
     }
@@ -302,20 +306,19 @@ impl<'d> Reader<'d> {
         self.d
             .retain(|finding| !finding.location.json_path.starts_with(&at));
         self.key(key, |r| {
-            r.push(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+            r.push(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            );
         });
     }
 
     /// A line vanilla's legacy parser writes to the content log at the error level before its
     /// parse returns and the effect loads: a kept error, which rejects nothing.
-    pub(crate) fn content_error(&mut self, text: &'static str) {
+    pub(crate) fn content_error(&mut self, code: &'static CodeDef<0>) {
         if self.muted == 0 {
-            self.d.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed(text)),
-                })
-                .at(self.path.clone()),
-            );
+            self.d
+                .push_kept_error(Diagnostic::of(code).at(self.path.clone()));
         }
     }
 
@@ -680,8 +683,8 @@ impl Node for String {
     }
 }
 
-/// A Molang value read where the legacy helper would log `text` for a bad one.
-fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, text: &'static str) -> Option<Molang> {
+/// A Molang value read where the legacy helper would log `code` for a bad one.
+fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, code: &'static CodeDef<0>) -> Option<Molang> {
     // An event's Molang is read by the legacy parser only from a string.
     if value.is_number() && !(o.event && r.legacy()) {
         return float(value, r).map(Molang::Const);
@@ -697,7 +700,10 @@ fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, text: &'static str) -> Opti
                 // Read as the member's default, 0, without a line of the game's: the crate
                 // notes it at the information level. A `null` member is an absent one.
                 if !value.is_null() {
-                    r.push(DiagnosticCode::InvalidType { text: None }, Severity::Info);
+                    r.push(
+                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        Severity::Info,
+                    );
                 }
                 None
             }
@@ -706,7 +712,7 @@ fn molang(value: &Value, r: &mut Reader<'_>, o: Opt, text: &'static str) -> Opti
             JsonScalar::Bool(b) => Molang::Bool(b),
             JsonScalar::String(text) => Molang::Expr(MolangSource::string(text, r.molang_version)),
             _ => {
-                r.warn(text);
+                r.warn(code);
                 Molang::Const(o.default)
             }
         }),
@@ -741,7 +747,7 @@ fn molang_value(value: &Molang, w: &Writer) -> Result<Value, EncodeError> {
 
 impl Node for Molang {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        molang(value, r, o, texts::NOT_MOLANG)
+        molang(value, r, o, &codes::NOT_MOLANG)
     }
 
     fn fallback(o: Opt) -> Self {
@@ -764,7 +770,7 @@ impl<const N: usize> Node for [Molang; N] {
         let elements = value.as_array().filter(|elements| elements.len() == N);
         let Some(elements) = elements else {
             if r.legacy() {
-                r.warn(texts::ARRAY_ERROR);
+                r.warn(&codes::ARRAY_ERROR);
                 return Some(Self::fallback(o));
             }
             r.wrong_type(value, None);
@@ -775,10 +781,10 @@ impl<const N: usize> Node for [Molang; N] {
             let element = &elements[i];
             let read = r.index(i, |r| {
                 if r.legacy() && element.is_null() {
-                    r.warn(texts::ARRAY_ELEMENT_MISSING);
+                    r.warn(&codes::ARRAY_ELEMENT_MISSING);
                     return Some(Molang::Const(o.default));
                 }
-                molang(element, r, o, texts::ARRAY_ELEMENT_NOT_MOLANG)
+                molang(element, r, o, &codes::ARRAY_ELEMENT_NOT_MOLANG)
             });
             complete &= read.is_some();
             read.unwrap_or(Molang::Const(o.default))
@@ -1084,7 +1090,7 @@ pub(super) fn render_parameters(
 ) {
     if parameters.texture.chars().count() > MAX_TEXTURE {
         r.key("texture", |r| {
-            r.error(DiagnosticCode::InvalidValue { text: None });
+            r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
         });
     }
 }
@@ -1110,7 +1116,7 @@ pub(crate) fn read_components(
     for (key, value) in components.iter() {
         r.key(key, |r| {
             if key.is_empty() && r.legacy() {
-                r.warn(texts::COMPONENT_WITHOUT_NAME);
+                r.warn(&codes::COMPONENT_WITHOUT_NAME);
                 return;
             }
             match read_named(key, value, r) {
@@ -1123,19 +1129,18 @@ pub(crate) fn read_components(
                 None => {
                     // The game logs this as a warning in both eras; the legacy parser's
                     // line names the key.
-                    let text = r.legacy().then(|| VanillaText::Formatted {
-                        template: texts::UNRECOGNIZED_COMPONENT,
-                        args: vec![key.to_owned()],
-                    });
                     // Not kept: the game stores no unknown key. The legacy parser writes its
                     // line at the error level and the effect loads, so the finding is a kept
                     // error; a 1.20.80 document logs a warning, which its strict loading
                     // grades an error that refuses the document.
                     if r.legacy() {
-                        r.push_kept(DiagnosticCode::UnrecognizedComponent { text });
+                        r.push_kept(codes::UNRECOGNIZED_COMPONENT.with([key]).into());
                     } else {
                         let unknown = r.unknown;
-                        r.push(DiagnosticCode::UnrecognizedComponent { text }, unknown);
+                        r.push(
+                            DiagnosticCode::from(&core_codes::UNRECOGNIZED_COMPONENT),
+                            unknown,
+                        );
                     }
                 }
             }
@@ -1145,7 +1150,13 @@ pub(crate) fn read_components(
 
 /// Reads `curves`.
 pub(crate) fn read_curves(m: Members<'_>, r: &mut Reader<'_>) -> Option<IndexMap<String, Curve>> {
-    named_map(m, "curves", texts::NO_CURVES, texts::CURVE_WITHOUT_NAME, r)
+    named_map(
+        m,
+        "curves",
+        &codes::NO_CURVES,
+        &codes::CURVE_WITHOUT_NAME,
+        r,
+    )
 }
 
 /// Reads `events`.
@@ -1153,7 +1164,13 @@ pub(crate) fn read_events(
     m: Members<'_>,
     r: &mut Reader<'_>,
 ) -> Option<IndexMap<String, EventNode>> {
-    named_map(m, "events", texts::NO_EVENTS, texts::EVENT_WITHOUT_NAME, r)
+    named_map(
+        m,
+        "events",
+        &codes::NO_EVENTS,
+        &codes::EVENT_WITHOUT_NAME,
+        r,
+    )
 }
 
 /// The members of `particle_effect`.
@@ -1173,13 +1190,7 @@ pub(crate) fn json(text: JsonSlice<'_>, at: &JsonPath, d: &mut Diagnostics) -> O
     match value_of(text.text) {
         Ok(value) => Some(value),
         Err(error) => {
-            d.push(
-                Diagnostic::error(DiagnosticCode::MalformedInput {
-                    message: error.kind.to_string(),
-                    text: None,
-                })
-                .at(at.clone()),
-            );
+            d.push(Diagnostic::of(builders::syntax(error.kind.to_string())).at(at.clone()));
             None
         }
     }

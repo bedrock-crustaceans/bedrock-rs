@@ -1,43 +1,33 @@
 //! The checks the game runs on a shape its schema accepted, in its order, stopping at the
 //! first failure: the file is not loaded and one line says why.
 
-use super::{ShapeBox, VoxelShape, texts};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use super::{ShapeBox, VoxelShape, codes};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::syntax::split_namespace;
 
 /// Runs the namespace, box, bounds, overlap and width checks on `shape` as a file of a base-game
 /// pack or of any other; the first failure is the one error pushed to `d`, at a path below `at`
 /// (the payload's).
 pub(crate) fn rules(shape: &VoxelShape, base_game: bool, at: &JsonPath, d: &mut Diagnostics) {
-    if let Some((text, path)) = first_failure(shape, base_game, at) {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: Some(text) })
-                .at(path)
-                .phase(Phase::Validate),
-        );
+    if let Some((code, path)) = first_failure(shape, base_game, at) {
+        d.push(Diagnostic::of(code).at(path).phase(Phase::Validate));
     }
 }
 
 /// The first check `shape` fails: vanilla's text and where.
-fn first_failure(
-    shape: &VoxelShape,
-    base_game: bool,
-    at: &JsonPath,
-) -> Option<(VanillaText, JsonPath)> {
+fn first_failure(shape: &VoxelShape, base_game: bool, at: &JsonPath) -> Option<(Code, JsonPath)> {
     let identifier = shape.description.identifier.as_str();
     // The game raises a developer assert here and then skips the file the same way; the crate
     // reports an error.
     if base_game && !is_vanilla_namespace(identifier) {
         return Some((
-            texts::namespace_required(identifier),
+            codes::NAMESPACE_REQUIRED.with([identifier]),
             at.with(&["description", "identifier"]),
         ));
     }
     if !base_game && is_vanilla_namespace(identifier) {
         return Some((
-            texts::namespace_not_valid(identifier),
+            codes::NAMESPACE_NOT_VALID.with([identifier]),
             at.with(&["description", "identifier"]),
         ));
     }
@@ -48,21 +38,27 @@ fn first_failure(
     for (index, one) in boxes.iter().enumerate() {
         let here = all.index(index);
         if one.is_inverted() {
-            return Some((texts::box_invalid(index, identifier), here));
+            return Some((
+                codes::BOX_INVALID.with([index.to_string(), identifier.to_owned()]),
+                here,
+            ));
         }
         if one.is_out_of_bounds() {
-            return Some((texts::box_out_of_bounds(index, identifier), here));
+            return Some((
+                codes::BOX_OUT_OF_BOUNDS.with([index.to_string(), identifier.to_owned()]),
+                here,
+            ));
         }
     }
     // Some box must enter the block itself.
     if !boxes.iter().any(ShapeBox::overlaps_block) {
-        return Some((texts::no_overlap(identifier), all));
+        return Some((codes::NO_OVERLAP.with([identifier]), all));
     }
     // The whole shape on x, then y, then z, at the first axis over the limit.
     for (axis, name) in ["x", "y", "z"].into_iter().enumerate() {
         let extent = extent(boxes, axis);
         if extent > WIDEST {
-            return Some((texts::extent_too_wide(identifier, name, extent), all));
+            return Some((extent_too_wide(identifier, name, extent), all));
         }
     }
     None
@@ -115,3 +111,22 @@ const BLOCK: f32 = 16.0;
 const LOWEST: f32 = -14.0;
 /// The highest coordinate of a box, in pixels: 14 above the block.
 const HIGHEST: f32 = 30.0;
+
+/// The shape spans `extent` pixels on `axis` (`x`, `y` or `z`), more than 30.
+pub(crate) fn extent_too_wide(identifier: &str, axis: &str, extent: f32) -> Code {
+    codes::EXTENT_TOO_WIDE.with([
+        identifier.to_owned(),
+        axis.to_owned(),
+        general(extent),
+        "30".to_owned(),
+    ])
+}
+
+/// `x` as vanilla's `{:g}` prints it: six significant digits without trailing zeros. Only for
+/// the extents the width check reports, which lie between 30 and 44 (every box passed the
+/// bounds check), so the form is
+/// always two digits, a point and up to four more.
+fn general(x: f32) -> String {
+    let fixed = format!("{x:.4}");
+    fixed.trim_end_matches('0').trim_end_matches('.').to_owned()
+}

@@ -1,6 +1,7 @@
 //! Format 1.21.60: `menu_category.group` is namespaced.
 
 use super::legacy::{BlockPayload, component_path, misread, strings_told};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
@@ -60,9 +61,9 @@ fn convert(
             && !had.as_object().is_some_and(facet_value::VObject::is_empty)
         {
             d.push(
-                Diagnostic::info(
-                    bedrock_addon_core::diagnostic::DiagnosticCode::DroppedField { text: None },
-                )
+                Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                    &core_codes::DROPPED_FIELD,
+                ))
                 .at(component_path(section, name))
                 .phase(Phase::Upgrade),
             );

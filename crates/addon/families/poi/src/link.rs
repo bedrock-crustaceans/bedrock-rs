@@ -2,9 +2,8 @@
 //! the block registry.
 
 use super::Poi;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use super::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::id::{BlockId, Kind, kind};
 
 /// What the POI references resolve against outside the group.
@@ -33,20 +32,16 @@ pub fn link(poi: &Poi, targets: &dyn Targets) -> Diagnostics {
                 .child("minecraft:poi_block")
                 .child("blocks")
                 .index(i);
-            let finding = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-                text: Some(VanillaText::Formatted {
-                    template: "BlockTypeRegistry::lookupByName() failed to find block \"{}\"",
-                    args: vec![block.as_str().to_owned()],
-                }),
-            })
-            .at(at)
-            .phase(Phase::Link)
-            .in_file(origin)
-            .detail(DiagnosticDetail::Reference {
-                kind: <kind::Block as Kind>::NAME,
-                id: block.as_str().to_owned(),
-                hint: None,
-            });
+            let finding =
+                Diagnostic::of(codes::BLOCK_LOOKUP_FAILED.with([block.as_str().to_owned()]))
+                    .at(at)
+                    .phase(Phase::Link)
+                    .in_file(origin)
+                    .detail(DiagnosticDetail::Reference {
+                        kind: <kind::Block as Kind>::NAME,
+                        id: block.as_str().to_owned(),
+                        hint: None,
+                    });
             out.push(finding);
         }
     }

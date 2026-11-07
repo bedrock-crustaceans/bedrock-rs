@@ -3,8 +3,9 @@
 
 use super::{convert, read};
 use crate as latest;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -197,7 +198,8 @@ fn upgrade_tier(index: usize, tier: Tier, at: &JsonPath, cx: &mut UpgradeCx<'_>)
 fn kept_trades(trades: Vec<Trade>, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Option<Vec<Trade>> {
     if trades.is_empty() {
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
                 .at(at.clone())
                 .phase(Phase::Upgrade),
         );
@@ -219,7 +221,7 @@ fn kept_trades(trades: Vec<Trade>, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Opt
         if group.pop() && in_groups(&group) {
             // The game's upgrade says nothing here; the crate reports an information.
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(group)
                     .phase(Phase::Upgrade),
             );
@@ -373,7 +375,7 @@ fn upgrade_item(item: TradeItem, at: &JsonPath, cx: &mut UpgradeCx<'_>) -> Vec<l
         });
     for (from, written_as) in functions.into_iter().chain(filters) {
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+            Diagnostic::of(&core_codes::VALUE_REWRITTEN)
                 .at(at.child(from))
                 .phase(Phase::Upgrade)
                 .detail(DiagnosticDetail::Note(written_as)),

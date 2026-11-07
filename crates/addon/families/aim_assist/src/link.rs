@@ -6,9 +6,8 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{AimAssist, AimAssistPreset};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Document, Origin};
 use bedrock_addon_core::id::AimAssistPresetId;
 use bedrock_addon_core::id::{Kind, kind};
@@ -58,7 +57,7 @@ pub(crate) fn entity_key(id: &str) -> String {
 /// `aim_assist.preset` is checked by neither folder.
 fn miss(out: &mut Diagnostics, origin: &Origin, at: JsonPath, kind: &'static str, id: &str) {
     out.push(
-        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
             .at(at)
             .phase(Phase::Link)
             .in_file(origin)

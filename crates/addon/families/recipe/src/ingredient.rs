@@ -1,7 +1,9 @@
 //! Ingredients: vanilla's item-name grammar, potion names and the derived views of an
 //! ingredient (item, aux, count).
 
+use super::codes;
 use super::{Ingredient, IngredientObject, ItemName};
+use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::load::BuiltIns;
 use bedrock_addon_core::molang::{Molang, MolangList};
 use bedrock_addon_core::vanilla::GeneratedBuiltIns;
@@ -25,12 +27,12 @@ pub(super) enum ItemIdProblem {
 }
 
 impl ItemIdProblem {
-    /// Vanilla's text, with `{}` where the item text goes.
-    pub(super) fn template(self) -> &'static str {
+    /// Vanilla's line, of the item text.
+    pub(super) fn code(self) -> &'static CodeDef<1> {
         match self {
-            Self::InvalidAux => "Invalid aux value in item ID \"{}\"",
-            Self::EmptyNamespace => "Empty namespace in item ID \"{}\"",
-            Self::ExcessiveTokens => "Excessive number of tokens in item ID \"{}\"",
+            Self::InvalidAux => &codes::INVALID_AUX,
+            Self::EmptyNamespace => &codes::EMPTY_NAMESPACE,
+            Self::ExcessiveTokens => &codes::EXCESSIVE_TOKENS,
         }
     }
 }

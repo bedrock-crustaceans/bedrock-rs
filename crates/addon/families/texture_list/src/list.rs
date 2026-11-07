@@ -6,9 +6,10 @@ use std::collections::{BTreeMap, HashSet};
 
 use indexmap::{IndexMap, IndexSet};
 
-use super::texts;
+use super::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
@@ -203,8 +204,8 @@ fn at_index(index: usize) -> JsonPath {
 }
 
 /// A finding of the crate's own about a value: vanilla reads it silently.
-fn invalid() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue { text: None }
+fn invalid() -> Diagnostic {
+    Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info)
 }
 
 /// Whether `entry` ends in an image or texture-set extension, in any case.
@@ -242,21 +243,23 @@ impl TextureList {
         };
         if scanned.malformed || scanned.partial {
             // Clients keep the entries read before the error.
-            let code = DiagnosticCode::MalformedInput {
-                message: "not valid JSON; clients keep only the entries read before the error"
-                    .to_owned(),
-                text: None,
-            };
-            out.push(Diagnostic::info(code).phase(Phase::Validate));
+            let code = builders::syntax(
+                "not valid JSON; clients keep only the entries read before the error",
+            );
+            out.push(
+                Diagnostic::of(code)
+                    .severity(Severity::Info)
+                    .phase(Phase::Validate),
+            );
         }
         match list.root {
             // No preload and no scan.
             TextureListRoot::Scalar => {
-                out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
+                out.push(invalid().phase(Phase::Validate));
             }
             // The values are the list.
             TextureListRoot::Object if !scanned.elements.is_empty() => {
-                out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
+                out.push(invalid().phase(Phase::Validate));
             }
             _ => {}
         }
@@ -267,11 +270,7 @@ impl TextureList {
                     list.skipped_non_strings += 1;
                     // An element that is no string, for an array's own elements.
                     if list.root == TextureListRoot::Array {
-                        out.push(
-                            Diagnostic::info(invalid())
-                                .at(at_index(index))
-                                .phase(Phase::Validate),
-                        );
+                        out.push(invalid().at(at_index(index)).phase(Phase::Validate));
                     }
                 }
             }
@@ -294,29 +293,21 @@ impl TextureList {
                 continue;
             }
             if has_extension(entry) {
-                out.push(
-                    Diagnostic::info(invalid())
-                        .at(at_index(index))
-                        .phase(Phase::Validate),
-                );
+                out.push(invalid().at(at_index(index)).phase(Phase::Validate));
             }
             // An entry that is not normalised, or one outside `textures/`: one finding for both,
             // the crate's own.
             if unnormalised(entry) || !entry.starts_with(TEXTURES) {
-                out.push(
-                    Diagnostic::info(invalid())
-                        .at(at_index(index))
-                        .phase(Phase::Validate),
-                );
+                out.push(invalid().at(at_index(index)).phase(Phase::Validate));
             }
         }
         let mut seen = HashSet::new();
         for (index, entry) in self.entries.iter().enumerate() {
             // At the first of the equal entries.
             if seen.insert(entry.as_str()) && counts.get(entry.as_str()).is_some_and(|n| *n > 1) {
-                let code = DiagnosticCode::DuplicateIdentifier { text: None };
                 out.push(
-                    Diagnostic::info(code)
+                    Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+                        .severity(Severity::Info)
                         .at(at_index(index))
                         .phase(Phase::Validate),
                 );
@@ -478,9 +469,9 @@ impl PackLint<'_> {
             // Once per distinct entry, at its first place.
             if listed.insert(entry.as_str()) && !self.has(entry) {
                 // An information: vanilla validates nothing, and another pack may have it.
-                let code = DiagnosticCode::TextureNotFound { text: None };
                 out.push(
-                    Diagnostic::info(code)
+                    Diagnostic::of(&core_codes::TEXTURE_NOT_FOUND)
+                        .severity(Severity::Info)
                         .at(at_index(index))
                         .phase(Phase::Validate),
                 );
@@ -497,7 +488,7 @@ impl PackLint<'_> {
             .into_iter()
             .any(|claim| !listed.contains(claim.as_str()));
         if omitted {
-            out.push(Diagnostic::info(invalid()).phase(Phase::Validate));
+            out.push(invalid().phase(Phase::Validate));
         }
     }
 
@@ -513,18 +504,13 @@ impl PackLint<'_> {
             // The game's own line, which goes to its developer log, not the content log: an
             // information with the game's text.
             let args = [PATH.to_owned(), self.files.pack.name().to_owned()];
-            let code = DiagnosticCode::MissingRequiredField {
-                text: bedrock_addon_core::diagnostic::texts::formatted(
-                    texts::NO_LIST_IN_BASE_PACK,
-                    args,
-                ),
-            };
+            let code = DiagnosticCode::from(codes::NO_LIST_IN_BASE_PACK.with(args));
             let finding = Diagnostic::new(code, Severity::Info, Phase::Validate, at(PATH));
             out.push(finding);
         }
         let has = |path: &str| self.files.files.contains_key(path);
         if has(MISNAMED) && !has(PATH) {
-            let code = DiagnosticCode::IgnoredFile { text: None };
+            let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
             out.push(Diagnostic::new(
                 code,
                 Severity::Info,
@@ -536,7 +522,7 @@ impl PackLint<'_> {
             let upper = ImageFormat::from_path(key).is_none()
                 && ImageFormat::from_path_ignoring_case(key).is_some();
             if upper {
-                let code = DiagnosticCode::IgnoredFile { text: None };
+                let code = DiagnosticCode::from(&core_codes::IGNORED_FILE);
                 out.push(Diagnostic::new(
                     code,
                     Severity::Info,

@@ -1,8 +1,8 @@
 //! The `.lang` grammar: the `lang/` fixtures, each read as vanilla reads it and
 //! compared with its `*.expected.toml` (stored key → value, findings in order).
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity, VanillaText};
-use bedrock_addon_family_lang::Line;
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_family_lang::{Line, codes};
 
 use super::common::*;
 
@@ -169,13 +169,12 @@ fn a_backslash_as_the_last_byte_of_the_file_is_kept() {
 fn no_equals_warning(diagnostics: &Diagnostics) -> (&'static str, Vec<String>) {
     let found = with_code(diagnostics, "MalformedInput", Severity::Warning);
     assert_eq!(found.len(), 1, "{diagnostics:#?}");
-    match &found[0].code {
-        DiagnosticCode::MalformedInput {
-            text: Some(VanillaText::Formatted { template, args }),
-            ..
-        } => (template, args.clone()),
-        other => panic!("not vanilla's formatted text: {other:?}"),
+    for line in [&codes::NEW_LINE_IN_KEY, &codes::NULL_IN_KEY] {
+        if let Some(args) = found[0].code.args_of(line) {
+            return (line.template(), args.to_vec());
+        }
     }
+    panic!("not vanilla's formatted text: {:?}", found[0].code);
 }
 
 const NEW_LINE: &str =

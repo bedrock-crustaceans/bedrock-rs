@@ -12,21 +12,17 @@ use super::component::{
     AmbientSounds, BiomeMusic, ClientBiomeComponent, Precipitation, WaterAppearance, child,
 };
 use super::read::PAYLOAD_KEY;
-use super::texts::{NO_SOUND, OPACITY, PRECIPITATION, VOLUME, fixed};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::{Component, ComponentMap};
 
 /// An error of a component check: vanilla's text at the component (or its member).
-fn fail<T: Component>(text: &'static str, member: Option<&str>, d: &mut Diagnostics) {
+fn fail<T: Component>(code: &'static CodeDef<0>, member: Option<&str>, d: &mut Diagnostics) {
     let mut path = child(&JsonPath::new(), &[PAYLOAD_KEY, "components", T::NAME]);
     if let Some(member) = member {
         path.push(member);
     }
-    d.push(
-        Diagnostic::error(DiagnosticCode::InvalidValue { text: fixed(text) })
-            .at(path)
-            .phase(Phase::Validate),
-    );
+    d.push(Diagnostic::of(code).at(path).phase(Phase::Validate));
 }
 
 /// `value` lies in `[0, 1]`.
@@ -43,19 +39,19 @@ pub(crate) fn check_components(components: &ComponentMap<ClientBiomeComponent>) 
     if let Some(music) = components.get::<BiomeMusic>()
         && music.volume_multiplier.is_some_and(|volume| !unit(volume))
     {
-        fail::<BiomeMusic>(VOLUME, Some("volume_multiplier"), cx);
+        fail::<BiomeMusic>(&codes::VOLUME, Some("volume_multiplier"), cx);
     }
     // The water opacity is between 0 and 1.
     if let Some(water) = components.get::<WaterAppearance>()
         && water.surface_opacity.is_some_and(|opacity| !unit(opacity))
     {
-        fail::<WaterAppearance>(OPACITY, Some("surface_opacity"), cx);
+        fail::<WaterAppearance>(&codes::OPACITY, Some("surface_opacity"), cx);
     }
     // At least one of the six ambient sounds is named.
     if let Some(sounds) = components.get::<AmbientSounds>()
         && !sounds.has_sound()
     {
-        fail::<AmbientSounds>(NO_SOUND, None, cx);
+        fail::<AmbientSounds>(&codes::NO_SOUND, None, cx);
     }
     // At most one precipitation type is present; presence counts, not the value.
     if let Some(particles) = components.get::<Precipitation>() {
@@ -69,7 +65,7 @@ pub(crate) fn check_components(components: &ComponentMap<ClientBiomeComponent>) 
         .filter(|member| member.is_some())
         .count();
         if present > 1 {
-            fail::<Precipitation>(PRECIPITATION, None, cx);
+            fail::<Precipitation>(&codes::PRECIPITATION, None, cx);
         }
     }
     found

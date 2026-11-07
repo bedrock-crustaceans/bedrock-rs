@@ -30,6 +30,7 @@ macro_rules! trigger_fields {
 }
 pub(crate) use trigger_fields;
 
+pub mod codes;
 pub mod component;
 mod dynamic;
 mod entity_types;
@@ -66,9 +67,8 @@ pub use types::{
 };
 
 use bedrock_addon_core::__private::Sealed;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{
     Content, Contribution, Definition, Document, JsonContent, JsonDefinition, JsonDocument,
     JsonPlaced, NoBeta, Origin, Placed, Registry, Rejected, default_path,
@@ -234,16 +234,7 @@ fn not_in_the_schema(cx: &mut ValidateCx<'_>) {
         Severity::Warning
     };
     for finding in cx.diagnostics.iter_mut() {
-        if (matches!(
-            finding.code,
-            DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::Deprecated { .. })
-            }
-        ) || finding
-            .code
-            .is(&bedrock_addon_core::diagnostic::codes::DEPRECATED_IN_FORMAT))
-            && finding.phase == Phase::Validate
-        {
+        if finding.is(&core_codes::DEPRECATED_IN_FORMAT) && finding.phase == Phase::Validate {
             finding.code = bedrock_addon_core::diagnostic::cereal::component_not_in_schema();
             finding.severity = severity;
         }
@@ -306,11 +297,9 @@ impl Entity {
                 Ok(Document::new(entity, origin, outcome.version, diagnostics))
             }
             Some(Loaded::Beta(_)) => {
-                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                    text: Some(VanillaText::NoParserForVersion {
-                        version: "beta".to_owned(),
-                    }),
-                }));
+                diagnostics.push(Diagnostic::of(
+                    core_codes::NO_PARSER_FOR_VERSION.with(["beta"]),
+                ));
                 Err(Rejected::new(origin, diagnostics))
             }
             None => Err(Rejected::new(origin, diagnostics)),
@@ -398,9 +387,7 @@ impl Content for Beta {
             DocumentRead::Stable(document) => {
                 let origin = document.origin().clone();
                 let mut diagnostics = document.diagnostics().clone();
-                diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-                    text: None,
-                }));
+                diagnostics.push(Diagnostic::of(&core_codes::UNSUPPORTED_VERSION));
                 Err(Rejected::new(origin, diagnostics))
             }
             DocumentRead::Rejected(_, rejected) => Err(rejected),

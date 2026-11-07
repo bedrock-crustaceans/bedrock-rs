@@ -1,8 +1,9 @@
 //! The single-file rows (`cat01` … `cat14`).
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::{Severity, codes as core_codes};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_crafting_catalog::CategoryName;
+use bedrock_addon_family_crafting_catalog::codes;
 
 use super::common::*;
 
@@ -42,20 +43,14 @@ fn cat02_a_version_below_1_21_60_is_rejected_with_vanilla_s_text() {
         listed(&found),
         expected_list("cat02_below_floor.expected.json")
     );
-    assert!(matches!(
-        one_error(&found).code,
-        DiagnosticCode::UnsupportedVersion { .. }
-    ));
+    assert!(one_error(&found).is(&codes::BELOW_FLOOR));
 }
 
 #[test]
 fn cat02_the_floor_is_exactly_1_21_60() {
     let text = fixture("cat01_all_categories.json");
     let below = rejects(&text.replace("1.21.60", "1.21.59"));
-    assert!(matches!(
-        one_error(&below).code,
-        DiagnosticCode::UnsupportedVersion { .. }
-    ));
+    assert!(one_error(&below).is(&codes::BELOW_FLOOR));
     assert_eq!(one_error(&below).code.to_string(), FORMAT_VERSION_TEXT);
     loads(&text);
 }
@@ -134,10 +129,7 @@ fn cat05_a_payload_under_another_key_is_vanilla_s_missing_object_error() {
         listed(&found),
         expected_list("cat05_wrong_payload_key.expected.json")
     );
-    assert!(matches!(
-        one_error(&found).code,
-        DiagnosticCode::MissingRequiredField { .. }
-    ));
+    assert!(one_error(&found).is(&codes::NO_CATALOG_PAYLOAD));
 }
 
 #[test]
@@ -248,7 +240,10 @@ fn cat11_a_version_above_the_engine_is_rejected() {
     let found = rejects(&fixture("cat11_above_engine.json"));
     let error = one_error(&found);
     assert!(
-        matches!(&error.code, DiagnosticCode::FormatVersionAboveEngine { version } if version == "1.27.0"),
+        error
+            .code
+            .args_of(&core_codes::FORMAT_VERSION_ABOVE_ENGINE)
+            .is_some_and(|args| args[0] == "1.27.0"),
         "{found:#?}"
     );
 }
@@ -261,10 +256,7 @@ fn cat11_the_ceiling_is_exactly_the_engine_version() {
     let above = format!("{}.{}.{}", engine.major, engine.minor, engine.patch + 1);
     loads(&text.replace("1.21.60", &at));
     let found = rejects(&text.replace("1.21.60", &above));
-    assert!(matches!(
-        one_error(&found).code,
-        DiagnosticCode::FormatVersionAboveEngine { .. }
-    ));
+    assert!(one_error(&found).is(&core_codes::FORMAT_VERSION_ABOVE_ENGINE));
 }
 
 #[test]

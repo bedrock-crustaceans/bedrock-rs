@@ -2,7 +2,8 @@
 //! `using_door_annotation` op that runs once after the last step on the payload, and
 //! the step's five upgrader ops.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use crate::codes;
+use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -44,12 +45,9 @@ impl LegacyStep<1, 26, 40> for Payload {
         for (value, at) in invalid {
             finding(
                 cx,
-                DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::NotAValidValue {
-                        value,
-                        member: "anchor",
-                    }),
-                },
+                codes::NOT_A_VALID_VALUE
+                    .with([value.as_str(), "anchor"])
+                    .into(),
                 &at,
             );
         }

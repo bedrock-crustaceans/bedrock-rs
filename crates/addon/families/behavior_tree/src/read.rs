@@ -5,9 +5,11 @@
 
 use facet_value::VObject;
 
+use super::codes;
 use super::{BehaviorTree, Node, Param};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::BehaviorTreeId;
@@ -21,14 +23,6 @@ pub(super) const PAYLOAD: &str = "minecraft:behavior_tree";
 pub(super) const NAME: &str = "minecraft:name";
 /// The root node.
 pub(super) const ROOT: &str = "minecraft:root";
-
-/// Vanilla's text for a file that is not JSON, with the reader's message.
-pub(super) const PARSE_ERROR: &str = "parse error:\n{}";
-
-/// Vanilla's text for an element of a block position that is not integral.
-pub(super) const EXPECTED_INTEGRAL: &str = "Expected Integral Number.";
-/// Vanilla's text for an element of a position that is not a number.
-pub(super) const EXPECTED_NUMBER: &str = "Expected Number.";
 
 /// What the loader read of one file.
 pub(super) struct Parsed {
@@ -120,18 +114,16 @@ impl<'d> Reader<'d> {
     fn document(&mut self, bytes: &[u8]) -> (Option<BehaviorTreeId>, Option<BehaviorTree>) {
         // Ours: vanilla's reader checks neither the encoding nor the nesting (a tree nests two
         // levels per node: the limit bounds the walk below).
-        let ours = |message: &str| DiagnosticCode::MalformedInput {
-            message: message.to_owned(),
-            text: None,
-        };
+        let ours = |message: &'static str| DiagnosticCode::from(core_codes::SYNTAX.with([message]));
         let prepared = match Prepared::non_empty(bytes) {
             Ok(prepared) => prepared,
             Err(error) => {
                 let (code, severity) = match error {
                     // Vanilla skips an empty text without a word: an information.
-                    PrepareError::Empty => {
-                        (DiagnosticCode::EmptyDocument { text: None }, Severity::Info)
-                    }
+                    PrepareError::Empty => (
+                        DiagnosticCode::from(&core_codes::EMPTY_DOCUMENT),
+                        Severity::Info,
+                    ),
                     PrepareError::NotUtf8(_) => (ours("the file is not UTF-8"), Severity::Error),
                     PrepareError::TooDeep(_) => {
                         (ours("the JSON nests too deeply"), Severity::Error)
@@ -155,16 +147,10 @@ impl<'d> Reader<'d> {
                 let message = error.to_string();
                 // `parse error:\n%s` with the reader's messages (Error, `LogArea::Ai`); the
                 // file is skipped.
-                self.report(
-                    &JsonPath::new(),
-                    DiagnosticCode::MalformedInput {
-                        message: message.clone(),
-                        text: Some(VanillaText::Formatted {
-                            template: PARSE_ERROR,
-                            args: vec![message],
-                        }),
-                    },
-                    Severity::Error,
+                self.read.push(
+                    Diagnostic::of(codes::PARSE_ERROR.with([message.clone()]))
+                        .detail(DiagnosticDetail::Syntax(message))
+                        .at(JsonPath::new()),
                 );
                 return (None, None);
             }
@@ -184,7 +170,7 @@ impl<'d> Reader<'d> {
             // object: vanilla skips the file without a word.
             self.report(
                 &payload_at.child(NAME),
-                DiagnosticCode::MissingRequiredField { text: None },
+                DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
                 Severity::Error,
             );
             return (None, None);
@@ -195,7 +181,11 @@ impl<'d> Reader<'d> {
             .and_then(|payload| payload.get(ROOT))
             .and_then(one_member)
         else {
-            self.report(&root_at, DiagnosticCode::InvalidRoot, Severity::Error);
+            self.report(
+                &root_at,
+                DiagnosticCode::from(&core_codes::INVALID_ROOT),
+                Severity::Error,
+            );
             return (Some(name), None);
         };
         let Some(root) = self.node(kind, body, &root_at, true) else {
@@ -238,9 +228,7 @@ impl<'d> Reader<'d> {
             // node is dropped. `BehaviorFactory::loadNodeDefinition` logs it at
             // level 3, area 13: at the root no tree is made; a child is left out and the
             // tree loads, a kept error.
-            let code = DiagnosticCode::UnknownNode {
-                name: kind.to_owned(),
-            };
+            let code = DiagnosticCode::from(core_codes::UNKNOWN_NODE.with([kind.to_owned()]));
             if root {
                 self.report(at, code, Severity::Error);
             } else {
@@ -276,7 +264,11 @@ impl<'d> Reader<'d> {
                 };
             }
             // Vanilla ignores a literal of the wrong type without a word.
-            self.report(node.path(), DiagnosticCode::LiteralIgnored, Severity::Info);
+            self.report(
+                node.path(),
+                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                Severity::Info,
+            );
         }
         Param {
             literal: failed,
@@ -302,7 +294,11 @@ impl<'d> Reader<'d> {
             }
             // A string is the documented key form; any other type is an ignored literal.
             if !node.value().is_string() {
-                self.report(node.path(), DiagnosticCode::LiteralIgnored, Severity::Info);
+                self.report(
+                    node.path(),
+                    DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                    Severity::Info,
+                );
             }
         }
         Param {
@@ -323,7 +319,7 @@ impl<'d> Reader<'d> {
             // The flying literal is overwritten by the throw literal.
             self.report(
                 &at.child(SHOULD_BE_FLYING.literal),
-                DiagnosticCode::LiteralIgnored,
+                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
                 Severity::Info,
             );
         }
@@ -348,7 +344,11 @@ impl<'d> Reader<'d> {
         let id = body.take(pair.id);
         let literal = written.as_ref().and_then(|node| T::read(self, node));
         if let Some(node) = written.as_ref().filter(|_| literal.is_none()) {
-            self.report(node.path(), DiagnosticCode::LiteralIgnored, Severity::Info);
+            self.report(
+                node.path(),
+                DiagnosticCode::from(&core_codes::LITERAL_IGNORED),
+                Severity::Info,
+            );
         }
         let key = self.text(id.as_ref(), pair.default_key).to_owned();
         (literal, key)
@@ -366,7 +366,7 @@ impl<'d> Reader<'d> {
             _ => {
                 self.report(
                     &at.child("children"),
-                    DiagnosticCode::InvalidType { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
                     Severity::Info,
                 );
                 return None;
@@ -376,7 +376,11 @@ impl<'d> Reader<'d> {
         let mut kept = Vec::new();
         for (index, element) in elements.iter().enumerate() {
             let Some((kind, body)) = one_member(element.value()) else {
-                self.report(element.path(), DiagnosticCode::InvalidNode, Severity::Info);
+                self.report(
+                    element.path(),
+                    DiagnosticCode::from(&core_codes::INVALID_NODE),
+                    Severity::Info,
+                );
                 continue;
             };
             if let Some(node) = self.node(kind, body, element.path(), false) {
@@ -399,7 +403,11 @@ impl<'d> Reader<'d> {
         let at = at.child("child");
         let child = body.take("child");
         let Some((kind, body)) = child.as_ref().and_then(|node| one_member(node.value())) else {
-            self.report(&at, DiagnosticCode::InvalidNode, Severity::Info);
+            self.report(
+                &at,
+                DiagnosticCode::from(&core_codes::INVALID_NODE),
+                Severity::Info,
+            );
             return None;
         };
         self.node(kind, body, &at, false).map(Box::new)
@@ -640,7 +648,7 @@ fn finite(reader: &mut Reader<'_>, read: f32, at: &JsonPath) -> f32 {
     if read.is_infinite() {
         reader.report(
             at,
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
         );
         return f32::MAX.copysign(read);
@@ -673,7 +681,7 @@ fn triple<T: Copy + Default>(
     reader: &mut Reader<'_>,
     node: &kit::Node<'_>,
     element: fn(&Value) -> Option<T>,
-    text: &'static str,
+    line: &'static CodeDef<0>,
 ) -> Option<[T; 3]> {
     node.value().as_array().filter(|array| array.len() == 3)?;
     let elements = reader.read.array(node)?;
@@ -689,12 +697,7 @@ fn triple<T: Copy + Default>(
         }
         match element(written.value()) {
             Some(read) => *slot = read,
-            None => reader.kept_error(
-                written.path(),
-                DiagnosticCode::InvalidType {
-                    text: Some(VanillaText::Fixed(text)),
-                },
-            ),
+            None => reader.kept_error(written.path(), DiagnosticCode::from(line)),
         }
     }
     Some(out)
@@ -702,13 +705,13 @@ fn triple<T: Copy + Default>(
 
 impl Literal for [i32; 3] {
     fn read(reader: &mut Reader<'_>, node: &kit::Node<'_>) -> Option<Self> {
-        triple(reader, node, integral, EXPECTED_INTEGRAL)
+        triple(reader, node, integral, &codes::EXPECTED_INTEGRAL)
     }
 }
 
 impl Literal for [f32; 3] {
     fn read(reader: &mut Reader<'_>, node: &kit::Node<'_>) -> Option<Self> {
-        let mut read = triple(reader, node, numeric, EXPECTED_NUMBER)?;
+        let mut read = triple(reader, node, numeric, &codes::EXPECTED_NUMBER)?;
         for (index, slot) in read.iter_mut().enumerate() {
             *slot = finite(reader, *slot, &node.path().index(index));
         }

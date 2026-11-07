@@ -1,9 +1,8 @@
 //! The validation rules and the upgrade steps that no fixture row covers on
 //! its own, and both ends of every rule's range.
 
-use bedrock_addon::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText, codes,
-};
+use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity, codes};
+use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{ActionMode, DialogueScene, DialogueText, NpcAction};
 use bedrock_addon::id::DialogueSceneTag;
 
@@ -28,20 +27,22 @@ fn errors(diagnostics: &Diagnostics) -> Vec<String> {
 fn a_root_that_is_not_an_object_skips_the_file() {
     load_fixture("v_root_not_object");
     let diagnostics = rejected("[]");
-    assert!(matches!(
-        diagnostics.first_error().map(|d| &d.code),
-        Some(DiagnosticCode::MalformedInput { text: Some(_), .. })
-    ));
+    assert!(
+        diagnostics
+            .first_error()
+            .is_some_and(|d| d.code.is(&dialogue_codes::ROOT_NOT_OBJECT))
+    );
 }
 
 #[test]
 fn a_missing_or_null_payload_skips_the_file() {
     load_fixture("v_missing_payload");
     let diagnostics = rejected(r#"{"format_version": "1.14.0"}"#);
-    assert!(matches!(
-        diagnostics.first_error().map(|d| &d.code),
-        Some(DiagnosticCode::MissingPayload { text: Some(_) })
-    ));
+    assert!(
+        diagnostics
+            .first_error()
+            .is_some_and(|d| d.code.is(&dialogue_codes::NO_PAYLOAD))
+    );
 }
 
 #[test]
@@ -70,14 +71,15 @@ fn file_rules_are_checked_in_vanilla_s_order() {
 fn an_empty_file_is_a_syntax_error() {
     for text in ["", "   \n", "// only a comment\n"] {
         let diagnostics = rejected(text);
-        let Some(DiagnosticCode::MalformedInput {
-            message,
-            text: Some(VanillaText::Formatted { args, .. }),
-        }) = diagnostics.first_error().map(|d| &d.code)
-        else {
+        let Some(finding) = diagnostics.first_error() else {
             panic!("{text:?}: {diagnostics:#?}");
         };
-        assert_eq!(args, &["a".to_owned(), message.clone()], "{text:?}");
+        let message = finding.syntax_message().expect("the reader's message");
+        assert_eq!(
+            finding.code.args_of(&dialogue_codes::READER),
+            Some(&["a".to_owned(), message.to_owned()][..]),
+            "{text:?}"
+        );
     }
 }
 
@@ -117,16 +119,15 @@ fn an_absent_or_null_scene_tag_is_a_missing_field_and_another_type_an_invalid_ty
         let error = registry.diagnostics().next().expect("the tag rule");
         assert_eq!(error.severity, Severity::Error, "{scene}");
         assert_eq!(
-            matches!(
-                error.code,
-                DiagnosticCode::MissingRequiredField { text: Some(_) }
-            ),
+            error
+                .code
+                .is(&dialogue_codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD),
             missing,
             "{scene}: {:?}",
             error.code
         );
         assert_eq!(
-            matches!(error.code, DiagnosticCode::InvalidType { text: Some(_) }),
+            error.code.is(&dialogue_codes::NO_SCENE_TAG_INVALID_TYPE),
             !missing,
             "{scene}: {:?}",
             error.code
@@ -961,14 +962,7 @@ fn a_byte_order_mark_is_skipped_and_bad_bytes_or_depth_are_syntax_errors() {
         let rejected = DialogueFile::parse(&path, bytes, &context()).expect_err("rejected");
         assert_eq!(rejected.diagnostics.len(), 1);
         let error = rejected.diagnostics.first_error().unwrap();
-        assert!(
-            matches!(
-                error.code,
-                DiagnosticCode::MalformedInput { text: Some(_), .. }
-            ),
-            "{:?}",
-            error.code
-        );
+        assert!(error.code.is(&dialogue_codes::READER), "{:?}", error.code);
         assert!(
             error
                 .code
@@ -1289,10 +1283,9 @@ fn trailing_commas_load_silently_deviation() {
     ] {
         let diagnostics = rejected(text);
         assert!(
-            matches!(
-                diagnostics.first_error().map(|d| &d.code),
-                Some(DiagnosticCode::MalformedInput { text: Some(_), .. })
-            ),
+            diagnostics
+                .first_error()
+                .is_some_and(|d| d.code.is(&dialogue_codes::READER)),
             "{text}"
         );
     }

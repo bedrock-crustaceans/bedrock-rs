@@ -9,13 +9,8 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod flipbook;
-#[allow(
-    dead_code,
-    reason = "the link rule of the flipbooks, the terrain atlas and the texture files quotes them"
-)]
-#[doc(hidden)]
-pub mod texts;
 
 use crate::flipbook::{FlipbookCopy, PATH, merge_flipbooks, parse_copy};
 use bedrock_addon_core::document::{Merged, RawLayer};

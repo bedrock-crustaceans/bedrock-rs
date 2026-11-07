@@ -7,6 +7,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 mod text;
 mod validate;
@@ -14,11 +15,12 @@ mod write;
 
 use std::collections::BTreeMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, builders};
 use bedrock_addon_core::document::{
     Content, Document, Files, FilesBuilder, FilesRule, Origin, Rejected, VersionInfo, unversioned,
 };
@@ -277,10 +279,7 @@ impl Structure {
     ) -> Result<Option<&'a Document<Structure>>, Diagnostic> {
         // An identifier without a namespace is the error, before any lookup.
         let Some(namespace) = namespace(id) else {
-            return Err(Diagnostic::error(DiagnosticCode::NamespaceRule {
-                text: Some(text::not_namespaced(id.as_str())),
-            })
-            .phase(Phase::Link));
+            return Err(Diagnostic::of(text::not_namespaced(id.as_str())).phase(Phase::Link));
         };
         let Some(primary) = Structure::path_of(id) else {
             return Ok(None);
@@ -390,8 +389,7 @@ fn read_in_pack(path: &PackPath, cx: &LoadContext) -> bool {
 fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> Parsed {
     if !file.path.as_str().ends_with(EXTENSION) {
         return Parsed::Ignored(
-            Diagnostic::info(DiagnosticCode::IgnoredFile { text: None })
-                .in_file(&unversioned::origin_of(file)),
+            Diagnostic::of(&core_codes::IGNORED_FILE).in_file(&unversioned::origin_of(file)),
         );
     }
     Parsed::File(
@@ -542,11 +540,7 @@ impl Structure {
             Err(error) => {
                 let mut findings = Diagnostics::default();
                 findings.push(
-                    Diagnostic::error(DiagnosticCode::MalformedInput {
-                        message: error.to_string(),
-                        text: None,
-                    })
-                    .phase(Phase::Validate),
+                    Diagnostic::of(builders::syntax(error.to_string())).phase(Phase::Validate),
                 );
                 findings
             }

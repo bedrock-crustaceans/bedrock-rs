@@ -5,9 +5,8 @@
 //! The crate adds a warning: the value is the one vanilla computes, and a member of the wrong
 //! JSON type also gets an `InvalidType` warning at its path (vanilla is silent).
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 
 /// A finding of the spawn readers at `at` (a parse finding without a span: the readers walk a
@@ -16,12 +15,21 @@ pub fn finding(code: DiagnosticCode, severity: Severity, at: &JsonPath, d: &mut 
     d.push(Diagnostic::error(code).severity(severity).at(at.clone()));
 }
 
-/// An `InvalidType` information at `at`, with vanilla's text when it has one; without one it is
-/// the crate's own information: the legacy parsers read through jsoncpp's
+/// A finding that is built already (it carries a detail) at `at`, told like [`finding`].
+pub fn finding_with(found: Diagnostic, at: &JsonPath, d: &mut Diagnostics) {
+    d.push(found.at(at.clone()));
+}
+
+/// An `InvalidType` information at `at`, the crate's own: the legacy parsers read through jsoncpp's
 /// `asInt`/`asString`/`asBool`, which convert or default without a line, and skip what is not
 /// an object or an array in silence.
-pub fn wrong_type(at: &JsonPath, text: Option<VanillaText>, d: &mut Diagnostics) {
-    finding(DiagnosticCode::InvalidType { text }, Severity::Info, at, d);
+pub fn wrong_type(at: &JsonPath, d: &mut Diagnostics) {
+    finding(
+        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+        Severity::Info,
+        at,
+        d,
+    );
 }
 
 /// `at` followed by `key`.
@@ -68,7 +76,7 @@ fn told_beyond(
 ) {
     if integer(value).is_some_and(|integer| !range.contains(&integer)) {
         finding(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             at,
             d,
@@ -97,7 +105,7 @@ pub fn int(value: Option<&Value>, at: &JsonPath, d: &mut Diagnostics) -> Option<
         )]
         return Some((bits as u32).cast_signed());
     }
-    wrong_type(at, None, d);
+    wrong_type(at, d);
     #[allow(
         clippy::cast_possible_truncation,
         reason = "the game's float-to-integer conversion saturates, as `as` does"
@@ -121,7 +129,7 @@ pub fn uint(value: Option<&Value>, at: &JsonPath, d: &mut Diagnostics) -> Option
         )]
         return Some(bits as u32);
     }
-    wrong_type(at, None, d);
+    wrong_type(at, d);
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
@@ -143,7 +151,7 @@ pub fn int64(value: Option<&Value>, at: &JsonPath, d: &mut Diagnostics) -> Optio
         told_beyond(value, 0..=i128::from(u64::MAX), at, d);
         return Some(bits);
     }
-    wrong_type(at, None, d);
+    wrong_type(at, d);
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
@@ -163,7 +171,7 @@ pub fn string(value: Option<&Value>, at: &JsonPath, d: &mut Diagnostics) -> Opti
     if let Some(text) = value.as_string() {
         return Some(text.as_str().to_owned());
     }
-    wrong_type(at, None, d);
+    wrong_type(at, d);
     Some(match value.as_bool() {
         Some(true) => "true".to_owned(),
         Some(false) => "false".to_owned(),
@@ -178,7 +186,7 @@ pub fn boolean(value: Option<&Value>, at: &JsonPath, d: &mut Diagnostics) -> Opt
     if let Some(b) = value.as_bool() {
         return Some(b);
     }
-    wrong_type(at, None, d);
+    wrong_type(at, d);
     Some(if let Some(bits) = integer_bits(value) {
         bits != 0
     } else if let Some(f) = real(value) {
@@ -208,7 +216,7 @@ mod tests {
         let mut d = Diagnostics::default();
         let read = reader(Some(&value), &at, &mut d);
         let told = d.iter().any(|finding| {
-            matches!(finding.code, DiagnosticCode::InvalidValue { text: None })
+            finding.is(&core_codes::INVALID_VALUE)
                 && finding.severity == Severity::Info
                 && finding.location.json_path == at
         });

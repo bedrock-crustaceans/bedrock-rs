@@ -4,19 +4,18 @@
 
 use std::collections::HashSet;
 
-use super::texts::{
-    CUBE_WITHOUT_FACE, DUPLICATE_PART, FACE_WITHOUT_CUBE, IDENTIFIER_FAILED, ILLEGAL_CHARACTERS,
-    INVALID_IDENTIFIER, MINECRAFT_NAMESPACE, NAME_INVALID, NAMESPACE_INVALID, NEEDS_NAMESPACE,
-    formatted,
-};
+use super::codes;
 use super::{CullingRules, Facing, Rule};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Phase};
 
 /// Why vanilla's `Util::validateIdentifier` refuses `identifier`: its messages, in order (none
 /// for an empty identifier, which fails without a reason). `Ok` when it passes.
 // The checks run on a lower-cased copy, the first
 // failure returns.
-pub(super) fn identifier(identifier: &str, base_game: bool) -> Result<(), Vec<&'static str>> {
+pub(super) fn identifier(
+    identifier: &str,
+    base_game: bool,
+) -> Result<(), Vec<&'static CodeDef<0>>> {
     let illegal = |chunk: &str| chunk.contains([' ', '\t', '\n', '\r']);
     if identifier.is_empty() {
         return Err(Vec::new());
@@ -25,20 +24,20 @@ pub(super) fn identifier(identifier: &str, base_game: bool) -> Result<(), Vec<&'
     let (first, second, third) = (parts.next(), parts.next(), parts.next());
     let (namespace, name) = match (first, second, third) {
         // No `:` at all: a valid format, but an identifier here needs a namespace.
-        (Some(_), None, _) => return Err(vec![NEEDS_NAMESPACE]),
+        (Some(_), None, _) => return Err(vec![&codes::NEEDS_NAMESPACE]),
         (Some(namespace), Some(name), None) if !namespace.is_empty() && !name.is_empty() => {
             (namespace, name)
         }
-        _ => return Err(vec![INVALID_IDENTIFIER]),
+        _ => return Err(vec![&codes::INVALID_IDENTIFIER]),
     };
     if namespace.eq_ignore_ascii_case("minecraft") && !base_game {
-        return Err(vec![MINECRAFT_NAMESPACE]);
+        return Err(vec![&codes::MINECRAFT_NAMESPACE]);
     }
     if illegal(namespace) {
-        return Err(vec![ILLEGAL_CHARACTERS, NAMESPACE_INVALID]);
+        return Err(vec![&codes::ILLEGAL_CHARACTERS, &codes::NAMESPACE_INVALID]);
     }
     if illegal(name) {
-        return Err(vec![ILLEGAL_CHARACTERS, NAME_INVALID]);
+        return Err(vec![&codes::ILLEGAL_CHARACTERS, &codes::NAME_INVALID]);
     }
     Ok(())
 }
@@ -50,8 +49,8 @@ pub(super) struct RuleProblem {
     pub(super) index: usize,
     /// The member of `geometry_part` the finding points at; `None` for the part as a whole.
     pub(super) member: Option<&'static str>,
-    /// Vanilla's template and its arguments.
-    pub(super) text: (&'static str, Vec<String>),
+    /// Vanilla's line.
+    pub(super) text: Code,
 }
 
 /// The rule checks: every rule with a cube and no face, then with a face and no cube, then
@@ -68,12 +67,12 @@ pub(super) fn rules(rules: &[Rule]) -> Vec<RuleProblem> {
             (Some(_), None) => problems.push(RuleProblem {
                 index,
                 member: Some("cube"),
-                text: (CUBE_WITHOUT_FACE, vec![index_text, part.bone.clone()]),
+                text: codes::CUBE_WITHOUT_FACE.with([index_text, part.bone.clone()]),
             }),
             (None, Some(_)) => problems.push(RuleProblem {
                 index,
                 member: Some("face"),
-                text: (FACE_WITHOUT_CUBE, vec![index_text, part.bone.clone()]),
+                text: codes::FACE_WITHOUT_CUBE.with([index_text, part.bone.clone()]),
             }),
             _ => {}
         }
@@ -87,15 +86,12 @@ pub(super) fn rules(rules: &[Rule]) -> Vec<RuleProblem> {
             problems.push(RuleProblem {
                 index,
                 member: None,
-                text: (
-                    DUPLICATE_PART,
-                    vec![
-                        index.to_string(),
-                        part.bone.clone(),
-                        cube.to_string(),
-                        part.face.map_or("Unknown facing", Facing::title).to_owned(),
-                    ],
-                ),
+                text: codes::DUPLICATE_PART.with([
+                    index.to_string(),
+                    part.bone.clone(),
+                    cube.to_string(),
+                    part.face.map_or("Unknown facing", Facing::title).to_owned(),
+                ]),
             });
         }
     }
@@ -110,19 +106,15 @@ pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: 
         let path = at.child("description").child("identifier");
         for reason in reasons {
             d.push(
-                Diagnostic::error(DiagnosticCode::NamespaceRule {
-                    text: Some(formatted(reason, &[])),
-                })
-                .at(path.clone())
-                .phase(Phase::Validate),
+                Diagnostic::of(reason)
+                    .at(path.clone())
+                    .phase(Phase::Validate),
             );
         }
         d.push(
-            Diagnostic::error(DiagnosticCode::MissingIdentifier {
-                text: Some(formatted(IDENTIFIER_FAILED, &[id])),
-            })
-            .at(path)
-            .phase(Phase::Validate),
+            Diagnostic::of(codes::IDENTIFIER_FAILED.with([id]))
+                .at(path)
+                .phase(Phase::Validate),
         );
         return;
     }
@@ -134,14 +126,6 @@ pub(super) fn check(document: &CullingRules, base_game: bool, at: &JsonPath, d: 
         if let Some(member) = problem.member {
             path.push(member);
         }
-        let (template, args) = problem.text;
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        let text = Some(formatted(template, &args));
-        let code = if template == DUPLICATE_PART {
-            DiagnosticCode::DuplicateIdentifier { text }
-        } else {
-            DiagnosticCode::InvalidValue { text }
-        };
-        d.push(Diagnostic::error(code).at(path).phase(Phase::Validate));
+        d.push(Diagnostic::of(problem.text).at(path).phase(Phase::Validate));
     }
 }

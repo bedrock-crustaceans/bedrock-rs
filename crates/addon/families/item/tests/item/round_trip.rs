@@ -2,7 +2,7 @@
 //! newest version, Upgraded for older documents, and writing as written through
 //! `history::ItemHistory::to_json`; plus construction, `default_path` and the network NBT.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::document::JsonDocument;
 use bedrock_addon_core::document::{ComponentRef, Content, Placed};
 use bedrock_addon_core::id::ItemId;
@@ -317,13 +317,7 @@ fn parse_as_written_strips_a_bom_and_refuses_what_parse_refuses() {
         .map(|_| ()),
     ] {
         let d = result.unwrap_err().diagnostics;
-        assert!(
-            has(&d, |c| matches!(
-                c,
-                bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput { .. }
-            )),
-            "{d:#?}"
-        );
+        assert!(has(&d, |c| c.name() == "MalformedInput"), "{d:#?}");
     }
     // nested past the depth limit: MalformedInput before any parse
     let deep = format!(
@@ -332,13 +326,7 @@ fn parse_as_written_strips_a_bom_and_refuses_what_parse_refuses() {
         "]".repeat(200)
     );
     let d = as_written(deep.as_bytes()).unwrap_err().diagnostics;
-    assert!(
-        has(&d, |c| matches!(
-            c,
-            bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput { .. }
-        )),
-        "{d:#?}"
-    );
+    assert!(has(&d, |c| c.name() == "MalformedInput"), "{d:#?}");
 }
 
 // ---- `menu_category`: what the author wrote ---------------------------------
@@ -676,10 +664,8 @@ fn told_at_components(document: &bedrock_addon_core::document::Document<Item>) -
         .diagnostics()
         .iter()
         .filter(|f| {
-            matches!(
-                f.code,
-                bedrock_addon_core::diagnostic::DiagnosticCode::InvalidValue { .. }
-            ) && f.severity == bedrock_addon_core::diagnostic::Severity::Info
+            f.code.name() == "InvalidValue"
+                && f.severity == bedrock_addon_core::diagnostic::Severity::Info
                 && f.phase == bedrock_addon_core::diagnostic::Phase::Validate
                 && f.location.json_path.to_string() == "minecraft:item/components"
         })
@@ -1331,10 +1317,7 @@ fn loader_perf_tests_1_the_perf_item_is_refused_for_its_group_as_in_the_game() {
     let d = rejects(&text, &third_party());
     let found = above_info(&d);
     assert_eq!(found.len(), 1, "{d:#?}");
-    assert!(
-        matches!(found[0].code, DiagnosticCode::NamespaceRule { .. }),
-        "{d:#?}"
-    );
+    assert!(found[0].code.name() == "NamespaceRule", "{d:#?}");
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
         found[0].location.json_path.to_string(),
@@ -1408,7 +1391,7 @@ fn a_document_refused_by_the_gates_after_a_kept_member_is_rejected() {
         rejected
             .diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::MissingToggles { .. })),
+            .any(|d| d.code.name() == "MissingToggles"),
         "{:?}",
         rejected.diagnostics
     );

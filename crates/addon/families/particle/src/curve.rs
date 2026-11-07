@@ -9,9 +9,10 @@
 use facet_value::VObject;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::read::{Era, Fields, Members, Node, Opt, Reader, Writer, object, put, req, walk};
-use super::texts;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, DiagnosticCode, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -95,7 +96,7 @@ object! {
         opt horizontal_range: Molang = "horizontal_range", Opt::with_default(1.0),
             default Molang::Const(1.0);
         /// The control nodes, as written (JSON `nodes`, required).
-        req nodes: Vec<Molang> = "nodes", Opt::NONE.wrong(texts::CURVE_NODES);
+        req nodes: Vec<Molang> = "nodes", Opt::NONE.wrong(&codes::CURVE_NODES);
     }
 }
 
@@ -123,7 +124,7 @@ impl SimpleCurve {
 fn simple_curve(curve: &mut SimpleCurve, m: Members<'_>, r: &mut Reader<'_>) {
     let listed = m.get("nodes").is_some_and(Value::is_array);
     if listed && !curve.has_valid_node_count() {
-        r.key("nodes", |r| r.warn(texts::CURVE_NODE_COUNT));
+        r.key("nodes", |r| r.warn(&codes::CURVE_NODE_COUNT));
     }
 }
 
@@ -174,10 +175,10 @@ fn chain_node(node: &mut BezierChainNode, _: Members<'_>, r: &mut Reader<'_>) {
         shared.is_some() || (left.is_some() && right.is_some())
     };
     if !both(node.value, node.left_value, node.right_value) {
-        r.warn(texts::CHAIN_VALUE);
+        r.warn(&codes::CHAIN_VALUE);
     }
     if !both(node.slope, node.left_slope, node.right_slope) {
-        r.warn(texts::CHAIN_SLOPE);
+        r.warn(&codes::CHAIN_SLOPE);
     }
 }
 
@@ -196,7 +197,7 @@ pub struct BezierChainCurve {
 }
 
 const CHAIN_INPUT: Opt = Opt::required(0.0);
-const CHAIN_NODES: Opt = Opt::NONE.wrong(texts::CURVE_NODE_DATA);
+const CHAIN_NODES: Opt = Opt::NONE.wrong(&codes::CURVE_NODE_DATA);
 
 impl Fields for BezierChainCurve {
     fn known(key: &str) -> bool {
@@ -229,7 +230,10 @@ impl Fields for BezierChainCurve {
 /// instead.
 fn left_out(r: &mut Reader<'_>, legacy_only: bool) -> Option<Curve> {
     if r.legacy() || !legacy_only {
-        r.push(DiagnosticCode::DroppedField { text: None }, Severity::Info);
+        r.push(
+            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+            Severity::Info,
+        );
     }
     None
 }
@@ -237,15 +241,15 @@ fn left_out(r: &mut Reader<'_>, legacy_only: bool) -> Option<Curve> {
 impl Node for Curve {
     fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
         let Some(members) = Members::of(value) else {
-            r.wrong_type(value, Some(texts::CURVE_NO_DATA));
+            r.wrong_type(value, Some(&codes::CURVE_NO_DATA));
             return None;
         };
         let Some(written) = members.get("type") else {
-            r.missing(members, "type", Some(texts::CURVE_TYPE));
+            r.missing(members, "type", Some(&codes::CURVE_TYPE));
             return left_out(r, true);
         };
         let Some(kind) = written.as_string().map(facet_value::VString::as_str) else {
-            r.key("type", |r| r.wrong_type(written, Some(texts::CURVE_TYPE)));
+            r.key("type", |r| r.wrong_type(written, Some(&codes::CURVE_TYPE)));
             return left_out(r, true);
         };
         // A curve whose nodes the legacy parser cannot read is not made.
@@ -259,7 +263,7 @@ impl Node for Curve {
         let nodes = members.get("nodes");
         if kind == "bezier_chain" {
             let listed = nodes.is_some_and(Value::is_object);
-            if !legacy_shape(listed, texts::CURVE_NODE_DATA, r) {
+            if !legacy_shape(listed, &codes::CURVE_NODE_DATA, r) {
                 return left_out(r, true);
             }
             return Some(Self::BezierChain(BezierChainCurve::read_members(
@@ -268,10 +272,10 @@ impl Node for Curve {
         }
         if SimpleCurveType::from_name(kind).is_none() {
             // A 1.20.80 document logs the same line and leaves the curve out.
-            r.key("type", |r| r.warn(texts::CURVE_TYPE));
+            r.key("type", |r| r.warn(&codes::CURVE_TYPE));
             return left_out(r, false);
         }
-        if !legacy_shape(nodes.is_some_and(Value::is_array), texts::CURVE_NODES, r) {
+        if !legacy_shape(nodes.is_some_and(Value::is_array), &codes::CURVE_NODES, r) {
             return left_out(r, true);
         }
         Some(Self::Simple(SimpleCurve::read_members(members, r)))
@@ -301,8 +305,8 @@ impl Node for Curve {
 pub(crate) fn named_map<T: Node>(
     m: Members<'_>,
     key: &str,
-    not_object: &'static str,
-    unnamed: &'static str,
+    not_object: &'static CodeDef<0>,
+    unnamed: &'static CodeDef<0>,
     r: &mut Reader<'_>,
 ) -> Option<IndexMap<String, T>> {
     let value = m.get(key)?;
@@ -368,7 +372,13 @@ mod tests {
                 |payload, count| {
                     let members = Members::of(payload).expect("an object");
                     let (read, found) = reading(era, |r| {
-                        named_map::<T>(members, key, texts::NO_CURVES, texts::CURVE_WITHOUT_NAME, r)
+                        named_map::<T>(
+                            members,
+                            key,
+                            &codes::NO_CURVES,
+                            &codes::CURVE_WITHOUT_NAME,
+                            r,
+                        )
                     });
                     assert_eq!(read.as_ref().map(IndexMap::len), Some(count));
                     assert!(found.is_empty());

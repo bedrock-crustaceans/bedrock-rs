@@ -1,37 +1,17 @@
 //! `credits/credits.json`, the game's own credits, and the files of the game's data that a
 //! resource pack carries in vain.
 
-use super::{Credits, CreditsDiscipline, CreditsSection, CreditsTitle};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use super::{Credits, CreditsDiscipline, CreditsSection, CreditsTitle, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
 use bedrock_addon_core::json::kit::Written;
 use bedrock_addon_core::json::kit::fixed_path::{Authored, raw_member, to_text};
 
-// The game's asserts on its own file are developer asserts and write no content-log line, so
-// the crate reports them as informations with the game's texts.
-/// The assert for an empty file.
-pub(super) const EMPTY_FILE: &str = "File is not supposed to be empty";
-/// The assert for a file that is not JSON.
-pub(super) const NOT_JSON: &str = "Failed to load json file";
-const ROOT_NOT_ARRAY: &str = "The root must be an array";
-const SECTION_EMPTY: &str = "The section data should not be empty";
-const DISCIPLINES_NOT_ARRAY: &str = "\"disciplines\" must be an array";
-const DISCIPLINE_EMPTY: &str = "The discipline data should not be empty";
-const TITLES_NOT_ARRAY: &str = "\"titles\" must be an array";
-const TITLE_EMPTY: &str = "The title object should not be empty";
-const NAMES_NOT_ARRAY: &str = "\"names\" must be an array";
-
-fn shape(text: &'static str, at: &JsonPath, diagnostics: &mut Diagnostics) {
-    diagnostics.push(
-        Diagnostic::info(DiagnosticCode::InvalidType {
-            text: Some(VanillaText::Fixed(text)),
-        })
-        .at(at.clone()),
-    );
+fn shape(code: &'static CodeDef<0>, at: &JsonPath, diagnostics: &mut Diagnostics) {
+    diagnostics.push(Diagnostic::of(code).at(at.clone()));
 }
 
 /// The members of an object that are none of `read`.
@@ -53,7 +33,7 @@ fn objects<'v>(
     parent: &'v Value,
     name: &str,
     at: &JsonPath,
-    (not_array, empty): (&'static str, &'static str),
+    (not_array, empty): (&'static CodeDef<0>, &'static CodeDef<0>),
     diagnostics: &mut Diagnostics,
 ) -> Option<Vec<(JsonPath, &'v Value)>> {
     let member = raw_member(parent, name)?;
@@ -68,7 +48,7 @@ fn objects<'v>(
 fn non_empty<'v>(
     elements: impl Iterator<Item = &'v Value>,
     at: &JsonPath,
-    empty: &'static str,
+    empty: &'static CodeDef<0>,
     diagnostics: &mut Diagnostics,
 ) -> Vec<(JsonPath, &'v Value)> {
     let mut kept = Vec::new();
@@ -89,10 +69,10 @@ impl Authored for Credits {
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let at = JsonPath::new();
         let Some(sections) = root.as_array() else {
-            shape(ROOT_NOT_ARRAY, &at, diagnostics);
+            shape(&codes::ROOT_NOT_ARRAY, &at, diagnostics);
             return Self::default();
         };
-        let sections = non_empty(sections.iter(), &at, SECTION_EMPTY, diagnostics)
+        let sections = non_empty(sections.iter(), &at, &codes::SECTION_EMPTY, diagnostics)
             .into_iter()
             .map(|(at, section)| CreditsSection {
                 section: raw_member(section, "section").map(to_text),
@@ -100,7 +80,7 @@ impl Authored for Credits {
                     section,
                     "disciplines",
                     &at,
-                    (DISCIPLINES_NOT_ARRAY, DISCIPLINE_EMPTY),
+                    (&codes::DISCIPLINES_NOT_ARRAY, &codes::DISCIPLINE_EMPTY),
                     diagnostics,
                 )
                 .map(|disciplines| {
@@ -151,7 +131,7 @@ fn read_discipline(
             discipline,
             "titles",
             at,
-            (TITLES_NOT_ARRAY, TITLE_EMPTY),
+            (&codes::TITLES_NOT_ARRAY, &codes::TITLE_EMPTY),
             diagnostics,
         )
         .map(|titles| {
@@ -163,7 +143,7 @@ fn read_discipline(
                         if let Some(names) = names.as_array() {
                             names.iter().map(to_text).collect()
                         } else {
-                            shape(NAMES_NOT_ARRAY, &at.child("names"), diagnostics);
+                            shape(&codes::NAMES_NOT_ARRAY, &at.child("names"), diagnostics);
                             Vec::new()
                         }
                     }),
@@ -217,7 +197,8 @@ pub fn check_starter_seeds(bytes: &[u8]) -> Diagnostics {
     for (line, seed) in text.split('\n').enumerate() {
         if seed.trim().is_empty() {
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
                     .at(JsonPath::new().index(line)),
             );
         }

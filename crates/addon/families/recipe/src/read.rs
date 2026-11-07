@@ -13,6 +13,7 @@
 
 use std::collections::HashSet;
 
+use super::codes;
 use super::ingredient::{constant_data, potion_in, split_item};
 use super::types::MISSING_VERSION;
 use super::{
@@ -20,8 +21,9 @@ use super::{
     MaterialReduction, Output, Recipe, RecipeKind, Shaped, Shapeless, SmithingTransform,
     SmithingTrim, Tags, Unlock, UnlockContext, input_count_allowed, unlock_required,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::VersionInfo;
 use bedrock_addon_core::id::RecipeId;
@@ -35,7 +37,7 @@ use bedrock_addon_core::molang::{
     json_scalar, read_finite,
 };
 use bedrock_addon_core::pack_identity::PackPath;
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, SemVersion};
 use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
 /// jsoncpp's `isInt` as the recipe reader asks it: an integer token that fits an `i32`; a real
@@ -57,31 +59,6 @@ pub(super) struct Parsed {
     pub(super) kind: Option<RecipeKind>,
     /// The identifier, when the payload has a non-empty one.
     pub(super) identifier: Option<RecipeId>,
-}
-
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every call site fills an `Option<VanillaText>` field"
-)]
-/// A vanilla text with arguments: `template` with each `{}` replaced by the next argument. The
-/// recipe module builds every formatted text through this, so a test can check the arity.
-pub(super) fn formatted<const N: usize>(
-    template: &'static str,
-    args: [String; N],
-) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.into(),
-    })
-}
-
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "every call site fills an `Option<VanillaText>` field"
-)]
-/// A vanilla text without arguments.
-fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
 }
 
 /// The smithing station tag, the only tag value the loader compares.
@@ -249,10 +226,9 @@ impl<'c> Reader<'c> {
         let Ok(prepared) = Prepared::new(bytes) else {
             self.report(
                 &root_path,
-                DiagnosticCode::MalformedInput {
-                    message: "not UTF-8 JSON within the nesting limit".to_owned(),
-                    text: None,
-                },
+                core_codes::SYNTAX
+                    .with(["not UTF-8 JSON within the nesting limit"])
+                    .into(),
                 Severity::Error,
             );
             return (parsed, None, None);
@@ -266,32 +242,24 @@ impl<'c> Reader<'c> {
             Err(error) => {
                 let message = error.to_string();
                 // The game's text is `JSON: %s has an error: \n %s`.
-                self.report(
-                    &root_path,
-                    DiagnosticCode::MalformedInput {
-                        message: message.clone(),
-                        text: formatted(
-                            "JSON: {} has an error: \n {}",
-                            [self.path.as_str().to_owned(), message],
-                        ),
-                    },
-                    Severity::Error,
+                self.diagnostics.push(
+                    Diagnostic::of(
+                        codes::JSON_ERROR.with([self.path.as_str().to_owned(), message.clone()]),
+                    )
+                    .detail(DiagnosticDetail::Syntax(message))
+                    .at(root_path.clone()),
                 );
                 return (parsed, None, None);
             }
         };
         let Some(object) = root.as_object() else {
             // The game's text is `JSON: %s root value is not a object`.
-            self.report(
-                &root_path,
-                DiagnosticCode::MalformedInput {
-                    message: "the root is not an object".to_owned(),
-                    text: formatted(
-                        "JSON: {} root value is not a object",
-                        [self.path.as_str().to_owned()],
-                    ),
-                },
-                Severity::Error,
+            self.diagnostics.push(
+                Diagnostic::of(codes::ROOT_NOT_OBJECT.with([self.path.as_str()]))
+                    .detail(DiagnosticDetail::Syntax(
+                        "the root is not an object".to_owned(),
+                    ))
+                    .at(root_path.clone()),
             );
             return (parsed, None, None);
         };
@@ -311,7 +279,7 @@ impl<'c> Reader<'c> {
                 root_members.keep(key);
                 self.report(
                     &root_path.child(key),
-                    DiagnosticCode::IgnoredPayload,
+                    DiagnosticCode::from(&core_codes::IGNORED_PAYLOAD),
                     Severity::Info,
                 );
             }
@@ -337,9 +305,9 @@ impl<'c> Reader<'c> {
         if self.not_checked > 0 {
             self.report(
                 &root_path,
-                DiagnosticCode::MolangNotChecked {
-                    fields: self.not_checked,
-                },
+                DiagnosticCode::from(
+                    core_codes::MOLANG_NOT_CHECKED.with([self.not_checked.to_string()]),
+                ),
                 Severity::Info,
             );
         }
@@ -386,12 +354,9 @@ impl<'c> Reader<'c> {
     fn no_identifier(&mut self, at: &JsonPath) {
         self.report(
             at,
-            DiagnosticCode::MissingIdentifier {
-                text: formatted(
-                    "JSON: {} has no identifier",
-                    [self.path.as_str().to_owned()],
-                ),
-            },
+            codes::NO_IDENTIFIER
+                .with([self.path.as_str().to_owned()])
+                .into(),
             Severity::Error,
         );
     }
@@ -411,20 +376,15 @@ impl<'c> Reader<'c> {
                 root.keep("format_version");
             }
             // The game logs the line as an error and goes on with 1.0.0, so it is a kept error.
-            self.report_kept(
-                &at,
-                DiagnosticCode::MissingFormatVersion {
-                    text: fixed("Missing version tag"),
-                },
-            );
+            self.report_kept(&at, DiagnosticCode::from(&codes::MISSING_VERSION_TAG));
             return None;
         };
         if version > self.cx.engine_version {
             self.report(
                 &at,
-                DiagnosticCode::FormatVersionAboveEngine {
-                    version: version.to_string(),
-                },
+                core_codes::FORMAT_VERSION_ABOVE_ENGINE
+                    .with([version.to_string(), ENGINE_VERSION.to_string()])
+                    .into(),
                 Severity::Info,
             );
         }
@@ -480,12 +440,7 @@ impl<'c> Reader<'c> {
         if list.is_empty() {
             // `No tags specified`: the game logs it as an error and goes on; one recipe object
             // is registered per tag, so nothing is registered. A kept error.
-            self.report_kept(
-                &path,
-                DiagnosticCode::NoEffect {
-                    text: fixed("No tags specified"),
-                },
-            );
+            self.report_kept(&path, DiagnosticCode::from(&codes::NO_TAGS));
         }
         let smithing = matches!(
             kind,
@@ -495,11 +450,7 @@ impl<'c> Reader<'c> {
             // The game logs the misuse as an error and goes on loading: a kept error.
             self.report_kept(
                 &path,
-                DiagnosticCode::InvalidValue {
-                    text: fixed(
-                        "smithing_table tag is only supported by recipes of type recipe_smithing_transform and of type recipe_smithing_trim",
-                    ),
-                },
+                DiagnosticCode::from(&codes::SMITHING_TABLE_TAG_MISUSED),
             );
         }
         tags
@@ -565,12 +516,9 @@ impl<'c> Reader<'c> {
         // A list with an element that is no value has no line in the game, so the crate's own
         // note is an information.
         if data.is_object() {
-            let text = formatted(
-                "Type not convertible to Molang expression: {}",
-                [OBJECT_VALUE_TYPE.to_owned()],
-            );
             self.diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidType { text }).at(at.child("data")),
+                Diagnostic::of(codes::DATA_NOT_MOLANG.with([OBJECT_VALUE_TYPE]))
+                    .at(at.child("data")),
             );
         } else {
             self.lenient()
@@ -628,11 +576,7 @@ impl<'c> Reader<'c> {
         if !flags.count {
             self.report_ingredient(
                 &at.child("count"),
-                DiagnosticCode::InvalidValue {
-                    text: fixed(
-                        "Recipe ingredient is invalid: Cannot specify an item count for input items",
-                    ),
-                },
+                DiagnosticCode::from(&codes::COUNT_NOT_ALLOWED),
                 flags,
             );
             return None;
@@ -672,13 +616,7 @@ impl<'c> Reader<'c> {
             members.keep("item");
         }
         if !flags.tag {
-            self.report_ingredient(
-                at,
-                DiagnosticCode::InvalidValue {
-                    text: fixed("Recipe ingredient is invalid: Must contain a valid item name"),
-                },
-                flags,
-            );
+            self.report_ingredient(at, DiagnosticCode::from(&codes::NO_ITEM_NAME), flags);
             return None;
         }
         if let Some(tag) = members.take("tag").and_then(Value::as_string) {
@@ -686,31 +624,19 @@ impl<'c> Reader<'c> {
             return Some(());
         }
         // Neither an item nor a tag: the game's error line for this case.
-        self.report_ingredient(
-            at,
-            DiagnosticCode::InvalidValue {
-                text: fixed(
-                    "Recipe ingredient is invalid: Must contain either a valid item name or item tag",
-                ),
-            },
-            flags,
-        );
+        self.report_ingredient(at, DiagnosticCode::from(&codes::NO_ITEM_OR_TAG), flags);
         None
     }
 
     /// An ingredient that is absent, or neither a string nor an object: the item lookup with an
     /// empty name fails ("The Item: %s is missing or invalid, can't make the recipe").
     fn empty_item(&mut self, at: &JsonPath, flags: Flags, missing: bool) {
-        let text = formatted(
-            "The Item: {} is missing or invalid, can't make the recipe",
-            [String::new()],
-        );
-        let code = if missing {
-            DiagnosticCode::MissingRequiredField { text }
+        let def = if missing {
+            &codes::ITEM_MISSING
         } else {
-            DiagnosticCode::InvalidType { text }
+            &codes::ITEM_INVALID
         };
-        self.report_ingredient(at, code, flags);
+        self.report_ingredient(at, def.with([""]).into(), flags);
     }
 
     /// What vanilla's item-name parser logs about an item text. The game logs each line as an
@@ -722,12 +648,8 @@ impl<'c> Reader<'c> {
             return;
         }
         for problem in split_item(text).1 {
-            self.diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: formatted(problem.template(), [text.to_owned()]),
-                })
-                .at(at.clone()),
-            );
+            self.diagnostics
+                .push_kept_error(Diagnostic::of(problem.code().with([text])).at(at.clone()));
         }
     }
 
@@ -851,7 +773,7 @@ impl<'c> Reader<'c> {
                 if entry.is_null() {
                     self.report(
                         &entry_at,
-                        DiagnosticCode::IgnoredMember { text: None },
+                        DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
                         Severity::Info,
                     );
                     continue;
@@ -870,9 +792,7 @@ impl<'c> Reader<'c> {
     fn result_malformed(&mut self, at: &JsonPath) {
         self.report(
             at,
-            DiagnosticCode::DocumentRejected {
-                text: fixed("Recipe result malformed"),
-            },
+            DiagnosticCode::from(&codes::RESULT_MALFORMED),
             Severity::Error,
         );
     }
@@ -888,9 +808,7 @@ impl<'c> Reader<'c> {
             Some(Output::Many(items)) if items.is_empty() => {
                 self.report(
                     &at,
-                    DiagnosticCode::DocumentRejected {
-                        text: fixed("Recipe has no result item(s)"),
-                    },
+                    DiagnosticCode::from(&codes::NO_RESULT_ITEMS),
                     Severity::Error,
                 );
                 Output::Many(items)
@@ -912,15 +830,7 @@ impl<'c> Reader<'c> {
             if entries.is_empty() {
                 // The game logs this as an error and returns the requirement `{None, []}`: a
                 // kept error.
-                self.report_kept(
-                    &at,
-                    DiagnosticCode::InvalidValue {
-                        text: formatted(
-                            "Recipe: {} has an empty unlocking ingredient array",
-                            [self.id.clone()],
-                        ),
-                    },
-                );
+                self.report_kept(&at, codes::EMPTY_UNLOCK.with([self.id.clone()]).into());
                 return Some(Unlock::Ingredients(Vec::new()));
             }
             let flags = Flags {
@@ -938,12 +848,9 @@ impl<'c> Reader<'c> {
                         self.diagnostics.unknown_mut().forget(&at);
                         self.report_kept(
                             &at,
-                            DiagnosticCode::InvalidValue {
-                                text: formatted(
-                                    "Recipe: {} has an invalid unlock ingredient",
-                                    [self.id.clone()],
-                                ),
-                            },
+                            codes::INVALID_UNLOCK_INGREDIENT
+                                .with([self.id.clone()])
+                                .into(),
                         );
                         return Some(Unlock::Malformed(value.clone()));
                     }
@@ -962,12 +869,9 @@ impl<'c> Reader<'c> {
             payload.keep("unlock");
             self.report_kept(
                 &at,
-                DiagnosticCode::InvalidType {
-                    text: formatted(
-                        "Recipe: {} has an unlocking element but does not contain an ingredient list or and unlocking context",
-                        [self.id.clone()],
-                    ),
-                },
+                codes::UNLOCK_WITHOUT_LIST_OR_CONTEXT
+                    .with([self.id.clone()])
+                    .into(),
             );
             return None;
         };
@@ -977,12 +881,9 @@ impl<'c> Reader<'c> {
             // The game logs an error and goes on loading: a kept error.
             self.report_kept(
                 &at.child("context"),
-                DiagnosticCode::InvalidValue {
-                    text: formatted(
-                        "Recipe: {} has a malformed unlocking context",
-                        [self.id.clone()],
-                    ),
-                },
+                codes::MALFORMED_UNLOCK_CONTEXT
+                    .with([self.id.clone()])
+                    .into(),
             );
             return Some(Unlock::Malformed(value.clone()));
         };
@@ -995,9 +896,7 @@ impl<'c> Reader<'c> {
         if unlock.is_none() && unlock_required(self.version) {
             self.report(
                 at,
-                DiagnosticCode::MissingRequiredField {
-                    text: fixed("1.20+ Recipes require unlock data"),
-                },
+                DiagnosticCode::from(&codes::UNLOCK_REQUIRED),
                 Severity::Error,
             );
         }
@@ -1074,7 +973,7 @@ impl<'c> Reader<'c> {
         if rows.is_empty() {
             self.report(
                 &at,
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Error,
             );
             return None;
@@ -1089,12 +988,9 @@ impl<'c> Reader<'c> {
             // The game rejects a pattern larger than 3x3 when it normalises the grid.
             self.report(
                 &at,
-                DiagnosticCode::InvalidValue {
-                    text: formatted(
-                        "Adding a recipe larger than 3x3: {} width, {} height",
-                        [width.to_string(), height.to_string()],
-                    ),
-                },
+                codes::PATTERN_TOO_LARGE
+                    .with([width.to_string(), height.to_string()])
+                    .into(),
                 Severity::Error,
             );
         }
@@ -1117,7 +1013,7 @@ impl<'c> Reader<'c> {
         if object.is_empty() {
             self.report(
                 &at,
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Error,
             );
             return None;
@@ -1129,7 +1025,7 @@ impl<'c> Reader<'c> {
             if name.is_empty() {
                 self.report(
                     &entry_at,
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     Severity::Error,
                 );
                 return None;
@@ -1141,12 +1037,7 @@ impl<'c> Reader<'c> {
                 None => {
                     self.report(
                         &entry_at,
-                        DiagnosticCode::DocumentRejected {
-                            text: formatted(
-                                "Recipe for: {} is missing (unknown) ingredient",
-                                [self.id.clone()],
-                            ),
-                        },
+                        codes::KEY_INGREDIENT_MISSING.with([self.id.clone()]).into(),
                         Severity::Error,
                     );
                     return None;
@@ -1176,20 +1067,13 @@ impl<'c> Reader<'c> {
         if used.is_empty() {
             self.report(
                 &at,
-                DiagnosticCode::InvalidValue {
-                    text: fixed("Recipes::addShapedRecipe: adding an empty recipe!"),
-                },
+                DiagnosticCode::from(&codes::EMPTY_RECIPE),
                 Severity::Error,
             );
         } else if !used.iter().any(|symbol| symbols.contains(symbol)) {
             self.report(
                 &at,
-                DiagnosticCode::InvalidValue {
-                    text: formatted(
-                        "Recipes::addShapedRecipe: '{}' doesn't have a single valid key in its pattern!",
-                        [self.id.clone()],
-                    ),
-                },
+                codes::NO_VALID_KEY.with([self.id.clone()]).into(),
                 Severity::Error,
             );
         }
@@ -1204,9 +1088,7 @@ impl<'c> Reader<'c> {
             // The game logs an error and loads the recipe with the first entry: a kept error.
             self.report_kept(
                 &at.child("result"),
-                DiagnosticCode::IgnoredMember {
-                    text: fixed("unsupported multiple output types for result list in shapeless"),
-                },
+                DiagnosticCode::from(&codes::MULTIPLE_OUTPUTS),
             );
         }
         let unlock = self.unlock(payload, at);
@@ -1312,9 +1194,9 @@ impl<'c> Reader<'c> {
     fn brewing_container(&mut self, payload: &mut Members<'_>, at: &JsonPath) -> Recipe {
         let texts = |part| {
             PartText::Site(match part {
-                0 => "Brewing Container Recipe: {} has an invalid input item",
-                1 => "Brewing Container Recipe: {} has an invalid reagent item",
-                _ => "Brewing Container Recipe: {} has an invalid output item",
+                0 => &codes::BREWING_INVALID_INPUT,
+                1 => &codes::BREWING_INVALID_REAGENT,
+                _ => &codes::BREWING_INVALID_OUTPUT,
             })
         };
         let input = self.part(
@@ -1340,7 +1222,7 @@ impl<'c> Reader<'c> {
             at,
             "input",
             Flags::new(self.input_count(), true),
-            PartText::Site("Material Reduction Recipe: {} has an invalid input item"),
+            PartText::Site(&codes::REDUCTION_INVALID_INPUT),
         );
         let output_at = at.child("output");
         let output = match payload.take("output") {
@@ -1353,12 +1235,9 @@ impl<'c> Reader<'c> {
                     if entries.len() > MAX_REDUCER_OUTPUTS {
                         self.report(
                             &output_at,
-                            DiagnosticCode::InvalidValue {
-                                text: formatted(
-                                    "Material Reduction Recipe: {} has too many outputs, the max is {}.",
-                                    [self.id.clone(), MAX_REDUCER_OUTPUTS.to_string()],
-                                ),
-                            },
+                            codes::REDUCTION_TOO_MANY_OUTPUTS
+                                .with([self.id.clone(), MAX_REDUCER_OUTPUTS.to_string()])
+                                .into(),
                             Severity::Error,
                         );
                     }
@@ -1395,12 +1274,9 @@ impl<'c> Reader<'c> {
         if item.is_none() {
             self.report(
                 at,
-                DiagnosticCode::DocumentRejected {
-                    text: formatted(
-                        "Material Reduction Recipe: {} has an invalid output item",
-                        [self.id.clone()],
-                    ),
-                },
+                codes::REDUCTION_INVALID_OUTPUT
+                    .with([self.id.clone()])
+                    .into(),
                 Severity::Error,
             );
         }
@@ -1408,14 +1284,13 @@ impl<'c> Reader<'c> {
     }
 
     /// The smithing tag rule: exactly one tag, `smithing_table`.
-    fn smithing_tag(&mut self, tags: Option<&Tags>, at: &JsonPath, template: &'static str) {
+    fn smithing_tag(&mut self, tags: Option<&Tags>, at: &JsonPath, def: &'static CodeDef<2>) {
         let list = tags.map_or(&[][..], Tags::as_slice);
         if list.len() != 1 || list[0] != SMITHING_TABLE {
             self.report(
                 &at.child("tags"),
-                DiagnosticCode::DocumentRejected {
-                    text: formatted(template, [self.id.clone(), SMITHING_TABLE.to_owned()]),
-                },
+                def.with([self.id.clone(), SMITHING_TABLE.to_owned()])
+                    .into(),
                 Severity::Error,
             );
         }
@@ -1433,11 +1308,7 @@ impl<'c> Reader<'c> {
         at: &JsonPath,
         tags: Option<&Tags>,
     ) -> Recipe {
-        self.smithing_tag(
-            tags,
-            at,
-            "Smithing Transform Recipe: {} has an invalid tag. They only supported one is {}.",
-        );
+        self.smithing_tag(tags, at, &codes::TRANSFORM_INVALID_TAG);
         let flags = Flags::new(false, false);
         // `template` is read only in a Trails & Tales world; absent, it is a
         // null template that skips the check.
@@ -1447,7 +1318,7 @@ impl<'c> Reader<'c> {
                 payload.keep("template");
                 self.report(
                     &at.child("template"),
-                    DiagnosticCode::IgnoredMember { text: None },
+                    DiagnosticCode::from(&core_codes::IGNORED_MEMBER),
                     Severity::Info,
                 );
                 None
@@ -1455,11 +1326,7 @@ impl<'c> Reader<'c> {
             Some(value) if !value.is_null() => {
                 let template = self.ingredient(Some(value), &at.child("template"), flags);
                 if template.is_none() {
-                    self.smithing_part(
-                        "Smithing Transform Recipe: {} has an invalid template item.",
-                        at,
-                        "template",
-                    );
+                    self.smithing_part(&codes::TRANSFORM_INVALID_TEMPLATE, at, "template");
                 }
                 template
             }
@@ -1474,21 +1341,21 @@ impl<'c> Reader<'c> {
             at,
             "base",
             flags,
-            PartText::Site("Smithing Transform Recipe: {} has an invalid base item."),
+            PartText::Site(&codes::TRANSFORM_INVALID_BASE),
         );
         let addition = self.part(
             payload,
             at,
             "addition",
             flags,
-            PartText::Site("Smithing Transform Recipe: {} has an invalid addition item."),
+            PartText::Site(&codes::TRANSFORM_INVALID_ADDITION),
         );
         let result = self.part(
             payload,
             at,
             "result",
             flags,
-            PartText::Site("Smithing Transform Recipe: {} has an invalid result item."),
+            PartText::Site(&codes::TRANSFORM_INVALID_RESULT),
         );
         Recipe::SmithingTransform(SmithingTransform {
             template,
@@ -1505,20 +1372,13 @@ impl<'c> Reader<'c> {
         at: &JsonPath,
         tags: Option<&Tags>,
     ) -> Recipe {
-        self.smithing_tag(
-            tags,
-            at,
-            "Smithing Trim Recipe: {} has an invalid tag. They only supported one is {}.",
-        );
+        self.smithing_tag(tags, at, &codes::TRIM_INVALID_TAG);
         if !self.trails_and_tales() {
             self.report(
                 at,
-                DiagnosticCode::DocumentRejected {
-                    text: formatted(
-                        "Smithing Trim Recipe: {} is invalid. Smithing Trim Recipes are only supported from version 1.20 onwards.",
-                        [self.id.clone()],
-                    ),
-                },
+                codes::TRIM_BEFORE_TRAILS_AND_TALES
+                    .with([self.id.clone()])
+                    .into(),
                 Severity::Error,
             );
         }
@@ -1535,12 +1395,10 @@ impl<'c> Reader<'c> {
         })
     }
 
-    fn smithing_part(&mut self, template: &'static str, at: &JsonPath, key: &str) {
+    fn smithing_part(&mut self, def: &'static CodeDef<1>, at: &JsonPath, key: &str) {
         self.report(
             &at.child(key),
-            DiagnosticCode::DocumentRejected {
-                text: formatted(template, [self.id.clone()]),
-            },
+            def.with([self.id.clone()]).into(),
             Severity::Error,
         );
     }
@@ -1562,7 +1420,7 @@ impl<'c> Reader<'c> {
         match text {
             PartText::None => {}
             PartText::Malformed => self.result_malformed(&part_at),
-            PartText::Site(template) => self.smithing_part(template, at, key),
+            PartText::Site(def) => self.smithing_part(def, at, key),
         }
         Ingredient::default()
     }
@@ -1575,8 +1433,8 @@ enum PartText {
     None,
     /// `Recipe result malformed`.
     Malformed,
-    /// The site's text, naming the recipe.
-    Site(&'static str),
+    /// The site's line, naming the recipe.
+    Site(&'static CodeDef<1>),
 }
 
 /// The spec of ingredient `data`: a value or a list, the pack's version, the

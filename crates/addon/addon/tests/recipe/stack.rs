@@ -1,6 +1,6 @@
 //! `bp.recipes()`: the stack rows of the fixtures and the walk.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::recipe::{Recipe, RecipeNamespace};
 use bedrock_addon::id::RecipeId;
 use bedrock_addon::load::LoadOptions;
@@ -45,10 +45,7 @@ fn same_pack_duplicate_keeps_the_first_and_rejects_the_second() {
         "JSON: {} has duplicate identifier in same pack: {}",
         Severity::Error,
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::DuplicateIdentifier { .. }
-    ));
+    assert!(finding.is(&bedrock_addon::families::recipe::codes::DUPLICATE_IDENTIFIER));
     assert_eq!(args(finding), ["recipes/b.json", "demo:twice"]);
 }
 

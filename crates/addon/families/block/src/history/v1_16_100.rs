@@ -3,7 +3,9 @@
 
 use super::legacy::{BlockPayload, component_path, input_check_failed, misread, number};
 use super::ops::{clamp, edit_object, int, number_member, whole};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 
@@ -73,7 +75,7 @@ impl LegacyStep<1, 16, 100> for BlockPayload {
             let mut at = component_path(section, "minecraft:crafting_table");
             at.push("grid_size");
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                Diagnostic::of(&core_codes::DROPPED_FIELD)
                     .at(at.clone())
                     .phase(Phase::Upgrade),
             );
@@ -98,7 +100,8 @@ impl LegacyStep<1, 16, 100> for BlockPayload {
                 Some(level) if level.is_bool() => misread(&at, cx.diagnostics),
                 Some(level) if number(level).is_some_and(|n| n.fract() != 0.0) => {
                     cx.diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                        Diagnostic::of(&core_codes::INVALID_VALUE)
+                            .severity(Severity::Info)
                             .at(at.clone())
                             .phase(Phase::Upgrade),
                     );

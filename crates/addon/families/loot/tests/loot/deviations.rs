@@ -1,7 +1,8 @@
 //! Deviations from vanilla: each pinned by a test whose name says `deviation` with the D- entry or
 //! the folder row it implements.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_family_loot::{
     ConditionKind, EnchantOption, EntryKind, FunctionKind, LootFunction, RandomValueBounds,
@@ -15,10 +16,7 @@ fn wrong_types(
 ) -> Vec<String> {
     findings(table)
         .into_iter()
-        .filter(|d| {
-            d.severity == Severity::Info
-                && matches!(d.code, DiagnosticCode::InvalidType { text: None })
-        })
+        .filter(|d| d.severity == Severity::Info && d.is(&core_codes::INVALID_TYPE))
         .map(path)
         .collect()
 }
@@ -101,10 +99,7 @@ fn unknown_members_of_a_bounds_object_are_reported_and_not_kept_deviation() {
     let table = load(r#"{"pools": [{"rolls": {"min": 1, "max": 2, "step": 1}, "entries": []}]}"#);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedField { text: None }
-    ));
+    assert!(found[0].is(&core_codes::UNRECOGNIZED_FIELD));
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/rolls/step");
     assert!(!table.to_json().unwrap().contains("step"));

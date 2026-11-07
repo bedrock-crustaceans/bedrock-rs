@@ -1,7 +1,9 @@
 //! Item and block goals: picking up, giving, eating, placing and carrying.
 
+use crate::codes;
 use crate::component::descriptor_tags;
-use bedrock_addon_core::diagnostic::{Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
@@ -21,10 +23,6 @@ use super::molang::{
     SUCCESS_CHANCE, SUCCESS_CHANCE_CONVERTED, push_trigger, push_triggers, visit_blocks,
     visit_conditions, visit_items,
 };
-
-/// Vanilla's message for a non-positive `transport_items.search_distance`.
-const SEARCH_DISTANCE: &str =
-    "behavior.transport_items: \"search_distance\" may only contain positive values";
 
 /// `minecraft:behavior.admire_item`: enables the mob to admire items that have been configured as admirable. Must be used in combination with the `admire_item` component.
 // `behavior.admire_item`: typed from 1.26.20.
@@ -144,7 +142,7 @@ impl Goal for ChargeHeldItem {
         c.required("items", self.items.is_some());
         if self.items.as_ref().is_some_and(Vec::is_empty) {
             // The list "must have at least one item in it" (`minItems` 1).
-            c.reject("items", None);
+            c.reject("items", &core_codes::INVALID_VALUE);
             self.items = None;
         }
     }
@@ -1435,7 +1433,7 @@ impl Goal for TransportItems {
             .as_ref()
             .is_some_and(|v| v.x <= 0.0 || v.y <= 0.0)
         {
-            c.kept("search_distance", VanillaText::Fixed(SEARCH_DISTANCE));
+            c.kept("search_distance", &codes::SEARCH_DISTANCE);
             self.search_distance = None;
         }
     }

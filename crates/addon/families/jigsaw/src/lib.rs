@@ -6,6 +6,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 #[doc(hidden)]
 pub use link::{Targets, link};
@@ -42,9 +43,8 @@ mod tests;
 use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, FilesBuilder, FilesRule,
     JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice, RegistryBuilder, Rejected,
@@ -121,15 +121,6 @@ const METADATA: &str = "worldgen/metadata";
 /// The oldest metadata registry.
 pub(crate) const V1_21_50: FormatVersion = FormatVersion::new(1, 21, 50);
 
-/// The line vanilla logs after a failed parse, with the file's path.
-const STRUCTURE_FAILED: &str = "Failed to parse jigsaw structure definition '{}'.";
-/// The line vanilla logs after a failed parse, with the file's path.
-const POOL_FAILED: &str = "Failed to parse jigsaw structure template pool '{}'.";
-/// The line vanilla logs after a failed parse, with the file's path.
-const SET_FAILED: &str = "Failed to parse structure set definition '{}'.";
-/// The line vanilla logs after a failed parse, with the file's path.
-const PROCESSORS_FAILED: &str = "Failed to parse jigsaw structure processor list '{}'.";
-
 /// The envelope of the four JSON documents.
 const JSON_ENVELOPE: Envelope = Envelope {
     // The game reads all four documents as Minecraft documents: the version as the JSON reader
@@ -180,7 +171,7 @@ impl Family for StructureFamily {
         failed: bool,
     ) {
         if failed {
-            failure_line(diagnostics, path, STRUCTURE_FAILED);
+            failure_line(diagnostics, path, &codes::STRUCTURE_FAILED);
         }
     }
 }
@@ -231,7 +222,7 @@ impl Family for PoolFamily {
         failed: bool,
     ) {
         if failed {
-            failure_line(diagnostics, path, POOL_FAILED);
+            failure_line(diagnostics, path, &codes::POOL_FAILED);
         }
     }
 }
@@ -282,7 +273,7 @@ impl Family for StructureSetFamily {
         failed: bool,
     ) {
         if failed {
-            failure_line(diagnostics, path, SET_FAILED);
+            failure_line(diagnostics, path, &codes::SET_FAILED);
         }
     }
 }
@@ -333,7 +324,7 @@ impl Family for ProcessorListFamily {
         failed: bool,
     ) {
         if failed {
-            failure_line(diagnostics, path, PROCESSORS_FAILED);
+            failure_line(diagnostics, path, &codes::PROCESSORS_FAILED);
         }
     }
 }
@@ -381,17 +372,12 @@ impl Family for MetadataFamily {
 
 /// After a failed parse (a parse error, not a registration check), the family's line `failed`
 /// with the file's path.
-fn failure_line(diagnostics: &mut Diagnostics, path: &PackPath, failed: &'static str) {
+fn failure_line(diagnostics: &mut Diagnostics, path: &PackPath, failed: &'static CodeDef<1>) {
     let parse_error = diagnostics
         .iter()
         .any(|d| d.severity >= Severity::Error && d.phase == Phase::Parse);
     if parse_error {
-        diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
-            text: Some(VanillaText::Formatted {
-                template: failed,
-                args: vec![path.as_str().to_owned()],
-            }),
-        }));
+        diagnostics.push(Diagnostic::of(failed.with([path.as_str()])));
     }
 }
 
@@ -538,7 +524,7 @@ impl<T: Definition> FamilyRegistry<T> {
                 // refused at registration: the registry's own rule reports neither.
                 if !self.seen.insert(key) || self.refused.contains(id) {
                     self.builder.push_diagnostic(
-                        Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+                        Diagnostic::of(&core_codes::SHADOWED_DEFINITION)
                             .in_file(document.origin())
                             .phase(Phase::Validate),
                     );
@@ -590,15 +576,10 @@ impl PoolChecks {
             // The game only asserts here, with no content-log line, so the crate reports
             // an information of its own.
             found.push(
-                Diagnostic::info(DiagnosticCode::DuplicateIdentifier {
-                    text: Some(VanillaText::Formatted {
-                        template: "Jigsaw pool name `{}` already registered",
-                        args: vec![name],
-                    }),
-                })
-                .at(path)
-                .phase(Phase::Validate)
-                .in_file(pool.origin()),
+                Diagnostic::of(codes::POOL_NAME_REGISTERED.with([name]))
+                    .at(path)
+                    .phase(Phase::Validate)
+                    .in_file(pool.origin()),
             );
         }
         // One element per location; a different one is a redefinition. The game registers
@@ -631,12 +612,9 @@ impl PoolChecks {
                         .child("location");
                     found.push(
                         // A crate-own lint: Info.
-                        Diagnostic::info(DiagnosticCode::InvalidValue {
-                            text: Some(VanillaText::Formatted {
-                                template: "Redefinition of existing element with location '{}'.",
-                                args: vec![location.as_str().to_owned()],
-                            }),
-                        })
+                        Diagnostic::of(
+                            codes::ELEMENT_REDEFINED.with([location.as_str().to_owned()]),
+                        )
                         .at(path)
                         .in_file(pool.origin())
                         .phase(Phase::Validate),
@@ -664,14 +642,9 @@ const GAME_RECORDED_SET: &str = "minecraft:trial_chambers";
 /// game's record is refused with the text. The finding is placed at the pack's file.
 fn game_record_refused(document: &Document<StructureSet>) -> Option<Diagnostic> {
     (document.description.identifier.as_str() == GAME_RECORDED_SET).then(|| {
-        Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-            text: Some(VanillaText::Formatted {
-                template: "Structure set '{}' has already been registered",
-                args: vec![GAME_RECORDED_SET.to_owned()],
-            }),
-        })
-        .in_file(document.origin())
-        .phase(Phase::Validate)
+        Diagnostic::of(codes::SET_ALREADY_REGISTERED.with([GAME_RECORDED_SET.to_owned()]))
+            .in_file(document.origin())
+            .phase(Phase::Validate)
     })
 }
 

@@ -233,6 +233,22 @@ const VALUES: &[(&str, &[&str])] = &[
     ),
 ];
 
+/// The finding as the table pins it: the legacy `Debug` of its code, with the item's two
+/// structured texts (the slot of `minecraft:enchantable`, the wearable's stack size) written in
+/// the legacy payload's shape, which the shared rendering knows only for core codes.
+fn pinned_debug(d: &bedrock_addon_core::diagnostic::Diagnostic) -> String {
+    use bedrock_addon_family_item::codes;
+    if let Some([slot]) = d.code.args_of(&codes::ENCHANT_SLOT) {
+        return format!("InvalidValue {{ text: Some(ItemEnchantSlot {{ slot: {slot:?} }}) }}");
+    }
+    if let Some([component, slot]) = d.code.args_of(&codes::WEARABLE_STACK_SIZE) {
+        return format!(
+            "InvalidValue {{ text: Some(ItemWearableStackSize {{ component: {component:?}, slot: {slot:?} }}) }}"
+        );
+    }
+    bedrock_addon_core::diagnostic::testing::legacy_debug(d)
+}
+
 /// One line of the table: the version, the component, the value, and what the load gave.
 fn line(version: &str, key: &str, value: &str) -> String {
     let text = item(version, "demo:x", &format!(r#""{key}": {value}"#));
@@ -262,7 +278,7 @@ fn line(version: &str, key: &str, value: &str) -> String {
                 .map_or("-".to_owned(), |s| format!("{}+{}", s.offset, s.len));
             format!(
                 "{} {:?} {} {span}",
-                bedrock_addon_core::diagnostic::testing::legacy_debug(d),
+                pinned_debug(d),
                 d.severity,
                 d.location.json_path
             )

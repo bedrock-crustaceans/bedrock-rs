@@ -2,14 +2,14 @@
 //! text's arity, the graph helpers and the link checker.
 
 use super::LOADER;
+use super::codes;
 use super::link::{Targets, link};
 use super::read::is_poi_name;
 use super::resolve::{TagNode, collect_members, components};
-use super::validate::{PART_OF_A_CYCLE, part_of_a_cycle};
+use super::validate::part_of_a_cycle;
 use super::{Poi, PoiTag, PoiType};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Phase, Severity};
 use bedrock_addon_core::document::Content;
 use bedrock_addon_core::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon_core::load::{Experiment, Experiments, LoadOptions};
@@ -126,13 +126,10 @@ fn the_walk_takes_json_files_directly_in_poi_blocks_and_poi_tags() {
 
 #[test]
 fn the_cycle_text_has_one_placeholder() {
-    assert_eq!(PART_OF_A_CYCLE.matches("{}").count(), 1);
+    assert_eq!(codes::PART_OF_A_CYCLE.template().matches("{}").count(), 1);
     let code = part_of_a_cycle(&PoiTagId::from_static("test:t1"));
     assert_eq!(code.to_string(), "test:t1 was a part of a cycle");
-    assert!(matches!(
-        code,
-        DiagnosticCode::ReferenceCycle { text: Some(_) }
-    ));
+    assert!(code.is(&codes::PART_OF_A_CYCLE));
 }
 
 #[test]
@@ -271,14 +268,7 @@ fn m7_a_block_no_registry_knows_is_an_unresolved_reference_at_its_entry() {
     let at: Vec<(String, Option<(&str, &str)>)> = found
         .iter()
         .map(|d| {
-            assert!(
-                matches!(
-                    d.code,
-                    DiagnosticCode::UnresolvedReference { text: Some(_) }
-                ),
-                "{:?}",
-                d.code
-            );
+            assert!(d.code.is(&codes::BLOCK_LOOKUP_FAILED), "{:?}", d.code);
             // The registry's log is error level; the rest of the type is kept.
             assert_eq!(d.severity, Severity::Error);
             assert_eq!(d.phase, Phase::Link);
@@ -356,7 +346,7 @@ fn a_value_the_writer_refuses_is_an_error_of_validate_not_silence() {
         what: Unrepresentable::NaN,
     };
     let finding = super::unwritable(&error, "minecraft:poi_block");
-    assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+    assert!(finding.is(&core_codes::INVALID_VALUE));
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(finding.phase, Phase::Validate);
     assert_eq!(
@@ -427,10 +417,7 @@ fn m7_the_unknown_block_carries_the_registry_s_text() {
         found[0].code.to_string(),
         "BlockTypeRegistry::lookupByName() failed to find block \"test:not_a_block\""
     );
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnresolvedReference { text: Some(_) }
-    ));
+    assert!(found[0].code.is(&codes::BLOCK_LOOKUP_FAILED));
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
         found[0].location.json_path.to_string(),

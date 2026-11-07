@@ -2,6 +2,7 @@
 
 use super::legacy::{BlockPayload, string};
 use super::ops::dropped_field;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
@@ -35,16 +36,16 @@ impl LegacyStep<1, 21, 30> for BlockPayload {
         let at =
             JsonPath::new().with(&["minecraft:block", "description", "menu_category", "group"]);
         if dropped {
-            dropped_field(&at, None, cx.diagnostics);
+            dropped_field(&at, cx.diagnostics);
         }
         // The group is written under vanilla's namespace: told as the item's same step
         // tells it (`item::history`, the 1.21.60 step): an information, since the game prefixes the
         // namespace without writing a log line.
         if namespaced_group {
             cx.diagnostics.push(
-                Diagnostic::info(
-                    bedrock_addon_core::diagnostic::DiagnosticCode::DeprecatedMember { text: None },
-                )
+                Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                    &core_codes::DEPRECATED_MEMBER,
+                ))
                 .at(at.clone())
                 .phase(Phase::Upgrade),
             );

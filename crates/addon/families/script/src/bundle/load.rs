@@ -9,10 +9,12 @@
 //! script module per pack, the language, the entry, the main file) is raised by the module,
 //! once; of the missing main file the bundle adds the file that differs only in case.
 
+use crate::codes;
 use std::collections::HashMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::load::{
     Accept, CollectionLoader, LoadContext, StackCx, StackPack, Walk, WalkFile,
@@ -252,10 +254,7 @@ fn combine(parsed: Vec<Walked>, stack: &StackCx<'_>) -> Vec<ScriptBundle> {
         if let Some(found) = &found {
             for finding in found.diagnostics() {
                 let mut finding = in_pack(finding.clone());
-                if let DiagnosticCode::UnresolvedReference {
-                    text: Some(VanillaText::PluginMissingMainFile { main, .. }),
-                } = &finding.code
-                {
+                if let Some([_, main]) = finding.code.args_of(&codes::PLUGIN_MISSING_MAIN_FILE) {
                     // The file that differs from the main file only in case is the hint.
                     finding.detail = Some(Box::new(missing_main(
                         members.iter().map(|member| &member.name),
@@ -334,7 +333,7 @@ fn unread_scripts(members: &[Member], module: &Module<'_>) -> Option<Diagnostic>
     };
     let at = main.unwrap_or(first);
     Some(Diagnostic::new(
-        DiagnosticCode::FileNotLoaded,
+        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
         Severity::Info,
         Phase::Read,
         Location::new(None, Some(at.file.path.clone()), JsonPath::new(), None),

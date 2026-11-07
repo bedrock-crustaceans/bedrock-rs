@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity, Span};
+use bedrock_addon::diagnostic::{Diagnostics, Severity, Span};
 use bedrock_addon::families::server_config::{
     AutoAttach, ContentLogLevel, PROPERTIES_LINE_MAX, PropertyLine, ScriptProperties,
     ServerProperties,
@@ -187,10 +187,7 @@ fn p12_bytes_that_are_not_utf8_are_replaced_with_an_information() {
     let properties = ServerProperties::parse(b"server-name=caf\xe9\n");
     assert_eq!(entries(&properties), [("server-name", "caf\u{fffd}")]);
     let finding = properties.diagnostics().iter().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    assert_eq!(finding.code.name(), "MalformedInput");
     assert_eq!(finding.severity, Severity::Info);
 }
 
@@ -560,7 +557,7 @@ fn r11_the_debug_port_is_1_to_65535() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.force_inbound_port, None, "{outside}");
         let finding = findings.first_error().unwrap();
-        assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+        assert_eq!(finding.code.name(), "InvalidValue");
         assert_eq!(
             finding.code.to_string(),
             "Invalid script debugger port, must be in the range [ 1, 65535 ]"
@@ -598,7 +595,7 @@ fn r12_the_connect_address_is_host_and_port() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.connect_address, None, "{bad}");
         let finding = findings.first_error().unwrap();
-        assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+        assert_eq!(finding.code.name(), "InvalidValue");
         assert_eq!(
             finding.code.to_string(),
             "Invalid script debugger connect address, format must be host:port with port in the range [ 1, 65535 ]"
@@ -622,10 +619,7 @@ fn r12_the_port_of_the_connect_address_is_digits_only() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.connect_address, None, "{bad}");
         let finding = findings.first_error().unwrap_or_else(|| panic!("{bad}"));
-        assert!(
-            matches!(finding.code, DiagnosticCode::InvalidValue { text: Some(_) }),
-            "{bad}"
-        );
+        assert!(finding.vanilla().is_some(), "{bad}");
     }
     // Leading zeros are digits.
     let (script, findings) = script(&format!("{key}=localhost:0080\n"));
@@ -671,10 +665,7 @@ fn r12_the_host_of_the_connect_address_is_a_name_or_a_bracketed_address() {
         let script = properties.script(&mut findings);
         assert_eq!(script.debugger.connect_address, None, "{bad:?}");
         let finding = findings.first_error().unwrap_or_else(|| panic!("{bad:?}"));
-        assert!(
-            matches!(finding.code, DiagnosticCode::InvalidValue { text: Some(_) }),
-            "{bad:?}"
-        );
+        assert!(finding.vanilla().is_some(), "{bad:?}");
         assert_eq!(
             finding.code.to_string(),
             "Invalid script debugger connect address, format must be host:port with port in the range [ 1, 65535 ]",
@@ -828,10 +819,7 @@ fn r4_the_keys_the_shipped_file_only_names_in_comments_are_known() {
         // And in another case each is the near miss of a known key.
         let upper = parse(&format!("{}=x\n", key.to_ascii_uppercase()));
         let finding = upper.diagnostics().iter().next().unwrap();
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::UnrecognizedField { .. }
-        ));
+        assert_eq!(finding.code.name(), "UnrecognizedField");
         assert_eq!(finding.severity, Severity::Info, "{key}");
     }
 }

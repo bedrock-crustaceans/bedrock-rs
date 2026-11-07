@@ -1,7 +1,7 @@
 //! The structure walk leaves the Java `.nbt` templates of a base-game pack out: a stack load never asks for their bytes. An add-on's `.nbt` file is
 //! still read, for its `IgnoredFile` info.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::load::{
     Collection, CollectionSet, LoadOptions, RepositoryLoader, RootId, Source, StackLoader,
     StackOptions,
@@ -91,7 +91,7 @@ fn a_base_game_pack_s_nbt_templates_are_never_asked_for() {
         let structures = set.behavior.structures();
         let ignored: Vec<&str> = structures
             .diagnostics()
-            .filter(|f| matches!(f.code, DiagnosticCode::IgnoredFile { .. }))
+            .filter(|f| f.code.name() == "IgnoredFile")
             .inspect(|f| assert_eq!(f.severity, Severity::Info))
             .filter_map(|f| {
                 f.location
@@ -106,7 +106,7 @@ fn a_base_game_pack_s_nbt_templates_are_never_asked_for() {
             !set.behavior
                 .report()
                 .iter()
-                .any(|f| matches!(f.code, DiagnosticCode::FileNotLoaded)),
+                .any(|f| f.is(&codes::FILE_NOT_LOADED)),
             "{order:?}"
         );
     }

@@ -1,5 +1,6 @@
 //! Format 1.26.20: the struct and the step to 1.26.30.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
 use facet_value::VArray;
@@ -38,7 +39,11 @@ impl LegacyStep<1, 26, 20> for Payload {
                 let at = section
                     .at
                     .with(&["minecraft:behavior.pickup_items", MEMBER]);
-                note(cx, DiagnosticCode::UnrecognizedField { text: None }, &at);
+                note(
+                    cx,
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
+                    &at,
+                );
             }
             if let Some(pushable) = members.object("minecraft:pushable_by_entity") {
                 pushable.insert_absent("presets", VArray::new().into());

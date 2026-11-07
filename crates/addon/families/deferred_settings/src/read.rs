@@ -7,29 +7,17 @@
 use facet_json::RawJson;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::{JsonSlice, ScalarShape, Value, parse_at};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_shared_shapes::color::hex_bytes;
-
-/// The game's text for a value that is no number.
-pub(crate) const MUST_BE_NUMBER: &str = "the input must be a number";
-/// The game's text for a colour without alpha that cannot be read.
-pub(crate) const RGB_TEXT: &str = "Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF).";
-/// The game's text for a colour with alpha that cannot be read.
-pub(crate) const RGBA_TEXT: &str = "Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF).";
-/// The game's text for keyframes of the wrong JSON type.
-pub(crate) const KEYFRAMES_TEXT: &str = "Expected keyframes.";
-/// The game's text for a triple of numbers that cannot be read.
-pub(crate) const VEC3_TEXT: &str = "Expected [x, y, z].";
-/// The game's text for a keyframe key that is no number; the placeholder is the name of the
-/// target type.
-pub(crate) const KEY_TEMPLATE: &str = "String-to-{} conversion failed";
 
 /// The read failed; its reason is in the diagnostics.
 ///
@@ -52,15 +40,6 @@ pub(crate) type Range = bedrock_addon_core::diagnostic::cereal::NumericRange;
 )]
 pub(crate) const fn range(min: f32, max: f32) -> Range {
     Range::inclusive(min as f64, max as f64)
-}
-
-/// A fixed vanilla text.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the `text` member of every code is an `Option`"
-)]
-pub(crate) fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
 }
 
 /// One JSON value of the document: its text and where it is.
@@ -184,7 +163,7 @@ impl<'a> Members<'a> {
             return read(&node, d);
         }
         d.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
                 .at(self.path(key))
                 .span(self.node.span()),
         );
@@ -222,23 +201,24 @@ impl<'a> Members<'a> {
         gone: &[(&'static str, FormatVersion)],
         d: &mut Diagnostics,
     ) -> UnknownMembers {
-        let hint = |template: &'static str, known: &[(&'static str, FormatVersion)], key: &str| {
-            known
-                .iter()
-                .find(|(name, _)| *name == key)
-                .map(|(name, version)| VanillaText::Formatted {
-                    template,
-                    args: vec![(*name).to_owned(), version.to_string()],
-                })
-        };
+        let hint =
+            |def: &'static CodeDef<2>, known: &[(&'static str, FormatVersion)], key: &str| {
+                known
+                    .iter()
+                    .find(|(name, _)| *name == key)
+                    .map(|(name, version)| {
+                        DiagnosticCode::from(def.with([(*name).to_owned(), version.to_string()]))
+                    })
+            };
         let mut extra = UnknownMembers::default();
         for (key, node) in self.rest() {
-            let text = hint("{} needs format_version {}", later, &key)
-                .or_else(|| hint("{} is no longer used (format_version {})", gone, &key));
+            let code = hint(&codes::NEEDS_FORMAT_VERSION, later, &key)
+                .or_else(|| hint(&codes::NO_LONGER_USED, gone, &key))
+                .unwrap_or_else(|| DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD));
             // The game reads every deferred settings file leniently: an unknown member is no
             // error, and the parse log is printed only for an invalid document. The game is
             // silent about a file that loads, so the finding is an information.
-            d.push(node.finding(DiagnosticCode::UnrecognizedField { text }, Severity::Info));
+            d.push(node.finding(code, Severity::Info));
             if let Some(value) = kept(&node, d) {
                 extra.insert(key, value);
             }
@@ -257,7 +237,9 @@ fn kept(node: &Node<'_>, d: &mut Diagnostics) -> Option<Value> {
     for clamped in bedrock_addon_core::json::clamp_non_finite(&mut value, Some(node.slice)) {
         let mut at = node.at.clone();
         at.append(&clamped.path);
-        let finding = Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at);
+        let finding = Diagnostic::of(&core_codes::INVALID_VALUE)
+            .severity(Severity::Info)
+            .at(at);
         d.push(match clamped.span {
             Some(span) => finding.span(span),
             None => finding,
@@ -276,12 +258,7 @@ fn number(node: &Node<'_>, d: &mut Diagnostics) -> Read<(f64, bool)> {
         Some(ScalarShape::UInt(value)) => Ok((value as f64, true)),
         Some(ScalarShape::Int(value)) => Ok((value as f64, true)),
         Some(ScalarShape::Number(value)) => Ok((value, false)),
-        _ => Err(node.error(
-            DiagnosticCode::InvalidType {
-                text: fixed(MUST_BE_NUMBER),
-            },
-            d,
-        )),
+        _ => Err(node.error(DiagnosticCode::from(&codes::MUST_BE_NUMBER), d)),
     }
 }
 
@@ -294,12 +271,7 @@ pub(crate) fn float_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Re
     if range.contains(f64::from(narrow)) {
         Ok(narrow)
     } else {
-        Err(node.error(
-            DiagnosticCode::InvalidValue {
-                text: Some(range.text()),
-            },
-            d,
-        ))
+        Err(node.error(range.code(), d))
     }
 }
 
@@ -313,7 +285,10 @@ pub(crate) fn float(node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
     if narrow.is_finite() {
         return Ok(narrow);
     }
-    d.push(node.finding(DiagnosticCode::InvalidValue { text: None }, Severity::Info));
+    d.push(node.finding(
+        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+        Severity::Info,
+    ));
     Ok(if value < 0.0 { f32::MIN } else { f32::MAX })
 }
 
@@ -323,17 +298,12 @@ pub(crate) fn float(node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
 pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostics) -> Read<i32> {
     let (value, _) = number(node, d)?;
     if value.fract() != 0.0 {
-        return Err(node.error(DiagnosticCode::InvalidValue { text: None }, d));
+        return Err(node.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d));
     }
     if value < f64::from(min) || value > f64::from(max) {
         #[allow(clippy::cast_precision_loss, reason = "the bounds are small integers")]
         let range = range(min as f32, max as f32);
-        return Err(node.error(
-            DiagnosticCode::InvalidValue {
-                text: Some(range.text()),
-            },
-            d,
-        ));
+        return Err(node.error(range.code(), d));
     }
     #[allow(clippy::cast_possible_truncation, reason = "within [min, max]")]
     Ok(value as i32)
@@ -343,7 +313,7 @@ pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostic
 pub(crate) fn boolean(node: &Node<'_>, d: &mut Diagnostics) -> Read<bool> {
     match node.scalar() {
         Some(ScalarShape::Bool(value)) => Ok(value),
-        _ => Err(node.error(DiagnosticCode::InvalidType { text: None }, d)),
+        _ => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), d)),
     }
 }
 
@@ -351,7 +321,7 @@ pub(crate) fn boolean(node: &Node<'_>, d: &mut Diagnostics) -> Read<bool> {
 pub(crate) fn string(node: &Node<'_>, d: &mut Diagnostics) -> Read<String> {
     match node.scalar() {
         Some(ScalarShape::String(value)) => Ok(value),
-        _ => Err(node.error(DiagnosticCode::InvalidType { text: None }, d)),
+        _ => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), d)),
     }
 }
 
@@ -365,7 +335,7 @@ pub(crate) fn choice<T: Copy>(
     let name = string(node, d)?;
     match table.iter().find(|(known, _)| *known == name) {
         Some((_, value)) => Ok(*value),
-        None => Err(node.error(DiagnosticCode::InvalidEnumValue { text: None }, d)),
+        None => Err(node.error(DiagnosticCode::from(&core_codes::INVALID_ENUM_VALUE), d)),
     }
 }
 
@@ -375,7 +345,10 @@ pub(crate) fn choice<T: Copy>(
 pub(crate) fn identifier<K: Kind>(node: &Node<'_>, d: &mut Diagnostics) -> Read<Id<K>> {
     let text = string(node, d)?;
     if !text.contains(':') {
-        d.push(node.finding(DiagnosticCode::NamespaceRule { text: None }, Severity::Info));
+        d.push(node.finding(
+            DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
+            Severity::Info,
+        ));
     }
     Ok(Id::parse(text))
 }
@@ -396,13 +369,11 @@ pub(crate) fn description<K: Kind>(node: &Node<'_>, d: &mut Diagnostics) -> Read
 /// `ClampedValue` info (vanilla clamps silently); one with a fraction is an `InvalidValue`
 /// error; anything else is an `InvalidType` error with `text`.
 fn channels<const N: usize>(
-    text: &'static str,
+    wrong_type: &'static CodeDef<0>,
     node: &Node<'_>,
     d: &mut Diagnostics,
 ) -> Read<[u8; N]> {
-    let wrong = |at: &Node<'_>, d: &mut Diagnostics| {
-        at.error(DiagnosticCode::InvalidType { text: fixed(text) }, d)
-    };
+    let wrong = |at: &Node<'_>, d: &mut Diagnostics| at.error(DiagnosticCode::from(wrong_type), d);
     let mut out = [0_u8; N];
     match node.first_token() {
         Some(b'"') => {
@@ -437,17 +408,17 @@ fn channels<const N: usize>(
                     }
                 };
                 if value.fract() != 0.0 {
-                    element.error(DiagnosticCode::InvalidValue { text: None }, d);
+                    element.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d);
                     failed = true;
                     continue;
                 }
                 let clamped = value.clamp(0.0, 255.0);
                 #[allow(clippy::float_cmp, reason = "exact: whether the clamp changed it")]
                 if clamped != value {
-                    d.push(
-                        element
-                            .finding(DiagnosticCode::ClampedValue { text: None }, Severity::Info),
-                    );
+                    d.push(element.finding(
+                        DiagnosticCode::from(&core_codes::CLAMPED_VALUE),
+                        Severity::Info,
+                    ));
                 }
                 #[allow(
                     clippy::cast_possible_truncation,
@@ -466,14 +437,14 @@ fn channels<const N: usize>(
 
 /// A colour without alpha: `[r, g, b]` or `"#RRGGBB"`.
 pub(crate) fn rgb(node: &Node<'_>, d: &mut Diagnostics) -> Read<Rgb8> {
-    let [red, green, blue] = channels::<3>(RGB_TEXT, node, d)?;
+    let [red, green, blue] = channels::<3>(&codes::RGB, node, d)?;
     Ok(Rgb8 { red, green, blue })
 }
 
 /// A colour with alpha: `[r, g, b, a]` or `"#AARRGGBB"` (alpha first in the hex form).
 pub(crate) fn rgba(node: &Node<'_>, d: &mut Diagnostics) -> Read<Rgba8> {
     let hex = node.first_token() == Some(b'"');
-    let [first, second, third, fourth] = channels::<4>(RGBA_TEXT, node, d)?;
+    let [first, second, third, fourth] = channels::<4>(&codes::RGBA, node, d)?;
     Ok(if hex {
         Rgba8::new(second, third, fourth, first)
     } else {
@@ -645,12 +616,7 @@ pub(crate) fn keyframes<'a, T>(
                 // By legacy name: the variant and the definitions that were it.
                 .any(|f| matches!(f.code.name(), "InvalidType"));
         if mistyped {
-            return Err(node.error(
-                DiagnosticCode::InvalidType {
-                    text: fixed(KEYFRAMES_TEXT),
-                },
-                d,
-            ));
+            return Err(node.error(DiagnosticCode::from(&codes::KEYFRAMES), d));
         }
         for finding in own {
             d.push(finding);
@@ -666,12 +632,7 @@ pub(crate) fn keyframes<'a, T>(
         let read = value(&child, d);
         let Some(time) = strtof(&key) else {
             child.error(
-                DiagnosticCode::InvalidType {
-                    text: Some(VanillaText::Formatted {
-                        template: KEY_TEMPLATE,
-                        args: vec!["float".to_owned()],
-                    }),
-                },
+                DiagnosticCode::from(codes::KEY_CONVERSION.with(["float"])),
                 d,
             );
             failed = true;
@@ -684,7 +645,10 @@ pub(crate) fn keyframes<'a, T>(
         if !(0.0..=1.0).contains(&time) {
             // The game skips a key outside the domain without a line, so the finding is an
             // information.
-            d.push(child.finding(DiagnosticCode::KeyframeOutOfDomain, Severity::Info));
+            d.push(child.finding(
+                DiagnosticCode::from(&core_codes::KEYFRAME_OUT_OF_DOMAIN),
+                Severity::Info,
+            ));
             continue;
         }
         // `-0` is the time `0`.
@@ -695,7 +659,7 @@ pub(crate) fn keyframes<'a, T>(
         return Err(Failed);
     }
     if !any || frames.is_empty() {
-        return Err(node.error(DiagnosticCode::InvalidValue { text: None }, d));
+        return Err(node.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), d));
     }
     Ok(Keyframes::Keys(standing(frames, d)))
 }
@@ -714,11 +678,15 @@ pub(super) fn standing<T>(
     for (frame, child) in frames {
         #[allow(clippy::float_cmp, reason = "exact: two keys of one time")]
         if kept.last().is_some_and(|(last, _)| last.time == frame.time) {
-            d.push(child.finding(DiagnosticCode::InvalidValue { text: None }, Severity::Info));
+            d.push(child.finding(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            ));
             if let Some((_, replaced)) = kept.pop() {
-                d.push(
-                    replaced.finding(DiagnosticCode::DroppedField { text: None }, Severity::Info),
-                );
+                d.push(replaced.finding(
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Severity::Info,
+                ));
             }
         }
         kept.push((frame, child));
@@ -734,14 +702,7 @@ pub(super) fn standing<T>(
     reason = "x, y and z are the members' names"
 )]
 pub(crate) fn vec3_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Read<Vec3> {
-    let wrong = |d: &mut Diagnostics| {
-        node.error(
-            DiagnosticCode::InvalidType {
-                text: fixed(VEC3_TEXT),
-            },
-            d,
-        )
-    };
+    let wrong = |d: &mut Diagnostics| node.error(DiagnosticCode::from(&codes::VEC3), d);
     match node.first_token() {
         Some(b'[') => {
             let Ok(elements) = parse_at::<Vec<RawJson<'_>>>(node.slice) else {

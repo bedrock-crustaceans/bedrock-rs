@@ -1,11 +1,11 @@
 //! `ItemDescriptor`: one item, or a set of items by tag.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::molang::MolangSource;
 use facet_value::VObject;
 
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
@@ -116,11 +116,7 @@ impl ItemDescriptor {
             // empty descriptor, a kept error.
             Self::Invalid(value) => {
                 out.push_kept_error(finding(
-                    DiagnosticCode::InvalidType {
-                        text: Some(VanillaText::ItemDescriptorShape {
-                            value: compact(value),
-                        }),
-                    },
+                    DiagnosticCode::from(codes::ITEM_DESCRIPTOR_SHAPE.with([compact(value)])),
                     Severity::Error,
                     at,
                 ));
@@ -133,7 +129,7 @@ impl ItemDescriptor {
         if KEYS.iter().any(|key| extra.get(key).is_some()) {
             // The first key in `KEYS` order wins, with an information.
             out.push(finding(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 at,
             ));

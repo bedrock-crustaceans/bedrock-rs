@@ -2,6 +2,7 @@
 
 use super::{AnimationFile, OneOrMany};
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_shared_animation::validate::{command_version_unset, events, push};
@@ -25,7 +26,7 @@ pub(crate) fn animation_findings(
                     let at = base.child("bones").child(name);
                     push(
                         diagnostics,
-                        DiagnosticCode::DuplicateBone,
+                        DiagnosticCode::from(&core_codes::DUPLICATE_BONE),
                         Severity::Info,
                         at,
                     );

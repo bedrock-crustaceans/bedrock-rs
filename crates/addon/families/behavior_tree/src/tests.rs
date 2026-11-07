@@ -243,11 +243,6 @@ fn every_built_in_text_names_its_tree_and_loads_without_a_finding() {
     }
 }
 
-#[test]
-fn the_formatted_text_has_one_placeholder() {
-    assert_eq!(read::PARSE_ERROR.matches("{}").count(), 1);
-}
-
 /// The findings of one tree come in document order.
 #[test]
 fn the_findings_of_a_tree_are_in_document_order() {

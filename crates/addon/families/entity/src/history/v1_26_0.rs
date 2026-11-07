@@ -1,5 +1,6 @@
 //! Format 1.26.0: the struct and the step to 1.26.10.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::ops::empty_object;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
@@ -87,7 +88,7 @@ impl LegacyStep<1, 26, 0> for Payload {
                 }
             }
             for at in misread {
-                finding(cx, DiagnosticCode::InvalidType { text: None }, &at);
+                finding(cx, DiagnosticCode::from(&core_codes::INVALID_TYPE), &at);
             }
             told.report(cx);
         }

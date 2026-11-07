@@ -3,7 +3,7 @@
 
 #![allow(dead_code, reason = "some helpers serve only the `molang` build")]
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::families::recipe::{Ingredient, IngredientObject};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::molang::{Molang, MolangList};
@@ -45,13 +45,12 @@ fn not_checked(
         .diagnostics()
         .iter()
         .filter_map(|d| {
-            // The family's own count is the legacy variant still; core's is the definition.
-            let fields = match &d.code {
-                DiagnosticCode::MolangNotChecked { fields } => *fields,
-                code => code.args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)?[0]
-                    .parse()
-                    .unwrap(),
-            };
+            // The family's count and core's are both the definition.
+            let fields: u32 = d
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)?[0]
+                .parse()
+                .unwrap();
             assert_eq!(d.severity, Severity::Info);
             Some(fields)
         })

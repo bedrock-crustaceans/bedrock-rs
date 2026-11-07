@@ -8,6 +8,7 @@ use facet::Facet;
 use facet_json::RawJson;
 
 use super::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity,
 };
@@ -155,8 +156,11 @@ pub(crate) fn parse_table(
         let mut unknown = Vec::new();
         unknown_tiers(&json, &cx.at, &mut unknown);
         for at in unknown {
-            run.d
-                .push(Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None }).at(at));
+            run.d.push(
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Error)
+                    .at(at),
+            );
             run.failed = true;
         }
     }
@@ -173,7 +177,10 @@ pub(crate) fn parse_table(
             let selects = num_to_select.unwrap_or(0);
             // The sequence must hold at least one element.
             if group.trades.is_empty() {
-                run.error(DiagnosticCode::InvalidValue { text: None }, list_at.clone());
+                run.error(
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                    list_at.clone(),
+                );
             }
             if let Some(finding) = rules::selects_too_many(
                 selects,
@@ -317,14 +324,17 @@ fn parse_trade<'a>(
     // `wants` and `gives` must hold at least one element.
     for (entries, key) in [(&trade.wants, "wants"), (&trade.gives, "gives")] {
         if entries.is_empty() {
-            run.error(DiagnosticCode::InvalidValue { text: None }, at.child(key));
+            run.error(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                at.child(key),
+            );
         }
     }
     if let Some(weight) = trade.weight {
         let weight_at = at.child("weight");
         // A number must be at least 1.
         if weight.0 < 1 {
-            run.error(DiagnosticCode::InvalidValue { text: None }, weight_at);
+            run.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), weight_at);
         } else if let Some(finding) =
             // The cereal slice has no such check, so the crate reports an information.
             rules::weight_without_effect(selects, &weight_at, Severity::Info)
@@ -441,16 +451,16 @@ fn parse_quantity(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Opt
 fn quantity_int(run: &mut Run<'_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<u32> {
     match parse_at::<StrictInt<u32>>(slice) {
         Ok(StrictInt(0)) => {
-            run.error(DiagnosticCode::InvalidValue { text: None }, at.clone());
+            run.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
             Some(0)
         }
         Ok(StrictInt(n)) => Some(n),
         Err(_) => {
             let negative = parse_at::<StrictInt<i64>>(slice).is_ok_and(|n| n.0 < 0);
             let code = if negative {
-                DiagnosticCode::InvalidValue { text: None }
+                DiagnosticCode::from(&core_codes::INVALID_VALUE)
             } else {
-                DiagnosticCode::InvalidType { text: None }
+                DiagnosticCode::from(&core_codes::INVALID_TYPE)
             };
             run.error(code, at.clone());
             None
@@ -512,7 +522,7 @@ fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     // By legacy name: the variant and the definitions that were it.
     let mut finding = error.into_diagnostic(base, |code, error| match code {
         code if code.name() == "MalformedInput" && !error.has_path() => {
-            DiagnosticCode::InvalidType { text: None }
+            DiagnosticCode::from(&core_codes::INVALID_TYPE)
         }
         other => other,
     });

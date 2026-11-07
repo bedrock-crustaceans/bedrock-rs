@@ -6,9 +6,8 @@ use indexmap::{IndexMap, IndexSet};
 
 use super::RenderController;
 use super::read::controller_path;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, Phase,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Phase};
 use bedrock_addon_core::molang::MolangSource;
 
 /// The `array.<name>` references of a Molang text, lower-cased, outside its string literals:
@@ -68,7 +67,7 @@ fn check<'s>(
             // The game makes no load-time check; its "Error processing expression" is a draw-time
             // line, so the crate reports an information.
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+                Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
                     .at(controller_path(key, Some(member)))
                     .phase(Phase::Validate)
                     .detail(DiagnosticDetail::Reference {

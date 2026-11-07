@@ -1,7 +1,8 @@
 //! Which files of a stack `bp.crafting_catalog()` reads (S1 and
 //! S2), what the item registry of the merge is (M1, M6), and the accessor itself.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Severity, codes};
+use bedrock_addon::families::crafting_catalog;
 use bedrock_addon::families::crafting_catalog::{CategoryName, CraftingCatalog};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack};
@@ -49,7 +50,7 @@ fn no_base_warnings(stack: &PackStack<Behavior>) -> usize {
         .crafting_catalog()
         .diagnostics()
         .filter(|f| {
-            matches!(f.code, DiagnosticCode::UnresolvedReference { .. })
+            f.is(&codes::UNRESOLVED_REFERENCE)
                 && matches!(
                     f.detail.as_deref(),
                     Some(DiagnosticDetail::Reference {
@@ -305,7 +306,7 @@ fn unresolved(stack: &PackStack<Behavior>) -> Vec<(String, String)> {
             }) => {
                 // The game's link pass holds every catalogue item and logs a miss at the
                 // content log's error level.
-                assert!(matches!(f.code, DiagnosticCode::UnresolvedReference { .. }));
+                assert!(f.is(&crafting_catalog::codes::MISSING_ITEM));
                 let text = f.code.to_string();
                 assert!(
                     text.ends_with(&format!(":  Missing referenced asset {id}"))

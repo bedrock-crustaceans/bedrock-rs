@@ -3,14 +3,13 @@
 //!
 //! Every finding is built here without pack and file; the loader locates them.
 
+use super::codes;
 use super::command::command_version;
-use super::texts::{
-    COMMAND_TYPE, COMMANDS_AND_URL, MAX_BUTTONS, NO_BUTTON_NAME, NO_FORMAT_VERSION, NO_PAYLOAD,
-    NO_SCENE_TAG, NO_SCENES, NO_TEXT, NPC_NAME, OUT_OF_RANGE, READER, ROOT_NOT_OBJECT,
-    SCENE_COMMAND_TYPE, URL_TYPE, formatted,
-};
 use super::{Button, DialogueScene, DialogueText, StoredCommand};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+};
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
@@ -191,9 +190,7 @@ impl Reader<'_> {
         let Some(payload) = member(read, &root, PAYLOAD) else {
             error(
                 read,
-                DiagnosticCode::MissingPayload {
-                    text: formatted(NO_PAYLOAD, &[self.stem]),
-                },
+                DiagnosticCode::from(codes::NO_PAYLOAD.with([self.stem])),
                 payload_at,
             );
             return None;
@@ -201,17 +198,20 @@ impl Reader<'_> {
         let scenes_at = payload_at.child("scenes");
         // One text for both an absent and a non-array `scenes`; a payload that is not an object
         // reads `scenes` as null.
-        let text = formatted(NO_SCENES, &[self.stem]);
         let Some(scenes) = member(read, &payload, "scenes") else {
             error(
                 read,
-                DiagnosticCode::MissingRequiredField { text },
+                DiagnosticCode::from(codes::NO_SCENES_MISSING_REQUIRED_FIELD.with([self.stem])),
                 scenes_at,
             );
             return None;
         };
         let Some(scenes) = elements(read, &scenes) else {
-            error(read, DiagnosticCode::InvalidType { text }, scenes_at);
+            error(
+                read,
+                DiagnosticCode::from(codes::NO_SCENES_INVALID_TYPE.with([self.stem])),
+                scenes_at,
+            );
             return None;
         };
         let scenes = scenes
@@ -250,23 +250,21 @@ impl Reader<'_> {
             Ok(root) => root,
             Err(message) => {
                 // The file is skipped with the reader's message.
-                let text = formatted(READER, &[self.stem, &message]);
-                error(
-                    read,
-                    DiagnosticCode::MalformedInput { message, text },
-                    JsonPath::new(),
+                read.push(
+                    Diagnostic::of(codes::READER.with([self.stem, &message]))
+                        .detail(DiagnosticDetail::Syntax(message))
+                        .at(JsonPath::new()),
                 );
                 return None;
             }
         };
         if root.as_object().is_none() {
-            error(
-                read,
-                DiagnosticCode::MalformedInput {
-                    message: "the root is not an object".to_owned(),
-                    text: formatted(ROOT_NOT_OBJECT, &[self.stem]),
-                },
-                JsonPath::new(),
+            read.push(
+                Diagnostic::of(codes::ROOT_NOT_OBJECT.with([self.stem]))
+                    .detail(DiagnosticDetail::Syntax(
+                        "the root is not an object".to_owned(),
+                    ))
+                    .at(JsonPath::new()),
             );
             return None;
         }
@@ -279,9 +277,9 @@ impl Reader<'_> {
         let Some(written) = member(read, root, "format_version") else {
             error(
                 read,
-                DiagnosticCode::MissingFormatVersion {
-                    text: formatted(NO_FORMAT_VERSION, &[self.stem]),
-                },
+                DiagnosticCode::from(
+                    codes::NO_FORMAT_VERSION_MISSING_FORMAT_VERSION.with([self.stem]),
+                ),
                 at,
             );
             return None;
@@ -299,9 +297,9 @@ impl Reader<'_> {
         let Some(version) = version else {
             error(
                 read,
-                DiagnosticCode::MalformedFormatVersion {
-                    text: formatted(NO_FORMAT_VERSION, &[self.stem]),
-                },
+                DiagnosticCode::from(
+                    codes::NO_FORMAT_VERSION_MALFORMED_FORMAT_VERSION.with([self.stem]),
+                ),
                 at,
             );
             return None;
@@ -312,16 +310,18 @@ impl Reader<'_> {
         {
             // The literal `beta` is read as the sentinel 9999.9999.9999-beta. The game writes no
             // content-log line for it, so the crate reports it as an information.
-            read.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(at.clone()));
+            read.push(
+                Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
+                    .at(at.clone()),
+            );
         }
         // A plain `<` against the floor: 1.14.0 itself loads.
         if version < SemVersion::from(FLOOR) {
             let floor = FLOOR.to_string();
             error(
                 read,
-                DiagnosticCode::UnsupportedVersion {
-                    text: formatted(OUT_OF_RANGE, &[self.stem, &floor]),
-                },
+                DiagnosticCode::from(codes::OUT_OF_RANGE.with([self.stem, &floor])),
                 at,
             );
             return None;
@@ -360,9 +360,7 @@ impl Reader<'_> {
             None => None,
             Some(name) => {
                 let Some(name) = text(name.value()) else {
-                    let code = DiagnosticCode::InvalidType {
-                        text: formatted(NPC_NAME, &[self.stem]),
-                    };
+                    let code = DiagnosticCode::from(codes::NPC_NAME.with([self.stem]));
                     return Scene::Dropped(None, code, at.child("npc_name"));
                 };
                 Some(name)
@@ -370,15 +368,12 @@ impl Reader<'_> {
         };
         // Absent, null or any other type than a string: one text.
         let Some(tag) = member(read, scene, "scene_tag") else {
-            let code = DiagnosticCode::MissingRequiredField {
-                text: formatted(NO_SCENE_TAG, &[self.stem]),
-            };
+            let code =
+                DiagnosticCode::from(codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD.with([self.stem]));
             return Scene::Dropped(None, code, at.child("scene_tag"));
         };
         let Some(tag) = tag.value().as_string() else {
-            let code = DiagnosticCode::InvalidType {
-                text: formatted(NO_SCENE_TAG, &[self.stem]),
-            };
+            let code = DiagnosticCode::from(codes::NO_SCENE_TAG_INVALID_TYPE.with([self.stem]));
             return Scene::Dropped(None, code, at.child("scene_tag"));
         };
         let tag = tag.as_str().to_owned();
@@ -386,16 +381,15 @@ impl Reader<'_> {
         // default: a bool reads as its word, a number or an array as the empty text.
         let text = match member(read, scene, "text") {
             None => {
-                let code = DiagnosticCode::MissingRequiredField {
-                    text: formatted(NO_TEXT, &[self.stem]),
-                };
+                let code = DiagnosticCode::from(codes::NO_TEXT.with([self.stem]));
                 return Scene::Dropped(Some(tag), code, at.child("text"));
             }
             Some(node) => text(node.value()).unwrap_or_else(|| {
                 // The game reads these without a content-log line, so the crate reports the
                 // coercion as an information.
                 read.push(
-                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Info)
                         .at(at.child("text")),
                 );
                 DialogueText::Plain(
@@ -427,9 +421,9 @@ impl Reader<'_> {
             .as_ref()
             .is_some_and(|kept| kept.len() > MAX_NUM_BUTTONS)
         {
-            let code = DiagnosticCode::InvalidValue {
-                text: formatted(MAX_BUTTONS, &[self.stem, &MAX_NUM_BUTTONS.to_string()]),
-            };
+            let code = DiagnosticCode::from(
+                codes::MAX_BUTTONS.with([self.stem, &MAX_NUM_BUTTONS.to_string()]),
+            );
             return Scene::Dropped(Some(tag), code, buttons_at);
         }
         let on_open_commands = self.scene_commands(scene, "on_open_commands", read);
@@ -467,25 +461,32 @@ impl Reader<'_> {
         };
         // An absent or null name and one that is neither a string nor an object share one text.
         let Some(name) = member(read, button, "name") else {
-            let text = formatted(NO_BUTTON_NAME, &[self.stem]);
             warn(
                 read,
-                DiagnosticCode::MissingRequiredField { text },
+                DiagnosticCode::from(
+                    codes::NO_BUTTON_NAME_MISSING_REQUIRED_FIELD.with([self.stem]),
+                ),
                 at.child("name"),
             );
             return None;
         };
         let Some(name) = text(name.value()) else {
-            let text = formatted(NO_BUTTON_NAME, &[self.stem]);
-            warn(read, DiagnosticCode::InvalidType { text }, at.child("name"));
+            warn(
+                read,
+                DiagnosticCode::from(codes::NO_BUTTON_NAME_INVALID_TYPE.with([self.stem])),
+                at.child("name"),
+            );
             return None;
         };
         // Both present and non-null, checked before either type is looked at.
         let commands = member(read, button, "commands");
         let url = member(read, button, "url");
         if commands.is_some() && url.is_some() {
-            let text = formatted(COMMANDS_AND_URL, &[self.stem]);
-            warn(read, DiagnosticCode::InvalidValue { text }, at.clone());
+            warn(
+                read,
+                DiagnosticCode::from(codes::COMMANDS_AND_URL.with([self.stem])),
+                at.clone(),
+            );
             return None;
         }
         // A non-array is ignored; a non-string element drops the button.
@@ -495,10 +496,9 @@ impl Reader<'_> {
                 let mut stored = Vec::new();
                 for command in list.iter() {
                     let Some(raw) = command.value().as_string() else {
-                        let text = formatted(COMMAND_TYPE, &[self.stem]);
                         warn(
                             read,
-                            DiagnosticCode::InvalidType { text },
+                            DiagnosticCode::from(codes::COMMAND_TYPE.with([self.stem])),
                             command.path().clone(),
                         );
                         return None;
@@ -513,8 +513,11 @@ impl Reader<'_> {
             None => None,
             Some(url) => {
                 let Some(url) = url.value().as_string() else {
-                    let text = formatted(URL_TYPE, &[self.stem]);
-                    warn(read, DiagnosticCode::InvalidType { text }, at.child("url"));
+                    warn(
+                        read,
+                        DiagnosticCode::from(codes::URL_TYPE.with([self.stem])),
+                        at.child("url"),
+                    );
                     return None;
                 };
                 Some(url.as_str().to_owned())
@@ -533,9 +536,7 @@ impl Reader<'_> {
         if button.label_is_cut() {
             // The label is cut, not the name; the game says nothing, so the crate reports an
             // information.
-            read.push(
-                Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at.child("name")),
-            );
+            read.push(Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at.child("name")));
         }
         Some(button)
     }
@@ -560,11 +561,8 @@ impl Reader<'_> {
                 // The game logs it at the content log's error level and skips the command, so
                 // the finding is a kept error.
                 None => read.push(
-                    Diagnostic::error(DiagnosticCode::InvalidType {
-                        text: formatted(SCENE_COMMAND_TYPE, &[self.stem, name]),
-                    })
-                    .at(command.path().clone())
-                    .into_kept(),
+                    Diagnostic::of(codes::SCENE_COMMAND_TYPE.with([self.stem, name]))
+                        .at(command.path().clone()),
                 ),
             }
         }

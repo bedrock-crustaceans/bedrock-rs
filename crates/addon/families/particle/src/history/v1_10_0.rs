@@ -26,11 +26,12 @@ use crate::read::{
 };
 use crate::read::{Era, Fields, Members, Reader, Writer};
 use crate::write::{PAYLOAD_KEY, document, payload_of};
-use crate::{BasicRenderParameters, Curve, Description, EventNode, texts};
+use crate::{BasicRenderParameters, Curve, Description, EventNode, codes};
 #[cfg(feature = "molang")]
 use bedrock_addon_core::diagnostic::Location;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::{Component as _, ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
@@ -89,18 +90,14 @@ impl Versioned for ParticleEffect {
 /// An error of the legacy envelope checks, and of a description that gives no identifier
 /// (the error is the crate's own there: the game registers an effect named `""`), with
 /// vanilla's text.
-fn refuse(r: &mut Reader<'_>, text: &'static str) {
-    r.error(DiagnosticCode::MissingRequiredField {
-        text: Some(VanillaText::Fixed(text)),
-    });
+fn refuse(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
+    r.error(DiagnosticCode::from(code));
 }
 
 /// A content-log line about a member that is missing, which the game writes at the error
 /// level and which does not stop the load: a kept error.
-fn lacking(r: &mut Reader<'_>, text: &'static str) {
-    r.push_kept(DiagnosticCode::MissingRequiredField {
-        text: Some(VanillaText::Fixed(text)),
-    });
+fn lacking(r: &mut Reader<'_>, code: &'static CodeDef<0>) {
+    r.push_kept(DiagnosticCode::from(code));
 }
 
 /// A string member of `basic_render_parameters`: its value, and whether the legacy parser
@@ -109,7 +106,7 @@ fn lacking(r: &mut Reader<'_>, text: &'static str) {
 fn render_string(
     m: Members<'_>,
     key: &str,
-    (missing, not_string, stops): (&'static str, &'static str, bool),
+    (missing, not_string, stops): (&'static CodeDef<0>, &'static CodeDef<0>, bool),
     r: &mut Reader<'_>,
 ) -> (String, bool) {
     r.key(key, |r| match m.get(key) {
@@ -133,13 +130,13 @@ impl ParticleEffect {
         let m = Members::of(payload).unwrap_or(Members::EMPTY);
         let description = m.get("description").and_then(Members::of);
         let Some(description) = description else {
-            r.key("description", |r| refuse(r, texts::NO_DESCRIPTION));
+            r.key("description", |r| refuse(r, &codes::NO_DESCRIPTION));
             return None;
         };
         r.key("description", |r| {
             let identifier = description.get("identifier").and_then(Value::as_string);
             let Some(identifier) = identifier else {
-                r.key("identifier", |r| refuse(r, texts::NO_IDENTIFIER));
+                r.key("identifier", |r| refuse(r, &codes::NO_IDENTIFIER));
                 return None;
             };
             // From here on the parser has the identifier: where it stops, the game still
@@ -150,7 +147,7 @@ impl ParticleEffect {
             let (material, texture, stopped, parameters_extra) =
                 r.key("basic_render_parameters", |r| {
                     let Some(parameters) = parameters else {
-                        lacking(r, texts::NO_RENDER_PARAMETERS);
+                        lacking(r, &codes::NO_RENDER_PARAMETERS);
                         return (
                             String::new(),
                             String::new(),
@@ -161,13 +158,13 @@ impl ParticleEffect {
                     let (material, no_material) = render_string(
                         parameters,
                         "material",
-                        (texts::NO_MATERIAL, texts::MATERIAL_NOT_STRING, true),
+                        (&codes::NO_MATERIAL, &codes::MATERIAL_NOT_STRING, true),
                         r,
                     );
                     let (texture, no_texture) = render_string(
                         parameters,
                         "texture",
-                        (texts::NO_TEXTURE, texts::TEXTURE_NOT_STRING, false),
+                        (&codes::NO_TEXTURE, &codes::TEXTURE_NOT_STRING, false),
                         r,
                     );
                     let extra = parameters.extra(BasicRenderParameters::known, r);
@@ -213,7 +210,10 @@ impl ParticleEffect {
             for key in ["curves", "events", "components"] {
                 if m.get(key).is_some_and(|member| !member.is_null()) {
                     r.key(key, |r| {
-                        r.push(DiagnosticCode::DroppedField { text: None }, Severity::Info);
+                        r.push(
+                            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                            Severity::Info,
+                        );
                     });
                 }
             }
@@ -225,7 +225,7 @@ impl ParticleEffect {
         effect.events = read_events(m, r);
         let Some(components) = m.get("components").and_then(Members::of) else {
             // The parser stops here too: the effect has its curves and events, no component.
-            r.key("components", |r| lacking(r, texts::NO_COMPONENTS));
+            r.key("components", |r| lacking(r, &codes::NO_COMPONENTS));
             effect.extra = m.extra(known, r);
             return effect;
         };
@@ -247,10 +247,10 @@ impl ParticleEffect {
         r.key("description", |r| {
             r.key("basic_render_parameters", |r| {
                 if no_material {
-                    r.key("material", |r| lacking(r, texts::MATERIAL_NOT_FOUND));
+                    r.key("material", |r| lacking(r, &codes::MATERIAL_NOT_FOUND));
                 }
                 if no_texture {
-                    r.key("texture", |r| lacking(r, texts::TEXTURE_NOT_FOUND));
+                    r.key("texture", |r| lacking(r, &codes::TEXTURE_NOT_FOUND));
                 }
             });
         });
@@ -262,14 +262,14 @@ impl ParticleEffect {
                 EmitterLifetimeExpression::NAME,
                 EmitterLifetimeEvents::NAME,
             ]) {
-                lacking(r, texts::NEEDS_LIFETIME);
+                lacking(r, &codes::NEEDS_LIFETIME);
             }
             if !has(&[
                 EmitterRateInstant::NAME,
                 EmitterRateSteady::NAME,
                 EmitterRateManual::NAME,
             ]) {
-                lacking(r, texts::NEEDS_RATE);
+                lacking(r, &codes::NEEDS_RATE);
             }
         });
         effect
@@ -324,7 +324,7 @@ impl VersionStruct for ParticleEffect {
         r.key(PAYLOAD_KEY, |r| match members.get(PAYLOAD_KEY) {
             Some(payload) => Self::read(payload, version, r),
             None => {
-                refuse(r, texts::NO_PAYLOAD);
+                refuse(r, &codes::NO_PAYLOAD);
                 None
             }
         })
@@ -427,7 +427,7 @@ impl ParticleEffect {
                     // here, where the value is rewritten (a finding of the crate's own; a
                     // document written as it was read keeps its boolean and gets no note).
                     d.push(
-                        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                        Diagnostic::of(&core_codes::VALUE_REWRITTEN)
                             .at(field.path.clone())
                             .phase(Phase::Upgrade),
                     );
@@ -522,7 +522,7 @@ impl Upgrade for ParticleEffect {
                         at.push(step);
                     }
                     cx.diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::NoEffect { text: None })
+                        Diagnostic::of(&core_codes::NO_EFFECT)
                             .at(at)
                             .phase(Phase::Upgrade),
                     );

@@ -3,6 +3,7 @@
 //! beside the member a step writes it to, the turtle's and the pufferfish's own values the
 //! fixer replaces, and the findings of the typed read of a member a step moved.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::Content;
 
 use super::common::{cx, doc, stable};
@@ -534,7 +535,7 @@ fn a_finding_of_a_subsensor_the_1_20_0_step_shifted_names_the_member_of_the_file
             }
         }
         found.push(Diagnostic::new(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Warning,
             Phase::Validate,
             Location::new(None, None, at, None),

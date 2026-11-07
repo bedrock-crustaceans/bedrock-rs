@@ -1,9 +1,8 @@
 //! The three version steps of `sounds/sound_definitions.json`: the game's JSON fixer, which
 //! runs on every pack's copy before the merge and once more on the merged root.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use super::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
@@ -17,11 +16,6 @@ pub(crate) const V1_20_20: FormatVersion = FormatVersion::new(1, 20, 20);
 pub(crate) const V1_26_50: FormatVersion = known::V1_26_50;
 /// The version of a file whose `format_version` is missing or unreadable.
 pub(crate) const DEFAULT_VERSION: FormatVersion = FormatVersion::new(1, 13, 0);
-
-/// Vanilla's text for a `sound_definitions` member that is no object.
-pub(crate) const NOT_A_LIST: &str = "sound definition field isn't a list of sound definitions!";
-/// Vanilla's text (sic, no space) for a definition that is no object.
-pub(crate) const MALFORMED_SOUND: &str = "sound definitions has sound '{}'that is malformed";
 
 /// The version the gates of a copy compare against: its `format_version` as a version string
 /// or an array of three integers, and 1.13.0 when the member is missing or anything else.
@@ -151,11 +145,9 @@ pub(crate) fn reset_integer_distances(
         // The game writes an error line to the content log; the file is still the stack's copy
         // and loads: a kept error.
         diagnostics.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(NOT_A_LIST)),
-            })
-            .at(path)
-            .phase(Phase::Upgrade),
+            Diagnostic::of(&codes::NOT_A_LIST)
+                .at(path)
+                .phase(Phase::Upgrade),
         );
         return;
     }
@@ -165,14 +157,9 @@ pub(crate) fn reset_integer_distances(
             // The game writes an error line to the content log and the step goes on: a kept
             // error.
             diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Formatted {
-                        template: MALFORMED_SOUND,
-                        args: vec![name.clone()],
-                    }),
-                })
-                .at(definition_path(&name))
-                .phase(Phase::Upgrade),
+                Diagnostic::of(codes::MALFORMED_SOUND.with([name.clone()]))
+                    .at(definition_path(&name))
+                    .phase(Phase::Upgrade),
             );
             continue;
         }

@@ -4,10 +4,11 @@
 
 use std::collections::HashMap;
 
+use super::codes;
 use super::{CatalogItem, CatalogKey, Category, CraftingCatalog, Group};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
-    VanillaText,
+    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::document::Merged;
 use bedrock_addon_core::id::ItemId;
@@ -145,11 +146,9 @@ fn placement(
     let placed = category.category_name.creative_category();
     // The game writes both lines (the category's and the group's) to the content log at its
     // warning level, so both findings are warnings.
-    let mut warn = |template, args: Vec<String>| {
+    let mut warn = |code: Code| {
         index.finding(
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Formatted { template, args }),
-            },
+            DiagnosticCode::from(code),
             Severity::Warning,
             &item_key(item),
         )
@@ -157,10 +156,11 @@ fn placement(
     if own_category != placed {
         // The names are `stringFromCreativeItemCategory`'s: the menu category spellings.
         let name = |category: CreativeCategory| category.name().unwrap_or_default().to_owned();
-        out.push(warn(
-            "The item {} was created with the category set to '{}', and is now being set to '{}'",
-            vec![written.to_owned(), name(own_category), name(placed)],
-        ));
+        out.push(warn(codes::CATEGORY_MISMATCH.with([
+            written.to_owned(),
+            name(own_category),
+            name(placed),
+        ])));
     }
     let own_group = own.group.as_deref().filter(|group| !group.is_empty());
     let target = group.group_identifier.as_ref().map(|i| i.name.as_str());
@@ -168,8 +168,7 @@ fn placement(
         && own_group != target
     {
         out.push(warn(
-            "The item {} was created with the group set to '{}', but is now being set to '{}'",
-            vec![written.to_owned(), own_group.to_owned(), target.to_owned()],
+            codes::GROUP_MISMATCH.with([written, own_group, target]),
         ));
     }
 }
@@ -217,7 +216,11 @@ pub fn link_group_names(
                 category: category.category_name,
                 name: name.to_owned(),
             };
-            let lint = places.finding(DiagnosticCode::UnresolvedLangKey, Severity::Info, &key);
+            let lint = places.finding(
+                DiagnosticCode::from(&core_codes::UNRESOLVED_LANG_KEY),
+                Severity::Info,
+                &key,
+            );
             out.push(lint.detail(DiagnosticDetail::Reference {
                 kind: "lang key",
                 id: name.to_owned(),

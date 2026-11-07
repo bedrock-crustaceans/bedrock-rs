@@ -4,8 +4,9 @@ use facet_value::VArray;
 use indexmap::IndexMap;
 
 use super::types::VectorEvents;
+use crate::codes;
 use crate::read::{Era, Members, Node, Opt, Reader, Writer, object, read_list};
-use crate::texts;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
@@ -111,14 +112,14 @@ object! {
         /// Events by the particle's age in seconds, the keys decimal strings (JSON
         /// `timeline`).
         opt timeline: IndexMap<String, VectorEvents> = "timeline",
-            Opt::NONE.wrong(texts::TIMELINE);
+            Opt::NONE.wrong(&codes::TIMELINE);
     }
 }
 
 /// A block list: the value of `minecraft:particle_expire_if_in_blocks` and its opposite.
 fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
     let Some(elements) = value.as_array() else {
-        r.wrong_type(value, Some(texts::NO_BLOCK_LIST));
+        r.wrong_type(value, Some(&codes::NO_BLOCK_LIST));
         return None;
     };
     let mut blocks = Vec::with_capacity(elements.len());
@@ -129,7 +130,7 @@ fn read_blocks(value: &Value, r: &mut Reader<'_>) -> Option<Vec<String>> {
                 blocks.push(name.as_str().to_owned());
                 places.push(i);
             }
-            None => r.index(i, |r| r.wrong_type(element, Some(texts::BLOCK_NOT_STRING))),
+            None => r.index(i, |r| r.wrong_type(element, Some(&codes::BLOCK_NOT_STRING))),
         }
     }
     r.kept(&places);
@@ -242,7 +243,7 @@ object! {
     /// particle hits something fast enough.
     pub struct CollisionEvent finish = collision_event {
         /// The event fired (JSON `event`, required).
-        req event: String = "event", Opt::NONE.missing(texts::NO_EVENT_FIELD);
+        req event: String = "event", Opt::NONE.missing(&codes::NO_EVENT_FIELD);
         /// The least speed of the hit, in blocks per second (JSON `min_speed`; default 2).
         opt min_speed: f32 = "min_speed", Opt::with_default(2.0), default 2.0;
     }
@@ -258,7 +259,10 @@ fn collision_event(event: &mut CollisionEvent, m: Members<'_>, r: &mut Reader<'_
     if r.legacy() && written && event.min_speed.is_none_or(|speed| speed < LEGACY_MIN_SPEED) {
         event.min_speed = Some(LEGACY_MIN_SPEED);
         r.key("min_speed", |r| {
-            r.push(DiagnosticCode::InvalidValue { text: None }, Severity::Info);
+            r.push(
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                Severity::Info,
+            );
         });
     }
 }
@@ -270,7 +274,7 @@ pub type CollisionEvents = OneOrMany<CollisionEvent>;
 
 impl Node for CollisionEvents {
     fn read(value: &Value, r: &mut Reader<'_>, o: Opt) -> Option<Self> {
-        let element = o.wrong(texts::EVENT_NOT_PAIR);
+        let element = o.wrong(&codes::EVENT_NOT_PAIR);
         // The legacy parser leaves out an entry without an `event` string.
         let usable = |event: &CollisionEvent, legacy: bool| !legacy || !event.event.is_empty();
         // An entry that is left out is noted where it is, at the information level: the
@@ -283,7 +287,10 @@ impl Node for CollisionEvents {
                 .is_some_and(|name| !name.as_str().is_empty())
         };
         let left_out = |r: &mut Reader<'_>| {
-            r.push(DiagnosticCode::DroppedField { text: None }, Severity::Info);
+            r.push(
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                Severity::Info,
+            );
         };
         if let Some(entries) = value.as_array() {
             let legacy = r.legacy();
@@ -311,7 +318,7 @@ impl Node for CollisionEvents {
             }
             return usable(&event, r.legacy()).then_some(Self::One(event));
         }
-        r.wrong_type(value, Some(texts::EVENTS_NOT_PAIRS));
+        r.wrong_type(value, Some(&codes::EVENTS_NOT_PAIRS));
         None
     }
 
@@ -334,19 +341,19 @@ object! {
         opt enabled: Molang = "enabled", Opt::with_default(1.0), default Molang::Const(1.0);
         /// How fast the particle slows down while it touches a block, in blocks per second
         /// squared (JSON `collision_drag`; default 0).
-        opt collision_drag: f32 = "collision_drag", Opt::NONE.wrong(texts::DRAG_NOT_FLOAT),
+        opt collision_drag: f32 = "collision_drag", Opt::NONE.wrong(&codes::DRAG_NOT_FLOAT),
             default 0.0;
         /// The bounciness, 0 to 1 (JSON `coefficient_of_restitution`; default 0).
         opt coefficient_of_restitution: f32 = "coefficient_of_restitution",
-            Opt::NONE.wrong(texts::RESTITUTION_NOT_FLOAT), default 0.0;
+            Opt::NONE.wrong(&codes::RESTITUTION_NOT_FLOAT), default 0.0;
         /// The radius the particle collides with, 0 to 0.5 (JSON `collision_radius`,
         /// required).
         req collision_radius: f32 = "collision_radius",
-            Opt::required(0.0).wrong(texts::RADIUS_NOT_FLOAT);
+            Opt::required(0.0).wrong(&codes::RADIUS_NOT_FLOAT);
         /// The particle expires when it hits something (JSON `expire_on_contact`; default
         /// `false`).
         opt expire_on_contact: bool = "expire_on_contact",
-            Opt::NONE.wrong(texts::EXPIRE_NOT_BOOL), default false;
+            Opt::NONE.wrong(&codes::EXPIRE_NOT_BOOL), default false;
         /// Events fired on a hit (JSON `events`).
         opt events: CollisionEvents = "events", Opt::NONE;
     }
@@ -360,12 +367,12 @@ fn collision(component: &mut ParticleMotionCollision, _: Members<'_>, r: &mut Re
         r.key("collision_radius", |r| {
             if r.legacy() {
                 r.warn(if radius < 0.0 {
-                    texts::RADIUS_TOO_SMALL
+                    &codes::RADIUS_TOO_SMALL
                 } else {
-                    texts::RADIUS_TOO_LARGE
+                    &codes::RADIUS_TOO_LARGE
                 });
             } else {
-                r.error(DiagnosticCode::InvalidValue { text: None });
+                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
             }
         });
         if r.legacy() {

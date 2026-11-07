@@ -8,9 +8,9 @@
 //! the component. Unknown members are kept among the document's unknown members, by the path
 //! of their level, with an `UnrecognizedField` warning in both modes.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Severity, Told,
-    VanillaText,
 };
 use bedrock_addon_core::json::{JsonSlice, NullRule, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
@@ -87,24 +87,18 @@ impl<'d> ComponentCheck<'d> {
     /// A broken rule at `at`: an error that drops the component in a strict read; in the lenient
     /// conversion an information of the crate's own, as the legacy readers check no bound (the game
     /// writes no content-log line for this), and `field` takes `default`.
-    pub(crate) fn invalid<T>(
-        &mut self,
-        at: &JsonPath,
-        field: &mut T,
-        default: T,
-        text: Option<VanillaText>,
-    ) {
+    pub(crate) fn invalid<T>(&mut self, at: &JsonPath, field: &mut T, default: T) {
         match self.mode {
             ConvertMode::Strict => {
                 self.failed = true;
-                self.push(DiagnosticCode::InvalidValue { text }, Severity::Error, at);
+                self.push((&core_codes::INVALID_VALUE).into(), Severity::Error, at);
             }
             ConvertMode::Lenient => {
                 *field = default;
                 // The legacy readers check no bound: the typed struct's rule is the crate's own, an
                 // information. Every caller passes no text (the game writes no content-log line for
                 // this).
-                self.push(DiagnosticCode::InvalidValue { text }, Severity::Info, at);
+                self.push((&core_codes::INVALID_VALUE).into(), Severity::Info, at);
             }
         }
     }
@@ -120,9 +114,9 @@ impl<'d> ComponentCheck<'d> {
     /// A broken rule at `at` with no field default to fall back to: an error that drops the
     /// component in a strict read, an information of the crate's own in the lenient conversion
     /// ([`ComponentCheck::invalid`]).
-    pub(crate) fn broken(&mut self, at: &JsonPath, text: Option<VanillaText>) {
+    pub(crate) fn broken(&mut self, at: &JsonPath) {
         let mut unit = ();
-        self.invalid(at, &mut unit, (), text);
+        self.invalid(at, &mut unit, ());
     }
 
     /// The schema bound `min ..= max` of a number at `at` ([`ComponentCheck::invalid`] outside it).
@@ -134,7 +128,7 @@ impl<'d> ComponentCheck<'d> {
         default: T,
     ) {
         if !(min <= *field && *field <= max) {
-            self.invalid(at, field, default, None);
+            self.invalid(at, field, default);
         }
     }
 
@@ -147,7 +141,7 @@ impl<'d> ComponentCheck<'d> {
         default: T,
     ) {
         if *field < min {
-            self.invalid(at, field, default, None);
+            self.invalid(at, field, default);
         }
     }
 
@@ -198,7 +192,7 @@ impl<'d> ComponentCheck<'d> {
                 ] {
                     if !missing {
                         let here = at.child(end);
-                        self.refuse(DiagnosticCode::UnrecognizedField { text: None }, &here);
+                        self.refuse(DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), &here);
                     }
                 }
                 return;
@@ -399,7 +393,7 @@ fn read_shaped<T: Typed>(
         // The legacy parser reads any string as the component of defaults; vanilla's own
         // files write `""`. A string that says something is read the same, and told
         // (an information: the game does it without a word).
-        d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }));
+        d.push(Diagnostic::of(&core_codes::INVALID_TYPE).severity(Severity::Info));
     }
     let Some(object) = shorthand.or_else(|| json.as_ref().and_then(Value::as_object).cloned())
     else {
@@ -408,18 +402,14 @@ fn read_shaped<T: Typed>(
             // crate's own (the game writes no content-log line for this): the legacy readers take
             // the members through const `Json::Value` access with defaults, and no line of the game
             // says it.
-            d.push(Diagnostic::info(DiagnosticCode::InvalidValue {
-                text: None,
-            }));
+            d.push(Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info));
             return None;
         }
         // Not an object (the typed read, strict): the typed read names the problem (a syntax
         // error, a wrong type).
         match crate::typed::read::<T>(slice, None) {
             Err(error) => d.push(crate::typed::finding(&error, Some(slice), Severity::Error)),
-            Ok(_) => d.push(Diagnostic::error(DiagnosticCode::InvalidType {
-                text: None,
-            })),
+            Ok(_) => d.push(Diagnostic::of(&core_codes::INVALID_TYPE)),
         }
         return None;
     };
@@ -475,7 +465,7 @@ fn read_shaped<T: Typed>(
         // The game logs an unknown member at level 2 (a warning) for the legacy slice; the
         // strict slice from 1.21.89 makes it an error: the slice's grade.
         d.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                 .severity(cx.grade(Class::Unknown))
                 .at(path.clone()),
         );
@@ -489,7 +479,7 @@ fn read_shaped<T: Typed>(
     };
     for path in misread {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
                 .at(path.clone())
                 .severity(misread_severity),
         );
@@ -543,7 +533,7 @@ pub(super) fn written<T: Typed>(
             ConvertMode::Strict => Severity::Error,
             ConvertMode::Lenient => Severity::Info,
         };
-        d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).severity(severity));
+        d.push(Diagnostic::of(&core_codes::INVALID_VALUE).severity(severity));
     }
     text
 }

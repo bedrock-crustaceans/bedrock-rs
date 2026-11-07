@@ -3,9 +3,9 @@
 
 use indexmap::IndexMap;
 
-use super::{AimAssistCategories, AimAssistPreset, texts};
+use super::{AimAssistCategories, AimAssistPreset, codes};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_core::versioning::shape::{child, element, error, in_range, violation};
@@ -14,7 +14,11 @@ use bedrock_addon_core::versioning::shape::{child, element, error, in_range, vio
 /// value"; a number above 100 is a range violation.
 fn priority(value: i32, at: JsonPath, d: &mut Diagnostics) -> bool {
     if value < 0 {
-        violation(texts::INVALID_NUMERIC, at, d);
+        violation(
+            bedrock_addon_core::diagnostic::cereal::INVALID_NUMERIC_VALUE_TEXT,
+            at,
+            d,
+        );
         return false;
     }
     in_range(f64::from(value), 0.0, 100.0, at, d)
@@ -74,26 +78,18 @@ fn valid_namespace_format(id: &str) -> bool {
 /// (`format`): an `InvalidValue` error with vanilla's text.
 fn namespaced(
     id: &str,
-    missing: &'static str,
-    format: &'static str,
+    missing: &'static CodeDef<1>,
+    format: &'static CodeDef<1>,
     at: JsonPath,
 ) -> Option<Diagnostic> {
-    let template = if namespace(id).is_empty() {
+    let code = if namespace(id).is_empty() {
         missing
     } else if valid_namespace_format(id) {
         return None;
     } else {
         format
     };
-    let mut finding = error(
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted {
-                template,
-                args: vec![id.to_owned()],
-            }),
-        },
-        at,
-    );
+    let mut finding = error(DiagnosticCode::from(code.with([id])), at);
     finding.phase = Phase::Validate;
     Some(finding)
 }
@@ -104,15 +100,15 @@ pub(crate) fn preset_namespaces(preset: &AimAssistPreset, cx: &mut ValidateCx<'_
     let at = child(&cx.at, "minecraft:aim_assist_preset");
     let identifier = namespaced(
         preset.identifier.as_str(),
-        texts::PRESET_NAMESPACE,
-        texts::PRESET_FORMAT,
+        &codes::PRESET_NAMESPACE,
+        &codes::PRESET_FORMAT,
         child(&at, "identifier"),
     );
     let category = |id: &str, at: JsonPath| {
         namespaced(
             id,
-            texts::CATEGORY_ID_NAMESPACE,
-            texts::CATEGORY_ID_FORMAT,
+            &codes::CATEGORY_ID_NAMESPACE,
+            &codes::CATEGORY_ID_FORMAT,
             at,
         )
     };
@@ -154,8 +150,8 @@ pub(crate) fn category_namespaces(file: &AimAssistCategories, cx: &mut ValidateC
         .find_map(|(i, category)| {
             namespaced(
                 category.name.as_str(),
-                texts::CATEGORY_NAMESPACE,
-                texts::CATEGORY_FORMAT,
+                &codes::CATEGORY_NAMESPACE,
+                &codes::CATEGORY_FORMAT,
                 child(&element(&categories, i), "name"),
             )
         });

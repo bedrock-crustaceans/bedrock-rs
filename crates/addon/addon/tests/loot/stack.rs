@@ -1,7 +1,7 @@
 //! `bp.loot_tables()`: `loot_tables/**/*.json` of every behaviour pack, keyed by path, the top
 //! pack's copy winning.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::loot::RandomValueBounds;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack};
@@ -54,10 +54,7 @@ fn a_failing_top_copy_leaves_the_path_without_a_table() {
         .filter(|d| d.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(
-        errors[0].code,
-        DiagnosticCode::MalformedInput { .. }
-    ));
+    assert_eq!(errors[0].code.name(), "MalformedInput");
     assert_eq!(
         errors[0].location.path.as_ref().unwrap().as_str(),
         "loot_tables/chests/x.json"

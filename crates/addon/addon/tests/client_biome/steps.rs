@@ -1,7 +1,7 @@
 //! The steps of `families::client_biome::history`: the steps key on the identifier, so each test
 //! runs its step for other biomes than the step's base.
 
-use bedrock_addon::diagnostic::DiagnosticCode as Code;
+use bedrock_addon::diagnostic::codes;
 use bedrock_addon::families::client_biome::history::{
     v1_21_40, v1_21_70, v1_21_90, v1_21_100, v1_21_110, v1_21_120,
 };
@@ -94,7 +94,7 @@ fn the_1_21_40_step_misses_the_tables_for_a_bare_identifier() {
     let missed = bare
         .diagnostics
         .iter()
-        .filter(|d| matches!(d.code, Code::UpgradeTableMissedBareIdentifier))
+        .filter(|d| d.code.is(&codes::UPGRADE_TABLE_MISSED_BARE_IDENTIFIER))
         .count();
     assert!(missed == 3, "each missed table is reported");
 }
@@ -126,7 +126,7 @@ fn the_1_21_70_step_namespaces_a_bare_identifier() {
     assert!(
         bare.diagnostics
             .iter()
-            .any(|d| matches!(d.code, Code::IdentifierNamespaced)),
+            .any(|d| d.code.is(&codes::IDENTIFIER_NAMESPACED)),
         "and the step says so",
     );
     let kept = run("1.21.70", "myns:glade", "");
@@ -135,7 +135,7 @@ fn the_1_21_70_step_namespaces_a_bare_identifier() {
             && !kept
                 .diagnostics
                 .iter()
-                .any(|d| matches!(d.code, Code::IdentifierNamespaced)),
+                .any(|d| d.code.is(&codes::IDENTIFIER_NAMESPACED)),
         "a namespaced identifier is kept",
     );
     // The inserts after it see the namespaced identifier.

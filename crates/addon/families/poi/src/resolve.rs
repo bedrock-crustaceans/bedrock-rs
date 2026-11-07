@@ -4,6 +4,7 @@
 use indexmap::{IndexMap, IndexSet};
 
 use super::validate::part_of_a_cycle;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
@@ -135,7 +136,7 @@ fn read_edges(
             for (i, other) in list.iter().enumerate() {
                 match resolved.tags.get_index_of(other) {
                     None => findings.push(finding::<kind::PoiTag>(
-                        DiagnosticCode::UnresolvedReference { text: None },
+                        DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
                         &record.origin,
                         entry("minecraft:poi_tag", key, i),
                         other,
@@ -319,7 +320,7 @@ fn claim_blocks(types: &[TypeRecord], resolved: &mut Resolved, findings: &mut Di
             let earlier = resolved.blocks.insert(block.clone(), record.id.clone());
             if let Some(earlier) = earlier {
                 findings.push(finding::<kind::PoiType>(
-                    DiagnosticCode::PoiBlockClaimedTwice,
+                    DiagnosticCode::from(&core_codes::POI_BLOCK_CLAIMED_TWICE),
                     &record.origin,
                     entry("minecraft:poi_block", "blocks", i),
                     &earlier,

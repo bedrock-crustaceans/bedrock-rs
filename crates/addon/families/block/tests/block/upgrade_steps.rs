@@ -1,7 +1,6 @@
 //! Behaviours of single `Upgrade` steps of the block chain, run on a hand-built input through
 //! `versioning::testing::step_output`.
 
-use bedrock_addon_core::diagnostic::DiagnosticCode;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon_family_block::history::v1_18_0;
@@ -50,7 +49,8 @@ fn light_emission_scales_to_fifteen_and_clamps() {
     assert!(
         out.diagnostics
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::ClampedValue { .. })),
+            // By legacy name: the variant and the definitions that were it.
+            .any(|d| d.code.name() == "ClampedValue"),
         "the clamp is reported"
     );
 }

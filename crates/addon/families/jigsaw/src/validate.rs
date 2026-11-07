@@ -2,55 +2,46 @@
 //! (element redefinition, pool names) run when the group combines (`lib.rs`); the references
 //! are the link pass's (`link.rs`).
 
+use super::codes;
 use super::{
     BlockEntityModifier, CappedDelegate, JigsawStructure, Processor, ProcessorList, ProcessorRule,
     StructureSet, TemplatePool,
 };
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    CodeDef, Diagnostic, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{Content, JsonPlaced};
 use bedrock_addon_core::load::LoadContext;
 
-/// What a family's identifier failure says after the identifier check's own reason.
-pub(crate) const STRUCTURE_REGISTER: &str =
-    "Identifier '{}' failed validation when registering jigsaw structure json";
-/// The template pool's.
-pub(crate) const POOL_REGISTER: &str =
-    "Identifier '{}' failed validation when registering jigsaw structure template pool json";
-/// The structure set's (also for a set entry).
-pub(crate) const SET_REGISTER: &str =
-    "Identifier '{}' failed validation when registering jigsaw structure set json";
-/// The processor list's.
-pub(crate) const PROCESSORS_REGISTER: &str =
-    "Identifier '{}' failed validation when registering jigsaw structure processor list json";
+/// The texts of an identifier without a namespace.
+static NO_NAMESPACE: &[&CodeDef<0>] = &[&codes::NO_NAMESPACE];
+/// The texts of an empty namespace or name, or a second `:`.
+static INVALID_IDENTIFIER: &[&CodeDef<0>] = &[&codes::INVALID_IDENTIFIER];
+/// The texts of an illegal character in the namespace.
+static NAMESPACE_INVALID: &[&CodeDef<0>] = &[&codes::ILLEGAL_CHARACTERS, &codes::NAMESPACE_INVALID];
+/// The texts of an illegal character in the name.
+static NAME_INVALID: &[&CodeDef<0>] = &[&codes::ILLEGAL_CHARACTERS, &codes::NAME_INVALID];
 
 /// Why the game's identifier check (which allows the `minecraft` namespace) rejects `id`, in
 /// the order it checks: `None` when it accepts it; the texts it logs
 /// otherwise (none for an empty identifier). Only space, tab, LF and CR are illegal characters;
 /// case, `.`, `/` and `-` pass.
-pub(crate) fn identifier_failure(id: &str) -> Option<&'static [&'static str]> {
+pub(crate) fn identifier_failure(id: &str) -> Option<&'static [&'static CodeDef<0>]> {
     let illegal = |s: &str| s.contains([' ', '\t', '\n', '\r']);
     if id.is_empty() {
         return Some(&[]);
     }
     let Some((namespace, name)) = id.split_once(':') else {
-        return Some(&["Identifier must have a namespace"]);
+        return Some(NO_NAMESPACE);
     };
     if namespace.is_empty() || name.is_empty() || name.contains(':') {
-        return Some(&["Invalid identifier"]);
+        return Some(INVALID_IDENTIFIER);
     }
     if illegal(namespace) {
-        return Some(&[
-            "Identifier cannot have illegal characters",
-            "Namespace is invalid",
-        ]);
+        return Some(NAMESPACE_INVALID);
     }
     if illegal(name) {
-        return Some(&[
-            "Identifier cannot have illegal characters",
-            "Identifier name is invalid",
-        ]);
+        return Some(NAME_INVALID);
     }
     None
 }
@@ -59,7 +50,7 @@ pub(crate) fn identifier_failure(id: &str) -> Option<&'static [&'static str]> {
 /// naming the identifier; each `InvalidValue` at `severity`, at `at`.
 pub(crate) fn identifier_findings(
     id: &str,
-    register: &'static str,
+    register: &'static CodeDef<1>,
     severity: Severity,
     at: &JsonPath,
 ) -> Option<Diagnostics> {
@@ -67,24 +58,17 @@ pub(crate) fn identifier_findings(
     let mut d = Diagnostics::default();
     for reason in reasons {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(reason)),
-            })
-            .severity(severity)
-            .at(at.clone())
-            .phase(Phase::Validate),
+            Diagnostic::of(*reason)
+                .severity(severity)
+                .at(at.clone())
+                .phase(Phase::Validate),
         );
     }
     d.push(
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted {
-                template: register,
-                args: vec![id.to_owned()],
-            }),
-        })
-        .severity(severity)
-        .at(at.clone())
-        .phase(Phase::Validate),
+        Diagnostic::of(register.with([id]))
+            .severity(severity)
+            .at(at.clone())
+            .phase(Phase::Validate),
     );
     Some(d)
 }
@@ -98,7 +82,7 @@ pub(crate) fn failed_registration(diagnostics: &Diagnostics) -> bool {
 }
 
 /// Checks the document's own identifier; an error, the document is not registered.
-fn check_identifier(id: &str, register: &'static str, at: &JsonPath, d: &mut Diagnostics) {
+fn check_identifier(id: &str, register: &'static CodeDef<1>, at: &JsonPath, d: &mut Diagnostics) {
     let at = at.with(&["description", "identifier"]);
     if let Some(found) = identifier_findings(id, register, Severity::Error, &at) {
         d.extend(found);
@@ -109,7 +93,7 @@ fn check_identifier(id: &str, register: &'static str, at: &JsonPath, d: &mut Dia
 pub(crate) fn structure(value: &JigsawStructure, at: &JsonPath, d: &mut Diagnostics) {
     check_identifier(
         value.description.identifier.as_str(),
-        STRUCTURE_REGISTER,
+        &codes::STRUCTURE_REGISTER,
         at,
         d,
     );
@@ -117,17 +101,22 @@ pub(crate) fn structure(value: &JigsawStructure, at: &JsonPath, d: &mut Diagnost
     // hard-coded structures, which the data path does not run, so the crate reports it as
     // an information of its own. The document stays loaded, as in the game.
     if value.start_pool.as_str().is_empty() {
-        d.push(Diagnostic::info(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(
-                    "[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure",
-                )),
-            }).at(at.with(&["start_pool"])).phase(Phase::Validate));
+        d.push(
+            Diagnostic::of(&codes::START_POOL_EMPTY)
+                .at(at.with(&["start_pool"]))
+                .phase(Phase::Validate),
+        );
     }
 }
 
 /// The checks of a template pool: the identifier.
 pub(crate) fn pool(value: &TemplatePool, at: &JsonPath, d: &mut Diagnostics) {
-    check_identifier(value.description.identifier.as_str(), POOL_REGISTER, at, d);
+    check_identifier(
+        value.description.identifier.as_str(),
+        &codes::POOL_REGISTER,
+        at,
+        d,
+    );
 }
 
 /// The checks of a structure set: the identifier, each entry's identifier (an entry the
@@ -135,7 +124,7 @@ pub(crate) fn pool(value: &TemplatePool, at: &JsonPath, d: &mut Diagnostics) {
 /// log's error level and goes on, the set kept) and the spacing against the separation.
 pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) {
     let id = value.description.identifier.as_str().to_owned();
-    check_identifier(&id, SET_REGISTER, at, d);
+    check_identifier(&id, &codes::SET_REGISTER, at, d);
     let mut kept = Vec::with_capacity(value.structures.len());
     let mut places = Vec::with_capacity(value.structures.len());
     for (i, entry) in std::mem::take(&mut value.structures)
@@ -145,7 +134,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
         let path = at.child("structures").index(i).child("structure");
         if let Some(found) = identifier_findings(
             entry.structure.as_str(),
-            SET_REGISTER,
+            &codes::SET_REGISTER,
             Severity::Error,
             &path,
         ) {
@@ -161,12 +150,11 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
     // The spacing must be more than twice the separation.
     let placement = &value.placement;
     if u32::from(placement.spacing) <= 2 * u32::from(placement.separation) {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Formatted {
-                    template: "Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.",
-                    args: vec![id],
-                }),
-            }).at(at.with(&["placement"])).phase(Phase::Validate));
+        d.push(
+            Diagnostic::of(codes::SPACING_SEPARATION.with([id]))
+                .at(at.with(&["placement"]))
+                .phase(Phase::Validate),
+        );
     }
 }
 
@@ -175,7 +163,7 @@ pub(crate) fn set(value: &mut StructureSet, at: &JsonPath, d: &mut Diagnostics) 
 pub(crate) fn processors(value: &mut ProcessorList, at: &JsonPath, d: &mut Diagnostics) {
     check_identifier(
         value.description.identifier.as_str(),
-        PROCESSORS_REGISTER,
+        &codes::PROCESSORS_REGISTER,
         at,
         d,
     );
@@ -207,11 +195,9 @@ fn empty_loot(rules: &mut [ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             // The game logs it at the content log's error level and carries on with the
             // modifier cleared: a kept error.
             d.push_kept_error(
-                Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Fixed("Empty loot table")),
-                })
-                .at(path)
-                .phase(Phase::Validate),
+                Diagnostic::of(&codes::EMPTY_LOOT_TABLE)
+                    .at(path)
+                    .phase(Phase::Validate),
             );
             rule.block_entity_modifier = None;
         }
@@ -231,13 +217,8 @@ pub(crate) fn validate_detached<T: JsonPlaced>(value: &T, cx: &LoadContext) -> D
         },
         Err(error) => {
             let mut findings = Diagnostics::default();
-            findings.push(
-                Diagnostic::error(DiagnosticCode::MalformedInput {
-                    message: error.to_string(),
-                    text: None,
-                })
-                .phase(Phase::Validate),
-            );
+            findings
+                .push(Diagnostic::of(builders::syntax(error.to_string())).phase(Phase::Validate));
             findings
         }
     }

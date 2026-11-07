@@ -3,6 +3,7 @@
 
 use super::legacy::{BlockPayload, input_check_failed, number};
 use super::ops::{clamp, real};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, Versioned};
@@ -63,11 +64,9 @@ impl LegacyStep<1, 19, 10> for BlockPayload {
                             super::legacy::component_path(section, "minecraft:creative_category");
                         at.push(key.as_str());
                         d.push(
-                            Diagnostic::info(
-                                bedrock_addon_core::diagnostic::DiagnosticCode::UnrecognizedField {
-                                    text: None,
-                                },
-                            )
+                            Diagnostic::info(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                                &core_codes::UNRECOGNIZED_FIELD,
+                            ))
                             .at(at.clone())
                             .phase(Phase::Upgrade),
                         );

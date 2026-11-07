@@ -3,14 +3,16 @@
 
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::PackPath;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::file::{KeyRules, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey};
 use super::list::MaterialListKind;
 use super::set::NameSet;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, Severity,
 };
 
 /// Which group of the client a [`MaterialGroup`] is.
@@ -511,7 +513,7 @@ impl MaterialGroup {
                 let finding = if key.extend {
                     unresolved(source.path, &[text], MATERIAL, &key.name)
                 } else {
-                    warn(DiagnosticCode::DuplicateIdentifier { text: None })
+                    warn(DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER))
                 };
                 out.push((index, finding));
                 false
@@ -520,7 +522,7 @@ impl MaterialGroup {
             // silence.
             Some(Slot::Created(_)) if !key.extend => {
                 if !again {
-                    let code = DiagnosticCode::DuplicateIdentifier { text: None };
+                    let code = DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER);
                     out.push((index, warn(code)));
                 }
                 false
@@ -595,9 +597,6 @@ const MATERIAL: &str = "material";
 /// The kind a reference to a variant is reported with.
 const VARIANT: &str = "material variant";
 
-/// The client's engine-log text for a variant that replaces one of the same name.
-pub(super) const VARIANT_REPLACED: &str = "Variant: {} was replaced with a new version";
-
 /// An index as the group stores it.
 fn index_of(index: usize) -> u32 {
     u32::try_from(index).unwrap_or(u32::MAX)
@@ -635,7 +634,7 @@ fn at_key(path: &PackPath, text: &str, code: DiagnosticCode, severity: Severity)
 /// `id`, a `kind`, resolves to nothing; reported at the keys `keys`.
 fn unresolved(path: &PackPath, keys: &[&str], kind: &'static str, id: &str) -> Diagnostic {
     let segments: Vec<Segment<'_>> = keys.iter().map(|key| Segment::Key(key)).collect();
-    let code = DiagnosticCode::UnresolvedReference { text: None };
+    let code = DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE);
     let mut finding = at(path, &segments, code, Severity::Info);
     finding.detail = Some(Box::new(DiagnosticDetail::Reference {
         kind,
@@ -681,7 +680,7 @@ fn apply_variants(
             if let Some((outer, _)) = name.rsplit_once('.')
                 && !variants.contains(outer)
             {
-                let code = DiagnosticCode::UnresolvedReference { text: None };
+                let code = DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE);
                 let mut finding = at(path, &place, code, Severity::Info);
                 finding.detail = Some(Box::new(DiagnosticDetail::Reference {
                     kind: VARIANT,
@@ -693,11 +692,7 @@ fn apply_variants(
             }
             let (with, was_there) = variants.with(name);
             if was_there {
-                let text = VanillaText::Formatted {
-                    template: VARIANT_REPLACED,
-                    args: vec![name.clone()],
-                };
-                let code = DiagnosticCode::ShadowedDefinition { text: Some(text) };
+                let code = codes::VARIANT_REPLACED.with([name.as_str()]).into();
                 out.push((index, at(path, &place, code, Severity::Info)));
             } else {
                 own.added.push(name.clone());

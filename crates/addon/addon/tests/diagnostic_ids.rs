@@ -11,8 +11,190 @@ fn tables() -> Vec<(&'static str, &'static [&'static CodeMeta])> {
     let tables: Vec<(&'static str, &'static [&'static CodeMeta])> = vec![
         ("core", bedrock_addon::diagnostic::codes::ALL),
         ("pack_settings", bedrock_addon::pack::settings::codes::ALL),
+        #[cfg(feature = "music")]
+        ("music", bedrock_addon::families::music::codes::ALL),
+        #[cfg(feature = "ui_texture_info")]
+        (
+            "ui_texture_info",
+            bedrock_addon::families::ui_texture_info::codes::ALL,
+        ),
+        #[cfg(feature = "loading_messages")]
+        (
+            "loading_messages",
+            bedrock_addon::families::loading_messages::codes::ALL,
+        ),
+        #[cfg(feature = "credits")]
+        ("credits", bedrock_addon::families::credits::codes::ALL),
+        #[cfg(feature = "dimension")]
+        ("dimension", bedrock_addon::families::dimension::codes::ALL),
+        #[cfg(feature = "server_sound_definitions")]
+        (
+            "server_sound_definitions",
+            bedrock_addon::families::server_sound_definitions::codes::ALL,
+        ),
+        #[cfg(feature = "flipbooks")]
+        ("flipbooks", bedrock_addon::families::flipbooks::codes::ALL),
+        #[cfg(feature = "texture_list")]
+        (
+            "texture_list",
+            bedrock_addon::families::texture_list::codes::ALL,
+        ),
+        #[cfg(feature = "spawn_rules")]
+        (
+            "spawn_rules",
+            bedrock_addon::families::spawn_rules::codes::ALL,
+        ),
+        #[cfg(feature = "spawn_groups")]
+        (
+            "spawn_groups",
+            bedrock_addon::families::spawn_groups::codes::ALL,
+        ),
+        #[cfg(any(feature = "spawn_rules", feature = "spawn_groups"))]
+        ("spawn", bedrock_addon::shared::spawn::codes::ALL),
+        #[cfg(feature = "feature_rules")]
+        (
+            "feature_rules",
+            bedrock_addon::families::feature_rules::codes::ALL,
+        ),
+        #[cfg(feature = "aim_assist")]
+        (
+            "aim_assist",
+            bedrock_addon::families::aim_assist::codes::ALL,
+        ),
+        #[cfg(feature = "function")]
+        ("function", bedrock_addon::families::function::codes::ALL),
+        #[cfg(feature = "voxel_shape")]
+        (
+            "voxel_shape",
+            bedrock_addon::families::voxel_shape::codes::ALL,
+        ),
+        #[cfg(feature = "skin")]
+        ("skin", bedrock_addon::families::skin::codes::ALL),
+        #[cfg(feature = "attachable")]
+        (
+            "attachable",
+            bedrock_addon::families::attachable::codes::ALL,
+        ),
+        #[cfg(feature = "atomic_client_entity")]
+        (
+            "atomic_client_entity",
+            bedrock_addon::families::atomic_client_entity::codes::ALL,
+        ),
+        ("visual", bedrock_addon::visual::codes::ALL),
+        ("shapes", bedrock_addon::shared::codes::ALL),
+        #[cfg(feature = "jigsaw")]
+        ("jigsaw", bedrock_addon::families::jigsaw::codes::ALL),
+        #[cfg(feature = "structure")]
+        ("structure", bedrock_addon::families::structure::codes::ALL),
+        #[cfg(feature = "crafting_catalog")]
+        (
+            "crafting_catalog",
+            bedrock_addon::families::crafting_catalog::codes::ALL,
+        ),
+        #[cfg(feature = "blocks_json")]
+        (
+            "blocks_json",
+            bedrock_addon::families::blocks_json::codes::ALL,
+        ),
+        #[cfg(feature = "feature")]
+        ("feature", bedrock_addon::families::feature::codes::ALL),
+        #[cfg(feature = "biome")]
+        ("biome", bedrock_addon::families::biome::codes::ALL),
+        #[cfg(feature = "client_biome")]
+        (
+            "client_biome",
+            bedrock_addon::families::client_biome::codes::ALL,
+        ),
+        #[cfg(feature = "block")]
+        ("block", bedrock_addon::families::block::codes::ALL),
+        #[cfg(feature = "fog")]
+        ("fog", bedrock_addon::families::fog::codes::ALL),
+        #[cfg(feature = "dialogue")]
+        ("dialogue", bedrock_addon::families::dialogue::codes::ALL),
+        #[cfg(feature = "block_culling")]
+        (
+            "block_culling",
+            bedrock_addon::families::block_culling::codes::ALL,
+        ),
+        #[cfg(feature = "texture_atlas")]
+        (
+            "texture_atlas",
+            bedrock_addon::families::texture_atlas::codes::ALL,
+        ),
+        #[cfg(feature = "texture_set")]
+        (
+            "texture_set",
+            bedrock_addon::families::texture_set::codes::ALL,
+        ),
+        #[cfg(feature = "camera")]
+        ("camera", bedrock_addon::families::camera::codes::ALL),
+        #[cfg(feature = "font")]
+        ("font", bedrock_addon::families::font::codes::ALL),
+        #[cfg(feature = "sounds_json")]
+        (
+            "sounds_json",
+            bedrock_addon::families::sounds_json::codes::ALL,
+        ),
+        #[cfg(feature = "animation_controller")]
+        (
+            "animation_controller",
+            bedrock_addon::families::animation_controller::codes::ALL,
+        ),
+        #[cfg(feature = "render_controller")]
+        (
+            "render_controller",
+            bedrock_addon::families::render_controller::codes::ALL,
+        ),
+        #[cfg(feature = "poi")]
+        ("poi", bedrock_addon::families::poi::codes::ALL),
+        #[cfg(feature = "behavior_tree")]
+        (
+            "behavior_tree",
+            bedrock_addon::families::behavior_tree::codes::ALL,
+        ),
+        #[cfg(feature = "sound_definitions")]
+        (
+            "sound_definitions",
+            bedrock_addon::families::sound_definitions::codes::ALL,
+        ),
+        #[cfg(feature = "lang")]
+        ("lang", bedrock_addon::families::lang::codes::ALL),
+        #[cfg(feature = "script")]
+        ("script", bedrock_addon::families::script::codes::ALL),
+        #[cfg(feature = "server_config")]
+        (
+            "server_config",
+            bedrock_addon::families::server_config::codes::ALL,
+        ),
         // wave 2: one line per family, in the group's commit for that family, e.g.
         // #[cfg(feature = "fog")] ("fog", bedrock_addon::families::fog::codes::ALL),
+        #[cfg(feature = "persona")]
+        ("persona", bedrock_addon::families::persona::codes::ALL),
+        #[cfg(feature = "material")]
+        ("material", bedrock_addon::families::material::codes::ALL),
+        #[cfg(feature = "deferred_settings")]
+        (
+            "deferred_settings",
+            bedrock_addon::families::deferred_settings::codes::ALL,
+        ),
+        #[cfg(feature = "trade")]
+        ("trade", bedrock_addon::families::trade::codes::ALL),
+        #[cfg(feature = "loot")]
+        ("loot", bedrock_addon::families::loot::codes::ALL),
+        #[cfg(feature = "ddui")]
+        ("ddui", bedrock_addon::families::ddui::codes::ALL),
+        #[cfg(feature = "item")]
+        ("item", bedrock_addon::families::item::codes::ALL),
+        #[cfg(feature = "geometry")]
+        ("geometry", bedrock_addon::families::geometry::codes::ALL),
+        #[cfg(feature = "particle")]
+        ("particle", bedrock_addon::families::particle::codes::ALL),
+        #[cfg(feature = "recipe")]
+        ("recipe", bedrock_addon::families::recipe::codes::ALL),
+        #[cfg(feature = "json_ui")]
+        ("json_ui", bedrock_addon::families::json_ui::codes::ALL),
+        #[cfg(feature = "entity")]
+        ("entity", bedrock_addon::families::entity::codes::ALL),
     ];
     tables
 }

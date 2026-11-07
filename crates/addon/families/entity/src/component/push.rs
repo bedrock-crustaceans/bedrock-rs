@@ -34,7 +34,7 @@ impl Typed for ApplyKnockbackRules {
         let at = JsonPath::new().child("presets");
         if self.presets.is_empty() {
             // The game accepts an empty list; the crate's own check refuses it.
-            cx.broken(&at, None);
+            cx.broken(&at);
         }
         for (i, preset) in self.presets.iter_mut().enumerate() {
             preset.check(&at.index(i), cx);

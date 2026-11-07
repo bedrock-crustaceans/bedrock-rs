@@ -1,16 +1,16 @@
 //! Format 1.26.0: `liquid_detection.detection_rules[].use_liquid_clipping`. Its step is the
 //! conversion to the 1.26.20 document.
 
+use crate::codes;
 use indexmap::IndexMap;
 
-use super::legacy::{BlockPayload, component_path, fixed, string, text, to_object};
+use super::legacy::{BlockPayload, component_path, string, to_object};
 use super::ops::{dropped_field, geometry_identifier, is_opaque};
 use super::v1_20_10::FULL_BLOCK;
 use crate::component::BlockComponent;
 use crate::read::parse_document;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{ComponentRef, Unknown};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -107,11 +107,9 @@ impl LegacyStep<1, 26, 0> for BlockPayload {
                 if !strings_where_expected(&node) {
                     // The game's event reader rejects a node that holds a non-string value.
                     cx.diagnostics.push(
-                        Diagnostic::error(DiagnosticCode::InvalidType {
-                            text: fixed("Invalid, nonstring Json "),
-                        })
-                        .at(JsonPath::new().with(&["minecraft:block", "events", &name]))
-                        .phase(Phase::Upgrade),
+                        Diagnostic::of(&codes::NONSTRING_JSON)
+                            .at(JsonPath::new().with(&["minecraft:block", "events", &name]))
+                            .phase(Phase::Upgrade),
                     );
                 }
                 // What the side-car's reader tells of the handler is told of the event the
@@ -139,7 +137,8 @@ fn drop_crate_members(block: &mut BlockPayload, d: &mut Diagnostics) {
     for key in ["deprecated", "deprecated_event_handlers"] {
         if d.unknown_mut().take(&payload, key).is_some() {
             d.push(
-                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
                     .at(payload.with(&[key]))
                     .phase(Phase::Upgrade),
             );
@@ -151,7 +150,8 @@ fn drop_crate_members(block: &mut BlockPayload, d: &mut Diagnostics) {
         if d.unknown_mut().take(&at, "deprecated").is_some() {
             at.push("deprecated");
             d.push(
-                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
                     .at(at.clone())
                     .phase(Phase::Upgrade),
             );
@@ -211,15 +211,13 @@ fn gates(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagnostics)
         .is_some_and(|s| s.as_object().is_none_or(|o| !o.is_empty()));
     if original < STATES_FROM {
         if block.description.shift_remove("states").is_some() {
-            dropped_field(&description("states"), None, d);
+            dropped_field(&description("states"), d);
         }
     } else if original < STATES_STRICT_FROM && has_states {
         d.push(
-            Diagnostic::error(DiagnosticCode::MissingToggles {
-                text: fixed("To use custom block properties, use format version 1.19.70 or higher"),
-            })
-            .at(description("states"))
-            .phase(Phase::Upgrade),
+            Diagnostic::of(&codes::CUSTOM_PROPERTIES_VERSION)
+                .at(description("states"))
+                .phase(Phase::Upgrade),
         );
     }
     if original == STATES_FROM && !block.permutations.is_empty() {
@@ -227,21 +225,13 @@ fn gates(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagnostics)
         // The game logs this at the content log's error level and goes on with the
         // permutations skipped: a kept error.
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::MissingToggles {
-                text: fixed(
-                    "To use custom block permutations, use format verison 1.19.70 or higher.",
-                ),
-            })
-            .at(JsonPath::new().with(&["minecraft:block", "permutations"]))
-            .phase(Phase::Upgrade),
+            Diagnostic::of(&codes::CUSTOM_PERMUTATIONS_VERSION)
+                .at(JsonPath::new().with(&["minecraft:block", "permutations"]))
+                .phase(Phase::Upgrade),
         );
     }
     if block.events.take().is_some() {
-        dropped_field(
-            &JsonPath::new().with(&["minecraft:block", "events"]),
-            None,
-            d,
-        );
+        dropped_field(&JsonPath::new().with(&["minecraft:block", "events"]), d);
     }
     let mut unrecognized = Vec::new();
     for (section, map) in block.sections_mut() {
@@ -254,7 +244,8 @@ fn gates(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagnostics)
     }
     for (section, name) in unrecognized {
         d.push(
-            Diagnostic::info(DiagnosticCode::UnrecognizedComponent { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_COMPONENT)
+                .severity(Severity::Info)
                 .at(component_path(section, &name))
                 .phase(Phase::Upgrade),
         );
@@ -280,14 +271,9 @@ fn deprecations(block: &mut BlockPayload, original: FormatVersion, d: &mut Diagn
     // block is kept: a kept error.
     for (section, name, since) in removed {
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::DeprecatedMember {
-                text: text(
-                    "{} component is not valid from {} onward.",
-                    &[name, &since.to_string()],
-                ),
-            })
-            .at(component_path(section, name))
-            .phase(Phase::Upgrade),
+            Diagnostic::of(codes::COMPONENT_NOT_VALID_FROM.with([name, &since.to_string()]))
+                .at(component_path(section, name))
+                .phase(Phase::Upgrade),
         );
     }
 }
@@ -343,7 +329,7 @@ fn side_car(
         let at = component_path(section, &key);
         if !lcf {
             d.push(
-                Diagnostic::error(DiagnosticCode::MissingToggles { text: None })
+                Diagnostic::of(&core_codes::MISSING_TOGGLES)
                     .severity(if section.is_none() {
                         Severity::Error
                     } else {
@@ -355,12 +341,10 @@ fn side_car(
             return None;
         }
         d.push(
-            Diagnostic::info(DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::Deprecated {
-                    member: key.clone(),
-                    version: known::V1_26_20,
-                }),
-            })
+            Diagnostic::of(
+                core_codes::DEPRECATED_IN_FORMAT.with([key.clone(), known::V1_26_20.to_string()]),
+            )
+            .severity(Severity::Info)
             .at(at.clone())
             .phase(Phase::Upgrade),
         );
@@ -415,7 +399,8 @@ fn queued_ticking(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Value {
             let mut element = at.with(&["interval_range"]);
             element.push_index(index);
             d.push(
-                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
                     .at(element.clone())
                     .phase(Phase::Upgrade),
             );
@@ -456,7 +441,8 @@ fn convert_tags(map: &mut IndexMap<String, Value>, section: Option<usize>, d: &m
             .is_some_and(facet_value::VObject::is_empty)
         {
             d.push(
-                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
                     .at(component_path(section, key))
                     .phase(Phase::Upgrade),
             );
@@ -521,11 +507,9 @@ fn conditions(block: &BlockPayload, d: &mut Diagnostics) {
             at.push_index(index);
             at.push("condition");
             d.push(
-                Diagnostic::error(DiagnosticCode::InvalidType {
-                    text: fixed("permutation condition must be a string value"),
-                })
-                .at(at.clone())
-                .phase(Phase::Upgrade),
+                Diagnostic::of(&codes::CONDITION_NOT_STRING)
+                    .at(at.clone())
+                    .phase(Phase::Upgrade),
             );
         }
     }
@@ -692,7 +676,7 @@ fn convert(
                 place.append(at);
             }
             cx.diagnostics.push(
-                Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+                Diagnostic::of(&core_codes::INVALID_VALUE)
                     .at(place.clone())
                     .phase(Phase::Upgrade),
             );

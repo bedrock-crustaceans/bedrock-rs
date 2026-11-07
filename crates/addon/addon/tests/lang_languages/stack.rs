@@ -2,7 +2,7 @@
 //! the merge rules across the pack stack, the pack keywords
 //! and the stack-level lints L5–L7 and L12.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::families::lang::Language;
 use bedrock_addon::pack::{Behavior, Pack, PackStack, Resource, Side};
 
@@ -145,7 +145,7 @@ fn a_lang_file_of_an_unlisted_code_is_reported_deviation() {
     assert!(
         report
             .iter()
-            .any(|d| matches!(d.code, DiagnosticCode::IgnoredFile { text: None })),
+            .any(|d| d.is(&bedrock_addon::diagnostic::codes::IGNORED_FILE)),
         "the report lacks the finding"
     );
 }
@@ -777,7 +777,7 @@ fn a_full_load_answers_what_the_lazy_accessors_answer() {
     // both stacks report the unlisted `yy_YY.lang`
     let ignored = report
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::IgnoredFile { text: None }))
+        .filter(|d| d.is(&bedrock_addon::diagnostic::codes::IGNORED_FILE))
         .count();
     assert_eq!(ignored, 2);
     assert!(!report.has_errors());

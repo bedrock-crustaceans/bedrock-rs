@@ -4,6 +4,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 mod types;
 mod validate;
@@ -14,9 +15,7 @@ mod tests;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice,
@@ -163,28 +162,15 @@ fn identifier_checks(rule: &FeatureRule, path: &PackPath, d: &mut Diagnostics) {
         return;
     }
     let at = JsonPath::new().with(&["minecraft:feature_rules", "description", "identifier"]);
-    let warn = |template, args: Vec<String>| {
-        Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted { template, args }),
-        })
-        .at(at.clone())
-        .phase(Phase::Validate)
-        .into_kept()
-    };
+    let warn = |code: Code| Diagnostic::of(code).at(at.clone()).phase(Phase::Validate);
     match identifier.rfind(':') {
         Some(colon) if colon >= 1 => {
             let name = &identifier[colon + 1..];
             if name != stem {
-                d.push(warn(
-                    "Feature rule identifier '{}' does not match filename '{}'",
-                    vec![name.to_owned(), stem.to_owned()],
-                ));
+                d.push(warn(codes::IDENTIFIER_MISMATCH.with([name, stem])));
             }
         }
-        _ => d.push(warn(
-            "Feature rule identifier '{}' does not use the appropriate namespace syntax",
-            vec![identifier.to_owned()],
-        )),
+        _ => d.push(warn(codes::IDENTIFIER_NAMESPACE.with([identifier]))),
     }
 }
 

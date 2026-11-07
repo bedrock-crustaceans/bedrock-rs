@@ -2,7 +2,7 @@
 //! filter and the folders nothing uses (fixtures sc01–sc18, sc23–sc24, sc44, sc49; validation
 //! D1–D6, M1, N8; link rules S8, S9).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::script::ScriptPlugin;
 use bedrock_addon::families::server_config::{
     ConfigFolder, ConfigSource, PackPermissions, ScriptConfig, ScriptConfigFiles,
@@ -57,10 +57,7 @@ fn sc01_default_only_refuses_the_unlisted_module() {
     assert!(!verdicts[0].runs);
     assert!(verdicts[0].dropped.is_empty());
     let finding = verdicts[0].diagnostics.first_error().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::ScriptModulePermission { .. }
-    ));
+    assert_eq!(finding.code.name(), "ScriptModulePermission");
     assert_eq!(
         config.for_module(uuid(MODULE)).source,
         ConfigSource::Default
@@ -526,11 +523,22 @@ fn d3_d4_d5_each_kind_of_unmatched_folder() {
     let found: Vec<(String, String, Option<Uuid>)> = config
         .unmatched_folders(&plugins)
         .iter()
-        .map(|d| match &d.code {
-            DiagnosticCode::UnmatchedConfigFolder { folder, expected } => {
-                (folder.clone(), d.severity.to_string(), *expected)
-            }
-            other => panic!("{other:?}"),
+        .map(|d| {
+            let folder = d
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER)
+                .or_else(|| {
+                    d.code.args_of(
+                        &bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER_EXPECTED,
+                    )
+                })
+                .unwrap_or_else(|| panic!("{:?}", d.code))[0]
+                .clone();
+            let expected = match d.detail.as_deref() {
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Uuid(uuid)) => Some(*uuid),
+                _ => None,
+            };
+            (folder, d.severity.to_string(), expected)
         })
         .collect();
     let module = Some(uuid(MODULE));
@@ -573,10 +581,15 @@ fn sc44_net_payload_size_is_newer_than_an_older_engine() {
             found[0].path,
             "module_permissions/@minecraft~1server-net/max_websocket_payload_size"
         );
-        assert!(matches!(
-            findings.iter().next().unwrap().code,
-            DiagnosticCode::FieldSinceEngine { since: s } if s == since
-        ));
+        assert_eq!(
+            findings
+                .iter()
+                .next()
+                .unwrap()
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::FIELD_SINCE_ENGINE),
+            Some(&[since.to_string()][..])
+        );
     }
     for known in [since, FormatVersion::new(1, 26, 50)] {
         assert!(config.engine_findings(known).is_empty());

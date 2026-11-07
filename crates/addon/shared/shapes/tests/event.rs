@@ -2,9 +2,10 @@
 //! walkers visit them, whether the game ignores the node's `sequence`, and the finding it logs for that.
 
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode, EVENT_BOTH_RANDOMIZE_AND_SEQUENCE, JsonPath, Phase, Severity, VanillaText,
+    EVENT_BOTH_RANDOMIZE_AND_SEQUENCE, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::json::Value;
+use bedrock_addon_shared_shapes::codes;
 use bedrock_addon_shared_shapes::event::{self, LISTS};
 
 /// The node `json`.
@@ -133,11 +134,10 @@ fn the_ignored_sequence_is_a_warning_with_the_games_text_at_the_sequence() {
     at.push("events");
     at.push("demo:e");
     let finding = event::sequence_ignored(&at);
+    assert!(finding.code.is(&codes::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE));
     assert_eq!(
-        finding.code,
-        DiagnosticCode::IgnoredMember {
-            text: Some(VanillaText::Fixed(EVENT_BOTH_RANDOMIZE_AND_SEQUENCE)),
-        }
+        finding.code.vanilla().as_deref(),
+        Some(EVENT_BOTH_RANDOMIZE_AND_SEQUENCE)
     );
     assert_eq!(finding.severity, Severity::Warning);
     assert_eq!(finding.phase, Phase::Parse);

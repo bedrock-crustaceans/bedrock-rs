@@ -37,10 +37,9 @@ fn document(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Op
         Err(error) => {
             d.push(
                 bedrock_addon_core::diagnostic::Diagnostic::error(
-                    bedrock_addon_core::diagnostic::DiagnosticCode::MalformedInput {
-                        message: error.to_string(),
-                        text: None,
-                    },
+                    bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                        bedrock_addon_core::diagnostic::builders::syntax(error.to_string()),
+                    ),
                 )
                 .at(cx.at.clone()),
             );

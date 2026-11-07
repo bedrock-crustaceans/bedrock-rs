@@ -17,11 +17,12 @@ pub(crate) mod numeric;
 mod numeric_table;
 mod table;
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::Code;
 use std::fmt::Write as _;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 
@@ -230,25 +231,19 @@ impl Problem {
         }
     }
 
-    /// The game's text.
-    pub(crate) fn text(&self) -> (&'static str, Vec<String>) {
+    /// The game's line.
+    pub(crate) fn code(&self) -> Code {
         match self {
-            Self::Unknown { name, .. } => ("child '{}' not valid here.", vec![name.clone()]),
-            Self::Type { allowed, .. } => (
-                bedrock_addon_core::diagnostic::cereal::UNKNOWN_CHILD_OPTION_TEXT,
-                vec![allowed.clone()],
-            ),
-            Self::Missing { name, .. } => (
-                bedrock_addon_core::diagnostic::cereal::REQUIRED_CHILD_TEXT,
-                vec![(*name).to_owned()],
-            ),
+            Self::Unknown { name, .. } => core_codes::CHILD_NOT_VALID.with([name.as_str()]),
+            Self::Type { allowed, .. } => core_codes::UNKNOWN_CHILD_OPTION.with([allowed.as_str()]),
+            Self::Missing { name, .. } => core_codes::REQUIRED_CHILD.with([*name]),
+            // One row of the numeric table per goal member: its sentence, the value in it.
             Self::Numeric {
                 template, value, ..
-            } => (template, vec![value.clone()]),
-            Self::Enum { value, keys, .. } => (
-                "Value '{}' not allowed.  Must match at least one of the following keys: {}",
-                vec![value.clone(), keys.clone()],
-            ),
+            } => core_codes::INVALID_VALUE_WORDED.with([template.replacen("{}", value, 1)]),
+            Self::Enum { value, keys, .. } => {
+                codes::ENUM_NOT_ALLOWED.with([value.as_str(), keys.as_str()])
+            }
         }
     }
 }
@@ -283,29 +278,24 @@ impl Outcome {
         let mut found = Diagnostics::default();
         let place = |below: &JsonPath| at.join(below);
         for problem in &self.problems {
-            let (template, args) = problem.text();
-            let text = Some(VanillaText::Formatted { template, args });
-            let code = match problem {
-                Problem::Unknown { .. } => DiagnosticCode::UnrecognizedField { text },
-                Problem::Type { .. } => DiagnosticCode::InvalidType { text },
-                Problem::Missing { .. } => DiagnosticCode::MissingRequiredField { text },
-                Problem::Enum { .. } => DiagnosticCode::InvalidEnumValue { text },
-                Problem::Numeric { .. } => DiagnosticCode::InvalidValue { text },
-            };
-            found.push_kept_error(Diagnostic::error(code).at(place(problem.at())).phase(phase));
+            found.push_kept_error(
+                Diagnostic::error(problem.code().into())
+                    .at(place(problem.at()))
+                    .phase(phase),
+            );
         }
         if self.failed {
             // The crate's information at the component (the game writes no content-log line for
             // it): the write-back writes its defaults, so every member of the file it held is
             // rewritten there; and at each member, that it is not read.
             found.push(
-                Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
+                Diagnostic::of(&core_codes::VALUE_REWRITTEN)
                     .at(place(&JsonPath::new()))
                     .phase(phase),
             );
             for below in &self.unread {
                 found.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                    Diagnostic::of(&core_codes::DROPPED_FIELD)
                         .at(place(below))
                         .phase(phase),
                 );
@@ -313,7 +303,8 @@ impl Outcome {
         }
         for below in &self.silent {
             found.push(
-                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
                     .at(place(below))
                     .phase(phase),
             );
@@ -731,13 +722,13 @@ mod tests {
             false,
         );
         assert!(bad.failed);
+        let code = bad.problems[0].code();
+        assert!(code.is(&codes::ENUM_NOT_ALLOWED));
         assert_eq!(
-            bad.problems[0].text(),
-            (
-                "Value '{}' not allowed.  Must match at least one of the following keys: {}",
-                vec!["extreme".to_owned(), " easy\n or  hard\n".to_owned()]
-            )
+            codes::ENUM_NOT_ALLOWED.template(),
+            "Value '{}' not allowed.  Must match at least one of the following keys: {}"
         );
+        assert_eq!(code.args(), ["extreme", " easy\n or  hard\n"]);
     }
 
     /// A required child is checked only when the members passed validation.

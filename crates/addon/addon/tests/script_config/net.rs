@@ -1,7 +1,7 @@
 //! The `@minecraft/server-net` entry of `module_permissions` (fixtures sc37–sc45, sc47;
 //! validation N1–N7, N9).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, Span};
+use bedrock_addon::diagnostic::{Severity, Span};
 use bedrock_addon::families::server_config::{
     ConfigFolder, NetModuleConfig, ScriptConfig, ScriptConfigFiles, ServerNet,
 };
@@ -84,8 +84,8 @@ fn sc38_net_unknown_member_denies_egress_deviation() {
     assert!(!net.allows_uri("https://127.0.0.1:9/allowed"));
     let finding = config.diagnostics().first_error().unwrap();
     assert!(matches!(
-        &finding.code,
-        DiagnosticCode::NetConfigRejected { module, errors }
+        finding.code.args_of(&bedrock_addon::diagnostic::codes::NET_CONFIG_REJECTED),
+        Some([module, errors])
             if module == "@minecraft/server-net" && errors.starts_with(" -> bogus_key:")
     ));
 }
@@ -232,9 +232,10 @@ fn n1_every_failing_member_is_a_line_of_the_one_error() {
     let rejected = config
         .diagnostics()
         .iter()
-        .find_map(|d| match &d.code {
-            DiagnosticCode::NetConfigRejected { errors, .. } => Some(errors.clone()),
-            _ => None,
+        .find_map(|d| {
+            d.code
+                .args_of(&bedrock_addon::diagnostic::codes::NET_CONFIG_REJECTED)
+                .map(|args| args[1].clone())
         })
         .unwrap();
     assert_eq!(
@@ -277,9 +278,10 @@ fn n3_force_https_replaces_a_force_tls_beside_it() {
     let errors = config
         .diagnostics()
         .iter()
-        .find_map(|d| match &d.code {
-            DiagnosticCode::NetConfigRejected { errors, .. } => Some(errors.clone()),
-            _ => None,
+        .find_map(|d| {
+            d.code
+                .args_of(&bedrock_addon::diagnostic::codes::NET_CONFIG_REJECTED)
+                .map(|args| args[1].clone())
         })
         .unwrap();
     assert_eq!(errors, " -> force_tls:  invalid numeric value");
@@ -405,7 +407,7 @@ fn a_span_after_a_member_written_twice_is_where_the_value_is() {
         ..ScriptConfigFiles::default()
     });
     let finding = config.diagnostics().iter().next().unwrap();
-    assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+    assert_eq!(finding.code.name(), "InvalidValue");
     let offset = u32::try_from(text.find("-1").unwrap()).unwrap();
     assert_eq!(finding.location.span, Some(Span { offset, len: 2 }));
 }

@@ -12,7 +12,7 @@
 )]
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
 use bedrock_addon_core::molang::SourceForm;
 use bedrock_addon_shared_shapes::{
     BlockDescriptor, BlockSpecifier, CreativeCategory, ItemDescriptor, MenuCategory,
@@ -28,14 +28,14 @@ fn read_fixture<T: for<'a> Facet<'a>>(text: &str) -> T {
     value
 }
 
-/// The vanilla text of the single `InvalidValue` finding of `descriptor`.
-fn block_text(descriptor: &BlockDescriptor) -> VanillaText {
+/// The vanilla text of the single `InvalidValue` finding of `descriptor`, as it renders.
+fn block_text(descriptor: &BlockDescriptor) -> String {
     let found = descriptor.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1);
-    match &found.iter().next().unwrap().code {
-        DiagnosticCode::InvalidValue { text: Some(text) } => text.clone(),
-        other => panic!("{other:?}"),
-    }
+    let code = &found.iter().next().unwrap().code;
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(code.name(), "InvalidValue", "{code:?}");
+    code.vanilla().expect("a vanilla text")
 }
 
 /// The `tags` text of a `Tags` descriptor, which holds a plain string.
@@ -80,7 +80,7 @@ fn descriptor_kept(text: &str) {
     assert_eq!(on.len(), 2);
     assert_eq!(
         block_text(&on[0]),
-        VanillaText::BlockDescriptorShape { value: "5".into() }
+        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
     );
     assert!(matches!(on[1], BlockDescriptor::Block { .. }));
     assert!(on[1].check(&JsonPath::new(), Severity::Warning).is_empty());
@@ -151,7 +151,7 @@ fn sg52_tags_shape_then_molang() {
     let blocks = &row.above.blocks;
     assert_eq!(
         block_text(&blocks[0]),
-        VanillaText::BlockDescriptorShape { value: "5".into() }
+        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
     );
     // The shape is fine; the Molang error is the compile pass's.
     assert_eq!(block_tags(&blocks[1]), "1 +");
@@ -184,11 +184,11 @@ fn s09_descriptor_errors() {
     let row: Row = read_fixture(include_str!("fixtures/spawn/s09_descriptor_errors.json"));
     assert_eq!(
         block_text(&row.shape),
-        VanillaText::BlockDescriptorShape { value: "5".into() }
+        VanillaText::BlockDescriptorShape { value: "5".into() }.to_string()
     );
     assert_eq!(
         block_text(&row.name),
-        VanillaText::BlockDescriptorName { value: "7".into() }
+        VanillaText::BlockDescriptorName { value: "7".into() }.to_string()
     );
     assert_eq!(
         block_text(&row.state),
@@ -197,6 +197,7 @@ fn s09_descriptor_errors() {
             state: "color".into(),
             state_type: 3,
         }
+        .to_string()
     );
 }
 

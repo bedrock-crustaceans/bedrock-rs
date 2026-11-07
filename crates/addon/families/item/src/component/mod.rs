@@ -35,6 +35,7 @@ pub use value::{
 pub(crate) use equipment::ENCHANT_SLOTS;
 pub(crate) use value::{ValueComponent, parse_value, read_bare};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::CustomComponent;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
@@ -249,9 +250,9 @@ pub(crate) fn tell_range_members<T>(
     for (path, _) in keep_members_and_range_members(&ranged, &json, &mut none).0 {
         if !known.contains(&path) {
             d.push(
-                Diagnostic::error(
-                    bedrock_addon_core::diagnostic::DiagnosticCode::MemberNotKept { text: None },
-                )
+                Diagnostic::error(bedrock_addon_core::diagnostic::DiagnosticCode::from(
+                    &core_codes::MEMBER_NOT_KEPT,
+                ))
                 .severity(severity)
                 .at(path),
             );

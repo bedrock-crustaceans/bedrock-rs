@@ -1,9 +1,8 @@
 //! Movement goals: wandering, following, fleeing and moving to places.
 
 use crate::component::descriptor_tags;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
@@ -2554,10 +2553,9 @@ impl Goal for Panic {
 /// the error-level empty list a kept error.
 pub(crate) fn legacy_warning(key: &str, text: &'static str) -> Diagnostic {
     let at = JsonPath::new().child(key);
-    Diagnostic::warn(DiagnosticCode::InvalidValue {
-        text: Some(VanillaText::Fixed(text)),
-    })
-    .at(at)
+    Diagnostic::of(core_codes::INVALID_VALUE_WORDED.with([text]))
+        .severity(Severity::Warning)
+        .at(at)
 }
 
 /// The members of the game's shared tempt base, common to `tempt` and `float_tempt`: one

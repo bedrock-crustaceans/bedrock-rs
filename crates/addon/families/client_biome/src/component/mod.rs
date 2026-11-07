@@ -23,9 +23,8 @@ use bedrock_addon_derive::Components;
 use facet::Facet;
 
 use super::history::ClientBiomeFamily;
-use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{
     JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
     unknown_members,
@@ -122,16 +121,14 @@ where
     let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
     let unknown = cx.grade(Class::Unknown);
     let unrecognized = |path: JsonPath| {
-        Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
             .at(path)
             .severity(unknown)
     };
     if let Some(json) = &json {
         // A component is an object; facet's own finding for another value has no path.
         if !json.is_object() {
-            d.push(Diagnostic::error(DiagnosticCode::InvalidType {
-                text: None,
-            }));
+            d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
             return None;
         }
         let start = d.len();

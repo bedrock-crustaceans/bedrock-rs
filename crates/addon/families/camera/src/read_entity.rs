@@ -1,12 +1,14 @@
 //! Reading and writing camera entity documents.
 
 use super::read::{VEC2, VEC3, each_ranged, ranged};
-use super::{CameraComponents, CameraEntity, texts};
+use super::violation;
+use super::{CameraComponents, CameraEntity, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::shape::{
-    self, Member, Shape, child, error, namespace_name, opt, req, violation,
+    self, Member, Shape, child, error, namespace_name, opt, req,
 };
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 
@@ -125,7 +127,7 @@ const DOCUMENT: &[Member] = &[
 /// known, so the finding carries none.
 fn non_negative(value: Option<f32>, at: JsonPath, d: &mut Diagnostics) -> bool {
     if value.is_some_and(|value| value < 0.0) {
-        d.push(error(DiagnosticCode::InvalidValue { text: None }, at));
+        d.push(error(DiagnosticCode::from(&core_codes::INVALID_VALUE), at));
         return false;
     }
     true
@@ -192,10 +194,10 @@ impl CameraComponents {
                 let at = child(&at, "horizontal_rotation_limit");
                 let [x, y] = *limit;
                 if !(0.0..=360.0).contains(&x) || !(0.0..=360.0).contains(&y) {
-                    violation(texts::TARGET_HORIZONTAL_RANGE, at, d);
+                    violation(&codes::TARGET_HORIZONTAL_RANGE, at, d);
                     passed = false;
                 } else if x + y > 360.0 {
-                    violation(texts::TARGET_HORIZONTAL_SUM, at, d);
+                    violation(&codes::TARGET_HORIZONTAL_SUM, at, d);
                     passed = false;
                 }
             }
@@ -224,7 +226,7 @@ impl VersionStruct for CameraEntity {
         // The identifier must match `^\w+:\w+$`.
         if !namespace_name(&entity.description.identifier) {
             let at = child(&child(&cx.at, "description"), "identifier");
-            violation(texts::ENTITY_IDENTIFIER, at, d);
+            violation(&codes::ENTITY_IDENTIFIER, at, d);
             passed = false;
         }
         passed &= entity.components.check(&child(&cx.at, "components"), d);

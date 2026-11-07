@@ -2,10 +2,10 @@
 
 use super::{
     ConditionalMessage, LoadingMessage, LoadingMessages, MARKETPLACE_NOT_DISABLED, MessageList,
+    codes,
 };
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
@@ -14,21 +14,14 @@ use bedrock_addon_core::json::kit::fixed_path::{
 };
 use bedrock_addon_core::json::kit::{Node, Read};
 
-/// `InvalidValue` without a vanilla text: a finding of the crate's own.
-const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
+/// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
+fn invalid() -> Diagnostic {
+    Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info)
+}
 
 /// The member of the store's progress texts.
 const TOOLTIPS: &str = "store_progress_tooltips";
 const ELEMENT_KEYS: [&str; 2] = ["message", "condition"];
-
-/// Vanilla's assert for a file with neither a non-empty `loading_messages` nor a
-/// `beginner_loading_messages`.
-const BEGINNER_MISSING: &str =
-    "Beginner messages are missing in ProgressTips::_parseLoadingMessages";
-/// Vanilla's assert when the beginner list is empty.
-const BEGINNER_EMPTY: &str = "ProgressTips::getProgressTipStage called before loading the tips!";
-/// Vanilla's assert for a list the file lacks; the argument is the member name.
-const LIST_MISSING: &str = "JSON passed to ProgressTips::_parseConditionalLoadingMessages does not contain messages of type: {}";
 
 impl MessageList {
     /// Every list, in the order the game's reader names them.
@@ -98,7 +91,7 @@ fn read_element(read: &mut Read<'_>, node: &Node<'_>) -> LoadingMessage {
     }
     // Another kind is the crate's own finding, not a wrong type.
     let Some(members) = element.is_object().then(|| read.object(node)).flatten() else {
-        read.push(Diagnostic::info(INVALID).at(node.path().clone()));
+        read.push(invalid().at(node.path().clone()));
         return LoadingMessage::Other(element.clone());
     };
     let Some(message) = read.required(&members, "message") else {
@@ -115,7 +108,7 @@ fn read_element(read: &mut Read<'_>, node: &Node<'_>) -> LoadingMessage {
         .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
     {
         // An unknown condition is false; the message is never shown.
-        read.push(Diagnostic::info(INVALID).at(node.path().child("condition")));
+        read.push(invalid().at(node.path().child("condition")));
     }
     let message = message.value();
     let mut extra = UnknownMembers::default();
@@ -167,7 +160,7 @@ impl Authored for LoadingMessages {
             let mut tooltips = Vec::new();
             for element in iterate(&mut read, &member) {
                 if !element.value().is_string() {
-                    read.push(Diagnostic::info(INVALID).at(element.path().clone()));
+                    read.push(invalid().at(element.path().clone()));
                 }
                 tooltips.push(element.value().clone());
             }
@@ -214,14 +207,10 @@ impl LoadingMessages {
         let mut asked = Vec::new();
         if !legacy {
             match &self.beginner_loading_messages {
-                None => diagnostics.push(Diagnostic::info(DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::Fixed(BEGINNER_MISSING)),
-                })),
+                None => diagnostics.push(Diagnostic::of(&codes::BEGINNER_MISSING)),
                 Some(list) if list.is_empty() => diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Fixed(BEGINNER_EMPTY)),
-                    })
-                    .at(JsonPath::new().child(MessageList::Beginner.key())),
+                    Diagnostic::of(&codes::BEGINNER_EMPTY)
+                        .at(JsonPath::new().child(MessageList::Beginner.key())),
                 ),
                 Some(_) => {}
             }
@@ -235,12 +224,7 @@ impl LoadingMessages {
         ]);
         for list in asked {
             if self.list(list).is_none() {
-                diagnostics.push(Diagnostic::info(DiagnosticCode::MissingRequiredField {
-                    text: Some(VanillaText::Formatted {
-                        template: LIST_MISSING,
-                        args: vec![list.key().to_owned()],
-                    }),
-                }));
+                diagnostics.push(Diagnostic::of(codes::LIST_MISSING.with([list.key()])));
             }
         }
     }

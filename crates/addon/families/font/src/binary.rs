@@ -4,13 +4,13 @@
 use indexmap::IndexMap;
 
 use super::GlyphPage;
+use super::codes;
 use bedrock_addon_core::diagnostic::builders::{invalid, malformed};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, JsonPath};
 
 /// The size of a metrics file: the header and 256 advances.
 const FONTDATA_SIZE: usize = 4 + 256 * 4;
-/// The game's assert for a metrics file whose header is not 0.
-const FONTDATA_VERSION: &str = "Version of MSDF data file should be 0";
 
 impl GlyphPage {
     /// Reads a `.fontdata` file.
@@ -40,7 +40,9 @@ impl GlyphPage {
                 Some(header) => format!("header {header}"),
                 None => "no header".to_owned(),
             };
-            diagnostics.push(Diagnostic::info(malformed(message, Some(FONTDATA_VERSION))));
+            diagnostics.push(
+                Diagnostic::of(&codes::FONTDATA_VERSION).detail(DiagnosticDetail::Syntax(message)),
+            );
             return Err(diagnostics);
         }
         let mut advances = [0.0_f32; 256];
@@ -151,7 +153,7 @@ pub fn check_glyph_sheet(bytes: &[u8]) -> Diagnostics {
     if let Some((width, height)) = png_size(bytes)
         && (width != height || width % 16 != 0 || width == 0)
     {
-        diagnostics.push(Diagnostic::info(DiagnosticCode::GlyphSheetShape));
+        diagnostics.push(Diagnostic::of(&core_codes::GLYPH_SHEET_SHAPE));
     }
     diagnostics
 }

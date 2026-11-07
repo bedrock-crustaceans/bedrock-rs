@@ -137,7 +137,7 @@ fn lowered(name: &str) -> Option<GateRow> {
         released: Some(FormatVersion::new(1, 20, 10)),
         requires: &[],
         deprecated_since: None,
-        deprecated_message: None,
+        deprecated_member: false,
     })
 }
 
@@ -428,7 +428,7 @@ fn v1_an_item_a_higher_pack_overrides_is_told() {
 #[test]
 fn v12_the_tag_deprecation_has_the_vanilla_text() {
     assert_eq!(
-        super::texts::TAG_DEPRECATED,
+        super::codes::TAG_DEPRECATED.template(),
         "tag: has been deprecated in format versions 1.20.50 and above. Use the minecraft:tags component to store all tags instead."
     );
 }

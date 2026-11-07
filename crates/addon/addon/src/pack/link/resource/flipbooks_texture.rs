@@ -7,7 +7,6 @@
 //! The flipbooks, the terrain atlas and the texture files are three families; this rule is
 //! where they meet.
 
-use bedrock_addon_core::diagnostic::builders;
 use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -16,15 +15,14 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use super::super::{Findings, LinkCx, Target, kinds};
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use crate::document::Origin;
-use crate::families::flipbooks::texts;
+use crate::families::flipbooks::codes;
 use crate::families::flipbooks::{Flipbook, FlipbookKey, Flipbooks};
 use crate::families::texture_atlas::{AtlasItem, TextureAtlas};
 use crate::families::texture_file::{ImageFormat, ImageInfo};
 use crate::id::{AtlasKey, Kind, kind};
-use bedrock_addon_core::diagnostic::texts::formatted;
 use bedrock_addon_shared_shapes::texture::files::{Found, IMAGE, StackFiles};
 
 /// What the link pass tells the checker about an image file: the header of the file at a path
@@ -211,19 +209,15 @@ impl Check<'_> {
             // tile uses the built-in one, a single UV set.
             let missing = atlas.get("missing").map_or(1, AtlasItem::frame_count);
             let logged = usize::try_from(*index).map_or(true, |place| place >= missing);
-            let (text, severity) = if logged {
-                (
-                    formatted(texts::TILE_MISSING, [tile.clone()]),
-                    Severity::Error,
-                )
+            let (code, severity) = if logged {
+                (codes::TILE_MISSING.with([tile.clone()]), Severity::Error)
             } else {
-                (None, Severity::Info)
+                (
+                    Code::from(&core_codes::UNRESOLVED_REFERENCE),
+                    Severity::Info,
+                )
             };
-            let code = DiagnosticCode::from(builders::worded(
-                &core_codes::UNRESOLVED_REFERENCE,
-                &core_codes::UNRESOLVED_REFERENCE_WORDED,
-                text.as_ref(),
-            ));
+            let code = DiagnosticCode::from(code);
             let mut finding = self.report("atlas_tile", None, code, severity);
             finding.detail = Some(Box::new(DiagnosticDetail::Reference {
                 kind: <kind::AtlasTexture as Kind>::NAME,
@@ -237,11 +231,7 @@ impl Check<'_> {
         let Some(place) = usize::try_from(*index).ok().filter(|place| *place < count) else {
             // The game skips the entry.
             let args = [tile.clone(), index.to_string(), count.to_string()];
-            let code = DiagnosticCode::from(builders::worded(
-                &core_codes::INVALID_VALUE,
-                &core_codes::INVALID_VALUE_WORDED,
-                (formatted(texts::BAD_ATLAS_INDEX, args)).as_ref(),
-            ));
+            let code = DiagnosticCode::from(codes::BAD_ATLAS_INDEX.with(args));
             self.push("atlas_index", code, Severity::Error);
             return;
         };
@@ -261,11 +251,7 @@ impl Check<'_> {
     fn image(&mut self, flipbook: &Flipbook, files: &StackFiles, headers: ImageHeaders<'_>) {
         let path = flipbook.flipbook_texture();
         let Some(found) = flipbook_image(flipbook, files) else {
-            let code = DiagnosticCode::from(builders::worded(
-                &core_codes::TEXTURE_NOT_FOUND,
-                &core_codes::TEXTURE_NOT_FOUND_WORDED,
-                (formatted(texts::NO_METADATA, [path.to_owned()])).as_ref(),
-            ));
+            let code = DiagnosticCode::from(codes::NO_METADATA.with([path.to_owned()]));
             self.push("flipbook_texture", code, Severity::Info);
             return;
         };
@@ -280,17 +266,14 @@ impl Check<'_> {
         };
         let frames = info.height.checked_div(info.width).unwrap_or(0);
         if frames < 1 {
-            let code =
-                DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([texts::NO_FRAMES]));
+            let code = DiagnosticCode::from(&codes::NO_FRAMES);
             self.push("flipbook_texture", code, Severity::Info);
         }
         for (place, frame) in flipbook.frames.iter().flatten().enumerate() {
             // The game's assertion reads the element before it is assigned, so it never fires,
             // and it has no lower bound; this check is the crate's own.
             if u32::try_from(*frame).map_or(true, |frame| frame >= frames) {
-                let code = DiagnosticCode::from(
-                    core_codes::INVALID_VALUE_WORDED.with([texts::FRAME_OUT_OF_RANGE]),
-                );
+                let code = DiagnosticCode::from(&codes::FRAME_OUT_OF_RANGE);
                 let finding = self.report("frames", Some(place), code, Severity::Info);
                 self.out.push(finding);
             }

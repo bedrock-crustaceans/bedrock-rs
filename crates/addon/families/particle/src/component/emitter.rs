@@ -4,9 +4,10 @@
 use indexmap::IndexMap;
 
 use super::types::VectorEvents;
+use crate::codes;
 use crate::read::{Members, Opt, Reader, object};
-use crate::texts;
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::molang::Molang;
 
 /// A Molang field that is 0 when the document does not write it.
@@ -43,7 +44,7 @@ object! {
 fn local_space(space: &mut EmitterLocalSpace, _: Members<'_>, r: &mut Reader<'_>) {
     let (position, rotation) = (space.position(), space.rotation());
     if rotation && !position {
-        r.key("rotation", |r| r.warn(texts::ROTATION_WITHOUT_POSITION));
+        r.key("rotation", |r| r.warn(&codes::ROTATION_WITHOUT_POSITION));
         space.rotation = Some(false);
     }
     // Vanilla stores `velocity` as written only when `position` and `rotation` are both
@@ -104,14 +105,14 @@ object! {
         /// Events by the emitter's age in seconds, the keys decimal strings (JSON
         /// `timeline`).
         opt timeline: IndexMap<String, VectorEvents> = "timeline",
-            Opt::NONE.wrong(texts::TIMELINE);
+            Opt::NONE.wrong(&codes::TIMELINE);
         /// Events by the distance the emitter has travelled, the keys decimal strings (JSON
         /// `travel_distance_events`).
         opt travel_distance_events: IndexMap<String, VectorEvents> = "travel_distance_events",
-            Opt::NONE.wrong(texts::TRAVEL_DISTANCE);
+            Opt::NONE.wrong(&codes::TRAVEL_DISTANCE);
         /// Events fired again every so many blocks (JSON `looping_travel_distance_events`).
         opt looping_travel_distance_events: Vec<DistanceEvent> = "looping_travel_distance_events",
-            Opt::NONE.wrong(texts::LOOPING);
+            Opt::NONE.wrong(&codes::LOOPING);
     }
 }
 
@@ -134,7 +135,7 @@ fn lifetime_events(events: &mut EmitterLifetimeEvents, _: Members<'_>, r: &mut R
             if r.legacy() {
                 let usable = entry.distance >= 0.0 && !entry.effects.is_empty();
                 if !usable {
-                    r.index(at, |r| r.warn(texts::LOOPING_ENTRY));
+                    r.index(at, |r| r.warn(&codes::LOOPING_ENTRY));
                 }
                 if usable {
                     places.push(at);
@@ -145,7 +146,7 @@ fn lifetime_events(events: &mut EmitterLifetimeEvents, _: Members<'_>, r: &mut R
             if entry.distance < 0.0 {
                 r.index(at, |r| {
                     r.key("distance", |r| {
-                        r.error(DiagnosticCode::InvalidValue { text: None });
+                        r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
                     });
                 });
             }

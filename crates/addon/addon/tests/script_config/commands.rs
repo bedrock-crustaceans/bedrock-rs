@@ -1,6 +1,6 @@
 //! `config/commands.json` (fixtures sc33–sc36, sc48; validation C1–C4, C6).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, Span};
+use bedrock_addon::diagnostic::{Severity, Span};
 use bedrock_addon::families::server_config::{
     CommandPermissionLevel, CommandsConfig, ScriptConfig, ScriptConfigFiles, UnreadableFile,
 };
@@ -134,7 +134,7 @@ fn an_empty_commands_json_is_refused() {
     let config = commands("");
     assert_eq!(config.commands, None);
     let finding = config.diagnostics().first_error().unwrap();
-    assert!(matches!(finding.code, DiagnosticCode::EmptyDocument { .. }));
+    assert_eq!(finding.code.name(), "EmptyDocument");
     assert_eq!(
         finding.code.to_string(),
         "Failed to parse JSON in file 'config/commands.json'\n:  malformed input"
@@ -153,7 +153,7 @@ fn an_unreadable_commands_json_is_a_read_error() {
     });
     assert_eq!(config.commands, None);
     let finding = config.diagnostics().first_error().unwrap();
-    assert!(matches!(finding.code, DiagnosticCode::ReadError { .. }));
+    assert_eq!(finding.code.name(), "ReadError");
     assert_eq!(
         finding.code.to_string(),
         "Failed to open file 'config/commands.json'"
@@ -240,10 +240,7 @@ fn a_span_after_a_repeated_member_is_where_the_value_is() {
     let text = r#"{"permission_levels": {"list": "any"}, "permission_levels": {"x": "y"}, "default_permission_level": "bogus"}"#;
     let config = commands(text);
     let finding = config.diagnostics().first_error().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidEnumValue { .. }
-    ));
+    assert_eq!(finding.code.name(), "InvalidEnumValue");
     let offset = u32::try_from(text.find("\"bogus\"").unwrap()).unwrap();
     assert_eq!(finding.location.span, Some(Span { offset, len: 7 }));
 }

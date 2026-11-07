@@ -496,12 +496,19 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
     let told: Vec<(&str, Severity, Phase, String, Option<Uuid>)> = found
         .iter()
         .map(|f| {
-            let bedrock_addon::diagnostic::DiagnosticCode::UnmatchedConfigFolder {
-                folder,
-                expected,
-            } = &f.code
-            else {
-                panic!("{f}");
+            let folder = f
+                .code
+                .args_of(&bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER)
+                .or_else(|| {
+                    f.code.args_of(
+                        &bedrock_addon::diagnostic::codes::UNMATCHED_CONFIG_FOLDER_EXPECTED,
+                    )
+                })
+                .unwrap_or_else(|| panic!("{f}"))[0]
+                .clone();
+            let expected = match f.detail.as_deref() {
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Uuid(uuid)) => Some(*uuid),
+                _ => None,
             };
             assert_eq!(
                 f.location
@@ -510,13 +517,7 @@ fn s8_a_config_folder_no_script_module_of_the_stack_uses_is_told_from_the_stack_
                     .map(|path| path.as_str().to_owned()),
                 Some(format!("config/{folder}"))
             );
-            (
-                f.code.name(),
-                f.severity,
-                f.phase,
-                folder.clone(),
-                *expected,
-            )
+            (f.code.name(), f.severity, f.phase, folder.clone(), expected)
         })
         .collect();
     let mut wanted = vec![

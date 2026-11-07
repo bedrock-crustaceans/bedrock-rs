@@ -3,7 +3,7 @@
 //! and installs those two collections first, in every completion order, also when only the
 //! catalogue was selected.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail};
+use bedrock_addon::diagnostic::{DiagnosticDetail, codes};
 use bedrock_addon::load::{
     Collection, CollectionSet, LoadOptions, RepositoryLoader, RootId, Source, StackLoader,
     StackOptions,
@@ -104,7 +104,7 @@ fn a_stack_load_of_the_catalogue_alone_resolves_against_the_stack_s_items_and_bl
             !set.behavior
                 .report()
                 .iter()
-                .any(|f| matches!(f.code, DiagnosticCode::FileNotLoaded)),
+                .any(|f| f.is(&codes::FILE_NOT_LOADED)),
             "{order:?}"
         );
     }

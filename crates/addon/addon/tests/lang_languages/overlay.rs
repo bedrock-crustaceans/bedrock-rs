@@ -1,7 +1,7 @@
 //! The locale overlay `texts/<code>/` (README "Locale overlay"): the `overlay/` rows of
 //! fixtures.md resolved with `locale_overlay_paths`, and the lints L15 and L16.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::lang::{Language, locale_overlay_paths};
 use bedrock_addon::pack::{PackStack, Resource};
 use bedrock_addon::storage::PackPath;
@@ -186,7 +186,7 @@ fn an_overlay_file_that_is_no_font_sheet_is_reported_as_shadowing_deviation() {
         stack
             .languages()
             .diagnostics()
-            .all(|d| { matches!(d.code, DiagnosticCode::ShadowedDefinition { text: None }) })
+            .all(|d| { d.is(&bedrock_addon::diagnostic::codes::SHADOWED_DEFINITION) })
     );
     assert_eq!(stack.languages().diagnostics().count(), 1);
 }

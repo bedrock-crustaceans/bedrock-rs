@@ -8,6 +8,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod binding;
+pub mod codes;
 pub mod history;
 #[cfg(test)]
 mod peek_tests;
@@ -30,8 +31,10 @@ use facet::Facet;
 use indexmap::IndexMap;
 use std::borrow::Cow;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    ShadowReason, builders,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, EngineVersionDecision, JsonDocument,
@@ -52,10 +55,10 @@ use bedrock_addon_core::versioning::{
     MissingVersion, NoComponents, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionStruct,
     finish, parse_as_written,
 };
+use bedrock_addon_shared_visual::codes as visual_codes;
 use bedrock_addon_shared_visual::{MergeStep, merge_step};
 
 use crate::history::{AttachableFamily, AttachableHistory};
-use crate::read::text;
 use bedrock_addon_core::versioning::Versioned;
 
 /// A resource-pack attachable (`attachables/**/*.json`, payload `minecraft:attachable`): what
@@ -228,13 +231,8 @@ const APP_DIRECTORY: &str = "definitions/attachables";
 /// The floor: every explicit version below 1.8.0 is rejected by vanilla's own schema.
 const FLOOR: FormatVersion = known::V1_8_0;
 
-/// The text for a `format_version` that does not read, or is below 1.0.0.
-const UNKNOWN_VERSION: &str =
-    "Unknown/unsupported version value specified in format_version field in {}";
 /// The minimum that message names: the `v1_10` schema's.
 const SCHEMA_MINIMUM: &str = "1.10.0";
-/// The text for a root that is null, no object or empty.
-const NOTHING_TO_PARSE: &str = "nothing to parse in";
 
 /// How every slice reads its description: the profile of the envelope's input kind (the
 /// default, [`InputKind::FirstRun`]), its scalars read as vanilla's strict schema types them (a
@@ -452,13 +450,13 @@ fn reject(origin: &Origin, found: Diagnostic) -> Rejected {
 /// Gives every finding the document's pack and file, and vanilla's texts the file's path.
 fn place(mut found: Diagnostics, origin: &Origin) -> Diagnostics {
     for finding in found.iter_mut() {
-        if let DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Formatted { args, .. }),
-        } = &mut finding.code
+        // The held item scale names the file, which the rule did not know.
+        if let Some([file, scale]) = finding.code.args_of(&visual_codes::HELD_ITEM_SCALE_INVALID)
+            && file == validate::FILE
         {
-            for arg in args.iter_mut().filter(|arg| *arg == validate::FILE) {
-                origin.path.as_str().clone_into(arg);
-            }
+            finding.code = visual_codes::HELD_ITEM_SCALE_INVALID
+                .with([origin.path.as_str(), scale.as_str()])
+                .into();
         }
     }
     found.located(origin)
@@ -474,15 +472,7 @@ fn admit<'b>(
     origin: &Origin,
     cx: &LoadContext,
 ) -> Result<Cow<'b, str>, Rejected> {
-    let malformed = |message: &str| {
-        reject(
-            origin,
-            Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: message.to_owned(),
-                text: None,
-            }),
-        )
-    };
+    let malformed = |message: &str| reject(origin, Diagnostic::of(builders::syntax(message)));
     // `new` never refuses an empty text: that is the chain's to report.
     let text = Prepared::new(bytes)
         .map_err(|error| match error {
@@ -498,10 +488,9 @@ fn admit<'b>(
     let Some(root) = root.as_object().filter(|root| !root.is_empty()) else {
         return Err(reject(
             origin,
-            Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: NOTHING_TO_PARSE.to_owned(),
-                text: Some(VanillaText::Fixed(NOTHING_TO_PARSE)),
-            }),
+            Diagnostic::of(&visual_codes::NOTHING_TO_PARSE).detail(DiagnosticDetail::Syntax(
+                visual_codes::NOTHING_TO_PARSE.template().to_owned(),
+            )),
         ));
     };
     if let Some(version) = root.get("format_version")
@@ -521,9 +510,7 @@ fn admit<'b>(
 /// 1.0.0 up to 1.8.0 it is below the schema's minimum.
 fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<DiagnosticCode> {
     // A value the game cannot read as a version, or that is the `beta` literal, is unknown.
-    let unknown = || DiagnosticCode::UnsupportedVersion {
-        text: text(UNKNOWN_VERSION, &[path]),
-    };
+    let unknown = || DiagnosticCode::from(visual_codes::UNKNOWN_VERSION.with([path]));
     let literal = version.as_string().map(facet_value::VString::as_str);
     let Some(read) =
         SemVersion::from_json(version).filter(|read| !read.is_any() && literal != Some("beta"))
@@ -533,12 +520,12 @@ fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<Diagnos
     let written = literal.map_or_else(|| read.to_string(), str::to_owned);
     let engine = cx.engine_version;
     if read > SemVersion::new(engine.major, engine.minor, engine.patch) {
-        return Some(DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::ActorAboveEngine {
-                version: written,
-                engine,
-            }),
-        });
+        return Some(DiagnosticCode::from(visual_codes::ACTOR_ABOVE_ENGINE.with(
+            [
+                written,
+                format!("{}.{}.{}", engine.major, engine.minor, engine.patch),
+            ],
+        )));
     }
     if read < SemVersion::new(1, 0, 0) {
         return Some(unknown());
@@ -648,7 +635,7 @@ fn ignored_payload(
         Payload::Attachable | Payload::Neither => return None,
     };
     Some(
-        Diagnostic::error(DiagnosticCode::IgnoredPayload)
+        Diagnostic::of(&core_codes::IGNORED_PAYLOAD)
             .severity(severity)
             .at(JsonPath::of_keys([key]))
             .in_file(origin),
@@ -837,9 +824,10 @@ impl Bindings {
     /// `ItemBindingOverlap` for each always-drawn binding of an item that has a later
     /// always-drawn one (a client tries the later first, and it always holds).
     fn finish(self) -> (Vec<(usize, Vec<ItemBindingEntry>)>, Vec<Diagnostic>) {
-        let note = |code: DiagnosticCode, entry: &ItemBindingEntry| {
+        let note = |code: &'static CodeDef<0>, entry: &ItemBindingEntry| {
             let file = Origin::file(entry.pack.clone(), PackSide::Resource, entry.file.clone());
-            Diagnostic::info(code)
+            Diagnostic::of(code)
+                .severity(Severity::Info)
                 .at(JsonPath::of_keys([read::PAYLOAD, "description", "item"]))
                 .phase(Phase::Validate)
                 .in_file(&file)
@@ -849,7 +837,7 @@ impl Bindings {
         for (_, mut gathering) in self.by_identifier {
             for entry in gathering.bindings.iter_mut().take(gathering.live_from) {
                 entry.shadowed = true;
-                notes.push(note(DiagnosticCode::ItemBindingShadowed, entry));
+                notes.push(note(&core_codes::ITEM_BINDING_SHADOWED, entry));
             }
             held.push((gathering.holder, gathering.bindings));
         }
@@ -865,7 +853,7 @@ impl Bindings {
             if entry.condition.is_always()
                 && let Some(earlier) = last_always.insert(entry.item.as_str(), entry)
             {
-                notes.push(note(DiagnosticCode::ItemBindingOverlap, earlier));
+                notes.push(note(&core_codes::ITEM_BINDING_OVERLAP, earlier));
             }
         }
         (held, notes)
@@ -931,12 +919,18 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<Attachable
             MergeStep::Ignore(reason) => {
                 let origin = incoming.origin();
                 // The reason is in the finding's text.
+                let code = match reason {
+                    ShadowReason::OlderMinEngineVersion => &core_codes::ATTACHABLE_SHADOWED_OLDER,
+                    ShadowReason::MinEngineVersionAboveStack => {
+                        &core_codes::ATTACHABLE_SHADOWED_ABOVE_STACK
+                    }
+                    _ => &core_codes::ATTACHABLE_SHADOWED,
+                };
                 d.push(
-                    Diagnostic::info(DiagnosticCode::AttachableShadowed {
-                        reason: Some(reason),
-                    })
-                    .phase(Phase::Validate)
-                    .in_file(origin),
+                    Diagnostic::of(code)
+                        .detail(DiagnosticDetail::Shadow(reason))
+                        .phase(Phase::Validate)
+                        .in_file(origin),
                 );
                 EngineVersionDecision::Ignore
             }

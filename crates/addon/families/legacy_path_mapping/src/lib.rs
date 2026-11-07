@@ -6,7 +6,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, builders};
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected, unversioned};
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
@@ -46,11 +46,9 @@ impl Content for LegacyPathMapping {
                     Ok(unversioned::document(mapping, origin, diagnostics))
                 }
                 Err(message) => {
-                    let code = DiagnosticCode::MalformedInput {
-                        message: message.to_string(),
-                        text: None,
-                    };
-                    diagnostics.push(Diagnostic::error(code).in_file(&origin));
+                    diagnostics.push(
+                        Diagnostic::of(builders::syntax(message.to_string())).in_file(&origin),
+                    );
                     Err(unversioned::rejected(origin, diagnostics))
                 }
             }
@@ -75,6 +73,7 @@ impl Placed for LegacyPathMapping {
 mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::diagnostic::codes as core_codes;
 
     fn parse(bytes: &[u8]) -> Result<Document<LegacyPathMapping>, Rejected> {
         let path = PackPath::from_static(PATH);
@@ -106,10 +105,7 @@ mod tests {
     fn a_file_that_is_no_json_is_rejected() {
         let rejected = parse(b"{").unwrap_err();
         let finding = rejected.diagnostics.iter().next().unwrap();
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::MalformedInput { .. }
-        ));
+        assert!(finding.code.is(&core_codes::SYNTAX));
         assert_eq!(finding.severity, Severity::Error);
     }
 }

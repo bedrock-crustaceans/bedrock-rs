@@ -220,10 +220,7 @@ fn sound_members(sound: &str) -> Vec<(String, &'static str)> {
 fn enum_error_at(d: &bedrock_addon_core::diagnostic::Diagnostics, path: &str) -> bool {
     d.iter().any(|f| {
         f.severity == bedrock_addon_core::diagnostic::Severity::Error
-            && matches!(
-                f.code,
-                bedrock_addon_core::diagnostic::DiagnosticCode::InvalidEnumValue { .. }
-            )
+            && f.code.name() == "InvalidEnumValue"
             && f.location.json_path.to_string() == format!("minecraft:item/components/{path}")
     })
 }

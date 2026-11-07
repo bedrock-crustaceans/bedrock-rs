@@ -2,9 +2,10 @@
 //! and compared with its `expected.json` and `expected.toml` (`check`), then the row's own
 //! claims are asserted.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, VanillaText, codes};
+use bedrock_addon::diagnostic::{DiagnosticCode, Phase, Severity, codes};
 use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon::document::{Registry, Rejected};
+use bedrock_addon::families::behavior_tree::codes as bt_codes;
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::pack::{Behavior, PackStack};
 
@@ -126,17 +127,13 @@ fn bt08_a_syntax_error_skips_the_file_with_vanillas_text() {
         "behavior_trees/truncated.json"
     );
     let finding = one(&rejected.diagnostics, "MalformedInput", Severity::Error, "");
-    let DiagnosticCode::MalformedInput { message, text } = &finding.code else {
-        unreachable!()
-    };
+    assert!(finding.is(&bt_codes::PARSE_ERROR));
+    let message = finding.syntax_message().expect("the reader's message");
     // `parse error:\n%s` with the reader's message
     assert!(!message.is_empty());
     assert_eq!(
-        text,
-        &Some(VanillaText::Formatted {
-            template: "parse error:\n{}",
-            args: vec![message.clone()],
-        })
+        finding.code.args_of(&bt_codes::PARSE_ERROR),
+        Some(&[message.to_owned()][..])
     );
     assert_eq!(finding.code.to_string(), format!("parse error:\n{message}"));
     assert_eq!(finding.phase, Phase::Parse);
@@ -156,10 +153,7 @@ fn bt09_an_empty_file_is_skipped_with_an_information() {
     let trees = stack.behavior_trees();
     let rejected = only_rejected(trees);
     let finding = one(&rejected.diagnostics, "EmptyDocument", Severity::Info, "");
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::EmptyDocument { text: None }
-    ));
+    assert!(finding.is(&codes::EMPTY_DOCUMENT));
     // an information only (vanilla is silent): nothing here is an error, and the file is still
     // not a tree
     assert!(!rejected.diagnostics.has_errors());
@@ -191,10 +185,7 @@ fn bt10_a_file_without_a_usable_name_is_skipped() {
             "minecraft:behavior_tree/minecraft:name",
         );
         // vanilla skips the file without a word
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::MissingRequiredField { text: None }
-        ));
+        assert!(finding.is(&codes::MISSING_REQUIRED_FIELD));
         assert_eq!(rejected.diagnostics.len(), 1);
     }
     // an empty name is no key: nothing is registered under it
@@ -247,9 +238,7 @@ fn bt12_an_unknown_root_type_is_not_registered_deviation() {
     );
     assert_eq!(
         finding.code,
-        DiagnosticCode::UnknownNode {
-            name: "minecraft:craft_item".to_owned()
-        }
+        DiagnosticCode::from(codes::UNKNOWN_NODE.with(["minecraft:craft_item"]))
     );
     // vanilla's text, without its trailing line feed
     assert_eq!(
@@ -411,9 +400,7 @@ fn bt19_position_arrays() {
     assert!(finding.kept);
     assert_eq!(
         finding.code,
-        DiagnosticCode::InvalidType {
-            text: Some(VanillaText::Fixed("Expected Integral Number."))
-        }
+        DiagnosticCode::from(&bt_codes::EXPECTED_INTEGRAL)
     );
     assert_eq!(findings.len(), 1);
     let (Node::LookAt { block_pos, .. }, findings) = root(&stack, "short") else {
@@ -584,10 +571,7 @@ fn bt14_children_that_are_no_nodes() {
         Severity::Info,
         &format!("{ROOT}/minecraft:sequence/children"),
     );
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&codes::INVALID_TYPE));
     assert_eq!(findings.len(), 1);
     let (Node::Selector { children, .. }, findings) = root(&stack, "mixed_children") else {
         panic!()
@@ -669,10 +653,7 @@ fn bt03_the_higher_pack_wins_and_the_lower_tree_is_shadowed() {
     assert!(matches!(tree.root, Node::WaitTicks { .. }));
     let notices: Vec<_> = trees.diagnostics().collect();
     assert_eq!(notices.len(), 1);
-    assert!(matches!(
-        notices[0].code,
-        DiagnosticCode::ShadowedDefinition { text: None }
-    ));
+    assert!(notices[0].is(&codes::SHADOWED_DEFINITION));
     assert_eq!(notices[0].severity, Severity::Info);
     // at the replaced tree: p1's
     assert_eq!(
@@ -695,10 +676,7 @@ fn bt04_the_last_path_of_a_pack_wins_deviation() {
     assert!(matches!(tree.root, Node::UseEntity { .. }));
     let notices: Vec<_> = trees.diagnostics().collect();
     assert_eq!(notices.len(), 1);
-    assert!(matches!(
-        notices[0].code,
-        DiagnosticCode::DuplicateIdentifier { text: None }
-    ));
+    assert!(notices[0].is(&codes::DUPLICATE_IDENTIFIER));
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
         notices[0]
@@ -719,7 +697,10 @@ fn bt05_a_built_in_tree_replaces_a_pack_tree_of_its_name() {
     assert!(matches!(tree.root, Node::Move { .. }));
     let notices: Vec<_> = trees.diagnostics().collect();
     assert_eq!(notices.len(), 1);
-    assert_eq!(notices[0].code, DiagnosticCode::ShadowedByBuiltin);
+    assert_eq!(
+        notices[0].code,
+        DiagnosticCode::from(&codes::SHADOWED_BY_BUILTIN)
+    );
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
         notices[0]
@@ -753,10 +734,7 @@ fn bt25_a_file_that_is_not_json_is_ignored_deviation() {
     assert_eq!(trees.rejected().len(), 0);
     let notices: Vec<_> = trees.diagnostics().collect();
     assert_eq!(notices.len(), 1);
-    assert!(matches!(
-        notices[0].code,
-        DiagnosticCode::IgnoredFile { text: None }
-    ));
+    assert!(notices[0].is(&codes::IGNORED_FILE));
     assert_eq!(notices[0].severity, Severity::Info);
     assert_eq!(
         notices[0]

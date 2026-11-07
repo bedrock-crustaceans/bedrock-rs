@@ -1,7 +1,7 @@
 //! The file kinds on their own: `Content::parse`, the round trip (the JSON as written, read
 //! back equal and rewritten identically), the fixed paths, and the determinism fragment.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Kind, Severity, codes};
 use bedrock_addon::document::{Content, Document, Placed, Rejected};
 use bedrock_addon::families::json_ui::{DefKey, GlobalVariables, UiDefsList, UiFile};
 use bedrock_addon::json::Value;
@@ -109,10 +109,7 @@ fn a_file_that_is_no_json_object_is_rejected() {
     for text in ["", "[]", "5", r#"{ "k": "#, "null"] {
         let rejected = parse::<UiFile>("ui/a.json", text).unwrap_err();
         let finding = rejected.diagnostics.iter().next().unwrap();
-        assert!(
-            matches!(finding.code, DiagnosticCode::MalformedInput { .. }),
-            "{text}"
-        );
+        assert_eq!(finding.kind(), Kind::Syntax, "{text}");
         assert_eq!(finding.severity, Severity::Error);
         assert_eq!(
             finding.location.path.as_ref().unwrap().as_str(),
@@ -139,10 +136,7 @@ fn a_namespace_that_is_no_string_is_kept_as_a_member() {
     assert_eq!(file.namespace, None);
     assert_eq!(file.defs[&DefKey::parse("namespace")], Value::from(5_i64));
     let finding = file.diagnostics().iter().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(finding.is(&codes::INVALID_TYPE));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(
         json(&file.to_json().unwrap()),

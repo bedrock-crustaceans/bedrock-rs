@@ -2,6 +2,7 @@
 //! `tags` members.
 
 use super::SpawnGroup;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::versioning::ValidateCx;
 use bedrock_addon_shared_spawn::legacy::GROUPS_KEY;
@@ -13,7 +14,7 @@ use bedrock_addon_shared_spawn::validate::{molang, path};
 pub(crate) fn group(group: &mut SpawnGroup, cx: &mut ValidateCx<'_>) {
     if group.conditions.as_ref().is_none_or(Vec::is_empty) {
         finding(
-            DiagnosticCode::EmptyDocument { text: None },
+            DiagnosticCode::from(&core_codes::EMPTY_DOCUMENT),
             Severity::Info,
             &path(&cx.at, &[GROUPS_KEY, "conditions"]),
             cx.diagnostics,

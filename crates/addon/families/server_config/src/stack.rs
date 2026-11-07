@@ -6,8 +6,9 @@ use std::collections::{HashMap, HashSet};
 
 use uuid::Uuid;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::FormatVersion;
@@ -18,6 +19,7 @@ use super::{
     CONFIG_DIR, DEFAULT_DIR, PAYLOAD_SIZE_SINCE, PERMISSIONS_FILE, PackScriptConfig,
     SERVER_NET_MODULE, ScriptConfig, ServerNet, WILDCARD_MODULE,
 };
+use crate::codes;
 use bedrock_addon_family_script::{ScriptContext, ScriptModuleRef, ScriptPlugin};
 
 /// What the dependency filter decided for one script module.
@@ -121,7 +123,7 @@ fn verdict(
                 // The server drops an optional dependency without a log line.
                 verdict.dropped.push(module.to_owned());
                 verdict.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::DroppedField { text: None },
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     Phase::Link,
                     location(),
@@ -129,12 +131,10 @@ fn verdict(
             } else {
                 // A required dependency the folder does not allow rejects the plugin.
                 verdict.runs = false;
-                let text = Some(VanillaText::PluginModuleNotConfigured {
-                    plugin: plugin.name.clone(),
-                    module: module.to_owned(),
-                });
                 verdict.diagnostics.push(Diagnostic::new(
-                    DiagnosticCode::ScriptModulePermission { text },
+                    DiagnosticCode::from(
+                        codes::PLUGIN_MODULE_NOT_CONFIGURED.with([plugin.name.as_str(), module]),
+                    ),
                     Severity::Error,
                     Phase::Link,
                     location(),
@@ -208,10 +208,15 @@ impl ScriptConfig {
                 },
                 None => (None, Severity::Info),
             };
-            findings.push(Diagnostic::new(
-                DiagnosticCode::UnmatchedConfigFolder {
-                    folder: folder.clone(),
-                    expected,
+            let mut finding = Diagnostic::new(
+                match expected {
+                    Some(uuid) => DiagnosticCode::from(
+                        core_codes::UNMATCHED_CONFIG_FOLDER_EXPECTED
+                            .with([folder.clone(), uuid.to_string()]),
+                    ),
+                    None => DiagnosticCode::from(
+                        core_codes::UNMATCHED_CONFIG_FOLDER.with([folder.clone()]),
+                    ),
                 },
                 severity,
                 Phase::Link,
@@ -221,7 +226,10 @@ impl ScriptConfig {
                     JsonPath::new(),
                     None,
                 ),
-            ));
+            );
+            // The UUID the module expects rides beside the folder.
+            finding.detail = expected.map(|uuid| Box::new(DiagnosticDetail::Uuid(uuid)));
+            findings.push(finding);
         }
         findings
     }
@@ -250,9 +258,9 @@ impl ScriptConfig {
                 .child(SERVER_NET_MODULE)
                 .child(MAX_WEBSOCKET_PAYLOAD_SIZE);
             findings.push(Diagnostic::new(
-                DiagnosticCode::FieldSinceEngine {
-                    since: PAYLOAD_SIZE_SINCE,
-                },
+                DiagnosticCode::from(
+                    core_codes::FIELD_SINCE_ENGINE.with([PAYLOAD_SIZE_SINCE.to_string()]),
+                ),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(None, permissions_path(config), at, None),

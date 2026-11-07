@@ -3,8 +3,9 @@
 //!
 //! "The block is not loaded" is an error. A rule whose game consequence is a logged error after
 //! which the game carries on is a kept error, and a rule the game does not log at all is an
-//! information of the crate's own. The game's texts are carried as `VanillaText`; findings of
-//! the crate's own carry no text (their code and path say what they are).
+//! information of the crate's own. The game's texts are the definitions of `codes.rs`; findings
+//! of the crate's own raise the core's generic definitions (their code and path say what they
+//! are).
 
 use super::component::{
     BlockComponent, BlockEntity, BoundingBox, CollisionBoundingBox, CollisionBox, ConnectionRule,
@@ -18,7 +19,10 @@ use super::component::{
 use super::history::BlockFamily;
 use super::read::{CEREAL, NEWEST};
 use super::{Block, StateValues};
+use crate::codes;
+use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
 };
@@ -71,7 +75,7 @@ pub(crate) fn validate(block: &mut Block, cx: &mut ValidateCx<'_>) {
     for index in &skipped {
         let path = at.child("permutations").index(*index);
         cx.diagnostics.push(
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+            Diagnostic::of(&core_codes::DROPPED_FIELD)
                 .at(path)
                 .phase(Phase::Validate),
         );
@@ -227,27 +231,6 @@ impl Report<'_> {
     }
 }
 
-/// Vanilla's text with arguments.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the codes' text fields are options"
-)]
-fn text(template: &'static str, args: &[&str]) -> Option<VanillaText> {
-    Some(VanillaText::Formatted {
-        template,
-        args: args.iter().map(|a| (*a).to_owned()).collect(),
-    })
-}
-
-/// Vanilla's fixed text.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the codes' text fields are options"
-)]
-fn fixed(text: &'static str) -> Option<VanillaText> {
-    Some(VanillaText::Fixed(text))
-}
-
 /// The section `None` (base) or `Some(i)` (permutation `i`) as a path prefix.
 fn section_path(section: Option<usize>) -> Vec<String> {
     match section {
@@ -333,11 +316,7 @@ fn identifier(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
     };
     if !ok {
         report.error(
-            DiagnosticCode::NamespaceRule {
-                text: fixed(
-                    "Must have a namespace and can't use the \"minecraft\" one. Example: \"namespace:my_block\"",
-                ),
-            },
+            DiagnosticCode::from(&codes::NAMESPACE),
             &["description", "identifier"],
         );
     }
@@ -360,9 +339,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         if data.block_archetype.as_ref().is_some_and(|a| a.len() > 1) {
             // The game's archetype constraint logs this text.
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed("\"block_archetype\" can only have a maximum of one component."),
-                },
+                DiagnosticCode::from(&codes::ARCHETYPE_COUNT),
                 &["description", "internal_vanilla_data", "block_archetype"],
             );
         }
@@ -373,9 +350,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             .is_some_and(|t| !translucency.contains(f64::from(t.0)))
         {
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: constraint_text(translucency.code()),
-                },
+                constraint_code(translucency.code()),
                 &["description", "internal_vanilla_data", "translucency"],
             );
         }
@@ -386,7 +361,7 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         // the load fails. The legacy description reader takes its members by name and says
         // nothing of this one, so the crate reports it as an information there.
         report.push(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             if cereal {
                 Severity::Error
             } else {
@@ -412,7 +387,7 @@ fn menu_category(block: &Block, report: &mut Report<'_>) {
     }
     if menu.category.is_none() {
         report.error(
-            DiagnosticCode::MissingRequiredField { text: None },
+            DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
             &["description", "menu_category", "category"],
         );
     }
@@ -420,7 +395,7 @@ fn menu_category(block: &Block, report: &mut Report<'_>) {
         let namespaced = has_namespace(group);
         if !namespaced || group.chars().any(char::is_whitespace) {
             report.error(
-                DiagnosticCode::NamespaceRule { text: None },
+                DiagnosticCode::from(&core_codes::NAMESPACE_RULE),
                 &["description", "menu_category", "group"],
             );
         }
@@ -447,20 +422,17 @@ fn states(block: &Block, report: &mut Report<'_>) {
             || path.is_empty()
             || namespace == "minecraft"
         {
-            report.error(DiagnosticCode::NamespaceRule { text: None }, &rel);
+            report.error(DiagnosticCode::from(&core_codes::NAMESPACE_RULE), &rel);
         }
         if implied.contains(&name.as_str()) {
-            report.error(DiagnosticCode::InvalidValue { text: None }, &rel);
+            report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &rel);
         }
         match values {
-            StateValues::Invalid(_) => report.error(
-                DiagnosticCode::InvalidType {
-                    text: fixed("Failed to create Block State Description"),
-                },
-                &rel,
-            ),
+            StateValues::Invalid(_) => {
+                report.error(DiagnosticCode::from(&codes::STATE_DESCRIPTION), &rel);
+            }
             other if !state_values_ok(other) => {
-                report.error(DiagnosticCode::InvalidValue { text: None }, &rel);
+                report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &rel);
             }
             _ => {}
         }
@@ -509,9 +481,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         .collect();
     for name in &unknown {
         report.error(
-            DiagnosticCode::InvalidEnumValue {
-                text: text("Failed to find BlockTrait with identifier: '{}'", &[name]),
-            },
+            DiagnosticCode::from(codes::UNKNOWN_TRAIT.with([name])),
             &["description", "traits", name],
         );
     }
@@ -519,23 +489,16 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         if released.is_some_and(|r| version >= r) || ucf {
             return;
         }
-        let text = match released {
-            Some(version) => VanillaText::TurnOnToggleBefore {
-                what: "trait",
-                name: name.to_owned(),
-                version,
-                toggle: ucf_toggle(),
-            },
-            None => VanillaText::TurnOnToggle {
-                what: "trait",
-                name: name.to_owned(),
-                toggle: ucf_toggle(),
-            },
+        let code = match released {
+            Some(version) => core_codes::TURN_ON_TOGGLE_BEFORE.with([
+                "trait".to_owned(),
+                name.to_owned(),
+                version.to_string(),
+                ucf_toggle().to_owned(),
+            ]),
+            None => core_codes::TURN_ON_TOGGLE.with(["trait", name, ucf_toggle()]),
         };
-        report.error(
-            DiagnosticCode::MissingToggles { text: Some(text) },
-            &["description", "traits", name],
-        );
+        report.error(code.into(), &["description", "traits", name]);
     };
     let enabled = |report: &mut Report<'_>,
                    name: &str,
@@ -543,24 +506,14 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                    valid: &[&str]| {
         if states.is_empty() {
             report.error(
-                DiagnosticCode::MissingRequiredField {
-                    text: text(
-                        "\"{}\" trait requires at least one 'enabled_state' to be specified.",
-                        &[name],
-                    ),
-                },
+                DiagnosticCode::from(codes::TRAIT_NEEDS_STATE.with([name])),
                 &["description", "traits", name, "enabled_states"],
             );
         }
         for state in states {
             if !valid.contains(&state.0.as_str()) {
                 report.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(
-                            "Invalid state option \"{}\" for \"{}\" trait.",
-                            &[&state.0, name],
-                        ),
-                    },
+                    DiagnosticCode::from(codes::INVALID_STATE_OPTION.with([&state.0, name])),
                     &["description", "traits", name, "enabled_states"],
                 );
             }
@@ -588,11 +541,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 || has("minecraft:sixteen_way_rotation"))
             {
                 report.error(
-                    DiagnosticCode::InvalidValue {
-                        text: fixed(
-                            "\"y_rotation_offset\" can only be used when \"minecraft:cardinal_direction\", \"minecraft:facing_direction\", and/or \"minecraft:sixteen_way_rotation\" are enabled in \"enabled_states\".",
-                        ),
-                    },
+                    DiagnosticCode::from(&codes::Y_ROTATION_OFFSET_STATES),
                     &["description", "traits", NAME, "y_rotation_offset"],
                 );
             } else if !(0.0..=360.0).contains(&offset) || offset % 90.0 != 0.0 {
@@ -601,11 +550,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 // The game logs this line at the content log's warning level and goes on with
                 // the closest axis-aligned rotation: a warning.
                 report.warn(
-                    DiagnosticCode::ClampedValue {
-                        text: fixed(
-                            "\"minecraft:placement_direction\" trait \"y_rotation_offset\" must be a factor of 90.0. Defaulting to the nearest axis-aligned angle.",
-                        ),
-                    },
+                    DiagnosticCode::from(&codes::Y_ROTATION_OFFSET_FACTOR),
                     &["description", "traits", NAME, "y_rotation_offset"],
                 );
             }
@@ -614,11 +559,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             && !has("minecraft:corner_and_cardinal_direction")
         {
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed(
-                        "\"blocks_to_corner_with\" can only be used when \"minecraft:corner_and_cardinal_direction\" is enabled in \"enabled_states\".",
-                    ),
-                },
+                DiagnosticCode::from(&codes::CORNER_STATES),
                 &["description", "traits", NAME, "blocks_to_corner_with"],
             );
         }
@@ -645,12 +586,9 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 .any(|s| s.0 == "minecraft:vertical_connections")
         {
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: text(
-                        "Invalid state option \"{}\" for \"{}\" trait.",
-                        &["minecraft:vertical_connections", NAME],
-                    ),
-                },
+                DiagnosticCode::from(
+                    codes::INVALID_STATE_OPTION.with(["minecraft:vertical_connections", NAME]),
+                ),
                 &["description", "traits", NAME, "enabled_states"],
             );
         }
@@ -681,7 +619,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             // The game binds `parts` with a numeric constraint of 2 to 4 under both error
             // masks, so a value outside it refuses the block.
             report.error(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 &["description", "traits", NAME, "parts"],
             );
         }
@@ -690,7 +628,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             // (`creator_features`).
             "down" | "up" | "north" | "south" | "west" | "east" => {}
             _ => report.error(
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 &["description", "traits", NAME, "direction"],
             ),
         }
@@ -810,7 +748,7 @@ fn empty_conditions(block: &Block, report: &mut Report<'_>) {
             // The empty node is not compiled and the game says nothing, so the crate reports
             // it as an information.
             report.push(
-                DiagnosticCode::DroppedField { text: None },
+                DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                 Severity::Info,
                 &["permutations", &i, "condition"],
             );
@@ -843,54 +781,48 @@ fn component_rules(
     // `minecraft:tags` (which has no constraint) and the format version of
     // `destruction_particles` (the component registry's). A legacy document's descriptions
     // bind most of them differently, as below.
-    let mut drop = |report: &mut Report<'_>,
-                    name: &'static str,
-                    message: Option<VanillaText>,
-                    field: &[&str]| {
-        let mut path = rel(&prefix, &[name]);
-        path.extend_from_slice(field);
-        // A legacy document's descriptions bind the same size constraints for these four: a
-        // failed constraint fails the description's load, which refuses the block.
-        let constraint = if cereal {
-            !matches!(name, "minecraft:tags" | "minecraft:destruction_particles")
-        } else {
-            matches!(
-                name,
-                "minecraft:crafting_table"
-                    | "minecraft:liquid_detection"
-                    | "minecraft:placement_filter"
-                    | "minecraft:geometry"
-                    | "minecraft:friction"
-                    | "minecraft:light_emission"
-            )
+    let mut drop =
+        |report: &mut Report<'_>, name: &'static str, code: DiagnosticCode, field: &[&str]| {
+            let mut path = rel(&prefix, &[name]);
+            path.extend_from_slice(field);
+            // A legacy document's descriptions bind the same size constraints for these four: a
+            // failed constraint fails the description's load, which refuses the block.
+            let constraint = if cereal {
+                !matches!(name, "minecraft:tags" | "minecraft:destruction_particles")
+            } else {
+                matches!(
+                    name,
+                    "minecraft:crafting_table"
+                        | "minecraft:liquid_detection"
+                        | "minecraft:placement_filter"
+                        | "minecraft:geometry"
+                        | "minecraft:friction"
+                        | "minecraft:light_emission"
+                )
+            };
+            // The game's `destruction_particles` check logs the format-version line and fails the
+            // component, which refuses the block. `minecraft:tags` has no constraint, and a legacy
+            // document's descriptions bind none of the tick order, detailed geometry or single
+            // bounding box constraints that exist only from 1.26.20: the drop is a lint of the
+            // crate's own, an information. The legacy descriptions of crafting table, liquid
+            // detection, placement filter and geometry do bind their size constraints, with the
+            // values of the 1.26.20 components, so their drop refuses the block too, as do friction
+            // and light emission, whose legacy descriptions bind the same ranges; the legacy
+            // collision box and selection box bind none, the legacy tick's order check is a kept
+            // error (below), and a legacy `uv_lock` list has no size constraint.
+            let severity = if constraint || name == "minecraft:destruction_particles" {
+                Severity::Error
+            } else {
+                Severity::Info
+            };
+            report.push(code, severity, &path);
+            dropped.push(name);
         };
-        // The game's `destruction_particles` check logs the format-version line and fails the
-        // component, which refuses the block. `minecraft:tags` has no constraint, and a legacy
-        // document's descriptions bind none of the tick order, detailed geometry or single
-        // bounding box constraints that exist only from 1.26.20: the drop is a lint of the
-        // crate's own, an information. The legacy descriptions of crafting table, liquid
-        // detection, placement filter and geometry do bind their size constraints, with the
-        // values of the 1.26.20 components, so their drop refuses the block too, as do friction
-        // and light emission, whose legacy descriptions bind the same ranges; the legacy
-        // collision box and selection box bind none, the legacy tick's order check is a kept
-        // error (below), and a legacy `uv_lock` list has no size constraint.
-        let severity = if constraint || name == "minecraft:destruction_particles" {
-            Severity::Error
-        } else {
-            Severity::Info
-        };
-        report.push(
-            DiagnosticCode::InvalidValue { text: message },
-            severity,
-            &path,
-        );
-        dropped.push(name);
-    };
     // Friction and light emission: bound by the legacy descriptions too, so checked in every
     // format. What the legacy reader holds here is what its non-strict read gave (`true` is
     // 1.0, `-1` is 255), held to the same range.
     if let Some(bound) = map.get::<Friction>().and_then(out_of_bounds) {
-        drop(report, "minecraft:friction", constraint_text(bound), &[]);
+        drop(report, "minecraft:friction", constraint_code(bound), &[]);
     }
     if let Some(bound) = map.get::<LightEmission>().and_then(out_of_bounds) {
         // The legacy description binds the brightness to a closed `[0, 15]` range, the
@@ -903,7 +835,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:light_emission",
-            constraint_text(bound),
+            constraint_code(bound),
             &[],
         );
     }
@@ -913,7 +845,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:light_dampening",
-                constraint_text(bound),
+                constraint_code(bound),
                 &[],
             );
         }
@@ -921,7 +853,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:redstone_producer",
-                constraint_text(bound),
+                constraint_code(bound),
                 &["power"],
             );
         }
@@ -929,7 +861,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:redstone_consumer",
-                constraint_text(bound),
+                constraint_code(bound),
                 &["min_power"],
             );
         }
@@ -937,7 +869,7 @@ fn component_rules(
             t.rotation
                 .and_then(|r| r.into_iter().find(|axis| axis % 90.0 != 0.0))
         }) {
-            let text = constraint_text(cereal::not_multiple_of(f64::from(axis), 90.0));
+            let text = constraint_code(cereal::not_multiple_of(f64::from(axis), 90.0));
             drop(report, "minecraft:transformation", text, &["rotation"]);
         }
         if let Some(DestructibleByExplosion::Params(p)) = map.get::<DestructibleByExplosion>()
@@ -946,7 +878,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:destructible_by_explosion",
-                constraint_text(bound),
+                constraint_code(bound),
                 &["explosion_resistance"],
             );
         }
@@ -956,7 +888,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:destructible_by_mining",
-                constraint_text(bound),
+                constraint_code(bound),
                 &["seconds_to_destroy"],
             );
         }
@@ -968,7 +900,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:connection_rule",
-                constraint_text(cereal::no_duplicates()),
+                constraint_code(cereal::no_duplicates()),
                 &["enabled_directions"],
             );
         }
@@ -985,7 +917,7 @@ fn component_rules(
                 drop(
                     report,
                     "minecraft:instrument_sound",
-                    constraint_text(code),
+                    constraint_code(code),
                     &[],
                 );
             }
@@ -994,7 +926,12 @@ fn component_rules(
             .get::<Tags>()
             .is_some_and(|t| t.0.is_empty() || t.0.iter().any(String::is_empty))
         {
-            drop(report, "minecraft:tags", None, &[]);
+            drop(
+                report,
+                "minecraft:tags",
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                &[],
+            );
         }
         if let Some(Geometry::Params(params)) = map.get::<Geometry>() {
             if params
@@ -1002,14 +939,14 @@ fn component_rules(
                 .as_ref()
                 .is_some_and(|s| !culling_shape_ok(s))
             {
-                let text = constraint_text(cereal::string_mismatch(CULLING_SHAPE_REGEX));
+                let text = constraint_code(cereal::string_mismatch(CULLING_SHAPE_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_shape"]);
             } else if params
                 .culling_layer
                 .as_ref()
                 .is_some_and(|l| !culling_layer_ok(l))
             {
-                let text = constraint_text(cereal::string_mismatch(CULLING_LAYER_REGEX));
+                let text = constraint_code(cereal::string_mismatch(CULLING_LAYER_REGEX));
                 drop(report, "minecraft:geometry", text, &["culling_layer"]);
             }
         }
@@ -1019,7 +956,7 @@ fn component_rules(
                     if i.ambient_occlusion.is_some_and(|a| !(0.0..=10.0).contains(&a)))
             })
         }) {
-            let text = constraint_text(NumericRange::inclusive(0.0, 10.0).code());
+            let text = constraint_code(NumericRange::inclusive(0.0, 10.0).code());
             drop(report, "minecraft:material_instances", text, &[]);
         }
     }
@@ -1033,7 +970,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_text(cereal::too_many_elements(64)),
+                constraint_code(cereal::too_many_elements(64)),
                 &["crafting_tags"],
             );
         } else if let Some(index) = long_tag {
@@ -1041,7 +978,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_text(cereal::too_many_characters(64)),
+                constraint_code(cereal::too_many_characters(64)),
                 &["crafting_tags", index.as_str()],
             );
         } else if table
@@ -1052,7 +989,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:crafting_table",
-                constraint_text(cereal::too_many_characters(256)),
+                constraint_code(cereal::too_many_characters(256)),
                 &["table_name"],
             );
         }
@@ -1072,7 +1009,7 @@ fn component_rules(
         drop(
             report,
             "minecraft:liquid_detection",
-            constraint_text(text),
+            constraint_code(text),
             &["detection_rules"],
         );
     }
@@ -1083,7 +1020,12 @@ fn component_rules(
     // a dropped component.
     if let Some(CollisionBox::Boxes(boxes)) = map.get::<CollisionBox>() {
         if !cereal && boxes.len() > 16 {
-            drop(report, "minecraft:collision_box", None, &[]);
+            drop(
+                report,
+                "minecraft:collision_box",
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                &[],
+            );
         } else if cereal
             && version < NEWEST
             && let Some(mut finding) = legacy_constraint(
@@ -1105,25 +1047,17 @@ fn component_rules(
         let min = [origin[0] + 8.0, origin[1], origin[2] + 8.0];
         let max = [min[0] + size[0], min[1] + size[1], min[2] + size[2]];
         let unit = |v: [f32; 3]| v.iter().all(|c| (0.0..=1.0).contains(&(c * 0.0625)));
-        for (ok, message) in [
-            (
-                unit(min),
-                "minecraft:selection_box: origin can't be below (-8, 0, -8) and can't be more than (8, 16, 8)",
-            ),
-            (
-                unit(max),
-                "minecraft:selection_box: origin with added size can't be below (-8, 0, -8) and can't be more than (8, 16, 8)",
-            ),
+        for (ok, code) in [
+            (unit(min), &codes::SELECTION_ORIGIN),
+            (unit(max), &codes::SELECTION_EXTENT),
         ] {
             if !ok {
                 let path = report.path(&rel(&prefix, &["minecraft:selection_box"]));
                 report.d.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: fixed(message),
-                    })
-                    .at(path)
-                    .phase(Phase::Validate)
-                    .into_kept(),
+                    Diagnostic::of(code)
+                        .at(path)
+                        .phase(Phase::Validate)
+                        .into_kept(),
                 );
             }
         }
@@ -1135,10 +1069,9 @@ fn component_rules(
         drop(
             report,
             "minecraft:selection_box",
-            text(
-                "\"origin\" + \"size\", must be inside the following limit: {} and {}",
-                &["(0, 0, 0)", "(16, 16, 16)"],
-            ),
+            codes::BOX_LIMIT_ONE
+                .with(["(0, 0, 0)", "(16, 16, 16)"])
+                .into(),
             &[],
         );
     }
@@ -1153,13 +1086,10 @@ fn component_rules(
     {
         let path = report.path(&rel(&prefix, &["minecraft:tick", "interval_range"]));
         report.d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                    text: text(
-                        "{}: maximum ticks in interval range must be more than or equal to minimum ticks",
-                        &["minecraft:tick"],
-                    ),
-                }).at(path).phase(Phase::Validate)
-            .into_kept(),
+            Diagnostic::of(codes::TICK_RANGE.with(["minecraft:tick"]))
+                .at(path)
+                .phase(Phase::Validate)
+                .into_kept(),
         );
     } else if cereal
         && map
@@ -1169,10 +1099,9 @@ fn component_rules(
         drop(
             report,
             "minecraft:tick",
-            text(
-                "Invalid interval_range: {}",
-                &["The first value must be equal or lower than the second value"],
-            ),
+            codes::INTERVAL_RANGE
+                .with(["The first value must be equal or lower than the second value"])
+                .into(),
             &["interval_range"],
         );
     }
@@ -1187,34 +1116,29 @@ fn component_rules(
             "minecraft:geometry.full_block" | "minecraft:geometry.cross"
         ) || (!cereal && params.identifier == "minecraft:geometry.full_block_v1");
         if params.bone_visibility_len() > 64 {
-            let text = constraint_text(cereal::too_many_map_elements());
+            let text = constraint_code(cereal::too_many_map_elements());
             drop(report, "minecraft:geometry", text, &["bone_visibility"]);
         } else if matches!(&params.uv_lock, Some(UvLock::Bones(bones)) if bones.len() > 64) {
             if cereal {
-                let text = constraint_text(cereal::too_many_elements(64));
+                let text = constraint_code(cereal::too_many_elements(64));
                 drop(report, "minecraft:geometry", text, &["uv_lock"]);
             } else {
                 // The game keeps the component in silence, so the crate reports an information.
                 report.push(
-                    DiagnosticCode::InvalidValue {
-                        text: constraint_text(cereal::too_many_elements(64)),
-                    },
+                    constraint_code(cereal::too_many_elements(64)),
                     Severity::Info,
                     &rel(&prefix, &["minecraft:geometry", "uv_lock"]),
                 );
             }
         } else if vanilla && params.bone_visibility_len() > 0 {
-            let message = if cereal {
-                fixed(
-                    "Cannot use bone visibility feature with minecraft:geometry.cross or minecraft:geometry.full_block",
-                )
+            let code = if cereal {
+                DiagnosticCode::from(&codes::BONE_VISIBILITY_GEOMETRY)
             } else {
-                text(
-                    "invalid bones: cannot use bone visibility feature with: {}",
-                    &[params.identifier.as_str()],
-                )
+                codes::INVALID_BONES
+                    .with([params.identifier.as_str()])
+                    .into()
             };
-            drop(report, "minecraft:geometry", message, &["bone_visibility"]);
+            drop(report, "minecraft:geometry", code, &["bone_visibility"]);
         }
     }
     if let Some(instances) = map.get::<MaterialInstances>() {
@@ -1230,7 +1154,7 @@ fn component_rules(
             drop(
                 report,
                 "minecraft:material_instances",
-                constraint_text(code),
+                constraint_code(code),
                 &[],
             );
         }
@@ -1239,7 +1163,7 @@ fn component_rules(
         f.conditions().len() > 64 || f.conditions().iter().any(|c| c.block_filter().len() > 64)
     }) {
         // Both lists hold at most 64 entries.
-        let text = constraint_text(cereal::too_many_elements(64));
+        let text = constraint_code(cereal::too_many_elements(64));
         drop(report, "minecraft:placement_filter", text, &[]);
     }
     // destruction_particles needs format 1.21.70.
@@ -1247,10 +1171,9 @@ fn component_rules(
         drop(
             report,
             "minecraft:destruction_particles",
-            text(
-                "Format version {} is at least required to use {}",
-                &["1.21.70", "minecraft:destruction_particles"],
-            ),
+            codes::FORMAT_REQUIRED
+                .with(["1.21.70", "minecraft:destruction_particles"])
+                .into(),
             &[],
         );
     }
@@ -1269,28 +1192,26 @@ fn component_rules(
     }
 }
 
-/// The text of one of `diagnostic::cereal`'s `InvalidValue` codes.
-fn constraint_text(code: DiagnosticCode) -> Option<VanillaText> {
+/// The finding of one of `diagnostic::cereal`'s `InvalidValue` codes, as a rule that drops the
+/// component tells it.
+fn constraint_code(code: DiagnosticCode) -> DiagnosticCode {
+    // The multiple-of definition held its template and arguments apart.
+    if let Some([value, step]) = code.args_of(&core_codes::NOT_MULTIPLE_OF) {
+        return codes::NOT_MULTIPLE_OF
+            .with([value.as_str(), step.as_str()])
+            .into();
+    }
     match code {
-        DiagnosticCode::InvalidValue { text } => text,
-        // The multiple-of definition held its template and arguments apart.
-        code if code.is(&bedrock_addon_core::diagnostic::codes::NOT_MULTIPLE_OF) => code
-            .args_of(&bedrock_addon_core::diagnostic::codes::NOT_MULTIPLE_OF)
-            .and_then(|args| match args {
-                [value, step] => Some(VanillaText::Formatted {
-                    template: "{} is not multiple of {}",
-                    args: vec![value.clone(), step.clone()],
-                }),
-                _ => None,
-            }),
-        // By legacy name: the definitions that were `InvalidValue`, by their game sentence.
-        code if code.name() == "InvalidValue" => {
-            code.vanilla().map(|line| VanillaText::Formatted {
+        legacy @ DiagnosticCode::InvalidValue { .. } => legacy,
+        // By legacy name: the definitions that were `InvalidValue`, by their game sentence,
+        // which the pins hold whole in the legacy text.
+        code if code.name() == "InvalidValue" => DiagnosticCode::InvalidValue {
+            text: code.vanilla().map(|line| VanillaText::Formatted {
                 template: "{}",
                 args: vec![line],
-            })
-        }
-        _ => None,
+            }),
+        },
+        _ => DiagnosticCode::from(&core_codes::INVALID_VALUE),
     }
 }
 
@@ -1334,7 +1255,7 @@ fn custom_parameters(
         .collect();
     for name in deep {
         report.push(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             &rel(prefix, &[&name]),
         );
@@ -1371,7 +1292,7 @@ fn base_game_members(
                     Value::from(dithering),
                 );
                 report.push(
-                    DiagnosticCode::UnrecognizedField { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                     severity,
                     &rel(prefix, &["minecraft:material_instances", key, "dithering"]),
                 );
@@ -1389,7 +1310,7 @@ fn base_game_members(
             );
         }
         report.push(
-            DiagnosticCode::UnrecognizedField { text: None },
+            DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
             severity,
             &rel(
                 prefix,
@@ -1473,11 +1394,8 @@ fn field_gates(
     report: &mut Report<'_>,
 ) {
     let cereal = version >= CEREAL;
-    let constraint = |report: &mut Report<'_>, message: Option<VanillaText>, path: &[&str]| {
-        report.error(
-            DiagnosticCode::InvalidValue { text: message },
-            &rel(prefix, path),
-        );
+    let constraint = |report: &mut Report<'_>, code: &'static CodeDef<0>, path: &[&str]| {
+        report.error(DiagnosticCode::from(code), &rel(prefix, path));
     };
     if version < known::V1_21_90
         && let Some(Geometry::Params(params)) = map.get_mut::<Geometry>()
@@ -1485,9 +1403,7 @@ fn field_gates(
     {
         constraint(
             report,
-            fixed(
-                "Cannot use field \"uv_lock\" before 'format_version' 1.21.90 when 'minecraft:transformation' component was released.",
-            ),
+            &codes::UV_LOCK_VERSION,
             &["minecraft:geometry", "uv_lock"],
         );
     }
@@ -1499,39 +1415,35 @@ fn field_gates(
             if version < FormatVersion::new(1, 21, 70) && instance.isotropic.take().is_some() {
                 constraint(
                     report,
-                    fixed(
-                        "'minecraft:material_instances' cannot use 'isotropic' member with 'format_version' < 1.21.70",
-                    ),
+                    &codes::ISOTROPIC_VERSION,
                     &["minecraft:material_instances", key, "isotropic"],
                 );
             }
             if instance.alpha_masked_tint == Some(true) {
                 let tint = instance.tint_method.unwrap_or_default() != TintMethod::None;
                 let opaque = instance.render_method.unwrap_or_default() == RenderMethod::Opaque;
-                let message = if version < known::V1_21_120 {
-                    Some(
-                        "'alpha_masked_tint' is only supported at format_version 1.21.120 or higher",
-                    )
+                let code = if version < known::V1_21_120 {
+                    Some(&codes::ALPHA_MASKED_TINT_VERSION)
                 } else if !tint {
                     Some(if cereal {
-                        "\"alpha_masked_tint\" requires a non-default \"tint_method\"."
+                        &codes::ALPHA_MASKED_TINT_METHOD
                     } else {
-                        "'alpha_masked_tint' requires a non-default 'tint_method'"
+                        &codes::ALPHA_MASKED_TINT_METHOD_LEGACY
                     })
                 } else if !opaque {
                     Some(if cereal {
-                        "\"alpha_masked_tint\" requires \"render_method\" to be \"opaque\"."
+                        &codes::ALPHA_MASKED_TINT_OPAQUE
                     } else {
-                        "'alpha_masked_tint' requires 'render_method' to be 'opaque'"
+                        &codes::ALPHA_MASKED_TINT_OPAQUE_LEGACY
                     })
                 } else {
                     None
                 };
-                if let Some(message) = message {
+                if let Some(code) = code {
                     instance.alpha_masked_tint = None;
                     constraint(
                         report,
-                        fixed(message),
+                        code,
                         &["minecraft:material_instances", key, "alpha_masked_tint"],
                     );
                 }
@@ -1546,13 +1458,14 @@ fn field_gates(
         && version < known::V1_21_90
     {
         particles.particle_count = None;
-        constraint(
-            report,
-            text(
-                "Format version {} is at least required to use {} and experimental creator features",
-                &["1.21.90", "particle_count"],
+        report.error(
+            codes::FORMAT_REQUIRED_EXPERIMENTAL
+                .with(["1.21.90", "particle_count"])
+                .into(),
+            &rel(
+                prefix,
+                &["minecraft:destruction_particles", "particle_count"],
             ),
-            &["minecraft:destruction_particles", "particle_count"],
         );
     }
 }
@@ -1625,12 +1538,11 @@ fn random_offset(
                 failed = true;
                 // The game binds this as a constraint of the component.
                 report.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(
-                            "\"random_offset pushes \"collision_box\" outside of unit cube for \"{}\" \"range\" \"{}\" of {}",
-                            &[name, bound, &value.to_string()],
-                        ),
-                    },
+                    DiagnosticCode::from(codes::RANDOM_OFFSET_OUTSIDE.with([
+                        name,
+                        bound,
+                        &value.to_string(),
+                    ])),
                     &path,
                 );
             } else {
@@ -1639,12 +1551,12 @@ fn random_offset(
                 let from = format!("{:.6}", *value);
                 *value = allowed;
                 report.warn(
-                    DiagnosticCode::ClampedValue {
-                        text: text(
-                            "Random offset pushes collision box outside of cube for '{}->{}'. Restricting value from {} to {}",
-                            &[name, bound, &from, &format!("{allowed:.6}")],
-                        ),
-                    },
+                    DiagnosticCode::from(codes::RANDOM_OFFSET_RESTRICTED.with([
+                        name,
+                        bound,
+                        &from,
+                        &format!("{allowed:.6}"),
+                    ])),
                     &path,
                 );
             }
@@ -1683,14 +1595,12 @@ fn experimental_components(
     if version < CEREAL && has(map, "minecraft:sound") {
         passed = false;
         report.push(
-            DiagnosticCode::MissingToggles {
-                text: Some(VanillaText::TurnOnToggleBefore {
-                    what: "component",
-                    name: "minecraft:sound".to_owned(),
-                    version: SOUND_RELEASED,
-                    toggle: ucf_toggle(),
-                }),
-            },
+            DiagnosticCode::from(core_codes::TURN_ON_TOGGLE_BEFORE.with([
+                "component".to_string(),
+                "minecraft:sound".to_string(),
+                SOUND_RELEASED.to_string(),
+                ucf_toggle().to_string(),
+            ])),
             severity,
             &rel(&prefix, &["minecraft:sound"]),
         );
@@ -1700,14 +1610,12 @@ fn experimental_components(
     if version < CEREAL && has(map, "minecraft:vibration_properties") {
         passed = false;
         report.push(
-            DiagnosticCode::MissingToggles {
-                text: Some(VanillaText::TurnOnToggleBefore {
-                    what: "component",
-                    name: "minecraft:vibration_properties".to_owned(),
-                    version: NEWEST,
-                    toggle: ucf_toggle(),
-                }),
-            },
+            DiagnosticCode::from(core_codes::TURN_ON_TOGGLE_BEFORE.with([
+                "component".to_string(),
+                "minecraft:vibration_properties".to_string(),
+                NEWEST.to_string(),
+                ucf_toggle().to_string(),
+            ])),
             severity,
             &rel(&prefix, &["minecraft:vibration_properties"]),
         );
@@ -1737,12 +1645,13 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             .is_some_and(|m| matches!(m.direction.0.as_str(), "north" | "south" | "west" | "east"))
     {
         report.error(
-            DiagnosticCode::MissingToggles {
-                text: fixed(
-                    "Upcoming Creator Features experiment is required for trait 'minecraft:multi_block' for horizontal directions",
-                ),
-            },
-            &["description", "traits", "minecraft:multi_block", "direction"],
+            DiagnosticCode::from(&codes::MULTI_BLOCK_HORIZONTAL_TOGGLE),
+            &[
+                "description",
+                "traits",
+                "minecraft:multi_block",
+                "direction",
+            ],
         );
         return;
     }
@@ -1763,12 +1672,10 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
         ] {
             if set {
                 report.error(
-                    DiagnosticCode::MissingToggles {
-                        text: text(
-                            "To use '{}' in '{}', experimental creator features are required",
-                            &[member, "minecraft:block_entity"],
-                        ),
-                    },
+                    DiagnosticCode::from(
+                        codes::MEMBER_NEEDS_CREATOR_FEATURES
+                            .with([member, "minecraft:block_entity"]),
+                    ),
                     &["components", "minecraft:block_entity", member],
                 );
                 return;
@@ -1789,12 +1696,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             if has(map, name) {
                 let prefix = section_path(*section);
                 report.error(
-                    DiagnosticCode::MissingToggles {
-                        text: text(
-                            "To use '{}', experimental creator features are required",
-                            &[name],
-                        ),
-                    },
+                    DiagnosticCode::from(codes::NEEDS_CREATOR_FEATURES.with([name])),
                     &rel(&prefix, &[name]),
                 );
                 return;
@@ -1810,11 +1712,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
         {
             let prefix = section_path(section);
             report.error(
-                DiagnosticCode::MissingToggles {
-                    text: fixed(
-                        "Upcoming Creator Features experiment is required to use \"min\"/\"max\" in \"minecraft:collision_box\" from version 1.26.60 and after",
-                    ),
-                },
+                DiagnosticCode::from(&codes::COLLISION_MIN_MAX_TOGGLE),
                 &rel(&prefix, &["minecraft:collision_box"]),
             );
             return;
@@ -1836,7 +1734,7 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
     let at = ["components", "minecraft:block_entity", "container"];
     if out_of_bounds(container).is_some() {
         report.error(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             &[at[0], at[1], at[2], "slot_count"],
         );
     }
@@ -1846,17 +1744,13 @@ fn block_entity(block: &Block, report: &mut Report<'_>) {
         .is_some_and(|title| title.is_empty() || title.chars().count() > 256)
     {
         report.error(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             &[at[0], at[1], at[2], "title"],
         );
     }
     if has(&block.components, "minecraft:crafting_table") {
         report.error(
-            DiagnosticCode::InvalidValue {
-                text: fixed(
-                    "Block cannot have both a \"container\" in \"minecraft:block_entity\" and a \"minecraft:crafting_table\" component.",
-                ),
-            },
+            DiagnosticCode::from(&codes::CONTAINER_AND_CRAFTING_TABLE),
             &["components"],
         );
     }
@@ -1891,14 +1785,9 @@ fn neighbor_change(block: &Block, report: &mut Report<'_>) {
             }
         }
         if distinct.is_empty() || distinct.len() > 6 {
-            report.error(DiagnosticCode::InvalidValue { text: None }, &path);
+            report.error(DiagnosticCode::from(&core_codes::INVALID_VALUE), &path);
         } else if distinct.len() > 1 && distinct.contains(&NeighborChangeDirection::All) {
-            report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed("The 'all' neighbor direction must be used alone"),
-                },
-                &path,
-            );
+            report.error(DiagnosticCode::from(&codes::NEIGHBOR_ALL_ALONE), &path);
         }
     }
 }
@@ -1978,12 +1867,10 @@ fn redstone_producer(block: &Block, report: &mut Report<'_>) {
         if has(&permutation.components, "minecraft:redstone_producer") {
             let i = index.to_string();
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: text(
-                        "For 'format_version' >= {} the block cannot define '{}' in the 'permutations' array and not define it in the base 'components' object",
-                        &["1.26.20", "minecraft:redstone_producer"],
-                    ),
-                },
+                DiagnosticCode::from(
+                    codes::PERMUTATION_ONLY_COMPONENT
+                        .with(["1.26.20", "minecraft:redstone_producer"]),
+                ),
                 &[
                     "permutations",
                     &i,
@@ -2028,37 +1915,32 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
     let mut seen: Vec<&'static str> = Vec::new();
     let mut fail = |report: &mut Report<'_>,
                     section: Option<usize>,
-                    message: Option<VanillaText>,
+                    code: DiagnosticCode,
                     key: &'static str| {
         if seen.contains(&key) {
             return;
         }
         seen.push(key);
         let prefix = section_path(section);
-        report.error(
-            DiagnosticCode::InvalidValue { text: message },
-            &rel(&prefix, &[]),
-        );
+        report.error(code, &rel(&prefix, &[]));
     };
     for (section, extra) in sections {
         let get = |name: &str| extra.is_some_and(|m| has(m, name)) || has(base, name);
         let geometry = get("minecraft:geometry");
         let materials = get("minecraft:material_instances");
         if version >= FormatVersion::new(1, 21, 80) && geometry != materials {
-            let message = if cereal {
-                "Block needs both a \"geometry\" and \"material_instances\" component."
+            let code = if cereal {
+                &codes::GEOMETRY_AND_MATERIALS
             } else {
-                "Block needs both a geometry and material instances component."
+                &codes::GEOMETRY_AND_MATERIALS_LEGACY
             };
-            fail(report, section, fixed(message), "geometry");
+            fail(report, section, code.into(), "geometry");
         }
         if get("minecraft:flower_pottable") && !(geometry && materials) {
             fail(
                 report,
                 section,
-                fixed(
-                    "Block that uses \"flower_pottable\" needs both a \"geometry\" and \"material_instances\" component.",
-                ),
+                DiagnosticCode::from(&codes::FLOWER_POTTABLE),
                 "flower_pottable",
             );
         }
@@ -2066,10 +1948,9 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                text(
-                    "Block {} needs both a geometry and material instances component when using an Item Visual Component.",
-                    &[block.description.identifier.as_str()],
-                ),
+                codes::ITEM_VISUAL
+                    .with([block.description.identifier.as_str()])
+                    .into(),
                 "item_visual",
             );
         }
@@ -2090,9 +1971,7 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                fixed(
-                    "Blocks with precipitation interactions \"snowlogging\" must have collision box disabled",
-                ),
+                DiagnosticCode::from(&codes::SNOWLOGGING_COLLISION),
                 "snowlogging",
             );
         }
@@ -2104,20 +1983,18 @@ fn cross_components(block: &Block, report: &mut Report<'_>) {
             fail(
                 report,
                 section,
-                fixed(
-                    "Block with \"geometry\" set at \"minecraft:geometry.full_block\" cannot have a \"random_offset\"",
-                ),
+                DiagnosticCode::from(&codes::FULL_BLOCK_RANDOM_OFFSET),
                 "random_offset",
             );
         }
     }
     if has(base, "minecraft:redstone_producer") && has(base, "minecraft:redstone_consumer") {
-        let message = if cereal {
-            "Block cannot have both \"minecraft:redstone_producer\" and \"minecraft:redstone_consumer\" components."
+        let code = if cereal {
+            &codes::REDSTONE_BOTH
         } else {
-            "Block cannot have both 'minecraft:redstone_producer' and 'minecraft:redstone_consumer' components"
+            &codes::REDSTONE_BOTH_LEGACY
         };
-        fail(report, None, fixed(message), "redstone");
+        fail(report, None, code.into(), "redstone");
     }
 }
 
@@ -2135,11 +2012,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     let traits = &block.description.traits;
     match block.components.get::<Movable>() {
         None => report.error(
-            DiagnosticCode::MissingRequiredField {
-                text: fixed(
-                    "Blocks with trait 'minecraft:multi_block' must define component 'minecraft:movable'",
-                ),
-            },
+            DiagnosticCode::from(&codes::MULTI_BLOCK_MOVABLE),
             &["components"],
         ),
         Some(movable)
@@ -2149,11 +2022,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
             ) =>
         {
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed(
-                        "Blocks with trait 'minecraft:multi_block' for component 'minecraft:movable' the 'movement_type' must either be 'popped' or 'immovable'",
-                    ),
-                },
+                DiagnosticCode::from(&codes::MULTI_BLOCK_MOVEMENT_TYPE),
                 &["components", "minecraft:movable", "movement_type"],
             );
         }
@@ -2167,11 +2036,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     );
     if horizontal && has(&block.components, "minecraft:random_offset") {
         report.error(
-            DiagnosticCode::InvalidValue {
-                text: fixed(
-                    "Blocks with trait 'minecraft:multi_block' and a horizontal 'direction' cannot define component 'minecraft:random_offset'",
-                ),
-            },
+            DiagnosticCode::from(&codes::MULTI_BLOCK_RANDOM_OFFSET),
             &["components", "minecraft:random_offset"],
         );
     }
@@ -2184,12 +2049,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     ] {
         if present {
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: text(
-                        "A block with trait 'minecraft:multi_block' cannot also define trait '{}'",
-                        &[other],
-                    ),
-                },
+                DiagnosticCode::from(codes::MULTI_BLOCK_TRAIT.with([other])),
                 &["description", "traits", other],
             );
         }
@@ -2201,11 +2061,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
             .any(|s| s.0 != "minecraft:cardinal_direction")
     {
         report.error(
-            DiagnosticCode::InvalidValue {
-                text: fixed(
-                    "A block with trait 'minecraft:multi_block' and trait 'minecraft:placement_direction' can only enable state 'minecraft:cardinal_direction'",
-                ),
-            },
+            DiagnosticCode::from(&codes::MULTI_BLOCK_PLACEMENT_DIRECTION),
             &[
                 "description",
                 "traits",
@@ -2234,12 +2090,7 @@ fn multi_block_permutations(block: &Block, horizontal: bool, report: &mut Report
             if has(&permutation.components, name) {
                 let i = index.to_string();
                 report.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(
-                            "Component '{}' is not valid in multi block permutations, only in the base BlockType components",
-                            &[name],
-                        ),
-                    },
+                    DiagnosticCode::from(codes::MULTI_BLOCK_PERMUTATION_COMPONENT.with([name])),
                     &["permutations", &i, "components", name],
                 );
             }
@@ -2259,11 +2110,7 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
         if rotation(&permutation.components).is_some() {
             let i = index.to_string();
             report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed(
-                        "minecraft:geometry 'n_way_visual_rotation' may only be defined on the base block and is not allowed in permutations.",
-                    ),
-                },
+                DiagnosticCode::from(&codes::N_WAY_PERMUTATIONS),
                 &[
                     "permutations",
                     &i,
@@ -2279,23 +2126,11 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
     };
     let rel = ["components", "minecraft:geometry", "n_way_visual_rotation"];
     if block.description.traits.multi_block.is_some() {
-        report.error(
-            DiagnosticCode::InvalidValue {
-                text: fixed(
-                    "'minecraft:geometry' field 'n_way_visual_rotation' cannot be defined for a block with trait 'minecraft:multi_block'",
-                ),
-            },
-            &rel,
-        );
+        report.error(DiagnosticCode::from(&codes::N_WAY_MULTI_BLOCK), &rel);
     }
     let axes = [("x", &base.x), ("y", &base.y), ("z", &base.z)];
     if axes.iter().all(|(_, state)| state.is_none()) {
-        report.error(
-            DiagnosticCode::MissingRequiredField {
-                text: fixed("'n_way_visual_rotation' must define at least one axis (x, y, or z)"),
-            },
-            &rel,
-        );
+        report.error(DiagnosticCode::from(&codes::N_WAY_AXIS), &rel);
     }
     let states = block.states_with_traits();
     for (axis, state) in axes {
@@ -2303,12 +2138,7 @@ fn n_way_visual_rotation(block: &Block, report: &mut Report<'_>) {
             && !states.contains_key(state)
         {
             report.error(
-                DiagnosticCode::UnresolvedReference {
-                    text: text(
-                        "'minecraft:geometry' field 'n_way_visual_rotation.{}' references unknown state '{}'",
-                        &[axis, state],
-                    ),
-                },
+                DiagnosticCode::from(codes::N_WAY_UNKNOWN_STATE.with([axis, state])),
                 &rel,
             );
         }
@@ -2345,16 +2175,14 @@ fn molang_failures(
         let i = index.to_string();
         match rule {
             MolangFailure::RejectDocument => report.error(
-                DiagnosticCode::InvalidValue {
-                    text: fixed("permutation condition failed to parse"),
-                },
+                DiagnosticCode::from(&codes::CONDITION_PARSE),
                 &["permutations", &i, "condition"],
             ),
             MolangFailure::DropEntry if compiles_unrestricted(block, index, cx) => {
                 // The game drops the permutation without a word (the parser's lines are the
                 // condition's own), so the crate reports an information.
                 report.push(
-                    DiagnosticCode::DroppedField { text: None },
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                     Severity::Info,
                     &["permutations", &i],
                 );
@@ -2429,7 +2257,7 @@ fn dangling(d: &mut Diagnostics, at: &JsonPath, steps: &[Step<'_>], kind: &'stat
         }
     }
     d.push(
-        Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
             .at(path)
             .phase(Phase::Validate)
             .detail(

@@ -10,7 +10,7 @@ use bedrock_addon_shared_visual::cereal::{self, ConditionTypes, Described, Profi
 
 pub(crate) use bedrock_addon_shared_visual::cereal::{
     check_animate, check_controllers, check_identifier, check_map, check_min_engine_version,
-    check_variables, is_map_key, not_valid_here, text,
+    check_variables, is_map_key, not_valid_here,
 };
 
 /// The payload key.

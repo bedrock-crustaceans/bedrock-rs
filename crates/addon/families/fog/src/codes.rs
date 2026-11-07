@@ -3,7 +3,7 @@
 //! noted. Each [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on
 //! the code's name keeps matching.
 
-use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind};
+use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
 // ---- the gates of `registerFogFromJson` ----
 
@@ -233,3 +233,29 @@ pub static ZERO_BELOW_MAX: CodeDef<0> = CodeDef::new(
 )
 .game("Value for 'zero_density_height' has to be greater than or equal to 'max_density_height'.")
 .was("InvalidValue");
+
+/// Every definition of this module, for the id registry.
+pub static ALL: &[&CodeMeta] = &[
+    PARSE_ERROR.meta(),
+    EMPTY_RESOURCE.meta(),
+    EMPTY_AFTER_PARSE.meta(),
+    NO_IDENTIFIER.meta(),
+    INVALID_VERSION.meta(),
+    UNSUPPORTED_VERSION.meta(),
+    FAILED_TO_VALIDATE.meta(),
+    MINECRAFT_NAMESPACE.meta(),
+    COLOR_FORMAT.meta(),
+    COLOR_SHAPE.meta(),
+    INTEGRAL.meta(),
+    EXPECTED_NUMBER.meta(),
+    BAD_FORMAT_VERSION.meta(),
+    END_BELOW_START.meta(),
+    RENDER_START_ABOVE.meta(),
+    RENDER_START_BELOW.meta(),
+    RENDER_END_ABOVE.meta(),
+    MID_BELOW_MAX.meta(),
+    UNIFORM_HEIGHTS.meta(),
+    MAX_HEIGHT_REQUIRED.meta(),
+    ZERO_HEIGHT_REQUIRED.meta(),
+    ZERO_BELOW_MAX.meta(),
+];

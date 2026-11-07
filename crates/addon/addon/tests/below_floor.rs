@@ -54,6 +54,13 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
             DiagnosticCode::Specific { code } if code.is(&codes::UNSUPPORTED_VERSION_WORDED) => {
                 lines.push(format!("fixed {:?}", code.args()[0]));
             }
+            // By legacy name: a family's own definition of a fixed sentence that was the
+            // variant's `Fixed` text.
+            DiagnosticCode::Specific { code }
+                if code.name() == "UnsupportedVersion" && code.args().is_empty() =>
+            {
+                lines.push(format!("fixed {:?}", code.vanilla().unwrap_or_default()));
+            }
             DiagnosticCode::UnsupportedVersion { text } => lines.push(match text {
                 Some(VanillaText::Fixed(text)) => format!("fixed {text:?}"),
                 Some(VanillaText::Formatted { template, .. }) => format!("formatted {template:?}"),

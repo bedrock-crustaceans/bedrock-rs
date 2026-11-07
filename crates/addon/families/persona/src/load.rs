@@ -3,13 +3,16 @@
 use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide};
 use bytes::Bytes;
 use facet_value::VObject;
 
+use super::codes;
 use super::piece::{EmoteAnimation, PersonaPiece, PieceAnimation, PieceGeometry};
 use super::read::{read_meta, read_root, read_store_info, written_in};
-use super::text::{self, unresolved, vanilla};
+use super::text::{self, unresolved};
 use super::{PackKind, PersonaPieces, PieceMetadata, PieceStoreInfo, PieceType};
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity,
@@ -108,19 +111,14 @@ pub(super) fn parse_file<T>(
 
 /// A meta file that is not JSON, or whose root is no object.
 pub(super) fn meta_not_parsed(path: &PackPath, message: String) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message,
-        text: vanilla(text::META_NOT_PARSED, [path.as_str()]),
-    })
+    Diagnostic::of(codes::META_NOT_PARSED.with([path.as_str()]))
+        .detail(DiagnosticDetail::Syntax(message))
 }
 
 /// A store-info file that is not JSON, or whose root is no object. The game ignores the
 /// file in silence.
 pub(super) fn store_info_not_parsed(_: &PackPath, message: String) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message,
-        text: None,
-    })
+    Diagnostic::of(builders::syntax(message))
 }
 
 impl PersonaPiece {
@@ -172,7 +170,7 @@ impl PersonaPiece {
             for path in &index.piece_files {
                 if !path.as_str().starts_with("models/") {
                     of_pack.push(at_file(
-                        DiagnosticCode::IgnoredFile { text: None },
+                        DiagnosticCode::from(&core_codes::IGNORED_FILE),
                         Severity::Info,
                         path,
                     ));
@@ -204,7 +202,7 @@ impl PersonaPiece {
                 // The client makes no piece of a folder without a meta file, in silence: an
                 // information of the crate's own.
                 of_pack.push(at_file(
-                    DiagnosticCode::MissingRequiredField { text: None },
+                    DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
                     Severity::Info,
                     &directory_path(directory),
                 ));
@@ -214,7 +212,7 @@ impl PersonaPiece {
                 // A later meta file replaces the earlier in the folder's slot, in silence: an
                 // information of the crate's own.
                 of_pack.push(at_file(
-                    DiagnosticCode::ShadowedDefinition { text: None },
+                    DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION),
                     Severity::Info,
                     &directory_path(directory),
                 ));
@@ -237,7 +235,7 @@ impl PersonaPiece {
             // finding, at the first folder that is not the kept one. The game says nothing: an
             // information of the crate's own.
             of_pack.push(at_file(
-                DiagnosticCode::IdentifierCollision { text: None },
+                DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
                 Severity::Info,
                 &directory_path(second),
             ));
@@ -263,7 +261,7 @@ fn shared_identities_and_unused_texts(
         for piece in pieces {
             if !seen.insert(piece.id) {
                 let mut found = at_file(
-                    DiagnosticCode::IdentifierCollision { text: None },
+                    DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
                     Severity::Info,
                     &piece.meta.origin().path,
                 );
@@ -279,7 +277,7 @@ fn shared_identities_and_unused_texts(
             && index.with_texts.contains(directory);
         if unused {
             of_pack.push(at_file(
-                DiagnosticCode::IgnoredFile { text: None },
+                DiagnosticCode::from(&core_codes::IGNORED_FILE),
                 Severity::Info,
                 &directory_path(&join(directory, "texts")),
             ));
@@ -407,10 +405,8 @@ impl<S: PieceSource> Load<'_, S> {
             Ok(bytes) => bytes,
             Err(kind) => {
                 // A meta file that cannot be read: the client skips the piece.
-                let found = Diagnostic::error(DiagnosticCode::ReadError {
-                    kind,
-                    text: vanilla(text::META_NOT_FOUND, [meta_path.as_str()]),
-                });
+                let found = Diagnostic::of(codes::META_NOT_FOUND.with([meta_path.as_str()]))
+                    .detail(DiagnosticDetail::Io(kind));
                 return Err(Rejected::new(origin.clone(), located(vec![found], &origin)));
             }
         };
@@ -420,8 +416,7 @@ impl<S: PieceSource> Load<'_, S> {
             let Some(id) = meta.value().piece_uuid() else {
                 // The client drops a built-in piece without an id of its own.
                 let mut diagnostics = meta.diagnostics().clone();
-                let found = Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                    .at(member("piece_id"));
+                let found = Diagnostic::of(&core_codes::INVALID_VALUE).at(member("piece_id"));
                 diagnostics.extend(located(vec![found], &origin));
                 return Err(Rejected::new(origin, diagnostics));
             };
@@ -469,7 +464,7 @@ impl<S: PieceSource> Load<'_, S> {
         // The name the client shows needs a translation, or the piece's own offer title.
         let key = piece.name_key();
         if piece.offer_title.is_none() && !self.is_named(&key) {
-            findings.push(Diagnostic::info(DiagnosticCode::UnresolvedLangKey).detail(
+            findings.push(Diagnostic::of(&core_codes::UNRESOLVED_LANG_KEY).detail(
                 DiagnosticDetail::Reference {
                     kind: "translation",
                     id: key,
@@ -498,13 +493,11 @@ impl<S: PieceSource> Load<'_, S> {
                     // geometry empty; the piece is kept: a kept error.
                     findings.push(
                         at_file(
-                            DiagnosticCode::ReadError {
-                                kind,
-                                text: vanilla(text::GEOMETRY_NOT_FOUND, [path.as_str()]),
-                            },
+                            codes::GEOMETRY_NOT_FOUND.with([path.as_str()]).into(),
                             Severity::Error,
                             path,
                         )
+                        .detail(DiagnosticDetail::Io(kind))
                         .into_kept(),
                     );
                     Err(())
@@ -529,13 +522,11 @@ impl<S: PieceSource> Load<'_, S> {
                             // geometry empty; the piece is kept: a kept error.
                             findings.push(
                                 at_file(
-                                    DiagnosticCode::MalformedInput {
-                                        message: message.to_string(),
-                                        text: vanilla(text::GEOMETRY_NOT_PARSED, [path.as_str()]),
-                                    },
+                                    codes::GEOMETRY_NOT_PARSED.with([path.as_str()]).into(),
                                     Severity::Error,
                                     path,
                                 )
+                                .detail(DiagnosticDetail::Syntax(message.to_string()))
                                 .into_kept(),
                             );
                             Err(())
@@ -564,11 +555,14 @@ impl<S: PieceSource> Load<'_, S> {
             Err(kind) => {
                 // The game ignores a store-info it cannot read, in silence, so an
                 // information.
-                findings.push(at_file(
-                    DiagnosticCode::ReadError { kind, text: None },
-                    Severity::Info,
-                    path,
-                ));
+                findings.push(
+                    at_file(
+                        core_codes::READ_ERROR.with([kind.to_string()]).into(),
+                        Severity::Info,
+                        path,
+                    )
+                    .detail(DiagnosticDetail::Io(kind)),
+                );
                 return None;
             }
         };
@@ -581,8 +575,12 @@ impl<S: PieceSource> Load<'_, S> {
                 {
                     // The game logs nothing about a missing thumbnail: an information of the
                     // crate's own.
-                    let mut found =
-                        unresolved("texture", thumbnail, None, member("piece_thumbnail"));
+                    let mut found = unresolved(
+                        "texture",
+                        thumbnail,
+                        (&core_codes::UNRESOLVED_REFERENCE).into(),
+                        member("piece_thumbnail"),
+                    );
                     found.severity = Severity::Info;
                     found.location.path = Some(path.clone());
                     findings.push(found);
@@ -669,7 +667,12 @@ pub(super) fn missing_images(
             return;
         };
         if !has_image(files, &join(directory, name)) {
-            let mut found = unresolved("texture", name, None, at);
+            let mut found = unresolved(
+                "texture",
+                name,
+                (&core_codes::UNRESOLVED_REFERENCE).into(),
+                at,
+            );
             found.severity = Severity::Info;
             findings.push(found);
         }
@@ -726,7 +729,7 @@ pub(super) fn missing_models(
                 unresolved(
                     "geometry",
                     name,
-                    vanilla(text::GEOMETRY_NAME_NOT_FOUND, [name, on]),
+                    codes::GEOMETRY_NAME_NOT_FOUND.with([name, on]).into(),
                     entry("geometry_sources", index, "geometry"),
                 )
                 .into_kept(),
@@ -803,12 +806,12 @@ pub(super) fn kept_animations(
             _ if missing.is_some() => {
                 // The game's error-level line for a missing animation file; the piece is kept.
                 findings.push(
-                    Diagnostic::error(DiagnosticCode::ReadError {
-                        kind: missing.unwrap_or(std::io::ErrorKind::NotFound),
-                        text: vanilla(text::ANIMATION_FILE_MISSING, [id, &joined]),
-                    })
-                    .at(entry("animation_sources", index, "animationFile"))
-                    .into_kept(),
+                    Diagnostic::of(codes::ANIMATION_FILE_MISSING.with([id, joined.as_str()]))
+                        .detail(DiagnosticDetail::Io(
+                            missing.unwrap_or(std::io::ErrorKind::NotFound),
+                        ))
+                        .at(entry("animation_sources", index, "animationFile"))
+                        .into_kept(),
                 );
             }
             _ => {
@@ -817,7 +820,9 @@ pub(super) fn kept_animations(
                     unresolved(
                         "animation",
                         name,
-                        vanilla(text::ANIMATION_NOT_IN_FILE, [name, id, &joined]),
+                        codes::ANIMATION_NOT_IN_FILE
+                            .with([name, id, joined.as_str()])
+                            .into(),
                         entry("animation_sources", index, "name"),
                     )
                     .into_kept(),
@@ -836,7 +841,7 @@ pub(super) fn kept_animations(
         findings.extend(lost.into_iter().map(|at| {
             // The game's rename has no text for a bone it replaces, so the crate reports an
             // information.
-            let mut found = Diagnostic::info(DiagnosticCode::DuplicateBone).at(at);
+            let mut found = Diagnostic::of(&core_codes::DUPLICATE_BONE).at(at);
             found.location.path = Some(first.file.clone());
             found
         }));
@@ -848,13 +853,8 @@ pub(super) fn kept_animations(
     if meta.animation_sources.iter().flatten().next().is_none() {
         // The game logs the invalid-definition line at the content log's error level and
         // stops reading the emote; the piece is kept: a kept error.
-        findings.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField {
-                text: vanilla(text::EMOTE_INVALID, [id]),
-            })
-            .at(member("animation_sources"))
-            .into_kept(),
-        );
+        findings
+            .push(Diagnostic::of(codes::EMOTE_INVALID.with([id])).at(member("animation_sources")));
     }
     (kept, emote)
 }

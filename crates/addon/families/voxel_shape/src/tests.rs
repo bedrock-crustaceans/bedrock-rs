@@ -1,7 +1,8 @@
 //! Unit tests of the crate-private parts: the chain and the vanilla texts.
 
 use super::VoxelShapeFamily;
-use super::{FLOOR, texts};
+use super::validate::extent_too_wide;
+use super::{FLOOR, codes};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     EnvelopeCheck, Family, MissingVersion, RangeModel, VersionChain, check_chain,
@@ -35,44 +36,47 @@ fn every_text_is_vanilla_s_with_its_arguments_filled_in() {
     // and either shows here.
     let texts = [
         (
-            texts::failed_to_load("shapes/a.json").to_string(),
+            codes::FAILED_TO_LOAD.with(["shapes/a.json"]).to_string(),
             "Failed to load voxel shape file shapes/a.json",
         ),
         (
-            texts::namespace_required("a:b").to_string(),
+            codes::NAMESPACE_REQUIRED.with(["a:b"]).to_string(),
             "The `minecraft` namespace is required for Vanilla shape: `a:b`",
         ),
         (
-            texts::namespace_not_valid("minecraft:b").to_string(),
+            codes::NAMESPACE_NOT_VALID.with(["minecraft:b"]).to_string(),
             "The `minecraft` namespace is not valid for custom voxel shape: `minecraft:b`",
         ),
         (
-            texts::box_invalid(3, "a:b").to_string(),
+            codes::BOX_INVALID.with(["3", "a:b"]).to_string(),
             "Box at index 3 is invalid for voxel shape `a:b`",
         ),
         (
-            texts::box_out_of_bounds(31, "a:b").to_string(),
+            codes::BOX_OUT_OF_BOUNDS.with(["31", "a:b"]).to_string(),
             "Box at index 31 in voxel shape 'a:b' is outside the allowed bounds of (-14, -14, -14) to (30, 30, 30).",
         ),
         (
-            texts::no_overlap("a:b").to_string(),
+            codes::NO_OVERLAP.with(["a:b"]).to_string(),
             "Voxel shape 'a:b' has no boxes that overlap the base block (0-16 pixels on all axes).",
         ),
         (
-            texts::extent_too_wide("a:b", "z", 44.0).to_string(),
+            extent_too_wide("a:b", "z", 44.0).to_string(),
             "Total extent of voxel shape 'a:b' on axis z is 44 pixels, which exceeds the maximum of 30 pixels (1 block + 14 pixels).",
         ),
         (
-            texts::not_in_schema().to_string(),
+            bedrock_addon_core::diagnostic::cereal::member_not_in_schema().to_string(),
             "this member was found in the input, but is not present in the Schema",
         ),
-        (texts::expected_x_y_z().to_string(), "Expected [x, y, z]."),
+        (
+            codes::EXPECTED_X_Y_Z.template().to_owned(),
+            "Expected [x, y, z].",
+        ),
         (
             bedrock_addon_core::diagnostic::cereal::expected_object().to_string(),
             "expected an object",
         ),
         (
-            texts::too_many_boxes().to_string(),
+            codes::TOO_MANY_BOXES.template().to_owned(),
             " -> shape -> boxes: too many input elements, expected no more than 32",
         ),
     ];
@@ -84,7 +88,7 @@ fn every_text_is_vanilla_s_with_its_arguments_filled_in() {
 #[test]
 fn an_extent_is_printed_with_six_significant_digits() {
     let printed = |extent: f32| {
-        let text = texts::extent_too_wide("a", "x", extent).to_string();
+        let text = extent_too_wide("a", "x", extent).to_string();
         let (_, rest) = text.split_once(" is ").unwrap();
         rest.split_once(" pixels").unwrap().0.to_owned()
     };

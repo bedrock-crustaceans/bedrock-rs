@@ -1,6 +1,6 @@
 //! The item-id rows of the fixtures (the game's item parser) and the `data` / inline-aux rows.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 
 use super::common::*;
 
@@ -28,7 +28,7 @@ fn ingredient_item_id_aux_300_is_logged_and_parsing_continues() {
     );
     // The game's item parser logs it at level 3 and goes on: a kept error.
     assert!(finding.kept);
-    assert!(matches!(finding.code, DiagnosticCode::InvalidValue { .. }));
+    assert!(finding.is(&bedrock_addon::families::recipe::codes::INVALID_AUX));
     assert_eq!(args(finding), ["minecraft:wool:300"]);
     let name = shaped(&document).key["#"].item_name().unwrap();
     assert_eq!((name.id().as_str(), name.aux), ("minecraft:wool", None));

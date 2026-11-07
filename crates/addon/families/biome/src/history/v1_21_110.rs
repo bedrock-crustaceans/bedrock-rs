@@ -6,11 +6,11 @@ use facet_json::RawJson;
 
 use super::v1_21_120;
 use crate::Description;
+use crate::codes;
 use crate::component::{BiomeComponent, child};
 use crate::read::payload;
-use crate::texts::INVALID_BIOME_FILE;
 use crate::write::object;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
@@ -59,11 +59,11 @@ impl VersionStruct for Biome {
             .any(|finding| finding.rejects() && !is_unknown_member(finding))
         {
             found.push(
-                Diagnostic::error(DiagnosticCode::MalformedInput {
-                    message: INVALID_BIOME_FILE.to_owned(),
-                    text: Some(VanillaText::Fixed(INVALID_BIOME_FILE)),
-                })
-                .at(cx.at.clone()),
+                Diagnostic::of(&codes::INVALID_BIOME_FILE)
+                    .detail(DiagnosticDetail::Syntax(
+                        codes::INVALID_BIOME_FILE.template().to_owned(),
+                    ))
+                    .at(cx.at.clone()),
             );
         }
         d.extend_with_unknown(found);

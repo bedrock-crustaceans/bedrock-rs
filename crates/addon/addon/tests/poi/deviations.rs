@@ -1,7 +1,7 @@
 //! The deviations of the POI family: the experiment gate, the load order of types and tags, and
 //! the findings vanilla does not make. Every test name ends in `deviation`.
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::families::poi::{Poi, PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::load::LoadOptions;
@@ -32,10 +32,7 @@ fn gate<T: bedrock_addon::document::Content + std::fmt::Debug>(text: &str) {
     let rejected = load_with::<T>(text, &off).expect_err("the gate is closed");
     assert_eq!(rejected.diagnostics.iter().count(), 1);
     let finding = rejected.diagnostics.iter().next().unwrap();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::MissingToggles { .. }
-    ));
+    assert!(finding.is(&bedrock_addon::diagnostic::codes::MISSING_TOGGLES));
     assert_eq!(finding.severity, Severity::Info);
     loads::<T>(text);
 }

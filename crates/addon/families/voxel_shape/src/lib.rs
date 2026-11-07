@@ -4,8 +4,8 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
-mod texts;
 mod types;
 mod validate;
 mod write;
@@ -13,7 +13,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Notice, Registry,
     default_path,
@@ -88,9 +88,7 @@ impl Family for VoxelShapeFamily {
             .iter()
             .any(|finding| finding.severity >= Severity::Error && finding.phase == Phase::Parse);
         if rejected_by_schema {
-            diagnostics.push(Diagnostic::error(DiagnosticCode::DocumentRejected {
-                text: Some(texts::failed_to_load(path.as_str())),
-            }));
+            diagnostics.push(Diagnostic::of(codes::FAILED_TO_LOAD.with([path.as_str()])));
         }
     }
 }

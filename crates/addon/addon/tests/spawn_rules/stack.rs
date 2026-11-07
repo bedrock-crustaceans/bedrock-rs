@@ -2,7 +2,6 @@
 //! below `spawn_rules/`, the higher pack's rules winning, routed by the world's experiment, and
 //! the rules vanilla does not register (rule 8) left out.
 
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::families::spawn_rules::SpawnRules;
 use bedrock_addon::id::{EntityId, SpawnRulesId, kind};
 use bedrock_addon::load::LoadOptions;
@@ -87,11 +86,10 @@ fn s09h_rules_without_a_known_pool_are_not_registered() {
     assert!(!registry.contains(&SpawnRulesId::parse("x:none")));
     assert!(registry.rejected().is_empty());
     // Their warnings are the registry's.
-    assert!(
-        registry
-            .diagnostics()
-            .any(|d| matches!(d.code, DiagnosticCode::InvalidEnumValue { .. }))
-    );
+    assert!(registry.diagnostics().any(|d| {
+        d.code
+            .is(&bedrock_addon::families::spawn_rules::codes::NO_POPULATION_CONTROL)
+    }));
 }
 
 #[test]

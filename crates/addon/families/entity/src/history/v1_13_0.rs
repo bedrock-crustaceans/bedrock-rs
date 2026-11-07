@@ -1,6 +1,7 @@
 //! Format 1.13.0: the struct and the step to 1.15.0.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, VanillaText};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersion;
@@ -169,11 +170,7 @@ fn per_type(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         for at in gone {
             finding(
                 cx,
-                DiagnosticCode::DroppedComponent {
-                    text: Some(VanillaText::Fixed(
-                        "The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater.",
-                    )),
-                },
+                DiagnosticCode::from(&codes::DAMAGE_SENSOR_NOT_ADDED),
                 &at,
             );
         }

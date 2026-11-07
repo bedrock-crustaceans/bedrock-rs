@@ -4,10 +4,10 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 
-use bedrock_addon_core::diagnostic::builders::malformed;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, Rejected, unversioned,
@@ -120,9 +120,6 @@ pub enum MessageList {
 
 impl bedrock_addon_core::__private::Sealed for LoadingMessages {}
 
-/// Vanilla's assert for a file that is not JSON.
-const LOADING_NOT_JSON: &str = "Failed to read loading messages file";
-
 /// Keyed by the member name of a list: `Merged::origin` names the pack whose file is read.
 impl Merge for LoadingMessages {
     type Key = String;
@@ -134,8 +131,9 @@ fn read_loading(origin: Origin, bytes: &[u8]) -> Result<Document<LoadingMessages
         Ok(root) => root,
         Err(message) => {
             // No tips at all.
-            let code = malformed(message.to_string(), Some(LOADING_NOT_JSON));
-            return Err(unversioned::reject(origin, Diagnostic::error(code)));
+            let found = Diagnostic::of(&codes::LOADING_NOT_JSON)
+                .detail(DiagnosticDetail::Syntax(message.to_string()));
+            return Err(unversioned::reject(origin, found));
         }
     };
     let mut diagnostics = Diagnostics::default();

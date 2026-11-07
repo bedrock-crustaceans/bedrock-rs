@@ -1,6 +1,7 @@
 //! The registry of `rp.client_biomes()`: the walk of `biomes/`, the
 //! claim-first rule, duplicates, beta documents and `Placed::default_path`.
 
+use bedrock_addon::diagnostic::codes;
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as Code, Severity};
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::client_biome::ClientBiome;
@@ -150,7 +151,7 @@ fn st02_failed_load_does_not_claim() {
         Some("#222222")
     );
     assert_eq!(stack.client_biomes().rejected().len(), 1);
-    assert!(found(&stack, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks)).is_empty());
+    assert!(found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS)).is_empty());
     assert!(found(&stack, |c| c.name() == "ShadowedDefinition").is_empty());
 }
 
@@ -183,7 +184,7 @@ fn a_glue_failure_claims_the_identifier() {
     assert_eq!(sky_of(&stack, "minecraft:plains"), None);
     assert!(stack.client_biomes().is_empty());
     assert_eq!(BiomeId::parse("plains"), BiomeId::parse("minecraft:plains"));
-    let claims = found(&stack, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks));
+    let claims = found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS));
     assert_eq!(claims.len(), 1, "{claims:#?}");
     // The client has no line for the shadowing: an information of ours.
     assert_eq!(claims[0].severity, Severity::Info);
@@ -217,7 +218,7 @@ fn a_glue_failure_claims_the_identifier() {
         sky_of(&stack, "minecraft:plains").as_deref(),
         Some("#111111")
     );
-    assert!(found(&stack, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks)).is_empty());
+    assert!(found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS)).is_empty());
 }
 
 /// The findings of `report` with a code `code` accepts.
@@ -612,7 +613,8 @@ fn a_shadowed_document_is_not_glue_checked() {
     assert!(stack.client_biomes().rejected().is_empty());
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
-    assert!(matches!(all[0].code, Code::ShadowedDefinition { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(all[0].code.name(), "ShadowedDefinition");
     assert_eq!(file(all[0]).0, "bottom");
     // The same document on top is the claiming one: it is checked, fails, and still claims.
     let top = pack(1, "top", PackOrigin::User, vec![bad("biomes/plains.json")]);
@@ -647,7 +649,7 @@ fn a_shadowed_document_is_not_glue_checked() {
         file(&shadowed[0]),
         ("bottom".to_owned(), "biomes/plains.json".to_owned())
     );
-    let claims = found(&stack, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks));
+    let claims = found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS));
     assert_eq!(claims.len(), 1, "{claims:#?}");
     assert_eq!(claims[0].severity, Severity::Info);
     assert_eq!(file(&claims[0]).0, "top");
@@ -677,7 +679,8 @@ fn a_document_for_an_unknown_biome_is_still_glue_checked_deviation() {
     assert!(stack.client_biomes().is_empty());
     let all: Vec<_> = stack.client_biomes().diagnostics().collect();
     assert_eq!(all.len(), 1, "{all:#?}");
-    assert!(matches!(all[0].code, Code::InvalidValue { .. }));
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(all[0].code.name(), "InvalidValue");
     assert_eq!(all[0].severity, Severity::Error);
     assert_eq!(
         all[0].code.to_string(),
@@ -735,7 +738,7 @@ fn two_packs_a_failed_claim_keeps_the_lower_beta_document_out() {
     let stack = stack(vec![top, vanilla]);
     assert!(stack.client_biomes().is_empty());
     assert_eq!(beta_pack_of(&stack, "myns:b"), None);
-    let claims = found(&stack, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks));
+    let claims = found(&stack, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS));
     assert_eq!(claims.len(), 1, "{claims:#?}");
     assert_eq!(claims[0].severity, Severity::Info);
     assert_eq!(
@@ -767,7 +770,7 @@ fn three_packs_a_failed_claim_keeps_the_stable_and_the_beta_document_below_it_ou
     );
     assert_eq!(sky_of(&loaded, "myns:b"), None);
     assert_eq!(beta_pack_of(&loaded, "myns:b"), None);
-    let claims = found(&loaded, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks));
+    let claims = found(&loaded, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS));
     assert_eq!(claims.len(), 1, "{claims:#?}");
     // The other order below the claim.
     let loaded = layers(
@@ -800,7 +803,7 @@ fn three_packs_a_failed_claim_keeps_the_stable_and_the_beta_document_below_it_ou
     ]);
     assert_eq!(beta_pack_of(&loaded, "myns:b").as_deref(), Some("top"));
     assert_eq!(sky_of(&loaded, "myns:b"), None);
-    assert!(found(&loaded, |c| matches!(c, Code::ClientBiomeShadowsLowerPacks)).is_empty());
+    assert!(found(&loaded, |c| c.is(&codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS)).is_empty());
 }
 
 // The game's walk over `biomes` takes a recursion flag set to false;

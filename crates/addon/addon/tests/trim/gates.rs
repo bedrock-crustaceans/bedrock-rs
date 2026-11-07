@@ -1,6 +1,6 @@
 //! The world gate and the template-item filter of world start, and the deviation for a pattern the filter leaves out.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Phase, Severity};
+use bedrock_addon::diagnostic::{DiagnosticDetail, Phase, Severity, codes};
 use bedrock_addon::families::item::trim::{ItemTags, TrimData};
 use bedrock_addon::id::ItemId;
 use bedrock_addon::load::LoadOptions;
@@ -74,10 +74,7 @@ fn assert_left_out(data: &TrimData, kind: &str) {
     let findings: Vec<_> = data.diagnostics().iter().collect();
     assert_eq!(findings.len(), 1, "{findings:?}");
     let finding = findings[0];
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::UnresolvedReference { text: None }
-    ));
+    assert!(finding.code.is(&codes::UNRESOLVED_REFERENCE));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(finding.phase, Phase::Link);
     match finding.detail.as_deref() {

@@ -2,6 +2,8 @@
 //! to e34 under `tests/fixtures/entity/entity/upgrade/` (`<name>.before.json` at the step's
 //! source version, `<name>.after.json` at its target).
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::testing::same_line;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
@@ -10,6 +12,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
+use bedrock_addon_family_entity::codes as entity_codes;
 #[allow(
     clippy::wildcard_imports,
     reason = "one module per struct of the chain"
@@ -143,14 +146,8 @@ pub fn removed(diagnostics: &Diagnostics) -> Vec<&'static str> {
     let names: Vec<&'static str> = diagnostics
         .iter()
         .filter(|d| {
-            matches!(
-                &d.code,
-                DiagnosticCode::DroppedField {
-                    text: Some(VanillaText::RemovedByUpgrade { .. })
-                } | DiagnosticCode::DroppedComponent {
-                    text: Some(VanillaText::RemovedByUpgrade { .. })
-                }
-            )
+            d.is(&entity_codes::MEMBER_REMOVED_BY_UPGRADE)
+                || d.is(&entity_codes::COMPONENT_REMOVED_BY_UPGRADE)
         })
         .inspect(|d| assert_eq!(d.severity, Severity::Info, "{d:?}"))
         .map(|d| d.code.name())
@@ -411,11 +408,11 @@ fn e00e_1_13_0_melee_chance_spawn() {
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_search_count", Run::default());
     assert_eq!(removed(&found), ["DroppedField", "DroppedField"]);
     let found = step::<v1_13_0::Entity>("e00e_1_13_0_snowball_damage_sensor", Run::default());
-    let sensor = DiagnosticCode::DroppedComponent {
-        text: Some(VanillaText::Fixed(
-            "The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater.",
-        )),
-    };
+    let sensor = DiagnosticCode::from(&entity_codes::DAMAGE_SENSOR_NOT_ADDED);
+    assert_eq!(
+        sensor.to_string(),
+        "The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater."
+    );
     // One finding at every location.
     assert_eq!(
         found
@@ -825,13 +822,19 @@ fn e22_1_21_70_leashable_presets() {
 #[test]
 fn e23_1_21_80_null_groups() {
     let found = step::<v1_21_80::Entity>("e23_1_21_80_null_groups", Run::default());
-    assert_eq!(
-        found.iter().map(|d| d.code.clone()).collect::<Vec<_>>(),
-        [DiagnosticCode::DroppedComponent {
-            text: Some(VanillaText::NullGroupRemoved {
-                group: "gone".to_owned()
-            })
-        }]
+    let legacy = [DiagnosticCode::DroppedComponent {
+        text: Some(VanillaText::NullGroupRemoved {
+            group: "gone".to_owned(),
+        }),
+    }];
+    let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
+    assert!(
+        codes.len() == legacy.len()
+            && codes
+                .iter()
+                .zip(&legacy)
+                .all(|(code, legacy)| same_line(code, legacy)),
+        "{codes:?}"
     );
 }
 
@@ -993,17 +996,23 @@ fn e32_1_26_20_to_1_26_30() {
 fn e33_1_26_30_on_kill_overlap() {
     // The `on_attack` of `melee_attack` that its `on_kill` replaces is told as dropped.
     let found = step::<v1_26_30::Entity>("e33_1_26_30_on_kill_overlap", Run::default());
-    assert_eq!(
-        found.iter().map(|d| d.code.clone()).collect::<Vec<_>>(),
-        [
-            DiagnosticCode::DroppedField { text: None },
-            DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::NotAValidValue {
-                    value: "bogus".to_owned(),
-                    member: "should_bounce"
-                })
-            }
-        ]
+    let legacy = [
+        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+        DiagnosticCode::InvalidValue {
+            text: Some(VanillaText::NotAValidValue {
+                value: "bogus".to_owned(),
+                member: "should_bounce",
+            }),
+        },
+    ];
+    let codes: Vec<_> = found.iter().map(|d| d.code.clone()).collect();
+    assert!(
+        codes.len() == legacy.len()
+            && codes
+                .iter()
+                .zip(&legacy)
+                .all(|(code, legacy)| same_line(code, legacy)),
+        "{codes:?}"
     );
     assert_eq!(
         found.iter().next().unwrap().location.json_path.to_string(),
@@ -1235,7 +1244,7 @@ fn misread(version: &str, components: &str) -> (Vec<String>, String) {
         .filter(|f| {
             f.phase == Phase::Upgrade
                 && f.severity == Severity::Info
-                && matches!(f.code, DiagnosticCode::InvalidType { .. })
+                && f.code.name() == "InvalidType"
         })
         .map(|f| f.location.json_path.to_string())
         .collect();

@@ -1,8 +1,9 @@
 //! The parse of one AI goal from its slice (the `parse` of every goal row of the component
 //! table), strict or lenient, and the member checks every goal runs while it is read.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{
@@ -198,7 +199,9 @@ fn read<T: Goal>(
         d.push(
             // The game writes no content-log line for this, so the crate reports it as an
             // information: facet's coercion, which the readers' `as*` make in silence.
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(path),
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
+                .at(path),
         );
     }
     if let Some(version) = version {
@@ -208,7 +211,7 @@ fn read<T: Goal>(
                 d.push(
                     // The game logs an unrecognised member of a legacy-format goal as a
                     // warning; the strict slices from 1.21.89 refuse the document.
-                    Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                         .severity(grade)
                         .at(JsonPath::new().child(name)),
                 );
@@ -238,7 +241,7 @@ fn read<T: Goal>(
             .flatten();
         if top && version.is_some() && T::REJECTED.contains(&name.as_str()) {
             rejected = true;
-            d.push(Diagnostic::error(DiagnosticCode::InvalidValue { text: None }).at(path));
+            d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(path));
         } else if let Some((name, text, _)) = deprecated {
             d.unknown_mut().take(&JsonPath::new(), name);
             // The game logs a deprecated name as an error that rejects the document in a
@@ -252,18 +255,16 @@ fn read<T: Goal>(
                 Severity::Info
             };
             d.push(
-                Diagnostic::error(DiagnosticCode::DeprecatedMember {
-                    text: Some(VanillaText::Fixed(text)),
-                })
-                .at(path)
-                .severity(severity),
+                Diagnostic::of(core_codes::DEPRECATED_MEMBER_WORDED.with([*text]))
+                    .at(path)
+                    .severity(severity),
             );
             value.deprecated(name, &member);
         } else {
             d.push(
                 // The game logs an unrecognised member of a legacy-format goal as a warning;
                 // the strict slices from 1.21.89 refuse the document.
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .severity(grade)
                     .at(path),
             );
@@ -284,8 +285,7 @@ fn read<T: Goal>(
 /// game's text: the game writes no content-log line for these, because the texts are
 /// cereal's constraints, which the legacy readers do not check. A line the game logs whatever the reader is told with
 /// [`GoalCheck::kept`].
-fn lenient_severity(text: Option<&VanillaText>) -> Severity {
-    let _ = text;
+fn lenient_severity() -> Severity {
     Severity::Info
 }
 
@@ -302,7 +302,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
         d.push(
             // The game writes no content-log line for this (the legacy reader takes
             // defaults), so the crate reports it as an information.
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }),
+            Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info),
         );
         return None;
     };
@@ -316,7 +316,8 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
             d.push(
                 // The lenient conversion: the legacy reader reads only what it knows, in
                 // silence, so the crate reports an information.
-                Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
                     .at(JsonPath::new().child(name)),
             );
         }
@@ -338,7 +339,7 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
                     // tells each one written as dropped.
                     for unread in value.legacy_member_failed(name) {
                         d.push(
-                            Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                            Diagnostic::of(&core_codes::DROPPED_FIELD)
                                 .at(JsonPath::new().child(unread)),
                         );
                     }
@@ -365,9 +366,10 @@ fn lenient<T: Goal>(slice: JsonSlice<'_>, d: &mut Diagnostics) -> Option<(T, Val
                 d.push(
                     // Without a row of the game's text the game writes no line, so the crate
                     // reports an information; a row with a text carries its own level.
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: legacy.map(|(_, text, _)| VanillaText::Fixed(text)),
-                    })
+                    Diagnostic::error(legacy.map_or(
+                        DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                        |(_, text, _)| core_codes::INVALID_VALUE_WORDED.with([*text]).into(),
+                    ))
                     .at(at)
                     .severity(legacy.map_or(Severity::Info, |(.., severity)| *severity)),
                 );
@@ -400,7 +402,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
         goal.insert("look_time", Value::from(range));
         dropped.push((
             JsonPath::new().child("look_time"),
-            DiagnosticCode::ValueRewritten { text: None },
+            DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
         ));
     }
     let names: Vec<String> = goal.keys().map(|key| key.as_str().to_owned()).collect();
@@ -422,7 +424,7 @@ pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Dia
             if range.remove(end).is_some() {
                 let mut at = JsonPath::new().child(&name);
                 at.push(end);
-                dropped.push((at, DiagnosticCode::DroppedField { text: None }));
+                dropped.push((at, DiagnosticCode::from(&core_codes::DROPPED_FIELD)));
             }
         }
         if range.is_empty() {
@@ -632,7 +634,7 @@ fn lenient_text<T: Goal>(json: &Value, d: &mut Diagnostics) -> Option<String> {
         d.push(
             // The game writes no content-log line for this, so the crate reports an
             // information.
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }),
+            Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info),
         );
     }
     text
@@ -763,45 +765,38 @@ impl<'d> GoalCheck<'d> {
 
     /// A value of member `key` the game logs at level 3 at the goal's set-up, whatever the
     /// reader, and replaces by its default: the game logs this at the error level and keeps the document: a kept error.
-    pub(crate) fn kept(&mut self, key: &str, text: VanillaText) {
+    pub(crate) fn kept(&mut self, key: &str, code: impl Into<DiagnosticCode>) {
         let at = self.path(key);
-        self.d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: Some(text) }).at(at),
-        );
+        self.d
+            .push_kept_error(Diagnostic::error(code.into()).at(at));
     }
 
     /// Reports a value of member `key` that vanilla rejects: an error that drops the goal in
     /// the strict parse; in the lenient one (the caller then resets the member) an
     /// information: the legacy readers check no bound, so the typed struct's bound is the
     /// crate's own and the game writes no line for it.
-    pub(crate) fn reject(&mut self, key: &str, text: Option<VanillaText>) {
+    pub(crate) fn reject(&mut self, key: &str, code: impl Into<DiagnosticCode>) {
         let severity = if self.strict {
             self.failed = true;
             Severity::Error
         } else {
-            lenient_severity(text.as_ref())
+            lenient_severity()
         };
         let at = self.path(key);
-        self.d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text })
-                .at(at)
-                .severity(severity),
-        );
+        self.d
+            .push(Diagnostic::error(code.into()).at(at).severity(severity));
     }
 
     /// [`GoalCheck::reject`] at `at`, a path below the goal.
-    fn reject_at(&mut self, at: JsonPath, text: Option<VanillaText>) {
+    fn reject_at(&mut self, at: JsonPath, code: impl Into<DiagnosticCode>) {
         let severity = if self.strict {
             self.failed = true;
             Severity::Error
         } else {
-            lenient_severity(text.as_ref())
+            lenient_severity()
         };
-        self.d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text })
-                .at(at)
-                .severity(severity),
-        );
+        self.d
+            .push(Diagnostic::error(code.into()).at(at).severity(severity));
     }
 
     /// Checks a float member with the game's numeric constraint of a lower bound `min`: a value
@@ -812,7 +807,7 @@ impl<'d> GoalCheck<'d> {
         if let Some(x) = *slot
             && !range.contains(f64::from(x))
         {
-            self.reject(key, Some(range.text()));
+            self.reject(key, range.code());
             *slot = None;
         }
     }
@@ -843,7 +838,7 @@ impl<'d> GoalCheck<'d> {
         let mut refused = false;
         if range.form == RangeForm::Scalar {
             if lo < 0.0 {
-                self.reject(key, Some(at_least.text()));
+                self.reject(key, at_least.code());
                 refused = true;
             }
         } else {
@@ -859,7 +854,7 @@ impl<'d> GoalCheck<'d> {
                 if !missing && end < 0.0 {
                     let mut at = self.path(key);
                     at.push(name);
-                    self.reject_at(at, Some(at_least.text()));
+                    self.reject_at(at, at_least.code());
                     refused = true;
                 }
             }
@@ -868,9 +863,8 @@ impl<'d> GoalCheck<'d> {
             if !refused && hi < lo {
                 self.reject(
                     key,
-                    Some(VanillaText::Fixed(
-                        "max value cannot be lower than min value",
-                    )),
+                    core_codes::INVALID_VALUE_WORDED
+                        .with(["max value cannot be lower than min value"]),
                 );
                 refused = true;
             }
@@ -889,13 +883,14 @@ impl<'d> GoalCheck<'d> {
         let (code, severity) = if self.strict {
             self.failed = true;
             (
-                DiagnosticCode::DeprecatedMember {
-                    text: Some(VanillaText::Fixed(text)),
-                },
+                DiagnosticCode::from(core_codes::DEPRECATED_MEMBER_WORDED.with([text])),
                 Severity::Error,
             )
         } else {
-            (DiagnosticCode::MemberNotKept { text: None }, Severity::Info)
+            (
+                DiagnosticCode::from(&core_codes::MEMBER_NOT_KEPT),
+                Severity::Info,
+            )
         };
         self.d
             .push(Diagnostic::error(code).at(at).severity(severity));
@@ -916,12 +911,8 @@ impl<'d> GoalCheck<'d> {
 
     /// [`GoalCheck::legacy_error`] at `at` (a path below the goal, an element of a list).
     pub(crate) fn legacy_error_at(&mut self, at: JsonPath, text: &'static str) {
-        self.d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(text)),
-            })
-            .at(at),
-        );
+        self.d
+            .push_kept_error(Diagnostic::of(core_codes::INVALID_VALUE_WORDED.with([text])).at(at));
     }
 
     /// A content-log warning of the legacy goal parser at `at` (a path below the goal, an
@@ -929,10 +920,9 @@ impl<'d> GoalCheck<'d> {
     pub(crate) fn legacy_warning_at(&mut self, at: JsonPath, text: &'static str) {
         self.d.push(
             // The legacy goal parser logs these at the warning level.
-            Diagnostic::warn(DiagnosticCode::InvalidValue {
-                text: Some(VanillaText::Fixed(text)),
-            })
-            .at(at),
+            Diagnostic::of(core_codes::INVALID_VALUE_WORDED.with([text]))
+                .severity(Severity::Warning)
+                .at(at),
         );
     }
 
@@ -962,7 +952,7 @@ impl<'d> GoalCheck<'d> {
         if let Some(x) = *slot
             && !bound.holds(x)
         {
-            self.reject(key, None);
+            self.reject(key, &core_codes::INVALID_VALUE);
             *slot = None;
         }
     }
@@ -977,7 +967,7 @@ impl<'d> GoalCheck<'d> {
         if let Some(x) = *slot
             && !bound.holds(x)
         {
-            self.reject(key, None);
+            self.reject(key, &core_codes::INVALID_VALUE);
             *slot = None;
         }
     }
@@ -1016,7 +1006,9 @@ impl<'d> GoalCheck<'d> {
                 let mut at = self.path(key);
                 at.push(end);
                 self.d.push(
-                    Diagnostic::error(DiagnosticCode::UnrecognizedField { text: None }).at(at),
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                        .severity(Severity::Error)
+                        .at(at),
                 );
             }
         }
@@ -1032,7 +1024,7 @@ impl<'d> GoalCheck<'d> {
             && r.form == RangeForm::Array
         {
             if self.strict {
-                self.reject(key, None);
+                self.reject(key, &core_codes::INVALID_VALUE);
             } else {
                 r.form = RangeForm::MinMax;
             }
@@ -1084,7 +1076,7 @@ impl<'d> GoalCheck<'d> {
             self.d.push(
                 // The game logs an unrecognised member of a legacy-format goal as a warning;
                 // the strict slices from 1.21.89 refuse the document.
-                Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                     .severity(self.unknown)
                     .at(at),
             );
@@ -1099,7 +1091,7 @@ impl<'d> GoalCheck<'d> {
             self.d.push(
                 // The game keeps a sound name it does not know without a line, so the crate
                 // reports an information.
-                Diagnostic::info(DiagnosticCode::UnknownSound { text: None }).at(at),
+                Diagnostic::of(&core_codes::UNKNOWN_SOUND).at(at),
             );
         }
     }
@@ -1128,7 +1120,7 @@ impl<'d> GoalCheck<'d> {
         };
         let at = self.path(key);
         self.d.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
                 .at(at)
                 .severity(severity),
         );

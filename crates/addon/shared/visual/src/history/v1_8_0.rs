@@ -2,7 +2,8 @@
 
 use std::collections::HashMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::id::AnimationRef;
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
 use bedrock_addon_core::versioning::UpgradeCx;
@@ -135,7 +136,7 @@ pub fn animation_controllers(
                 };
                 for key in element.keys().filter(|key| *key != first) {
                     cx.diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+                        Diagnostic::of(&core_codes::DROPPED_FIELD)
                             .at(controller_at(at, index, key))
                             .phase(Phase::Upgrade),
                     );
@@ -199,7 +200,7 @@ fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Di
         || at.with(&["animations", name]),
         |(earlier, key)| controller_at(at, *earlier, key),
     );
-    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+    Diagnostic::of(&core_codes::DROPPED_FIELD)
         .at(replaced)
         .phase(Phase::Upgrade)
 }
@@ -209,7 +210,7 @@ fn written_over(at: &JsonPath, name: &str, made: Option<&(usize, String)>) -> Di
 fn empty_element(at: &JsonPath, index: usize) -> Diagnostic {
     let mut element_at = at.with(&["animation_controllers"]);
     element_at.push_index(index);
-    Diagnostic::info(DiagnosticCode::DroppedField { text: None })
+    Diagnostic::of(&core_codes::DROPPED_FIELD)
         .at(element_at)
         .phase(Phase::Upgrade)
 }

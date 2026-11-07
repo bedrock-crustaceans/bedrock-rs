@@ -2,7 +2,8 @@
 //! takes on the pool.
 
 use super::{ConditionalSplashes, SplashClient, SplashRequires, Splashes};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
@@ -11,8 +12,10 @@ use bedrock_addon_core::json::kit::fixed_path::{
 };
 use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
 
-/// `InvalidValue` without a vanilla text: a finding of the crate's own.
-const INVALID: DiagnosticCode = DiagnosticCode::InvalidValue { text: None };
+/// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
+fn invalid() -> Diagnostic {
+    Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info)
+}
 
 const ROOT_KEYS: [&str; 3] = ["canMerge", "splashes", "conditional"];
 const ENTRY_KEYS: [&str; 2] = ["requires", "splashes"];
@@ -43,7 +46,7 @@ fn check_texts(read: &mut Read<'_>, list: Option<Node<'_>>) {
     }
     for (at, element) in iterated(list.value(), list.path()) {
         if !element.is_string() {
-            read.push(Diagnostic::info(INVALID).at(at));
+            read.push(invalid().at(at));
         }
     }
 }
@@ -77,7 +80,7 @@ impl Authored for Splashes {
         let mut read = reader(diagnostics);
         let Some(members) = members(&mut read, &Node::new(root, at.clone())) else {
             // The first member lookup turns the root into `{}`.
-            read.push(Diagnostic::info(INVALID).at(at));
+            read.push(invalid().at(at));
             return Self::default();
         };
         let member = |key: &str| members.get(key).map(|node| node.value().clone());
@@ -89,7 +92,7 @@ impl Authored for Splashes {
             written: Written::default(),
         };
         if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
-            read.push(Diagnostic::info(INVALID).at(at.child("canMerge")));
+            read.push(invalid().at(at.child("canMerge")));
         }
         check_texts(&mut read, members.get("splashes"));
         let extra = kept_unknown(&mut read, &members, &ROOT_KEYS);
@@ -121,7 +124,7 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
         return;
     }
     if !conditional.value().is_array() {
-        read.push(Diagnostic::info(INVALID).at(conditional.path().clone()));
+        read.push(invalid().at(conditional.path().clone()));
         return;
     }
     let Some(entries) = read.array(conditional) else {
@@ -134,7 +137,7 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
             .and_then(|members| members.get("requires"))
             .filter(|requires| requires.value().is_object());
         let (Some(entry_members), Some(requires)) = (entry_members, requires) else {
-            read.push(Diagnostic::info(INVALID).at(entry.path().clone()));
+            read.push(invalid().at(entry.path().clone()));
             continue;
         };
         check_texts(read, entry_members.get("splashes"));
@@ -148,7 +151,7 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
                 .and_then(|list| list.value().as_array())
                 .is_some_and(|list| !list.is_empty() && !list.iter().any(Value::is_string));
             if only_others {
-                read.push(Diagnostic::info(INVALID).at(requires.node().path().child(category)));
+                read.push(invalid().at(requires.node().path().child(category)));
             }
         }
         read.unknown(&requires, &REQUIRES_KEYS, Disposition::Keep);

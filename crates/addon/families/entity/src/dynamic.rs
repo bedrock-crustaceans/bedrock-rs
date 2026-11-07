@@ -10,7 +10,8 @@
 //! `{"tags": …}` in a component: the pack's version in `Dynamic` components, rule M3), at every member of these components that holds a block or an item descriptor.
 //! A rejected expression is told and the descriptor kept with it.
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Location, Phase};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Location, Phase, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
@@ -244,7 +245,7 @@ pub(crate) fn check(entity: &mut Entity, cx: &mut ValidateCx<'_>) {
             // The game keeps the component and writes no content-log line; the drop is the crate's own,
             // so it is reported as an information.
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DroppedComponent { text: None })
+                Diagnostic::of(&core_codes::DROPPED_COMPONENT)
                     .at(at)
                     .phase(Phase::Validate),
             );
@@ -286,7 +287,8 @@ fn gather(entity: &Entity, cx: &mut ValidateCx<'_>, drop: &mut Vec<ComponentAt>)
                 // JSON type in the legacy reader (the typed slice's type error belongs to the
                 // strict read).
                 cx.diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Info)
                         .at(json_path(&cx.at, &path))
                         .phase(Phase::Validate),
                 );

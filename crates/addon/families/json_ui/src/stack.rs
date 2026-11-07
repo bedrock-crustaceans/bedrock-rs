@@ -8,6 +8,7 @@ use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, Wal
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use indexmap::IndexMap;
 
+use super::codes;
 use super::globals::{GlobalEvent, merge_globals};
 use super::merge::{CopyContent, Event, FileCopy, merge_file};
 use super::resolve::{ResolveEvent, resolve};
@@ -16,9 +17,10 @@ use super::{
     DefKey, GLOBAL_VARIABLES_PATH, GlobalVariables, UI_DEFS_PATH, UiDefinitions, UiDefsList,
     UiFile, UiPackError, UiPackErrorKind, UiPackReport, lint, write,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
-    VanillaText,
+    Code, CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Severity, builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
@@ -28,15 +30,6 @@ use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 
 /// The directory the listed files live in.
 const UI: &str = "ui";
-
-/// The text of a file that is not JSON: the path and the reader's formatted errors.
-const PARSE_ERROR: &str = "JSON Parse error in file: {}\n\n{}\n";
-/// The per-file task's text for a listed file no pack has.
-const NOT_LOADED: &str = "The following file could not be loaded: {}. Make sure the file exists or remove the reference in '_ui_defs.json'";
-/// The text for empty or repeated child names: the names one per line, then the path.
-const INVALID_NAMES: &str = "We have invalid names in the resource files. Make sure all your control children have unique names that aren't empty!\n\nControls:\n{}\nFile name:{}";
-/// The text for a global variables file at the top of the stack that does not parse.
-const GLOBALS_NOT_PARSED: &str = "Could not parse file at the top of the stack: {}.";
 
 impl bedrock_addon_core::__private::Sealed for UiDefinitions {}
 impl bedrock_addon_core::__private::Sealed for UiFile {}
@@ -76,10 +69,7 @@ impl UiFile {
 /// A rejection for a file that is not the JSON object it has to be.
 fn reject(origin: Origin, message: String) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-        message,
-        text: None,
-    }));
+    diagnostics.push(Diagnostic::of(builders::syntax(message)));
     Rejected::located(origin, diagnostics)
 }
 
@@ -122,7 +112,8 @@ impl Content for UiFile {
             // The game converts the value to a string; the crate puts the file in `_root`
             // instead and says so.
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
                     .at(json_path(&["namespace"])),
             );
         }
@@ -166,7 +157,8 @@ impl Content for UiDefsList {
             if !value.is_array() {
                 // The game reads no path from a list that is not an array; the crate says so.
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Info)
                         .at(json_path(&["ui_defs"])),
                 );
             }
@@ -362,13 +354,14 @@ struct Report {
 impl Report {
     fn push(
         &mut self,
-        code: DiagnosticCode,
+        code: impl Into<DiagnosticCode>,
         severity: Severity,
         origin: Option<&Origin>,
         path: &[&str],
         detail: Option<DiagnosticDetail>,
     ) {
         // By legacy name: the variant and the definitions that were it.
+        let code = code.into();
         let phase = if matches!(code.name(), "MalformedInput") {
             Phase::Parse
         } else {
@@ -388,8 +381,8 @@ impl Report {
     }
 
     /// A content-log error after which the game goes on with the file: a kept error.
-    fn push_kept(&mut self, code: DiagnosticCode, origin: Option<&Origin>) {
-        let mut diagnostic = Diagnostic::error(code).phase(Phase::Validate);
+    fn push_kept(&mut self, code: impl Into<DiagnosticCode>, origin: Option<&Origin>) {
+        let mut diagnostic = Diagnostic::error(code.into()).phase(Phase::Validate);
         if let Some(origin) = origin {
             diagnostic = diagnostic.in_file(origin);
         }
@@ -397,64 +390,63 @@ impl Report {
     }
 
     /// A lint of the crate's own (vanilla is silent): an information.
-    fn lint(&mut self, code: DiagnosticCode, origin: Option<&Origin>, path: &[&str]) {
+    fn lint(&mut self, code: impl Into<DiagnosticCode>, origin: Option<&Origin>, path: &[&str]) {
         self.push(code, Severity::Info, origin, path, None);
     }
 
     /// One `uiPackError`: into the pack's report and the findings.
     fn pack_error(&mut self, error: UiPackError, origin: &Origin) {
-        let text = Some(VanillaText::Formatted {
-            template: error.kind.template(),
-            args: error.args.clone(),
-        });
-        // A pack error has no code of its own: each is reported under the code of its nature.
+        // A pack error has no code of its own: each kind's definition was the legacy code of
+        // its nature.
+        let args = &error.args;
         let code = match error.kind {
-            UiPackErrorKind::InvalidChildNames => DiagnosticCode::InvalidValue { text },
-            UiPackErrorKind::ParseError => DiagnosticCode::MalformedInput {
-                message: error.args.get(1).cloned().unwrap_or_default(),
-                text,
-            },
-            UiPackErrorKind::MissingControl | UiPackErrorKind::MissingControlTarget => {
-                DiagnosticCode::UnresolvedReference { text }
+            UiPackErrorKind::InvalidChildNames => fill(&codes::PACK_INVALID_CHILD_NAMES, args),
+            UiPackErrorKind::ParseError => fill(&codes::PACK_PARSE_ERROR, args),
+            UiPackErrorKind::MissingControl => fill(&codes::PACK_MISSING_CONTROL, args),
+            UiPackErrorKind::MissingControlTarget => {
+                fill(&codes::PACK_MISSING_CONTROL_TARGET, args)
             }
-            UiPackErrorKind::MissingArrayName
-            | UiPackErrorKind::MissingCondition
-            | UiPackErrorKind::MissingValue
-            | UiPackErrorKind::MissingOperation => DiagnosticCode::MissingRequiredField { text },
-            UiPackErrorKind::InvalidOperationName => DiagnosticCode::InvalidEnumValue { text },
+            UiPackErrorKind::MissingArrayName => fill(&codes::PACK_MISSING_ARRAY_NAME, args),
+            UiPackErrorKind::MissingCondition => fill(&codes::PACK_MISSING_CONDITION, args),
+            UiPackErrorKind::MissingValue => fill(&codes::PACK_MISSING_VALUE, args),
+            UiPackErrorKind::MissingOperation => fill(&codes::PACK_MISSING_OPERATION, args),
+            UiPackErrorKind::InvalidOperationName => {
+                fill(&codes::PACK_INVALID_OPERATION_NAME, args)
+            }
         };
+        // The reader's message of an overlay that is not JSON.
+        let detail = (error.kind == UiPackErrorKind::ParseError)
+            .then(|| DiagnosticDetail::Syntax(args.get(1).cloned().unwrap_or_default()));
         // The overlay key, when the text has one, is where the finding is.
         let key = match error.kind {
             UiPackErrorKind::InvalidChildNames | UiPackErrorKind::ParseError => None,
             _ => error.args.get(1).cloned(),
         };
         let path: Vec<&str> = key.as_deref().into_iter().collect();
-        self.push(code, error.severity, Some(origin), &path, None);
+        self.push(code, error.severity, Some(origin), &path, detail);
         self.reports
             .entry(origin.pack.clone())
             .or_default()
             .push(error);
     }
 
-    /// A file that is not JSON, with vanilla's text for it.
-    fn malformed(
-        &mut self,
-        template: &'static str,
-        args: Vec<String>,
-        message: String,
-        origin: &Origin,
-    ) {
+    /// A file that is not JSON, with vanilla's text for it and the reader's message.
+    fn malformed(&mut self, code: Code, message: String, origin: &Origin) {
         self.push(
-            DiagnosticCode::MalformedInput {
-                message,
-                text: Some(VanillaText::Formatted { template, args }),
-            },
+            code,
             Severity::Error,
             Some(origin),
             &[],
-            None,
+            Some(DiagnosticDetail::Syntax(message)),
         );
     }
+}
+
+/// A definition's code from a pack error's arguments, in order; a missing one is empty.
+fn fill<const N: usize>(def: &'static CodeDef<N>, args: &[String]) -> Code {
+    def.with(std::array::from_fn(|index| {
+        args.get(index).cloned().unwrap_or_default()
+    }))
 }
 
 /// The stack position of a pack: the top pack first, the app data last.
@@ -522,8 +514,8 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             // That pack's list is skipped; the others still contribute.
             content => {
                 let message = message_of(content).unwrap_or_default();
-                let args = vec![copy.origin.path.to_string(), message.clone()];
-                report.malformed(PARSE_ERROR, args, message, &copy.origin);
+                let code = codes::PARSE_ERROR.with([copy.origin.path.to_string(), message.clone()]);
+                report.malformed(code, message, &copy.origin);
             }
         }
     }
@@ -543,7 +535,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
     if paths.is_empty() && has_ui {
         // No pack lists a file although the stack has JSON UI files.
         report.push(
-            DiagnosticCode::NoUiDefinitions,
+            &core_codes::NO_UI_DEFINITIONS,
             Severity::Info,
             None,
             &[],
@@ -581,20 +573,14 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
         match event {
             // The lowest copy of the variables does not parse.
             GlobalEvent::BaseMalformed(message) => report.malformed(
-                GLOBALS_NOT_PARSED,
-                vec![origin.path.to_string()],
+                codes::GLOBALS_NOT_PARSED.with([origin.path.to_string()]),
                 message,
                 origin,
             ),
             // Silent in vanilla.
-            GlobalEvent::OverlayMalformed(message) => report.lint(
-                DiagnosticCode::MalformedInput {
-                    message,
-                    text: None,
-                },
-                Some(origin),
-                &[],
-            ),
+            GlobalEvent::OverlayMalformed(message) => {
+                report.lint(builders::syntax(message), Some(origin), &[]);
+            }
         }
     }
     value.global_variables = GlobalVariables::from_value(&root);
@@ -619,12 +605,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
                 // The game's line for a listed file no pack has goes to the developer log
                 // only, not the content log: an information that carries its text.
                 report.push(
-                    DiagnosticCode::UnresolvedReference {
-                        text: Some(VanillaText::Formatted {
-                            template: NOT_LOADED,
-                            args: vec![path.clone()],
-                        }),
-                    },
+                    codes::NOT_LOADED.with([path.as_str()]),
                     Severity::Info,
                     lister,
                     at,
@@ -633,7 +614,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             } else {
                 // Only the JSON files of `ui/` are read, so a path elsewhere or of another
                 // kind is never asked for; the crate says so.
-                report.lint(DiagnosticCode::FileNotLoaded, lister, at);
+                report.lint(&core_codes::FILE_NOT_LOADED, lister, at);
             }
             continue;
         };
@@ -658,47 +639,39 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             match raised.event {
                 // The base copy does not parse.
                 Event::BaseMalformed(message) => report.malformed(
-                    PARSE_ERROR,
-                    vec![origin.path.to_string(), message.clone()],
+                    codes::PARSE_ERROR.with([origin.path.to_string(), message.clone()]),
                     message,
                     origin,
                 ),
                 // Empty or repeated child names in the base copy are an error in the game's
                 // content log, and the merge goes on with the file: a kept error.
                 Event::BaseInvalidNames(names) => report.push_kept(
-                    DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Formatted {
-                            template: INVALID_NAMES,
-                            args: vec![names.join("\n"), path.clone()],
-                        }),
-                    },
+                    codes::INVALID_NAMES.with([names.join("\n"), path.clone()]),
                     Some(origin),
                 ),
                 Event::Pack(error) => report.pack_error(error, origin),
                 // Silent in vanilla: an overlay member that is no object, and `modifications`
                 // below a control's top level.
-                Event::IgnoredValue(key) => report.lint(
-                    DiagnosticCode::IgnoredMember { text: None },
-                    Some(origin),
-                    &[&key],
-                ),
+                Event::IgnoredValue(key) => {
+                    report.lint(&core_codes::IGNORED_MEMBER, Some(origin), &[&key]);
+                }
                 Event::NestedModifications(key) => report.lint(
-                    DiagnosticCode::IgnoredMember { text: None },
+                    &core_codes::IGNORED_MEMBER,
                     Some(origin),
                     &[&key, "modifications"],
                 ),
                 // An overlay `name@base` key whose short name the base already has.
                 Event::Rebased(key) => {
-                    report.lint(DiagnosticCode::RebasedOverride, Some(origin), &[&key]);
+                    report.lint(&core_codes::REBASED_OVERRIDE, Some(origin), &[&key]);
                 }
                 // A condition that matches nothing is silent in vanilla.
                 Event::Unmatched(key) => report.lint(
-                    DiagnosticCode::UnmatchedCondition,
+                    &core_codes::UNMATCHED_CONDITION,
                     Some(origin),
                     &[&key, "modifications"],
                 ),
                 Event::WhereArray(key) => report.lint(
-                    DiagnosticCode::WhereArrayNeverMatches,
+                    &core_codes::WHERE_ARRAY_NEVER_MATCHES,
                     Some(origin),
                     &[&key, "modifications"],
                 ),
@@ -711,11 +684,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             Some((file, bad_namespace)) => {
                 let origin = merged_origin(&file_origins, &merged.committed);
                 if bad_namespace {
-                    report.lint(
-                        DiagnosticCode::InvalidType { text: None },
-                        origin.as_ref(),
-                        &["namespace"],
-                    );
+                    report.lint(&core_codes::INVALID_TYPE, origin.as_ref(), &["namespace"]);
                 }
                 if let Some(origin) = origin {
                     origins.entry(path.clone()).or_insert(origin);
@@ -725,10 +694,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             // A root that is no object defines nothing; the game says nothing, the crate
             // reports an error.
             None => report.push(
-                DiagnosticCode::MalformedInput {
-                    message: "the root is not an object".to_owned(),
-                    text: None,
-                },
+                core_codes::SYNTAX.with(["the root is not an object"]),
                 Severity::Error,
                 file_origins.first(),
                 &[],
@@ -747,7 +713,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
         match found.event {
             // Silent in vanilla; the crate reports an information.
             ResolveEvent::Duplicate => report.push(
-                DiagnosticCode::DuplicateIdentifier { text: None },
+                &core_codes::DUPLICATE_IDENTIFIER,
                 Severity::Info,
                 origin,
                 &[&key],
@@ -757,7 +723,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             ResolveEvent::MissingBase(reference) => {
                 unresolved.insert((found.namespace, found.key.name));
                 report.push(
-                    DiagnosticCode::UnresolvedReference { text: None },
+                    &core_codes::UNRESOLVED_REFERENCE,
                     Severity::Info,
                     origin,
                     &[&key],
@@ -773,7 +739,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             ResolveEvent::Cycle => {
                 unresolved.insert((found.namespace, found.key.name));
                 report.push(
-                    DiagnosticCode::ReferenceCycle { text: None },
+                    &core_codes::REFERENCE_CYCLE,
                     Severity::Info,
                     origin,
                     &[&key],

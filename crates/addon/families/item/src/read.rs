@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Severity, VanillaText,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::id::ItemId;
@@ -24,7 +24,7 @@ use super::history::{
     HISTORY_ROWS, ItemFamily, into_component_map, parse_parts, written_components,
 };
 use super::types::{ModernItem, modern_version};
-use super::{ItemDescription, texts};
+use super::{ItemDescription, codes};
 
 /// 1.16.100: the first component format, and the start of vanilla's data-driven items.
 pub(crate) const V1_16_100: FormatVersion = known::V1_16_100;
@@ -88,10 +88,9 @@ pub(crate) fn prepare(bytes: &[u8]) -> Result<Prepared<'_>, Diagnostics> {
             PrepareError::NotUtf8(_) | PrepareError::Empty => "not UTF-8",
         };
         let mut early = Diagnostics::default();
-        early.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: message.to_owned(),
-            text: None,
-        }));
+        early.push(Diagnostic::of(
+            bedrock_addon_core::diagnostic::builders::syntax(message.to_owned()),
+        ));
         early
     })
 }
@@ -116,11 +115,11 @@ pub(crate) fn load_item(bytes: &[u8], cx: &LoadContext) -> ItemLoad {
         && !parsed.version.beta
     {
         let mut diagnostics = parsed.diagnostics;
-        diagnostics.push(Diagnostic::error(DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::ItemInResourcePack {
-                identifier: identifier.clone().unwrap_or_default(),
-            }),
-        }));
+        diagnostics.push(Diagnostic::error(
+            codes::ITEM_IN_RESOURCE_PACK
+                .with([identifier.clone().unwrap_or_default()])
+                .into(),
+        ));
         return ItemLoad {
             outcome: LoadOutcome {
                 value: None,
@@ -150,7 +149,6 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
     if cx.source == DocumentSource::Mcb {
         return;
     }
-    let fixed = |text: &'static str| Some(VanillaText::Fixed(text));
     let root = bedrock_addon_core::json::from_str_jsonc::<Value>(text).ok();
     let payload_not_object = root
         .as_ref()
@@ -164,20 +162,17 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
             continue;
         }
         // The JSON reader's refusal, told again in the item's words; the reader's message
-        // moves from the detail back into the code.
+        // stays the detail.
         if finding.is(&core_codes::DOCUMENT_JSON) {
             let message = finding.syntax_message().unwrap_or_default().to_owned();
             let line = if root.is_some() {
                 invalid_object = true;
-                texts::ROOT_NOT_OBJECT
+                &codes::ROOT_NOT_OBJECT
             } else {
-                texts::INVALID_JSON_OBJECT
+                &codes::INVALID_JSON_OBJECT
             };
-            finding.code = DiagnosticCode::MalformedInput {
-                message,
-                text: fixed(line),
-            };
-            finding.detail = None;
+            finding.code = line.into();
+            finding.detail = Some(Box::new(DiagnosticDetail::Syntax(message)));
             continue;
         }
         // the versioned parser's "no parser available for version", and its version
@@ -194,39 +189,39 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
         // By legacy name: the variant and the definitions that were it.
         match finding.code.name() {
             "MalformedFormatVersion" => {
-                finding.code = DiagnosticCode::MalformedFormatVersion {
-                    text: fixed(texts::VERSION_NOT_READABLE),
-                };
+                finding.code = (&codes::VERSION_NOT_READABLE).into();
                 invalid_object = true;
             }
             "MissingFormatVersion" => invalid_object = true,
             "MissingPayload" => {
-                finding.code = DiagnosticCode::MissingPayload {
-                    text: fixed(texts::PAYLOAD_NOT_OBJECT),
-                };
+                finding.code = (&codes::PAYLOAD_NOT_OBJECT).into();
             }
             _ if out_of_range => {
-                finding.code = DiagnosticCode::UnsupportedVersion {
-                    text: fixed(texts::VERSION_OUT_OF_RANGE),
-                };
+                finding.code = (&codes::VERSION_OUT_OF_RANGE).into();
             }
             _ if no_parser.is_some() => {}
             _ if payload_not_object && finding.location.json_path == payload_at => {
-                finding.code = DiagnosticCode::MalformedInput {
-                    message: "the payload is no object".to_owned(),
-                    text: fixed(texts::PAYLOAD_NOT_OBJECT),
-                };
+                finding.code = (&codes::PAYLOAD_NOT_OBJECT_MALFORMED_INPUT).into();
+                finding.detail = Some(Box::new(DiagnosticDetail::Syntax(
+                    "the payload is no object".to_owned(),
+                )));
             }
             _ => {}
         }
     }
     if invalid_object {
-        d.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            message: "the item is not loaded".to_owned(),
-            text: fixed(texts::INVALID_JSON_OBJECT),
-        }));
+        d.push(
+            Diagnostic::error((&codes::INVALID_JSON_OBJECT).into()).detail(
+                DiagnosticDetail::Syntax("the item is not loaded".to_owned()),
+            ),
+        );
     }
 }
+
+/// A root `format_version` written as a number (the crate's own text). The game re-reads
+/// the version of a JSON item from its text when it is no string.
+const NUMERIC_VERSION: &str =
+    "the version written as a number is read from its text; it is written back as a string";
 
 /// A root `format_version` written as a number: the item's version is read from its text, as
 /// the game's document parse re-reads a version that is no string, and the writer writes a
@@ -236,13 +231,9 @@ pub(crate) fn numeric_version(text: &str) -> Option<Diagnostic> {
     let version = root.as_object()?.get("format_version")?;
     version.as_number()?;
     let at = JsonPath::new().child("format_version");
-    Some(
-        Diagnostic::info(DiagnosticCode::ValueRewritten { text: None })
-            .at(at)
-            .detail(bedrock_addon_core::diagnostic::DiagnosticDetail::Note(
-                texts::NUMERIC_VERSION,
-            )),
-    )
+    Some(Diagnostic::of(&core_codes::VALUE_REWRITTEN).at(at).detail(
+        bedrock_addon_core::diagnostic::DiagnosticDetail::Note(NUMERIC_VERSION),
+    ))
 }
 
 /// The identifier of the item file `bytes` of the pack of `cx`, when the file loads there:

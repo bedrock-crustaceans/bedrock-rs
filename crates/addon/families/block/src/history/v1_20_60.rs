@@ -31,7 +31,7 @@ impl LegacyStep<1, 20, 60> for BlockPayload {
         for section in removed {
             let mut at = component_path(section, "minecraft:destructible_by_mining");
             at.push("item_specific_speeds");
-            dropped_field(&at, None, cx.diagnostics);
+            dropped_field(&at, cx.diagnostics);
         }
         synthesize_redstone_conductivity(&mut block);
         Legacy(block)

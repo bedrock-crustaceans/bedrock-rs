@@ -111,7 +111,8 @@ pub fn beta_object<'f, D: Facet<'f>>(
 mod tests {
     use super::*;
     use crate::{BoolAttribute, BoolOperation};
-    use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode};
+    use bedrock_addon_core::diagnostic::codes as core_codes;
+    use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
     use bedrock_addon_core::json::to_json;
 
     /// A description of one member, as each family's is.
@@ -170,7 +171,8 @@ mod tests {
         let read = |value: Option<bool>| {
             move |found: &mut Diagnostics| {
                 found.push(
-                    Diagnostic::warn(DiagnosticCode::InvalidType { text: None })
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Warning)
                         .at(JsonPath::of_keys(["a"])),
                 );
                 found

@@ -11,6 +11,7 @@ pub mod history;
 #[doc(hidden)]
 pub use link::{Targets, link};
 
+pub mod codes;
 mod link;
 mod read;
 mod resolve;
@@ -24,9 +25,8 @@ pub use types::{PoiDescription, PoiTag, PoiTagDescription, PoiType};
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced, NoBeta,
@@ -288,10 +288,7 @@ impl PoiTag {
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(core_codes::SYNTAX.with(["not UTF-8 JSON within the nesting limit"]))
 }
 
 /// Whether the POI documents of a pack loaded with `cx` are read at all: vanilla builds the
@@ -304,7 +301,7 @@ fn enabled(cx: &LoadContext) -> bool {
 /// The finding of a file that is not read because the `poi` experiment is off
 /// (the crate's own note: vanilla says nothing).
 fn gate_closed() -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::MissingToggles { text: None })
+    Diagnostic::of(&core_codes::MISSING_TOGGLES).severity(Severity::Info)
 }
 
 /// A file that did not load, with its findings placed.
@@ -340,9 +337,7 @@ fn finished<F: Family>(
 /// tag loader log the one text "Failed to load POI Type", after the versioned loader's own log
 /// lines.
 fn failed_to_load() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DocumentRejected {
-        text: Some(VanillaText::Fixed("Failed to load POI Type")),
-    })
+    Diagnostic::of(&codes::FAILED_TO_LOAD)
 }
 
 /// The finding of a value that has no JSON form: an `InvalidValue` error at the member the
@@ -356,7 +351,7 @@ pub(crate) fn unwritable(error: &EncodeError, key: &str) -> Diagnostic {
     if let EncodeError::NotRepresentable { at: member, .. } = error {
         at.append(member);
     }
-    Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+    Diagnostic::of(&core_codes::INVALID_VALUE)
         .at(at)
         .phase(Phase::Validate)
 }

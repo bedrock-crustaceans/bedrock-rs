@@ -6,6 +6,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod binary;
+pub mod codes;
 mod emoticons;
 mod fields;
 mod metadata;
@@ -21,8 +22,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::Written;
 
 use crate::stack::Index;
-use bedrock_addon_core::diagnostic::builders::malformed;
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, JsonPathSegment, VanillaText};
+use bedrock_addon_core::diagnostic::{DiagnosticCode, DiagnosticDetail, JsonPath, JsonPathSegment};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Origin, Placed, Rejected, unversioned,
 };
@@ -294,16 +294,15 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FontFileCopy<FontMetadata> {
         Err(message) => {
             // The game keeps its default fonts and writes its line to the developer log, not the
             // content log: an information with its text, the file still refused.
-            let code = malformed(message.to_string(), Some(metadata::NOT_JSON));
-            return Err(unversioned::reject(origin, Diagnostic::info(code)));
+            let finding = Diagnostic::of(&codes::NOT_JSON)
+                .detail(DiagnosticDetail::Syntax(message.to_string()));
+            return Err(unversioned::reject(origin, finding));
         }
     };
     if !FontMetadata::version_is_supported(&root) {
         // The file is ignored; the game's line goes to the developer log, so this is an
         // information, and the file is still refused.
-        let code = DiagnosticCode::UnsupportedVersion {
-            text: Some(VanillaText::Fixed(metadata::VERSION)),
-        };
+        let code = DiagnosticCode::from(&codes::VERSION);
         let at = JsonPath::new().child("version");
         return Err(unversioned::reject(origin, Diagnostic::info(code).at(at)));
     }
@@ -345,8 +344,9 @@ fn read_emoticons(origin: Origin, bytes: &[u8]) -> FontFileCopy<EmoticonList> {
         Err(message) => {
             // No emoticons; the game's "Malformed JSON" is a developer assert: an information
             // with its text, the file still refused.
-            let code = malformed(message.to_string(), Some(emoticons::MALFORMED));
-            return Err(unversioned::reject(origin, Diagnostic::info(code)));
+            let finding = Diagnostic::of(&codes::MALFORMED)
+                .detail(DiagnosticDetail::Syntax(message.to_string()));
+            return Err(unversioned::reject(origin, finding));
         }
     };
     let mut diagnostics = Diagnostics::default();

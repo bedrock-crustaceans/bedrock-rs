@@ -3,9 +3,10 @@
 
 use facet::Facet;
 
-use super::texts;
+use super::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, CodeDef, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
 use bedrock_addon_core::json::{
@@ -125,7 +126,7 @@ impl VersionStruct for SimplifiedSpawnRules {
         let severity = cx.load.grade(Class::Unknown);
         let unknown = |path: &JsonPath, d: &mut Diagnostics| {
             finding(
-                DiagnosticCode::UnrecognizedField { text: None },
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                 severity,
                 &cx.at.join(path),
                 d,
@@ -291,7 +292,7 @@ fn resolved<'a>(written: Option<&'a String>, names: &[&str], fallback: &'a str) 
 pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diagnostics) {
     let negative = |path: &JsonPath, d: &mut Diagnostics| {
         finding(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Error,
             path,
             d,
@@ -328,30 +329,30 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
     };
     let identifier = rules.description.identifier.as_str();
     let placement_at = at.child("placement");
-    let checks: [(&str, Option<&String>, &[&str], &'static str); 4] = [
+    let checks: [(&str, Option<&String>, &[&str], &'static CodeDef<1>); 4] = [
         (
             "type",
             placement.r#type.as_ref(),
             PLACEMENT_TYPES,
-            texts::PLACEMENT_TYPE,
+            &codes::PLACEMENT_TYPE,
         ),
         (
             "heightmap",
             placement.heightmap.as_ref(),
             HEIGHTMAPS,
-            texts::PLACEMENT_HEIGHTMAP,
+            &codes::PLACEMENT_HEIGHTMAP,
         ),
         (
             "spawn_obstruction_predicate",
             placement.spawn_obstruction_predicate.as_ref(),
             OBSTRUCTION_PREDICATES,
-            texts::PLACEMENT_OBSTRUCTION,
+            &codes::PLACEMENT_OBSTRUCTION,
         ),
         (
             "spawn_predicate",
             placement.spawn_predicate.as_ref(),
             ENTITY_PREDICATES,
-            texts::PLACEMENT_PREDICATE,
+            &codes::PLACEMENT_PREDICATE,
         ),
     ];
     for (key, written, names, template) in checks {
@@ -363,12 +364,7 @@ pub(crate) fn validate(rules: &SimplifiedSpawnRules, at: &JsonPath, d: &mut Diag
             // An `UnresolvedReference` warning with vanilla's text: the validator logs it at the
             // content log's warning level.
             finding(
-                DiagnosticCode::UnresolvedReference {
-                    text: Some(VanillaText::Formatted {
-                        template,
-                        args: vec![identifier.to_owned()],
-                    }),
-                },
+                DiagnosticCode::from(template.with([identifier])),
                 Severity::Warning,
                 &path,
                 d,

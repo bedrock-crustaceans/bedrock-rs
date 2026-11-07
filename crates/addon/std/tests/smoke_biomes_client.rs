@@ -20,7 +20,7 @@ use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity, codes};
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, PackRepository};
 use bedrock_addon::version::{BaseGameVersion, SemVersion};
@@ -179,7 +179,7 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
         assert!(skipped.biomes.is_empty(), "{folder}: skipped from 1.21.40");
         outcome.legacy_skipped += skipped
             .diagnostics()
-            .filter(|d| matches!(d.code, DiagnosticCode::VanillaBiomesClientSkipped))
+            .filter(|d| d.is(&codes::VANILLA_BIOMES_CLIENT_SKIPPED))
             .count();
     }
 }
@@ -337,7 +337,7 @@ fn stacked(driver: &mut Driver, packs: &[PathBuf]) -> (usize, usize, Vec<String>
     eprintln!("  layers, top first, by pack version: {order:?}");
     let mut ignored: Vec<String> = legacy
         .diagnostics()
-        .filter(|d| matches!(d.code, DiagnosticCode::LegacyFogIgnored))
+        .filter(|d| d.is(&codes::LEGACY_FOG_IGNORED))
         .map(|d| {
             let path = d.location.json_path.to_string();
             let biome = path

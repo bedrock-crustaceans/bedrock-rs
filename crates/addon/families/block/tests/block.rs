@@ -3,9 +3,6 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-#[path = "block/texts.rs"]
-mod texts;
-
 #[path = "block/upgrade_steps.rs"]
 mod upgrade_steps;
 

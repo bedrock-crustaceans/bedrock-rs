@@ -201,10 +201,7 @@ pub fn errors<T: Content + std::fmt::Debug>(text: &str) -> Vec<&'static str> {
 /// with. A test of one rule looks at the findings before it; `rules.rs` pins the
 /// closing line itself.
 pub fn is_closing(finding: &Diagnostic) -> bool {
-    matches!(
-        finding.code,
-        bedrock_addon::diagnostic::DiagnosticCode::DocumentRejected { .. }
-    )
+    finding.is(&bedrock_addon::families::poi::codes::FAILED_TO_LOAD)
 }
 
 /// The code names of the findings at `severity`, the closing line left out.

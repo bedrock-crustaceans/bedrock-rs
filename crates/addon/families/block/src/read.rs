@@ -1,6 +1,7 @@
 //! Reading [`Block`] from the text of a 1.26.20 payload (the game's cereal
 //! document), and the Molang walk of the document.
 
+use crate::codes;
 use facet::Facet;
 use facet_json::RawJson;
 use indexmap::IndexMap;
@@ -8,8 +9,9 @@ use indexmap::IndexMap;
 use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
 use super::history::{BlockFamily, BlockHistory};
 use super::{Block, Description, Permutation};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
@@ -264,7 +266,7 @@ fn newest_members(
         // The strict slice's error that refuses the block: only reachable in
         // [1.26.20, 1.26.60), never a warning the load keeps.
         d.push(
-            Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                 .severity(unknown)
                 .at(at.with(&["minecraft:block_entity", "entity_storage"])),
         );
@@ -291,12 +293,11 @@ fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut 
         // The legacy event reader takes them with no deprecation line (the deprecation is the
         // cereal document's), so the crate reports them as an information.
         d.push(
-            Diagnostic::info(DiagnosticCode::DeprecatedMember {
-                text: Some(VanillaText::Deprecated {
-                    member: "events".to_owned(),
-                    version: cx.original_version,
-                }),
-            })
+            Diagnostic::of(
+                core_codes::DEPRECATED_IN_FORMAT
+                    .with(["events".to_string(), cx.original_version.to_string()]),
+            )
+            .severity(Severity::Info)
             .at(cx.at.with(&["events"])),
         );
     }
@@ -335,7 +336,7 @@ fn reject_crate_members(root: &Value, at: &JsonPath, unknown: Severity, d: &mut 
                 // The strict slice's error that refuses the block (cereal documents alone
                 // reach here).
                 d.push(
-                    Diagnostic::warn(DiagnosticCode::UnrecognizedField { text: None })
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
                         .severity(unknown)
                         .at(path.with(&[key])),
                 );
@@ -370,12 +371,7 @@ fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
         else {
             continue;
         };
-        finding.code = DiagnosticCode::InvalidEnumValue {
-            text: Some(VanillaText::Formatted {
-                template: "Failed to find BlockTrait with identifier: '{}'",
-                args: vec![name],
-            }),
-        };
+        finding.code = DiagnosticCode::from(codes::UNKNOWN_TRAIT.with([name]));
         finding.severity = Severity::Error;
     }
 }
@@ -444,24 +440,13 @@ fn section(
         // The schema of the legacy document has no child for the key: the game logs "child
         // '%s' not valid here." at the content log's error level, validation fails and with
         // it the component load: the block is refused.
-        d.push(
-            Diagnostic::error(DiagnosticCode::UnrecognizedComponent {
-                text: Some(VanillaText::Formatted {
-                    template: CHILD_NOT_VALID,
-                    args: vec![key.clone()],
-                }),
-            })
-            .at(at.with(&[&key])),
-        );
+        d.push(Diagnostic::of(codes::CHILD_NOT_VALID.with([key.clone()])).at(at.with(&[&key])));
         let json =
             bedrock_addon_core::json::from_str_jsonc::<Value>(raw.as_str()).unwrap_or(Value::NULL);
         map.insert_unknown(&key, json);
     }
     map
 }
-
-/// The game's line for a key the legacy document's schema has no child for.
-const CHILD_NOT_VALID: &str = "child '{}' not valid here.";
 
 /// The components no legacy description exists for: the legacy reader of a document below
 /// 1.26.20 leaves them to the document's schema, which has no child for them: the block is
@@ -494,7 +479,9 @@ fn parse_entry<T: for<'f> Facet<'f>>(
                     let mut full = at.clone();
                     full.append(&path);
                     d.push(
-                        Diagnostic::info(DiagnosticCode::UnrecognizedField { text: None }).at(full),
+                        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                            .severity(Severity::Info)
+                            .at(full),
                     );
                 }
             }
@@ -503,12 +490,14 @@ fn parse_entry<T: for<'f> Facet<'f>>(
         Err(error) => {
             let mut full = at.clone();
             full.append(&error.path);
-            d.push(Diagnostic::info(DiagnosticCode::InvalidType { text: None }).at(full));
+            d.push(
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
+                    .at(full),
+            );
             // The entry goes whole for one member: told at the entry too, unless the member's finding is at the entry itself.
             if !error.path.is_empty() {
-                d.push(
-                    Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.clone()),
-                );
+                d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at.clone()));
             }
             None
         }
@@ -640,10 +629,7 @@ fn legacy_identifier(
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(core_codes::SYNTAX.with(["not UTF-8 JSON within the nesting limit"]))
 }
 
 /// Reads one block file at `origin`: the document, or its rejection with the identifier its

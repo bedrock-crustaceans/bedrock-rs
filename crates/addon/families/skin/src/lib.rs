@@ -5,6 +5,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 mod types;
 mod write;
@@ -12,10 +13,11 @@ mod write;
 use std::collections::HashSet;
 use std::fmt::Write as _;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Origin, Placed, Rejected, unversioned,
@@ -35,17 +37,6 @@ pub const GEOMETRY_PATH: &str = "geometry.json";
 pub const BUILT_IN_GEOMETRIES: [&str; 2] =
     ["geometry.humanoid.custom", "geometry.humanoid.customSlim"];
 
-// The loader's texts.
-/// A pack without `skins.json`.
-const NOT_FOUND: &str = "Failed to load skinpack, skins.json not found";
-/// A `skins.json` that is not JSON.
-const NOT_JSON: &str = "Failed to load skinpack, failed to parse manifest";
-/// A `skins.json` whose root is no object; the literal `/n` and the two spaces are the
-/// game's. The arguments are the pack's name, author and UUID.
-const NOT_OBJECT: &str = "Skin manifest failed to load.  Pack Name: {} /nAuthor: {}, /nUUID: {}";
-/// The start of the content-log line for a skin whose files are missing.
-const INVALID_SKIN: &str = "Trying to add an invalid classic skin.{}";
-
 impl bedrock_addon_core::__private::Sealed for SkinPack {}
 
 fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
@@ -57,9 +48,9 @@ fn located(mut diagnostics: Diagnostics, origin: &Origin) -> Diagnostics {
     diagnostics
 }
 
-fn refuse(origin: &Origin, code: DiagnosticCode) -> Rejected {
+fn refuse(origin: &Origin, found: Diagnostic) -> Rejected {
     let mut diagnostics = Diagnostics::default();
-    diagnostics.push(Diagnostic::error(code));
+    diagnostics.push(found);
     Rejected::new(origin.clone(), located(diagnostics, origin))
 }
 
@@ -92,23 +83,16 @@ fn parse_placed(
     let mut root = match read_json(bytes) {
         Ok(root) => root,
         Err(error) => {
-            let code = DiagnosticCode::MalformedInput {
-                message: error.to_string(),
-                text: Some(VanillaText::Fixed(NOT_JSON)),
-            };
-            return Err(refuse(&origin, code));
+            let found = Diagnostic::of(&codes::NOT_JSON)
+                .detail(DiagnosticDetail::Syntax(error.to_string()));
+            return Err(refuse(&origin, found));
         }
     };
     if !root.is_object() {
         // The pack's name, author and UUID are the manifest's, which a file read on its own does
         // not have.
-        let code = DiagnosticCode::InvalidType {
-            text: Some(VanillaText::Formatted {
-                template: NOT_OBJECT,
-                args: vec![String::new(), String::new(), String::new()],
-            }),
-        };
-        return Err(refuse(&origin, code));
+        let found = Diagnostic::of(codes::NOT_OBJECT.with(["", "", ""]));
+        return Err(refuse(&origin, found));
     }
     let mut diagnostics = Diagnostics::default();
     // A number no double holds is read as the largest finite one, with a warning.
@@ -155,10 +139,8 @@ impl SkinPack {
     ) -> Result<Document<SkinPack>, Rejected> {
         let path = PackPath::from_static(SKINS_PATH);
         let Some(bytes) = skins_json else {
-            let code = DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(NOT_FOUND)),
-            };
-            return Err(refuse(&unversioned::lone(&path), code));
+            let found = Diagnostic::of(&codes::NOT_FOUND);
+            return Err(refuse(&unversioned::lone(&path), found));
         };
         let (document, places) = parse_placed(&path, bytes)?;
         let files: HashSet<&str> = paths.into_iter().collect();
@@ -195,22 +177,19 @@ impl SkinPack {
                     let _ = write!(missing, " Cape is missing from {name}.");
                 }
                 if !missing.is_empty() {
-                    let code = DiagnosticCode::InvalidValue {
-                        text: Some(VanillaText::Formatted {
-                            template: INVALID_SKIN,
-                            args: vec![missing],
-                        }),
-                    };
                     // The game logs the line at the content log's error level and loads the next
                     // skin: the skin is dropped while the pack is kept, a kept error.
-                    found.push(Diagnostic::error(code).at(at).into_kept());
+                    found.push(Diagnostic::of(codes::INVALID_SKIN.with([missing])).at(at));
                     continue;
                 }
                 if !skin.uses_built_in_geometry() && !has_model(&skin.geometry_name()) {
                     // The game falls back without a line, so the crate reports an information.
                     at.push("geometry");
-                    let code = DiagnosticCode::InvalidValue { text: None };
-                    found.push(Diagnostic::info(code).at(at));
+                    found.push(
+                        Diagnostic::of(&core_codes::INVALID_VALUE)
+                            .severity(Severity::Info)
+                            .at(at),
+                    );
                 }
                 drop(name);
                 kept.push(skin);
@@ -219,14 +198,11 @@ impl SkinPack {
         }
         diagnostics.extend(located(found, &origin));
         if let Err(message) = models {
-            let code = DiagnosticCode::MalformedInput {
-                message: message.to_string(),
-                text: None,
-            };
             // The game reads the geometry file and tests the parse result only for null, with no
             // content-log line and no assert, so the game is silent and the crate reports an
             // information.
-            let mut broken = Diagnostic::info(code);
+            let mut broken =
+                Diagnostic::of(builders::syntax(message.to_string())).severity(Severity::Info);
             broken.location.path = Some(PackPath::from_static(GEOMETRY_PATH));
             diagnostics.push(broken);
         }
@@ -237,7 +213,7 @@ impl SkinPack {
 fn creator_rule(bytes: &[u8], sizes: &[(u32, u32)]) -> Diagnostics {
     let mut diagnostics = Diagnostics::default();
     if bedrock_addon_shared_shapes::png_size(bytes).is_some_and(|size| !sizes.contains(&size)) {
-        diagnostics.push(Diagnostic::info(DiagnosticCode::SkinPackCreatorRule));
+        diagnostics.push(Diagnostic::of(&core_codes::SKIN_PACK_CREATOR_RULE));
     }
     diagnostics
 }

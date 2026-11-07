@@ -2,9 +2,10 @@
 //! lighting.
 
 use super::types::TintColor;
+use crate::codes;
 use crate::read::{Members, Node, Opt, Reader, Writer, object};
-use crate::texts;
 use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::Molang;
 
@@ -25,11 +26,11 @@ impl Node for DirectionMode {
             Some("derive_from_velocity") => Some(Self::DeriveFromVelocity),
             Some("custom") => Some(Self::Custom),
             Some(_) if !r.legacy() => {
-                r.error(DiagnosticCode::InvalidValue { text: None });
+                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
                 None
             }
             _ => {
-                r.wrong_type(value, Some(texts::DIRECTION_MODE));
+                r.wrong_type(value, Some(&codes::DIRECTION_MODE));
                 None
             }
         }
@@ -66,7 +67,7 @@ object! {
 /// mode `custom` needs `custom_direction`.
 fn direction(settings: &mut DirectionSettings, _: Members<'_>, r: &mut Reader<'_>) {
     if settings.mode == DirectionMode::Custom && settings.custom_direction.is_none() {
-        r.warn(texts::DIRECTION_CUSTOM);
+        r.warn(&codes::DIRECTION_CUSTOM);
     }
 }
 
@@ -107,7 +108,7 @@ object! {
         opt uv_size: [Molang; 2] = "uv_size", Opt::with_default(1.0),
             default [Molang::Const(1.0), Molang::Const(1.0)];
         /// A frame animation (JSON `flipbook`).
-        opt flipbook: Flipbook = "flipbook", Opt::NONE.wrong(texts::BAD_FLIPBOOK);
+        opt flipbook: Flipbook = "flipbook", Opt::NONE.wrong(&codes::BAD_FLIPBOOK);
     }
 }
 
@@ -116,8 +117,8 @@ object! {
 fn uv(uv: &mut Uv, m: Members<'_>, r: &mut Reader<'_>) {
     if r.legacy() {
         for (key, text) in [
-            ("texturewidth", texts::TEXTURE_WIDTH_NAME),
-            ("textureheight", texts::TEXTURE_HEIGHT_NAME),
+            ("texturewidth", &codes::TEXTURE_WIDTH_NAME),
+            ("textureheight", &codes::TEXTURE_HEIGHT_NAME),
         ] {
             if m.get(key).is_some() {
                 r.key(key, |r| r.warn(text));
@@ -129,10 +130,10 @@ fn uv(uv: &mut Uv, m: Members<'_>, r: &mut Reader<'_>) {
         return;
     }
     if uv.uv.is_none() {
-        r.warn(texts::MISSING_UV);
+        r.warn(&codes::MISSING_UV);
     }
     if uv.uv_size.is_none() {
-        r.warn(texts::MISSING_UV_SIZE);
+        r.warn(&codes::MISSING_UV_SIZE);
     }
 }
 
@@ -150,9 +151,9 @@ object! {
         opt facing_camera_mode: String = "facing_camera_mode", Opt::NONE;
         /// The direction for the modes that face one (JSON `direction`).
         opt direction: DirectionSettings = "direction",
-            Opt::NONE.wrong(texts::DIRECTION_NOT_OBJECT);
+            Opt::NONE.wrong(&codes::DIRECTION_NOT_OBJECT);
         /// The part of the texture shown (JSON `uv`).
-        opt uv: Uv = "uv", Opt::NONE.wrong(texts::BAD_UV);
+        opt uv: Uv = "uv", Opt::NONE.wrong(&codes::BAD_UV);
     }
 }
 
@@ -179,7 +180,7 @@ fn billboard(billboard: &mut ParticleAppearanceBillboard, m: Members<'_>, r: &mu
     }
     // The game writes this line to the content log at the error level.
     r.key("direction", |r| {
-        r.content_error(texts::DIRECTION_NOT_PROPERLY_DEFINED);
+        r.content_error(&codes::DIRECTION_NOT_PROPERLY_DEFINED);
     });
     if m.get("uv").is_some() {
         billboard.uv = None;
@@ -192,7 +193,7 @@ object! {
     pub struct ParticleAppearanceTinting {
         /// The colour, or a gradient (JSON `color`, required from format 1.20.80; white in
         /// an older document that does not write it).
-        req color: TintColor = "color", Opt::NONE.missing(texts::NO_COLOR);
+        req color: TintColor = "color", Opt::NONE.missing(&codes::NO_COLOR);
     }
 }
 

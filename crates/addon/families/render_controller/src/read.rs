@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use facet_value::VObject;
 use indexmap::{IndexMap, IndexSet};
 
+use super::codes;
 use super::fold::{Folded, fold};
 use super::molang::{MolangRun, run};
 use super::{
@@ -13,12 +14,12 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
-    VanillaText,
+    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment,
+    Phase, Severity, Span,
 };
 use bedrock_addon_core::json::node_tree::{
-    ABOVE_MAX_VERSION, BELOW_MIN_VERSION, Failure, Group, Hit, Kind, Lossy, Names, Node, Order,
-    Pattern, REQUIRED_CHILD, Rules, UNKNOWN_OPTION_TYPE, Validation, Walk, text,
+    Failure, Group, Hit, Kind, Lossy, Names, Node, Order, Pattern, REQUIRED_CHILD, Rules,
+    Validation, Walk,
 };
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
@@ -27,18 +28,13 @@ use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::PackPath;
-use bedrock_addon_core::version::{FormatVersionInput, SemVersion};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersionInput, SemVersion};
 use bedrock_addon_shared_shapes::TrueOnly;
 
 /// The schema's `format_version` minimum and the family's floor.
 pub(crate) const V1_8_0: SemVersion = SemVersion::new(1, 8, 0);
 /// The version node's default maximum, which the schema never overrides.
 pub(crate) const MAXIMUM: SemVersion = SemVersion::new(65535, 0, 0);
-
-/// `error parsing %s:\n%s`: the file's path and the JSON reader's messages.
-const ERROR_PARSING: &str = "error parsing {}:\n{}";
-/// The text for a controller without a `textures` member.
-const MUST_CONTAIN_TEXTURES: &str = "Render controller must contain textures.";
 
 /// The rules of the game's render controller schema: names as written, the members of an
 /// object in sorted key order (jsoncpp's `std::map`), strict, an object failed by any member,
@@ -199,10 +195,10 @@ fn as_spelled<'v>(
 fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     let malformed = |message: String| {
         let mut diagnostics = Diagnostics::default();
-        diagnostics.push(Diagnostic::error(DiagnosticCode::MalformedInput {
-            text: text(ERROR_PARSING, &[path.as_str(), &message]),
-            message,
-        }));
+        diagnostics.push(
+            Diagnostic::of(codes::ERROR_PARSING.with([path.as_str(), &message]))
+                .detail(DiagnosticDetail::Syntax(message)),
+        );
         Parsed::failed(diagnostics, None)
     };
     // The nesting before the encoding, each in the loader's words.
@@ -241,18 +237,17 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     unresolvable_names(marked, &folded, original, &mut diagnostics);
     if written.is_pre_release() {
         diagnostics.push(
-            Diagnostic::info(DiagnosticCode::PrereleaseFormatVersion {
-                version: written.to_string(),
-            })
-            .at(at_version()),
+            Diagnostic::of(core_codes::PRERELEASE_FORMAT_VERSION.with([written.to_string()]))
+                .at(at_version()),
         );
     }
     if written.format_version() > cx.engine_version {
         // The game compares the version with nothing but the schema's bounds.
         diagnostics.push(
-            Diagnostic::info(DiagnosticCode::FormatVersionAboveEngine {
-                version: written.to_string(),
-            })
+            Diagnostic::of(
+                core_codes::FORMAT_VERSION_ABOVE_ENGINE
+                    .with([written.to_string(), ENGINE_VERSION.to_string()]),
+            )
             .at(at_version()),
         );
     }
@@ -284,10 +279,8 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     let mut failed: IndexSet<String> = outcome.dropped;
     for key in drafts.without_textures {
         diagnostics.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField {
-                text: Some(VanillaText::Fixed(MUST_CONTAIN_TEXTURES)),
-            })
-            .at(controller_path(&key, Some("textures"))),
+            Diagnostic::of(&codes::MUST_CONTAIN_TEXTURES)
+                .at(controller_path(&key, Some("textures"))),
         );
         failed.insert(key);
     }
@@ -382,10 +375,9 @@ fn folding_hints(diagnostics: &mut Diagnostics, folded: &Folded, original: &str)
         let offset = u32::try_from(quote).unwrap_or(u32::MAX);
         let (line, _) = Span { offset, len: 1 }.line_col(original);
         hints.push(Diagnostic::new(
-            DiagnosticCode::CaseFoldingDisabled {
-                line: Some(line),
-                unresolvable: false,
-            },
+            DiagnosticCode::from(
+                core_codes::CASE_FOLDING_DISABLED_AT_LINE.with([line.to_string()]),
+            ),
             Severity::Info,
             Phase::Parse,
             finding.location.clone(),
@@ -427,9 +419,7 @@ fn read_root(walk: &mut Walk, root: Node<'_>, drafts: &mut Drafts) -> Option<Sem
     }
     if version.is_none() {
         walk.error(
-            DiagnosticCode::MissingFormatVersion {
-                text: text(REQUIRED_CHILD, &["format_version"]),
-            },
+            DiagnosticCode::from(codes::REQUIRED_CHILD.with(["format_version"])),
             root.span(),
         );
     }
@@ -450,28 +440,21 @@ fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
         .filter(|v| !v.is_any());
     let Some(version) = version else {
         walk.error(
-            DiagnosticCode::UnsupportedVersion {
-                text: text(UNKNOWN_OPTION_TYPE, &["SemVersion"]),
-            },
+            DiagnosticCode::from(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"])),
             node.span(),
         );
         return None;
     };
     let as_written = written.as_deref().unwrap_or("");
-    let bound = if version < V1_8_0 {
-        Some((BELOW_MIN_VERSION, V1_8_0))
+    let refused = if version < V1_8_0 {
+        Some(core_codes::VERSION_BELOW_MIN.with([as_written.to_owned(), V1_8_0.to_string()]))
     } else if version > MAXIMUM {
-        Some((ABOVE_MAX_VERSION, MAXIMUM))
+        Some(codes::ABOVE_MAX_VERSION.with([as_written.to_owned(), MAXIMUM.to_string()]))
     } else {
         None
     };
-    if let Some((template, bound)) = bound {
-        walk.error(
-            DiagnosticCode::UnsupportedVersion {
-                text: text(template, &[as_written, &bound.to_string()]),
-            },
-            node.span(),
-        );
+    if let Some(code) = refused {
+        walk.error(DiagnosticCode::from(code), node.span());
         return None;
     }
     Some(version)
@@ -500,9 +483,11 @@ fn unresolvable_names(
         });
         // The game says nothing, so this is an information.
         diagnostics.push(
-            Diagnostic::info(DiagnosticCode::CaseFoldingDisabled {
-                line,
-                unresolvable: true,
+            Diagnostic::of(match line {
+                Some(line) => {
+                    core_codes::CASE_FOLDING_DISABLED_AT_LINE_UNRESOLVABLE.with([line.to_string()])
+                }
+                None => Code::from(&core_codes::CASE_FOLDING_DISABLED_UNRESOLVABLE),
             })
             .at(at)
             .span(span),
@@ -591,7 +576,7 @@ fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Draf
             // text).
             if matches!(value, Molang::Const(_)) {
                 walk.push(
-                    DiagnosticCode::InvalidType { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
                     Severity::Info,
                     Some(v.span()),
                 );

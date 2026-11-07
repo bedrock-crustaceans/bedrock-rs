@@ -4,13 +4,11 @@
 use std::borrow::Cow;
 
 use super::lint::has_wrong_arity;
-use super::texts::{
-    FAILED_HEADER, TICK_NO_VALUES, TICK_NOT_FOUND, TICK_NOT_JSON, UNKNOWN_COMMAND,
-    UNKNOWN_COMMAND_COMMENT, UNKNOWN_COMMAND_SLASH, formatted,
-};
-use super::{Function, FunctionLine, TickFunction, TickList};
+use super::{Function, FunctionLine, TickFunction, TickList, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Span, builders,
 };
 use bedrock_addon_core::id::FunctionPath;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, strip_bom};
@@ -108,7 +106,8 @@ pub(super) fn parse_function(
             // line parses is the command system's to say, so this never drops a line. The
             // game's load checks the first word only, so the note is an information.
             if has_wrong_arity(command, &line[word.len()..], version) {
-                let note = Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+                let note = Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
                     .phase(Phase::Validate);
                 lints.push(note.span(span));
             }
@@ -120,14 +119,10 @@ pub(super) fn parse_function(
             lints.push(unchecked_command(word, "feature-gated command").span(span));
             function.commands.push(kept);
         } else {
-            let error = Diagnostic::error(DiagnosticCode::UnresolvedReference {
-                text: formatted(
-                    unknown_command_text(word),
-                    [number.to_string(), word.to_owned()],
-                ),
-            })
-            .phase(Phase::Validate)
-            .severity(severity);
+            let error =
+                Diagnostic::of(unknown_command(word).with([number.to_string(), word.to_owned()]))
+                    .phase(Phase::Validate)
+                    .severity(severity);
             errors.push(error.span(span));
             function.dropped.push(kept);
         }
@@ -136,21 +131,23 @@ pub(super) fn parse_function(
     if lossy {
         // Vanilla keeps the bytes of a file that is not UTF-8; a `String` cannot. The game says
         // nothing, so the crate's own note is an information.
-        diagnostics.push(Diagnostic::info(DiagnosticCode::MalformedInput {
-            message: "not UTF-8: each invalid sequence is read as U+FFFD".to_owned(),
-            text: None,
-        }));
+        diagnostics.push(
+            Diagnostic::of(builders::syntax(
+                "not UTF-8: each invalid sequence is read as U+FFFD",
+            ))
+            .severity(Severity::Info),
+        );
     }
     if !errors.is_empty() {
         // The game logs the header, then one entry per error.
-        let text = formatted(FAILED_HEADER, [function.name.as_str().to_owned()]);
+        let name = [function.name.as_str()];
         let header = if strict {
-            DiagnosticCode::DocumentRejected { text }
+            codes::FAILED_HEADER.with(name)
         } else {
-            DiagnosticCode::DroppedField { text }
+            codes::FAILED_HEADER_DROPPED.with(name)
         };
         diagnostics.push(
-            Diagnostic::error(header)
+            Diagnostic::of(header)
                 .phase(Phase::Validate)
                 .severity(severity),
         );
@@ -169,13 +166,13 @@ pub(super) fn first_word(line: &str) -> &str {
 /// starts with `//`, with the slash hint when it otherwise starts with `/` and is at least two
 /// bytes long, without a hint for anything else (a lone `/` included). Both hints follow the
 /// unknown-command text only and look at the first word, not the line.
-fn unknown_command_text(word: &str) -> &'static str {
+fn unknown_command(word: &str) -> &'static CodeDef<2> {
     if word.starts_with("//") {
-        UNKNOWN_COMMAND_COMMENT
+        &codes::UNKNOWN_COMMAND_COMMENT
     } else if word.len() >= 2 && word.starts_with('/') {
-        UNKNOWN_COMMAND_SLASH
+        &codes::UNKNOWN_COMMAND_SLASH
     } else {
-        UNKNOWN_COMMAND
+        &codes::UNKNOWN_COMMAND
     }
 }
 
@@ -229,7 +226,7 @@ fn is_feature_gated(word: &str) -> bool {
 /// The command table holds vanilla's public commands only and the game has no line for such a
 /// word, so the crate's own note is an information.
 fn unchecked_command(word: &str, kind: &'static str) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+    Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
         .phase(Phase::Validate)
         .detail(DiagnosticDetail::Reference {
             kind,
@@ -263,12 +260,10 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
             // The game's text is `File %s failed to load with error(s) %s`, logged as an error:
             // the first `%s` is the literal `tick.json`, the second the reader's errors; the
             // pack's tick list is skipped.
-            parsed
-                .diagnostics
-                .push(Diagnostic::error(DiagnosticCode::MalformedInput {
-                    text: formatted(TICK_NOT_JSON, [TICK_FILE.to_owned(), message.clone()]),
-                    message,
-                }));
+            parsed.diagnostics.push(
+                Diagnostic::of(codes::TICK_NOT_JSON.with([TICK_FILE, message.as_str()]))
+                    .detail(DiagnosticDetail::Syntax(message)),
+            );
             return parsed;
         }
     };
@@ -279,10 +274,9 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
         .as_object()
         .and_then(|object| object.get(VALUES))
         .filter(|value| !value.is_null());
-    let text = || formatted(TICK_NO_VALUES, [VALUES.to_owned()]);
     let Some(values) = values else {
         parsed.diagnostics.push(at_values(
-            DiagnosticCode::MissingRequiredField { text: text() },
+            DiagnosticCode::from(codes::TICK_NO_VALUES.with([VALUES])),
             Severity::Error,
             None,
         ));
@@ -290,7 +284,7 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
     };
     let Some(values) = values.as_array() else {
         parsed.diagnostics.push(at_values(
-            DiagnosticCode::InvalidType { text: text() },
+            DiagnosticCode::from(codes::TICK_VALUES_NOT_ARRAY.with([VALUES])),
             Severity::Error,
             None,
         ));
@@ -342,9 +336,7 @@ fn at_values(code: DiagnosticCode, severity: Severity, index: Option<usize>) -> 
 /// has.
 pub(super) fn not_found(name: &str, index: Option<usize>) -> Diagnostic {
     at_values(
-        DiagnosticCode::UnresolvedReference {
-            text: formatted(TICK_NOT_FOUND, [name.to_owned()]),
-        },
+        DiagnosticCode::from(codes::TICK_NOT_FOUND.with([name])),
         // The game logs this as a warning, skips the entry and goes on with the next.
         Severity::Warning,
         index,

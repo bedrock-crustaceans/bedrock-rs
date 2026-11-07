@@ -3,24 +3,23 @@
 
 mod common;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon_core::diagnostic::{JsonPath, Severity, VanillaText};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier, StateValue};
 use common::{compact, read, round_trip};
 
-/// The one finding of `descriptor`'s check, as its vanilla text.
-fn text_of(descriptor: &BlockDescriptor) -> VanillaText {
+/// The one finding of `descriptor`'s check, as the vanilla text it renders.
+fn text_of(descriptor: &BlockDescriptor) -> String {
     let found = descriptor.check(&JsonPath::new(), Severity::Warning);
     assert_eq!(found.len(), 1, "{descriptor:?}");
     let finding = found.iter().next().unwrap();
     // The game logs these at level 3 and goes on: a kept error.
     assert_eq!(finding.severity, Severity::Error);
     assert!(finding.kept);
-    match &finding.code {
-        DiagnosticCode::InvalidValue { text: Some(text) } => text.clone(),
-        other => panic!("not InvalidValue: {other:?}"),
-    }
+    // By legacy name: the variant and the definitions that were it.
+    assert_eq!(finding.code.name(), "InvalidValue", "{:?}", finding.code);
+    finding.code.vanilla().expect("a vanilla text")
 }
 
 #[test]
@@ -78,6 +77,7 @@ fn a_name_or_states_beside_tags_is_mixed_and_reported() {
         VanillaText::BlockDescriptorNameAndTags {
             block: "a:b".into()
         }
+        .to_string()
     );
     let d: BlockDescriptor = round_trip(r#"{"states": {"age": 1}, "tags": "q.any_tag('x')"}"#);
     assert!(matches!(&d, BlockDescriptor::Mixed { name: None, .. }));
@@ -86,6 +86,7 @@ fn a_name_or_states_beside_tags_is_mixed_and_reported() {
         VanillaText::BlockDescriptorTagsAndStates {
             block: String::new()
         }
+        .to_string()
     );
 }
 
@@ -105,7 +106,8 @@ fn a_wrong_shape_is_kept_with_the_json_readers_text() {
             text_of(&d),
             VanillaText::BlockDescriptorShape {
                 value: common::normalised(json)
-            },
+            }
+            .to_string(),
             "{json}"
         );
     }
@@ -117,7 +119,7 @@ fn a_name_that_is_not_a_string_is_kept_with_its_text() {
     assert!(matches!(d, BlockDescriptor::Invalid(_)));
     assert_eq!(
         text_of(&d),
-        VanillaText::BlockDescriptorName { value: "7".into() }
+        VanillaText::BlockDescriptorName { value: "7".into() }.to_string()
     );
 }
 
@@ -133,12 +135,10 @@ fn a_state_of_another_type_is_kept_with_its_text() {
             state: "age".into(),
             state_type: 3,
         }
+        .to_string()
     );
     let d: BlockDescriptor = read(r#"{"name": "a:b", "states": {"x": null}}"#).unwrap();
-    assert!(matches!(
-        text_of(&d),
-        VanillaText::BlockDescriptorStateType { state_type: 0, .. }
-    ));
+    assert!(text_of(&d).contains(", state type 0. "), "{}", text_of(&d));
 }
 
 #[test]

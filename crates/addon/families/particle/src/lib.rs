@@ -7,6 +7,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod component;
 pub mod history;
 pub use curve::{BezierChainCurve, BezierChainNode, Curve, SimpleCurve, SimpleCurveType};
@@ -19,14 +20,12 @@ mod event;
 #[cfg(test)]
 mod linear;
 mod read;
-mod texts;
 mod write;
 
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
     CombineRule, ComponentMap, Contribution, Document, JsonDefinition, JsonDocument, JsonPlaced,
     NoBeta, Notice, Origin, Registry, Rejected, default_path,
@@ -304,10 +303,7 @@ pub(crate) fn upgrade_document(
 
 /// The finding of an unreadable file.
 fn malformed() -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::MalformedInput {
-        message: "not UTF-8 JSON within the nesting limit".to_owned(),
-        text: None,
-    })
+    Diagnostic::of(core_codes::SYNTAX.with(["not UTF-8 JSON within the nesting limit"]))
 }
 
 /// A rejection with one finding.
@@ -333,16 +329,8 @@ fn vanilla_envelope_texts(diagnostics: &mut Diagnostics, document: JsonSlice<'_>
     let envelope = probe_envelope(JsonSlice::new(&cleaned)).ok();
     // In place, as `Diagnostics::locate`.
     for finding in diagnostics.iter_mut() {
-        // The pipeline's member-count line, on core's definition or the legacy variant.
-        let member_count = matches!(
-            finding.code,
-            DiagnosticCode::MalformedInput {
-                text: Some(VanillaText::DocumentMemberCount),
-                ..
-            }
-        ) || finding
-            .code
-            .is(&bedrock_addon_core::diagnostic::codes::DOCUMENT_MEMBER_COUNT);
+        // The pipeline's member-count line, on core's definition.
+        let member_count = finding.is(&core_codes::DOCUMENT_MEMBER_COUNT);
         if member_count && envelope.as_ref().is_some_and(|e| e.members.is_empty()) {
             finding.code = bedrock_addon_core::diagnostic::cereal::payload_missing();
             // the member count no longer stands

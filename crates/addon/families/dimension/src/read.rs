@@ -6,7 +6,8 @@ use facet::Facet;
 
 use super::{DimensionComponents, DimensionDescription};
 use crate::history::v1_18_0::Components as ComponentsV1;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{
     JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
     reject_nulls,
@@ -112,11 +113,11 @@ pub(crate) fn parse_root<R: for<'f> Facet<'f>>(
             // From 1.21.60 the cereal slice reads leniently and logs an unknown member at the
             // content log's warning level. Below it the legacy parser reads only what it knows,
             // in silence, so the crate reports an information.
-            let code = DiagnosticCode::UnrecognizedField { text: None };
+            let finding = Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD);
             let finding = if cx.original_version >= CEREAL_FLOOR {
-                Diagnostic::warn(code).severity(cx.load.grade(Class::Unknown))
+                finding.severity(cx.load.grade(Class::Unknown))
             } else {
-                Diagnostic::info(code)
+                finding.severity(Severity::Info)
             };
             d.push(finding.at(at));
         }

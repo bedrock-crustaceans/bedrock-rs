@@ -8,11 +8,11 @@ use facet_json::RawJson;
 use facet_value::VObject;
 use indexmap::IndexMap;
 
-use super::texts::at_breadcrumb;
 use super::{Condition, Description, Facing, GeometryPart, Rule};
 use bedrock_addon_core::diagnostic::cereal;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, JsonPathSegment, Span,
 };
 use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -149,10 +149,9 @@ fn read_value(
         &bedrock_addon_core::json::last_wins(payload.text),
     ) else {
         reader.fail(
-            DiagnosticCode::MalformedInput {
-                message: "the payload is not JSON".to_owned(),
-                text: None,
-            },
+            DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(
+                "the payload is not JSON",
+            )),
             &JsonPath::new(),
         );
         return None;
@@ -196,28 +195,23 @@ impl Reader<'_> {
         self.d.push(Diagnostic::error(code).at(path));
     }
 
-    /// Vanilla's line for `text` at `at`: the breadcrumb, a colon and the text.
-    fn line(at: &JsonPath, text: &VanillaText) -> VanillaText {
-        at_breadcrumb(&breadcrumb(at), text)
-    }
-
     /// The game's generic finding `code` (`diagnostic::cereal`) at `at`, its text after the
-    /// breadcrumb.
+    /// breadcrumb: `-> rules[0] -> direction: <text>`.
     fn cereal(&mut self, code: DiagnosticCode, at: &JsonPath) {
-        let text = Some(Self::line(
-            at,
-            &VanillaText::Formatted {
-                template: "{}",
-                args: vec![code.to_string()],
-            },
-        ));
+        let line = format!("{}: {code}", breadcrumb(at));
         // By legacy name: the variant and the definitions that were it.
         let code = match code.name() {
-            "MissingRequiredField" => DiagnosticCode::MissingRequiredField { text },
-            "UnrecognizedField" => DiagnosticCode::UnrecognizedField { text },
-            "InvalidType" => DiagnosticCode::InvalidType { text },
-            "InvalidEnumValue" => DiagnosticCode::InvalidEnumValue { text },
-            "InvalidValue" => DiagnosticCode::InvalidValue { text },
+            "MissingRequiredField" => {
+                DiagnosticCode::from(core_codes::MISSING_REQUIRED_FIELD_WORDED.with([line]))
+            }
+            "UnrecognizedField" => {
+                DiagnosticCode::from(core_codes::UNRECOGNIZED_FIELD_WORDED.with([line]))
+            }
+            "InvalidType" => DiagnosticCode::from(core_codes::INVALID_TYPE_WORDED.with([line])),
+            "InvalidEnumValue" => {
+                DiagnosticCode::from(core_codes::INVALID_ENUM_VALUE_WORDED.with([line]))
+            }
+            "InvalidValue" => DiagnosticCode::from(core_codes::INVALID_VALUE_WORDED.with([line])),
             _ => code,
         };
         self.fail(code, at);
@@ -225,7 +219,7 @@ impl Reader<'_> {
 
     /// A value of a JSON type the member does not take, where vanilla's text is not known.
     fn wrong_type(&mut self, at: &JsonPath) {
-        self.fail(DiagnosticCode::InvalidType { text: None }, at);
+        self.fail(DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
     }
 
     /// "missing required field" at `at`.
@@ -437,7 +431,7 @@ impl Reader<'_> {
         #[allow(clippy::cast_possible_truncation)] // whole and in range, checked here
         let index = wide as i32;
         if wide.fract() != 0.0 || wide > f64::from(i32::MAX) {
-            self.fail(DiagnosticCode::InvalidValue { text: None }, at);
+            self.fail(DiagnosticCode::from(&core_codes::INVALID_VALUE), at);
             return None;
         }
         Some(index)

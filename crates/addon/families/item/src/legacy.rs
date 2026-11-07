@@ -5,13 +5,12 @@ use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::version::{FormatVersion, known};
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 
-use super::texts;
+use super::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// Which reader an item went through (vanilla `ItemVersion`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -230,10 +229,8 @@ pub(crate) fn read_legacy(
     // The game writes a deprecation line for `foil`, `mining_speed`, `tag:` and
     // `creative_category` at the content log's error level, and the item loads on: each is a
     // kept error.
-    let deprecated = |d: &mut Diagnostics, key: &str, text: VanillaText| {
-        d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::DeprecatedMember { text: Some(text) }).at(path(key)),
-        );
+    let deprecated = |d: &mut Diagnostics, key: &str, code: DiagnosticCode| {
+        d.push_kept_error(Diagnostic::error(code).at(path(key)));
     };
     for (key, value) in components {
         if SHARED.contains(&key.as_str()) {
@@ -243,29 +240,49 @@ pub(crate) fn read_legacy(
             "minecraft:block" => {
                 data.block = value.as_string().map(|s| s.as_str().to_owned());
                 if data.block.is_none() {
-                    misread(d, DiagnosticCode::InvalidType { text: None }, path(key));
+                    misread(
+                        d,
+                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        path(key),
+                    );
                 }
             }
             "minecraft:frame_count" => {
                 data.frame_count = number(value).map(truncate);
                 match number(value) {
-                    None => misread(d, DiagnosticCode::InvalidType { text: None }, path(key)),
+                    None => misread(
+                        d,
+                        DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                        path(key),
+                    ),
                     Some(n) if n.fract() != 0.0 || n.abs() > f64::from(i32::MAX) => {
-                        misread(d, DiagnosticCode::InvalidValue { text: None }, path(key));
+                        misread(
+                            d,
+                            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                            path(key),
+                        );
                     }
                     Some(_) => {}
                 }
             }
             "minecraft:mining_speed" => {
                 if original_version >= V1_20_30 {
-                    deprecated(d, key, VanillaText::Fixed(texts::MINING_SPEED_DEPRECATED));
+                    deprecated(d, key, (&codes::MINING_SPEED_DEPRECATED).into());
                 } else {
                     #[allow(clippy::cast_possible_truncation, reason = "an f32 member")]
                     let speed = number(value).map(|n| n as f32);
                     match speed {
-                        None => misread(d, DiagnosticCode::InvalidType { text: None }, path(key)),
+                        None => misread(
+                            d,
+                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                            path(key),
+                        ),
                         Some(speed) if speed.is_infinite() => {
-                            misread(d, DiagnosticCode::InvalidValue { text: None }, path(key));
+                            misread(
+                                d,
+                                DiagnosticCode::from(&core_codes::INVALID_VALUE),
+                                path(key),
+                            );
                         }
                         Some(_) => {}
                     }
@@ -285,7 +302,11 @@ pub(crate) fn read_legacy(
             // newest format, does not carry it: told as not written, as an information (as
             // for `creative_category`, which the game holds too).
             "minecraft:use_modifiers" if original_version < V1_20_50 => {
-                misread(d, DiagnosticCode::DroppedField { text: None }, path(key));
+                misread(
+                    d,
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    path(key),
+                );
             }
             // The legacy read takes the number, or `value` of the object form: any other
             // member of the object is read by nothing.
@@ -302,7 +323,7 @@ pub(crate) fn read_legacy(
                     if value.is_object() {
                         at.push("value");
                     }
-                    misread(d, DiagnosticCode::InvalidType { text: None }, at);
+                    misread(d, DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
                 }
                 if let Some(object) = value.as_object() {
                     for (member, _) in object
@@ -310,7 +331,7 @@ pub(crate) fn read_legacy(
                         .filter(|(member, _)| member.as_str() != "value")
                     {
                         let at = path(key).child(member.as_str());
-                        misread(d, DiagnosticCode::UnrecognizedField { text: None }, at);
+                        misread(d, DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), at);
                     }
                 }
             }
@@ -319,9 +340,9 @@ pub(crate) fn read_legacy(
                     deprecated(
                         d,
                         key,
-                        VanillaText::ItemCreativeCategoryDeprecated {
-                            version: original_version,
-                        },
+                        codes::CREATIVE_CATEGORY_DEPRECATED
+                            .with([original_version.to_string()])
+                            .into(),
                     );
                 } else {
                     // Held for the legacy item (the legacy data's `creative_category`). The
@@ -336,27 +357,32 @@ pub(crate) fn read_legacy(
                     // the game writes no such line for an item, so this information is the
                     // crate's own.
                     d.push(
-                        Diagnostic::info(DiagnosticCode::DuplicateComponentVersion {
-                            old: "minecraft:foil".to_owned(),
-                            new: "minecraft:glint".to_owned(),
-                        })
+                        Diagnostic::info(
+                            core_codes::DUPLICATE_COMPONENT_VERSION
+                                .with([
+                                    "minecraft:foil",
+                                    "minecraft:glint",
+                                    "minecraft:glint",
+                                    "minecraft:foil",
+                                ])
+                                .into(),
+                        )
                         .at(path("minecraft:glint")),
                     );
                 } else if original_version >= V1_20_20 {
-                    deprecated(d, key, VanillaText::Fixed(texts::FOIL_DEPRECATED));
+                    deprecated(d, key, (&codes::FOIL_DEPRECATED).into());
                 } else if LoadRequirement::LegacyCreatorFeatures.satisfied(cx) {
                     data.is_glint = value.as_bool();
                     if data.is_glint.is_none() {
-                        misread(d, DiagnosticCode::InvalidType { text: None }, path(key));
+                        misread(
+                            d,
+                            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                            path(key),
+                        );
                     }
                 } else {
                     // The text is the crate's own and the game says nothing: an information.
-                    d.push(
-                        Diagnostic::info(DiagnosticCode::DroppedComponent {
-                            text: Some(VanillaText::Fixed(texts::FOIL_IGNORED)),
-                        })
-                        .at(path(key)),
-                    );
+                    d.push(Diagnostic::of(&codes::FOIL_IGNORED).at(path(key)));
                 }
             }
             "minecraft:seed" => {
@@ -365,14 +391,12 @@ pub(crate) fn read_legacy(
                 // Above 1.16.100 the game's own warning says so (below); at 1.16.100 it is
                 // noted here (an information: the game discards it too).
                 if original_version <= V1_16_100 {
-                    d.push(
-                        Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(path(key)),
-                    );
+                    d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(path(key)));
                 }
             }
             tag if is_tag_key(tag) => {
                 if original_version >= V1_20_50 {
-                    deprecated(d, key, VanillaText::Fixed(texts::TAG_DEPRECATED));
+                    deprecated(d, key, (&codes::TAG_DEPRECATED).into());
                 } else {
                     data.tags.push(tag["tag:".len()..].to_owned());
                     // The tag is the key; the game does not read the value. The crate
@@ -383,7 +407,8 @@ pub(crate) fn read_legacy(
                         .is_some_and(facet_value::VObject::is_empty)
                     {
                         d.push(
-                            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+                            Diagnostic::of(&core_codes::INVALID_TYPE)
+                                .severity(Severity::Info)
                                 .at(path(key)),
                         );
                     }
@@ -402,12 +427,7 @@ pub(crate) fn read_legacy(
 /// log's warning level and keeps the key.
 pub(crate) fn seed_warning(at: &JsonPath, d: &mut Diagnostics) {
     let path = at.child("minecraft:seed");
-    d.push(
-        Diagnostic::warn(DiagnosticCode::DeprecatedMember {
-            text: Some(VanillaText::Fixed(texts::SEED_DEPRECATED)),
-        })
-        .at(path),
-    );
+    d.push(Diagnostic::of(&codes::SEED_DEPRECATED).at(path));
 }
 
 /// The information of a key of the legacy reader read as another value than the file writes:

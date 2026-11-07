@@ -7,10 +7,11 @@ use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::component::{ClientBiomeComponent, child};
-use super::texts::{IDENTIFIER_NAMESPACE, IDENTIFIER_UPPER, INVALID_FILE, fixed};
 use super::{Description, EnvironmentAttributes};
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, VanillaText,
+    Class, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -159,11 +160,11 @@ pub(crate) fn strict<T>(
         .any(|finding| finding.rejects() && !is_unknown_member(finding))
     {
         found.push(
-            Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: INVALID_FILE.to_owned(),
-                text: Some(VanillaText::Fixed(INVALID_FILE)),
-            })
-            .at(cx.at.clone()),
+            Diagnostic::of(&codes::INVALID_FILE)
+                .detail(DiagnosticDetail::Syntax(
+                    codes::INVALID_FILE.template().to_owned(),
+                ))
+                .at(cx.at.clone()),
         );
     }
     d.extend_with_unknown(found);
@@ -270,16 +271,12 @@ fn check_identifier(
         if bare_or_namespaced(identifier) {
             return;
         }
-        DiagnosticCode::InvalidValue {
-            text: fixed(IDENTIFIER_UPPER),
-        }
+        DiagnosticCode::from(&codes::IDENTIFIER_UPPER)
     } else {
         if namespaced(identifier) {
             return;
         }
-        DiagnosticCode::NamespaceRule {
-            text: fixed(IDENTIFIER_NAMESPACE),
-        }
+        DiagnosticCode::from(&codes::IDENTIFIER_NAMESPACE)
     };
     d.push(Diagnostic::error(code).at(child(at, &["description", "identifier"])));
 }
@@ -311,7 +308,7 @@ fn components<C: ComponentEra>(
         let Some(meta) = table.get(key) else {
             map.insert_unknown(key, json);
             d.push(
-                Diagnostic::warn(DiagnosticCode::UnrecognizedComponent { text: None })
+                Diagnostic::of(&core_codes::UNRECOGNIZED_COMPONENT)
                     .at(path)
                     .severity(cx.grade(Class::Unknown)),
             );
@@ -379,8 +376,7 @@ fn gated(
             .is_some_and(|name| name.as_str() == "dry_foliage");
     if dry_foliage && version < DRY_FOLIAGE_MAP {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidEnumValue { text: None })
-                .at(child(at, &["color", "color_map"])),
+            Diagnostic::of(&core_codes::INVALID_ENUM_VALUE).at(child(at, &["color", "color_map"])),
         );
         reported = true;
     }
@@ -389,13 +385,11 @@ fn gated(
 
 /// "To use %s '%s', use json format version %s or higher".
 fn use_version(what: &'static str, name: &str, version: FormatVersion) -> DiagnosticCode {
-    DiagnosticCode::UnsupportedVersion {
-        text: Some(VanillaText::UseFormatVersion {
-            what,
-            name: name.to_owned(),
-            version,
-        }),
-    }
+    DiagnosticCode::from(core_codes::USE_FORMAT_VERSION.with([
+        what.to_string(),
+        name.to_string(),
+        version.to_string(),
+    ]))
 }
 
 #[cfg(test)]
@@ -434,7 +428,13 @@ mod tests {
         assert!(kept[0].starts_with("unknown demo:nothing"), "{kept:?}");
         let told: Vec<String> = d
             .iter()
-            .map(|f| format!("{:?} {}", f.code, f.location.json_path))
+            .map(|f| {
+                format!(
+                    "{} {}",
+                    bedrock_addon_core::diagnostic::testing::legacy_debug(f),
+                    f.location.json_path
+                )
+            })
             .collect();
         assert_eq!(
             told,

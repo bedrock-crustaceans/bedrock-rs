@@ -2,8 +2,10 @@
 //! and in every component group, the way vanilla's upgrade and rename steps
 //! visit them, and the findings of a removal.
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    self, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, VanillaText,
+    self, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::vanilla::ActorType;
@@ -146,15 +148,12 @@ pub(crate) fn removed(
     member: &str,
     version: FormatVersion,
 ) {
-    let text = Some(VanillaText::RemovedByUpgrade {
-        member: member.to_owned(),
-        version,
-    });
+    let args = [member.to_owned(), version.to_string()];
     let code = match what {
-        Removed::Component => DiagnosticCode::DroppedComponent { text },
-        Removed::Field => DiagnosticCode::DroppedField { text },
+        Removed::Component => codes::COMPONENT_REMOVED_BY_UPGRADE.with(args),
+        Removed::Field => codes::MEMBER_REMOVED_BY_UPGRADE.with(args),
     };
-    note(cx, code, at);
+    note(cx, code.into(), at);
 }
 
 /// An information of a step at `at` (below the payload): the game writes no content-log line for
@@ -207,19 +206,19 @@ impl Told {
     /// A value of another JSON shape than the step converts, read as the game reads it
     /// (`InvalidType`, INFO: the game discards the value without a word).
     pub(crate) fn wrong_type(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::InvalidType { text: None }, at);
+        self.note(DiagnosticCode::from(&core_codes::INVALID_TYPE), at);
     }
 
     /// A member the step drops, or replaces by what it makes of another, as the game's
     /// fixer does (`DroppedField`, INFO).
     pub(crate) fn dropped(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::DroppedField { text: None }, at);
+        self.note(DiagnosticCode::from(&core_codes::DROPPED_FIELD), at);
     }
 
     /// A member of an object form the step does not read (`UnrecognizedField`, INFO: the
     /// game does not read it either).
     pub(crate) fn unknown(&mut self, at: JsonPath) {
-        self.note(DiagnosticCode::UnrecognizedField { text: None }, at);
+        self.note(DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD), at);
     }
 
     /// A value the game itself discards at this version: INFO.
@@ -319,13 +318,19 @@ pub(crate) fn half(
 ) -> Option<Value> {
     let value = object.remove(name).filter(|value| !value.is_null())?;
     let Some(number) = value.as_number() else {
-        told.deviation(DiagnosticCode::InvalidType { text: None }, at.child(name));
+        told.deviation(
+            DiagnosticCode::from(&core_codes::INVALID_TYPE),
+            at.child(name),
+        );
         return None;
     };
     #[allow(clippy::cast_possible_truncation, reason = "the range's f32")]
     let float = number.to_f64_lossy() as f32;
     if float.is_infinite() {
-        told.deviation(DiagnosticCode::InvalidValue { text: None }, at.child(name));
+        told.deviation(
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            at.child(name),
+        );
         return Some(f32_value(f32::MAX.copysign(float)));
     }
     Some(value)

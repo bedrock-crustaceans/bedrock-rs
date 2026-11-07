@@ -1,8 +1,9 @@
 //! Every row of the fixtures: the list ("Fixtures to write", `l1`–`l9`) and
 //! the table (`d01`–`d27`), fixtures under `tests/fixtures/dialogue/dialogue/`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{DiagnosticCode, Severity, codes};
 use bedrock_addon::document::{Content, Document};
+use bedrock_addon::families::dialogue::codes as dialogue_codes;
 use bedrock_addon::families::dialogue::{
     ActionMode, Button, DialogueFile, DialogueScene, DialogueText, NpcAction, StoredCommand,
 };
@@ -34,10 +35,11 @@ fn command(raw: &str) -> StoredCommand {
 fn l1_format_version_1_13_0_is_rejected() {
     load_fixture("l1_below_floor");
     let diagnostics = rejected(&fixture_text("l1_below_floor/dialogue/old.json"));
-    assert!(matches!(
-        diagnostics.first_error().map(|d| &d.code),
-        Some(DiagnosticCode::UnsupportedVersion { text: Some(_) })
-    ));
+    assert!(
+        diagnostics
+            .first_error()
+            .is_some_and(|d| d.code.is(&dialogue_codes::OUT_OF_RANGE))
+    );
 }
 
 #[test]
@@ -46,10 +48,10 @@ fn l3_missing_format_version_is_rejected() {
     let diagnostics = rejected(&fixture_text(
         "l3_missing_version/dialogue/unversioned.json",
     ));
-    assert!(matches!(
-        diagnostics.first_error().map(|d| &d.code),
-        Some(DiagnosticCode::MissingFormatVersion { text: Some(_) })
-    ));
+    assert!(diagnostics.first_error().is_some_and(|d| {
+        d.code
+            .is(&dialogue_codes::NO_FORMAT_VERSION_MISSING_FORMAT_VERSION)
+    }));
 }
 
 #[test]
@@ -106,10 +108,10 @@ fn d03_three_integer_array_version_loads_and_other_arrays_are_unreadable() {
         let diagnostics = rejected(&fixture_text(&format!(
             "d03_array_version/dialogue/{name}.json"
         )));
-        assert!(matches!(
-            diagnostics.first_error().map(|d| &d.code),
-            Some(DiagnosticCode::MalformedFormatVersion { text: Some(_) })
-        ));
+        assert!(diagnostics.first_error().is_some_and(|d| {
+            d.code
+                .is(&dialogue_codes::NO_FORMAT_VERSION_MALFORMED_FORMAT_VERSION)
+        }));
     }
 }
 
@@ -156,9 +158,12 @@ fn d07_a_truncated_file_is_skipped_with_the_reader_s_message_after_the_prefix() 
         .diagnostics()
         .next()
         .expect("the syntax error");
-    let DiagnosticCode::MalformedInput { message, .. } = &finding.code else {
-        panic!("{:?}", finding.code);
-    };
+    assert!(
+        finding.code.is(&dialogue_codes::READER),
+        "{:?}",
+        finding.code
+    );
+    let message = finding.syntax_message().expect("the reader's message");
     assert!(!message.is_empty());
     assert_eq!(
         finding.code.to_string(),
@@ -229,10 +234,13 @@ fn d10_coerced_text_is_an_invalid_type_information_deviation() {
         names(coerced.diagnostics(), Severity::Info),
         ["InvalidType"]
     );
-    assert!(matches!(
-        coerced.diagnostics().iter().next().map(|d| &d.code),
-        Some(DiagnosticCode::InvalidType { text: None })
-    ));
+    assert!(
+        coerced
+            .diagnostics()
+            .iter()
+            .next()
+            .is_some_and(|d| d.code.is(&codes::INVALID_TYPE))
+    );
 }
 
 #[test]
@@ -433,7 +441,7 @@ fn d23_a_cut_label_is_a_clamped_value_info_deviation() {
         .collect();
     assert_eq!(
         found,
-        [(DiagnosticCode::ClampedValue { text: None }, Severity::Info)]
+        [(DiagnosticCode::from(&codes::CLAMPED_VALUE), Severity::Info)]
     );
 }
 
@@ -460,10 +468,7 @@ fn l4_a_scene_tag_in_two_packs_keeps_the_lower_priority_pack_s_scene() {
         .diagnostics()
         .find(|d| d.severity == Severity::Error)
         .expect("the error");
-    assert!(matches!(
-        error.code,
-        DiagnosticCode::DuplicateIdentifier { text: Some(_) }
-    ));
+    assert!(error.code.is(&dialogue_codes::DUPLICATE));
     assert_eq!(
         error
             .location

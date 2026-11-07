@@ -5,8 +5,9 @@
 
 #[cfg(feature = "molang")]
 use bedrock_addon_core::diagnostic::Location;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::{
@@ -18,8 +19,8 @@ use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{UpgradeCx, ValidateCx};
 use indexmap::IndexMap;
 
-use crate::cereal::{self, text};
-use crate::{AnimateEntry, ControllerUse, HeldItemScale, Scripts, VisualSlots};
+use crate::cereal;
+use crate::{AnimateEntry, ControllerUse, HeldItemScale, Scripts, VisualSlots, codes};
 
 /// The engine version that first declares `scripts.hide_held_items` and reads
 /// `held_item_scale` as Molang. Before it the member is a plain float.
@@ -55,11 +56,6 @@ const LOADER_SCRIPT: MolangFieldSpec = MolangFieldSpec::KEPT
     .reader(ReaderKind::SchemaValidated)
     .on_failure(MolangFailure::DropEntry);
 
-/// Vanilla's text for a named script the loader cannot parse; `{}` is the member name.
-#[cfg(feature = "molang")]
-pub const FAILED_TO_PARSE: &str = "Failed to parse '{}'!";
-/// Vanilla's text for a `held_item_scale` at or below 0: the file, then the value.
-pub(crate) const HELD_ITEM_SCALE_TEXT: &str = "In file '{}', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '{}'.";
 /// Stands for the file's path in a text until the load knows it.
 pub const FILE: &str = "\u{0}file";
 
@@ -291,7 +287,8 @@ fn empty_conditions(description: &VisualSlots, at: &JsonPath, d: &mut Diagnostic
         let mut entry_at = at.with(list);
         entry_at.push_index(index);
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
                 .at(entry_at)
                 .phase(Phase::Validate),
         );
@@ -320,11 +317,9 @@ fn held_item_scale(slots: &VisualSlots, at: &JsonPath, d: &mut Diagnostics) {
         && scale <= 0.0
     {
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: text(HELD_ITEM_SCALE_TEXT, &[FILE, &scale.to_string()]),
-            })
-            .at(at.with(&["held_item_scale"]))
-            .phase(Phase::Validate),
+            Diagnostic::of(codes::HELD_ITEM_SCALE_INVALID.with([FILE, &scale.to_string()]))
+                .at(at.with(&["held_item_scale"]))
+                .phase(Phase::Validate),
         );
     }
 }
@@ -362,11 +357,9 @@ fn loader_scripts(slots: &mut VisualSlots, at: &JsonPath, cx: &mut ValidateCx<'_
             // "Failed to parse '{}'!" follows the parser's lines and the script is not stored.
             // The game logs it as an error and loads the file: a kept error.
             cx.diagnostics.push_kept_error(
-                Diagnostic::error(DiagnosticCode::DroppedField {
-                    text: text(FAILED_TO_PARSE, &[name]),
-                })
-                .at(member_at)
-                .phase(Phase::Validate),
+                Diagnostic::of(codes::FAILED_TO_PARSE.with([name]))
+                    .at(member_at)
+                    .phase(Phase::Validate),
             );
             *member = None;
         }
@@ -405,7 +398,7 @@ fn animate_names(description: &VisualSlots, at: &JsonPath, d: &mut Diagnostics) 
         let mut entry_at = at.with(&["scripts", "animate"]);
         entry_at.push_index(index);
         d.push(
-            Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+            Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
                 .at(entry_at)
                 .phase(Phase::Validate)
                 .detail(DiagnosticDetail::Reference {

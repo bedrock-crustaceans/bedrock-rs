@@ -1,6 +1,8 @@
 //! The layout axis grammar of `size`, `offset`, `min_size` and `max_size`
 //! as the game parses them.
 
+use super::codes;
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::json::Value;
 
 /// One `+`/`-` joined term of an axis.
@@ -42,20 +44,16 @@ pub(crate) enum AxisError {
 }
 
 impl AxisError {
-    /// The game's text. Its format strings spell `%` as `%%`; this is what they print.
-    pub(crate) fn text(&self) -> (&'static str, Vec<String>) {
+    /// The game's line. Its format strings spell `%` as `%%`; this is what they print.
+    pub(crate) fn code(&self) -> Code {
         match self {
-            Self::DanglingNumber => ("Dangling number (no % or px in Size)", Vec::new()),
-            Self::ModifierWithoutPercent => ("% modifier given without '%' symbol!", Vec::new()),
-            Self::UnknownSiblingAxis(letters) => (
-                "An unknown sibling axis type was found: {}",
-                vec![letters.clone()],
-            ),
-            Self::UnrecognizedToken => ("Unrecognized token!", Vec::new()),
-            Self::NotANumber => (
-                "Trying to give JSON value without a number value!",
-                Vec::new(),
-            ),
+            Self::DanglingNumber => Code::from(&codes::DANGLING_NUMBER),
+            Self::ModifierWithoutPercent => Code::from(&codes::MODIFIER_WITHOUT_PERCENT),
+            Self::UnknownSiblingAxis(letters) => {
+                codes::UNKNOWN_SIBLING_AXIS.with([letters.as_str()])
+            }
+            Self::UnrecognizedToken => Code::from(&codes::UNRECOGNIZED_TOKEN),
+            Self::NotANumber => Code::from(&codes::NOT_A_NUMBER),
         }
     }
 }

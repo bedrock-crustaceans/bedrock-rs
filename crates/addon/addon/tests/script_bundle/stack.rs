@@ -491,7 +491,7 @@ fn the_stack_s_report_lists_a_bundle_s_findings() {
     let found: Vec<&DiagnosticCode> = report
         .iter()
         .map(|finding| &finding.code)
-        .filter(|code| matches!(code, DiagnosticCode::ScriptImportNotFound { .. }))
+        .filter(|code| code.is(&bedrock_addon::diagnostic::codes::SCRIPT_IMPORT_NOT_FOUND))
         .collect();
     assert_eq!(found.len(), 1);
     assert!(report.has_errors());

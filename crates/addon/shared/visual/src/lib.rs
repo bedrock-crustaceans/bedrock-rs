@@ -12,6 +12,7 @@
 /// The shared reader of the description schema: the families' plumbing, not the facade's API.
 #[doc(hidden)]
 pub mod cereal;
+pub mod codes;
 mod held_item_scale;
 pub mod history;
 mod merge;

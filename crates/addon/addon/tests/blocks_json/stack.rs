@@ -2,8 +2,9 @@
 
 use std::collections::BTreeMap;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity, VanillaText};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Placed};
+use bedrock_addon::families::blocks_json::codes::NOT_JSON;
 use bedrock_addon::families::blocks_json::{BlocksJson, ClientBlock};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackStack, Resource};
@@ -349,23 +350,17 @@ fn a_file_that_is_not_json_is_refused_with_an_error_deviation() {
         );
         // The text is ours, with the reason as its one argument: which reason a file is
         // refused for is the reader's own variant (`resolve::tests`), not a wording.
-        let code = loaded
-            .registry()
-            .diagnostics()
-            .next()
-            .map(|d| d.code.clone());
+        let finding = loaded.registry().diagnostics().next().cloned();
         assert!(
-            matches!(
-                &code,
-                Some(DiagnosticCode::MalformedInput {
-                    message,
-                    text: Some(VanillaText::Formatted { template, args }),
-                }) if *template == "blocks.json is not valid JSON ({}); clients ignore this file"
-                    && args.len() == 1
-                    && args[0] == *message
+            finding.as_ref().is_some_and(|finding| {
+                let message = finding.syntax_message().unwrap_or_default();
+                finding.is(&NOT_JSON)
+                    && NOT_JSON.template()
+                        == "blocks.json is not valid JSON ({}); clients ignore this file"
+                    && finding.code.args_of(&NOT_JSON) == Some(&[message.to_owned()][..])
                     && !message.is_empty()
-            ),
-            "{broken:?}: {code:?}"
+            }),
+            "{broken:?}: {finding:?}"
         );
         assert_eq!(loaded.registry().rejected().len(), 1);
         assert_eq!(loaded.registry().rejected()[0].origin.pack.name(), "rp 1");

@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::SemVersion;
 use indexmap::IndexMap;
@@ -12,7 +13,7 @@ use super::link::{Definitions, link_group_names, link_placements};
 use super::{
     CatalogItem, CatalogKey, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier, PATH,
 };
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Phase, Severity};
 use bedrock_addon_core::document::{Document, Merged, Origin, VersionInfo};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
@@ -200,11 +201,7 @@ fn m10_another_category_and_another_group_are_two_warnings_with_vanilla_s_texts(
             ("InvalidValue", Severity::Warning, GROUP.to_owned()),
         ]
     );
-    assert!(
-        found
-            .iter()
-            .all(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. }))
-    );
+    assert!(found.iter().all(|f| f.code.name() == "InvalidValue"));
 }
 
 #[test]
@@ -541,7 +538,7 @@ fn a_new_group_name_without_a_lang_entry_is_an_info() {
     let found = link_group_names(&catalog, &|key| key == "custom:known");
     assert_eq!(found.iter().count(), 1, "{found:#?}");
     let finding = found.iter().next().unwrap();
-    assert!(matches!(finding.code, DiagnosticCode::UnresolvedLangKey));
+    assert!(finding.is(&core_codes::UNRESOLVED_LANG_KEY));
     assert_eq!(finding.severity, Severity::Info);
     assert_eq!(finding.phase, Phase::Link);
     assert_eq!(

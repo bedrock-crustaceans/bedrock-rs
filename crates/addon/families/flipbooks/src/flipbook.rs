@@ -6,7 +6,8 @@ use std::collections::{HashMap, HashSet};
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity, builders};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
     UnknownMembers, unversioned,
@@ -257,26 +258,22 @@ fn read_entries(root: &VArray) -> Vec<Flipbook> {
 fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
     // All of these are the crate's own lints, informations: the game is silent, and the
     // `ticks_per_frame` clamp is silent too.
-    let invalid = || DiagnosticCode::InvalidValue { text: None };
+    let invalid = || Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info);
     let Some(entries) = root.as_array() else {
-        out.push(
-            Diagnostic::info(invalid())
-                .at(JsonPath::new())
-                .in_file(origin),
-        );
+        out.push(invalid().at(JsonPath::new()).in_file(origin));
         return false;
     };
     let mut seen: HashSet<FlipbookKey> = HashSet::new();
     for (index, entry) in entries.as_slice().iter().enumerate() {
         let at = JsonPath::new().index(index);
         let Some(entry) = entry.as_object() else {
-            out.push(Diagnostic::info(invalid()).at(at).in_file(origin));
+            out.push(invalid().at(at).in_file(origin));
             continue;
         };
         let member = |key: &str| at.child(key);
         for key in ["flipbook_texture", "atlas_tile"] {
             if non_null(entry.get(key)).is_some_and(|value| !value.is_string()) {
-                out.push(Diagnostic::info(invalid()).at(member(key)).in_file(origin));
+                out.push(invalid().at(member(key)).in_file(origin));
             }
         }
         for key in [
@@ -286,15 +283,11 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
             "replicate",
         ] {
             if entry.get(key).is_some_and(int_is_coerced) {
-                out.push(Diagnostic::info(invalid()).at(member(key)).in_file(origin));
+                out.push(invalid().at(member(key)).in_file(origin));
             }
         }
         if non_null(entry.get("blend_frames")).is_some_and(|value| !value.is_bool()) {
-            out.push(
-                Diagnostic::info(invalid())
-                    .at(member("blend_frames"))
-                    .in_file(origin),
-            );
+            out.push(invalid().at(member("blend_frames")).in_file(origin));
         }
         if let Some(frames) = non_null(entry.get("frames")) {
             if let Some(frames) = frames.as_array() {
@@ -302,39 +295,38 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
                     if value.is_null() || int_is_coerced(value) {
                         let mut at = member("frames");
                         at.push_index(frame);
-                        out.push(Diagnostic::info(invalid()).at(at).in_file(origin));
+                        out.push(invalid().at(at).in_file(origin));
                     }
                 }
             } else {
                 // Vanilla reads `frames` only when it is an array.
-                out.push(
-                    Diagnostic::info(invalid())
-                        .at(member("frames"))
-                        .in_file(origin),
-                );
+                out.push(invalid().at(member("frames")).in_file(origin));
             }
         }
         for (key, _) in entry {
             if !KNOWN.contains(&key.as_str()) {
-                let code = DiagnosticCode::UnrecognizedField { text: None };
                 out.push(
-                    Diagnostic::info(code)
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                        .severity(Severity::Info)
                         .at(member(key.as_str()))
                         .in_file(origin),
                 );
             }
         }
         if as_int(entry.get("ticks_per_frame"), 1) < 1 {
-            let code = DiagnosticCode::ClampedValue { text: None };
             out.push(
-                Diagnostic::info(code)
+                Diagnostic::of(&core_codes::CLAMPED_VALUE)
                     .at(member("ticks_per_frame"))
                     .in_file(origin),
             );
         }
         if !seen.insert(raw_key(entry)) {
-            let code = DiagnosticCode::DuplicateIdentifier { text: None };
-            out.push(Diagnostic::info(code).at(at).in_file(origin));
+            out.push(
+                Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+                    .severity(Severity::Info)
+                    .at(at)
+                    .in_file(origin),
+            );
         }
     }
     true
@@ -361,11 +353,7 @@ pub(crate) fn parse_copy(file: &WalkFile) -> FlipbookCopy {
         Ok(read) => check_file(&read.value, &origin, &mut findings)
             .then(|| RawLayer::new(origin.clone(), read.value)),
         Err(message) => {
-            let code = DiagnosticCode::MalformedInput {
-                message: message.to_string(),
-                text: None,
-            };
-            findings.push(Diagnostic::error(code).in_file(&origin));
+            findings.push(Diagnostic::of(builders::syntax(message.to_string())).in_file(&origin));
             None
         }
     };
@@ -444,11 +432,9 @@ impl Content for Flipbooks {
             let read = match read_lenient(bytes) {
                 Ok(read) => read,
                 Err(message) => {
-                    let code = DiagnosticCode::MalformedInput {
-                        message: message.to_string(),
-                        text: None,
-                    };
-                    diagnostics.push(Diagnostic::error(code).in_file(&origin));
+                    diagnostics.push(
+                        Diagnostic::of(builders::syntax(message.to_string())).in_file(&origin),
+                    );
                     return Err(unversioned::rejected(origin, diagnostics));
                 }
             };

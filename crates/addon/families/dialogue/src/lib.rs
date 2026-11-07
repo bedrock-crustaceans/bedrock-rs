@@ -10,9 +10,9 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod command;
 mod read;
-mod texts;
 mod write;
 
 #[cfg(test)]
@@ -20,11 +20,8 @@ mod tests;
 
 use crate::command::CURRENT;
 use crate::read::{FLOOR, PAYLOAD, ReadFile, SceneOutcome, read};
-use crate::texts::{DUPLICATE, formatted};
 use crate::write::fast_writer;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, JsonContent, NoBeta, Origin, Placed,
     Registry, RegistryBuilder, Rejected, VersionInfo,
@@ -252,12 +249,10 @@ impl Placed for DialogueFile {
 
 /// Vanilla's "already exists" text for the scene `tag` at `at` of `file`: an error.
 fn duplicate(file: &Origin, tag: &str, at: &JsonPath) -> Diagnostic {
-    Diagnostic::error(DiagnosticCode::DuplicateIdentifier {
-        text: formatted(DUPLICATE, &[&stem(&file.path), tag]),
-    })
-    .at(at.clone())
-    .phase(Phase::Validate)
-    .in_file(file)
+    Diagnostic::of(codes::DUPLICATE.with([stem(&file.path).as_str(), tag]))
+        .at(at.clone())
+        .phase(Phase::Validate)
+        .in_file(file)
 }
 
 /// The version record of a file of `version`: written and effective as read, parsed by the

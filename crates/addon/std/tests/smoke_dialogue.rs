@@ -19,7 +19,7 @@ use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::dialogue::DialogueText;
 use bedrock_addon::id::DialogueSceneTag;
 use bedrock_addon::load::{LoadOptions, StackOptions};
@@ -218,10 +218,11 @@ fn two_packs_on_disk_load_through_the_driver_and_the_lower_one_keeps_a_shared_sc
         .filter(|d| d.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(
-        errors[0].code,
-        DiagnosticCode::DuplicateIdentifier { text: Some(_) }
-    ));
+    assert!(
+        errors[0]
+            .code
+            .is(&bedrock_addon::families::dialogue::codes::DUPLICATE)
+    );
     assert_eq!(
         errors[0]
             .location

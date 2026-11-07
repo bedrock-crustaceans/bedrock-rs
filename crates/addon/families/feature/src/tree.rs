@@ -7,10 +7,12 @@ use facet_value::VObject;
 use super::Description;
 use super::Rules;
 use super::blocks::WeightedHeight;
+use super::codes;
 use super::molang::walk;
 use super::validate::Check;
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, DiagnosticCode};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::shared::IntRange;
@@ -820,22 +822,10 @@ walk!(AboveRoot { "above_root_block" => above_root_block });
 
 // ---- rules -------------------------------------------------------------------------------------
 
-/// The trunk setter's text for a negative `height_modifier` larger than the trunk height.
-const INVERTED_TRUNK: &str = "A negative 'height_modifier' cannot have greater magnitude than 'trunk_height:range_min' (trunk would invert!)";
-/// The cherry trunk setter's text for a start offset of one value.
-const CHERRY_START_OFFSET: &str = "branch_start_offset_from_top range must contain at least 2 values because branches must start at different heights.";
-/// The simple canopy setter's text for `canopy_offset.min > max`.
-const CANOPY_OFFSET: &str = "'min' must be <= 'max'";
-
 /// A setter's message as an `InvalidValue` kept error: the client logs it at level 3 and keeps
 /// the value (for the trunk, the cherry start offset and each canopy offset).
-fn setter(check: &mut ValidateCx<'_>, key: &str, text: &'static str) {
-    check.kept(
-        key,
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::Fixed(text)),
-        },
-    );
+fn setter(check: &mut ValidateCx<'_>, key: &str, code: &'static CodeDef<0>) {
+    check.kept(key, DiagnosticCode::from(code));
 }
 
 fn decoration(check: &mut ValidateCx<'_>, decoration: &Decoration) {
@@ -860,7 +850,7 @@ fn height_modifier(check: &mut ValidateCx<'_>, height: &IntRange, modifier: Opti
         && modifier.min < 0
         && modifier.min.unsigned_abs() > height.min.unsigned_abs()
     {
-        setter(check, "height_modifier", INVERTED_TRUNK);
+        setter(check, "height_modifier", &codes::INVERTED_TRUNK);
     }
 }
 
@@ -871,12 +861,11 @@ fn intervals(check: &mut ValidateCx<'_>, values: Option<&Vec<JsonInt>>) {
             if value.0 < 1 {
                 let at = check.at.clone();
                 check.diagnostics.push(
-                    Diagnostic::error(DiagnosticCode::InvalidValue {
-                        text: Some(super::read::formatted(
-                            super::read::INT_OUT_OF_RANGE,
-                            &[&value.0, &1, &i32::MAX],
-                        )),
-                    })
+                    Diagnostic::of(core_codes::OUTSIDE_RANGE.with([
+                        value.0.to_string(),
+                        1.to_string(),
+                        i32::MAX.to_string(),
+                    ]))
                     .at(at)
                     .phase(bedrock_addon_core::diagnostic::Phase::Validate),
                 );
@@ -1028,7 +1017,11 @@ fn cherry_trunk(check: &mut ValidateCx<'_>, trunk: &CherryTrunk) {
         let start = &branches.branch_start_offset_from_top;
         check.range("branch_start_offset_from_top", Some(start), i32::MIN, 0);
         if start.min == start.max {
-            setter(check, "branch_start_offset_from_top", CHERRY_START_OFFSET);
+            setter(
+                check,
+                "branch_start_offset_from_top",
+                &codes::CHERRY_START_OFFSET,
+            );
         }
         check.range(
             "branch_end_offset_from_top",
@@ -1128,7 +1121,7 @@ fn branch_canopy(check: &mut ValidateCx<'_>, canopy: &BranchCanopy) {
 
 fn simple_canopy(check: &mut ValidateCx<'_>, canopy: &SimpleCanopy) {
     if canopy.canopy_offset.min.0 > canopy.canopy_offset.max.0 {
-        setter(check, "canopy_offset", CANOPY_OFFSET);
+        setter(check, "canopy_offset", &codes::CANOPY_OFFSET);
     }
     check.int_min("min_width", canopy.min_width, 0);
     check.opt(

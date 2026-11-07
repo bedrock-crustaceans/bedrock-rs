@@ -3,16 +3,8 @@
 use super::legacy::{alias, aliases};
 use super::resolve::duplicate_keys;
 use super::shape::{BLOCK_SHAPES, REFUSED_CONVERSIONS, block_shape_value, default_block_shape};
-use super::texts::TEMPLATES;
 use super::version::{Effective, Match, from_string};
 use bedrock_addon_core::version::FormatVersion;
-
-#[test]
-fn every_template_has_the_number_of_arguments_its_rule_gives() {
-    for (template, arguments) in TEMPLATES {
-        assert_eq!(template.matches("{}").count(), *arguments, "{template}");
-    }
-}
 
 #[test]
 fn the_shape_table_has_vanilla_s_90_names_and_three_shared_numbers() {

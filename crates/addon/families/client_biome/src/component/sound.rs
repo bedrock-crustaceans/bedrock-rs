@@ -3,7 +3,7 @@
 use facet::Facet;
 
 use super::{Checked, child};
-use bedrock_addon_core::diagnostic::DiagnosticCode;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{MusicDefinitionId, SoundEventName};
 use bedrock_addon_core::json::Value;
@@ -139,8 +139,7 @@ fn check_addition(json: &Value, key: &'static str, d: &mut Diagnostics) {
     let asset = addition.get("asset").and_then(Value::as_string);
     if asset.is_some_and(|asset| asset.as_str().is_empty()) {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(child(&JsonPath::new(), &[key, "asset"])),
+            Diagnostic::of(&core_codes::INVALID_VALUE).at(child(&JsonPath::new(), &[key, "asset"])),
         );
     }
     let chance = addition
@@ -149,7 +148,7 @@ fn check_addition(json: &Value, key: &'static str, d: &mut Diagnostics) {
         .map(facet_value::VNumber::to_f64_lossy);
     if chance.is_some_and(|chance| !(0.0..=1.0).contains(&chance)) {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
+            Diagnostic::of(&core_codes::INVALID_VALUE)
                 .at(child(&JsonPath::new(), &[key, "chance"])),
         );
     }

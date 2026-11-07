@@ -4,14 +4,11 @@
 //! and reads as absent.
 
 use super::v0::{Group, ItemList, Tier, Trade, TradeItem, TradeTable};
-use crate::texts::{
-    GROUPS_ARRAY, INVALID_WEIGHT, MUST_CONTAIN_TIERS, NO_OFFERS, NO_RECEIVES, TIERS_ARRAY,
-    TRADES_ARRAY, formatted,
-};
+use crate::codes;
 use crate::validate as rules;
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
 
 /// The members the legacy parser reads, per object.
@@ -60,13 +57,7 @@ pub(super) fn read(
     d: &mut Diagnostics,
 ) -> Option<TradeTable> {
     let Ok(root) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
-        d.push(
-            Diagnostic::error(DiagnosticCode::MalformedInput {
-                message: "the document is not JSON".to_owned(),
-                text: None,
-            })
-            .at(at.clone()),
-        );
+        d.push(Diagnostic::of(builders::syntax("the document is not JSON")).at(at.clone()));
         return None;
     };
     let mut reader = Reader { d, failed: false };
@@ -105,7 +96,7 @@ impl Reader<'_> {
     /// members says: noted at the trade or group itself, since the member's line does not
     /// say that the other members go with it.
     fn dropped(&mut self, at: &JsonPath) {
-        self.push(Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(at.clone()));
+        self.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at.clone()));
     }
 
     /// The members of `object` not in `known`, each with an `UnrecognizedField` information:
@@ -116,7 +107,7 @@ impl Reader<'_> {
         for (key, value) in object {
             if !known.contains(&key.as_str()) {
                 self.warn(
-                    DiagnosticCode::UnrecognizedField { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                     at.child(key.as_str()),
                 );
                 self.d.unknown_mut().put(at, key.as_str(), value.clone());
@@ -129,11 +120,9 @@ impl Reader<'_> {
     fn table(&mut self, root: &Value, at: &JsonPath) -> Option<TradeTable> {
         let Some(object) = root.as_object() else {
             let code = if root.is_null() {
-                DiagnosticCode::MissingPayload {
-                    text: Some(VanillaText::Fixed(MUST_CONTAIN_TIERS)),
-                }
+                DiagnosticCode::from(&codes::MUST_CONTAIN_TIERS)
             } else {
-                DiagnosticCode::InvalidType { text: None }
+                DiagnosticCode::from(&core_codes::INVALID_TYPE)
             };
             self.error(code, at.clone());
             return None;
@@ -147,28 +136,18 @@ impl Reader<'_> {
         if format_version.is_none() && present(object.get("format_version")).is_some() {
             // Read as absent, and said.
             self.warn(
-                DiagnosticCode::InvalidType { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_TYPE),
                 at.child("format_version"),
             );
         }
         let tiers_at = at.child("tiers");
         // The tiers are missing or not an array.
         let Some(tiers) = object.get("tiers") else {
-            self.error(
-                DiagnosticCode::MissingPayload {
-                    text: Some(VanillaText::Fixed(TIERS_ARRAY)),
-                },
-                at.clone(),
-            );
+            self.error(DiagnosticCode::from(&codes::TIERS_MISSING), at.clone());
             return None;
         };
         let Some(tiers) = tiers.as_array() else {
-            self.error(
-                DiagnosticCode::InvalidType {
-                    text: Some(VanillaText::Fixed(TIERS_ARRAY)),
-                },
-                tiers_at,
-            );
+            self.error(DiagnosticCode::from(&codes::TIERS_ARRAY), tiers_at);
             return None;
         };
         let mut table = TradeTable {
@@ -186,7 +165,7 @@ impl Reader<'_> {
     /// with its flat `trades`.
     fn tier(&mut self, json: &Value, at: &JsonPath) -> Option<Tier> {
         let Some(object) = json.as_object() else {
-            self.error(DiagnosticCode::InvalidType { text: None }, at.clone());
+            self.error(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         self.unknown(object, TIER_MEMBERS, at);
@@ -204,12 +183,7 @@ impl Reader<'_> {
                 let groups_at = at.child("groups");
                 // The groups are non-null and not an array.
                 let Some(groups) = groups.as_array() else {
-                    self.error(
-                        DiagnosticCode::InvalidType {
-                            text: Some(VanillaText::Fixed(GROUPS_ARRAY)),
-                        },
-                        groups_at,
-                    );
+                    self.error(DiagnosticCode::from(&codes::GROUPS_ARRAY), groups_at);
                     return None;
                 };
                 let mut kept = Vec::with_capacity(groups.len());
@@ -227,7 +201,7 @@ impl Reader<'_> {
                 // effect, which the crate reports as a warning.
                 if object.contains_key("trades") {
                     self.warn(
-                        DiagnosticCode::DroppedField { text: None },
+                        DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                         at.child("trades"),
                     );
                 }
@@ -267,13 +241,12 @@ impl Reader<'_> {
     /// not an array, and the group is dropped. Vanilla logs an error and the rest of the table
     /// loads, so it is a kept error.
     fn trades(&mut self, json: Option<&Value>, at: &JsonPath, selects: i32) -> Option<Vec<Trade>> {
-        let text = Some(VanillaText::Fixed(TRADES_ARRAY));
         let Some(json) = json else {
-            self.kept_error(DiagnosticCode::MissingRequiredField { text }, at.clone());
+            self.kept_error(DiagnosticCode::from(&codes::TRADES_MISSING), at.clone());
             return None;
         };
         let Some(trades) = json.as_array() else {
-            self.kept_error(DiagnosticCode::InvalidType { text }, at.clone());
+            self.kept_error(DiagnosticCode::from(&codes::TRADES_ARRAY), at.clone());
             return None;
         };
         let mut kept = Vec::with_capacity(trades.len());
@@ -303,15 +276,15 @@ impl Reader<'_> {
         };
         let wants = self.entries(object.get("wants"), &at.child("wants"));
         if wants.is_empty() {
-            let text = Some(formatted(NO_OFFERS, &[&styled().trim()]));
-            self.kept_error(DiagnosticCode::InvalidValue { text }, at.child("wants"));
+            let code = codes::NO_OFFERS.with([styled().trim()]).into();
+            self.kept_error(code, at.child("wants"));
             self.dropped(at);
             return None;
         }
         let gives = self.entries(object.get("gives"), &at.child("gives"));
         if gives.is_empty() {
-            let text = Some(formatted(NO_RECEIVES, &[&styled().trim()]));
-            self.kept_error(DiagnosticCode::InvalidValue { text }, at.child("gives"));
+            let code = codes::NO_RECEIVES.with([styled().trim()]).into();
+            self.kept_error(code, at.child("gives"));
             self.dropped(at);
             return None;
         }
@@ -323,9 +296,9 @@ impl Reader<'_> {
         let weight = self.int(object.get("weight"), &weight_at);
         if let Some(weight) = weight {
             if weight <= 0 {
-                let text = Some(formatted(INVALID_WEIGHT, &[&weight]));
+                let code = codes::INVALID_WEIGHT.with([weight.to_string()]).into();
                 // The game logs an error and drops the trade: a kept error.
-                self.kept_error(DiagnosticCode::InvalidValue { text }, weight_at);
+                self.kept_error(code, weight_at);
                 self.dropped(at);
                 return None;
             }
@@ -400,7 +373,7 @@ impl Reader<'_> {
         // A list left empty says so itself, at the list.
         if !kept.is_empty() {
             for at in empty {
-                self.warn(DiagnosticCode::InvalidValue { text: None }, at);
+                self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at);
             }
         }
         // Everything told of the entries at the file's indices is told.
@@ -411,7 +384,7 @@ impl Reader<'_> {
     /// One item of a `wants` or `gives` list.
     fn item(&mut self, json: &Value, at: &JsonPath) -> Option<TradeItem> {
         let Some(object) = json.as_object() else {
-            self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         self.unknown(object, ITEM_MEMBERS, at);
@@ -457,13 +430,13 @@ impl Reader<'_> {
     fn float(&mut self, json: Option<&Value>, at: &JsonPath) -> Option<f32> {
         let json = present(json)?;
         let Some(number) = json.as_number() else {
-            self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         let nearest = narrow(number.to_f64_lossy());
         if bedrock_addon_core::json::lossy::narrows(number.to_f64_lossy()) {
             // Held as a float, as in the game, and written so: noted.
-            self.push(Diagnostic::info(DiagnosticCode::LossyConversion).at(at.clone()));
+            self.push(Diagnostic::of(&core_codes::LOSSY_CONVERSION).at(at.clone()));
         }
         if nearest.is_infinite() {
             self.push(bedrock_addon_core::molang::beyond_f32_warning(
@@ -481,11 +454,11 @@ impl Reader<'_> {
     fn integer(&mut self, json: Option<&Value>, at: &JsonPath) -> Option<i64> {
         let json = present(json)?;
         if let Some(b) = json.as_bool() {
-            self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
             return Some(i64::from(b));
         }
         let Some(number) = json.as_number() else {
-            self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
             return None;
         };
         if !number.is_float()
@@ -499,7 +472,7 @@ impl Reader<'_> {
         #[allow(clippy::cast_possible_truncation)]
         let n = x.trunc() as i64;
         if x.fract() != 0.0 {
-            self.warn(DiagnosticCode::InvalidValue { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
         }
         Some(n)
     }
@@ -509,7 +482,7 @@ impl Reader<'_> {
         let n = self.integer(json, at)?;
         let fits = i32::try_from(n).ok();
         if fits.is_none() {
-            self.warn(DiagnosticCode::InvalidValue { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
         }
         fits
     }
@@ -519,7 +492,7 @@ impl Reader<'_> {
         let n = self.integer(json, at)?;
         let fits = u32::try_from(n).ok();
         if fits.is_none() {
-            self.warn(DiagnosticCode::InvalidValue { text: None }, at.clone());
+            self.warn(DiagnosticCode::from(&core_codes::INVALID_VALUE), at.clone());
         }
         fits
     }
@@ -530,7 +503,7 @@ impl Reader<'_> {
         if let Some(flag) = json.as_bool() {
             return Some(flag);
         }
-        self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+        self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
         json.as_number().map(|n| n.to_f64_lossy() != 0.0)
     }
 
@@ -542,7 +515,7 @@ impl Reader<'_> {
             return Some(text.as_str().to_owned());
         }
         // Not a string: said, whatever it reads as.
-        self.warn(DiagnosticCode::InvalidType { text: None }, at.clone());
+        self.warn(DiagnosticCode::from(&core_codes::INVALID_TYPE), at.clone());
         if let Some(b) = json.as_bool() {
             return Some(b.to_string());
         }

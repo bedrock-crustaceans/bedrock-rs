@@ -3,14 +3,14 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod read;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::kit::Written;
 
-use crate::read::{EMPTY_FILE, NOT_JSON};
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
+    CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
 };
 use bedrock_addon_core::document::unversioned::{document, lone, reject};
 use bedrock_addon_core::document::{Content, Document, Merge, Merged, Origin, Placed, Rejected};
@@ -103,22 +103,20 @@ impl Merge for Credits {
 /// Reads one `credits/credits.json` with the game's own checks: an information each for a file
 /// that loads, an error for the two that refuse it.
 fn read_credits(origin: Origin, bytes: &[u8]) -> Result<Document<Credits>, Rejected> {
-    let refuse = |message: String, text| {
-        let code = DiagnosticCode::MalformedInput {
-            message,
-            text: Some(VanillaText::Fixed(text)),
-        };
+    let refuse = |message: String, code: &'static CodeDef<0>| {
         Err(reject(
             origin.clone(),
-            Diagnostic::error(code).at(JsonPath::new()),
+            Diagnostic::of(code)
+                .detail(DiagnosticDetail::Syntax(message))
+                .at(JsonPath::new()),
         ))
     };
     if bytes.is_empty() {
-        return refuse("the file is empty".to_owned(), EMPTY_FILE);
+        return refuse("the file is empty".to_owned(), &codes::EMPTY_FILE);
     }
     let mut root = match read(bytes) {
         Ok(root) => root,
-        Err(message) => return refuse(message.to_string(), NOT_JSON),
+        Err(message) => return refuse(message.to_string(), &codes::NOT_JSON),
     };
     let mut diagnostics = Diagnostics::default();
     // A number no double holds is read as the largest finite one, with a warning.

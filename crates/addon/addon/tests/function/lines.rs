@@ -1,5 +1,6 @@
 //! The line rules of a function file (vanilla's `_processFunctionEntry`): fixtures f06 to f15.
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use bedrock_addon::diagnostic::{DiagnosticCode, DiagnosticDetail, Severity};
 use bedrock_addon::families::function::{Function, FunctionLine, FunctionState};
 use bedrock_addon::id::FunctionPath;
@@ -339,7 +340,7 @@ fn a_namespaced_first_word_is_kept_with_an_information() {
     assert_eq!(warning.severity, Severity::Info);
     assert_eq!(
         warning.code,
-        DiagnosticCode::UnresolvedReference { text: None }
+        DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE)
     );
     assert_eq!(
         warning.detail.as_deref(),
@@ -365,10 +366,7 @@ fn a_file_that_is_not_utf8_loads_with_replacement_characters_deviation() {
         panic!("one finding, not {}", document.diagnostics().len());
     };
     assert_eq!(warning.severity, Severity::Info);
-    assert!(matches!(
-        warning.code,
-        DiagnosticCode::MalformedInput { text: None, .. }
-    ));
+    assert!(warning.code.is(&core_codes::SYNTAX));
 }
 
 #[test]
@@ -460,7 +458,7 @@ fn a_feature_gated_command_is_kept_with_an_information_deviation() {
                 assert_eq!(finding.severity, Severity::Info, "{name}");
                 assert_eq!(
                     finding.code,
-                    DiagnosticCode::UnresolvedReference { text: None },
+                    DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
                     "{name}"
                 );
                 assert!(finding.location.span.is_some(), "{name}");

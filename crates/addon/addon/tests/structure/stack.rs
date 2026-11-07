@@ -1,7 +1,8 @@
 //! `bp.structures()` and the lookups by identifier: the fixtures, the stack
 //! and naming rows `n01`–`n08`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
+use bedrock_addon::families::structure;
 use bedrock_addon::families::structure::Structure;
 use bedrock_addon::id::StructureId;
 use bedrock_addon::load::LoadOptions;
@@ -117,10 +118,7 @@ fn n03_the_mystructure_folder_beats_the_root_in_one_pack() {
 fn n04_an_identifier_without_a_namespace_is_rejected() {
     let stack = stack_of([bp(1).file("structures/house.mcstructure", valid()).open()]);
     let finding = Structure::find(stack.structures(), &id("house")).unwrap_err();
-    assert!(matches!(
-        finding.code,
-        DiagnosticCode::NamespaceRule { text: Some(_) }
-    ));
+    assert!(finding.is(&structure::codes::NOT_NAMESPACED));
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(
         finding.code.to_string(),
@@ -148,10 +146,7 @@ fn n05_a_broken_top_copy_falls_through_to_the_lower_pack_deviation() {
     let findings: Vec<_> = structures.diagnostics().collect();
     assert_eq!(findings.len(), 1, "{findings:#?}");
     assert_eq!(findings[0].severity, Severity::Error);
-    assert!(matches!(
-        findings[0].code,
-        DiagnosticCode::UnsupportedVersion { .. }
-    ));
+    assert_eq!(findings[0].code.name(), "UnsupportedVersion");
     assert_eq!(findings[0].location.pack.as_ref().unwrap().name(), "bp 1");
     assert_eq!(structures.rejected().len(), 1);
     assert_eq!(
@@ -207,10 +202,7 @@ fn n08_an_add_on_nbt_file_is_ignored_with_an_info_deviation() {
     assert_eq!(structures.iter().count(), 0);
     let findings: Vec<_> = structures.diagnostics().collect();
     assert_eq!(findings.len(), 1, "{findings:#?}");
-    assert!(matches!(
-        findings[0].code,
-        DiagnosticCode::IgnoredFile { text: None }
-    ));
+    assert!(findings[0].is(&codes::IGNORED_FILE));
     assert_eq!(findings[0].severity, Severity::Info);
     assert_eq!(
         findings[0].location.path.as_ref().unwrap().as_str(),

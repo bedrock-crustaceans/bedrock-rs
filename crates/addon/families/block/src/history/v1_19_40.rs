@@ -1,7 +1,8 @@
 //! Format 1.19.40: `light_dampening`, `menu_category.is_hidden_in_commands`.
 
-use super::legacy::{BlockPayload, component_path, fixed};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
+use super::legacy::{BlockPayload, component_path};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Phase};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx};
 
@@ -23,17 +24,13 @@ impl LegacyStep<1, 19, 40> for BlockPayload {
         }
         for section in removed {
             let at = component_path(section, "minecraft:part_visibility");
-            for message in [
-                "The part_visibility component has been deprecated, use the bone_visibility field in the geometry component instead. See Block Documentation for more information.",
-                "The part_visibility component is no longer supported. Please use the bone_visibility field in the geometry component instead.",
+            for code in [
+                &codes::PART_VISIBILITY_DEPRECATED,
+                &codes::PART_VISIBILITY_UNSUPPORTED,
             ] {
                 cx.diagnostics.push(
                     // The game writes neither line when it loads a block, so the finding is an information.
-                    Diagnostic::info(DiagnosticCode::DroppedComponent {
-                        text: fixed(message),
-                    })
-                    .at(at.clone())
-                    .phase(Phase::Upgrade),
+                    Diagnostic::of(code).at(at.clone()).phase(Phase::Upgrade),
                 );
             }
         }

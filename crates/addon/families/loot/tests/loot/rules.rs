@@ -1,7 +1,8 @@
 //! The validation rules: one test per rule, matched on the code, the severity and
 //! the location; vanilla's texts are compared where the rule quotes one.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::Content;
 use bedrock_addon_family_loot::{ConditionKind, EntryKind, LootTable, Pool};
 
@@ -58,8 +59,11 @@ fn v03_a_pool_that_is_not_an_object_is_dropped_with_a_warning_deviation() {
     );
     let found = findings(&table);
     assert_eq!(found.len(), 3, "{found:?}");
-    assert!(found.iter().all(|d| d.severity == Severity::Info
-        && matches!(d.code, DiagnosticCode::InvalidType { text: None })));
+    assert!(
+        found
+            .iter()
+            .all(|d| d.severity == Severity::Info && d.is(&core_codes::INVALID_TYPE))
+    );
     let paths: Vec<String> = found.iter().map(|d| path(d)).collect();
     assert_eq!(paths, ["pools/0", "pools/2", "pools/3"]);
     // The rewrite invents no `{}` and raises nothing the document did not.
@@ -87,10 +91,7 @@ fn v04_entries_that_are_not_an_array_are_the_game_s_content_log_error() {
     assert!(table.pools.as_deref().unwrap()[0].entries().is_empty());
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     // A kept error: the table loads with it.
     assert!(found[0].kept, "{found:?}");
@@ -109,10 +110,7 @@ fn v05_an_entry_that_is_not_an_object_is_skipped() {
     assert!(matches!(entries[0].kind, EntryKind::Empty));
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0");
     assert_eq!(
@@ -134,10 +132,7 @@ fn v08_a_function_that_is_not_an_object_is_skipped() {
     assert_eq!(functions.as_deref().unwrap().len(), 1);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0");
     assert_eq!(
@@ -155,10 +150,7 @@ fn v12_a_condition_that_is_not_an_object_is_skipped() {
     assert_eq!(pool.conditions.as_deref().unwrap().len(), 1);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/conditions/0");
     assert_eq!(
@@ -191,7 +183,7 @@ fn v03_pools_functions_and_conditions_given_as_objects_are_read_by_member_value(
     );
     let wrong: Vec<String> = findings(&scalar)
         .into_iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::InvalidType { text: None }))
+        .filter(|d| d.is(&core_codes::INVALID_TYPE))
         .map(path)
         .collect();
     assert_eq!(wrong, ["pools/0/conditions", "pools/0/entries/0/functions"]);
@@ -210,10 +202,7 @@ fn v03_a_min_max_object_on_an_int_range_member_is_warned_and_kept() {
     );
     let found = findings(&table);
     assert_eq!(found.len(), 2, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: None }
-    ));
+    assert!(found[0].is(&core_codes::INVALID_TYPE));
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/conditions/0/count");
     assert!(found[1].is(&bedrock_addon_core::diagnostic::codes::INVALID_VALUE));

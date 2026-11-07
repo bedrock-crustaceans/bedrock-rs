@@ -6,8 +6,10 @@
 
 use indexmap::IndexMap;
 
+use super::codes;
 use super::{CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier};
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, DiagnosticCode, Diagnostics, builders};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc, parse_at};
@@ -31,18 +33,13 @@ fn token(value: &Value) -> &'static str {
     }
 }
 
-/// Vanilla's text for a group name that fails its namespace constraint.
-const GROUP_NAME_TEXT: &str = "string must be prefixed with a namespace (eg. namespace:value)";
-
 /// The pattern an item name must match; a mismatch reads "expected string to match the
 /// \"<pattern>\" regex".
 const ITEM_NAME_REGEX: &str = "^(?:.)+:(?:.)+$";
 
 /// The code of a group name that fails its namespace constraint.
 fn group_name_code() -> DiagnosticCode {
-    DiagnosticCode::InvalidValue {
-        text: Some(VanillaText::Fixed(GROUP_NAME_TEXT)),
-    }
+    DiagnosticCode::from(&codes::GROUP_NAME)
 }
 
 /// The code of an item name that does not match its pattern.
@@ -79,10 +76,7 @@ fn expect(read: &mut Read<'_>, node: &Node<'_>, expected: &'static str) -> bool 
     }
     error(
         read,
-        DiagnosticCode::MalformedInput {
-            message: format!("expected {expected}, found {found}"),
-            text: None,
-        },
+        builders::syntax(format!("expected {expected}, found {found}")).into(),
         node,
     );
     false
@@ -128,7 +122,7 @@ fn required<'v>(read: &mut Read<'_>, members: &Members<'v>, key: &str) -> Option
     let node = read.opt(members, key);
     if node.is_none() {
         read.push(
-            Diagnostic::error(DiagnosticCode::MissingRequiredField { text: None })
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
                 .at(members.node().path().child(key)),
         );
     }
@@ -179,7 +173,11 @@ fn category_name(read: &mut Read<'_>, members: &Members<'_>) -> Option<CategoryN
     let name = string(read, &node)?;
     let category = CategoryName::from_name(name);
     if category.is_none() {
-        error(read, DiagnosticCode::InvalidValue { text: None }, &node);
+        error(
+            read,
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
+            &node,
+        );
     }
     category
 }

@@ -11,12 +11,12 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 pub mod history;
 
 mod inherit;
 mod molang;
 mod read;
-mod texts;
 mod types;
 mod validate;
 mod walk;
@@ -27,7 +27,8 @@ mod tests;
 
 use std::collections::HashMap;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPathSegment};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPathSegment};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, NoBeta, Notice, Origin, Placed,
     Registry, RegistryBuilder, Rejected, VersionInfo,
@@ -106,9 +107,7 @@ impl GeometryFile {
         let mut diagnostics = Diagnostics::default();
         let outcome = read_written(path, bytes, cx, false, &mut diagnostics);
         if matches!(outcome, Outcome::Empty) {
-            diagnostics.push(Diagnostic::info(DiagnosticCode::EmptyDocument {
-                text: None,
-            }));
+            diagnostics.push(Diagnostic::of(&core_codes::EMPTY_DOCUMENT));
         }
         let diagnostics = diagnostics.located(&origin);
         match outcome {

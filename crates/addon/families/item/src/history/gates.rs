@@ -2,18 +2,17 @@
 //! component its deprecation and its `released` / `requires` rows, the newest format's table
 //! and the rows of the components only an older format binds.
 
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::Family;
 use indexmap::IndexMap;
 
+use crate::codes;
 use crate::component::ItemComponent;
 use crate::history::ItemFamily;
-use crate::texts;
 
 /// A gate row of a component no newer format binds (or binds under another name).
 #[derive(Clone, Copy)]
@@ -26,8 +25,9 @@ pub(crate) struct GateRow {
     pub(crate) requires: &'static [LoadRequirement],
     /// The version it was deprecated in.
     pub(crate) deprecated_since: Option<FormatVersion>,
-    /// Its own deprecation text.
-    pub(crate) deprecated_message: Option<&'static str>,
+    /// Whether its deprecation is the schema's deprecated-member line (cereal's `member "<key>"
+    /// is deprecated`, which refuses the item) in place of the generic one (a kept error).
+    pub(crate) deprecated_member: bool,
 }
 
 const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
@@ -41,56 +41,56 @@ pub(crate) const HISTORY_ROWS: &[GateRow] = &[
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 20)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:chargeable",
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 50)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:custom_components",
         released: Some(FormatVersion::new(1, 21, 10)),
         requires: &[BETA_APIS],
         deprecated_since: Some(known::V1_21_90),
-        deprecated_message: Some(texts::CUSTOM_COMPONENTS_DEPRECATED),
+        deprecated_member: true,
     },
     GateRow {
         name: "minecraft:on_use",
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 40)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:on_use_on",
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 40)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:render_offsets",
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 10)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:use_duration",
         released: Some(FormatVersion::new(1, 20, 20)),
         requires: &[],
         deprecated_since: None,
-        deprecated_message: None,
+        deprecated_member: false,
     },
     GateRow {
         name: "minecraft:weapon",
         released: None,
         requires: &[LCF],
         deprecated_since: Some(FormatVersion::new(1, 20, 40)),
-        deprecated_message: None,
+        deprecated_member: false,
     },
 ];
 
@@ -102,7 +102,8 @@ fn row(name: &str) -> Option<GateRow> {
             released: meta.released,
             requires: meta.requires,
             deprecated_since: meta.deprecated_since,
-            deprecated_message: meta.deprecated_message,
+            // A table row with a text of its own is a deprecated member of the schema.
+            deprecated_member: meta.deprecated_message.is_some(),
         });
     }
     HISTORY_ROWS.iter().find(|row| row.name == name).copied()
@@ -170,13 +171,11 @@ pub(crate) fn gate_with(
         && let Some(threshold) = threshold
         && original < threshold
     {
-        d.push(Diagnostic::error(DiagnosticCode::MissingToggles {
-            text: Some(VanillaText::UseFormatVersion {
-                what: "item",
-                name: identifier.to_owned(),
-                version: threshold,
-            }),
-        }));
+        d.push(Diagnostic::error(
+            core_codes::TOGGLE_USE_FORMAT_VERSION
+                .with(["item", identifier, threshold.to_string().as_str()])
+                .into(),
+        ));
         return None;
     }
     let mut dropped = Vec::new();
@@ -193,22 +192,19 @@ pub(crate) fn gate_with(
         if let Some(since) = row.deprecated_since
             && original >= since
         {
-            let text = row.deprecated_message.map_or_else(
-                || VanillaText::Deprecated {
-                    member: key.clone(),
-                    version: original,
-                },
-                VanillaText::Fixed,
-            );
+            let code = if row.deprecated_member {
+                core_codes::MEMBER_DEPRECATED.with([key])
+            } else {
+                core_codes::DEPRECATED_IN_FORMAT.with([key.clone(), original.to_string()])
+            };
             // The game logs "%s has been deprecated and is not available in json format %s"
             // at the content log's error level and removes the member; the item loads on: a
-            // kept error. A row with its own text (`custom_components`) is a deprecated
+            // kept error. A row of the schema's own line (`custom_components`) is a deprecated
             // member of the schema instead: that line is an error under every error mask, so
             // the item is refused (the game's own unit tests expect this text for a current
             // format version).
-            let finding =
-                Diagnostic::error(DiagnosticCode::DeprecatedMember { text: Some(text) }).at(path);
-            if row.deprecated_message.is_some() {
+            let finding = Diagnostic::error(code.into()).at(path);
+            if row.deprecated_member {
                 d.push(finding);
             } else {
                 d.push_kept_error(finding);
@@ -222,55 +218,50 @@ pub(crate) fn gate_with(
         }
         if let Some(failed) = row.requires.iter().find(|r| !r.satisfied(cx)) {
             rejected = true;
-            d.push(
-                Diagnostic::error(DiagnosticCode::MissingToggles {
-                    text: requirement_text(*failed, key, row.released),
-                })
-                .at(path),
-            );
+            d.push(Diagnostic::error(requirement_code(*failed, key, row.released)).at(path));
         }
     }
     (!rejected).then_some(dropped)
 }
 
-/// The text of a failed requirement.
-fn requirement_text(
+/// The code of a failed requirement: the game's line for it, or the bare code where the game
+/// has none.
+fn requirement_code(
     requirement: LoadRequirement,
     name: &str,
     released: Option<FormatVersion>,
-) -> Option<VanillaText> {
+) -> DiagnosticCode {
     use bedrock_addon_core::load::Experiment;
     let toggle = |experiment: Experiment| experiment.save_name().unwrap_or_default();
     let what = ItemFamily::COMPONENT_NOUN;
     let experiment = match requirement {
         LoadRequirement::LegacyCreatorFeatures => {
             // The crate's own text where the component has no release version.
-            return Some(released.map_or_else(
-                || VanillaText::ItemLegacyOnly {
-                    component: name.to_owned(),
-                },
-                |version| VanillaText::UseFormatVersion {
-                    what,
-                    name: name.to_owned(),
-                    version,
-                },
-            ));
+            return released
+                .map_or_else(
+                    || codes::LEGACY_ONLY.with([name]),
+                    |version| {
+                        core_codes::TOGGLE_USE_FORMAT_VERSION.with([
+                            what,
+                            name,
+                            version.to_string().as_str(),
+                        ])
+                    },
+                )
+                .into();
         }
         LoadRequirement::BetaFeatures => Experiment::BetaApis,
         LoadRequirement::Experiment(experiment) => experiment,
-        _ => return None,
+        _ => return (&core_codes::MISSING_TOGGLES).into(),
     };
-    Some(match released {
-        Some(version) => VanillaText::TurnOnToggleBefore {
+    match released {
+        Some(version) => core_codes::TURN_ON_TOGGLE_BEFORE.with([
             what,
-            name: name.to_owned(),
-            version,
-            toggle: toggle(experiment),
-        },
-        None => VanillaText::TurnOnToggle {
-            what,
-            name: name.to_owned(),
-            toggle: toggle(experiment),
-        },
-    })
+            name,
+            version.to_string().as_str(),
+            toggle(experiment),
+        ]),
+        None => core_codes::TURN_ON_TOGGLE.with([what, name, toggle(experiment)]),
+    }
+    .into()
 }

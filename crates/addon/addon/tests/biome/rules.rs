@@ -3,6 +3,7 @@
 //! other biomes and to blocks are the link pass's: their tests run through
 //! `StackSet::link`.
 
+use bedrock_addon::diagnostic::codes;
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::version::{FormatVersion, MinEngineVersion};
 
@@ -210,10 +211,7 @@ fn rule_8_member_constraints() {
         let found = rejected(&biome("1.26.30", "test:x", &components), &context());
         let errors_found = errors(&found);
         assert_eq!(errors_found.len(), 1, "{at}: {found:#?}");
-        assert!(matches!(
-            errors_found[0].code,
-            DiagnosticCode::InvalidValue { text: None }
-        ));
+        assert!(errors_found[0].code.is(&codes::INVALID_VALUE));
         assert_eq!(
             errors_found[0].location.json_path.to_string(),
             format!("minecraft:biome/components/{at}"),
@@ -453,26 +451,21 @@ fn rule_16_service_texts_are_not_document_rules() {
 #[test]
 fn the_below_floor_hints_render_the_readme_texts() {
     assert_eq!(
-        DiagnosticCode::BiomeFormatHint {
-            version: None,
-            surface_components: false
-        }
-        .to_string(),
+        codes::BIOME_FORMAT_HINT_LEGACY.template(),
         "biome files in the 1.12 format are no longer supported; use the minecraft:biome document format with format_version 1.21.110 or higher"
     );
     assert_eq!(
-        DiagnosticCode::BiomeFormatHint {
-            version: Some(FormatVersion::new(1, 20, 60)),
-            surface_components: false
-        }
+        DiagnosticCode::from(
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL.with([FormatVersion::new(1, 20, 60).to_string()])
+        )
         .to_string(),
         "biome format 1.20.60 was experimental and is not loaded; set format_version to 1.21.110 (move climate ash/white_ash/red_spores/blue_spores to the client biome's minecraft:precipitation)"
     );
     assert_eq!(
-        DiagnosticCode::BiomeFormatHint {
-            version: Some(FormatVersion::new(1, 20, 60)),
-            surface_components: true
-        }
+        DiagnosticCode::from(
+            codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE
+                .with([FormatVersion::new(1, 20, 60).to_string()])
+        )
         .to_string(),
         "biome format 1.20.60 was experimental and is not loaded; set format_version to 1.21.110 (move climate ash/white_ash/red_spores/blue_spores to the client biome's minecraft:precipitation and replace minecraft:surface_parameters / minecraft:*_surface with minecraft:surface_builder)"
     );
@@ -487,10 +480,7 @@ fn constraint_at(text: &str) -> Option<String> {
     };
     let errors_found = errors(&found);
     assert_eq!(errors_found.len(), 1, "{found:#?}");
-    assert!(matches!(
-        errors_found[0].code,
-        DiagnosticCode::InvalidValue { text: None }
-    ));
+    assert!(errors_found[0].code.is(&codes::INVALID_VALUE));
     Some(errors_found[0].location.json_path.to_string())
 }
 
@@ -591,11 +581,16 @@ fn the_format_hint_reads_the_last_copy_of_a_doubled_payload() {
     let d = rejected(text, &context());
     let hints: Vec<_> = d
         .iter()
-        .filter_map(|f| match &f.code {
-            DiagnosticCode::BiomeFormatHint {
-                surface_components, ..
-            } => Some(*surface_components),
-            _ => None,
+        .filter_map(|f| {
+            if f.code.is(&codes::BIOME_FORMAT_HINT_EXPERIMENTAL_SURFACE) {
+                Some(true)
+            } else if f.code.is(&codes::BIOME_FORMAT_HINT_EXPERIMENTAL)
+                || f.code.is(&codes::BIOME_FORMAT_HINT_LEGACY)
+            {
+                Some(false)
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(hints, [false], "{d:#?}");

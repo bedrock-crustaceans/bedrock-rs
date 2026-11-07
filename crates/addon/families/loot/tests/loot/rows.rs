@@ -1,6 +1,7 @@
 //! The fixtures: one test per row, fixtures under
 //! `tests/fixtures/loot/loot/`.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::{Content, UnknownMembers};
 use bedrock_addon_core::id::{EntityId, ItemId, LootTablePath};
@@ -72,7 +73,7 @@ fn lt01_pools_only_loads_without_a_version_warning() {
     assert_eq!(third.entries()[0].weight, None);
     assert_eq!(third.entries()[0].weight(), 1);
     let _ = (
-        DiagnosticCode::UnrecognizedField { text: None },
+        DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
         Severity::Info,
     );
 }
@@ -215,10 +216,7 @@ fn lt11_an_array_root_is_an_invalid_table() {
         .filter(|d| d.severity == Severity::Error)
         .collect();
     assert_eq!(errors.len(), 1, "{:?}", rejected.diagnostics);
-    assert!(matches!(
-        errors[0].code,
-        DiagnosticCode::MalformedInput { text: Some(_), .. }
-    ));
+    assert!(errors[0].code.name() == "MalformedInput" && errors[0].code.vanilla().is_some());
     assert_eq!(
         text(&errors[0].code),
         "Loot table for loot_tables/test.json is invalid."
@@ -242,10 +240,7 @@ fn lt03_an_unknown_entry_type_is_dropped_with_vanillas_text() {
     // the validation rules: an error in vanilla's log; a kept error, the table loads.
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidValue { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidValue" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0");
     assert_eq!(
@@ -277,10 +272,7 @@ fn lt07_a_function_name_loses_everything_up_to_the_last_colon() {
 
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedComponent { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "UnrecognizedComponent" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/3");
     assert_eq!(
@@ -295,10 +287,7 @@ fn lt21_trader_material_type_is_not_a_loot_function() {
     assert!(first_functions(&table).is_empty());
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedComponent { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "UnrecognizedComponent" && found[0].code.vanilla().is_some());
     assert_eq!(
         text(&found[0].code),
         "Unsupported looting function: trader_material_type"
@@ -321,10 +310,7 @@ fn lt08_a_namespaced_condition_name_is_unknown_and_dropped_with_an_information()
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
     // Vanilla drops it with a developer-log line only: an information with that line.
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedComponent { .. }
-    ));
+    assert_eq!(found[0].code.name(), "UnrecognizedComponent");
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/conditions/0");
 }
@@ -338,10 +324,7 @@ fn lt22_vanillas_entity_properties_condition_is_dropped_and_furnace_smelt_kept()
     assert_eq!(functions[0].conditions.as_deref(), Some(&[][..]));
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnrecognizedComponent { .. }
-    ));
+    assert_eq!(found[0].code.name(), "UnrecognizedComponent");
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0/conditions/0");
     assert!(at_least(&table, Severity::Error).is_empty());
@@ -358,10 +341,7 @@ fn lt10_a_pool_without_entries_is_the_game_s_content_log_error() {
     assert_eq!(pools[0].entries, None);
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::MissingRequiredField { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "MissingRequiredField" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0");
     // A kept error: the table loads with it.
@@ -417,8 +397,11 @@ fn lt23_keys_vanilla_does_not_read_are_kept_and_reported_at_info() {
         Some("minecraft:chest")
     );
     let found = findings(&table);
-    assert!(found.iter().all(|d| d.severity == Severity::Info
-        && matches!(d.code, DiagnosticCode::UnrecognizedField { text: None })));
+    assert!(
+        found
+            .iter()
+            .all(|d| d.severity == Severity::Info && d.is(&core_codes::UNRECOGNIZED_FIELD))
+    );
     let paths: Vec<String> = found.iter().map(|d| path(d)).collect();
     assert_eq!(
         paths,
@@ -462,10 +445,7 @@ fn lt14_set_data_without_data_or_values_is_kept_with_vanillas_warning() {
     assert_eq!((data.range().min(), data.range().max()), (0.0, 0.0));
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::MissingRequiredField { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "MissingRequiredField" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Warning);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0");
     assert_eq!(
@@ -484,10 +464,7 @@ fn lt12_carry_over_block_entity_data_needs_upcoming_creator_features() {
     assert!(first_functions(&off).is_empty());
     let found = findings(&off);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::MissingToggles { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "MissingToggles" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0");
     assert_eq!(
@@ -519,10 +496,7 @@ fn lt12_carry_over_block_entity_data_needs_upcoming_creator_features() {
     );
     let found = findings(&bad);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(found[0].code.name() == "InvalidType" && found[0].code.vanilla().is_some());
     assert_eq!(found[0].severity, Severity::Error);
     assert_eq!(
         path(found[0]),
@@ -570,8 +544,11 @@ fn lt24_biome_has_tag_is_a_condition_from_engine_1_26_30() {
     );
     let found = findings(&old);
     assert_eq!(found.len(), 2, "{found:?}");
-    assert!(found.iter().all(|d| d.severity == Severity::Info
-        && matches!(d.code, DiagnosticCode::UnrecognizedComponent { .. })));
+    assert!(
+        found
+            .iter()
+            .all(|d| d.severity == Severity::Info && d.code.name() == "UnrecognizedComponent")
+    );
 }
 
 /// The `set_banner_details` parameters of `function`.
@@ -611,7 +588,7 @@ fn lt17_banner_details_keep_vanillas_limits() {
     assert_eq!(names, ["bo", "bri", "cre", "flo", "moj", "sku"]);
     let first = at(0);
     assert_eq!(first.len(), 1, "{first:?}");
-    assert!(matches!(first[0].code, DiagnosticCode::InvalidValue { .. }));
+    assert_eq!(first[0].code.name(), "InvalidValue");
     assert_eq!(first[0].severity, Severity::Error);
     assert_eq!(path(first[0]), "pools/0/entries/0/functions/0/patterns");
     assert_eq!(
@@ -625,10 +602,7 @@ fn lt17_banner_details_keep_vanillas_limits() {
     assert_eq!(patterns, None);
     let second = at(1);
     assert_eq!(second.len(), 1, "{second:?}");
-    assert!(matches!(
-        second[0].code,
-        DiagnosticCode::InvalidValue { .. }
-    ));
+    assert_eq!(second[0].code.name(), "InvalidValue");
     assert_eq!(
         text(&second[0].code),
         "Non-default banner types cannot have custom patterns"
@@ -639,7 +613,7 @@ fn lt17_banner_details_keep_vanillas_limits() {
     assert_eq!(base_color, None);
     let third = at(2);
     assert_eq!(third.len(), 1, "{third:?}");
-    assert!(matches!(third[0].code, DiagnosticCode::InvalidValue { .. }));
+    assert_eq!(third[0].code.name(), "InvalidValue");
     assert_eq!(path(third[0]), "pools/0/entries/0/functions/2/base_color");
     assert_eq!(
         text(&third[0].code),
@@ -654,10 +628,7 @@ fn lt17_banner_details_keep_vanillas_limits() {
     assert_eq!(patterns[1].color, None);
     let fourth = at(3);
     assert_eq!(fourth.len(), 1, "{fourth:?}");
-    assert!(matches!(
-        fourth[0].code,
-        DiagnosticCode::InvalidValue { .. }
-    ));
+    assert_eq!(fourth[0].code.name(), "InvalidValue");
     assert_eq!(
         path(fourth[0]),
         "pools/0/entries/0/functions/3/patterns/1/color"
@@ -700,10 +671,7 @@ fn lt19_enchant_book_options_drop_what_names_no_enchantment() {
         .collect();
     assert_eq!(names.len(), 2, "{names:?}");
     for (finding, (at, shown)) in names.iter().zip([("1", "nope"), ("2", "5")]) {
-        assert!(matches!(
-            finding.code,
-            DiagnosticCode::UnresolvedReference { text: Some(_) }
-        ));
+        assert!(finding.code.name() == "UnresolvedReference" && finding.code.vanilla().is_some());
         // An error in vanilla's log; the function and the table load.
         assert_eq!(finding.severity, Severity::Error);
         assert_eq!(
@@ -725,10 +693,7 @@ fn lt19_enchant_book_options_drop_what_names_no_enchantment() {
         .filter(|d| path(d).starts_with("pools/0/entries/0/functions/1"))
         .collect();
     assert_eq!(array.len(), 1, "{array:?}");
-    assert!(matches!(
-        array[0].code,
-        DiagnosticCode::InvalidType { text: Some(_) }
-    ));
+    assert!(array[0].code.name() == "InvalidType" && array[0].code.vanilla().is_some());
     assert_eq!(path(array[0]), "pools/0/entries/0/functions/1/enchantments");
     assert_eq!(
         text(&array[0].code),
@@ -756,10 +721,7 @@ fn lt20_specific_enchants_drops_an_unknown_id_with_a_warning_deviation() {
     // Vanilla drops `nope` without a word; the warning is ours.
     let found = findings(&table);
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::UnresolvedReference { text: None }
-    ));
+    assert!(found[0].is(&core_codes::UNRESOLVED_REFERENCE));
     assert_eq!(found[0].severity, Severity::Info);
     assert_eq!(path(found[0]), "pools/0/entries/0/functions/0/enchants/2");
 }

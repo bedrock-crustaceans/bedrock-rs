@@ -2,8 +2,8 @@
 //! The server loads such a preset silently, so each finding is raised at load and the preset is
 //! kept with it.
 
-use super::{ALLOWED_MC_INHERIT, CameraPreset, VANILLA_CAMERAS, texts};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Phase};
+use super::{ALLOWED_MC_INHERIT, CameraPreset, VANILLA_CAMERAS, codes};
+use bedrock_addon_core::diagnostic::{Diagnostic, Phase};
 use bedrock_addon_core::versioning::ValidateCx;
 
 /// The findings of one preset.
@@ -20,11 +20,9 @@ pub(crate) fn preset(preset: &CameraPreset, cx: &mut ValidateCx<'_>) {
         .as_ref()
         .is_some_and(|parent| !parent.as_str().is_empty());
     if !vanilla_camera && !inherits {
-        let error = Diagnostic::error(DiagnosticCode::MissingRequiredField {
-            text: texts::formatted(texts::MISSING_INHERIT, &[name]),
-        })
-        .at(at.child("inherit_from"))
-        .phase(Phase::Validate);
+        let error = Diagnostic::of(codes::MISSING_INHERIT.with([name]))
+            .at(at.child("inherit_from"))
+            .phase(Phase::Validate);
         cx.diagnostics.push_kept_error(error);
     }
     // The client logs the line as an error when `min > max` (equal limits say nothing), skips
@@ -32,11 +30,9 @@ pub(crate) fn preset(preset: &CameraPreset, cx: &mut ValidateCx<'_>) {
     if let (Some(min), Some(max)) = (preset.yaw_limits_min, preset.yaw_limits_max)
         && min > max
     {
-        let error = Diagnostic::error(DiagnosticCode::InvalidValue {
-            text: texts::formatted(texts::YAW_ORDER, &[name]),
-        })
-        .at(at.child("yaw_limits_min"))
-        .phase(Phase::Validate);
+        let error = Diagnostic::of(codes::YAW_ORDER.with([name]))
+            .at(at.child("yaw_limits_min"))
+            .phase(Phase::Validate);
         cx.diagnostics.push_kept_error(error);
     }
     // A vanilla camera keeps its own starting rotation, and the client ignores the value of a
@@ -44,11 +40,9 @@ pub(crate) fn preset(preset: &CameraPreset, cx: &mut ValidateCx<'_>) {
     // boom, which none of the four vanilla documents has, so the game is silent where this
     // tells: the crate's own note is an information.
     if VANILLA_CAMERAS.contains(&name) && preset.starting_rot.is_some() {
-        let info = Diagnostic::info(DiagnosticCode::InvalidValue {
-            text: texts::formatted(texts::VANILLA_STARTING_ROT, &[name]),
-        })
-        .at(at.child("starting_rot"))
-        .phase(Phase::Validate);
+        let info = Diagnostic::of(codes::VANILLA_STARTING_ROT.with([name]))
+            .at(at.child("starting_rot"))
+            .phase(Phase::Validate);
         cx.diagnostics.push(info);
     }
 }

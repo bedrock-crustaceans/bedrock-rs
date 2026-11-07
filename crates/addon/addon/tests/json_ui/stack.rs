@@ -3,7 +3,7 @@
 
 use std::fmt::Write as _;
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::families::json_ui::{COLOR_VARIABLES, ROOT_NAMESPACE, UiPackErrorKind};
 
 use super::common::*;
@@ -1047,7 +1047,7 @@ fn r06_missing_base_deviation() {
     let missing = stack
         .ui()
         .diagnostics()
-        .find(|d| matches!(d.code, DiagnosticCode::UnresolvedReference { .. }))
+        .find(|d| d.is(&codes::UNRESOLVED_REFERENCE))
         .unwrap();
     assert!(
         missing.to_string().ends_with(": ui definition 'a.nope'"),

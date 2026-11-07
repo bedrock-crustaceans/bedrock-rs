@@ -4,11 +4,13 @@
 
 use facet_value::{VArray, VObject};
 
+use super::codes;
 use super::history::{TextureSetHistory, v1_16_100};
-use super::texts;
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
-use bedrock_addon_core::diagnostic::texts::{fixed, formatted};
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    CodeDef, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath,
+};
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
@@ -76,9 +78,7 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
     // The client asserts on an empty file and shows the missing texture: an information with
     // the assert's text; the set is not loaded.
     if strip_bom(bytes).is_empty() {
-        let code = DiagnosticCode::EmptyDocument {
-            text: fixed(texts::SET_EMPTY),
-        };
+        let code = DiagnosticCode::from(&codes::SET_EMPTY);
         d.push(Diagnostic::info(code).at(root_at));
         return None;
     }
@@ -87,22 +87,21 @@ fn read_root(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Option<Value> {
             if read.trailing {
                 // The reader never looks past the root value, and says nothing, so this is an
                 // information of the crate's own.
-                let code = DiagnosticCode::MalformedInput {
-                    message: "content after the JSON value is ignored".to_owned(),
-                    text: None,
-                };
+                let code = DiagnosticCode::from(
+                    core_codes::SYNTAX.with(["content after the JSON value is ignored"]),
+                );
                 d.push(Diagnostic::info(code).at(root_at));
             }
             Some(read.value)
         }
         Err(message) => {
-            let code = DiagnosticCode::MalformedInput {
-                message: message.to_string(),
-                text: formatted(texts::SET_NO_JSON, [file.to_owned()]),
-            };
             // The game logs this at the content log's warning level, then shows the image
             // alone: the loader's warning; the set is not loaded.
-            d.push(Diagnostic::warn(code).at(root_at));
+            d.push(
+                Diagnostic::of(codes::SET_NO_JSON.with([file]))
+                    .detail(DiagnosticDetail::Syntax(message.to_string()))
+                    .at(root_at),
+            );
             None
         }
     }
@@ -117,9 +116,7 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
         None => SemVersion::parse(written.as_string()?.as_str()),
     });
     let Some(version) = version else {
-        let code = DiagnosticCode::MalformedFormatVersion {
-            text: formatted(texts::SET_BAD_VERSION, [file.to_owned()]),
-        };
+        let code = DiagnosticCode::from(codes::SET_BAD_VERSION.with([file.to_owned()]));
         // The game logs this at the content log's warning level; the set is not loaded.
         d.push(Diagnostic::warn(code).at(version_at));
         return None;
@@ -127,12 +124,9 @@ fn select_schema(written: Option<&Value>, file: &str, d: &mut Diagnostics) -> Op
     // Any version but the two.
     let schema = Schema::of(&version);
     if schema.is_none() {
-        let code = DiagnosticCode::UnsupportedVersion {
-            text: formatted(
-                texts::SET_UNSUPPORTED_VERSION,
-                [version.to_string(), file.to_owned()],
-            ),
-        };
+        let code = DiagnosticCode::from(
+            codes::SET_UNSUPPORTED_VERSION.with([version.to_string(), file.to_owned()]),
+        );
         // The game logs this at the content log's warning level; the set is not loaded.
         d.push(Diagnostic::warn(code).at(version_at));
     }
@@ -176,10 +170,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
     let payload_at = root_at.child(PAYLOAD);
     let layers = match payload.map(|payload| (payload, payload.as_object())) {
         None => {
-            let code = DiagnosticCode::MissingPayload {
-                text: formatted(texts::SET_REQUIRED_CHILD, [PAYLOAD.to_owned()]),
-            };
-            d.push(Diagnostic::error(code).at(root_at.clone()));
+            d.push(Diagnostic::of(codes::SET_REQUIRED_CHILD.with([PAYLOAD])).at(root_at.clone()));
             None
         }
         Some((_, None)) => {
@@ -189,7 +180,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
         Some((_, Some(layers))) => read_layers(layers, schema, &payload_at, d),
     };
     if errors(d) > before {
-        d.push(closing(texts::SET_SCHEMA_FAILED, root_at));
+        d.push(closing(&codes::SET_SCHEMA_FAILED, root_at));
         return none(Some(schema));
     }
     let Some(layers) = layers else {
@@ -201,10 +192,9 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
         .into_iter()
         .flatten()
         .map(|(key, value)| (key.as_str(), value.is_null()));
-    if let Some(text) = post_validation(names) {
-        let code = DiagnosticCode::InvalidValue { text: fixed(text) };
-        d.push(Diagnostic::error(code).at(payload_at));
-        d.push(closing(texts::SET_POST_FAILED, root_at));
+    if let Some(rule) = post_validation(names) {
+        d.push(Diagnostic::of(rule).at(payload_at));
+        d.push(closing(&codes::SET_POST_FAILED, root_at));
         return none(Some(schema));
     }
     let value = match schema {
@@ -223,14 +213,13 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
 }
 
 /// The line the client logs after a failed pass.
-fn closing(text: &'static str, at: JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::InvalidValue { text: fixed(text) };
-    Diagnostic::error(code).at(at)
+fn closing(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
+    Diagnostic::of(line).at(at)
 }
 
 /// A member the schema has no child for. The client logs nothing of its own for it.
 fn unknown_member(at: JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::UnrecognizedField { text: None };
+    let code = DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD);
     Diagnostic::error(code).at(at)
 }
 
@@ -246,27 +235,27 @@ fn unknown_option(allowed: &str, at: JsonPath) -> Diagnostic {
 /// The rules are checked in the game's order.
 pub(super) fn post_validation<'a>(
     members: impl Iterator<Item = (&'a str, bool)>,
-) -> Option<&'static str> {
+) -> Option<&'static CodeDef<0>> {
     let mut names = Vec::new();
     for (name, null) in members {
         if null {
-            return Some(texts::SET_MALFORMED_LAYER);
+            return Some(&codes::SET_MALFORMED_LAYER);
         }
         names.push(name);
     }
     let has = |name: &str| names.contains(&name);
     let mer = has(LayerKind::Mer.key());
     if !has(LayerKind::Color.key()) {
-        return Some(texts::SET_NO_COLOR);
+        return Some(&codes::SET_NO_COLOR);
     }
     if mer && has("metalness") && has("emissive") && has("roughness") {
-        return Some(texts::SET_MER_AND_SINGLE);
+        return Some(&codes::SET_MER_AND_SINGLE);
     }
     if mer && has(LayerKind::Mers.key()) {
-        return Some(texts::SET_MER_AND_MERS);
+        return Some(&codes::SET_MER_AND_MERS);
     }
     if has(LayerKind::Heightmap.key()) && has(LayerKind::Normal.key()) {
-        return Some(texts::SET_HEIGHTMAP_AND_NORMAL);
+        return Some(&codes::SET_HEIGHTMAP_AND_NORMAL);
     }
     None
 }
@@ -371,9 +360,7 @@ const COLOUR_TYPES: &str = "'color' 'string'";
 /// A four-member object. The crate rejects it; the client logs this text and loads a zero
 /// colour.
 fn four_members(at: &JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::InvalidType {
-        text: fixed(texts::BAD_COLOR),
-    };
+    let code = DiagnosticCode::from(&codes::BAD_COLOR);
     Diagnostic::error(code).at(at.clone())
 }
 
@@ -384,9 +371,7 @@ fn rgba(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
             let Some(v) = parse_hex(text, 8) else {
-                let code = DiagnosticCode::InvalidValue {
-                    text: fixed(texts::SET_HEX_8),
-                };
+                let code = DiagnosticCode::from(&codes::SET_HEX_8);
                 d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
@@ -425,9 +410,7 @@ fn rgb(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<R
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
             let Some(v) = parse_hex(text, 6) else {
-                let code = DiagnosticCode::InvalidValue {
-                    text: fixed(texts::SET_HEX_6),
-                };
+                let code = DiagnosticCode::from(&codes::SET_HEX_6);
                 d.push(Diagnostic::error(code).at(at.clone()));
                 return None;
             };
@@ -465,7 +448,7 @@ fn channels<const N: usize>(
     for (index, (element, slot)) in array.iter().zip(&mut out).enumerate() {
         let path = at.index(index);
         let Some(number) = element.as_number() else {
-            let code = DiagnosticCode::InvalidType { text: None };
+            let code = DiagnosticCode::from(&core_codes::INVALID_TYPE);
             d.push(Diagnostic::error(code).at(path));
             failed = true;
             continue;
@@ -473,9 +456,7 @@ fn channels<const N: usize>(
         if !number.is_integer() {
             // The game logs this at the content log's error level and the set loads: a kept
             // error.
-            let code = DiagnosticCode::InvalidValue {
-                text: fixed(texts::NOT_INTEGRAL),
-            };
+            let code = DiagnosticCode::from(&codes::NOT_INTEGRAL);
             d.push_kept_error(Diagnostic::error(code).at(path));
             *slot = 255.0;
             continue;
@@ -484,7 +465,7 @@ fn channels<const N: usize>(
         let written = number.to_i64().unwrap_or(i64::MAX);
         let clamped = written.clamp(0, 255);
         if clamped != written {
-            let code = DiagnosticCode::ClampedValue { text: None };
+            let code = DiagnosticCode::from(&core_codes::CLAMPED_VALUE);
             d.push(Diagnostic::info(code).at(path));
         }
         *slot = f32::from(u8::try_from(clamped).unwrap_or(u8::MAX));
@@ -497,7 +478,7 @@ mod tests {
     use super::*;
 
     /// The post-validation of a payload with the members `names`, none `null`.
-    fn post(names: &[&'static str]) -> Option<&'static str> {
+    fn post(names: &[&'static str]) -> Option<&'static CodeDef<0>> {
         post_validation(names.iter().map(|name| (*name, false)))
     }
 
@@ -511,20 +492,20 @@ mod tests {
         let members = [("normal", true)];
         assert_eq!(
             post_validation(members.into_iter()),
-            Some(texts::SET_MALFORMED_LAYER),
+            Some(&codes::SET_MALFORMED_LAYER),
             "checked before the missing color"
         );
         let members = [("color", false), ("normal", true), ("heightmap", false)];
         assert_eq!(
             post_validation(members.into_iter()),
-            Some(texts::SET_MALFORMED_LAYER)
+            Some(&codes::SET_MALFORMED_LAYER)
         );
     }
 
     #[test]
     fn v9c_the_composite_layer_beside_all_three_single_layers() {
         let all = ["color", MER, "metalness", "emissive", "roughness"];
-        assert_eq!(post(&all), Some(texts::SET_MER_AND_SINGLE));
+        assert_eq!(post(&all), Some(&codes::SET_MER_AND_SINGLE));
         // Each of the four is needed.
         for leave_out in 1..all.len() {
             let mut some = all.to_vec();
@@ -533,27 +514,27 @@ mod tests {
         }
         // It is checked before the composite-layer rule.
         let with_mers = ["color", MER, MERS, "metalness", "emissive", "roughness"];
-        assert_eq!(post(&with_mers), Some(texts::SET_MER_AND_SINGLE));
+        assert_eq!(post(&with_mers), Some(&codes::SET_MER_AND_SINGLE));
     }
 
     #[test]
     fn the_rules_come_in_the_client_s_order() {
-        assert_eq!(post(&[]), Some(texts::SET_NO_COLOR));
-        assert_eq!(post(&[MER, MERS]), Some(texts::SET_NO_COLOR));
+        assert_eq!(post(&[]), Some(&codes::SET_NO_COLOR));
+        assert_eq!(post(&[MER, MERS]), Some(&codes::SET_NO_COLOR));
         assert_eq!(post(&["color"]), None);
         assert_eq!(post(&["color", MER]), None);
         assert_eq!(post(&["color", MERS]), None);
-        assert_eq!(post(&["color", MER, MERS]), Some(texts::SET_MER_AND_MERS));
+        assert_eq!(post(&["color", MER, MERS]), Some(&codes::SET_MER_AND_MERS));
         assert_eq!(post(&["color", "normal"]), None);
         assert_eq!(post(&["color", "heightmap"]), None);
         assert_eq!(
             post(&["color", "heightmap", "normal"]),
-            Some(texts::SET_HEIGHTMAP_AND_NORMAL)
+            Some(&codes::SET_HEIGHTMAP_AND_NORMAL)
         );
         // The composite-layer rule is checked before the heightmap rule.
         assert_eq!(
             post(&["color", MER, MERS, "heightmap", "normal"]),
-            Some(texts::SET_MER_AND_MERS)
+            Some(&codes::SET_MER_AND_MERS)
         );
     }
 

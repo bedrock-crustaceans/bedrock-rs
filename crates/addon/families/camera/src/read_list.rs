@@ -1,13 +1,12 @@
 //! Reading and writing camera lists.
 
-use super::{CameraList, texts};
+use super::violation;
+use super::{CameraList, codes};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::chain_file::document;
-use bedrock_addon_core::versioning::shape::{
-    self, Member, Shape, child, namespace_name, req, violation,
-};
+use bedrock_addon_core::versioning::shape::{self, Member, Shape, child, namespace_name, req};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, write_payload};
 
 /// The list payload: both members required.
@@ -37,7 +36,7 @@ impl VersionStruct for CameraList {
         // does not pass.
         if !namespace_name(list.identifier.as_str()) {
             let at = child(&child(&cx.at, "minecraft:camera_list"), "identifier");
-            violation(texts::IDENTIFIER, at, d);
+            violation(&codes::IDENTIFIER, at, d);
             return None;
         }
         Some(list)

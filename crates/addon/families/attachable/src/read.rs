@@ -4,7 +4,8 @@
 
 use facet::Facet;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Span};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity, Span};
 use bedrock_addon_core::json::{JsonSlice, Value, Width};
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::versioning::ParseCx;
@@ -14,14 +15,11 @@ use bedrock_addon_shared_visual::cereal::{
 
 pub(crate) use bedrock_addon_shared_visual::cereal::{
     check_animate, check_controllers, check_identifier, check_map, check_min_engine_version,
-    check_variables, is_map_key, not_valid_here, text, wrong_type,
+    check_variables, is_map_key, not_valid_here, wrong_type,
 };
 
-use super::ItemBinding;
+use super::{ItemBinding, codes};
 
-/// The text for a declared member of the wrong JSON type.
-pub(crate) const UNKNOWN_OPTION_TYPE: &str =
-    bedrock_addon_core::diagnostic::cereal::UNKNOWN_CHILD_OPTION_TEXT;
 /// The payload key.
 pub(crate) const PAYLOAD: &str = cereal::ATTACHABLE;
 /// The payload key of the client entity family, which the same root schema declares.
@@ -93,10 +91,7 @@ fn item_type_error(described: &Described<'_>, span: Span) -> Diagnostic {
 
 /// An `item` that is neither a string nor an object.
 fn wrong_item(at: JsonPath, span: Option<Span>) -> Diagnostic {
-    let mut found = Diagnostic::error(DiagnosticCode::InvalidValue {
-        text: text(UNKNOWN_OPTION_TYPE, &["string, object"]),
-    })
-    .at(at);
+    let mut found = Diagnostic::of(codes::UNKNOWN_ITEM_TYPE.with(["string, object"])).at(at);
     found.location.span = span;
     found
 }
@@ -128,7 +123,11 @@ pub(crate) fn check_item(
     let members = match item {
         ItemBinding::Item(written) => {
             if !is_condition_key(written) {
-                d.push(Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(item_at));
+                d.push(
+                    Diagnostic::of(&core_codes::INVALID_VALUE)
+                        .severity(Severity::Info)
+                        .at(item_at),
+                );
             }
             return;
         }
@@ -144,9 +143,7 @@ pub(crate) fn check_item(
         d.push(required(ITEM_KEY, item_at.clone()));
     }
     for key in item.ignored() {
-        d.push(
-            Diagnostic::info(DiagnosticCode::DroppedField { text: None }).at(item_at.with(&[key])),
-        );
+        d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(item_at.with(&[key])));
     }
     // `asString("")` of a number is the empty text.
     let bound = members
@@ -154,7 +151,9 @@ pub(crate) fn check_item(
         .min_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     if let Some((key, Molang::Const(_))) = bound {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(item_at.with(&[key])),
+            Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(item_at.with(&[key])),
         );
     }
 }

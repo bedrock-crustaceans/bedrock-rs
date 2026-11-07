@@ -8,8 +8,9 @@
 
 use facet_value::{VArray, VObject};
 
+use super::codes;
 use super::read::{Era, Members, Node, Opt, Reader, Writer, float, object, opt, put_opt, walk};
-use super::texts;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
@@ -62,7 +63,7 @@ impl Node for ParticleEffectType {
         let read = text.and_then(Self::from_name);
         if read.is_none() {
             if text.is_some() && !r.legacy() {
-                r.error(DiagnosticCode::InvalidValue { text: None });
+                r.error(DiagnosticCode::from(&core_codes::INVALID_VALUE));
             } else {
                 r.wrong_type(value, o.wrong);
             }
@@ -88,10 +89,10 @@ object! {
     pub struct VisualEffectEvent {
         /// The identifier of the effect (JSON `effect`, required).
         req effect: String = "effect",
-            Opt::NONE.missing(texts::EFFECT_MISSING).wrong(texts::EFFECT_MISSING);
+            Opt::NONE.missing(&codes::EFFECT_MISSING).wrong(&codes::EFFECT_MISSING);
         /// How it is started (JSON `type`, required).
         req kind: ParticleEffectType = "type",
-            Opt::NONE.missing(texts::TYPE_MISSING).wrong(texts::TYPE_MISSING);
+            Opt::NONE.missing(&codes::TYPE_MISSING).wrong(&codes::TYPE_MISSING);
         /// Molang run on the new emitter before it starts (JSON `pre_effect_expression`;
         /// default 0).
         opt pre_effect_expression: Molang = "pre_effect_expression", EXPRESSION,
@@ -104,7 +105,7 @@ object! {
     pub struct SoundEffectEvent {
         /// The level sound event (JSON `event_name`, required).
         req event_name: String = "event_name",
-            Opt::NONE.missing(texts::SOUND_NAME).wrong(texts::SOUND_NAME);
+            Opt::NONE.missing(&codes::SOUND_NAME).wrong(&codes::SOUND_NAME);
     }
 }
 
@@ -196,16 +197,16 @@ impl EventNode {
         };
         let legacy = r.legacy();
         let mut node = Self {
-            sequence: opt(m, "sequence", Opt::NONE.wrong(texts::SEQUENCE), r),
-            randomize: opt(m, "randomize", Opt::NONE.wrong(texts::RANDOM), r),
+            sequence: opt(m, "sequence", Opt::NONE.wrong(&codes::SEQUENCE), r),
+            randomize: opt(m, "randomize", Opt::NONE.wrong(&codes::RANDOM), r),
             expression: opt(m, "expression", EXPRESSION, r),
             particle_effect: opt(
                 m,
                 "particle_effect",
-                Opt::NONE.wrong(texts::EFFECT_SECTION),
+                Opt::NONE.wrong(&codes::EFFECT_SECTION),
                 r,
             ),
-            sound_effect: opt(m, "sound_effect", Opt::NONE.wrong(texts::SOUND_SECTION), r),
+            sound_effect: opt(m, "sound_effect", Opt::NONE.wrong(&codes::SOUND_SECTION), r),
             log: opt(m, "log", Opt::NONE, r),
             extra: m.extra(known, r),
         };
@@ -226,7 +227,7 @@ impl EventNode {
                 if m.get(key).is_some_and(Value::is_object) {
                     r.key(key, |r| {
                         r.push(
-                            DiagnosticCode::DroppedField { text: None },
+                            DiagnosticCode::from(&core_codes::DROPPED_FIELD),
                             bedrock_addon_core::diagnostic::Severity::Info,
                         );
                     });
@@ -276,7 +277,7 @@ impl Node for EventNode {
         match Members::of(value) {
             Some(members) => Some(Self::read_node(members, false, r)),
             None => {
-                r.wrong_type(value, Some(texts::EVENT_NO_DATA));
+                r.wrong_type(value, Some(&codes::EVENT_NO_DATA));
                 None
             }
         }
@@ -355,32 +356,35 @@ impl Node for RandomEventNode {
     // one; a 1.20.80 document requires the member and has no bound.
     fn read(value: &Value, r: &mut Reader<'_>, _: Opt) -> Option<Self> {
         let Some(members) = Members::of(value) else {
-            r.wrong_type(value, Some(texts::EVENT_NO_DATA));
+            r.wrong_type(value, Some(&codes::EVENT_NO_DATA));
             return None;
         };
         let weight = match members.get("weight") {
             Some(weight) => r.key("weight", |r| {
                 let read = float(weight, r);
                 if read.is_none() {
-                    r.wrong_type(weight, Some(texts::WEIGHT));
+                    r.wrong_type(weight, Some(&codes::WEIGHT));
                 }
                 read
             }),
             None => {
-                r.missing(members, "weight", Some(texts::WEIGHT));
+                r.missing(members, "weight", Some(&codes::WEIGHT));
                 None
             }
         };
         if r.legacy() {
             let negative = weight.is_some_and(|weight| weight < 0.0);
             if negative {
-                r.key("weight", |r| r.warn(texts::WEIGHT_NEGATIVE));
+                r.key("weight", |r| r.warn(&codes::WEIGHT_NEGATIVE));
             }
             if weight.is_none() || negative {
                 // The option is skipped with every member it has; the line is at its
                 // weight alone. The crate notes the skip at the option, at the information
                 // level.
-                r.push(DiagnosticCode::DroppedField { text: None }, Severity::Info);
+                r.push(
+                    DiagnosticCode::from(&core_codes::DROPPED_FIELD),
+                    Severity::Info,
+                );
                 return None;
             }
         }

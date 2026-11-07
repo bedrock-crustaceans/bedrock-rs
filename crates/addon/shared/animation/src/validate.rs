@@ -2,6 +2,7 @@
 //! without `min_engine_version`.
 
 use super::types::EventString;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
 };
@@ -31,7 +32,7 @@ pub fn events<'a>(
         {
             push(
                 diagnostics,
-                DiagnosticCode::UnrecognizedEventString,
+                DiagnosticCode::from(&core_codes::UNRECOGNIZED_EVENT_STRING),
                 Severity::Info,
                 at,
             );
@@ -47,7 +48,7 @@ pub fn command_version_unset(cx: &LoadContext, any_event: bool, diagnostics: &mu
     if any_event && cx.min_engine_version.is_none() {
         push(
             diagnostics,
-            DiagnosticCode::MissingMinEngineVersion,
+            DiagnosticCode::from(&core_codes::MISSING_MIN_ENGINE_VERSION),
             Severity::Info,
             JsonPath::new(),
         );

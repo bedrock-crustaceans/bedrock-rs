@@ -4,7 +4,9 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText};
+use bedrock_addon::diagnostic::{
+    CodeMeta, Diagnostic, DiagnosticCode, Diagnostics, Severity, VanillaText,
+};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::recipe::{Recipe, Shaped};
 use bedrock_addon::load::LoadContext;
@@ -114,8 +116,23 @@ pub fn text(code: &DiagnosticCode) -> Option<&VanillaText> {
     }
 }
 
-/// The template of a finding's vanilla text: the fixed text, or the template with `{}`.
+/// The recipe family's definition a finding was raised on, if it was.
+fn recipe_def(diagnostic: &Diagnostic) -> Option<&'static CodeMeta> {
+    let DiagnosticCode::Specific { code } = &diagnostic.code else {
+        return None;
+    };
+    bedrock_addon::families::recipe::codes::ALL
+        .iter()
+        .find(|meta| meta.id() == code.id())
+        .copied()
+}
+
+/// The template of a finding's vanilla text: the fixed text, or the template with `{}`; for a
+/// finding of a recipe definition, its game sentence.
 pub fn template(diagnostic: &Diagnostic) -> Option<&'static str> {
+    if let Some(def) = recipe_def(diagnostic) {
+        return def.game_template();
+    }
     match text(&diagnostic.code)? {
         VanillaText::Fixed(text) => Some(text),
         VanillaText::Formatted { template, .. } => Some(template),
@@ -123,8 +140,12 @@ pub fn template(diagnostic: &Diagnostic) -> Option<&'static str> {
     }
 }
 
-/// The arguments of a finding's formatted vanilla text.
+/// The arguments of a finding's formatted vanilla text, or of its recipe definition.
 pub fn args(diagnostic: &Diagnostic) -> Vec<String> {
+    if let (Some(_), DiagnosticCode::Specific { code }) = (recipe_def(diagnostic), &diagnostic.code)
+    {
+        return code.args().to_vec();
+    }
     match text(&diagnostic.code) {
         Some(VanillaText::Formatted { args, .. }) => args.clone(),
         _ => Vec::new(),

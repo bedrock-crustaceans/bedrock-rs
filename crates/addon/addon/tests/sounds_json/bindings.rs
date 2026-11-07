@@ -1001,10 +1001,12 @@ fn without_the_compile_check_the_keys_are_counted_once() {
     let stack = copies(BINDINGS, &[text]);
     let sounds = stack.sounds_json();
     expect_one(sounds, "MolangNotChecked", Severity::Info, "");
-    assert!(matches!(
-        found(sounds, "MolangNotChecked")[0].code,
-        bedrock_addon::diagnostic::DiagnosticCode::MolangNotChecked { fields: 2 }
-    ));
+    assert_eq!(
+        found(sounds, "MolangNotChecked")[0]
+            .code
+            .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED),
+        Some(&["2".to_owned()][..])
+    );
     expect_none(sounds, "InvalidMolang");
     // No key, no note.
     let stack = copies(

@@ -4,53 +4,28 @@
 use std::collections::HashSet;
 use std::ops::RangeInclusive;
 
+use super::codes;
 use super::fields::{Fields, Got, Written, real_value};
 use super::{
     BUILT_IN_FONTS, FontAlias, FontAliasRef, FontEntry, FontFormat, FontMetadata, FontRange,
     PageSpec,
 };
-use bedrock_addon_core::diagnostic::builders::{invalid, invalid_text};
-use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, VanillaText,
-};
+use bedrock_addon_core::diagnostic::builders::invalid;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::array;
 use bedrock_addon_core::json::kit::fixed_path::{Authored, as_int, as_real, iterated};
 
-// The reader's texts, as the game writes them.
-/// A file that is not JSON.
-pub(super) const NOT_JSON: &str = "Couldn't parse font_metadata.json";
-/// A `version` that is not the integer 1.
-pub(super) const VERSION: &str = "Unsupported version number.";
-const NO_FORMAT: &str = "Font is missing font_format.";
-const NO_NAME: &str = "Font is missing font_name.";
-const NO_BITMAP_FILE: &str =
-    "Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified";
-const NO_TTF_FILE: &str = "TTF is missing font_file.";
-const NO_MSDF_FILE: &str = "MSDF is missing font_file.";
-const PAGES_FORMAT: &str = "Invalid format for the generate_pages_on_start json object.";
-const NO_ALIAS: &str = "Font Alias missing alias.";
-const ALIAS_FONTS: &str = "Font Alias property fonts must be an array.";
-const NO_REFERENCE: &str = "Font alias missing font_reference";
-const LANGUAGE_CODE: &str = "Font alias font_language_code must be a string";
-const RANGES: &str = "Font alias font_ranges must be an array";
-const RANGE_BOUNDS: &str = "Font alias font_ranges first and last values must be integers.";
-
 /// The longest path the game's fixed buffers hold.
 const MAX_PATH: usize = 1023;
 
-fn missing(text: &'static str, at: JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::MissingRequiredField {
-        text: Some(VanillaText::Fixed(text)),
-    };
-    Diagnostic::info(code).at(at)
+fn missing(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
+    Diagnostic::of(line).at(at)
 }
 
-fn wrong_type(text: &'static str, at: JsonPath) -> Diagnostic {
-    let code = DiagnosticCode::InvalidType {
-        text: Some(VanillaText::Fixed(text)),
-    };
-    Diagnostic::info(code).at(at)
+fn wrong_type(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
+    Diagnostic::of(line).at(at)
 }
 
 /// The game ignores a scale that is no JSON real (only a number written as a decimal counts)
@@ -63,7 +38,7 @@ fn silent(at: JsonPath) -> Diagnostic {
 
 /// The warning of a scale beyond a float, which is held as the largest finite float.
 pub(super) fn clamp_warning(at: JsonPath) -> Diagnostic {
-    Diagnostic::info(DiagnosticCode::ClampedValue { text: None }).at(at)
+    Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at)
 }
 
 impl FontFormat {
@@ -180,11 +155,11 @@ impl FontEntry {
     fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
         let mut fields = Fields::new(element, at.clone());
         let Some(font_format) = fields.string("font_format").into_typed() else {
-            diagnostics.push(missing(NO_FORMAT, fields.path("font_format")));
+            diagnostics.push(missing(&codes::NO_FORMAT, fields.path("font_format")));
             return None;
         };
         let Some(font_name) = fields.string("font_name").into_typed() else {
-            diagnostics.push(missing(NO_NAME, fields.path("font_name")));
+            diagnostics.push(missing(&codes::NO_NAME, fields.path("font_name")));
             return None;
         };
         let format = FontFormat::from_name(&font_format);
@@ -213,13 +188,13 @@ impl FontEntry {
             Some(FontFormat::Bitmap)
                 if ascii_font_file.is_none() && unicode_file_prefix.is_none() =>
             {
-                diagnostics.push(missing(NO_BITMAP_FILE, at.clone()));
+                diagnostics.push(missing(&codes::NO_BITMAP_FILE, at.clone()));
             }
             Some(FontFormat::Ttf | FontFormat::TtfMsdf) if font_file.is_none() => {
-                diagnostics.push(missing(NO_TTF_FILE, fields.path("font_file")));
+                diagnostics.push(missing(&codes::NO_TTF_FILE, fields.path("font_file")));
             }
             Some(FontFormat::Msdf) if font_file.is_none() => {
-                diagnostics.push(missing(NO_MSDF_FILE, fields.path("font_file")));
+                diagnostics.push(missing(&codes::NO_MSDF_FILE, fields.path("font_file")));
             }
             _ => {}
         }
@@ -328,7 +303,7 @@ fn read_page(element: &Value, at: JsonPath, diagnostics: &mut Diagnostics) -> Pa
         return PageSpec::Page(page);
     }
     if !element.is_object() {
-        diagnostics.push(Diagnostic::info(invalid_text(PAGES_FORMAT)).at(at));
+        diagnostics.push(Diagnostic::of(&codes::PAGES_FORMAT).at(at));
         return PageSpec::Other(element.clone());
     }
     let bound = |name: &str| element.as_object()?.get(name).and_then(as_int);
@@ -365,7 +340,7 @@ impl FontAliasRef {
     fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
         let mut fields = Fields::new(element, at.clone());
         let Some(font_reference) = fields.string("font_reference").into_typed() else {
-            diagnostics.push(missing(NO_REFERENCE, fields.path("font_reference")));
+            diagnostics.push(missing(&codes::NO_REFERENCE, fields.path("font_reference")));
             return None;
         };
         let ranges_at = fields.path("font_ranges");
@@ -379,7 +354,7 @@ impl FontAliasRef {
                     ranges.push(FontRange { first, last });
                 } else {
                     let at = ranges_at.index(i);
-                    diagnostics.push(wrong_type(RANGE_BOUNDS, at));
+                    diagnostics.push(wrong_type(&codes::RANGE_BOUNDS, at));
                     bad_bound = true;
                 }
             }
@@ -390,13 +365,16 @@ impl FontAliasRef {
         }
         if ranges.is_other(false) {
             // The font is kept without ranges.
-            diagnostics.push(wrong_type(RANGES, ranges_at));
+            diagnostics.push(wrong_type(&codes::RANGES, ranges_at));
         }
         let code = fields.string("font_language_code");
         let coerced = code.is_other(false);
         if coerced {
             // The font is kept with the code "".
-            diagnostics.push(wrong_type(LANGUAGE_CODE, fields.path("font_language_code")));
+            diagnostics.push(wrong_type(
+                &codes::LANGUAGE_CODE,
+                fields.path("font_language_code"),
+            ));
         }
         let (scale, clamped) = fields.real("font_scale");
         if clamped {
@@ -451,12 +429,12 @@ impl FontAlias {
     fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
         let mut fields = Fields::new(element, at.clone());
         let Some(alias) = fields.string("alias").into_typed() else {
-            diagnostics.push(missing(NO_ALIAS, fields.path("alias")));
+            diagnostics.push(missing(&codes::NO_ALIAS, fields.path("alias")));
             return None;
         };
         let fonts_at = fields.path("fonts");
         let Some(elements) = fields.raw("fonts").and_then(Value::as_array) else {
-            diagnostics.push(wrong_type(ALIAS_FONTS, fonts_at));
+            diagnostics.push(wrong_type(&codes::ALIAS_FONTS, fonts_at));
             return None;
         };
         if elements.is_empty() {
@@ -537,7 +515,7 @@ impl Authored for FontMetadata {
             if !names.insert(font.font_name.clone()) {
                 // A repeated font name, reported at the entry's place in the file.
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("font_name")),
+                    Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("font_name")),
                 );
             }
         }
@@ -561,7 +539,7 @@ impl Authored for FontMetadata {
                 }
                 if !names.insert(alias.alias.clone()) {
                     diagnostics.push(
-                        Diagnostic::info(DiagnosticCode::FontNameOverridden).at(at.child("alias")),
+                        Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("alias")),
                     );
                 }
             }

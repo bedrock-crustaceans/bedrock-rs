@@ -12,6 +12,7 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+pub mod codes;
 mod format;
 mod keyword;
 mod language;

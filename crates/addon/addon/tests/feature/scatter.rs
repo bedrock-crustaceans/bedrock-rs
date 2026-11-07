@@ -1,7 +1,7 @@
 //! `scatter_feature`: the 1.21.10 move into `distribution`, the strict schema of both eras and
 //! the runtime scatter checks (fixtures f01–f03).
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::feature::{Feature, ScatterFeature};
 use bedrock_addon::families::feature_rules::{
@@ -355,11 +355,8 @@ fn a_cereal_minimum_in_a_coordinate_rejects_the_feature() {
         r#""places_feature": "demo:y", "distribution": {"iterations": 1, "x": {"distribution": "fixed_grid", "extent": [0, 4], "step_size": 0}, "y": 0, "z": 0}"#,
     );
     let d = rejects(&json, &cx());
-    assert!(
-        d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidValue { .. })
-                && f.location.json_path.to_string().ends_with("x/step_size"))
-    );
+    assert!(d.iter().any(|f| f.code.name() == "InvalidValue"
+        && f.location.json_path.to_string().ends_with("x/step_size")));
 }
 
 /// A scatter document of `version` with the scatter parameters `members` (after `iterations`),

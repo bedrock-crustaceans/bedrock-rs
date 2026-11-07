@@ -2,20 +2,13 @@
 //! the link pass calls.
 
 use super::link::{self, Targets, entity_key, item_key};
-use super::{AimAssist, AimAssistCategories, AimAssistCategory, AimAssistPreset, texts};
+use super::{AimAssist, AimAssistCategories, AimAssistCategory, AimAssistPreset};
 use bedrock_addon_core::diagnostic::{DiagnosticDetail, Phase, Severity};
 use bedrock_addon_core::document::{
     CombineRule, Content, Contribution, Definition, Document, RegistryBuilder,
 };
 use bedrock_addon_core::load::{LoadContext, LoadOptions};
 use bedrock_addon_core::pack_identity::PackPath;
-
-#[test]
-fn every_formatted_text_has_as_many_placeholders_as_arguments() {
-    for (template, arity) in texts::FORMATTED {
-        assert_eq!(template.matches("{}").count(), *arity, "{template}");
-    }
-}
 
 /// The world's blocks, entities and items: three of each.
 struct World;

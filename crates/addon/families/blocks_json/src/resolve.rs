@@ -4,16 +4,14 @@
 use facet_value::VObject;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::entry::{self, ReadEntry};
 use super::legacy::{self, LegacyAlias};
-use super::texts::{
-    BASE_GAME_BLOCKSHAPE, NOT_JSON, OLD_NAME, VERSION_ABOVE_CEILING, VERSION_INVALID,
-    VERSION_NOT_GIVEN, formatted,
-};
 use super::version::{self, BLOCKS_JSON_MAX_FORMAT_VERSION, Effective, Log};
 use super::{BlocksJson, ClientBlock};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{
@@ -62,11 +60,9 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
             // The client skips the file without a word, so the finding is an information of
             // this crate's own; the file is still refused.
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::MalformedInput {
-                    text: Some(formatted(NOT_JSON, &[&message])),
-                    message,
-                })
-                .phase(Phase::Validate),
+                Diagnostic::of(codes::NOT_JSON.with([message.as_str()]))
+                    .detail(DiagnosticDetail::Syntax(message))
+                    .phase(Phase::Validate),
             );
             return FileRead {
                 file: None,
@@ -86,7 +82,8 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
         for (key, count) in duplicate_keys(text) {
             for _ in 1..count {
                 diagnostics.push(
-                    Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                    Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+                        .severity(Severity::Info)
                         .at(path(&key))
                         .phase(Phase::Validate),
                 );
@@ -105,7 +102,7 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
             let mut at = path(key.as_str());
             at.append(&clamped.path);
             diagnostics.push(
-                Diagnostic::info(DiagnosticCode::ClampedValue { text: None })
+                Diagnostic::of(&core_codes::CLAMPED_VALUE)
                     .at(at)
                     .phase(Phase::Validate),
             );
@@ -249,36 +246,29 @@ fn version_log(log: Option<&Log>, d: &mut Diagnostics) -> bool {
     let at = path("format_version");
     match log {
         None => return false,
-        Some(Log::NotGiven) => d.push(
-            Diagnostic::warn(DiagnosticCode::MissingFormatVersion {
-                text: Some(formatted(VERSION_NOT_GIVEN, &[])),
-            })
-            .phase(Phase::Validate),
-        ),
+        Some(Log::NotGiven) => {
+            d.push(Diagnostic::of(&codes::VERSION_NOT_GIVEN).phase(Phase::Validate));
+        }
         Some(Log::Invalid { partial }) => {
             d.push(
-                Diagnostic::warn(DiagnosticCode::MalformedFormatVersion {
-                    text: Some(formatted(VERSION_INVALID, &[])),
-                })
-                .at(at.clone())
-                .phase(Phase::Validate),
+                Diagnostic::of(&codes::VERSION_INVALID)
+                    .at(at.clone())
+                    .phase(Phase::Validate),
             );
             if partial.is_some() {
                 // The client says it uses 1.1.0 and reads the partial version.
                 d.push(
-                    Diagnostic::info(DiagnosticCode::UnusualFormatVersion)
+                    Diagnostic::of(&core_codes::UNUSUAL_FORMAT_VERSION)
                         .at(at)
                         .phase(Phase::Validate),
                 );
             }
         }
         Some(Log::AboveCeiling(written)) => d.push(
-            Diagnostic::warn(DiagnosticCode::UnsupportedVersion {
-                text: Some(formatted(
-                    VERSION_ABOVE_CEILING,
-                    &[written, &BLOCKS_JSON_MAX_FORMAT_VERSION.to_string()],
-                )),
-            })
+            Diagnostic::of(
+                codes::VERSION_ABOVE_CEILING
+                    .with([written.clone(), BLOCKS_JSON_MAX_FORMAT_VERSION.to_string()]),
+            )
             .at(at)
             .phase(Phase::Validate),
         ),
@@ -313,7 +303,8 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
     // A member that is not an object is skipped.
     let Some(object) = value.as_object() else {
         d.push(
-            Diagnostic::info(DiagnosticCode::InvalidType { text: None })
+            Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -325,11 +316,9 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
     if cx.base_game && object.get("blockshape").is_some() {
         // The game logs this as an error, skips the entry and loads the file: a kept error.
         d.push_kept_error(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(formatted(BASE_GAME_BLOCKSHAPE, &[key])),
-            })
-            .at(at)
-            .phase(Phase::Validate),
+            Diagnostic::of(codes::BASE_GAME_BLOCKSHAPE.with([key]))
+                .at(at)
+                .phase(Phase::Validate),
         );
         return;
     }
@@ -342,7 +331,7 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
         "brown_mushroom_block" | "red_mushroom_block"
     ) {
         d.push(
-            Diagnostic::info(DiagnosticCode::ShadowedDefinition { text: None })
+            Diagnostic::of(&core_codes::SHADOWED_DEFINITION)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -353,7 +342,7 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
     // `chalkboard` is ignored without a word.
     if lower == "chalkboard" {
         d.push(
-            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+            Diagnostic::of(&core_codes::IGNORED_MEMBER)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -396,15 +385,10 @@ fn old_name(alias: &LegacyAlias, base_game: bool, at: JsonPath) -> Diagnostic {
     } else {
         Severity::Error
     };
-    Diagnostic::error(DiagnosticCode::DeprecatedMember {
-        text: Some(formatted(
-            OLD_NAME,
-            &[&format!("{MINECRAFT}:{}", alias.name), &names],
-        )),
-    })
-    .severity(severity)
-    .at(at)
-    .phase(Phase::Validate)
+    Diagnostic::of(codes::OLD_NAME.with([format!("{MINECRAFT}:{}", alias.name), names]))
+        .severity(severity)
+        .at(at)
+        .phase(Phase::Validate)
 }
 
 /// Splits a legacy name: a copy of the entry for every post-split block, its texture names given
@@ -420,7 +404,7 @@ fn split(
     if alias.removed {
         // `lava_cauldron` is dropped without a word.
         d.push(
-            Diagnostic::info(DiagnosticCode::IgnoredMember { text: None })
+            Diagnostic::of(&core_codes::IGNORED_MEMBER)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -429,7 +413,8 @@ fn split(
     if cx.fell_back {
         // The author asked for another version and got the split.
         d.push(
-            Diagnostic::info(DiagnosticCode::DeprecatedMember { text: None })
+            Diagnostic::of(&core_codes::DEPRECATED_MEMBER)
+                .severity(Severity::Info)
                 .at(at)
                 .phase(Phase::Validate),
         );
@@ -489,7 +474,7 @@ fn ordinary(
         .filter(|alias| !alias.removed && !alias.is_still_a_block());
     if let Some(alias) = aliased {
         d.push(
-            Diagnostic::info(DiagnosticCode::IdentifierNamespaced)
+            Diagnostic::of(&core_codes::IDENTIFIER_NAMESPACED)
                 .at(path(cx.key))
                 .phase(Phase::Validate),
         );

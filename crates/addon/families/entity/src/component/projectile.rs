@@ -6,7 +6,9 @@
 //! `minecraft_projectile` schema. Below 1.26.50 the key is `Dynamic`, read by the game's untyped
 //! projectile reader, whose camelCase aliases the lenient conversion maps.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
+use crate::codes;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
@@ -694,9 +696,9 @@ fn enum_spelling(
     // The game logs a level-3 line for `should_bounce` and for `difficulty_randomization` and
     // takes the default: it logs this at the error level and keeps the document, a kept error.
     cx.kept(
-        DiagnosticCode::InvalidValue {
-            text: Some(VanillaText::NotAValidValue { value, member }),
-        },
+        codes::NOT_A_VALID_VALUE
+            .with([value.as_str(), member])
+            .into(),
         at,
     );
     json.insert(member, Value::from(fallback));
@@ -720,7 +722,7 @@ impl Typed for Projectile {
                     // The game writes no content-log line for another integer, so the crate's own
                     // information stands here.
                     cx.push(
-                        DiagnosticCode::InvalidValue { text: None },
+                        DiagnosticCode::from(&core_codes::INVALID_VALUE),
                         Severity::Info,
                         &JsonPath::new().child("anchor"),
                     );
@@ -757,7 +759,7 @@ impl Typed for Projectile {
             && list.len() != 3
         {
             let at = JsonPath::new().child("offset");
-            cx.invalid(&at, &mut self.offset, ProjectileOffset::default(), None);
+            cx.invalid(&at, &mut self.offset, ProjectileOffset::default());
         }
         if let Some(on_hit) = &mut self.on_hit {
             on_hit.check(&JsonPath::new().child("on_hit"), cx);
@@ -873,7 +875,7 @@ fn legacy_spawn_chances(spawn: &mut VObject, at: &JsonPath, cx: &mut ComponentCh
                 && spawn_chance_rewritten(value, integer)
             {
                 cx.push(
-                    DiagnosticCode::ValueRewritten { text: None },
+                    DiagnosticCode::from(&core_codes::VALUE_REWRITTEN),
                     Severity::Info,
                     &at.child(name),
                 );

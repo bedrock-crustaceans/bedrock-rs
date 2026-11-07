@@ -7,10 +7,9 @@ use super::{
     Animation, AnimationFile, AxisElement, Bone, Channel, EventString, Keyframe, KeyframeParts,
     LerpMode, LoopMode, OneOrMany, RelativeTo,
 };
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, JsonPath};
-use bedrock_addon_core::json::node_tree::{
-    Group, Hit, Kind, NOT_ALLOWED_KEYS, NOT_ALLOWED_REGEX, Node, Pattern, Walk, text,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Severity};
+use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{ENGINE_VERSION, SemVersion};
@@ -67,14 +66,18 @@ pub(crate) fn parse_file(bytes: &[u8], cx: &LoadContext) -> Parsed<AnimationFile
         let mut at = JsonPath::new();
         at.push("format_version");
         let code = if cx.pack_type == PackType::Resource {
-            DiagnosticCode::FormatVersionAboveEngine {
-                version: written.to_string(),
-            }
+            core_codes::FORMAT_VERSION_ABOVE_ENGINE.with([
+                written.to_string(),
+                format!(
+                    "{}.{}.{}",
+                    ENGINE_VERSION.major, ENGINE_VERSION.minor, ENGINE_VERSION.patch
+                ),
+            ])
         } else {
             // The game loads the file silently, so this finding is the crate's own.
-            DiagnosticCode::UnsupportedVersion { text: None }
+            Code::from(&core_codes::UNSUPPORTED_VERSION)
         };
-        diagnostics.push(Diagnostic::info(code).at(at));
+        diagnostics.push(Diagnostic::of(code).severity(Severity::Info).at(at));
     }
     super::validate::animation_findings(&file, cx, &mut diagnostics);
     let defaults = file
@@ -212,9 +215,9 @@ fn read_loop(walk: &mut Walk, node: Node<'_>) -> Option<LoopMode> {
                 Some(LoopMode::HoldOnLastFrame)
             } else {
                 walk.error(
-                    DiagnosticCode::InvalidValue {
-                        text: text(NOT_ALLOWED_REGEX, &[&value, "hold_on_last_frame"]),
-                    },
+                    core_codes::NOT_ALLOWED_REGEX
+                        .with([&value, "hold_on_last_frame"])
+                        .into(),
                     node.span(),
                 );
                 None
@@ -297,9 +300,9 @@ fn read_relative_to(walk: &mut Walk, node: Node<'_>) -> Option<RelativeTo> {
             Hit::Ok
         } else {
             walk.error(
-                DiagnosticCode::InvalidValue {
-                    text: text(NOT_ALLOWED_REGEX, &[&lower, "entity"]),
-                },
+                core_codes::NOT_ALLOWED_REGEX
+                    .with([&lower, "entity"])
+                    .into(),
                 v.span(),
             );
             Hit::Failed
@@ -430,9 +433,9 @@ fn read_lerp_mode(walk: &mut Walk, node: Node<'_>) -> Option<LerpMode> {
         "catmullrom" => Some(LerpMode::CatmullRom),
         _ => {
             walk.error(
-                DiagnosticCode::InvalidValue {
-                    text: text(NOT_ALLOWED_KEYS, &[&value, "linear, catmullrom"]),
-                },
+                core_codes::NOT_ALLOWED_KEYS
+                    .with([&value, "linear, catmullrom"])
+                    .into(),
                 node.span(),
             );
             None

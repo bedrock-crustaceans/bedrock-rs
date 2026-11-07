@@ -4,9 +4,10 @@
 use facet::Facet;
 use facet_json::RawJson;
 
-use super::{Description, Shape, ShapeBox, VoxelShape, texts};
+use super::{Description, Shape, ShapeBox, VoxelShape, codes};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span,
+    Class, Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Severity, Span, cereal,
 };
 use bedrock_addon_core::json::{self, JsonSlice, Value, parse_at};
 use bedrock_addon_core::versioning::ParseCx;
@@ -97,24 +98,15 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
     // reproduced here.
     if identifier.len() > MAX_IDENTIFIER {
         d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(at.with(&["description", "identifier"])),
+            Diagnostic::of(&core_codes::INVALID_VALUE).at(at.with(&["description", "identifier"])),
         );
     }
     // A shape needs a box; the game's text for it is not reproduced here.
     if boxes < MIN_BOXES {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue { text: None })
-                .at(at.with(&["shape", "boxes"])),
-        );
+        d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(at.with(&["shape", "boxes"])));
     }
     if boxes > MAX_BOXES {
-        d.push(
-            Diagnostic::error(DiagnosticCode::InvalidValue {
-                text: Some(texts::too_many_boxes()),
-            })
-            .at(at.with(&["shape", "boxes"])),
-        );
+        d.push(Diagnostic::of(&codes::TOO_MANY_BOXES).at(at.with(&["shape", "boxes"])));
     }
 }
 
@@ -164,9 +156,7 @@ fn corner(
         }
     };
     let expected = |d: &mut Diagnostics| {
-        d.push(at_corner(DiagnosticCode::InvalidType {
-            text: Some(texts::expected_x_y_z()),
-        }));
+        d.push(at_corner(DiagnosticCode::from(&codes::EXPECTED_X_Y_Z)));
     };
     let Some(object) = json.and_then(Value::as_object) else {
         expected(d);
@@ -195,7 +185,7 @@ fn corner(
         expected(d);
     }
     for key in &mistyped {
-        d.push(Diagnostic::error(DiagnosticCode::InvalidType { text: None }).at(at.child(key)));
+        d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at.child(key)));
     }
     for key in &unbound {
         d.push(self::unknown(at.child(key), unknown));
@@ -215,9 +205,7 @@ fn number(json: &Value) -> Option<f32> {
 /// A member the schema does not bind, at `at` and `severity`: the slice's grade, the error that
 /// refuses the document (every voxel-shape slice is strict).
 fn unknown(at: JsonPath, severity: Severity) -> Diagnostic {
-    Diagnostic::warn(DiagnosticCode::UnrecognizedField {
-        text: Some(texts::not_in_schema()),
-    })
-    .at(at)
-    .severity(severity)
+    Diagnostic::warn(cereal::member_not_in_schema())
+        .at(at)
+        .severity(severity)
 }
