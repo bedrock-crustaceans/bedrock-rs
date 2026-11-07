@@ -210,68 +210,68 @@ const EXPECTED: &[(bool, &[&str])] = &[
     (
         false,
         &[
-            r"Error|minecraft:crafting_items_catalog/categories|MissingRequiredField { text: None }|None|false",
+            r"Error|minecraft:crafting_items_catalog/categories|core/missing_required_field|None|false",
         ],
     ),
     // {"categories": [], "extra": 1}
     (
         true,
         &[
-            r"Warning|minecraft:crafting_items_catalog/extra|UnrecognizedField { text: None }|Some((28, 1))|false",
+            r"Warning|minecraft:crafting_items_catalog/extra|core/unrecognized_field|Some((28, 1))|false",
         ],
     ),
     // []
     (
         false,
         &[
-            r#"Error|minecraft:crafting_items_catalog|MalformedInput { message: "expected an object, found an array", text: None }|Some((0, 2))|false"#,
+            r#"Error|minecraft:crafting_items_catalog|core/syntax ["expected an object, found an array"]|Some((0, 2))|false"#,
         ],
     ),
     // {"categories": {}}
     (
         false,
         &[
-            r#"Error|minecraft:crafting_items_catalog/categories|MalformedInput { message: "expected an array, found an object", text: None }|Some((15, 2))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories|core/syntax ["expected an array, found an object"]|Some((15, 2))|false"#,
         ],
     ),
     // {"categories": [{"category_name": "nature", "groups": [], "zz": 1}, 5, {"groups": []}]}
     (
         false,
         &[
-            r"Warning|minecraft:crafting_items_catalog/categories/0/zz|UnrecognizedField { text: None }|Some((64, 1))|false",
-            r#"Error|minecraft:crafting_items_catalog/categories/1|MalformedInput { message: "expected an object, found a number, a boolean or null", text: None }|Some((68, 1))|false"#,
-            r"Error|minecraft:crafting_items_catalog/categories/2/category_name|MissingRequiredField { text: None }|None|false",
+            r"Warning|minecraft:crafting_items_catalog/categories/0/zz|core/unrecognized_field|Some((64, 1))|false",
+            r#"Error|minecraft:crafting_items_catalog/categories/1|core/syntax ["expected an object, found a number, a boolean or null"]|Some((68, 1))|false"#,
+            r"Error|minecraft:crafting_items_catalog/categories/2/category_name|core/missing_required_field|None|false",
         ],
     ),
     // {"categories": [{"category_name": 3, "groups": [{"items": [{"name": "custom:a"}, {"nome": "x"}, "bad
     (
         false,
         &[
-            r#"Error|minecraft:crafting_items_catalog/categories/0/category_name|MalformedInput { message: "expected a string, found a number, a boolean or null", text: None }|Some((34, 1))|false"#,
-            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/x|UnrecognizedField { text: None }|Some((153, 1))|false",
-            r"Error|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name|MissingRequiredField { text: None }|None|false",
-            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/items/1/nome|UnrecognizedField { text: None }|Some((90, 3))|false",
-            r"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/1/name|MissingRequiredField { text: None }|None|false",
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/2|InvalidValue { text: Some(Formatted { template: "expected string to match the \"{}\" regex", args: ["^(?:.)+:(?:.)+$"] }) }|Some((96, 5))|false"#,
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/3|MalformedInput { message: "expected a string, found a number, a boolean or null", text: None }|Some((103, 1))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories/0/category_name|core/syntax ["expected a string, found a number, a boolean or null"]|Some((34, 1))|false"#,
+            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/x|core/unrecognized_field|Some((153, 1))|false",
+            r"Error|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name|core/missing_required_field|None|false",
+            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/items/1/nome|core/unrecognized_field|Some((90, 3))|false",
+            r"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/1/name|core/missing_required_field|None|false",
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/2|core/string_mismatch ["^(?:.)+:(?:.)+$"]|Some((96, 5))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/3|core/syntax ["expected a string, found a number, a boolean or null"]|Some((103, 1))|false"#,
         ],
     ),
     // {"categories": [{"category_name": "items", "groups": [{"group_identifier": {"name": "nons"}, "items"
     (
         false,
         &[
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name|InvalidValue { text: Some(Fixed("string must be prefixed with a namespace (eg. namespace:value)")) }|Some((84, 6))|false"#,
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/1/group_identifier|MalformedInput { message: "expected an object, found a string", text: None }|Some((128, 3))|false"#,
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/1/items|MalformedInput { message: "expected an array, found an object", text: None }|Some((142, 2))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/name|core/invalid_value_worded ["string must be prefixed with a namespace (eg. namespace:value)"]|Some((84, 6))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/1/group_identifier|core/syntax ["expected an object, found a string"]|Some((128, 3))|false"#,
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/1/items|core/syntax ["expected an array, found an object"]|Some((142, 2))|false"#,
         ],
     ),
     // {"categories": [{"category_name": "Equipment", "groups": [{"group_identifier": {"name": "a:b", "icon
     (
         false,
         &[
-            r"Error|minecraft:crafting_items_catalog/categories/0/category_name|InvalidValue { text: None }|Some((34, 11))|false",
-            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/icon/q|UnrecognizedField { text: None }|Some((124, 1))|false",
-            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/0|MalformedInput { message: "expected a string, found a number, a boolean or null", text: None }|Some((139, 4))|false"#,
+            r"Error|minecraft:crafting_items_catalog/categories/0/category_name|core/invalid_value|Some((34, 11))|false",
+            r"Warning|minecraft:crafting_items_catalog/categories/0/groups/0/group_identifier/icon/q|core/unrecognized_field|Some((124, 1))|false",
+            r#"Error|minecraft:crafting_items_catalog/categories/0/groups/0/items/0|core/syntax ["expected a string, found a number, a boolean or null"]|Some((139, 4))|false"#,
         ],
     ),
 ];

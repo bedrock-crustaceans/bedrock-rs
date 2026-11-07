@@ -5,7 +5,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-use bedrock_addon::diagnostic::{Diagnostic, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
@@ -276,12 +276,16 @@ fn a_wide_integer_is_in_every_family_the_real_number_it_spells() {
                 assert!(
                     !ours.findings.iter().any(|d| d.location.json_path.is_empty()
                         && d.severity >= Severity::Error
-                        && bedrock_addon::diagnostic::testing::legacy_debug(d)
-                            .starts_with("MalformedInput")
-                        && !bedrock_addon::diagnostic::testing::legacy_debug(d)
-                            .contains("Number too big")
-                        && !bedrock_addon::diagnostic::testing::legacy_debug(d)
-                            .contains("the item is not loaded")),
+                        && d.code.kind() == Kind::Syntax
+                        && {
+                            let told = format!(
+                                "{} {}",
+                                bedrock_addon::diagnostic::testing::shown(d),
+                                d.code.vanilla().unwrap_or_default()
+                            );
+                            !told.contains("Number too big")
+                                && !told.contains("the item is not loaded")
+                        }),
                     "{shown}: {:?}",
                     ours.findings
                 );

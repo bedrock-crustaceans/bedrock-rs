@@ -340,7 +340,7 @@ fn vectors_of_the_wrong_shape_are_refused_and_both_forms_write_back() {
                     "{:?} {} {} {:?}",
                     d.severity,
                     d.location.json_path,
-                    bedrock_addon_core::diagnostic::testing::legacy_debug(d),
+                    bedrock_addon_core::diagnostic::testing::shown(d),
                     d.detail
                 )
             })
@@ -348,26 +348,26 @@ fn vectors_of_the_wrong_shape_are_refused_and_both_forms_write_back() {
     };
     assert_eq!(
         told(KEY, r#"{"target_range": [1, 2]}"#),
-        ["Error target_range InvalidType { text: None } None"]
+        ["Error target_range core/invalid_type None"]
     );
     assert_eq!(
         told(KEY, r#"{"target_range": "far"}"#),
-        ["Error target_range InvalidType { text: None } None"]
+        ["Error target_range core/invalid_type None"]
     );
     assert_eq!(
         told(KEY, r#"{"target_range": {"x": "a"}}"#),
-        ["Error target_range InvalidType { text: None } None"]
+        ["Error target_range core/invalid_type None"]
     );
     assert_eq!(
         told(KEY, r#"{"target_range": [1, 2, 1e39]}"#),
-        ["Error target_range InvalidType { text: None } None"]
+        ["Error target_range core/invalid_type None"]
     );
     assert_eq!(
         told(
             LOOK,
             r#"{"look_distance": 1, "look_angle": [1, 2, 3], "target_entity": "t"}"#
         ),
-        ["Error look_angle InvalidType { text: None } None"]
+        ["Error look_angle core/invalid_type None"]
     );
     assert_eq!(
         written::<goal::DropItemFor>(KEY, r#"{"target_range": [1, 2.5, 3]}"#),

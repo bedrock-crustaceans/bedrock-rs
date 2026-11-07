@@ -22,7 +22,7 @@ fn rendered(found: &Diagnostics) -> Vec<String> {
                 "{:?}|{}|{}|{:?}|{}",
                 f.severity,
                 f.location.json_path,
-                crate::diagnostic::testing::legacy_debug(f),
+                crate::diagnostic::testing::shown(f),
                 f.location.span.map(|s| (s.offset, s.len)),
                 f.kept
             )
@@ -84,7 +84,7 @@ fn a_member_written_null_is_absent_only_under_the_absent_null_rule() {
         assert!(read.opt(&members, "b").is_none());
         // NULL_ABSENT refuses a failed member: the missing member is an error.
         let expected: &[&str] = if absent {
-            &["Error|a|MissingRequiredField { text: None }|None|false"]
+            &["Error|a|core/missing_required_field|None|false"]
         } else {
             &[]
         };
@@ -115,8 +115,8 @@ fn a_failed_read_is_an_error_that_fails_the_owner_unless_the_member_takes_its_de
         assert_eq!(
             rendered(&found),
             [
-                format!("{severity}|p/a|InvalidType {{ text: None }}|None|false"),
-                format!("{severity}|p/b|MissingRequiredField {{ text: None }}|None|false"),
+                format!("{severity}|p/a|core/invalid_type|None|false"),
+                format!("{severity}|p/b|core/missing_required_field|None|false"),
             ]
         );
     }
@@ -127,10 +127,10 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
     let json = value(r#"{"known": 1, "x": 2, "y": [3]}"#);
     let root = Node::new(&json, JsonPath::new());
     for (disposition, code) in [
-        (Disposition::Keep, "UnrecognizedField"),
-        (Disposition::Report, "MemberNotKept"),
-        (Disposition::Reject, "DroppedField"),
-        (Disposition::Ignore, "IgnoredMember"),
+        (Disposition::Keep, "core/unrecognized_field"),
+        (Disposition::Report, "core/member_not_kept"),
+        (Disposition::Reject, "core/dropped_field"),
+        (Disposition::Ignore, "core/ignored_member"),
     ] {
         for (mask, severity) in [
             (UnknownMask::Error, "Error"),
@@ -150,8 +150,8 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
             assert_eq!(
                 rendered(&found),
                 [
-                    format!("{severity}|x|{code} {{ text: None }}|None|false"),
-                    format!("{severity}|y|{code} {{ text: None }}|None|false"),
+                    format!("{severity}|x|{code}|None|false"),
+                    format!("{severity}|y|{code}|None|false"),
                 ]
             );
         }
@@ -163,7 +163,7 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
     read.unknown(&members, &["known", "y"], Disposition::Keep);
     assert_eq!(
         rendered(&found),
-        ["Info|x|UnrecognizedField { text: None }|None|false"]
+        ["Info|x|core/unrecognized_field|None|false"]
     );
 }
 
@@ -185,9 +185,9 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
     assert_eq!(
         rendered(&found),
         [
-            r#"Error|z|UnrecognizedField { text: Some(Fixed("this member was found in the input, but is not present in the Schema")) }|None|false"#,
-            r#"Error|a|InvalidType { text: Some(Fixed("not a string")) }|None|false"#,
-            r#"Error|b|MissingRequiredField { text: Some(Fixed("missing required field")) }|None|false"#,
+            r#"Error|z|core/unrecognized_field_worded ["this member was found in the input, but is not present in the Schema"]|None|false"#,
+            r#"Error|a|core/invalid_type_worded ["not a string"]|None|false"#,
+            r#"Error|b|core/missing_required_field_worded ["missing required field"]|None|false"#,
         ]
     );
 }
@@ -213,9 +213,9 @@ fn findings_span_the_text_of_their_value_when_the_node_has_it() {
     assert_eq!(
         rendered(&found),
         [
-            "Error|root/list/1/deep|InvalidType { text: None }|Some((122, 3))|false",
-            "Error|root/list/1/missing|MissingRequiredField { text: None }|Some((113, 13))|false",
-            "Error|root/flag|InvalidType { text: None }|Some((137, 1))|false",
+            "Error|root/list/1/deep|core/invalid_type|Some((122, 3))|false",
+            "Error|root/list/1/missing|core/missing_required_field|Some((113, 13))|false",
+            "Error|root/flag|core/invalid_type|Some((137, 1))|false",
         ]
     );
     // Without the text, the same findings carry no span.
@@ -228,7 +228,7 @@ fn findings_span_the_text_of_their_value_when_the_node_has_it() {
     read.bool(&flag);
     assert_eq!(
         rendered(&found),
-        ["Error|root/flag|InvalidType { text: None }|None|false"]
+        ["Error|root/flag|core/invalid_type|None|false"]
     );
 }
 
@@ -307,8 +307,8 @@ fn a_value_of_another_shape_is_a_wrong_type_at_it() {
     assert_eq!(
         rendered(&found),
         [
-            "Error|o|InvalidType { text: None }|None|false",
-            "Error|a|InvalidType { text: None }|None|false",
+            "Error|o|core/invalid_type|None|false",
+            "Error|a|core/invalid_type|None|false",
         ]
     );
 }
@@ -340,7 +340,7 @@ fn members_are_walked_in_file_order_and_got_without_a_word() {
     read.unknown_member(&members.get("c").expect("written"), Disposition::Report);
     assert_eq!(
         rendered(&found),
-        ["Warning|r/c|MemberNotKept { text: None }|None|false"]
+        ["Warning|r/c|core/member_not_kept|None|false"]
     );
 }
 

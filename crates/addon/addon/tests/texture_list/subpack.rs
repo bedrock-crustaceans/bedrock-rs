@@ -133,11 +133,11 @@ fn tl17_the_appended_list_is_incomplete_only_for_an_image_neither_list_names() {
         .diagnostics()
         .map(|d| {
             let path = d.location.path.as_ref().map_or("", |p| p.as_str());
-            (bedrock_addon::diagnostic::testing::legacy_debug(d), path)
+            (bedrock_addon::diagnostic::testing::shown(d), path)
         })
         .collect();
     assert_eq!(found.len(), 1, "{found:?}");
-    assert!(found[0].0.starts_with("InvalidValue"), "{found:?}");
+    assert_eq!(found[0].0, "core/invalid_value", "{found:?}");
     assert_eq!(found[0].1, "subpacks/hi/textures/textures_list.json");
 }
 

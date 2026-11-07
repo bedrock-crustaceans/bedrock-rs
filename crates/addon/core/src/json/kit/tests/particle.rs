@@ -163,55 +163,55 @@ const CEREAL: &[(bool, &[&str])] = &[
     (
         true,
         &[
-            r"Error|particle_effect/description/identifier|InvalidType { text: None }|None|false",
-            r"Error|particle_effect/description/basic_render_parameters/material|InvalidType { text: None }|None|false",
-            r"Warning|particle_effect/description/basic_render_parameters/zz|UnrecognizedField { text: None }|None|false",
-            r"Warning|particle_effect/description/x|UnrecognizedField { text: None }|None|false",
+            r"Error|particle_effect/description/identifier|core/invalid_type|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/material|core/invalid_type|None|false",
+            r"Warning|particle_effect/description/basic_render_parameters/zz|core/unrecognized_field|None|false",
+            r"Warning|particle_effect/description/x|core/unrecognized_field|None|false",
         ],
     ),
     // {}
     (
         true,
         &[
-            r"Error|particle_effect/description/identifier|MissingRequiredField { text: None }|None|false",
-            r"Error|particle_effect/description/basic_render_parameters|MissingRequiredField { text: None }|None|false",
+            r"Error|particle_effect/description/identifier|core/missing_required_field|None|false",
+            r"Error|particle_effect/description/basic_render_parameters|core/missing_required_field|None|false",
         ],
     ),
     // {"basic_render_parameters": []}
     (
         true,
         &[
-            r"Error|particle_effect/description/identifier|MissingRequiredField { text: None }|None|false",
-            r"Error|particle_effect/description/basic_render_parameters|InvalidType { text: None }|None|false",
+            r"Error|particle_effect/description/identifier|core/missing_required_field|None|false",
+            r"Error|particle_effect/description/basic_render_parameters|core/invalid_type|None|false",
         ],
     ),
     // {"identifier": "a", "basic_render_parameters": {"material": "m"}}
     (
         true,
         &[
-            r"Error|particle_effect/description/basic_render_parameters/texture|MissingRequiredField { text: None }|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/texture|core/missing_required_field|None|false",
         ],
     ),
     // {"identifier": "a", "basic_render_parameters": {"material": "m", "texture": "tttttttttttttttt
     (
         true,
         &[
-            r"Error|particle_effect/description/basic_render_parameters/texture|InvalidValue { text: None }|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/texture|core/invalid_value|None|false",
         ],
     ),
     // {"identifier": null, "basic_render_parameters": {"material": null, "texture": true}}
     (
         true,
         &[
-            r"Error|particle_effect/description/identifier|InvalidType { text: None }|None|false",
-            r"Error|particle_effect/description/basic_render_parameters/material|InvalidType { text: None }|None|false",
-            r"Error|particle_effect/description/basic_render_parameters/texture|InvalidType { text: None }|None|false",
+            r"Error|particle_effect/description/identifier|core/invalid_type|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/material|core/invalid_type|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/texture|core/invalid_type|None|false",
         ],
     ),
     // []
     (
         false,
-        &[r"Error|particle_effect/description|InvalidType { text: None }|None|false"],
+        &[r"Error|particle_effect/description|core/invalid_type|None|false"],
     ),
 ];
 
@@ -223,10 +223,10 @@ const LEGACY: &[(bool, &[&str])] = &[
     (
         true,
         &[
-            r"Info|particle_effect/description/identifier|InvalidValue { text: None }|None|false",
-            r"Info|particle_effect/description/basic_render_parameters/material|InvalidValue { text: None }|None|false",
-            r"Info|particle_effect/description/basic_render_parameters/zz|UnrecognizedField { text: None }|None|false",
-            r"Info|particle_effect/description/x|UnrecognizedField { text: None }|None|false",
+            r"Info|particle_effect/description/identifier|core/invalid_value|None|false",
+            r"Info|particle_effect/description/basic_render_parameters/material|core/invalid_value|None|false",
+            r"Info|particle_effect/description/basic_render_parameters/zz|core/unrecognized_field|None|false",
+            r"Info|particle_effect/description/x|core/unrecognized_field|None|false",
         ],
     ),
     // {}
@@ -235,7 +235,7 @@ const LEGACY: &[(bool, &[&str])] = &[
     (
         true,
         &[
-            r"Info|particle_effect/description/basic_render_parameters|InvalidValue { text: None }|None|false",
+            r"Info|particle_effect/description/basic_render_parameters|core/invalid_value|None|false",
         ],
     ),
     // {"identifier": "a", "basic_render_parameters": {"material": "m"}}
@@ -244,21 +244,21 @@ const LEGACY: &[(bool, &[&str])] = &[
     (
         true,
         &[
-            r"Error|particle_effect/description/basic_render_parameters/texture|InvalidValue { text: None }|None|false",
+            r"Error|particle_effect/description/basic_render_parameters/texture|core/invalid_value|None|false",
         ],
     ),
     // {"identifier": null, "basic_render_parameters": {"material": null, "texture": true}}
     (
         true,
         &[
-            r"Info|particle_effect/description/identifier|InvalidValue { text: None }|None|false",
-            r"Info|particle_effect/description/basic_render_parameters/material|InvalidValue { text: None }|None|false",
-            r"Info|particle_effect/description/basic_render_parameters/texture|InvalidValue { text: None }|None|false",
+            r"Info|particle_effect/description/identifier|core/invalid_value|None|false",
+            r"Info|particle_effect/description/basic_render_parameters/material|core/invalid_value|None|false",
+            r"Info|particle_effect/description/basic_render_parameters/texture|core/invalid_value|None|false",
         ],
     ),
     // []
     (
         false,
-        &[r"Info|particle_effect/description|InvalidValue { text: None }|None|false"],
+        &[r"Info|particle_effect/description|core/invalid_value|None|false"],
     ),
 ];

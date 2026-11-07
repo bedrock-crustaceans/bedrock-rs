@@ -312,63 +312,61 @@ const EXPECTED: &[(bool, &[&str])] = &[
     // { "description": { "identifier": "demo:style" }, "components": { } }
     (
         false,
-        &[r"Error|minecraft:ui-style/components|InvalidValue { text: None }|Some((63, 3))|false"],
+        &[r"Error|minecraft:ui-style/components|core/invalid_value|Some((63, 3))|false"],
     ),
     // { "description": { "identifier": "demo:style" }, "parts": { "minecraft:form_label": {} } }
     (
         false,
         &[
-            r"Error|minecraft:ui-style/parts|UnrecognizedField { text: None }|Some((58, 30))|false",
-            r"Error|minecraft:ui-style/components|MissingRequiredField { text: None }|Some((0, 90))|false",
+            r"Error|minecraft:ui-style/parts|core/unrecognized_field|Some((58, 30))|false",
+            r"Error|minecraft:ui-style/components|core/missing_required_field|Some((0, 90))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_label": {}, "minecr
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_button|UnrecognizedComponent { text: None }|Some((118, 2))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_button|core/unrecognized_component|Some((118, 2))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_panel": { "margin":
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_panel/margin|UnrecognizedField { text: None }|Some((101, 6))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel/margin|core/unrecognized_field|Some((101, 6))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style", "name": "x" }, "components": { "minecraft:form_label"
     (
         false,
-        &[
-            r"Error|minecraft:ui-style/description/name|UnrecognizedField { text: None }|Some((55, 3))|false",
-        ],
+        &[r"Error|minecraft:ui-style/description/name|core/unrecognized_field|Some((55, 3))|false"],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_label": { "shadow":
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_label/shadow|InvalidType { text: None }|Some((101, 4))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_label/shadow|core/invalid_type|Some((101, 4))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_label": { "color":
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_label/color|InvalidType { text: None }|Some((100, 4))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_label/color|core/invalid_type|Some((100, 4))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_panel": { "image":
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_panel/image|InvalidType { text: None }|Some((100, 4))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel/image|core/invalid_type|Some((100, 4))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_panel": null } }
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_panel|InvalidType { text: None }|Some((89, 4))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel|core/invalid_type|Some((89, 4))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_panel": { "padding"
@@ -377,72 +375,72 @@ const EXPECTED: &[(bool, &[&str])] = &[
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_panel/padding/1|InvalidType { text: None }|Some((106, 3))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_panel/image|InvalidType { text: None }|Some((160, 1))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_panel/image_repeat_top_bottom|InvalidValue { text: None }|Some((139, 10))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel/padding/1|core/invalid_type|Some((106, 3))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel/image|core/invalid_type|Some((160, 1))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_panel/image_repeat_top_bottom|core/invalid_value|Some((139, 10))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_panel": { "padding"
     (
         false,
         &[
-            r#"Error|minecraft:ui-style/components/minecraft:form_panel/padding|InvalidValue { text: Some(Fixed("Expected [top, right, bottom, left].")) }|Some((102, 9))|false"#,
+            r#"Error|minecraft:ui-style/components/minecraft:form_panel/padding|core/invalid_value_worded ["Expected [top, right, bottom, left]."]|Some((102, 9))|false"#,
         ],
     ),
     // { "description": { "identifier": "style" }, "components": { "minecraft:form_label": { "color": "#12"
     (
         false,
         &[
-            r#"Error|minecraft:ui-style/description/identifier|InvalidValue { text: Some(Fixed("string must be prefixed with a namespace (eg. namespace:value)")) }|Some((33, 7))|false"#,
-            r#"Error|minecraft:ui-style/components/minecraft:form_label/color|InvalidValue { text: Some(Fixed("Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF).")) }|Some((95, 5))|false"#,
-            r"Error|minecraft:ui-style/components/minecraft:form_label/shadow|InvalidType { text: None }|Some((112, 1))|false",
+            r#"Error|minecraft:ui-style/description/identifier|core/invalid_value_worded ["string must be prefixed with a namespace (eg. namespace:value)"]|Some((33, 7))|false"#,
+            r#"Error|minecraft:ui-style/components/minecraft:form_label/color|core/invalid_value_worded ["Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF)."]|Some((95, 5))|false"#,
+            r"Error|minecraft:ui-style/components/minecraft:form_label/shadow|core/invalid_type|Some((112, 1))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_label": { "color":
     (
         false,
         &[
-            r"Error|minecraft:ui-style/components/minecraft:form_label/color|InvalidType { text: None }|Some((100, 1))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_label/color|core/invalid_type|Some((100, 1))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_label": { "color":
     (
         false,
         &[
-            r#"Error|minecraft:ui-style/components/minecraft:form_label/color|InvalidValue { text: Some(Fixed("Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF).")) }|Some((100, 11))|false"#,
+            r#"Error|minecraft:ui-style/components/minecraft:form_label/color|core/invalid_value_worded ["Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF)."]|Some((100, 11))|false"#,
         ],
     ),
     // []
     (
         false,
-        &[r"Error|minecraft:ui-style|InvalidType { text: None }|Some((0, 2))|false"],
+        &[r"Error|minecraft:ui-style|core/invalid_type|Some((0, 2))|false"],
     ),
     // { "zz": 1 }
     (
         false,
         &[
-            r"Error|minecraft:ui-style/zz|UnrecognizedField { text: None }|Some((8, 1))|false",
-            r"Error|minecraft:ui-style/description|MissingRequiredField { text: None }|Some((0, 11))|false",
-            r"Error|minecraft:ui-style/components|MissingRequiredField { text: None }|Some((0, 11))|false",
+            r"Error|minecraft:ui-style/zz|core/unrecognized_field|Some((8, 1))|false",
+            r"Error|minecraft:ui-style/description|core/missing_required_field|Some((0, 11))|false",
+            r"Error|minecraft:ui-style/components|core/missing_required_field|Some((0, 11))|false",
         ],
     ),
     // { "description": "demo:style", "components": [] }
     (
         false,
         &[
-            r"Error|minecraft:ui-style/description|InvalidType { text: None }|Some((17, 12))|false",
-            r"Error|minecraft:ui-style/components|InvalidType { text: None }|Some((45, 2))|false",
+            r"Error|minecraft:ui-style/description|core/invalid_type|Some((17, 12))|false",
+            r"Error|minecraft:ui-style/components|core/invalid_type|Some((45, 2))|false",
         ],
     ),
     // { "description": { }, "components": { "minecraft:form_textfield": { "text_color": [1, 2, 3], "panel_
     (
         false,
         &[
-            r"Error|minecraft:ui-style/description/identifier|MissingRequiredField { text: None }|Some((17, 3))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_textfield/caret|UnrecognizedField { text: None }|Some((122, 1))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_textfield/caret_color|MissingRequiredField { text: None }|Some((66, 59))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_textfield/selection_background_color|MissingRequiredField { text: None }|Some((66, 59))|false",
-            r"Error|minecraft:ui-style/components/minecraft:form_textfield/text_color_disabled|MissingRequiredField { text: None }|Some((66, 59))|false",
+            r"Error|minecraft:ui-style/description/identifier|core/missing_required_field|Some((17, 3))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_textfield/caret|core/unrecognized_field|Some((122, 1))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_textfield/caret_color|core/missing_required_field|Some((66, 59))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_textfield/selection_background_color|core/missing_required_field|Some((66, 59))|false",
+            r"Error|minecraft:ui-style/components/minecraft:form_textfield/text_color_disabled|core/missing_required_field|Some((66, 59))|false",
         ],
     ),
     // { "description": { "identifier": "demo:style" }, "components": { "minecraft:form_textfield": { "text

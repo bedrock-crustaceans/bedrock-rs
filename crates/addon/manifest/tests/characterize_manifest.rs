@@ -430,7 +430,7 @@ fn outcome(text: &str) -> String {
         let _ = writeln!(
             out,
             "{} | {:?} | {:?} | {}",
-            bedrock_addon_core::diagnostic::testing::legacy_debug(finding),
+            bedrock_addon_core::diagnostic::testing::shown(finding),
             finding.severity,
             finding.phase,
             path_text(&finding.location.json_path)

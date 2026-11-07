@@ -725,8 +725,8 @@ enum Proof {
     /// A text of the loaded value, looked for outside the member's findings (an identifier
     /// alone would also be in the finding that refuses its file).
     Value(&'static str),
-    /// A finding, for a member that holds nothing else: its code and the path of the file it
-    /// is told at. The path alone would be met by the same file refused for any other reason.
+    /// A finding, for a member that holds nothing else: its definition's id and the path of the
+    /// file it is told at. The path alone would be met by the same file refused for any other reason.
     Finding(&'static str, &'static str),
 }
 
@@ -813,7 +813,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "Recipes",
         "untyped",
-        Proof::Finding("MissingIdentifier", "recipes/determinism_untyped.json"),
+        Proof::Finding("recipe/no_identifier", "recipes/determinism_untyped.json"),
     ),
     // A rule of a pass vanilla does not define, a rule that is refused, and its finding.
     (
@@ -827,7 +827,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
         "FeatureRules",
         "rejected",
         Proof::Finding(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "feature_rules/determinism_refused.json",
         ),
     ),
@@ -835,7 +835,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
         "FeatureRules",
         "diagnostics",
         Proof::Finding(
-            "MissingRequiredField",
+            "core/missing_required_field",
             "feature_rules/determinism_refused.json",
         ),
     ),
@@ -849,7 +849,10 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "Poi",
         "findings",
-        Proof::Finding("UnresolvedReference", "poi/tags/determinism_dangling.json"),
+        Proof::Finding(
+            "core/unresolved_reference",
+            "poi/tags/determinism_dangling.json",
+        ),
     ),
     (
         "Cameras",
@@ -886,7 +889,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "SoundFiles",
         "diagnostics",
-        Proof::Finding("ShadowedDefinition", "sounds/determinism/click.wav"),
+        Proof::Finding("core/shadowed_definition", "sounds/determinism/click.wav"),
     ),
     // `notes.txt`: a file under `sounds/` the client never looks for.
     (
@@ -897,7 +900,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "SoundFiles",
         "diagnostics",
-        Proof::Finding("IgnoredFile", "sounds/determinism/notes.txt"),
+        Proof::Finding("core/ignored_file", "sounds/determinism/notes.txt"),
     ),
     (
         "DeferredSettings",
@@ -913,7 +916,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "DeferredSettings",
         "diagnostics",
-        Proof::Finding("IgnoredFile", "point_lights/determinism.json"),
+        Proof::Finding("core/ignored_file", "point_lights/determinism.json"),
     ),
     (
         "TextureAtlases",
@@ -960,7 +963,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "TextureLists",
         "diagnostics",
-        Proof::Finding("IgnoredFile", "textures/blocks/demo_upper.PNG"),
+        Proof::Finding("core/ignored_file", "textures/blocks/demo_upper.PNG"),
     ),
     (
         "TextureSets",
@@ -970,7 +973,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "TextureSets",
         "diagnostics",
-        Proof::Finding("CapabilityHint", "manifest.json"),
+        Proof::Finding("core/capability_hint", "manifest.json"),
     ),
     // An image is listed by its path and never decoded here.
     (
@@ -1000,7 +1003,7 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "Fonts",
         "diagnostics",
-        Proof::Finding("FontFileMissing", "font/smooth/smooth_41.png"),
+        Proof::Finding("font/msdf_info_missing", "font/smooth/smooth_41.png"),
     ),
     (
         "Materials",
@@ -1032,12 +1035,12 @@ const PROOFS: &[(&str, &str, Proof)] = &[
     (
         "Materials",
         "rejected",
-        Proof::Finding("InvalidType", "materials/gameface.json"),
+        Proof::Finding("core/invalid_type", "materials/gameface.json"),
     ),
     (
         "Materials",
         "diagnostics",
-        Proof::Finding("InvalidType", "materials/gameface.json"),
+        Proof::Finding("core/invalid_type", "materials/gameface.json"),
     ),
 ];
 
@@ -1092,27 +1095,17 @@ const APP_DATA_ALONE: &[(&str, &str)] = &[("SpawnGroups", "")];
 /// view), and the fixture stack's packs are none of the game's.
 const STACK_FLAGS: &[(&str, &str)] = &[("SoundFiles", "client_audio")];
 
-/// Whether the `Debug` text `member` holds a finding with the code `code` told at the file
-/// `path`: a `Diagnostic { code: Code { meta: CodeMeta { … }, … }, location: Location { …, path:
-/// Some(PackPath("<path>")), … } }` whose definition was `<code>`, or a finding in the legacy
-/// shape `Diagnostic { code: <code> …` (the shape this file's own helper tests are written in).
-fn tells(member: &str, code: &str, path: &str) -> bool {
+/// Whether the `Debug` text `member` holds a finding of the definition `id` told at the file
+/// `path`: a `Diagnostic { code: Code { meta: CodeMeta { id: "<id>", … }, … }, location:
+/// Location { …, path: Some(PackPath("<path>")), … } }`.
+fn tells(member: &str, id: &str, path: &str) -> bool {
     let at = format!("path: Some(PackPath(\"{path}\"))");
-    // A code prints its definition's meta: the legacy name it was stands in it.
-    let was = format!("legacy: Some({code:?})");
-    member.split("Diagnostic { code: ").skip(1).any(|finding| {
-        let named = finding
-            .strip_prefix(code)
-            .is_some_and(|rest| rest.starts_with([' ', ',']))
-            || finding
-                .strip_prefix("Code { meta: CodeMeta {")
-                .is_some_and(|rest| {
-                    rest.split("args:")
-                        .next()
-                        .is_some_and(|meta| meta.contains(&was))
-                });
-        named && finding.contains(&at)
-    })
+    // A code prints its definition's meta, the id first.
+    let meta = format!("Code {{ meta: CodeMeta {{ id: {id:?},");
+    member
+        .split("Diagnostic { code: ")
+        .skip(1)
+        .any(|finding| finding.starts_with(&meta) && finding.contains(&at))
 }
 
 /// Whether a member whose `Debug` is `full` holds content the same member of the stack
@@ -1134,7 +1127,7 @@ fn holds_loaded_content(full: &str, bare: &str, proof: Option<Proof>) -> bool {
         Proof::Value(text) => {
             without_findings(full).contains(text) && !without_findings(bare).contains(text)
         }
-        Proof::Finding(code, path) => tells(full, code, path) && !tells(bare, code, path),
+        Proof::Finding(id, path) => tells(full, id, path) && !tells(bare, id, path),
     };
     if is_documents(full) {
         documents(full).0 > documents(bare).0 && proof.is_none_or(proven)
@@ -1263,7 +1256,7 @@ fn loaded_content_is_a_document_or_a_value_and_never_a_finding() {
     assert!(holds_loaded_content(&loaded, &empty, None), "a document");
     // A file that holds no document is refused with a code that has the word in it.
     let no_document = registry(
-        r"entries: {}, rejected: [Rejected { diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]) }], diagnostics: Diagnostics([Diagnostic { code: EmptyDocument { text: None } }]),",
+        r#"entries: {}, rejected: [Rejected { diagnostics: Diagnostics([Diagnostic { code: Code { meta: CodeMeta { id: "core/empty_document", kind: EmptyDocument }, args: [] } }]) }], diagnostics: Diagnostics([Diagnostic { code: Code { meta: CodeMeta { id: "core/empty_document", kind: EmptyDocument }, args: [] } }]),"#,
     );
     assert!(
         !holds_loaded_content(&no_document, &empty, None),
@@ -1311,34 +1304,38 @@ fn a_merged_value_holds_content_only_by_its_proof() {
 #[test]
 fn a_member_of_findings_alone_shows_a_finding() {
     // A member of findings alone shows a finding.
-    let finding = Some(Proof::Finding("MissingPayload", "a.json"));
+    let finding = Some(Proof::Finding("core/missing_payload", "a.json"));
     let rejected = |code: &str, path: &str| {
         format!(
-            r#"[Rejected {{ diagnostics: Diagnostics([Diagnostic {{ code: {code} {{ text: None }}, location: Location {{ pack: None, path: Some(PackPath("{path}")) }} }}]) }}]"#
+            r#"[Rejected {{ diagnostics: Diagnostics([Diagnostic {{ code: Code {{ meta: CodeMeta {{ id: "{code}", owner: "core" }}, args: [] }}, location: Location {{ pack: None, path: Some(PackPath("{path}")) }} }}]) }}]"#
         )
     };
     assert!(holds_loaded_content(
-        &rejected("MissingPayload", "a.json"),
+        &rejected("core/missing_payload", "a.json"),
         "[]",
         finding
     ));
     assert!(
-        !holds_loaded_content(&rejected("MissingPayload", "b.json"), "[]", finding),
+        !holds_loaded_content(&rejected("core/missing_payload", "b.json"), "[]", finding),
         "another file"
     );
     assert!(
-        !holds_loaded_content(&rejected("SyntaxError", "a.json"), "[]", finding),
+        !holds_loaded_content(&rejected("core/syntax", "a.json"), "[]", finding),
         "another reason"
     );
     assert!(
-        !holds_loaded_content(&rejected("MissingPayloadKey", "a.json"), "[]", finding),
-        "a longer code"
+        !holds_loaded_content(
+            &rejected("core/missing_payload_worded", "a.json"),
+            "[]",
+            finding
+        ),
+        "a longer id"
     );
     // The code of one finding and the path of the next are no finding.
     let two = format!(
         "{}{}",
-        rejected("MissingPayload", "b.json"),
-        rejected("SyntaxError", "a.json")
+        rejected("core/missing_payload", "b.json"),
+        rejected("core/syntax", "a.json")
     );
     assert!(!holds_loaded_content(&two, "[]", finding));
     assert_eq!(

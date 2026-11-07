@@ -5,7 +5,7 @@ use std::fmt::Write as _;
 
 use super::def::Code;
 use super::legacy::legacy;
-use super::{CodeDef, Diagnostic};
+use super::{CodeDef, Diagnostic, DiagnosticDetail};
 
 pub use super::legacy::legacy_names;
 
@@ -34,73 +34,24 @@ pub fn assert_replaces<const N: usize>(def: &CodeDef<N>, legacy_name: &str) {
     );
 }
 
-/// The `Debug` text of the legacy code a finding's code replaces: what a characterization pin
-/// written before the raise site moved holds (the Debug-keyed `.txt` pins, the literal strings
-/// of the kit's reader tests), so the pin renders the line it held.
+/// A finding's code as a pin holds it: the definition's id, then its arguments when it has
+/// any, then the reader's message when the finding carries one as its detail.
 ///
-/// The legacy code is the one the definition [`was`](CodeDef::was): a variant without fields
-/// renders its name; a `text` field renders `None` for a definition without the game's sentence,
-/// `Some(Fixed(..))` for one with a sentence and no argument (or the sentence given whole, a
-/// `_WORDED` one), `Some(Formatted { .. })` for one with arguments; `MalformedInput`'s
-/// `message` is the finding's [`syntax_message`](Diagnostic::syntax_message); the few lines of
-/// a structured `VanillaText` render by their id. Goes with the legacy names: the pins are
-/// then re-rendered by id.
+/// ```
+/// use bedrock_addon_core::diagnostic::{Diagnostic, codes, testing::shown};
 ///
-/// # Panics
-///
-/// For a code this does not know how to render: a definition of a structured text or a typed
-/// payload not in its tables, or one that replaces no legacy variant. A pin that meets one
-/// adds it here.
-// hidden: a bridge for the pins of the migration, deleted with the legacy names
-#[doc(hidden)]
+/// let finding = Diagnostic::error(codes::SYNTAX.with(["expected `,`"]));
+/// assert_eq!(shown(&finding), r#"core/syntax ["expected `,`"]"#);
+/// ```
 #[must_use]
-pub fn legacy_debug(finding: &Diagnostic) -> String {
+pub fn shown(finding: &Diagnostic) -> String {
     let code = &finding.code;
-    let name = code.name();
-    let fields = legacy(name)
-        .unwrap_or_else(|| panic!("{} replaces no legacy variant", code.id()))
-        .fields;
-    let mut out = name.to_owned();
-    match fields {
-        [] => {}
-        ["text"] => {
-            let _ = write!(out, " {{ text: {} }}", text_debug(code));
-        }
-        ["message", "text"] => {
-            let message = finding.syntax_message().unwrap_or_default();
-            let _ = write!(
-                out,
-                " {{ message: {message:?}, text: {} }}",
-                text_debug(code)
-            );
-        }
-        // The engine version a field needs, typed in the legacy payload.
-        ["since"] if code.is(&super::codes::FIELD_SINCE_ENGINE) => {
-            let mut parts = code.args()[0]
-                .split('.')
-                .map(|part| part.parse::<u32>().ok());
-            let (major, minor, patch) = (parts.next(), parts.next(), parts.next());
-            let _ = write!(
-                out,
-                " {{ since: FormatVersion {{ major: {}, minor: {}, patch: {} }} }}",
-                major.flatten().unwrap_or_default(),
-                minor.flatten().unwrap_or_default(),
-                patch.flatten().unwrap_or_default()
-            );
-        }
-        // A payload of strings whose fields are the definition's arguments, in order.
-        fields if !fields.contains(&"text") && fields.len() == code.args().len() => {
-            let shown: Vec<String> = fields
-                .iter()
-                .zip(code.args())
-                .map(|(field, arg)| format!("{field}: {arg:?}"))
-                .collect();
-            let _ = write!(out, " {{ {} }}", shown.join(", "));
-        }
-        fields => panic!(
-            "{}: a payload of {fields:?} the bridge does not render",
-            code.id()
-        ),
+    let mut out = code.id().to_owned();
+    if !code.args().is_empty() {
+        let _ = write!(out, " {:?}", code.args());
+    }
+    if let Some(DiagnosticDetail::Syntax(message)) = finding.detail.as_deref() {
+        let _ = write!(out, " syntax: {message:?}");
     }
     out
 }
@@ -234,79 +185,21 @@ mod tests {
         ));
     }
 
-    /// The engine version a field needs renders as the legacy payload's typed version.
+    /// A pin shows a finding by its definition's id, its arguments and the reader's message.
     #[test]
-    fn a_field_since_engine_renders_its_typed_version() {
-        let code = codes::FIELD_SINCE_ENGINE.with(["1.26.50"]);
+    fn a_finding_is_shown_by_its_id_its_arguments_and_its_reader_s_message() {
+        assert_eq!(shown(&finding(&codes::INVALID_VALUE)), "core/invalid_value");
         assert_eq!(
-            legacy_debug(&finding(code)),
-            "FieldSinceEngine { since: FormatVersion { major: 1, minor: 26, patch: 50 } }"
+            shown(&finding(WORDED_TWICE.with(["1", "2"]))),
+            r#"core/test_worded_twice ["1", "2"]"#
         );
-    }
-
-    /// A definition whose arguments are the legacy payload's strings renders as that payload.
-    #[test]
-    fn a_payload_of_arguments_renders_as_the_legacy_payload() {
-        let code = codes::VERSION_TOO_LOW.with(["1.0.0", "1.13.0"]);
         assert_eq!(
-            legacy_debug(&finding(code)),
-            r#"VersionTooLow { version: "1.0.0", limit: "1.13.0" }"#
+            shown(
+                &finding(codes::MALFORMED_INPUT_WORDED.with(["line"]))
+                    .detail(DiagnosticDetail::Syntax("expected `,`".to_owned()))
+            ),
+            r#"core/malformed_input_worded ["line"] syntax: "expected `,`""#
         );
-    }
-
-    /// A cereal range finding renders as the legacy code `NumericRange::code` gave: the whole
-    /// sentence as the one argument of `{}`.
-    #[test]
-    fn a_range_definition_renders_as_the_whole_sentence_it_was() {
-        let code = super::super::cereal::NumericRange::inclusive(0.0, 1.0).code();
-        assert_eq!(
-            legacy_debug(&finding(code)),
-            r#"InvalidValue { text: Some(Formatted { template: "{}", args: ["the input is outside of the accepted range [0, 1]"] }) }"#
-        );
-    }
-
-    /// A sentence given whole as a formatted text's one argument renders as that text: the
-    /// shape a rule that drops a component tells a cereal range finding in.
-    #[test]
-    fn a_whole_formatted_sentence_renders_as_the_formatted_text() {
-        let code = codes::INVALID_VALUE_FORMATTED.with(["the input must be a number >= 0"]);
-        assert_eq!(code.to_string(), "the input must be a number >= 0");
-        assert_eq!(
-            legacy_debug(&finding(code)),
-            r#"InvalidValue { text: Some(Formatted { template: "{}", args: ["the input must be a number >= 0"] }) }"#
-        );
-    }
-
-    /// Each specific code renders as the `Debug` of the legacy code it stands for.
-    #[test]
-    fn a_specific_code_renders_as_the_legacy_code_it_replaces() {
-        let rows: Vec<(Diagnostic, &str)> = vec![
-            (
-                finding(&codes::INVALID_VALUE),
-                "InvalidValue { text: None }",
-            ),
-            (
-                finding(codes::INVALID_VALUE_WORDED.with(["the game's line"])),
-                r#"InvalidValue { text: Some(Fixed("the game's line")) }"#,
-            ),
-            (
-                finding(WORDED_TWICE.with(["1", "2"])),
-                r#"InvalidValue { text: Some(Formatted { template: "between {} and {}", args: ["1", "2"] }) }"#,
-            ),
-            (finding(&codes::LOSSY_CONVERSION), "LossyConversion"),
-            (
-                finding(codes::SYNTAX.with(["expected `,`"])),
-                r#"MalformedInput { message: "expected `,`", text: None }"#,
-            ),
-            (
-                finding(codes::MALFORMED_INPUT_WORDED.with(["the game's line"]))
-                    .detail(DiagnosticDetail::Syntax("expected `,`".to_owned())),
-                r#"MalformedInput { message: "expected `,`", text: Some(Fixed("the game's line")) }"#,
-            ),
-        ];
-        for (specific, legacy) in rows {
-            assert_eq!(legacy_debug(&specific), legacy);
-        }
     }
 
     /// The reader's message of a syntax finding, wherever it is held.

@@ -49,7 +49,7 @@ fn told(files: &[&str]) -> Vec<String> {
                 d.location.path.as_ref().map_or("-", |path| path.as_str()),
                 d.location.json_path,
                 d.location.span,
-                bedrock_addon::diagnostic::testing::legacy_debug(d),
+                bedrock_addon::diagnostic::testing::shown(d),
             )
         })
         .collect();
@@ -115,47 +115,47 @@ fn digit_keys_and_numbers_beyond_a_double() {
 }
 
 const EXPECTED_ORDER: &[&str] = &[
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_surface_color\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_color\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_fog_color\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_surface_transparency\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_fog_distance\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_ids_to_merge\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"make_back_compat_fog\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"water_surface_transparency\")] }|None|ClampedValue { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"fog_ids_to_merge\"), Index(1)] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"fog_ids_to_merge\"), Index(2)] }|None|InvalidType { text: None }",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_surface_color\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_color\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_fog_color\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_surface_transparency\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"water_fog_distance\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_ids_to_merge\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"make_back_compat_fog\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"water_surface_transparency\")] }|None|core/clamped_value",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"fog_ids_to_merge\"), Index(1)] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:b\"), Key(\"fog_ids_to_merge\"), Index(2)] }|None|core/invalid_type",
     "default: None",
     "minecraft:plains: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [], water_surface_color: None, water_surface_transparency: None }",
     "minecraft:b: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [Id<fog>(\"a:f\"), Id<fog>(\"b:g\")], water_surface_color: None, water_surface_transparency: Some(1.0) }",
 ];
 const EXPECTED_ORIGINS: &[&str] = &[
-    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"default\"), Key(\"remove_all_prior_fog\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"inherit_from_prior_fog\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:desert\"), Key(\"water_surface_transparency\")] }|None|InvalidType { text: None }",
+    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"default\"), Key(\"remove_all_prior_fog\")] }|None|core/invalid_type",
+    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"inherit_from_prior_fog\")] }|None|core/invalid_type",
+    "Info|Parse|pack1|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:desert\"), Key(\"water_surface_transparency\")] }|None|core/invalid_type",
     "default: Some(LegacyClientBiome { old_fog: None, fog_ids_to_merge: [], water_surface_color: None, water_surface_transparency: None })",
     "minecraft:plains: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [Id<fog>(\"a:f\")], water_surface_color: Some([0.0, 0.0, 0.003921569, 1.0]), water_surface_transparency: None }",
     "minecraft:desert: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [], water_surface_color: Some([0.0, 0.0, 0.007843138, 1.0]), water_surface_transparency: None }",
 ];
 const EXPECTED_NULLS: &[&str] = &[
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:x\")] }|None|InvalidType { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"default\")] }|None|InvalidType { text: None }",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:x\")] }|None|core/invalid_type",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"default\")] }|None|core/invalid_type",
     "default: None",
 ];
 const EXPECTED_ARRAY: &[&str] = &[
-    "Info|Validate|-|-|JsonPath { segments: [] }|None|NoEffect { text: None }",
+    "Info|Validate|-|-|JsonPath { segments: [] }|None|core/no_effect",
     "default: None",
 ];
 const EXPECTED_FOG: &[&str] = &[
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_identifier\")] }|None|LegacyFogIgnored",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:plains\"), Key(\"fog_identifier\")] }|None|core/legacy_fog_ignored",
     "default: None",
     "minecraft:plains: LegacyClientBiome { old_fog: Some(OldFog { fog_color: Some([1.0, 0.0, 0.0, 1.0]), water_fog_color: None, water_fog_distance: Some(inf), fog_identifier: None }), fog_ids_to_merge: [], water_surface_color: None, water_surface_transparency: None }",
 ];
 const EXPECTED_DIGITS: &[&str] = &[
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:far\"), Key(\"water_surface_transparency\")] }|Some(Span { offset: 80, len: 5 })|InvalidValue { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Index(7)] }|None|UnrecognizedField { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:123\"), Index(9)] }|None|UnrecognizedField { text: None }",
-    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:far\"), Key(\"water_surface_transparency\")] }|None|ClampedValue { text: None }",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:far\"), Key(\"water_surface_transparency\")] }|Some(Span { offset: 80, len: 5 })|core/invalid_value",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Index(7)] }|None|core/unrecognized_field",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"minecraft:123\"), Index(9)] }|None|core/unrecognized_field",
+    "Info|Parse|pack0|biomes_client.json|JsonPath { segments: [Key(\"biomes\"), Key(\"a:far\"), Key(\"water_surface_transparency\")] }|None|core/clamped_value",
     "default: None",
     "a:far: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [], water_surface_color: None, water_surface_transparency: Some(1.0) }",
     "minecraft:123: LegacyClientBiome { old_fog: None, fog_ids_to_merge: [], water_surface_color: None, water_surface_transparency: None }",

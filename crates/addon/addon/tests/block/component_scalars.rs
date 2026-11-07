@@ -306,7 +306,7 @@ fn line(version: &str, key: &str, value: &str, cx: &LoadContext) -> String {
                 .map_or("-".to_owned(), |s| format!("{}+{}", s.offset, s.len));
             format!(
                 "{} {:?} {} {span}",
-                bedrock_addon::diagnostic::testing::legacy_debug(d),
+                bedrock_addon::diagnostic::testing::shown(d),
                 d.severity,
                 d.location.json_path
             )

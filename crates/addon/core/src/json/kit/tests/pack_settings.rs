@@ -166,108 +166,104 @@ const EXPECTED: &[(bool, &[&str])] = &[
     // {"settings": [], "comment": "x"}
     (
         true,
-        &[
-            r"Error|minecraft:pack_settings/comment|UnrecognizedField { text: None }|Some((28, 3))|false",
-        ],
+        &[r"Error|minecraft:pack_settings/comment|core/unrecognized_field|Some((28, 3))|false"],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "values": {}, "extra": 1}]}
     (
         true,
         &[
-            r"Error|minecraft:pack_settings/settings/0/extra|UnrecognizedField { text: None }|Some((89, 1))|false",
+            r"Error|minecraft:pack_settings/settings/0/extra|core/unrecognized_field|Some((89, 1))|false",
         ],
     ),
     // {"settings": [{"pack_id": 5, "values": {}}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/pack_id|InvalidType { text: None }|Some((26, 1))|false",
+            r"Error|minecraft:pack_settings/settings/0/pack_id|core/invalid_type|Some((26, 1))|false",
         ],
     ),
     // {"settings": [{"pack_id": "BadPackID", "values": {}}]}
     (
         true,
         &[
-            r"Info|minecraft:pack_settings/settings/0/pack_id|InvalidValue { text: None }|Some((26, 11))|false",
+            r"Info|minecraft:pack_settings/settings/0/pack_id|core/invalid_value|Some((26, 11))|false",
         ],
     ),
     // {}
     (
         false,
-        &[
-            r"Error|minecraft:pack_settings/settings|MissingRequiredField { text: None }|Some((0, 2))|false",
-        ],
+        &[r"Error|minecraft:pack_settings/settings|core/missing_required_field|Some((0, 2))|false"],
     ),
     // {"settings": [{"values": {}}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/pack_id|MissingRequiredField { text: None }|Some((14, 14))|false",
+            r"Error|minecraft:pack_settings/settings/0/pack_id|core/missing_required_field|Some((14, 14))|false",
         ],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915"}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/values|MissingRequiredField { text: None }|Some((14, 51))|false",
+            r"Error|minecraft:pack_settings/settings/0/values|core/missing_required_field|Some((14, 51))|false",
         ],
     ),
     // {"settings": {}}
     (
         false,
-        &[r"Error|minecraft:pack_settings/settings|InvalidType { text: None }|Some((13, 2))|false"],
+        &[r"Error|minecraft:pack_settings/settings|core/invalid_type|Some((13, 2))|false"],
     ),
     // []
     (
         false,
-        &[r"Error|minecraft:pack_settings|InvalidType { text: None }|Some((0, 2))|false"],
+        &[r"Error|minecraft:pack_settings|core/invalid_type|Some((0, 2))|false"],
     ),
     // {"settings": [5, {"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "values": []}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0|InvalidType { text: None }|Some((14, 1))|false",
-            r"Error|minecraft:pack_settings/settings/1/values|InvalidType { text: None }|Some((79, 2))|false",
+            r"Error|minecraft:pack_settings/settings/0|core/invalid_type|Some((14, 1))|false",
+            r"Error|minecraft:pack_settings/settings/1/values|core/invalid_type|Some((79, 2))|false",
         ],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "last_used": 12, "values": {"a": 1
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/values/e|InvalidType { text: None }|Some((147, 4))|false",
-            r"Error|minecraft:pack_settings/settings/0/values/f|InvalidType { text: None }|Some((158, 2))|false",
-            r"Info|minecraft:pack_settings/settings/0/values/g|InvalidValue { text: None }|Some((167, 4))|false",
-            r"Error|minecraft:pack_settings/settings/0/values/h|InvalidType { text: None }|Some((178, 3))|false",
+            r"Error|minecraft:pack_settings/settings/0/values/e|core/invalid_type|Some((147, 4))|false",
+            r"Error|minecraft:pack_settings/settings/0/values/f|core/invalid_type|Some((158, 2))|false",
+            r"Info|minecraft:pack_settings/settings/0/values/g|core/invalid_value|Some((167, 4))|false",
+            r"Error|minecraft:pack_settings/settings/0/values/h|core/invalid_type|Some((178, 3))|false",
         ],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "last_used": -1, "values": {}}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/last_used|InvalidType { text: None }|Some((79, 2))|false",
+            r"Error|minecraft:pack_settings/settings/0/last_used|core/invalid_type|Some((79, 2))|false",
         ],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "last_used": 1.5, "values": {}}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/last_used|InvalidType { text: None }|Some((79, 3))|false",
+            r"Error|minecraft:pack_settings/settings/0/last_used|core/invalid_type|Some((79, 3))|false",
         ],
     ),
     // {"settings": [{"pack_id": "d3349771-6782-4420-875a-fcd6179a8915", "last_used": "3", "values": {}}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/last_used|InvalidType { text: None }|Some((79, 3))|false",
+            r"Error|minecraft:pack_settings/settings/0/last_used|core/invalid_type|Some((79, 3))|false",
         ],
     ),
     // {"settings": [{"pack_id": null, "values": null, "zz": 0}]}
     (
         false,
         &[
-            r"Error|minecraft:pack_settings/settings/0/zz|UnrecognizedField { text: None }|Some((54, 1))|false",
-            r"Error|minecraft:pack_settings/settings/0/pack_id|InvalidType { text: None }|Some((26, 4))|false",
-            r"Error|minecraft:pack_settings/settings/0/values|InvalidType { text: None }|Some((42, 4))|false",
+            r"Error|minecraft:pack_settings/settings/0/zz|core/unrecognized_field|Some((54, 1))|false",
+            r"Error|minecraft:pack_settings/settings/0/pack_id|core/invalid_type|Some((26, 4))|false",
+            r"Error|minecraft:pack_settings/settings/0/values|core/invalid_type|Some((42, 4))|false",
         ],
     ),
 ];

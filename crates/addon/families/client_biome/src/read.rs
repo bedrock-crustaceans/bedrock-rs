@@ -427,14 +427,14 @@ mod tests {
             .map(|f| {
                 format!(
                     "{} {}",
-                    bedrock_addon_core::diagnostic::testing::legacy_debug(f),
+                    bedrock_addon_core::diagnostic::testing::shown(f),
                     f.location.json_path
                 )
             })
             .collect();
         assert_eq!(
             told,
-            ["UnrecognizedComponent { text: None } minecraft:client_biome/components/demo:nothing"]
+            ["core/unrecognized_component minecraft:client_biome/components/demo:nothing"]
         );
     }
 }

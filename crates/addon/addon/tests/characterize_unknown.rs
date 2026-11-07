@@ -44,7 +44,7 @@ fn outcome<T: Content>(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Strin
                 .map(|finding| {
                     format!(
                         "{} {:?} {}",
-                        finding.code.name(),
+                        finding.code.id(),
                         finding.severity,
                         finding.location.json_path
                     )
