@@ -41,9 +41,21 @@ fn closed_to_latest_selects_the_old_struct_below_1_26_40_and_latest_only_at_it()
     assert_eq!(selects("1.26.40-beta.1"), Selection::Unsupported);
 }
 
+/// A file that fails to load closes on the settings' own definition, naming the file.
 #[test]
-fn the_load_failed_template_takes_one_argument() {
-    assert_eq!(super::LOAD_FAILED.matches("{}").count(), 1);
+fn a_file_that_fails_to_load_closes_on_its_definition() {
+    let rejected = super::SavedSettings::parse_named("world_resource_pack_settings.json", b"[")
+        .expect_err("no JSON");
+    let closing = rejected
+        .diagnostics
+        .iter()
+        .last()
+        .expect("a closing finding");
+    assert!(closing.is(&super::codes::LOAD_FAILED), "{closing:?}");
+    assert_eq!(
+        closing.code.to_string(),
+        "Pack Settings failed to load [world_resource_pack_settings.json]"
+    );
 }
 
 #[test]

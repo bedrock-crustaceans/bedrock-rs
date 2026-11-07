@@ -3,7 +3,7 @@
 //! registries, so it runs in the link pass. Its body is
 //! written against `StackSet::link`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::id::BlockId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, StackSet, WorldPacks};
@@ -77,7 +77,7 @@ fn stacks_with_resources(spec: &Spec) -> StackSet {
 /// The findings about culling shapes among `d`.
 fn unresolved(d: &Diagnostics) -> Vec<(Severity, String)> {
     d.iter()
-        .filter(|f| matches!(f.code, DiagnosticCode::UnresolvedReference { .. }))
+        .filter(|f| f.code.name() == "UnresolvedReference")
         .map(|f| (f.severity, f.code.to_string()))
         .collect()
 }

@@ -16,6 +16,7 @@
 use std::cell::OnceCell;
 use std::collections::HashMap;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, Origin, VersionInfo};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
@@ -173,7 +174,7 @@ impl<'a> Shadowed<'a> {
                 Severity::Info,
             );
             out.push(at.reference(
-                DiagnosticCode::ClientBiomeShadowsLowerPacks,
+                DiagnosticCode::from(&core_codes::CLIENT_BIOME_SHADOWS_LOWER_PACKS),
                 kinds::PACK,
                 pack.name(),
                 Some(ReferenceHint::Shadowed),
@@ -257,7 +258,7 @@ pub(super) fn own_entry<'l>(
 pub(super) fn overridden(origin: &Origin, component: &str, by: &PackRef) -> Diagnostic {
     let at = At::new(origin, path(&["components", component]), Severity::Info);
     at.reference(
-        DiagnosticCode::ClientBiomeOverriddenByBiomesClient,
+        DiagnosticCode::from(&core_codes::CLIENT_BIOME_OVERRIDDEN_BY_BIOMES_CLIENT),
         kinds::PACK,
         by.name(),
         None,

@@ -17,7 +17,7 @@ mod common;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::voxel_shape::VoxelShape;
 use bedrock_addon::load::{Experiment, LoadContext, LoadOptions, StackOptions};
@@ -119,7 +119,7 @@ fn check(source: &str, dir: &Path) -> (usize, usize) {
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) {
+        if finding.is(&codes::UNSUPPORTED_FILE_FORMAT) {
             counted += 1;
         }
         errors.push(finding.to_string());

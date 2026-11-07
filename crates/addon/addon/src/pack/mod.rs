@@ -30,6 +30,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
 };
@@ -319,7 +320,7 @@ impl Pack {
         if !self.inner.files.entries.contains_key(&path) {
             let mut diagnostics = Diagnostics::default();
             diagnostics.push(icon_finding(
-                DiagnosticCode::PackIconMissing,
+                DiagnosticCode::from(&core_codes::PACK_ICON_MISSING),
                 Severity::Info,
             ));
             return diagnostics;
@@ -343,11 +344,14 @@ impl Pack {
             None => diagnostics.push(icon_finding(
                 // The game reads no icon bytes at load, so bytes that are not a PNG are not a
                 // finding of the game's: the crate reports them as an information.
-                DiagnosticCode::InvalidValue { text: None },
+                DiagnosticCode::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
             )),
             Some((width, height)) if width != height => {
-                diagnostics.push(icon_finding(DiagnosticCode::PackIconShape, Severity::Info));
+                diagnostics.push(icon_finding(
+                    DiagnosticCode::from(&core_codes::PACK_ICON_SHAPE),
+                    Severity::Info,
+                ));
             }
             Some(_) => {}
         }

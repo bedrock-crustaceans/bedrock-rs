@@ -1,5 +1,6 @@
 //! The entry point and the sink: what `StackSet::link` promises whatever the rules are.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
 };
@@ -12,7 +13,7 @@ fn finding(name: &str, severity: Severity, phase: Phase) -> Diagnostic {
     let mut path = JsonPath::new();
     path.push(name);
     Diagnostic::new(
-        DiagnosticCode::UnresolvedReference { text: None },
+        DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
         severity,
         phase,
         Location::new(None, None, path, None),

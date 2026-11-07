@@ -2,6 +2,8 @@
 //! client entity names, and the render-controller features an atomic client entity cannot
 //! use.
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity, VanillaText};
 use bedrock_addon_core::id::RenderControllerId;
 use bedrock_addon_core::molang::{Molang, MolangSource};
@@ -57,18 +59,24 @@ fn atomic_controllers(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
             At::new(user.origin, path, Severity::Warning)
         };
         if !atomic_compatible(controller) {
-            out.push(at().diagnostic(DiagnosticCode::AtomicUnsupportedRenderController));
+            out.push(at().diagnostic(DiagnosticCode::from(
+                &core_codes::ATOMIC_UNSUPPORTED_RENDER_CONTROLLER,
+            )));
             continue;
         }
         if controller.filter_lighting() {
-            out.push(at().diagnostic(DiagnosticCode::AtomicFilterLightingIgnored));
+            out.push(at().diagnostic(DiagnosticCode::from(
+                &core_codes::ATOMIC_FILTER_LIGHTING_IGNORED,
+            )));
         }
         if let Some(Molang::Expr(source)) = &controller.light_color_multiplier
             && !is_constant(source)
         {
-            out.push(at().diagnostic(DiagnosticCode::NoEffect {
-                text: Some(VanillaText::AtomicLightColorExpression),
-            }));
+            out.push(at().diagnostic(DiagnosticCode::from(builders::worded(
+                &core_codes::NO_EFFECT,
+                &core_codes::NO_EFFECT_WORDED,
+                Some(VanillaText::AtomicLightColorExpression).as_ref(),
+            ))));
         }
     }
 }

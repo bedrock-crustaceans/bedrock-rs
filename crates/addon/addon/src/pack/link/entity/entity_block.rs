@@ -104,8 +104,17 @@ fn eat_block(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
             // a copy.
             let mut checked = goal.clone();
             for finding in eat_block_pairs(&mut checked, is_block) {
-                let DiagnosticCode::UnresolvedReference { text } = &finding.code else {
+                // By legacy name: the variant the entity family raises and the definitions
+                // that were it; the game's sentence, if any, goes on to the link's finding.
+                if finding.code.name() != "UnresolvedReference" {
                     continue;
+                }
+                let text = match &finding.code {
+                    DiagnosticCode::UnresolvedReference { text } => text.clone(),
+                    code => code.vanilla().map(|line| VanillaText::Formatted {
+                        template: "{}",
+                        args: vec![line],
+                    }),
                 };
                 let Some(JsonPathSegment::Index(index)) =
                     finding.location.json_path.segments().last()
@@ -141,7 +150,7 @@ fn eat_block(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
                 // The pair is counted among the pairs held: told where the file has it.
                 let path = definition.places.place_of(&path);
                 let mut at = At::new(definition.origin, path, finding.severity);
-                at.text.clone_from(text);
+                at.text = text;
                 out.push(unresolved(at, kinds::BLOCK, name, hint));
             }
         }

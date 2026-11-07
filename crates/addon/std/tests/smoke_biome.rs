@@ -13,10 +13,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, PackRepository};
 use bedrock_addon_std::{Driver, Options};
@@ -91,7 +92,7 @@ fn load_biomes(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb_seen < on_disk {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb_seen < on_disk {
             mcb_seen += 1;
             continue;
         }

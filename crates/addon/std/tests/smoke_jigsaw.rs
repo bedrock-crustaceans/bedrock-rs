@@ -12,10 +12,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Pack, PackOrigin, PackRepository};
 use bedrock_addon_std::{DirSource, Driver, Options};
@@ -99,7 +100,7 @@ fn load_jigsaw(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
             ));
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < on_disk {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
             mcb += 1;
             continue;
         }

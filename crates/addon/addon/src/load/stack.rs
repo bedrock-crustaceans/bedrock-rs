@@ -614,10 +614,10 @@ impl StackLoader {
             .walk()
             .read_error_text(path)
         {
-            finding.code = bedrock_addon_core::diagnostic::DiagnosticCode::ReadError {
-                kind,
-                text: Some(text),
-            };
+            // The kind stays the finding's detail; the walk's sentence is the line.
+            finding.code = bedrock_addon_core::diagnostic::codes::READ_ERROR_WORDED
+                .with([text.to_string()])
+                .into();
         }
         finding
     }

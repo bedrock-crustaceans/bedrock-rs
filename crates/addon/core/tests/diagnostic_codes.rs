@@ -616,6 +616,16 @@ const LISTED_IDS: &[&str] = &[
     "core/version_below_min",
     "core/member_deprecated",
     "core/enum_value_deprecated",
+    "core/manifest_invalid_value",
+    "core/manifest_not_semver",
+    "core/manifest_wrong_type",
+    "core/dependency_invalid_version",
+    "core/duplicate_pack_setting_name",
+    "core/slider_max_not_above_min",
+    "core/slider_step_too_large",
+    "core/slider_default_out_of_range",
+    "core/dropdown_default_not_in_options",
+    "core/multiselect_default_not_in_options",
 ];
 
 /// The list knows every definition of `codes::ALL`, and nothing else.

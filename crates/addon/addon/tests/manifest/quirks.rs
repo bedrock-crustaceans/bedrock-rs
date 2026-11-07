@@ -1,6 +1,6 @@
 //! The manifest quirk table of 12, one test per quirk, and the format-3 reader's rules.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::manifest::{
     Capability, CapabilityRegistry, CapabilityValidation, Dependency, ManifestFormat, ModuleType,
     NativeModuleVersion, TrustLevel,
@@ -8,6 +8,7 @@ use bedrock_addon::manifest::{
 use bedrock_addon::pack::PackType;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{MinEngineVersion, SemVersion};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use uuid::Uuid;
 
 use super::{format_2, format_3, has, loads, parse_str, rejected};
@@ -213,7 +214,7 @@ fn quirk_version_arrays_truncate_reals() {
                 document.diagnostics(),
                 Severity::Info,
                 &format!("header/version/{index}"),
-                |c| matches!(c, C::InvalidValue { text: None })
+                |c| c.is(&core_codes::INVALID_VALUE)
             ),
             "{index}: {:?}",
             document.diagnostics()
@@ -236,7 +237,7 @@ fn a_version_array_element_read_as_another_value_is_told_at_the_element() {
                 document.diagnostics(),
                 Severity::Info,
                 &format!("header/version/{index}"),
-                |c| matches!(c, C::InvalidType { text: None })
+                |c| c.is(&core_codes::INVALID_TYPE)
             ),
             "{index}: {:?}",
             document.diagnostics()

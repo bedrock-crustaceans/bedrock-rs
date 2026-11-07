@@ -8,6 +8,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest, Setting};
 use bedrock_addon::pack::settings::history::v1_21_100;
 use bedrock_addon::versioning::testing::{Checks, Run, step_output};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 use super::{runtime, version};
 
@@ -86,7 +87,7 @@ fn manifest_setting_type_mismatch() {
     assert!(matches!(document.settings[1], Setting::Toggle { .. }));
     for path in ["settings/0/type", "settings/1/type"] {
         let found = count(document.diagnostics(), Severity::Info, path, |c| {
-            matches!(c, C::SettingTypeMismatch)
+            c.is(&core_codes::SETTING_TYPE_MISMATCH)
         });
         assert_eq!(found, 1, "{path}");
     }
@@ -96,7 +97,7 @@ fn manifest_setting_type_mismatch() {
         !plain
             .diagnostics()
             .iter()
-            .any(|f| matches!(f.code, C::SettingTypeMismatch))
+            .any(|f| f.is(&core_codes::SETTING_TYPE_MISMATCH))
     );
 }
 
@@ -106,7 +107,7 @@ fn manifest_multiselect_since_engine() {
     let document = manifest("mv15_multiselect").expect("the manifest loads");
     assert!(matches!(document.settings[0], Setting::Multiselect { .. }));
     let found = count(document.diagnostics(), Severity::Info, "settings/0", |c| {
-        matches!(c, C::FieldSinceEngine { .. })
+        c.name() == "FieldSinceEngine"
     });
     assert_eq!(found, 1);
 }
@@ -118,7 +119,7 @@ fn manifest_legacy_setting_ignored() {
     assert_eq!(document.settings.len(), 1);
     assert!(matches!(document.settings[0], Setting::Label { .. }));
     let found = count(document.diagnostics(), Severity::Info, "settings/1", |c| {
-        matches!(c, C::LegacySettingIgnored)
+        c.is(&core_codes::LEGACY_SETTING_IGNORED)
     });
     assert_eq!(found, 1);
 }
@@ -131,7 +132,7 @@ fn manifest_constraint_texts() {
         &rejected.diagnostics,
         Severity::Error,
         "settings/0/step",
-        |c| matches!(c, C::InvalidValue { text: None }),
+        |c| c.is(&core_codes::INVALID_VALUE),
     );
     assert_eq!(found, 1);
 }

@@ -12,6 +12,8 @@
     reason = "the frame of the rule packages: each uses the constructors its rows need"
 )]
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Location, Phase, ReferenceHint,
     Severity, VanillaText,
@@ -107,50 +109,60 @@ pub(crate) fn unresolved(
     id: &str,
     hint: Option<ReferenceHint>,
 ) -> Diagnostic {
-    let code = DiagnosticCode::UnresolvedReference {
-        text: at.text.clone(),
-    };
+    let code = DiagnosticCode::from(builders::worded(
+        &core_codes::UNRESOLVED_REFERENCE,
+        &core_codes::UNRESOLVED_REFERENCE_WORDED,
+        at.text.as_ref(),
+    ));
     at.reference(code, kind, id, hint)
 }
 
 /// `InvalidReference`: the `kind` named `id` resolves to something the use cannot accept.
 pub(crate) fn invalid(at: At<'_>, kind: &'static str, id: &str) -> Diagnostic {
-    let code = DiagnosticCode::InvalidReference {
-        text: at.text.clone(),
-    };
+    let code = DiagnosticCode::from(builders::worded(
+        &core_codes::INVALID_REFERENCE,
+        &core_codes::INVALID_REFERENCE_WORDED,
+        at.text.as_ref(),
+    ));
     at.reference(code, kind, id, None)
 }
 
 /// `ReferenceCycle`: following the reference to the `kind` named `id` comes back to where it
 /// started.
 pub(crate) fn cycle(at: At<'_>, kind: &'static str, id: &str) -> Diagnostic {
-    let code = DiagnosticCode::ReferenceCycle {
-        text: at.text.clone(),
-    };
+    let code = DiagnosticCode::from(builders::worded(
+        &core_codes::REFERENCE_CYCLE,
+        &core_codes::REFERENCE_CYCLE_WORDED,
+        at.text.as_ref(),
+    ));
     at.reference(code, kind, id, None)
 }
 
 /// `TextureNotFound`: no pack of the stack has a texture at `path` (as written).
 pub(crate) fn texture_not_found(at: At<'_>, path: &str) -> Diagnostic {
-    let code = DiagnosticCode::TextureNotFound {
-        text: at.text.clone(),
-    };
+    let code = DiagnosticCode::from(builders::worded(
+        &core_codes::TEXTURE_NOT_FOUND,
+        &core_codes::TEXTURE_NOT_FOUND_WORDED,
+        at.text.as_ref(),
+    ));
     at.reference(code, kinds::TEXTURE, path, None)
 }
 
 /// `UnknownSound`: a sound name of `kind` (a sound event of the definitions, a level sound
 /// event, a block sound type, a named sound) that nothing provides.
 pub(crate) fn unknown_sound(at: At<'_>, kind: &'static str, name: &str) -> Diagnostic {
-    let code = DiagnosticCode::UnknownSound {
-        text: at.text.clone(),
-    };
+    let code = DiagnosticCode::from(builders::worded(
+        &core_codes::UNKNOWN_SOUND,
+        &core_codes::UNKNOWN_SOUND_WORDED,
+        at.text.as_ref(),
+    ));
     at.reference(code, kind, name, None)
 }
 
 /// `UnresolvedLangKey`: no `.lang` file defines `key`. The code has no text of vanilla's.
 pub(crate) fn unresolved_lang_key(at: At<'_>, key: &str) -> Diagnostic {
     at.reference(
-        DiagnosticCode::UnresolvedLangKey,
+        DiagnosticCode::from(&core_codes::UNRESOLVED_LANG_KEY),
         kinds::LANG_KEY,
         key,
         None,

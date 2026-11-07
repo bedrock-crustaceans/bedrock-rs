@@ -7,8 +7,10 @@
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::Arc;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, PackReport,
+    Phase, Severity,
 };
 use bedrock_addon_core::document::{Document, Rejected};
 use bedrock_addon_core::load::{ListDepth, Place, ReadRange, RootId};
@@ -858,7 +860,7 @@ impl Opener {
         for duplicate in &pack.duplicates {
             if let Some(path) = strip(duplicate, &pack.prefix) {
                 unit.findings.push(Diagnostic::new(
-                    DiagnosticCode::DuplicateEntry,
+                    DiagnosticCode::from(&core_codes::DUPLICATE_ENTRY),
                     // The game logs nothing for a name written twice in a zip (its only
                     // duplicate-name line is for brarchives), so this finding is the crate's
                     // own and an information.
@@ -983,7 +985,9 @@ fn read_contents(bytes: &[u8], key: Option<&ContentKey>) -> ContentsOutcome {
             }
             Err(reason) => {
                 // Without a usable key every encrypted entry is `unsupported_file_format`.
-                findings.push(warn(DiagnosticCode::UnsupportedFileFormat));
+                findings.push(warn(DiagnosticCode::from(
+                    &core_codes::UNSUPPORTED_FILE_FORMAT,
+                )));
                 Encryption::Locked(reason)
             }
         }
@@ -991,10 +995,12 @@ fn read_contents(bytes: &[u8], key: Option<&ContentKey>) -> ContentsOutcome {
         match ContentsJson::parse(bytes) {
             Ok(contents) if !contents.is_current() => findings.push(version_finding(&path)),
             Ok(_) => {}
-            Err(_) => findings.push(warn(DiagnosticCode::MalformedInput {
-                message: "contents.json is not a contents table".to_owned(),
-                text: None,
-            })),
+            Err(_) => findings.push(warn(
+                bedrock_addon_core::diagnostic::builders::syntax(
+                    "contents.json is not a contents table",
+                )
+                .into(),
+            )),
         }
         Encryption::Plain
     };
@@ -1034,7 +1040,7 @@ fn version_finding(path: &PackPath) -> Diagnostic {
     let mut json_path = JsonPath::new();
     json_path.push("version");
     Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&core_codes::INVALID_VALUE),
         Severity::Info,
         Phase::Read,
         Location::new(None, Some(path.clone()), json_path, None),
@@ -1044,9 +1050,7 @@ fn version_finding(path: &PackPath) -> Diagnostic {
 /// A listed entry skipped for its name.
 pub(crate) fn path_rejected(name: &str) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::PathRejected {
-            entry: name.to_owned(),
-        },
+        DiagnosticCode::from(core_codes::PATH_REJECTED.with([name.to_owned()])),
         // A listing rule of the crate, with no line of the game's, so an information.
         Severity::Info,
         Phase::Read,
@@ -1057,17 +1061,18 @@ pub(crate) fn path_rejected(name: &str) -> Diagnostic {
 /// A file the driver could not read.
 pub(crate) fn read_error(path: &PackPath, kind: std::io::ErrorKind) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::ReadError { kind, text: None },
+        core_codes::READ_ERROR.with([kind.to_string()]).into(),
         Severity::Error,
         Phase::Read,
         Location::new(None, Some(path.clone()), JsonPath::new(), None),
     )
+    .detail(DiagnosticDetail::Io(kind))
 }
 
 /// A job that panicked.
 pub(crate) fn internal_error(path: Option<PackPath>) -> Diagnostic {
     Diagnostic::new(
-        DiagnosticCode::InternalError,
+        DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
         Severity::Error,
         Phase::Read,
         Location::new(None, path, JsonPath::new(), None),

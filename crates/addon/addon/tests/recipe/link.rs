@@ -77,7 +77,10 @@ fn smithing_transform_diamond_addition_is_rejected_by_tag_deviation() {
         Severity::Error,
     );
     assert_eq!(
-        args(finding),
+        args_in(
+            finding,
+            "Smithing Transform Recipe: {} addition item must have the '{}' tag."
+        ),
         ["demo:diamond_addition", "minecraft:transform_materials"]
     );
 }
@@ -98,7 +101,13 @@ fn shapeless_tag_count_over_stack_is_rejected() {
         "The Item from tag '{}': {} has invalid stack size: {}",
         Severity::Error,
     );
-    assert_eq!(args(finding), ["minecraft:planks", "demo:plank", "99"]);
+    assert_eq!(
+        args_in(
+            finding,
+            "The Item from tag '{}': {} has invalid stack size: {}"
+        ),
+        ["minecraft:planks", "demo:plank", "99"]
+    );
     one(&found, "Recipe result malformed", Severity::Error);
 }
 

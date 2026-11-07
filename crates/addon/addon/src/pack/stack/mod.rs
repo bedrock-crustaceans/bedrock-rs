@@ -36,6 +36,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::marker::PhantomData;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
 };
@@ -372,7 +373,7 @@ fn carried_in_vain(packs: &[StackPack]) -> Diagnostics {
     let mut found = Diagnostics::default();
     let mut ignored = |path: &PackPath, pack: &StackPack| {
         found.push(Diagnostic::new(
-            DiagnosticCode::IgnoredFile { text: None },
+            DiagnosticCode::from(&core_codes::IGNORED_FILE),
             Severity::Info,
             Phase::Validate,
             Location::new(
@@ -409,9 +410,11 @@ fn carried_in_vain(packs: &[StackPack]) -> Diagnostics {
 pub(crate) fn once_per_unread_file(findings: &mut Vec<&Diagnostic>) {
     let mut seen: HashSet<(Option<&PackRef>, &str)> = HashSet::new();
     findings.retain(|finding| {
-        let DiagnosticCode::ReadError { .. } = finding.code else {
+        // By legacy name: `READ_ERROR`, `READ_ERROR_WORDED` and the variant a family still
+        // raises are each a read error.
+        if finding.code.name() != "ReadError" {
             return true;
-        };
+        }
         let Some(path) = finding.location.path.as_ref() else {
             return true;
         };
@@ -427,7 +430,9 @@ fn icon_lints(instances: &[PackInstance], packs: &[StackPack]) -> Diagnostics {
     let mut found = Diagnostics::default();
     for (instance, pack) in instances.iter().zip(packs).rev() {
         for mut finding in instance.pack.icon_findings() {
-            if pack.context.is_base_game_pack && finding.code == DiagnosticCode::PackIconMissing {
+            if pack.context.is_base_game_pack
+                && finding.code == DiagnosticCode::from(&core_codes::PACK_ICON_MISSING)
+            {
                 continue;
             }
             finding.location.pack = Some(pack.pack.clone());

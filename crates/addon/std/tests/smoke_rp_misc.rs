@@ -16,7 +16,7 @@ mod common;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::font::{
     GlyphPage, GlyphRemapping, SMOOTH_PREFIX, check_glyph_sheet, remapping_path,
@@ -207,10 +207,14 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     let unmet: std::collections::BTreeSet<uuid::Uuid> = set
         .selection()
         .iter()
-        .filter_map(|d| match &d.code {
-            DiagnosticCode::MissingDependency { pack, dependency }
-                if pack.pack_type == PackType::Resource
-                    && dependency.version == SemVersion::new(1, 0, 0) =>
+        .filter(|d| d.is(&bedrock_addon::diagnostic::codes::MISSING_DEPENDENCY))
+        .filter_map(|d| match d.detail.as_deref() {
+            // The packs ride as the finding's detail.
+            Some(bedrock_addon::diagnostic::DiagnosticDetail::Packs {
+                pack,
+                dependency: Some(dependency),
+            }) if pack.pack_type == PackType::Resource
+                && dependency.version == SemVersion::new(1, 0, 0) =>
             {
                 assert_eq!(d.severity, Severity::Info, "{source}: {d}");
                 Some(pack.uuid)
@@ -310,7 +314,8 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
     let report = rp.report();
     let in_vain: Vec<&str> = report
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::IgnoredFile { .. }))
+        // By legacy name: `IGNORED_FILE`, `IGNORED_FILE_WORDED` and the variant a family raises.
+        .filter(|d| d.code.name() == "IgnoredFile")
         .filter_map(|d| d.location.path.as_ref().map(PackPath::as_str))
         .filter(|path| {
             *path == bedrock_addon::families::credits::CREDITS_PATH

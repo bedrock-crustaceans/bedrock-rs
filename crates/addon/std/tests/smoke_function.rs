@@ -13,10 +13,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::id::FunctionPath;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, StackSet};
@@ -124,7 +125,7 @@ fn check_functions(source: &str, stacks: &StackSet, dirs: &[&Path]) -> usize {
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             mcb += 1;
             continue;
         }

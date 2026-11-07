@@ -17,6 +17,8 @@
 //! A controller that gives two textures to a material that needs three (one with both
 //! the `GLINT` and the `MULTIPLICATIVE_TINT` define) is told with the game's text.
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 
@@ -447,12 +449,15 @@ fn tell(out: &mut Findings, origin: &Origin, written: &Written<'_>, finding: Fou
             // document: a kept error.
             let at = At::new(origin, written.path(&["textures"]), Severity::Error);
             out.push(
-                at.diagnostic(DiagnosticCode::InvalidValue {
-                    text: Some(VanillaText::Formatted {
+                at.diagnostic(DiagnosticCode::from(builders::worded(
+                    &core_codes::INVALID_VALUE,
+                    &core_codes::INVALID_VALUE_WORDED,
+                    Some(VanillaText::Formatted {
                         template: NEEDS_THREE_TEXTURES,
                         args: vec![origin.key.as_deref().unwrap_or(written.key).to_owned()],
-                    }),
-                })
+                    })
+                    .as_ref(),
+                )))
                 .into_kept(),
             );
         }

@@ -5,7 +5,7 @@
 
 use std::io::ErrorKind;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::families::ddui::{Component, Control, DataDrivenUi};
 use bedrock_addon::id::{UiCompositionId, UiRootId};
 use bedrock_addon::load::{
@@ -355,8 +355,10 @@ fn v2_a_file_that_cannot_be_read_is_skipped_with_a_read_error() {
             .resource
             .report()
             .iter()
-            .filter_map(|f| match &f.code {
-                DiagnosticCode::ReadError { kind, .. } => {
+            .filter_map(|f| match f.detail.as_deref() {
+                // The read-error definitions carry the host's kind as the detail.
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Io(kind))
+                    if f.code.name() == "ReadError" => {
                     let path = f.location.path.as_ref()?.as_str().to_owned();
                     assert_eq!(
                         f.code.to_string(),

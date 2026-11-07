@@ -19,7 +19,7 @@ mod pairs;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options, Strategy};
@@ -116,7 +116,7 @@ fn check(source: &str, dir: &Path, expected: &[(&str, usize)]) -> usize {
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < mcb_on_disk {
+        if finding.is(&codes::UNSUPPORTED_FILE_FORMAT) && mcb < mcb_on_disk {
             mcb += 1;
             continue;
         }

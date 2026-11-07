@@ -3,9 +3,8 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::diagnostic::{
-    DiagnosticCode as Code, JsonPath, Phase, Severity, VanillaText,
-};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion, SemVersion};
 
@@ -154,14 +153,14 @@ pub(super) fn read(
         return Vec::new();
     };
     let Some(elements) = value.as_array().map(facet_value::VArray::as_slice) else {
-        sink.error(Code::InvalidType { text: None }, &list);
+        sink.error(Code::from(&core_codes::INVALID_TYPE), &list);
         return Vec::new();
     };
     // An empty list is refused with "expected array with at least 1 elements", and more than
     // 50 settings are refused before any element is read. The crate reports both as
     // `InvalidValue`.
     if elements.is_empty() || elements.len() > MAX_SETTINGS {
-        sink.error(Code::InvalidValue { text: None }, &list);
+        sink.error(Code::from(&core_codes::INVALID_VALUE), &list);
         return Vec::new();
     }
     let mut settings = Vec::new();
@@ -178,7 +177,7 @@ pub(super) fn read(
 /// object has exactly, with the right JSON types; then the member constraints.
 fn setting(sink: &mut Sink<'_>, element: &Value, at: &JsonPath) -> Option<Setting> {
     if element.as_object().is_none() {
-        sink.error(Code::InvalidType { text: None }, at);
+        sink.error(Code::from(&core_codes::INVALID_TYPE), at);
         return None;
     }
     let type_value = member(element, "type").and_then(text);
@@ -194,7 +193,10 @@ fn setting(sink: &mut Sink<'_>, element: &Value, at: &JsonPath) -> Option<Settin
     if type_value != Some(setting.type_name()) {
         // `type` does not choose the kind. Vanilla is silent about a mismatch; the crate
         // reports an information.
-        sink.note(Code::SettingTypeMismatch, &below(at, "type"));
+        sink.note(
+            Code::from(&core_codes::SETTING_TYPE_MISMATCH),
+            &below(at, "type"),
+        );
     }
     constraints(sink, &setting, at);
     Some(setting)
@@ -289,32 +291,35 @@ fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &JsonPath, type_value
     let Some((_, required, optional)) = named else {
         let type_at = below(at, "type");
         match member(element, "type") {
-            None => sink.error(Code::MissingRequiredField { text: None }, &type_at),
+            None => sink.error(Code::from(&core_codes::MISSING_REQUIRED_FIELD), &type_at),
             Some(value) if text(value).is_some() => {
-                sink.error(Code::InvalidEnumValue { text: None }, &type_at);
+                sink.error(Code::from(&core_codes::INVALID_ENUM_VALUE), &type_at);
             }
-            Some(_) => sink.error(Code::InvalidType { text: None }, &type_at),
+            Some(_) => sink.error(Code::from(&core_codes::INVALID_TYPE), &type_at),
         }
         return;
     };
     let before = sink.errors();
     for key in *required {
         if member(element, key).is_none() {
-            sink.error(Code::MissingRequiredField { text: None }, &below(at, key));
+            sink.error(
+                Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+                &below(at, key),
+            );
         }
     }
     let allowed: Vec<&str> = required.iter().chain(optional.iter()).copied().collect();
     let _ = sink.unknown(element, at, &allowed);
     if sink.errors() == before {
         // Every member is there and no other: one has the wrong type.
-        sink.error(Code::InvalidType { text: None }, at);
+        sink.error(Code::from(&core_codes::INVALID_TYPE), at);
     }
 }
 
 /// Member constraints of the kind: `InvalidValue` errors naming the member.
 fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &JsonPath) {
     let invalid = |sink: &mut Sink<'_>, key: &str| {
-        sink.error(Code::InvalidValue { text: None }, &below(at, key));
+        sink.error(Code::from(&core_codes::INVALID_VALUE), &below(at, key));
     };
     if setting.name().is_some_and(|name| !namespaced(name)) {
         // "string has invalid namespace (minecraft)" / "string must be prefixed with a
@@ -352,15 +357,21 @@ fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &JsonPath) {
 fn option_constraints(sink: &mut Sink<'_>, options: &[DropdownOption], at: &JsonPath) {
     let options_at = below(at, "options");
     if !OPTIONS.contains(&options.len()) {
-        sink.error(Code::InvalidValue { text: None }, &options_at);
+        sink.error(Code::from(&core_codes::INVALID_VALUE), &options_at);
     }
     for (index, option) in options.iter().enumerate() {
         let entry_at = options_at.index(index);
         if option.name.is_empty() {
-            sink.error(Code::InvalidValue { text: None }, &below(&entry_at, "name"));
+            sink.error(
+                Code::from(&core_codes::INVALID_VALUE),
+                &below(&entry_at, "name"),
+            );
         }
         if option.text.is_empty() {
-            sink.error(Code::InvalidValue { text: None }, &below(&entry_at, "text"));
+            sink.error(
+                Code::from(&core_codes::INVALID_VALUE),
+                &below(&entry_at, "text"),
+            );
         }
     }
 }
@@ -396,23 +407,13 @@ fn check(
     let mut names = HashSet::new();
     for (index, setting) in settings {
         let at = path(&["settings"]).index(*index);
-        let fail = |sink: &mut Sink<'_>, text: VanillaText| {
-            sink.push(
-                Code::InvalidValue { text: Some(text) },
-                Severity::Error,
-                Phase::Validate,
-                &at,
-            );
+        let fail = |sink: &mut Sink<'_>, code: bedrock_addon_core::diagnostic::Code| {
+            sink.push(code.into(), Severity::Error, Phase::Validate, &at);
         };
         if let Some(name) = setting.name()
             && !names.insert(name.to_owned())
         {
-            fail(
-                sink,
-                VanillaText::DuplicatePackSettingName {
-                    name: name.to_owned(),
-                },
-            );
+            fail(sink, core_codes::DUPLICATE_PACK_SETTING_NAME.with([name]));
         }
         match setting {
             Setting::Slider {
@@ -436,10 +437,7 @@ fn check(
                 if !options.iter().any(|option| option.name == *default) {
                     fail(
                         sink,
-                        VanillaText::DropdownDefaultNotInOptions {
-                            name: name.clone(),
-                            default: default.clone(),
-                        },
+                        core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS.with([name, default]),
                     );
                 }
             }
@@ -453,10 +451,7 @@ fn check(
                     if !options.iter().any(|option| option.name == *default) {
                         fail(
                             sink,
-                            VanillaText::MultiselectDefaultNotInOptions {
-                                name: name.clone(),
-                                default: default.clone(),
-                            },
+                            core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS.with([name, default]),
                         );
                     }
                 }
@@ -466,9 +461,9 @@ fn check(
                     .is_none_or(|engine| engine.version < SemVersion::from(MULTISELECT_SINCE))
                 {
                     sink.push(
-                        Code::FieldSinceEngine {
-                            since: MULTISELECT_SINCE,
-                        },
+                        core_codes::FIELD_SINCE_ENGINE
+                            .with([MULTISELECT_SINCE.to_string()])
+                            .into(),
                         Severity::Info,
                         Phase::Validate,
                         &at,
@@ -482,25 +477,25 @@ fn check(
 
 /// The three slider checks, in vanilla's order. Exact comparisons (`max - min` in `f32`); a NaN
 /// fails each check it takes part in.
-fn slider_texts(name: &str, min: f32, max: f32, step: f32, default: f32) -> Vec<VanillaText> {
+fn slider_texts(
+    name: &str,
+    min: f32,
+    max: f32,
+    step: f32,
+    default: f32,
+) -> Vec<bedrock_addon_core::diagnostic::Code> {
     use std::cmp::Ordering::{Equal, Less};
     let mut texts = Vec::new();
     if min.partial_cmp(&max) != Some(Less) {
-        texts.push(VanillaText::SliderMaxNotAboveMin {
-            name: name.to_owned(),
-        });
+        texts.push(core_codes::SLIDER_MAX_NOT_ABOVE_MIN.with([name]));
     }
     if !matches!(step.partial_cmp(&(max - min)), Some(Less | Equal)) {
-        texts.push(VanillaText::SliderStepTooLarge {
-            name: name.to_owned(),
-            step: step.to_string(),
-        });
+        texts.push(core_codes::SLIDER_STEP_TOO_LARGE.with([name.to_owned(), step.to_string()]));
     }
     if default < min || !matches!(default.partial_cmp(&max), Some(Less | Equal)) {
-        texts.push(VanillaText::SliderDefaultOutOfRange {
-            name: name.to_owned(),
-            default: default.to_string(),
-        });
+        texts.push(
+            core_codes::SLIDER_DEFAULT_OUT_OF_RANGE.with([name.to_owned(), default.to_string()]),
+        );
     }
     texts
 }

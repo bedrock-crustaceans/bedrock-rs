@@ -575,7 +575,6 @@ fn a_lower_definition_does_not_come_back_when_the_winning_one_is_rejected() {
 fn a_geometry_file_that_cannot_be_read_is_skipped_with_the_loader_s_text() {
     use std::io::ErrorKind;
 
-    use bedrock_addon::diagnostic::DiagnosticCode;
     use bedrock_addon::load::{
         LoadOptions, RepositoryLoader, RootId, Source, StackLoader, StackOptions,
     };
@@ -621,13 +620,18 @@ fn a_geometry_file_that_cannot_be_read_is_skipped_with_the_loader_s_text() {
             .resource
             .report()
             .iter()
-            .filter_map(|f| match &f.code {
-                DiagnosticCode::ReadError { kind, .. } => Some((
-                    f.location.path.as_ref()?.as_str().to_owned(),
-                    f.severity,
-                    format!("{kind:?}"),
-                    f.code.to_string(),
-                )),
+            .filter_map(|f| match f.detail.as_deref() {
+                // The read-error definitions carry the host's kind as the detail.
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Io(kind))
+                    if f.code.name() == "ReadError" =>
+                {
+                    Some((
+                        f.location.path.as_ref()?.as_str().to_owned(),
+                        f.severity,
+                        format!("{kind:?}"),
+                        f.code.to_string(),
+                    ))
+                }
                 _ => None,
             })
             .collect();

@@ -2,6 +2,7 @@
 //! texture path (the texture sets beside the images, resolved against the packs' files), and
 //! the image of every layer of every loaded texture set.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::pack_identity::PackRef;
 
 use super::{PackStack, Resource};
@@ -67,13 +68,13 @@ impl LayerImage<'_> {
     pub fn check(&self, bytes: &[u8]) -> Option<Diagnostic> {
         let format = self.image.format?;
         let code = match ImageInfo::read(format, bytes) {
-            None => DiagnosticCode::LayerImageUndecodable,
+            None => DiagnosticCode::from(&core_codes::LAYER_IMAGE_UNDECODABLE),
             Some(info) => {
                 let channels = info.channels?;
                 if self.layer.channel_counts().contains(&channels) {
                     return None;
                 }
-                DiagnosticCode::LayerImageFormat
+                DiagnosticCode::from(&core_codes::LAYER_IMAGE_FORMAT)
             }
         };
         let mut at = payload_at();

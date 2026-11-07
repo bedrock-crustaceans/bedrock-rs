@@ -1,10 +1,20 @@
 //! The 05 composition rules over manifest facts.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::{Experiment, Experiments};
 use bedrock_addon_core::version::{BaseGameVersion, SemVersion};
 use uuid::Uuid;
 
 use super::*;
+use bedrock_addon_core::diagnostic::DiagnosticDetail;
+
+/// The packs a stack finding names, from its detail.
+fn packs(finding: &Diagnostic) -> Option<(&PackIdVersion, Option<&PackIdVersion>)> {
+    match finding.detail.as_deref()? {
+        DiagnosticDetail::Packs { pack, dependency } => Some((pack, dependency.as_ref())),
+        _ => None,
+    }
+}
 use crate::pack::SubpackFacts;
 
 /// A pack of `pack_type` with the UUID `n`, version 1.0.0, one module of its type.
@@ -114,8 +124,7 @@ fn placed_findings(composition: &Composition) -> Vec<&Diagnostic> {
         .findings
         .iter()
         .filter(|diagnostic| {
-            !(matches!(diagnostic.code, DiagnosticCode::PackNotFound { .. })
-                && diagnostic.location.path.is_none())
+            !(diagnostic.is(&core_codes::PACK_NOT_FOUND) && diagnostic.location.path.is_none())
         })
         .collect()
 }
@@ -125,7 +134,7 @@ fn placed_findings(composition: &Composition) -> Vec<&Diagnostic> {
 fn level_findings(composition: &Composition) -> Vec<&Diagnostic> {
     placed_findings(composition)
         .into_iter()
-        .filter(|diagnostic| !matches!(diagnostic.code, DiagnosticCode::MissingDependency { .. }))
+        .filter(|diagnostic| !diagnostic.is(&core_codes::MISSING_DEPENDENCY))
         .inspect(|diagnostic| assert_eq!(diagnostic.severity, Severity::Info, "{diagnostic:?}"))
         .collect()
 }
@@ -136,7 +145,7 @@ fn above_info(composition: &Composition) -> Vec<&DiagnosticCode> {
         .into_iter()
         // A dependency the education layer hides silently is an information.
         .filter(|diagnostic| {
-            !(matches!(diagnostic.code, DiagnosticCode::MissingDependency { .. })
+            !(diagnostic.is(&core_codes::MISSING_DEPENDENCY)
                 && diagnostic.severity == Severity::Info)
         })
         .map(|diagnostic| &diagnostic.code)
@@ -203,11 +212,8 @@ fn a_missing_dependency_hides_the_pack_and_is_an_error() {
     assert!(!composition.behavior[1].hidden);
     let errors: Vec<&Diagnostic> = composition.findings.at_least(Severity::Error).collect();
     assert_eq!(errors.len(), 1);
-    assert!(matches!(
-        &errors[0].code,
-        DiagnosticCode::MissingDependency { pack, dependency }
-            if *pack == a.id && *dependency == missing.id
-    ));
+    assert!(errors[0].is(&core_codes::MISSING_DEPENDENCY));
+    assert_eq!(packs(errors[0]), Some((&a.id, Some(&missing.id))));
 }
 
 #[test]
@@ -226,15 +232,22 @@ fn a_behavior_packs_resource_dependency_is_auto_added_after_the_listed_resource_
     assert!(composition.resource[1].is_dependent);
     let found = above_info(&composition);
     assert_eq!(found.len(), 1);
-    assert!(matches!(
+    assert_eq!(
         found[0],
-        DiagnosticCode::DependencyAutoAdded { pack, dependency }
-            if *pack == a.id && *dependency == r.id
-    ));
+        &DiagnosticCode::from(
+            core_codes::DEPENDENCY_AUTO_ADDED.with([r.id.to_string(), a.id.to_string()])
+        )
+    );
+    let added = composition
+        .findings
+        .iter()
+        .find(|diagnostic| diagnostic.is(&core_codes::DEPENDENCY_AUTO_ADDED))
+        .and_then(packs);
+    assert_eq!(added, Some((&a.id, Some(&r.id))));
     let warning = composition
         .findings
         .iter()
-        .find(|diagnostic| matches!(diagnostic.code, DiagnosticCode::DependencyAutoAdded { .. }));
+        .find(|diagnostic| diagnostic.is(&core_codes::DEPENDENCY_AUTO_ADDED));
     assert_eq!(
         warning.map(|diagnostic| diagnostic.severity),
         Some(Severity::Info)
@@ -265,10 +278,13 @@ fn an_absent_resource_dependency_hides_the_behavior_pack() {
     );
     assert!(composition.behavior[0].hidden);
     assert!(composition.resource.is_empty());
-    assert!(matches!(
-        above_info(&composition)[..],
-        [DiagnosticCode::MissingDependency { .. }]
-    ));
+    assert_eq!(
+        above_info(&composition)
+            .iter()
+            .map(|code| code.is(&core_codes::MISSING_DEPENDENCY))
+            .collect::<Vec<_>>(),
+        [true]
+    );
 }
 
 #[test]
@@ -296,7 +312,8 @@ fn an_unregistered_world_entry_is_skipped_with_an_information() {
     assert_eq!(order(&composition.behavior), [0]);
     let found = level_findings(&composition);
     assert_eq!(found.len(), 1);
-    assert!(matches!(&found[0].code, DiagnosticCode::PackNotFound { pack } if *pack == ghost.id));
+    assert!(found[0].is(&core_codes::PACK_NOT_FOUND));
+    assert_eq!(packs(found[0]), Some((&ghost.id, None)));
     assert_eq!(
         found[0].location.path.as_ref().map(PackPath::as_str),
         Some(WorldPacks::BEHAVIOR_FILE)
@@ -315,10 +332,7 @@ fn a_repeated_world_entry_keeps_the_first_with_an_information() {
     assert_eq!(order(&composition.behavior), [0, 1]);
     let found = level_findings(&composition);
     assert_eq!(found.len(), 1);
-    assert!(matches!(
-        found[0].code,
-        DiagnosticCode::DuplicateIdentifier { .. }
-    ));
+    assert!(found[0].is(&core_codes::DUPLICATE_IDENTIFIER));
     assert_eq!(found[0].location.json_path.to_string(), "2");
 }
 
@@ -336,7 +350,7 @@ fn listing_a_dependency_as_well_keeps_the_first_with_an_information() {
     let found = level_findings(&composition);
     assert!(matches!(
         found[..],
-        [d] if matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. })
+        [d] if d.is(&core_codes::DUPLICATE_IDENTIFIER)
     ));
     assert_eq!(found[0].location.json_path.to_string(), "1");
 }
@@ -351,10 +365,13 @@ fn a_base_game_pack_already_pulled_in_as_a_dependency_is_a_duplicate() {
         &LoadOptions::default(),
     );
     assert_eq!(order(&composition.behavior), [0, 1]);
-    assert!(matches!(
-        above_info(&composition)[..],
-        [DiagnosticCode::DuplicateIdentifier { .. }]
-    ));
+    assert_eq!(
+        above_info(&composition)
+            .iter()
+            .map(|code| code.is(&core_codes::DUPLICATE_IDENTIFIER))
+            .collect::<Vec<_>>(),
+        [true]
+    );
 }
 
 #[test]
@@ -369,10 +386,13 @@ fn a_hidden_behavior_pack_adds_no_resource_pack() {
     );
     assert!(composition.behavior[0].hidden);
     assert!(composition.resource.is_empty());
-    assert!(matches!(
-        above_info(&composition)[..],
-        [DiagnosticCode::MissingDependency { .. }]
-    ));
+    assert_eq!(
+        above_info(&composition)
+            .iter()
+            .map(|code| code.is(&core_codes::MISSING_DEPENDENCY))
+            .collect::<Vec<_>>(),
+        [true]
+    );
 }
 
 #[test]
@@ -385,7 +405,7 @@ fn a_pack_of_the_other_side_is_skipped_from_a_world_list() {
     );
     assert!(composition.behavior.is_empty());
     let found = level_findings(&composition);
-    assert!(matches!(found[..], [d] if matches!(d.code, DiagnosticCode::InvalidValue { .. })));
+    assert!(matches!(found[..], [d] if d.is(&core_codes::INVALID_VALUE)));
     assert_eq!(found[0].location.json_path.to_string(), "0/pack_id");
 }
 
@@ -453,7 +473,7 @@ fn an_unknown_subpack_falls_back_to_the_default_with_an_information() {
     );
     assert_eq!(composition.resource[0].subpack, Some(1));
     let found = level_findings(&composition);
-    assert!(matches!(found[..], [d] if matches!(d.code, DiagnosticCode::InvalidValue { .. })));
+    assert!(matches!(found[..], [d] if d.is(&core_codes::INVALID_VALUE)));
     assert_eq!(
         found[0].location.path.as_ref().map(PackPath::as_str),
         Some(WorldPacks::RESOURCE_FILE)
@@ -651,8 +671,9 @@ fn a_missing_base_game_pack_is_skipped_with_an_info() {
         .iter()
         .map(|diagnostic| {
             assert_eq!(diagnostic.severity, Severity::Info);
-            match &diagnostic.code {
-                DiagnosticCode::PackNotFound { pack } => pack,
+            assert!(diagnostic.is(&core_codes::PACK_NOT_FOUND), "{diagnostic:?}");
+            match packs(diagnostic) {
+                Some((pack, None)) => pack,
                 other => panic!("unexpected {other:?}"),
             }
         })
@@ -702,10 +723,13 @@ fn a_world_listed_vanilla_pack_stays_where_the_world_put_it() {
         &LoadOptions::default(),
     );
     assert_eq!(order(&composition.behavior), [0, 1]);
-    assert!(matches!(
-        above_info(&composition)[..],
-        [DiagnosticCode::DuplicateIdentifier { .. }]
-    ));
+    assert_eq!(
+        above_info(&composition)
+            .iter()
+            .map(|code| code.is(&core_codes::DUPLICATE_IDENTIFIER))
+            .collect::<Vec<_>>(),
+        [true]
+    );
 }
 
 #[test]
@@ -760,12 +784,13 @@ fn a_dependency_at_another_version_than_the_packs_header_hides_the_pack() {
     let missing: Vec<(Uuid, Uuid, SemVersion)> = composition
         .findings
         .iter()
-        .filter_map(|d| match &d.code {
-            DiagnosticCode::MissingDependency { pack, dependency } => {
-                assert_eq!(d.severity, Severity::Error);
-                Some((pack.uuid, dependency.uuid, dependency.version.clone()))
-            }
-            _ => None,
+        .filter(|d| d.is(&core_codes::MISSING_DEPENDENCY))
+        .map(|d| {
+            assert_eq!(d.severity, Severity::Error);
+            let Some((pack, Some(dependency))) = packs(d) else {
+                panic!("no packs: {d:?}");
+            };
+            (pack.uuid, dependency.uuid, dependency.version.clone())
         })
         .collect();
     assert_eq!(
@@ -811,7 +836,7 @@ fn a_persona_piece_pack_on_the_resource_list_is_skipped_with_its_own_information
     assert!(composition.resource.is_empty());
     let found = level_findings(&composition);
     assert!(
-        matches!(found[..], [d] if matches!(d.code, DiagnosticCode::PersonaPiecePack)
+        matches!(found[..], [d] if d.is(&core_codes::PERSONA_PIECE_PACK)
             && d.severity == Severity::Info),
         "{found:?}"
     );
@@ -824,7 +849,7 @@ fn a_persona_piece_pack_on_the_resource_list_is_skipped_with_its_own_information
     );
     let found = level_findings(&composition);
     assert!(
-        matches!(found[..], [d] if matches!(d.code, DiagnosticCode::InvalidValue { .. })),
+        matches!(found[..], [d] if d.is(&core_codes::INVALID_VALUE)),
         "{found:?}"
     );
 }
@@ -926,7 +951,7 @@ fn an_education_world_appends_the_chemistry_behaviour_packs_and_hides_the_slices
     let missing: Vec<_> = composition
         .findings
         .iter()
-        .filter(|d| matches!(d.code, DiagnosticCode::MissingDependency { .. }))
+        .filter(|d| d.is(&core_codes::MISSING_DEPENDENCY))
         .map(|d| d.severity)
         .collect();
     assert_eq!(missing, [Severity::Info]);
@@ -1025,7 +1050,7 @@ fn a_world_listed_app_bundled_pack_with_an_unmet_dependency_is_hidden_with_an_in
         let found: Vec<Severity> = composition
             .findings
             .iter()
-            .filter(|d| matches!(d.code, DiagnosticCode::MissingDependency { .. }))
+            .filter(|d| d.is(&core_codes::MISSING_DEPENDENCY))
             .map(|d| d.severity)
             .collect();
         assert_eq!(found, [severity], "{origin:?}");

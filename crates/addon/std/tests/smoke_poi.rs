@@ -19,7 +19,7 @@ mod common;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::{Severity, codes};
 use bedrock_addon::load::{Experiment, Experiments, LoadOptions, StackOptions};
 use bedrock_addon::pack::{Pack, PackOrigin, PackRepository, PackType};
 use bedrock_addon_std::{DirSource, Driver, Options};
@@ -136,7 +136,7 @@ fn load_poi(driver: &Driver, repository: &PackRepository, roots: &[PathBuf], poi
             findings.push(format!("{} {}", finding.severity, finding.code.name()));
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < on_disk {
+        if finding.is(&codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
             mcb += 1;
             continue;
         }

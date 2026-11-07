@@ -15,6 +15,8 @@ use crate::families::biome::component::{
 };
 use crate::id::BiomeId;
 use crate::pack::PackSide;
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// vanilla's text for a transformation that names no biome.
 const NO_BIOME: &str = "No biome found with name '{}'";
@@ -222,8 +224,13 @@ fn custom_biome_count(cx: &LinkCx<'_>, out: &mut Findings, limit: usize) {
             path.push(key);
         }
         out.push(
-            At::new(origin, path, Severity::Error)
-                .diagnostic(DiagnosticCode::InvalidValue { text: Some(text) }),
+            At::new(origin, path, Severity::Error).diagnostic(DiagnosticCode::from(
+                builders::worded(
+                    &core_codes::INVALID_VALUE,
+                    &core_codes::INVALID_VALUE_WORDED,
+                    Some(&text),
+                ),
+            )),
         );
     }
 }

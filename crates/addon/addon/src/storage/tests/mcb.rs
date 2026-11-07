@@ -94,10 +94,7 @@ mod pack_layer {
         let mut cut = shape();
         cut.pop();
         let finding = mcb_text(&path, Bytes::from(cut)).unwrap_err();
-        assert!(matches!(
-            finding.code,
-            crate::diagnostic::DiagnosticCode::UnsupportedFileFormat
-        ));
+        assert!(finding.is(&crate::diagnostic::codes::UNSUPPORTED_FILE_FORMAT));
     }
 
     /// The family's loader reads the text like a JSON file's.

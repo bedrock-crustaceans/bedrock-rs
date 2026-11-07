@@ -23,6 +23,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::{LazyLock, OnceLock};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, PackReport, Phase, Severity,
 };
@@ -365,7 +366,7 @@ fn unwritable(manifest: &Manifest, error: EncodeError, origin: PackOrigin) -> Op
     report.original_name.clone_from(&manifest.header.name);
     report.original_version = manifest.header.version.to_string();
     report.diagnostics.push(Diagnostic::new(
-        DiagnosticCode::InvalidValue { text: None },
+        DiagnosticCode::from(&core_codes::INVALID_VALUE),
         Severity::Error,
         Phase::Validate,
         Location::new(None, Some(MANIFEST_PATH.clone()), at, None),

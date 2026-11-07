@@ -4,7 +4,7 @@
 
 use std::io::ErrorKind;
 
-use bedrock_addon::diagnostic::DiagnosticCode;
+use bedrock_addon::diagnostic::codes as core_codes;
 use bedrock_addon::load::{LoadOptions, RepositoryLoader, RootId, Source};
 use bedrock_addon::pack::{OpenError, OpenOptions, Pack, PackOrigin, PackRepository, WorldPacks};
 use bedrock_addon::storage::{PackPath, StorageError, ZipLimit};
@@ -100,13 +100,10 @@ fn the_first_registration_of_an_identity_and_origin_wins_across_sources() {
         .selection()
         .iter()
         .filter(|d| d.severity == bedrock_addon::diagnostic::Severity::Info)
-        .filter(|d| matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. }))
+        .filter(|d| d.is(&core_codes::DUPLICATE_IDENTIFIER))
         .map(|d| &d.code)
         .collect();
-    assert!(
-        matches!(warnings[..], [DiagnosticCode::DuplicateIdentifier { .. }]),
-        "{warnings:?}"
-    );
+    assert_eq!(warnings.len(), 1, "{warnings:?}");
 }
 
 #[test]

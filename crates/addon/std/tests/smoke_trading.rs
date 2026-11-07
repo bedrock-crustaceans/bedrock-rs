@@ -14,10 +14,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::trade::TradeTable;
 use bedrock_addon::load::{LoadContext, LoadOptions, StackOptions};
@@ -117,7 +118,7 @@ fn check_stack(source: &str, dirs: &[&Path], world_behavior: &[u8]) -> (usize, u
         if finding.severity == Severity::Warning {
             count(&mut warnings, finding.code.name());
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             mcb += 1;
             continue;
         }

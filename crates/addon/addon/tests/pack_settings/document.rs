@@ -1,9 +1,7 @@
 //! `families/pack_settings` fixtures.md "Document" rows `ps01`–`ps16` (validation.md "Save
 //! document" D1–D10).
 
-use bedrock_addon::diagnostic::{
-    Diagnostic, DiagnosticCode as C, Diagnostics, Severity, VanillaText,
-};
+use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode as C, Diagnostics, Severity};
 use bedrock_addon::pack::settings::{SavedSettings, SettingValue, Settings};
 use bedrock_addon::version::FormatVersion;
 use indexmap::IndexMap;
@@ -69,12 +67,9 @@ fn ps02_v1_21_100_no_last_used_stays_absent_after_the_step() {
 
 /// The closing finding of a rejected file: "Pack Settings failed to load [<name>]".
 pub fn load_failed(name: &str) -> C {
-    C::DocumentRejected {
-        text: Some(VanillaText::Formatted {
-            template: "Pack Settings failed to load [{}]",
-            args: vec![name.to_owned()],
-        }),
-    }
+    bedrock_addon::pack::settings::codes::LOAD_FAILED
+        .with([name])
+        .into()
 }
 
 /// The errors of a rejected file end with exactly one closing finding naming it.

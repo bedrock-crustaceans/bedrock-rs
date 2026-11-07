@@ -6,13 +6,13 @@
 //! text, so every member's JSON type is checked here (facet would coerce scalars) and every
 //! finding keeps its file offset.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use facet_json::RawJson;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
 use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
-    code_for_deserialize_error_kind,
+    Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, code_for_deserialize_error_kind,
 };
 use crate::json::kit::{Disposition, Node, Read};
 use crate::json::{EncodeError, JsonSlice, Value, parse_at};
@@ -216,8 +216,9 @@ impl Reader<'_> {
 
     /// An information at `node`, spanning it: a value the game reads silently as another.
     fn information(&mut self, node: &Node<'_>) {
-        let mut finding =
-            Diagnostic::info(DiagnosticCode::InvalidValue { text: None }).at(node.path().clone());
+        let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
+            .severity(Severity::Info)
+            .at(node.path().clone());
         finding.location.span = node.span();
         self.read.push(finding);
     }

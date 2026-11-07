@@ -1,7 +1,8 @@
 //! `Manifest::parse`: the text, the reader the `format_version` selects, and the document.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    DiagnosticCode as Code, JsonPath, Span, VanillaText, code_for_deserialize_error_kind,
+    DiagnosticCode as Code, JsonPath, Span, code_for_deserialize_error_kind,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
@@ -47,10 +48,8 @@ fn read(
     let bytes = strip_bom(file);
     if check_depth(bytes, MAX_JSON_DEPTH).is_err() {
         sink.error(
-            Code::MalformedInput {
-                message: "JSON nesting deeper than the limit".to_owned(),
-                text: None,
-            },
+            bedrock_addon_core::diagnostic::builders::syntax("JSON nesting deeper than the limit")
+                .into(),
             &JsonPath::new(),
         );
         return None;
@@ -83,7 +82,7 @@ fn read(
         PickedVersion::Absent => None,
         PickedVersion::Malformed => {
             sink.error(
-                Code::MalformedFormatVersion { text: None },
+                Code::from(&core_codes::MALFORMED_FORMAT_VERSION),
                 &JsonPath::of_keys(["format_version"]),
             );
             return None;
@@ -103,9 +102,7 @@ fn read(
                         _ => written,
                     };
                     sink.error(
-                        Code::UnsupportedVersion {
-                            text: Some(VanillaText::NoParserForVersion { version: shown }),
-                        },
+                        Code::from(core_codes::NO_PARSER_FOR_VERSION.with([shown.clone()])),
                         &JsonPath::of_keys(["format_version"]),
                     );
                     return None;

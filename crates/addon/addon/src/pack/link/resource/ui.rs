@@ -189,13 +189,12 @@ fn remapping(
             }
             let mut path = JsonPath::new();
             path.push_index(index);
-            let code = DiagnosticCode::MalformedInput {
-                message: format!(
+            let code = DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(
+                format!(
                     "character {:#06X} is drawn with a glyph of page {page:02X}, which the font has no file of",
                     record.from
                 ),
-                text: None,
-            };
+            ));
             let missing = format!("{prefix}{page:02X}{extension}");
             // The game reads the remapping records unchecked and the font family has no
             // content-log line for this: the crate reports an information.

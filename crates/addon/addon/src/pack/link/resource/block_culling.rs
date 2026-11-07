@@ -1,5 +1,7 @@
 //! The culling rules a block names against the culling rules of the resource stack.
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document};
 use bedrock_addon_core::id::CullingRulesId;
@@ -150,9 +152,11 @@ pub(super) fn culling_layers(cx: &LinkCx<'_>, out: &mut Findings) {
             if !told.first(origin, "", "condition", &index.to_string()) {
                 continue;
             }
-            let code = DiagnosticCode::NoEffect {
-                text: Some(formatted(NO_CULLING_LAYER, &[])),
-            };
+            let code = DiagnosticCode::from(builders::worded(
+                &core_codes::NO_EFFECT,
+                &core_codes::NO_EFFECT_WORDED,
+                Some(formatted(NO_CULLING_LAYER, &[])).as_ref(),
+            ));
             let path = rule_path(index, &["condition"]);
             // The game logs this at the warning level: a warning.
             out.push(At::new(origin, path, Severity::Warning).diagnostic(code));

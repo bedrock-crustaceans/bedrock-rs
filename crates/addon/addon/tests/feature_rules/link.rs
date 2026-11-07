@@ -2,7 +2,7 @@
 //! `places_feature` against the loaded features run in the link pass:
 //! the tests run through `StackSet::link`.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, WorldPacks};
 
@@ -77,10 +77,7 @@ fn r15_pregeneration_pass_places_only_cave_carvers() {
         );
     let d = link(&scatter, PackOrigin::World);
     assert!(has(&d, Severity::Error, text), "{d:#?}");
-    assert!(
-        d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidReference { .. }))
-    );
+    assert!(d.iter().any(|f| f.code.name() == "InvalidReference"));
     let carver = bp(2)
         .file(
             "feature_rules/r.json",
@@ -114,10 +111,7 @@ fn r16_a_non_base_game_rule_cannot_place_an_internal_vanilla_feature() {
     );
     let d = link_all(&[(&world, PackOrigin::World), (&game, PackOrigin::Package)]);
     assert!(has(&d, Severity::Error, text), "{d:#?}");
-    assert!(
-        d.iter()
-            .any(|f| matches!(f.code, DiagnosticCode::InvalidReference { .. }))
-    );
+    assert!(d.iter().any(|f| f.code.name() == "InvalidReference"));
     // The same rule in the game's own pack.
     let base_game = bp(2).file("features/layout.json", layout).file(
         "feature_rules/r.json",
@@ -135,8 +129,8 @@ fn rule_9_a_places_feature_no_feature_defines_is_an_info() {
     let spec = bp(1).file("feature_rules/r.json", rule("surface_pass", "demo:nowhere"));
     let d = link(&spec, PackOrigin::World);
     assert!(
-        d.iter().any(|f| f.severity == Severity::Info
-            && matches!(f.code, DiagnosticCode::UnresolvedReference { .. })),
+        d.iter()
+            .any(|f| f.severity == Severity::Info && f.code.name() == "UnresolvedReference"),
         "{d:#?}"
     );
     assert!(!d.iter().any(|f| f.severity > Severity::Info));

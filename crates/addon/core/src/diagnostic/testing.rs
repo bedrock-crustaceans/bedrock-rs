@@ -76,6 +76,29 @@ pub fn legacy_debug(finding: &Diagnostic) -> String {
                 text_debug(code)
             );
         }
+        // The engine version a field needs, typed in the legacy payload.
+        ["since"] if code.is(&super::codes::FIELD_SINCE_ENGINE) => {
+            let mut parts = code.args()[0]
+                .split('.')
+                .map(|part| part.parse::<u32>().ok());
+            let (major, minor, patch) = (parts.next(), parts.next(), parts.next());
+            let _ = write!(
+                out,
+                " {{ since: FormatVersion {{ major: {}, minor: {}, patch: {} }} }}",
+                major.flatten().unwrap_or_default(),
+                minor.flatten().unwrap_or_default(),
+                patch.flatten().unwrap_or_default()
+            );
+        }
+        // A payload of strings whose fields are the definition's arguments, in order.
+        fields if !fields.contains(&"text") && fields.len() == code.args().len() => {
+            let shown: Vec<String> = fields
+                .iter()
+                .zip(code.args())
+                .map(|(field, arg)| format!("{field}: {arg:?}"))
+                .collect();
+            let _ = write!(out, " {{ {} }}", shown.join(", "));
+        }
         fields => panic!(
             "{}: a payload of {fields:?} the bridge does not render",
             code.id()
@@ -108,6 +131,20 @@ fn text_debug(code: &Code) -> String {
     }
 }
 
+/// Whether `code` tells what the legacy code `legacy` told: the same code, or one of the same
+/// legacy name with the same line and the same game's sentence. A site that held the game's
+/// sentence as a legacy text raises the worded definition with the sentence alone; this is the
+/// equality the pins of such a site keep until it has a definition of its own.
+// hidden: a bridge for the pins of the migration, deleted with the legacy enum
+#[doc(hidden)]
+#[must_use]
+pub fn same_line(code: &DiagnosticCode, legacy: &DiagnosticCode) -> bool {
+    code == legacy
+        || (code.name() == legacy.name()
+            && code.to_string() == legacy.to_string()
+            && code.vanilla() == legacy.vanilla())
+}
+
 /// The `Debug` of a structured `VanillaText` a definition renders, by the definition's id.
 fn structured_debug(id: &str, args: &[String]) -> Option<String> {
     Some(match id {
@@ -118,6 +155,37 @@ fn structured_debug(id: &str, args: &[String]) -> Option<String> {
         "core/document_member_count" => "DocumentMemberCount".to_owned(),
         "core/member_deprecated" => format!("MemberDeprecated {{ member: {:?} }}", args[0]),
         "core/filter_test_not_found" => format!("FilterTestNotFound {{ name: {:?} }}", args[0]),
+        "core/manifest_invalid_value" => {
+            format!("ManifestInvalidValue {{ path: {:?} }}", args[0])
+        }
+        "core/manifest_not_semver" => format!("ManifestNotSemVer {{ path: {:?} }}", args[0]),
+        "core/manifest_wrong_type" => format!("ManifestWrongType {{ path: {:?} }}", args[0]),
+        "core/duplicate_pack_setting_name" => {
+            format!("DuplicatePackSettingName {{ name: {:?} }}", args[0])
+        }
+        "core/slider_max_not_above_min" => {
+            format!("SliderMaxNotAboveMin {{ name: {:?} }}", args[0])
+        }
+        "core/slider_step_too_large" => format!(
+            "SliderStepTooLarge {{ name: {:?}, step: {:?} }}",
+            args[0], args[1]
+        ),
+        "core/slider_default_out_of_range" => format!(
+            "SliderDefaultOutOfRange {{ name: {:?}, default: {:?} }}",
+            args[0], args[1]
+        ),
+        "core/dropdown_default_not_in_options" => format!(
+            "DropdownDefaultNotInOptions {{ name: {:?}, default: {:?} }}",
+            args[0], args[1]
+        ),
+        "core/multiselect_default_not_in_options" => format!(
+            "MultiselectDefaultNotInOptions {{ name: {:?}, default: {:?} }}",
+            args[0], args[1]
+        ),
+        "core/dependency_invalid_version" => format!(
+            "DependencyInvalidVersion {{ module: {:?}, version: {:?} }}",
+            args[0], args[1]
+        ),
         // `NumericRange::code` gave the whole sentence as the one argument of `{}`.
         "core/outside_accepted_range" => format!(
             "Formatted {{ template: \"{{}}\", args: [{:?}] }}",
@@ -148,6 +216,56 @@ mod tests {
 
     fn finding(code: impl Into<DiagnosticCode>) -> Diagnostic {
         Diagnostic::error(code.into())
+    }
+
+    /// A worded definition with the sentence tells what the legacy code with the text told;
+    /// another sentence or another name does not.
+    #[test]
+    fn a_worded_definition_tells_the_line_of_the_legacy_text() {
+        let legacy = DiagnosticCode::UnresolvedReference {
+            text: Some(VanillaText::Formatted {
+                template: "no block {}",
+                args: vec!["a:b".to_owned()],
+            }),
+        };
+        let worded =
+            DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block a:b"]));
+        assert!(same_line(&worded, &legacy));
+        let other = DiagnosticCode::from(codes::UNRESOLVED_REFERENCE_WORDED.with(["no block c:d"]));
+        assert!(!same_line(&other, &legacy));
+        let renamed = DiagnosticCode::from(codes::INVALID_REFERENCE_WORDED.with(["no block a:b"]));
+        assert!(!same_line(&renamed, &legacy));
+    }
+
+    /// The engine version a field needs renders as the legacy payload's typed version.
+    #[test]
+    fn a_field_since_engine_renders_its_typed_version() {
+        let code = codes::FIELD_SINCE_ENGINE.with(["1.26.50"]);
+        assert_eq!(
+            legacy_debug(&finding(code)),
+            format!(
+                "{:?}",
+                DiagnosticCode::FieldSinceEngine {
+                    since: crate::version::FormatVersion::new(1, 26, 50),
+                }
+            )
+        );
+    }
+
+    /// A definition whose arguments are the legacy payload's strings renders as that payload.
+    #[test]
+    fn a_payload_of_arguments_renders_as_the_legacy_payload() {
+        let code = codes::VERSION_TOO_LOW.with(["1.0.0", "1.13.0"]);
+        assert_eq!(
+            legacy_debug(&finding(code)),
+            format!(
+                "{:?}",
+                DiagnosticCode::VersionTooLow {
+                    version: "1.0.0".to_owned(),
+                    limit: "1.13.0".to_owned(),
+                }
+            )
+        );
     }
 
     /// A cereal range finding renders as the legacy code `NumericRange::code` gave: the whole

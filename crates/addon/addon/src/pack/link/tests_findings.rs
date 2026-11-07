@@ -1,6 +1,7 @@
 //! The constructors of the findings: the code, the severity, the phase, the place and the
 //! detail of each.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, DiagnosticDetail, JsonPath, Phase, ReferenceHint, Severity,
     VanillaText,
@@ -79,7 +80,7 @@ fn an_unresolved_reference_names_the_kind_and_the_name_as_written_with_its_hint(
     );
     assert_eq!(
         finding.code,
-        DiagnosticCode::UnresolvedReference { text: None }
+        DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE)
     );
     check(&finding, Severity::Warning, "block", "Demo:Lamp", hint);
     assert_eq!(
@@ -109,9 +110,7 @@ fn a_finding_that_vanilla_words_carries_vanillas_text_and_ours_none() {
     );
     assert_eq!(
         worded.code,
-        DiagnosticCode::UnresolvedReference {
-            text: Some(text.clone())
-        }
+        DiagnosticCode::from(core_codes::UNRESOLVED_REFERENCE_WORDED.with([text.to_string()]))
     );
     check(&worded, Severity::Warning, "item", "demo:none", None);
     for (finding, own) in [
@@ -121,7 +120,7 @@ fn a_finding_that_vanilla_words_carries_vanillas_text_and_ours_none() {
                 kinds::BLOCK,
                 "b",
             ),
-            DiagnosticCode::InvalidReference { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_REFERENCE),
         ),
         (
             cycle(
@@ -129,11 +128,11 @@ fn a_finding_that_vanilla_words_carries_vanillas_text_and_ours_none() {
                 kinds::BLOCK,
                 "b",
             ),
-            DiagnosticCode::ReferenceCycle { text: None },
+            DiagnosticCode::from(&core_codes::REFERENCE_CYCLE),
         ),
         (
             texture_not_found(at(&origin, Severity::Warning).with_text(text.clone()), "b"),
-            DiagnosticCode::TextureNotFound { text: None },
+            DiagnosticCode::from(&core_codes::TEXTURE_NOT_FOUND),
         ),
         (
             unknown_sound(
@@ -141,7 +140,7 @@ fn a_finding_that_vanilla_words_carries_vanillas_text_and_ours_none() {
                 kinds::BLOCK,
                 "b",
             ),
-            DiagnosticCode::UnknownSound { text: None },
+            DiagnosticCode::from(&core_codes::UNKNOWN_SOUND),
         ),
     ] {
         assert_ne!(finding.code, own, "the text is carried");
@@ -155,7 +154,7 @@ fn an_invalid_reference_and_a_cycle_have_their_own_codes() {
     let finding = invalid(at(&origin, Severity::Error), kinds::BLOCK, "demo:lamp");
     assert_eq!(
         finding.code,
-        DiagnosticCode::InvalidReference { text: None }
+        DiagnosticCode::from(&core_codes::INVALID_REFERENCE)
     );
     check(&finding, Severity::Error, "block", "demo:lamp", None);
     let finding = cycle(
@@ -163,7 +162,10 @@ fn an_invalid_reference_and_a_cycle_have_their_own_codes() {
         kinds::BEHAVIOR_TREE,
         "demo:tree",
     );
-    assert_eq!(finding.code, DiagnosticCode::ReferenceCycle { text: None });
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(&core_codes::REFERENCE_CYCLE)
+    );
     check(
         &finding,
         Severity::Warning,
@@ -177,7 +179,10 @@ fn an_invalid_reference_and_a_cycle_have_their_own_codes() {
 fn a_missing_texture_a_sound_and_a_lang_key_have_their_own_codes() {
     let origin = origin("entities/pet.json");
     let finding = texture_not_found(at(&origin, Severity::Warning), "textures/Entity/Pet");
-    assert_eq!(finding.code, DiagnosticCode::TextureNotFound { text: None });
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(&core_codes::TEXTURE_NOT_FOUND)
+    );
     check(
         &finding,
         Severity::Warning,
@@ -190,7 +195,10 @@ fn a_missing_texture_a_sound_and_a_lang_key_have_their_own_codes() {
         kinds::SOUND_EVENT,
         "mob.pet.say",
     );
-    assert_eq!(finding.code, DiagnosticCode::UnknownSound { text: None });
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(&core_codes::UNKNOWN_SOUND)
+    );
     check(&finding, Severity::Info, "sound event", "mob.pet.say", None);
     let finding = unknown_sound(
         at(&origin, Severity::Warning),
@@ -205,7 +213,10 @@ fn a_missing_texture_a_sound_and_a_lang_key_have_their_own_codes() {
         None,
     );
     let finding = unresolved_lang_key(at(&origin, Severity::Info), "Item.Pet.Name");
-    assert_eq!(finding.code, DiagnosticCode::UnresolvedLangKey);
+    assert_eq!(
+        finding.code,
+        DiagnosticCode::from(&core_codes::UNRESOLVED_LANG_KEY)
+    );
     check(&finding, Severity::Info, "lang key", "Item.Pet.Name", None);
 }
 
@@ -222,14 +233,18 @@ fn the_names_of_the_kinds_are_the_identifier_kinds_names() {
 fn a_finding_of_any_code_is_built_with_the_frames_place_severity_and_phase() {
     let origin = origin("entities/pet.json");
     let hint = Some(ReferenceHint::MissingNamespace);
-    let code = DiagnosticCode::InvalidValue { text: None };
+    let code = DiagnosticCode::from(&core_codes::INVALID_VALUE);
     let with =
         at(&origin, Severity::Error).reference(code.clone(), kinds::BLOCK, "lamp", hint.clone());
     assert_eq!(with.code, code);
     check(&with, Severity::Error, "block", "lamp", hint);
     // Without a detail: the same place, severity and phase, and nothing named.
-    let plain = at(&origin, Severity::Info).diagnostic(DiagnosticCode::FileNotLoaded);
-    assert_eq!(plain.code, DiagnosticCode::FileNotLoaded);
+    let plain =
+        at(&origin, Severity::Info).diagnostic(DiagnosticCode::from(&core_codes::FILE_NOT_LOADED));
+    assert_eq!(
+        plain.code,
+        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED)
+    );
     assert_eq!(plain.severity, Severity::Info);
     assert_eq!(plain.phase, Phase::Link);
     assert_eq!(plain.location, with.location);

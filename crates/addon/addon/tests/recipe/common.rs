@@ -131,12 +131,60 @@ pub fn args(diagnostic: &Diagnostic) -> Vec<String> {
     }
 }
 
-/// The findings whose vanilla text has `template`.
+/// The arguments of a finding's vanilla text of `template`: the formatted text's, or those
+/// that fill the template in the sentence of a finding raised on a worded definition.
+pub fn args_in(diagnostic: &Diagnostic, template_: &str) -> Vec<String> {
+    if template(diagnostic).is_some() {
+        return args(diagnostic);
+    }
+    let Some(line) = diagnostic.vanilla() else {
+        return Vec::new();
+    };
+    let pieces: Vec<&str> = template_.split("{}").collect();
+    let mut rest = line.strip_prefix(pieces[0]).unwrap_or_default();
+    let mut found = Vec::new();
+    for (index, piece) in pieces.iter().enumerate().skip(1) {
+        let end = if index + 1 == pieces.len() {
+            rest.len() - piece.len()
+        } else {
+            rest.find(piece).unwrap_or(rest.len())
+        };
+        found.push(rest[..end].to_owned());
+        rest = &rest[(end + piece.len()).min(rest.len())..];
+    }
+    found
+}
+
+/// The findings whose vanilla text has `template`. A finding raised on a worded definition
+/// carries the sentence alone (the link pass's): its sentence fits the template.
 pub fn with_text<'d>(diagnostics: &'d Diagnostics, template_: &str) -> Vec<&'d Diagnostic> {
     diagnostics
         .iter()
-        .filter(|d| template(d) == Some(template_))
+        .filter(|d| match template(d) {
+            Some(template) => template == template_,
+            None => d.vanilla().is_some_and(|line| fits(template_, &line)),
+        })
         .collect()
+}
+
+/// Whether `line` is `template` with each `{}` filled.
+fn fits(template: &str, line: &str) -> bool {
+    let mut pieces = template.split("{}");
+    let first = pieces.next().unwrap_or_default();
+    let Some(mut rest) = line.strip_prefix(first) else {
+        return false;
+    };
+    let pieces: Vec<&str> = pieces.collect();
+    for (index, piece) in pieces.iter().enumerate() {
+        if index + 1 == pieces.len() {
+            return rest.ends_with(piece);
+        }
+        let Some(at) = rest.find(piece) else {
+            return false;
+        };
+        rest = &rest[at + piece.len()..];
+    }
+    rest.is_empty()
 }
 
 /// Exactly one finding with `template`, a kept error (the game's level-3

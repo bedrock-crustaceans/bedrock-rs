@@ -12,8 +12,9 @@
 //! own coercion and its own parse-error type, which a typed deserialisation cannot report.
 //! Findings on a `Value` have a JSON path and no byte offset.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span, VanillaText,
+    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
@@ -146,10 +147,13 @@ impl<'p> Sink<'p> {
                 .is_some_and(|number| number.to_f64_lossy().fract() != 0.0);
             // Vanilla reads the element in silence; the crate reports an information.
             if element.is_null() || element.as_bool().is_some() {
-                self.note(DiagnosticCode::InvalidType { text: None }, &at.index(index));
+                self.note(
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
+                    &at.index(index),
+                );
             } else if fraction {
                 self.note(
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     &at.index(index),
                 );
             }
@@ -175,16 +179,16 @@ impl Sink<'_> {
     /// The code of a member of the wrong JSON type.
     pub(super) fn wrong_type(&self) -> DiagnosticCode {
         match self.profile {
-            Profile::Legacy => DiagnosticCode::WrongTypeProperty { text: None },
-            Profile::Comprehensive => DiagnosticCode::InvalidType { text: None },
+            Profile::Legacy => DiagnosticCode::from(&core_codes::WRONG_TYPE_PROPERTY),
+            Profile::Comprehensive => DiagnosticCode::from(&core_codes::INVALID_TYPE),
         }
     }
 
     /// The code of a required member that is absent.
     fn missing(&self) -> DiagnosticCode {
         match self.profile {
-            Profile::Legacy => DiagnosticCode::MissingProperty { text: None },
-            Profile::Comprehensive => DiagnosticCode::MissingRequiredField { text: None },
+            Profile::Legacy => DiagnosticCode::from(&core_codes::MISSING_PROPERTY),
+            Profile::Comprehensive => DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD),
         }
     }
 
@@ -273,7 +277,7 @@ impl Sink<'_> {
         if read.is_empty() && required && self.profile == Profile::Legacy {
             // An empty required string is reported as `empty_property:%s;` (skipped for an
             // optional member), and the pack is rejected, so it is an error.
-            self.error(DiagnosticCode::EmptyProperty, &at);
+            self.error(DiagnosticCode::from(&core_codes::EMPTY_PROPERTY), &at);
         }
         Some(read.to_owned())
     }
@@ -318,7 +322,11 @@ impl Sink<'_> {
         if let Some(uuid) = ids::parse(&raw) {
             return Some(uuid);
         }
-        self.error_or_upgraded(DiagnosticCode::MalformedPropertyUuid, upgraded, &at);
+        self.error_or_upgraded(
+            DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_UUID),
+            upgraded,
+            &at,
+        );
         Some(ids::salvage(&raw))
     }
 
@@ -339,7 +347,7 @@ impl Sink<'_> {
             let parsed = relaxed_version_text(&raw);
             if parsed.is_none() {
                 self.error(
-                    DiagnosticCode::MalformedPropertyVersion { text: None },
+                    DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_VERSION),
                     &below(at, key),
                 );
             }
@@ -348,22 +356,27 @@ impl Sink<'_> {
         let at = below(at, key);
         let Some(value) = self.present(object, key) else {
             if upgraded {
-                self.warning(DiagnosticCode::MissingProperty { text: None }, &at);
+                self.warning(DiagnosticCode::from(&core_codes::MISSING_PROPERTY), &at);
                 return Some(SemVersion::new(0, 0, 0));
             }
-            self.error(DiagnosticCode::MissingProperty { text: None }, &at);
+            self.error(DiagnosticCode::from(&core_codes::MISSING_PROPERTY), &at);
             return None;
         };
         if let Some(raw) = text(value) {
             return match strict_version_text(raw) {
                 Some(version) => Some(version),
                 None if upgraded => {
-                    self.warning(DiagnosticCode::MalformedPropertyVersion { text: None }, &at);
+                    self.warning(
+                        DiagnosticCode::from(&core_codes::MALFORMED_PROPERTY_VERSION),
+                        &at,
+                    );
                     Some(SemVersion::new(1, 0, 0))
                 }
                 None => {
-                    let text = Some(VanillaText::ManifestNotSemVer { path: pointer(&at) });
-                    self.error(DiagnosticCode::MalformedPropertyVersion { text }, &at);
+                    self.error(
+                        core_codes::MANIFEST_NOT_SEMVER.with([pointer(&at)]).into(),
+                        &at,
+                    );
                     None
                 }
             };
@@ -372,8 +385,12 @@ impl Sink<'_> {
             return Some(version);
         }
         // An array of the wrong length or with an unconvertible element, or another type.
-        let text = (!upgraded).then(|| VanillaText::ManifestWrongType { path: pointer(&at) });
-        self.error_or_upgraded(DiagnosticCode::WrongTypeProperty { text }, upgraded, &at);
+        let code = if upgraded {
+            DiagnosticCode::from(&core_codes::WRONG_TYPE_PROPERTY)
+        } else {
+            core_codes::MANIFEST_WRONG_TYPE.with([pointer(&at)]).into()
+        };
+        self.error_or_upgraded(code, upgraded, &at);
         upgraded.then(|| SemVersion::new(0, 0, 0))
     }
 
@@ -399,7 +416,7 @@ impl Sink<'_> {
                     extra.insert(key.as_str().to_owned(), value.clone());
                 }
                 Profile::Comprehensive => self.error(
-                    DiagnosticCode::UnrecognizedField { text: None },
+                    DiagnosticCode::from(&core_codes::UNRECOGNIZED_FIELD),
                     &below(at, key.as_str()),
                 ),
             }
@@ -414,20 +431,19 @@ impl Sink<'_> {
         let engine = SemVersion::from(ENGINE_VERSION);
         if *version > engine {
             self.error(
-                DiagnosticCode::VersionTooHigh {
-                    version: version.to_string(),
-                    limit: engine.to_string(),
-                },
+                DiagnosticCode::from(
+                    core_codes::VERSION_TOO_HIGH.with([version.to_string(), engine.to_string()]),
+                ),
                 at,
             );
             return false;
         }
         if *version < LOWEST_ENGINE {
             self.error(
-                DiagnosticCode::VersionTooLow {
-                    version: version.to_string(),
-                    limit: LOWEST_ENGINE.to_string(),
-                },
+                DiagnosticCode::from(
+                    core_codes::VERSION_TOO_LOW
+                        .with([version.to_string(), LOWEST_ENGINE.to_string()]),
+                ),
                 at,
             );
             return false;

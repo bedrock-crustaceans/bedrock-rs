@@ -8,6 +8,7 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, Location, Phase, Severity,
 };
@@ -135,7 +136,7 @@ impl<'a> LinkCx<'a> {
                     .insert((side, index, path.clone()));
                 if first {
                     out.push(Diagnostic::new(
-                        DiagnosticCode::FileNotLoaded,
+                        DiagnosticCode::from(&core_codes::FILE_NOT_LOADED),
                         Severity::Info,
                         Phase::Link,
                         Location::new(

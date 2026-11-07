@@ -3,6 +3,7 @@
 use bedrock_addon::diagnostic::codes;
 use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
 use bedrock_addon::pack::settings::SettingValue;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 use super::common::{WORLD, document, loads_text, names, one_entry, refused_text};
 use super::document::closes;
@@ -217,10 +218,7 @@ fn a_slider_cannot_be_set_to_a_number_that_is_not_finite_deviation() {
             Err(SetError::TypeMismatch)
         );
     }
-    assert!(matches!(
-        SetError::NotFinite.code(),
-        C::InvalidValue { text: None }
-    ));
+    assert!(SetError::NotFinite.code().is(&core_codes::INVALID_VALUE));
     // The largest finite numbers are clamped like any other.
     assert_eq!(
         settings.set("banana:slider", SettingValue::Float(f32::MAX)),

@@ -14,10 +14,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::spawn_rules::SpawnRules;
 use bedrock_addon::id::SpawnGroupId;
 use bedrock_addon::load::{Experiment, Experiments, LoadOptions, StackOptions};
@@ -101,7 +102,7 @@ fn check_rules(source: &str, dirs: &[&Path], world_behavior: &[u8]) {
             if finding.severity < Severity::Error {
                 continue;
             }
-            if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < on_disk {
+            if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
                 mcb += 1;
                 continue;
             }

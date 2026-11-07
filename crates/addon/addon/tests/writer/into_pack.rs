@@ -1,7 +1,7 @@
 //! `PackWriter::into_pack`: the written pack goes through the loader a pack on disk does and
 //! comes out with the identity, the files and the bytes it was written with.
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::RootId;
 use bedrock_addon::manifest::{Manifest, Setting};
 use bedrock_addon::pack::{OpenError, Pack, PackOrigin, PackType, PackWriter};
@@ -103,7 +103,10 @@ fn into_pack_of_a_manifest_its_format_cannot_hold_is_an_invalid_manifest() {
     let findings: Vec<_> = report.diagnostics().iter().collect();
     assert_eq!(findings.len(), 1, "{findings:?}");
     let finding = findings[0];
-    assert_eq!(finding.code, DiagnosticCode::InvalidValue { text: None });
+    assert!(
+        finding.is(&bedrock_addon::diagnostic::codes::INVALID_VALUE),
+        "{finding:?}"
+    );
     assert_eq!(finding.severity, Severity::Error);
     assert_eq!(
         finding.location.path.as_ref().map(PackPath::as_str),

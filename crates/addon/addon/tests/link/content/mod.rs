@@ -84,16 +84,18 @@ pub fn one(
 
 /// The vanilla text of a finding, as the game prints it; `None` for a finding of ours.
 pub fn text(finding: &Diagnostic) -> Option<String> {
-    use bedrock_addon::diagnostic::DiagnosticCode as Code;
-    match &finding.code {
-        Code::UnresolvedReference { text }
-        | Code::InvalidReference { text }
-        | Code::InvalidValue { text }
-        | Code::NoEffect { text }
-        | Code::MissingRequiredField { text }
-        | Code::DocumentRejected { text } => text.as_ref().map(ToString::to_string),
-        _ => None,
-    }
+    // By legacy name: the variants and the definitions (plain and worded) that were them.
+    matches!(
+        finding.code.name(),
+        "UnresolvedReference"
+            | "InvalidReference"
+            | "InvalidValue"
+            | "NoEffect"
+            | "MissingRequiredField"
+            | "DocumentRejected"
+    )
+    .then(|| finding.vanilla())
+    .flatten()
 }
 
 /// The hint of a finding's reference.

@@ -4,7 +4,6 @@
 
 use std::io::ErrorKind;
 
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::load::{
     Collection, CollectionSet, LoadOptions, RepositoryLoader, RootId, Source, StackLoader,
     StackOptions,
@@ -71,7 +70,8 @@ fn about_the_broken_file(set: &StackSet) -> usize {
                 .as_ref()
                 .is_some_and(|path| path.as_str() == "functions/broken.mcfunction")
         })
-        .inspect(|f| assert!(matches!(f.code, DiagnosticCode::ReadError { .. }), "{f:?}"))
+        // By legacy name: `READ_ERROR` and `READ_ERROR_WORDED` (the walk's sentence).
+        .inspect(|f| assert!(f.code.name() == "ReadError", "{f:?}"))
         .count()
 }
 

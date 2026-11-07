@@ -16,6 +16,7 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
@@ -113,9 +114,7 @@ fn collect<'a>(
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat)
-            && outcome.mcb_seen < on_disk
-        {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && outcome.mcb_seen < on_disk {
             outcome.mcb_seen += 1;
             continue;
         }

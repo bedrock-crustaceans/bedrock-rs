@@ -4,6 +4,7 @@
 //! pack has under that name; a name that resolves to nothing is silent when it is played, and
 //! nothing happens at load. Told as informations at the entry.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, JsonPath, ReferenceHint, Severity,
 };
@@ -57,7 +58,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
             path.push_index(index);
             if has_extension(name) {
                 let at = At::new(origin, path.clone(), Severity::Info);
-                out.push(at.diagnostic(DiagnosticCode::InvalidValue { text: None }));
+                out.push(at.diagnostic(DiagnosticCode::from(&core_codes::INVALID_VALUE)));
             }
             let built_in = || {
                 built_ins.is_some_and(|built_ins| {
@@ -78,7 +79,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
                 .map(|asset| ReferenceHint::CaseMismatch(asset.path.as_str().to_owned()));
             let at = At::new(origin, path, Severity::Info);
             let finding: Diagnostic = at.reference(
-                DiagnosticCode::UnresolvedReference { text: None },
+                DiagnosticCode::from(&core_codes::UNRESOLVED_REFERENCE),
                 SOUND_FILE_KIND,
                 name,
                 hint,

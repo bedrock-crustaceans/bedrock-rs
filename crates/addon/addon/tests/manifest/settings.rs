@@ -3,6 +3,7 @@
 use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity, VanillaText};
 use bedrock_addon::document::Document;
 use bedrock_addon::manifest::{DropdownOption, Manifest, Setting};
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 use super::{findings, fixture, has, parse};
 
@@ -21,20 +22,55 @@ fn refused(name: &str) -> Diagnostics {
     }
 }
 
-/// The vanilla texts of the `InvalidValue` errors, in order.
+/// The vanilla texts of the `InvalidValue` errors, in order: the legacy text, or the one a
+/// pack settings definition stands for, built from its arguments.
 fn texts(diagnostics: &Diagnostics) -> Vec<VanillaText> {
     diagnostics
         .iter()
         .filter_map(|d| match &d.code {
             C::InvalidValue { text: Some(text) } => Some(text.clone()),
+            C::Specific { code } => setting_text(code),
             _ => None,
         })
         .collect()
 }
 
+/// The legacy text a pack settings definition of core stands for.
+fn setting_text(code: &bedrock_addon::diagnostic::Code) -> Option<VanillaText> {
+    let args = code.args();
+    let arg = |index: usize| args[index].clone();
+    Some(if code.is(&core_codes::DUPLICATE_PACK_SETTING_NAME) {
+        VanillaText::DuplicatePackSettingName { name: arg(0) }
+    } else if code.is(&core_codes::SLIDER_MAX_NOT_ABOVE_MIN) {
+        VanillaText::SliderMaxNotAboveMin { name: arg(0) }
+    } else if code.is(&core_codes::SLIDER_STEP_TOO_LARGE) {
+        VanillaText::SliderStepTooLarge {
+            name: arg(0),
+            step: arg(1),
+        }
+    } else if code.is(&core_codes::SLIDER_DEFAULT_OUT_OF_RANGE) {
+        VanillaText::SliderDefaultOutOfRange {
+            name: arg(0),
+            default: arg(1),
+        }
+    } else if code.is(&core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS) {
+        VanillaText::DropdownDefaultNotInOptions {
+            name: arg(0),
+            default: arg(1),
+        }
+    } else if code.is(&core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS) {
+        VanillaText::MultiselectDefaultNotInOptions {
+            name: arg(0),
+            default: arg(1),
+        }
+    } else {
+        return None;
+    })
+}
+
 fn invalid_at(diagnostics: &Diagnostics, path: &str) -> bool {
     has(diagnostics, Severity::Error, path, |c| {
-        matches!(c, C::InvalidValue { .. })
+        c.name() == "InvalidValue"
     })
 }
 
@@ -209,7 +245,7 @@ fn mv15_multiselect_with_no_and_two_defaults_is_valid() {
         document.diagnostics(),
         Severity::Info,
         "settings/0",
-        |c| matches!(c, C::FieldSinceEngine { .. })
+        |c| c.name() == "FieldSinceEngine"
     ));
 }
 
@@ -237,7 +273,7 @@ fn mv17_a_legacy_manifest_keeps_only_labels() {
         document.diagnostics(),
         Severity::Info,
         "settings/1",
-        |c| matches!(c, C::LegacySettingIgnored)
+        |c| c.is(&core_codes::LEGACY_SETTING_IGNORED)
     ));
 }
 
@@ -258,29 +294,22 @@ fn mv18_the_shape_not_the_type_decides_the_kind() {
         ]
     );
     for path in ["settings/0/type", "settings/1/type"] {
-        assert!(has(
-            document.diagnostics(),
-            Severity::Info,
-            path,
-            |c| matches!(c, C::SettingTypeMismatch)
-        ));
+        assert!(has(document.diagnostics(), Severity::Info, path, |c| c
+            .is(&core_codes::SETTING_TYPE_MISMATCH)));
     }
 }
 
 #[test]
 fn mv19_an_entry_that_fits_no_kind_rejects_the_manifest() {
     let diagnostics = refused("mv19_fits_nothing");
-    assert!(has(
-        &diagnostics,
-        Severity::Error,
-        "settings/0/step",
-        |c| matches!(c, C::MissingRequiredField { .. })
-    ));
+    assert!(has(&diagnostics, Severity::Error, "settings/0/step", |c| c
+        .name()
+        == "MissingRequiredField"));
     assert!(has(
         &diagnostics,
         Severity::Error,
         "settings/0/default",
-        |c| matches!(c, C::MissingRequiredField { .. })
+        |c| c.name() == "MissingRequiredField"
     ));
 }
 
@@ -505,7 +534,7 @@ fn a_multiselect_s_selection_text_loads() {
         let rejected = parse(text.as_bytes()).unwrap_err();
         assert!(
             has(&rejected.diagnostics, Severity::Error, "settings/0", |c| {
-                matches!(c, C::InvalidType { .. })
+                c.name() == "InvalidType"
             }),
             "{value}: {:#?}",
             rejected.diagnostics
@@ -542,7 +571,7 @@ fn an_option_with_an_empty_name_is_the_constraint_s_error_not_v3_or_v7() {
                 .diagnostics
                 .iter()
                 .filter(|d| d.severity == Severity::Error)
-                .all(|d| matches!(d.code, C::InvalidValue { text: None })),
+                .all(|d| d.is(&core_codes::INVALID_VALUE)),
             "{kind}: {:#?}",
             rejected.diagnostics
         );

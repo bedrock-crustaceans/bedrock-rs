@@ -4,7 +4,8 @@
 use std::collections::BTreeMap;
 
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    codes,
 };
 use bedrock_addon_core::load::{Place, RootId};
 use bedrock_addon_core::pack_identity::PackPath;
@@ -245,22 +246,21 @@ impl PackFiles {
 /// key is an unsupported format, anything else a read error (`InvalidData`).
 // 03.
 pub(crate) fn storage_finding(path: &PackPath, error: &StorageError) -> Diagnostic {
-    let code = match error {
-        StorageError::MissingContentKey | StorageError::Decrypt | StorageError::Mcb { .. } => {
-            DiagnosticCode::UnsupportedFileFormat
-        }
-        StorageError::NotResident => DiagnosticCode::FileNotLoaded,
-        _ => DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::InvalidData,
-            text: None,
-        },
+    let location = Location::new(None, Some(path.clone()), JsonPath::new(), None);
+    let finding = |code: DiagnosticCode| {
+        Diagnostic::new(code, Severity::Error, Phase::Read, location.clone())
     };
-    Diagnostic::new(
-        code,
-        Severity::Error,
-        Phase::Read,
-        Location::new(None, Some(path.clone()), JsonPath::new(), None),
-    )
+    match error {
+        StorageError::MissingContentKey | StorageError::Decrypt | StorageError::Mcb { .. } => {
+            finding(DiagnosticCode::from(&codes::UNSUPPORTED_FILE_FORMAT))
+        }
+        StorageError::NotResident => finding(DiagnosticCode::from(&codes::FILE_NOT_LOADED)),
+        _ => {
+            let kind = std::io::ErrorKind::InvalidData;
+            finding(codes::READ_ERROR.with([kind.to_string()]).into())
+                .detail(DiagnosticDetail::Io(kind))
+        }
+    }
 }
 
 impl Pack {

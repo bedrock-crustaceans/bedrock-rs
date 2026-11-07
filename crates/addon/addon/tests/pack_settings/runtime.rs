@@ -1,7 +1,7 @@
 //! The pack settings "Runtime" fixture rows `rt01`–`rt18`: the values of one pack
 //! (`PackSettings`, rules A1–A5) and the save algorithm.
 
-use bedrock_addon::diagnostic::{DiagnosticCode as C, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::json::Value;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest};
 use bedrock_addon::pack::settings::{
@@ -9,6 +9,7 @@ use bedrock_addon::pack::settings::{
     SettingsFile,
 };
 use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -209,7 +210,7 @@ pub fn rt05_unknown_saved_name_is_ignored_and_gone_after_the_save() {
     assert_eq!(names(&d, Severity::Info), ["SettingUnknownName"]);
     let found = d
         .iter()
-        .find(|f| matches!(f.code, C::SettingUnknownName))
+        .find(|f| f.is(&core_codes::SETTING_UNKNOWN_NAME))
         .unwrap();
     assert_eq!(found.location.json_path.to_string(), "values/banana:gone");
     let written_doc =

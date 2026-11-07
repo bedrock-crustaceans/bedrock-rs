@@ -3,6 +3,7 @@
 //! replaces or is ignored against the other; this crate keeps them apart and tells the
 //! collision at the attachable.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, JsonPath, Severity};
 use bedrock_addon_core::id::EntityId;
 
@@ -30,7 +31,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         // information.
         let at = At::new(document.origin(), path, Severity::Info);
         out.push(at.reference(
-            DiagnosticCode::IdentifierCollision { text: None },
+            DiagnosticCode::from(&core_codes::IDENTIFIER_COLLISION),
             kinds::ENTITY,
             attachable.description.identifier.as_str(),
             None,

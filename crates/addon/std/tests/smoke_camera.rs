@@ -17,10 +17,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::aim_assist::{AimAssistCategories, AimAssistPreset};
 use bedrock_addon::families::camera::{CameraEntity, CameraList, CameraPreset, CameraSpline};
@@ -135,7 +136,7 @@ fn check_stack(source: &str, dirs: &[&Path], world_behavior: &[u8]) -> Loaded {
         if finding.severity == Severity::Warning {
             count(&mut warnings, finding.code.name());
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             mcb += 1;
             continue;
         }

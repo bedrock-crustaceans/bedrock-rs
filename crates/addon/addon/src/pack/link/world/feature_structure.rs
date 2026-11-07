@@ -5,6 +5,8 @@ use crate::diagnostic::{DiagnosticCode, JsonPath, Severity, VanillaText};
 use crate::document::Document;
 use crate::families::feature::Feature;
 use crate::id::StructureId;
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// vanilla's text for a `ground_level` above the structure's height.
 // The game's text: the value, the height, the value it is clamped to.
@@ -54,7 +56,11 @@ pub(super) fn feature_template(cx: &LinkCx<'_>, out: &mut Findings, document: &D
                 };
                 // The game logs this at the warning level and clamps the value: a warning.
                 let at = At::new(origin, member("ground_level"), Severity::Warning);
-                out.push(at.diagnostic(DiagnosticCode::InvalidValue { text: Some(text) }));
+                out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+                    &core_codes::INVALID_VALUE,
+                    &core_codes::INVALID_VALUE_WORDED,
+                    Some(&text),
+                ))));
             }
         }
         _ => {}

@@ -2703,6 +2703,91 @@ fn core_definitions() -> Vec<(Code, DiagnosticCode)> {
                 text: Some(VanillaText::Fixed("enum value is deprecated")),
             },
         ),
+        (
+            codes::MANIFEST_INVALID_VALUE.with(["/modules/0/type"]),
+            C::InvalidProperty {
+                text: Some(VanillaText::ManifestInvalidValue {
+                    path: "/modules/0/type".into(),
+                }),
+            },
+        ),
+        (
+            codes::MANIFEST_NOT_SEMVER.with(["/dependencies/0/version"]),
+            C::MalformedPropertyVersion {
+                text: Some(VanillaText::ManifestNotSemVer {
+                    path: "/dependencies/0/version".into(),
+                }),
+            },
+        ),
+        (
+            codes::MANIFEST_WRONG_TYPE.with(["/dependencies/0/version"]),
+            C::WrongTypeProperty {
+                text: Some(VanillaText::ManifestWrongType {
+                    path: "/dependencies/0/version".into(),
+                }),
+            },
+        ),
+        (
+            codes::DEPENDENCY_INVALID_VERSION.with(["@minecraft/server", "0.0.0"]),
+            C::MalformedPropertyVersion {
+                text: Some(VanillaText::DependencyInvalidVersion {
+                    module: "@minecraft/server".into(),
+                    version: "0.0.0".into(),
+                }),
+            },
+        ),
+        (
+            codes::DUPLICATE_PACK_SETTING_NAME.with(["volume"]),
+            C::InvalidValue {
+                text: Some(VanillaText::DuplicatePackSettingName {
+                    name: "volume".into(),
+                }),
+            },
+        ),
+        (
+            codes::SLIDER_MAX_NOT_ABOVE_MIN.with(["volume"]),
+            C::InvalidValue {
+                text: Some(VanillaText::SliderMaxNotAboveMin {
+                    name: "volume".into(),
+                }),
+            },
+        ),
+        (
+            codes::SLIDER_STEP_TOO_LARGE.with(["volume", "2"]),
+            C::InvalidValue {
+                text: Some(VanillaText::SliderStepTooLarge {
+                    name: "volume".into(),
+                    step: "2".into(),
+                }),
+            },
+        ),
+        (
+            codes::SLIDER_DEFAULT_OUT_OF_RANGE.with(["volume", "7"]),
+            C::InvalidValue {
+                text: Some(VanillaText::SliderDefaultOutOfRange {
+                    name: "volume".into(),
+                    default: "7".into(),
+                }),
+            },
+        ),
+        (
+            codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS.with(["mode", "fast"]),
+            C::InvalidValue {
+                text: Some(VanillaText::DropdownDefaultNotInOptions {
+                    name: "mode".into(),
+                    default: "fast".into(),
+                }),
+            },
+        ),
+        (
+            codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS.with(["modes", "fast"]),
+            C::InvalidValue {
+                text: Some(VanillaText::MultiselectDefaultNotInOptions {
+                    name: "modes".into(),
+                    default: "fast".into(),
+                }),
+            },
+        ),
     ]
 }
 

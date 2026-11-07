@@ -18,13 +18,15 @@ fn v12_eat_block_unknown_block_is_reported_with_vanillas_text() {
         .find(|f| f.code.name() == "UnresolvedReference")
         .unwrap_or_else(|| panic!("{d:?}"));
     assert_eq!(found.severity, Severity::Error);
-    assert_eq!(
-        found.code,
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::EatBlockInvalidBlock {
-                block: "demo:nothing".to_owned()
-            })
-        }
+    let legacy = DiagnosticCode::UnresolvedReference {
+        text: Some(VanillaText::EatBlockInvalidBlock {
+            block: "demo:nothing".to_owned(),
+        }),
+    };
+    assert!(
+        bedrock_addon::diagnostic::testing::same_line(&found.code, &legacy),
+        "{:?}",
+        found.code
     );
 }
 

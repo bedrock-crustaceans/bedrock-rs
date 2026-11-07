@@ -31,7 +31,7 @@ mod pairs;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity, VanillaText};
+use bedrock_addon::diagnostic::{Diagnostic, JsonPath, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::entity::Entity;
 use bedrock_addon::json::{JsonSlice, Value, parse_at};
@@ -177,12 +177,10 @@ fn count_filters(set: &StackSet, found: &mut Filters) {
 
 /// The name of the filter test `finding` did not find, when it is that warning.
 fn unknown_filter_test(finding: &Diagnostic) -> Option<&str> {
-    match &finding.code {
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::FilterTestNotFound { name }),
-        } => Some(name),
-        _ => None,
-    }
+    let args = finding
+        .code
+        .args_of(&bedrock_addon::diagnostic::codes::FILTER_TEST_NOT_FOUND)?;
+    args.first().map(String::as_str)
 }
 
 /// Loads every behaviour pack in `packs`, each as a stack of its own, and the app data below

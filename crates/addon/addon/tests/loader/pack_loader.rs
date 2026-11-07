@@ -2,6 +2,7 @@
 //! findings for failed, missing and lossy answers, panicked jobs, progress, cancellation and
 //! determinism over completion orders.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::io::ErrorKind;
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
@@ -106,7 +107,7 @@ fn a_contents_json_with_another_version_is_reported() {
         let pack = open_folder(&mut responder, OpenOptions::default()).unwrap();
         let found: Vec<_> = pack.report().diagnostics().iter().collect();
         assert!(
-            matches!(found[..], [d] if matches!(d.code, DiagnosticCode::InvalidValue { text: None })),
+            matches!(found[..], [d] if d.is(&core_codes::INVALID_VALUE)),
             "{found:?}"
         );
         assert_eq!(
@@ -189,8 +190,9 @@ mod encrypted {
             .iter()
             .map(|d| &d.code)
             .collect();
-        assert!(
-            matches!(codes[..], [DiagnosticCode::UnsupportedFileFormat]),
+        assert_eq!(
+            codes,
+            [&DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)],
             "{codes:?}"
         );
     }
@@ -319,16 +321,16 @@ fn an_unreadable_contents_json_is_a_read_error_and_the_pack_opens() {
         .report()
         .diagnostics()
         .iter()
-        .map(|d| &d.code)
+        .map(|d| (d.is(&core_codes::READ_ERROR), d.detail.as_deref()))
         .collect();
-    assert!(
-        matches!(
-            codes[..],
-            [DiagnosticCode::ReadError {
-                kind: ErrorKind::Other,
-                ..
-            }]
-        ),
+    assert_eq!(
+        codes,
+        [(
+            true,
+            Some(&bedrock_addon::diagnostic::DiagnosticDetail::Io(
+                ErrorKind::Other
+            ))
+        )],
         "{codes:?}"
     );
 }
@@ -344,7 +346,7 @@ fn lossy_and_rejected_names_are_skipped_with_path_rejected() {
     let findings: Vec<_> = pack.report().diagnostics().iter().collect();
     assert_eq!(findings.len(), 2, "{findings:?}");
     for finding in findings {
-        assert!(matches!(finding.code, DiagnosticCode::PathRejected { .. }));
+        assert!(finding.is(&core_codes::PATH_REJECTED), "{finding:?}");
         assert_eq!(finding.severity, Severity::Info);
     }
     let paths: Vec<&str> = pack.paths().map(PackPath::as_str).collect();
@@ -402,7 +404,7 @@ fn a_panicked_contents_index_job_is_an_internal_error_and_the_pack_opens() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::InternalError]);
+    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
     // A plain `contents.json`: the files stay readable.
     assert!(pack.read(&PackPath::from_static("manifest.json")).is_ok());
 }
@@ -486,7 +488,7 @@ fn a_panicked_brarchive_index_job_of_an_archive_pack_names_each_archive() {
     assert_eq!(
         findings,
         [(
-            &DiagnosticCode::InternalError,
+            &DiagnosticCode::from(&core_codes::INTERNAL_ERROR),
             Some("__brarchive/entities.brarchive")
         )]
     );

@@ -14,9 +14,10 @@ mod common;
 #[path = "common/pairs.rs"]
 mod pairs;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Pack, PackOrigin, PackRepository};
 use bedrock_addon_std::{DirSource, Driver, Options, read_app_data};
@@ -84,7 +85,7 @@ fn load_features(
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < on_disk {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
             mcb += 1;
             continue;
         }

@@ -1,6 +1,7 @@
 //! Saved pack settings: the values a world stored for a pack's `settings` definitions (the
 //! definitions themselves are `manifest::Setting`).
 
+pub mod codes;
 pub mod history;
 
 // Pack settings are user-adjustable controls a format-3 manifest declares (`manifest::Setting`).
@@ -36,9 +37,7 @@ pub const MAX_GLOBAL_ENTRIES: usize = 128;
 use std::collections::HashSet;
 use std::convert::Infallible;
 
-use crate::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Span, VanillaText,
-};
+use crate::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Phase, Severity, Span};
 use crate::document::{Document, Origin, Rejected};
 use crate::json::{
     EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, RootProbe, check_depth, probe_envelope, strip_bom,
@@ -48,13 +47,11 @@ use crate::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, Loaded, MissingVersion, NoComponents,
     RangeModel, Selection, ValidateCx, Versioned, finish, parse_as_written, select,
 };
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
 use history::{PackSettingsFamily, PackSettingsHistory};
-
-/// The closing error of a file that failed to load; `{}` is the file's path.
-const LOAD_FAILED: &str = "Pack Settings failed to load [{}]";
 
 /// The floor, and the only version the released game reads.
 const FLOOR: FormatVersion = FormatVersion::new(1, 21, 100);
@@ -103,7 +100,8 @@ impl Family for PackSettingsFamily {
             // The game takes the first match and carries the others in silence, so the crate
             // reports it as an information.
             cx.diagnostics.push(
-                Diagnostic::info(DiagnosticCode::DuplicateIdentifier { text: None })
+                Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
+                    .severity(Severity::Info)
                     .at(at)
                     .phase(Phase::Validate),
             );
@@ -177,12 +175,7 @@ impl SavedSettings {
         let loaded = load(bytes, &mut found);
         if found.has_errors() {
             // Once per file, after the loader's own entries (error level, the packs log area).
-            found.push(error(DiagnosticCode::DocumentRejected {
-                text: Some(VanillaText::Formatted {
-                    template: LOAD_FAILED,
-                    args: vec![name.to_owned()],
-                }),
-            }));
+            found.push(error(codes::LOAD_FAILED.with([name]).into()));
         }
         let diagnostics: Diagnostics = found
             .into_iter()
@@ -240,7 +233,7 @@ fn load(
         // The game only asserts the payload key (in a development build) and the payload
         // loads, so the crate reports an information.
         d.push(
-            Diagnostic::info(DiagnosticCode::PayloadKeyMismatch)
+            Diagnostic::of(&core_codes::PAYLOAD_KEY_MISMATCH)
                 .at(at)
                 .span(key.span()),
         );
@@ -257,13 +250,19 @@ fn load(
     let value = outcome.value?;
     // The game reads a version written as three integers too.
     if matches!(written, EnvelopeVersion::Array(_)) {
-        d.push(info(DiagnosticCode::FormatVersionArray, version_at()));
+        d.push(info(
+            DiagnosticCode::from(&core_codes::FORMAT_VERSION_ARRAY),
+            version_at(),
+        ));
     }
     // The released game's only range is [1.21.100, 1.21.100]; the crate reads up to the newest
     // struct.
     let effective = outcome.version.effective;
     if FLOOR < effective && effective < <SavedSettings as Versioned>::VERSION {
-        d.push(info(DiagnosticCode::VanillaRejectsVersion, version_at()));
+        d.push(info(
+            DiagnosticCode::from(&core_codes::VANILLA_REJECTS_VERSION),
+            version_at(),
+        ));
     }
     match value {
         Loaded::Stable(settings) => Some((settings, outcome.version)),
@@ -469,12 +468,9 @@ fn origin(name: &str) -> Origin {
     Origin::file(PackRef::app_data(), side, path)
 }
 
-/// `MalformedInput` without vanilla's text: bytes that are no JSON text at all.
+/// A syntax finding without vanilla's text: bytes that are no JSON text at all.
 fn malformed(message: String) -> DiagnosticCode {
-    DiagnosticCode::MalformedInput {
-        message,
-        text: None,
-    }
+    bedrock_addon_core::diagnostic::builders::syntax(message).into()
 }
 
 /// A file-level parse error.

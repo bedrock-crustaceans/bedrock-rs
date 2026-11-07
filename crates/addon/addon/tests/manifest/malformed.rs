@@ -5,6 +5,7 @@
 use bedrock_addon::diagnostic::{DiagnosticCode as C, Severity};
 use bedrock_addon::manifest::ModuleType;
 use bedrock_addon::version::SemVersion;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 
 use super::{findings, fixture, fixtures, has, parse};
 
@@ -73,8 +74,8 @@ const TABLE: &[Row] = &[
     Row { file: "malformed_unquoted_key.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
     // By legacy name: the variant and the definitions that were it.
     Row { file: "malformed_unterminated.json", loads: false, severity: E, path: "", code: |c| matches!(c.name(), "MalformedInput") },
-    Row { file: "min_engine_above_current.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| matches!(c, C::VersionTooHigh { version, .. } if version == "1.99.0") },
-    Row { file: "min_engine_below_1_13.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| matches!(c, C::VersionTooLow { version, limit } if version == "1.5.0" && limit == "1.13.0") },
+    Row { file: "min_engine_above_current.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| c.args_of(&core_codes::VERSION_TOO_HIGH).is_some_and(|args| args[0] == "1.99.0") },
+    Row { file: "min_engine_below_1_13.json", loads: false, severity: E, path: "header/min_engine_version", code: |c| c.args_of(&core_codes::VERSION_TOO_LOW).is_some_and(|args| args == ["1.5.0", "1.13.0"]) },
     // Strict path: an absent `modules` is error 9, not warning 20.
     // By legacy name: the variant and the definitions that were it.
     Row { file: "modules_absent.json", loads: false, severity: E, path: "modules", code: |c| matches!(c.name(), "WrongTypeProperty") },

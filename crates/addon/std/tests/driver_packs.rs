@@ -3,6 +3,7 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::fs;
 use std::path::Path;
 
@@ -186,7 +187,7 @@ fn an_encrypted_pack_folder_is_decrypted_with_its_sidecar_key_only_when_opted_in
     /// Whether `contents.json` could not be decrypted (a warning on `contents.json`).
     fn contents_unsupported(pack: &Pack) -> bool {
         pack.report().diagnostics().iter().any(|diagnostic| {
-            diagnostic.code == DiagnosticCode::UnsupportedFileFormat
+            diagnostic.code == DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)
                 && diagnostic.location.path == Some(PackPath::from_static("contents.json"))
         })
     }

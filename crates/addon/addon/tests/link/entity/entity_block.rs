@@ -44,13 +44,15 @@ fn e10_an_eat_block_pair_naming_a_block_nothing_defines_is_an_error_with_vanilla
         ]
     );
     let texts: Vec<_> = found.iter().map(|finding| finding.code.clone()).collect();
-    assert_eq!(
-        texts[0],
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::EatBlockInvalidBlock {
-                block: "demo:nothing".to_owned()
-            })
-        }
+    let legacy = DiagnosticCode::UnresolvedReference {
+        text: Some(VanillaText::EatBlockInvalidBlock {
+            block: "demo:nothing".to_owned(),
+        }),
+    };
+    assert!(
+        bedrock_addon::diagnostic::testing::same_line(&texts[0], &legacy),
+        "{:?}",
+        texts[0]
     );
 }
 
@@ -210,21 +212,20 @@ fn e11_a_block_list_naming_a_block_nothing_defines_is_a_kept_error_a_name_an_inf
     );
     // Each error is kept and carries the game's line; an information has no text.
     for finding in found.iter().filter(|finding| said(finding).4 == "block") {
-        let DiagnosticCode::UnresolvedReference { text } = &finding.code else {
-            panic!("{finding:?}");
-        };
+        assert_eq!(finding.code.name(), "UnresolvedReference", "{finding:?}");
+        let text = finding.vanilla();
         if finding.severity == Severity::Error {
             assert!(finding.kept, "{finding:?}");
             assert!(
                 text.as_ref().is_some_and(|text| {
-                    text.to_string().starts_with(
+                    text.starts_with(
                         "Unknown block during Deferred BlockDescriptor resolution: demo:none",
                     )
                 }),
                 "{finding:?}"
             );
         } else {
-            assert_eq!(*text, None, "{finding:?}");
+            assert_eq!(text, None, "{finding:?}");
         }
     }
 }
@@ -274,14 +275,16 @@ fn e11_a_state_the_block_does_not_have_is_the_notifiers_kept_error_and_another_r
         .find(|finding| finding.severity == Severity::Error)
         .unwrap();
     assert!(kept.kept, "{kept:?}");
-    assert_eq!(
-        kept.code,
-        DiagnosticCode::UnresolvedReference {
-            text: Some(VanillaText::Formatted {
-                template: "Block of type '{}' does not have the state '{}'. This block will not be added to InsideBlockNotifierComponent's watch list due to an invalid state.",
-                args: vec!["demo:lamp".to_owned(), "demo:dim".to_owned()],
-            })
-        }
+    let legacy = DiagnosticCode::UnresolvedReference {
+        text: Some(VanillaText::Formatted {
+            template: "Block of type '{}' does not have the state '{}'. This block will not be added to InsideBlockNotifierComponent's watch list due to an invalid state.",
+            args: vec!["demo:lamp".to_owned(), "demo:dim".to_owned()],
+        }),
+    };
+    assert!(
+        bedrock_addon::diagnostic::testing::same_line(&kept.code, &legacy),
+        "{:?}",
+        kept.code
     );
 }
 
@@ -371,7 +374,7 @@ fn e11_a_name_of_a_list_of_block_names_is_linked_as_a_block_name() {
             found
                 .iter()
                 .all(|finding| finding.severity == Severity::Info
-                    && matches!(finding.code, DiagnosticCode::UnresolvedReference { .. })),
+                    && finding.code.name() == "UnresolvedReference"),
             "{component}: {found:?}"
         );
     }

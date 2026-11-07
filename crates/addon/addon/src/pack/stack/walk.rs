@@ -905,7 +905,7 @@ mod tests {
 
     #[test]
     fn a_stack_walk_reads_each_packs_resident_files_and_its_active_subpack() {
-        use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics};
+        use bedrock_addon_core::diagnostic::{Diagnostics, codes as core_codes};
         use bedrock_addon_core::load::LoadOptions;
         use bedrock_addon_core::pack_identity::PackOrigin;
 
@@ -965,7 +965,7 @@ mod tests {
         );
         let not_loaded: Vec<_> = findings.iter().collect();
         assert_eq!(not_loaded.len(), 1);
-        assert!(matches!(not_loaded[0].code, DiagnosticCode::FileNotLoaded));
+        assert!(not_loaded[0].is(&core_codes::FILE_NOT_LOADED));
         assert_eq!(
             not_loaded[0].location.path.as_ref().map(PackPath::as_str),
             Some("entity/cow.json")

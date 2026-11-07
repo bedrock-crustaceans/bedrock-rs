@@ -7,6 +7,8 @@
 //! names a trim colour palette. The client looks a name up as written; the name of a tile the
 //! atlas lacks shows the missing texture.
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, Origin};
 
 use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
@@ -128,9 +130,11 @@ impl Subject<'_> {
         if !icon.textures.is_empty() && !icon.textures.contains_key("default") {
             // The game sets the item's icon to the empty name.
             let at = At::new(self.origin, Self::icon_at(&["textures"]), Severity::Error);
-            out.push(at.diagnostic(DiagnosticCode::MissingRequiredField {
-                text: formatted(NO_DEFAULT, vec![self.id.as_str().to_owned()]),
-            }));
+            out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+                &core_codes::MISSING_REQUIRED_FIELD,
+                &core_codes::MISSING_REQUIRED_FIELD_WORDED,
+                (formatted(NO_DEFAULT, vec![self.id.as_str().to_owned()])).as_ref(),
+            ))));
         }
         for (key, name) in &icon.textures {
             // The file may hold the `default` texture as the bare name, as `texture` or as
@@ -144,7 +148,7 @@ impl Subject<'_> {
                 Role::Palette => continue,
                 Role::Unread if cx.lints() => {
                     let at = At::new(self.origin, path.clone(), Severity::Info);
-                    out.push(at.diagnostic(DiagnosticCode::NoEffect { text: None }));
+                    out.push(at.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
                 }
                 Role::Unread | Role::Read => {}
             }
@@ -162,9 +166,11 @@ impl Subject<'_> {
                 path.push("slot");
                 // The game logs this at the warning level: a warning.
                 let at = At::new(self.origin, path, Severity::Warning);
-                out.push(at.diagnostic(DiagnosticCode::InvalidValue {
-                    text: formatted(NOT_ARMOR, vec![self.id.as_str().to_owned()]),
-                }));
+                out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+                    &core_codes::INVALID_VALUE,
+                    &core_codes::INVALID_VALUE_WORDED,
+                    (formatted(NOT_ARMOR, vec![self.id.as_str().to_owned()])).as_ref(),
+                ))));
             }
             Some(_) => {}
         }
@@ -175,9 +181,11 @@ impl Subject<'_> {
     // Both lines are logged at the warning level: warnings.
     fn no_trimmed_icons(&self, out: &mut Findings, text: &'static str) {
         let at = At::new(self.origin, components_at(), Severity::Warning);
-        out.push(at.diagnostic(DiagnosticCode::MissingRequiredField {
-            text: formatted(text, vec![self.id.as_str().to_owned()]),
-        }));
+        out.push(at.diagnostic(DiagnosticCode::from(builders::worded(
+            &core_codes::MISSING_REQUIRED_FIELD,
+            &core_codes::MISSING_REQUIRED_FIELD_WORDED,
+            (formatted(text, vec![self.id.as_str().to_owned()])).as_ref(),
+        ))));
     }
 
     /// The icon of an item of the legacy item format: the bare name, or `texture`.

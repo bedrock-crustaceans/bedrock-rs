@@ -29,7 +29,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode};
+use bedrock_addon::diagnostic::Diagnostic;
 use bedrock_addon::document::Content;
 use bedrock_addon::json::MAX_JSON_DEPTH;
 use bedrock_addon::load::{LoadOptions, StackOptions};
@@ -460,7 +460,10 @@ type Loaded = BTreeMap<&'static str, Made>;
 /// How many of `findings` refuse a text.
 fn malformed<'a>(findings: impl Iterator<Item = &'a Diagnostic>) -> usize {
     findings
-        .filter(|finding| matches!(finding.code, DiagnosticCode::MalformedInput { .. }))
+        // By name: MALFORMED_INPUT, SYNTAX, MALFORMED_INPUT_WORDED, DOCUMENT_JSON, PARSE_ERROR,
+        // the document size defs and STACK_TOP_UNPARSABLE (and fog's PARSE_ERROR) all were
+        // `MalformedInput`, and families not yet on definitions still raise the variant.
+        .filter(|finding| finding.code.name() == "MalformedInput")
         .count()
 }
 

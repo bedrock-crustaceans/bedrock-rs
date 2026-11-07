@@ -5,7 +5,8 @@
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
 
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, Diagnostics};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics};
 use bedrock_addon_core::load::{
     Accept, AppDataPlace, Limits, ListDepth, LoadContext, LoadOptions, Place, ReadRange, RootId,
     StackCx, Walk, WalkFile, WalkOrder,
@@ -628,14 +629,17 @@ fn a_failed_read_skips_the_file_with_a_read_error() {
     let (toy, ..) = load(&tree, &StackOptions::default(), Order::Seeded(5), None);
     assert_eq!(files(toy).len(), 2);
     let findings = &toy.cache.get().unwrap().findings;
-    let codes: Vec<_> = findings.iter().map(|d| &d.code).collect();
-    assert!(matches!(
-        codes[..],
-        [DiagnosticCode::ReadError {
-            kind: std::io::ErrorKind::PermissionDenied,
-            ..
-        }]
-    ));
+    let codes: Vec<_> = findings
+        .iter()
+        .map(|d| (d.is(&core_codes::READ_ERROR), d.detail.as_deref()))
+        .collect();
+    assert_eq!(
+        codes,
+        [(
+            true,
+            Some(&DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+        )]
+    );
     let finding = findings.iter().next().unwrap();
     assert_eq!(
         finding.location.pack.as_ref().and_then(PackRef::index),
@@ -676,13 +680,11 @@ fn a_failed_read_carries_the_walk_s_text_for_the_file() {
             .map(|d| {
                 (
                     d.code.to_string(),
-                    matches!(
-                        d.code,
-                        DiagnosticCode::ReadError {
-                            kind: std::io::ErrorKind::PermissionDenied,
-                            ..
-                        }
-                    ),
+                    // The walk's sentence is the worded definition's line; the kind rides as
+                    // the detail.
+                    d.is(&core_codes::READ_ERROR_WORDED)
+                        && d.detail.as_deref()
+                            == Some(&DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied)),
                     d.severity,
                     d.location.pack.as_ref().and_then(PackRef::index),
                     d.location.path.as_ref().map(|p| p.as_str().to_owned()),
@@ -718,7 +720,7 @@ fn a_panicked_parse_rejects_its_file_and_a_panicked_combine_installs_it_empty() 
     assert!(
         findings
             .iter()
-            .all(|d| d.code == DiagnosticCode::InternalError)
+            .all(|d| d.code == DiagnosticCode::from(&core_codes::INTERNAL_ERROR))
     );
 
     // The first `Combine` panics; the replacement over no files installs the empty collection.
@@ -740,7 +742,7 @@ fn a_panicked_parse_rejects_its_file_and_a_panicked_combine_installs_it_empty() 
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::InternalError]);
+    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
 }
 
 #[test]
@@ -765,7 +767,7 @@ fn an_indexed_file_of_a_memory_pack_is_not_loaded() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::FileNotLoaded]);
+    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::FILE_NOT_LOADED)]);
 }
 
 #[test]
@@ -790,7 +792,10 @@ fn an_mcb_document_is_an_unsupported_file_format() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::UnsupportedFileFormat]);
+    assert_eq!(
+        codes,
+        [&DiagnosticCode::from(&core_codes::UNSUPPORTED_FILE_FORMAT)]
+    );
 }
 
 #[test]
@@ -807,7 +812,7 @@ fn a_panicked_brarchive_index_job_leaves_the_archive_absent() {
     assert_eq!(files(toy).len(), 3, "the horse is not walked");
     let top = &set.behavior.instances()[0].pack;
     let codes: Vec<_> = top.report().diagnostics().iter().map(|d| &d.code).collect();
-    assert_eq!(codes, [&DiagnosticCode::InternalError]);
+    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
 }
 
 #[test]
@@ -980,7 +985,7 @@ fn a_panicked_second_stage_installs_the_collection_empty() {
         .iter()
         .map(|d| &d.code)
         .collect();
-    assert_eq!(codes, [&DiagnosticCode::InternalError]);
+    assert_eq!(codes, [&DiagnosticCode::from(&core_codes::INTERNAL_ERROR)]);
     // Nothing of the second stage was read.
     assert!(seen.reads.is_empty(), "{:?}", seen.reads);
 }
@@ -1048,4 +1053,22 @@ fn loaders_and_sources_implement_debug() {
         origin: PackOrigin::World,
     };
     assert!(format!("{:?}", source.clone()).starts_with("Packs"));
+}
+
+/// The driver's finding for an unreadable file is the read-error definition, with the host's
+/// `io::ErrorKind` as its argument and its detail.
+#[test]
+fn a_failed_read_is_told_on_its_definition_with_the_kind_as_detail() {
+    use bedrock_addon_core::diagnostic::codes;
+    let path = PackPath::from_static("entities/cow.json");
+    let finding = super::pack::read_error(&path, std::io::ErrorKind::PermissionDenied);
+    assert!(finding.is(&codes::READ_ERROR), "{:?}", finding.code);
+    assert_eq!(
+        finding.detail.as_deref(),
+        Some(&DiagnosticDetail::Io(std::io::ErrorKind::PermissionDenied))
+    );
+    assert_eq!(
+        finding.code.to_string(),
+        "cannot read the file (permission denied)"
+    );
 }

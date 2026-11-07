@@ -1,6 +1,7 @@
 //! The runtime values of one pack (the game's pack settings): its definitions applied to its
 //! saved entry.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -59,10 +60,10 @@ impl SetError {
     /// `SettingUnknownOption`; `InvalidValue` for a number that is not finite.
     pub fn code(self) -> DiagnosticCode {
         match self {
-            Self::UnknownName => DiagnosticCode::SettingUnknownName,
-            Self::TypeMismatch => DiagnosticCode::SettingTypeMismatch,
-            Self::UnknownOption => DiagnosticCode::SettingUnknownOption,
-            Self::NotFinite => DiagnosticCode::InvalidValue { text: None },
+            Self::UnknownName => DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_NAME),
+            Self::TypeMismatch => DiagnosticCode::from(&core_codes::SETTING_TYPE_MISMATCH),
+            Self::UnknownOption => DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_OPTION),
+            Self::NotFinite => DiagnosticCode::from(&core_codes::INVALID_VALUE),
         }
     }
 }
@@ -124,7 +125,12 @@ impl PackSettings {
             let value = match saved_value.map(|value| check(definition, value.clone())) {
                 Some(Ok((value, clamped))) => {
                     if clamped {
-                        report(d, DiagnosticCode::SettingClamped, Severity::Info, name);
+                        report(
+                            d,
+                            DiagnosticCode::from(&core_codes::SETTING_CLAMPED),
+                            Severity::Info,
+                            name,
+                        );
                     }
                     value
                 }
@@ -144,7 +150,7 @@ impl PackSettings {
             if !values.contains_key(name) {
                 report(
                     d,
-                    DiagnosticCode::SettingUnknownName,
+                    DiagnosticCode::from(&core_codes::SETTING_UNKNOWN_NAME),
                     // The game ignores the saved name in silence, so the crate reports an
                     // information.
                     Severity::Info,
@@ -365,7 +371,7 @@ pub fn unmatched_entries(saved: &Document<SavedSettings>, set: &StackSet) -> Dia
         let at = JsonPath::of_keys(["minecraft:pack_settings", "settings"])
             .index(index)
             .child("pack_id");
-        let finding = Diagnostic::info(DiagnosticCode::UnresolvedReference { text: None })
+        let finding = Diagnostic::of(&core_codes::UNRESOLVED_REFERENCE)
             .at(at)
             .phase(Phase::Link)
             .in_file(origin)

@@ -2884,6 +2884,120 @@ pub static ENUM_VALUE_DEPRECATED: CodeDef<0> = CodeDef::new(
 .game("enum value is deprecated")
 .was("DeprecatedMember");
 
+// ---- the game's lines of the pack manifest readers ----
+
+/// A manifest element with a value the game does not take (a module `type`). The argument is the
+/// element as the game prints it: `/modules/0/type` (legacy), `modules/type` (format 3).
+pub static MANIFEST_INVALID_VALUE: CodeDef<1> = CodeDef::new(
+    "core/manifest_invalid_value",
+    Kind::InvalidValue,
+    Class::Error,
+    "manifest element {} has an invalid value",
+)
+.game("Provided '{}' element has an invalid value in pack manifest.")
+.was("InvalidProperty");
+
+/// A manifest version string that is no semantic version. The argument is the element as the game
+/// prints it: `/dependencies/0/version`.
+pub static MANIFEST_NOT_SEMVER: CodeDef<1> = CodeDef::new(
+    "core/manifest_not_semver",
+    Kind::InvalidValue,
+    Class::Error,
+    "manifest element {} is no SemVer version",
+)
+.game("Provided '{}' element is not SemVer (semver.org) compliant in pack manifest.")
+.was("MalformedPropertyVersion");
+
+/// A manifest version of the wrong JSON type or shape. The argument is the element as the game
+/// prints it: `/dependencies/0/version`.
+pub static MANIFEST_WRONG_TYPE: CodeDef<1> = CodeDef::new(
+    "core/manifest_wrong_type",
+    Kind::WrongType,
+    Class::Error,
+    "manifest element {} is of the wrong type",
+)
+.game("Required '{}' element is the wrong type in pack manifest.")
+.was("WrongTypeProperty");
+
+/// A format-3 manifest's native module dependency whose version the game cannot read. The arguments
+/// are the module's name and the version as the game prints it (`0.0.0` for a string it could not
+/// read).
+pub static DEPENDENCY_INVALID_VERSION: CodeDef<2> = CodeDef::new(
+    "core/dependency_invalid_version",
+    Kind::InvalidValue,
+    Class::Error,
+    "native module dependency {} has an invalid version {}",
+)
+.game("dependency {} invalid version: {}")
+.was("MalformedPropertyVersion");
+
+// ---- the game's lines of the manifest's pack settings check ----
+
+/// Two pack settings of a manifest with one name. The argument is the name.
+pub static DUPLICATE_PACK_SETTING_NAME: CodeDef<1> = CodeDef::new(
+    "core/duplicate_pack_setting_name",
+    Kind::InvalidValue,
+    Class::Error,
+    "pack setting name {} given twice",
+)
+.game("duplicate pack setting name found: {}")
+.was("InvalidValue");
+
+/// A slider whose `max` is not above its `min`. The argument is the setting's name.
+pub static SLIDER_MAX_NOT_ABOVE_MIN: CodeDef<1> = CodeDef::new(
+    "core/slider_max_not_above_min",
+    Kind::InvalidValue,
+    Class::Error,
+    "slider {}: max is not above min",
+)
+.game("slider {} max must be greater than min")
+.was("InvalidValue");
+
+/// A slider whose `step` is larger than `max - min`. The arguments are the setting's name and the
+/// step as `{}` prints an `f32`.
+pub static SLIDER_STEP_TOO_LARGE: CodeDef<2> = CodeDef::new(
+    "core/slider_step_too_large",
+    Kind::InvalidValue,
+    Class::Error,
+    "slider {}: step {} is larger than max - min",
+)
+.game("slider {} step {} must be <= to max - min")
+.was("InvalidValue");
+
+/// A slider whose `default` is outside `[min, max]`. The arguments are the setting's name and the
+/// default as `{}` prints an `f32`.
+pub static SLIDER_DEFAULT_OUT_OF_RANGE: CodeDef<2> = CodeDef::new(
+    "core/slider_default_out_of_range",
+    Kind::InvalidValue,
+    Class::Error,
+    "slider {}: default {} is out of range",
+)
+.game("slider {} default {} is out of range")
+.was("InvalidValue");
+
+/// A dropdown whose `default` names none of its options. The arguments are the setting's name and
+/// the default as written.
+pub static DROPDOWN_DEFAULT_NOT_IN_OPTIONS: CodeDef<2> = CodeDef::new(
+    "core/dropdown_default_not_in_options",
+    Kind::InvalidValue,
+    Class::Error,
+    "dropdown {}: default {} is no option",
+)
+.game("dropdown {} default value {} is not in options")
+.was("InvalidValue");
+
+/// A multiselect default that names none of its options. The arguments are the setting's name and
+/// the default as written. The sentence is the crate's own, the multiselect form of the dropdown's
+/// line, carried as the game's as the legacy text was.
+pub static MULTISELECT_DEFAULT_NOT_IN_OPTIONS: CodeDef<2> = CodeDef::new(
+    "core/multiselect_default_not_in_options",
+    Kind::InvalidValue,
+    Class::Error,
+    "multiselect {}: default {} is no option",
+)
+.game("multiselect {} default value {} is not in options")
+.was("InvalidValue");
+
 /// Every definition of this module, in the order of the legacy variants.
 pub static ALL: &[&CodeMeta] = &[
     UNSUPPORTED_VERSION.meta(),
@@ -3166,4 +3280,14 @@ pub static ALL: &[&CodeMeta] = &[
     VERSION_BELOW_MIN.meta(),
     MEMBER_DEPRECATED.meta(),
     ENUM_VALUE_DEPRECATED.meta(),
+    MANIFEST_INVALID_VALUE.meta(),
+    MANIFEST_NOT_SEMVER.meta(),
+    MANIFEST_WRONG_TYPE.meta(),
+    DEPENDENCY_INVALID_VERSION.meta(),
+    DUPLICATE_PACK_SETTING_NAME.meta(),
+    SLIDER_MAX_NOT_ABOVE_MIN.meta(),
+    SLIDER_STEP_TOO_LARGE.meta(),
+    SLIDER_DEFAULT_OUT_OF_RANGE.meta(),
+    DROPDOWN_DEFAULT_NOT_IN_OPTIONS.meta(),
+    MULTISELECT_DEFAULT_NOT_IN_OPTIONS.meta(),
 ];

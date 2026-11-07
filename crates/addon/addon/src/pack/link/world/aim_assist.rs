@@ -125,20 +125,17 @@ fn with_validator_line(mut finding: Diagnostic) -> Diagnostic {
     if !held {
         finding.severity = crate::diagnostic::Severity::Info;
     }
-    if held
-        && let crate::diagnostic::DiagnosticCode::UnresolvedReference { text } = &mut finding.code
-        && text.is_none()
-    {
+    // By legacy name and without a sentence: the variant the aim-assist family's own check
+    // raises, and `UNRESOLVED_REFERENCE`.
+    if held && finding.code.name() == "UnresolvedReference" && finding.vanilla().is_none() {
         let bare = id.split('<').next().unwrap_or_default();
         // The linked-asset check writes this line to the content log at the error level and
         // drops nothing, so the finding is an error.
         finding.severity = crate::diagnostic::Severity::Error;
-        *text = Some(validator_text(
-            Validator::Missing,
-            &finding.location.json_path,
-            0,
-            bare,
-        ));
+        let line = validator_text(Validator::Missing, &finding.location.json_path, 0, bare);
+        finding.code = crate::diagnostic::codes::UNRESOLVED_REFERENCE_WORDED
+            .with([line.to_string()])
+            .into();
     }
     finding
 }

@@ -7,7 +7,8 @@
 
 use std::collections::HashSet;
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackType;
@@ -33,7 +34,7 @@ pub(super) fn read(
 ) -> Option<Manifest> {
     sink.set_profile(Profile::Comprehensive);
     if root.as_object().is_none() {
-        sink.error(Code::InvalidType { text: None }, &JsonPath::new());
+        sink.error(Code::from(&core_codes::INVALID_TYPE), &JsonPath::new());
         return None;
     }
     sink.unknown(
@@ -95,7 +96,7 @@ pub(super) fn read(
 fn format_version(sink: &mut Sink<'_>, root: &Value) {
     let Some(value) = member(root, "format_version") else {
         sink.error(
-            Code::MissingRequiredField { text: None },
+            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
             &path(&["format_version"]),
         );
         return;
@@ -106,7 +107,10 @@ fn format_version(sink: &mut Sink<'_>, root: &Value) {
         .and_then(facet_value::VNumber::to_u64)
         .is_some_and(|number| number < 256);
     if !fits {
-        sink.error(Code::InvalidType { text: None }, &path(&["format_version"]));
+        sink.error(
+            Code::from(&core_codes::INVALID_TYPE),
+            &path(&["format_version"]),
+        );
     }
 }
 
@@ -136,7 +140,7 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
             // name stays empty and only reports show the placeholder. The format-3 reader has
             // no report entry for it, so the game says nothing and the crate reports an
             // information.
-            sink.note(Code::EmptyProperty, &at.child("name"));
+            sink.note(Code::from(&core_codes::EMPTY_PROPERTY), &at.child("name"));
         }
     });
     let description = sink.string(header, "description", &at, false);
@@ -146,7 +150,7 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
     let base_game_version =
         if member(header, "base_game_version").is_some_and(|v| text(v).is_none()) {
             sink.error(
-                Code::InvalidType { text: None },
+                Code::from(&core_codes::INVALID_TYPE),
                 &at.child("base_game_version"),
             );
             None
@@ -164,7 +168,7 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
     let pack_scope = pack_scope(
         sink,
         scope_text,
-        Code::InvalidValue { text: None },
+        Code::from(&core_codes::INVALID_VALUE),
         &mut extra,
     );
     let platform_locked = sink.boolean(header, "platform_locked", &at, false);
@@ -174,7 +178,7 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
     {
         (true, None) if member(header, "lock_template_options").is_none() => {
             sink.error(
-                Code::MissingProperty { text: None },
+                Code::from(&core_codes::MISSING_PROPERTY),
                 &at.child("lock_template_options"),
             );
             None
@@ -182,7 +186,10 @@ fn header(sink: &mut Sink<'_>, root: &Value, pack_type: PackType) -> Option<Head
         (false, Some(_)) => {
             // A `lock_template_options` on a pack that is not a world template is a pack-report
             // warning, which counts as the level-2 class.
-            sink.warning(Code::IgnoredProperty, &at.child("lock_template_options"));
+            sink.warning(
+                Code::from(&core_codes::IGNORED_PROPERTY),
+                &at.child("lock_template_options"),
+            );
             None
         }
         (_, value) => value,
@@ -217,23 +224,23 @@ fn min_engine_version(
     let enforced = matches!(pack_type, PackType::Behavior | PackType::Resource);
     let Some(value) = member(header, "min_engine_version") else {
         if enforced {
-            sink.error(Code::MissingProperty { text: None }, &at);
+            sink.error(Code::from(&core_codes::MISSING_PROPERTY), &at);
         }
         return None;
     };
     let Some(raw) = text(value) else {
-        sink.error(Code::InvalidType { text: None }, &at);
+        sink.error(Code::from(&core_codes::INVALID_TYPE), &at);
         return None;
     };
     if !enforced {
         // A `min_engine_version` on a pack that does not enforce one (the legacy reader
         // reports it too) is a pack-report warning, which counts as the level-2 class. The
         // report does not identify the member.
-        sink.warning(Code::IgnoredProperty, &at);
+        sink.warning(Code::from(&core_codes::IGNORED_PROPERTY), &at);
         return None;
     }
     let Some(version) = relaxed_version_text(raw) else {
-        sink.error(Code::MalformedPropertyVersion { text: None }, &at);
+        sink.error(Code::from(&core_codes::MALFORMED_PROPERTY_VERSION), &at);
         return None;
     };
     sink.engine_bounds(&version, &at)
@@ -248,14 +255,14 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
     };
     if elements.is_empty() {
         // The schema needs at least one module, and the game asserts that one exists.
-        sink.error(Code::InvalidValue { text: None }, &list);
+        sink.error(Code::from(&core_codes::INVALID_VALUE), &list);
     }
     let mut modules = Vec::new();
     let mut seen = HashSet::new();
     for (index, element) in elements.iter().enumerate() {
         let at = list.index(index);
         if element.as_object().is_none() {
-            sink.error(Code::InvalidType { text: None }, &at);
+            sink.error(Code::from(&core_codes::INVALID_TYPE), &at);
             continue;
         }
         sink.unknown(
@@ -275,10 +282,12 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
             let ty = ModuleType::from_name(&name).filter(|ty| *ty != ModuleType::Invalid);
             if ty.is_none() {
                 // The game names the member without its element's index.
-                let text = Some(VanillaText::ManifestInvalidValue {
-                    path: "modules/type".to_owned(),
-                });
-                sink.error(Code::InvalidProperty { text }, &below(&at, "type"));
+                sink.error(
+                    core_codes::MANIFEST_INVALID_VALUE
+                        .with(["modules/type"])
+                        .into(),
+                    &below(&at, "type"),
+                );
             }
             ty
         });
@@ -291,7 +300,7 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
             && !seen.insert(uuid)
         {
             // The game's comprehensive-manifest check reports "duplicate module uuid found: …".
-            sink.error(Code::DuplicateUuid, &below(&at, "uuid"));
+            sink.error(Code::from(&core_codes::DUPLICATE_UUID), &below(&at, "uuid"));
         }
         if let (Some(module_type), Some(uuid), Some(version)) = (module_type, uuid, version) {
             modules.push(Module {
@@ -306,7 +315,7 @@ fn modules(sink: &mut Sink<'_>, root: &Value) -> Vec<Module> {
         }
     }
     if !modules_consistent(&modules) {
-        sink.error(Code::MultipleModules, &list);
+        sink.error(Code::from(&core_codes::MULTIPLE_MODULES), &list);
     }
     modules
 }
@@ -322,7 +331,7 @@ fn dependencies(sink: &mut Sink<'_>, root: &Value) -> (Vec<Dependency>, Vec<Depe
     for (index, element) in elements.iter().enumerate() {
         let at = list.index(index);
         if element.as_object().is_none() {
-            sink.error(Code::InvalidType { text: None }, &at);
+            sink.error(Code::from(&core_codes::INVALID_TYPE), &at);
             continue;
         }
         if member(element, "module_name").is_none() {
@@ -372,14 +381,15 @@ fn script_module_version(
             if parsed.is_none() {
                 // "dependency {} invalid version: {}": the version printed is the invalid one
                 // the setter left, `0.0.0`.
-                let text = module_name.map(|module| VanillaText::DependencyInvalidVersion {
-                    module: module.to_owned(),
-                    version: "0.0.0".to_owned(),
-                });
-                sink.error(
-                    Code::MalformedPropertyVersion { text },
-                    &below(at, "version"),
+                let code = module_name.map_or_else(
+                    || Code::from(&core_codes::MALFORMED_PROPERTY_VERSION),
+                    |module| {
+                        core_codes::DEPENDENCY_INVALID_VERSION
+                            .with([module, "0.0.0"])
+                            .into()
+                    },
                 );
+                sink.error(code, &below(at, "version"));
             }
             parsed
         }
@@ -396,7 +406,7 @@ fn subpacks(sink: &mut Sink<'_>, root: &Value) -> Vec<Subpack> {
     for (index, element) in elements.iter().enumerate() {
         let at = list.index(index);
         if element.as_object().is_none() {
-            sink.error(Code::InvalidType { text: None }, &at);
+            sink.error(Code::from(&core_codes::INVALID_TYPE), &at);
             continue;
         }
         sink.unknown(
@@ -409,7 +419,7 @@ fn subpacks(sink: &mut Sink<'_>, root: &Value) -> Vec<Subpack> {
         let tier_at = below(&at, "memory_performance_tier");
         let memory_tier = match member(element, "memory_performance_tier") {
             None => {
-                sink.error(Code::MissingRequiredField { text: None }, &tier_at);
+                sink.error(Code::from(&core_codes::MISSING_REQUIRED_FIELD), &tier_at);
                 None
             }
             Some(value) => match value
@@ -418,14 +428,14 @@ fn subpacks(sink: &mut Sink<'_>, root: &Value) -> Vec<Subpack> {
                 .and_then(facet_value::VNumber::to_i64)
             {
                 None => {
-                    sink.error(Code::InvalidType { text: None }, &tier_at);
+                    sink.error(Code::from(&core_codes::INVALID_TYPE), &tier_at);
                     None
                 }
                 Some(tier) => {
                     // Schema: 0 to 5.
                     let tier = u8::try_from(tier).ok().and_then(MemoryTier::from_number);
                     if tier.is_none() {
-                        sink.error(Code::InvalidValue { text: None }, &tier_at);
+                        sink.error(Code::from(&core_codes::INVALID_VALUE), &tier_at);
                     }
                     tier
                 }

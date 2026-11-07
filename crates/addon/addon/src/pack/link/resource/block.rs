@@ -1,6 +1,8 @@
 //! The `blocks.json` entries against the blocks: what `blocks.json` says of blocks the behaviour
 //! stack defines or the game has.
 
+use bedrock_addon_core::diagnostic::builders;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
@@ -77,9 +79,11 @@ pub(super) fn exponents(cx: &LinkCx<'_>, out: &mut Findings) {
         let member = "ambient_occlusion_exponent";
         let origin = writers.of(cx, out, id, member, entry.origin());
         let path = entry_path(entry_key(id, &origin), Some(member));
-        let code = DiagnosticCode::NoEffect {
-            text: Some(formatted(EXPONENT_UNUSED, &[id.as_str()])),
-        };
+        let code = DiagnosticCode::from(builders::worded(
+            &core_codes::NO_EFFECT,
+            &core_codes::NO_EFFECT_WORDED,
+            Some(formatted(EXPONENT_UNUSED, &[id.as_str()])).as_ref(),
+        ));
         // The client logs this at the warning level: a warning.
         out.push(At::new(&origin, path, Severity::Warning).diagnostic(code));
     }
@@ -172,13 +176,15 @@ pub(super) fn tessellation(cx: &LinkCx<'_>, out: &mut Findings) {
             } else {
                 (TEXTURES_MISSING, Severity::Error)
             };
-            let code = DiagnosticCode::NoEffect {
-                text: Some(formatted(template, &[id.as_str()])),
-            };
+            let code = DiagnosticCode::from(builders::worded(
+                &core_codes::NO_EFFECT,
+                &core_codes::NO_EFFECT_WORDED,
+                Some(formatted(template, &[id.as_str()])).as_ref(),
+            ));
             let finding = At::new(origin, path, severity).diagnostic(code);
             out.push(if custom { finding } else { finding.into_kept() });
         } else if cx.lints() {
-            let code = DiagnosticCode::ShadowedDefinition { text: None };
+            let code = DiagnosticCode::from(&core_codes::SHADOWED_DEFINITION);
             out.push(At::new(origin, path, Severity::Info).diagnostic(code));
         }
     }
@@ -188,7 +194,7 @@ pub(super) fn tessellation(cx: &LinkCx<'_>, out: &mut Findings) {
 mod tests {
     use std::fmt::Write as _;
 
-    use bedrock_addon_core::diagnostic::{DiagnosticCode, Diagnostics, Severity};
+    use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
     use bedrock_addon_core::load::LoadOptions;
     use bedrock_addon_core::pack_identity::PackOrigin;
 
@@ -322,13 +328,11 @@ mod tests {
         found
             .iter()
             .map(|finding| {
-                let text = match &finding.code {
-                    DiagnosticCode::NoEffect { text }
-                    | DiagnosticCode::ShadowedDefinition { text } => {
-                        text.as_ref().map(ToString::to_string)
-                    }
-                    _ => None,
-                };
+                // By legacy name: the definitions that were `NoEffect` or
+                // `ShadowedDefinition`, plain (no sentence) and worded.
+                let text = matches!(finding.code.name(), "NoEffect" | "ShadowedDefinition")
+                    .then(|| finding.vanilla())
+                    .flatten();
                 (
                     finding.code.name(),
                     finding.severity,

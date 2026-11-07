@@ -3,6 +3,7 @@
 
 use std::collections::HashSet;
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, Diagnostics, JsonPath, Severity, VanillaText,
 };
@@ -118,7 +119,7 @@ fn trim_template(out: &mut Findings, item: &Entry<'_>) {
     let tagged = tags.tags.iter().any(|tag| tag == TRIM_TEMPLATES);
     if tagged && TrimData::vanilla().pattern_for_item(item.id).is_none() {
         let place = At::new(item.origin, component("minecraft:tags"), Severity::Info);
-        out.push(place.diagnostic(DiagnosticCode::NoEffect { text: None }));
+        out.push(place.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
     }
 }
 

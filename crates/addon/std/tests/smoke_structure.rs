@@ -13,9 +13,10 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::structure::Structure;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Pack, PackOrigin, PackRef, PackRepository};
@@ -111,7 +112,7 @@ fn load_structures(driver: &Driver, repository: &PackRepository, packs_dir: &Pat
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && outcome.mcb < on_disk {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && outcome.mcb < on_disk {
             outcome.mcb += 1;
             continue;
         }

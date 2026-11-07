@@ -4,6 +4,7 @@
 #[path = "pack/common.rs"]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
 use bedrock_addon::load::{Experiment, LoadOptions};
 use bedrock_addon::pack::{
@@ -41,11 +42,9 @@ fn warnings(set: &StackSet) -> Vec<DiagnosticCode> {
     set.selection()
         .iter()
         .filter(|diagnostic| {
-            let missing_dependency =
-                matches!(diagnostic.code, DiagnosticCode::MissingDependency { .. });
+            let missing_dependency = diagnostic.is(&core_codes::MISSING_DEPENDENCY);
             let pack_not_found_at_no_path =
-                matches!(diagnostic.code, DiagnosticCode::PackNotFound { .. })
-                    && diagnostic.location.path.is_none();
+                diagnostic.is(&core_codes::PACK_NOT_FOUND) && diagnostic.location.path.is_none();
             !missing_dependency && !pack_not_found_at_no_path
         })
         .inspect(|diagnostic| assert_eq!(diagnostic.severity, Severity::Info, "{diagnostic:?}"))
@@ -60,7 +59,12 @@ fn an_empty_repository_stacks_nothing_and_says_what_it_missed() {
     assert_eq!(set.behavior.packs().len(), 0);
     assert_eq!(set.resource.packs().len(), 0);
     let found = warnings(&set);
-    assert!(matches!(&found[..], [DiagnosticCode::PackNotFound { pack }] if *pack == ghost.id()));
+    assert_eq!(
+        found,
+        [DiagnosticCode::from(
+            core_codes::PACK_NOT_FOUND.with([ghost.id().to_string()])
+        )]
+    );
     // The base-game layer: both script libraries and `vanilla`, as info, and the ghost's own
     // entry.
     let info = set
@@ -111,10 +115,10 @@ fn the_first_registration_of_an_identity_and_origin_wins() {
     let kept = repository.get(&first.id()).expect("registered");
     assert!(kept.paths().any(|path| path.as_str() == "first.txt"));
     let set = repository.stacks(&world(&[], &[]), LoadOptions::default());
-    assert!(matches!(
-        &warnings(&set)[..],
-        [DiagnosticCode::DuplicateIdentifier { .. }]
-    ));
+    assert_eq!(
+        warnings(&set),
+        [DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER)]
+    );
 }
 
 #[test]
@@ -143,11 +147,20 @@ fn a_missing_dependency_hides_the_pack_with_an_error() {
     let set = repository.stacks(&world(&[&a, &b], &[]), LoadOptions::default());
     assert_eq!(ids(&set.behavior), [b.id()]);
     let errors: Vec<_> = set.selection().at_least(Severity::Error).collect();
-    assert!(matches!(
-        &errors[..],
-        [d] if matches!(&d.code, DiagnosticCode::MissingDependency { pack, dependency }
-            if *pack == a.id() && *dependency == missing.id())
-    ));
+    let codes: Vec<_> = errors.iter().map(|d| &d.code).collect();
+    assert_eq!(
+        codes,
+        [&DiagnosticCode::from(
+            core_codes::MISSING_DEPENDENCY.with([a.id().to_string(), missing.id().to_string()])
+        )]
+    );
+    assert_eq!(
+        errors[0].detail.as_deref(),
+        Some(&bedrock_addon::diagnostic::DiagnosticDetail::Packs {
+            pack: a.id(),
+            dependency: Some(missing.id()),
+        })
+    );
 }
 
 #[test]
@@ -175,11 +188,13 @@ fn a_behavior_packs_resource_pack_is_auto_added_with_a_warning() {
     let set = repository.stacks(&world(&[&a], &[&q]), LoadOptions::default());
     assert_eq!(ids(&set.resource), [q.id(), r.id()]);
     let found = warnings(&set);
-    assert!(matches!(
-        &found[..],
-        [DiagnosticCode::DependencyAutoAdded { pack, dependency }]
-            if *pack == a.id() && *dependency == r.id()
-    ));
+    // The line names the dependency first.
+    assert_eq!(
+        found,
+        [DiagnosticCode::from(
+            core_codes::DEPENDENCY_AUTO_ADDED.with([r.id().to_string(), a.id().to_string()])
+        )]
+    );
 }
 
 /// An app-bundled behaviour pack at `uuid` and `version`.
@@ -265,8 +280,8 @@ fn the_world_chooses_a_subpack_by_folder_name() {
         unknown.resource[0].subpack = Some("medium".to_owned());
         repository.stacks(&unknown, LoadOptions::default())
     };
-    assert!(matches!(
-        &warnings(&unknown)[..],
-        [DiagnosticCode::InvalidValue { .. }]
-    ));
+    assert_eq!(
+        warnings(&unknown),
+        [DiagnosticCode::from(&core_codes::INVALID_VALUE)]
+    );
 }

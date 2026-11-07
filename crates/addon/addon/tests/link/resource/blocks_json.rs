@@ -443,10 +443,7 @@ mod textures {
             assert_eq!(finding.severity, Severity::Info, "{finding:#?}");
             // Ours: no text of vanilla's.
             assert!(
-                matches!(
-                    finding.code,
-                    bedrock_addon::diagnostic::DiagnosticCode::UnresolvedReference { text: None }
-                ),
+                finding.is(&bedrock_addon::diagnostic::codes::UNRESOLVED_REFERENCE),
                 "{finding:#?}"
             );
         }

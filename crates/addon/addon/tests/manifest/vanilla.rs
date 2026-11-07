@@ -2,6 +2,7 @@
 //! they exercise (CRLF, comments, format 1 defaults and caps, script modules, subpacks,
 //! metadata) read as vanilla reads them.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
@@ -119,8 +120,13 @@ fn chemistry_manifests_with_comments_load_with_the_chemistry_capability() {
         // The server default registry has the education toggle off: chemistry is refused,
         // which is an information of ours, not a rejection.
         assert!(
-            document.diagnostics().iter().any(|d| d.severity == Severity::Info
-                && matches!(&d.code, DiagnosticCode::InvalidCapability { name } if name == "chemistry")),
+            document
+                .diagnostics()
+                .iter()
+                .any(|d| d.severity == Severity::Info
+                    && d.code
+                        .args_of(&core_codes::INVALID_CAPABILITY)
+                        .is_some_and(|args| args == ["chemistry"])),
             "{relative}"
         );
     }
@@ -183,7 +189,8 @@ fn a_format_1_min_engine_version_above_1_12_is_capped_with_a_warning() {
             .diagnostics()
             .iter()
             .any(|d| d.severity == Severity::Warning
-                && d.code == DiagnosticCode::MinEngineVersionCapFormatVersion1)
+                && d.code
+                    == DiagnosticCode::from(&core_codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1))
     );
 }
 

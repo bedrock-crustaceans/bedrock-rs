@@ -20,10 +20,11 @@ mod common;
 #[path = "common/pairs.rs"]
 mod pairs;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{Diagnostic, DiagnosticCode, JsonPath, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, JsonPath, Severity};
 use bedrock_addon::document::{Content, JsonDocument as _};
 use bedrock_addon::families::particle::ParticleEffect;
 use bedrock_addon::families::particle::history::ParticleHistory;
@@ -130,7 +131,12 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
     let options = options();
     let set = repository.stacks(&base_game_world(&repository, &options), options.clone());
     let hidden = set.selection().iter().any(|finding| {
-        matches!(&finding.code, DiagnosticCode::MissingDependency { pack, .. } if pack.uuid == uuid)
+        finding.is(&bedrock_addon::diagnostic::codes::MISSING_DEPENDENCY)
+            && matches!(
+                finding.detail.as_deref(),
+                Some(bedrock_addon::diagnostic::DiagnosticDetail::Packs { pack, .. })
+                    if pack.uuid == uuid
+            )
     });
     let stacks = driver
         .load_stacks(set, StackOptions::default())
@@ -159,7 +165,7 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
             .stack_codes
             .entry(format!("{:?} {}", finding.severity, finding.code.name()))
             .or_insert(0) += 1;
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) {
             unsupported += 1;
         } else if finding.severity >= Severity::Error {
             let file = finding.location.path.as_ref().map(ToString::to_string);
@@ -210,10 +216,9 @@ fn load_pack(driver: &mut Driver, root: &Path, outcome: &mut Outcome) {
         };
         for finding in &diagnostics {
             let text = text(&folder, &relative, finding);
-            if matches!(
-                finding.code,
-                DiagnosticCode::InvalidMolang { .. } | DiagnosticCode::MolangLint { .. }
-            ) {
+            // By name: INVALID_MOLANG and MOLANG_LINT, and the family raises that still build
+            // the legacy variants.
+            if finding.code.name() == "InvalidMolang" || finding.code.name() == "MolangLint" {
                 outcome
                     .molang
                     .push(format!("{:?} {text}", finding.severity));

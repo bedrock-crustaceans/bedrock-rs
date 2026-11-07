@@ -2,7 +2,6 @@
 //! round trip.
 
 #[cfg(feature = "biome")]
-use bedrock_addon::diagnostic::DiagnosticCode;
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::dimension::Dimension;
 
@@ -87,8 +86,10 @@ fn rule_10_a_default_biome_no_biome_defines_is_an_info() {
         resource: Vec::new(),
     };
     let d = repository.stacks(&world, LoadOptions::default()).link();
-    assert!(d.iter().any(|f| f.severity == Severity::Info
-        && matches!(f.code, DiagnosticCode::UnresolvedReference { .. })));
+    assert!(
+        d.iter()
+            .any(|f| f.severity == Severity::Info && f.code.name() == "UnresolvedReference")
+    );
 }
 
 #[test]

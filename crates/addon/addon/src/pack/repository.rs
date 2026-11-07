@@ -1,5 +1,6 @@
 //! The repository of every pack found under some sources, and the world's pack selection.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
 };
@@ -68,7 +69,7 @@ impl PackRepository {
             // The game skips a duplicate registration without a log line, so the crate reports it
             // as an information.
             self.registration.push(Diagnostic::new(
-                DiagnosticCode::DuplicateIdentifier { text: None },
+                DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
                 Severity::Info,
                 Phase::Validate,
                 Location::new(None, Some(manifest_path()), JsonPath::new(), None),
@@ -330,9 +331,8 @@ fn parse_list(
     };
     let bytes = &*crate::json::blank_bom(bytes);
     let bytes = json::strip_bom(bytes);
-    let malformed = |message: String| DiagnosticCode::MalformedInput {
-        message,
-        text: None,
+    let malformed = |message: String| {
+        DiagnosticCode::from(bedrock_addon_core::diagnostic::builders::syntax(message))
     };
     if let Err(too_deep) = json::check_depth(bytes, MAX_JSON_DEPTH) {
         return Err(reject(
@@ -364,21 +364,21 @@ fn parse_list(
             };
             let text = entry.pack_id.as_string().ok_or_else(|| {
                 reject(
-                    DiagnosticCode::InvalidType { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_TYPE),
                     at("pack_id"),
                     None,
                 )
             })?;
             let pack_id = pack_uuid(text.as_str()).ok_or_else(|| {
                 reject(
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     at("pack_id"),
                     None,
                 )
             })?;
             let version = SemVersion::from_json(&entry.version).ok_or_else(|| {
                 reject(
-                    DiagnosticCode::InvalidValue { text: None },
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE),
                     at("version"),
                     None,
                 )
@@ -391,7 +391,7 @@ fn parse_list(
                         .map(|text| text.as_str().to_owned())
                         .ok_or_else(|| {
                             reject(
-                                DiagnosticCode::InvalidType { text: None },
+                                DiagnosticCode::from(&core_codes::INVALID_TYPE),
                                 at("subpack"),
                                 None,
                             )
@@ -528,12 +528,9 @@ mod tests {
             .selection()
             .iter()
             .filter(|d| d.severity == Severity::Info)
-            .filter(|d| matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. }))
+            .filter(|d| d.is(&core_codes::DUPLICATE_IDENTIFIER))
             .collect();
-        assert!(matches!(
-            &warnings[..],
-            [d] if matches!(d.code, DiagnosticCode::DuplicateIdentifier { .. })
-        ));
+        assert_eq!(warnings.len(), 1, "{warnings:?}");
     }
 
     #[test]
@@ -558,20 +555,20 @@ mod tests {
             .iter()
             .map(|d| &d.code)
             .filter(|code| {
-                matches!(
-                    code,
-                    DiagnosticCode::MissingDependency { .. }
-                        | DiagnosticCode::DependencyAutoAdded { .. }
-                )
+                code.is(&core_codes::MISSING_DEPENDENCY)
+                    || code.is(&core_codes::DEPENDENCY_AUTO_ADDED)
             })
             .collect();
-        assert!(matches!(
-            codes[..],
-            [
-                DiagnosticCode::MissingDependency { .. },
-                DiagnosticCode::DependencyAutoAdded { .. }
-            ]
-        ));
+        assert_eq!(
+            codes
+                .iter()
+                .map(|code| (
+                    code.is(&core_codes::MISSING_DEPENDENCY),
+                    code.is(&core_codes::DEPENDENCY_AUTO_ADDED)
+                ))
+                .collect::<Vec<_>>(),
+            [(true, false), (false, true)]
+        );
     }
 
     #[test]

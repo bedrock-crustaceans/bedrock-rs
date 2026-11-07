@@ -9,8 +9,10 @@
 //! dependencies, then the resource packs behaviour packs depend on. Duplicates by
 //! `(pack, subpack)` keep the first.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticCode, Diagnostics, JsonPath, Location, Phase, Severity,
+    Code, Diagnostic, DiagnosticCode, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase,
+    Severity,
 };
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackSide, PackType};
@@ -180,6 +182,21 @@ impl Composer<'_> {
             .push(Diagnostic::new(code, severity, Phase::Validate, location));
     }
 
+    /// A finding about `pack` (and the `dependency` it names): the packs ride as the detail.
+    fn packs_finding(
+        &mut self,
+        code: Code,
+        pack: PackIdVersion,
+        dependency: Option<PackIdVersion>,
+        severity: Severity,
+        location: Location,
+    ) {
+        self.findings.push(
+            Diagnostic::new(code.into(), severity, Phase::Validate, location)
+                .detail(DiagnosticDetail::Packs { pack, dependency }),
+        );
+    }
+
     /// One world list: each pack that exists and has a module of `side`'s kind, with its
     /// subpack and its dependencies. Returns the `(requester, resource)` pairs of resource
     /// packs that behaviour packs depend on.
@@ -200,8 +217,10 @@ impl Composer<'_> {
             let Some(candidate) = self.find(&id) else {
                 // The game logs a world-list entry no pack matches only to its developer log,
                 // not the content log, so the crate reports it as an information.
-                self.finding(
-                    DiagnosticCode::PackNotFound { pack: id },
+                self.packs_finding(
+                    core_codes::PACK_NOT_FOUND.with([id.to_string()]),
+                    id,
+                    None,
                     Severity::Info,
                     entry_location(file, index, None),
                 );
@@ -213,9 +232,9 @@ impl Composer<'_> {
                 let piece = side == PackSide::Resource
                     && self.facts(candidate).has_module(PackType::PersonaPiece);
                 let code = if piece {
-                    DiagnosticCode::PersonaPiecePack
+                    DiagnosticCode::from(&core_codes::PERSONA_PIECE_PACK)
                 } else {
-                    DiagnosticCode::InvalidValue { text: None }
+                    DiagnosticCode::from(&core_codes::INVALID_VALUE)
                 };
                 // The game checks no kind and logs nothing for it, so the crate reports it as an
                 // information.
@@ -235,7 +254,7 @@ impl Composer<'_> {
                 // removes duplicates without a log line, so the crate reports it as an
                 // information.
                 self.finding(
-                    DiagnosticCode::DuplicateIdentifier { text: None },
+                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     entry_location(file, index, None),
                 );
@@ -282,7 +301,7 @@ impl Composer<'_> {
         // The game falls back to the default subpack without a line, so the crate reports it as
         // an information.
         self.finding(
-            DiagnosticCode::InvalidValue { text: None },
+            DiagnosticCode::from(&core_codes::INVALID_VALUE),
             Severity::Info,
             entry_location(file, index, Some("subpack")),
         );
@@ -315,8 +334,11 @@ impl Composer<'_> {
                 if layer == Layer::Education {
                     stack[position].hidden = true;
                     let pack = self.facts(candidate).id.clone();
-                    self.finding(
-                        DiagnosticCode::MissingDependency { pack, dependency },
+                    self.packs_finding(
+                        core_codes::MISSING_DEPENDENCY
+                            .with([pack.to_string(), dependency.to_string()]),
+                        pack,
+                        Some(dependency),
                         Severity::Info,
                         Location::default(),
                     );
@@ -325,8 +347,10 @@ impl Composer<'_> {
                 if layer == Layer::BaseGame {
                     // An app-bundled pack is never hidden for a missing dependency: the host may
                     // ship only one side of the vanilla packs.
-                    self.finding(
-                        DiagnosticCode::PackNotFound { pack: dependency },
+                    self.packs_finding(
+                        core_codes::PACK_NOT_FOUND.with([dependency.to_string()]),
+                        dependency,
+                        None,
                         Severity::Info,
                         Location::default(),
                     );
@@ -343,8 +367,10 @@ impl Composer<'_> {
                 } else {
                     Severity::Error
                 };
-                self.finding(
-                    DiagnosticCode::MissingDependency { pack, dependency },
+                self.packs_finding(
+                    core_codes::MISSING_DEPENDENCY.with([pack.to_string(), dependency.to_string()]),
+                    pack,
+                    Some(dependency),
                     severity,
                     Location::default(),
                 );
@@ -437,8 +463,10 @@ impl Composer<'_> {
         for id in layer {
             let Some(candidate) = self.find(&id) else {
                 // Vanilla skips a missing app-bundled pack with a log line.
-                self.finding(
-                    DiagnosticCode::PackNotFound { pack: id },
+                self.packs_finding(
+                    core_codes::PACK_NOT_FOUND.with([id.to_string()]),
+                    id,
+                    None,
                     Severity::Info,
                     Location::default(),
                 );
@@ -447,7 +475,7 @@ impl Composer<'_> {
             if stack.iter().any(|planned| planned.candidate == candidate) {
                 // The base-game layer dedups in silence too, as the game does.
                 self.finding(
-                    DiagnosticCode::DuplicateIdentifier { text: None },
+                    DiagnosticCode::from(&core_codes::DUPLICATE_IDENTIFIER),
                     Severity::Info,
                     Location::default(),
                 );
@@ -522,8 +550,11 @@ impl Composer<'_> {
             let dependency = self.facts(resource).id.clone();
             // The game adds a dependency to the stack without a log line, so the crate reports it
             // as an information.
-            self.finding(
-                DiagnosticCode::DependencyAutoAdded { pack, dependency },
+            self.packs_finding(
+                // The line names the dependency first.
+                core_codes::DEPENDENCY_AUTO_ADDED.with([dependency.to_string(), pack.to_string()]),
+                pack,
+                Some(dependency),
                 Severity::Info,
                 Location::default(),
             );

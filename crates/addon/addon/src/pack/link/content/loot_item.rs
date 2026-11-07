@@ -1,5 +1,6 @@
 //! The items a loot table names and the armour trims its `set_armor_trim` function names.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     DiagnosticCode, JsonPath, ReferenceHint, Severity,
 };
@@ -115,7 +116,7 @@ impl Trims {
             // nothing; its names are not looked up.
             if cx.lints() {
                 let place = At::new(origin, path.clone(), Severity::Info);
-                out.push(place.diagnostic(DiagnosticCode::NoEffect { text: None }));
+                out.push(place.diagnostic(DiagnosticCode::from(&core_codes::NO_EFFECT)));
             }
             return;
         };
@@ -145,7 +146,7 @@ impl Trims {
             match name {
                 // An absent name is read as the empty one; the function trims nothing.
                 None | Some("") => {
-                    out.push(place.diagnostic(DiagnosticCode::MissingRequiredField { text: None }));
+                    out.push(place.diagnostic(DiagnosticCode::from(&core_codes::MISSING_REQUIRED_FIELD)));
                 }
                 // A name of no pattern, of no material.
                 Some(name) if !known.contains(&name) => {

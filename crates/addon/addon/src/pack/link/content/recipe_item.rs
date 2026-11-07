@@ -5,6 +5,8 @@
 //! they load, so the pass tells each miss as an error and leaves the recipe where the load
 //! put it.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::builders;
 use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::{
@@ -295,7 +297,7 @@ impl Rule<'_, '_, '_> {
             VanillaText::Fixed(template)
         };
         let finding = At::new(place.origin, path, Severity::Error)
-            .diagnostic(DiagnosticCode::DocumentRejected { text: Some(text) });
+            .diagnostic(DiagnosticCode::from(builders::worded(&core_codes::DOCUMENT_REJECTED, &core_codes::DOCUMENT_REJECTED_WORDED, Some(&text))));
         self.out.push(finding);
     }
 

@@ -6,7 +6,8 @@
 //! modules and metadata from inside the header and skips everything else; it is upgraded to
 //! format 1, and its UUID, version and module problems are warnings instead of errors.
 
-use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath, VanillaText};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{DiagnosticCode as Code, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::{BaseGameVersion, MinEngineVersion, SemVersion};
@@ -46,11 +47,7 @@ pub(super) fn read(
         // format_version 2 in your manifest.json." for a format-0 manifest at content-log
         // level 2, area 36: a warning.
         reader.sink.push(
-            Code::DeprecatedMember {
-                text: Some(VanillaText::Fixed(
-                    "Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.",
-                )),
-            },
+            Code::from(core_codes::DEPRECATED_MEMBER_WORDED.with(["Pack Manifest version 0 is deprecated, please include format_version 2 in your manifest.json.",])),
             bedrock_addon_core::diagnostic::Severity::Warning,
             bedrock_addon_core::diagnostic::Phase::Parse,
             &path(&["format_version"]),
@@ -63,7 +60,7 @@ pub(super) fn read(
             // load says at the root (the crate's own information; the game upgrades in
             // silence).
             reader.sink.push(
-                Code::UnusualFormatVersion,
+                Code::from(&core_codes::UNUSUAL_FORMAT_VERSION),
                 bedrock_addon_core::diagnostic::Severity::Info,
                 bedrock_addon_core::diagnostic::Phase::Upgrade,
                 &JsonPath::new(),
@@ -92,7 +89,7 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
             number.to_i64().unwrap_or(0)
         } else {
             // The coercion is parse semantics; the lint is the crate's own.
-            sink.note(Code::WrongTypeProperty { text: None }, &at);
+            sink.note(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
             #[allow(
                 clippy::cast_possible_truncation,
                 reason = "jsoncpp `asInt` truncates a real toward zero"
@@ -101,10 +98,10 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
             truncated
         }
     } else if let Some(flag) = value.as_bool() {
-        sink.note(Code::WrongTypeProperty { text: None }, &at);
+        sink.note(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
         i64::from(flag)
     } else {
-        sink.note(Code::WrongTypeProperty { text: None }, &at);
+        sink.note(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
         0
     };
     #[allow(
@@ -116,12 +113,12 @@ fn format_version(root: &Value, sink: &mut Sink<'_>) -> Option<u8> {
     if format >= 3 {
         // The game reports an error at `format_version` before dispatching, so nothing is
         // parsed.
-        sink.error(Code::InvalidProperty { text: None }, &at);
+        sink.error(Code::from(&core_codes::INVALID_PROPERTY), &at);
         return None;
     }
     if i64::from(format) != as_int {
         // A lint of the coercion, the crate's own.
-        sink.note(Code::InvalidProperty { text: None }, &at);
+        sink.note(Code::from(&core_codes::INVALID_PROPERTY), &at);
     }
     Some(format)
 }
@@ -320,7 +317,7 @@ impl Legacy<'_, '_> {
         let pack_scope = pack_scope(
             self.sink,
             scope_text,
-            Code::InvalidProperty { text: None },
+            Code::from(&core_codes::INVALID_PROPERTY),
             &mut extra,
         );
         Some(HeaderParts {
@@ -363,7 +360,8 @@ impl Legacy<'_, '_> {
                 // The game's noname branch adds no report entry, so the crate keeps format 1's
                 // message as an information at most.
                 if self.format >= 2 && member(object, "name").is_some_and(|v| text(v) == Some("")) {
-                    self.sink.note(Code::EmptyProperty, &at.child("name"));
+                    self.sink
+                        .note(Code::from(&core_codes::EMPTY_PROPERTY), &at.child("name"));
                 }
                 // Kept empty, so it is written back empty; only reports show the placeholder.
                 Some(String::new())
@@ -371,7 +369,8 @@ impl Legacy<'_, '_> {
             _ => {
                 if member(object, "name").is_some_and(|v| text(v) == Some("")) {
                     // The format-0 branch's `empty_property` warning for the name.
-                    self.sink.warning(Code::EmptyProperty, &at.child("name"));
+                    self.sink
+                        .warning(Code::from(&core_codes::EMPTY_PROPERTY), &at.child("name"));
                 }
                 uuid.map(|uuid| uuid.hyphenated().to_string())
             }
@@ -400,7 +399,8 @@ impl Legacy<'_, '_> {
         let Some(value) = member(object, "min_engine_version").filter(|v| !v.is_null()) else {
             return match (self.format >= 2, enforced) {
                 (true, true) => {
-                    self.sink.error(Code::MissingProperty { text: None }, &at);
+                    self.sink
+                        .error(Code::from(&core_codes::MISSING_PROPERTY), &at);
                     None
                 }
                 (false, true) => Some(MinEngineVersion::FORMAT_1_DEFAULT),
@@ -410,14 +410,15 @@ impl Legacy<'_, '_> {
         if self.format >= 2 && !enforced {
             // `ignored_property:%s;` is a pack-report warning with no content-log level, so
             // it counts as the level-2 class.
-            self.sink.warning(Code::IgnoredProperty, &at);
+            self.sink
+                .warning(Code::from(&core_codes::IGNORED_PROPERTY), &at);
             return None;
         }
         // The legacy parser accepts only the array form; a string like "1.20.0" is
         // `malformed_property_version`.
         let Some(version) = self.sink.version_array(value, &at) else {
             self.sink
-                .error(Code::MalformedPropertyVersion { text: None }, &at);
+                .error(Code::from(&core_codes::MALFORMED_PROPERTY_VERSION), &at);
             return None;
         };
         if self.format >= 2 {
@@ -428,8 +429,10 @@ impl Legacy<'_, '_> {
         }
         let version = MinEngineVersion { version };
         if version.exceeds_format_1_cap() {
-            self.sink
-                .warning(Code::MinEngineVersionCapFormatVersion1, &at);
+            self.sink.warning(
+                Code::from(&core_codes::MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1),
+                &at,
+            );
             return Some(MinEngineVersion::FORMAT_1_CAP);
         }
         Some(version)
@@ -459,7 +462,8 @@ impl Legacy<'_, '_> {
         let present = member(object, "lock_template_options").is_some_and(|v| !v.is_null());
         if !present {
             if self.format >= 2 && template {
-                self.sink.error(Code::MissingProperty { text: None }, &at);
+                self.sink
+                    .error(Code::from(&core_codes::MISSING_PROPERTY), &at);
             }
             return None;
         }
@@ -470,7 +474,8 @@ impl Legacy<'_, '_> {
             Some(value)
         } else {
             // A pack-report warning, which counts as the level-2 class.
-            self.sink.warning(Code::IgnoredProperty, &at);
+            self.sink
+                .warning(Code::from(&core_codes::IGNORED_PROPERTY), &at);
             None
         }
     }
@@ -482,22 +487,26 @@ impl Legacy<'_, '_> {
         let at = below(at, "modules");
         let Some(value) = member(container, "modules").filter(|v| !v.is_null()) else {
             if self.upgraded {
-                self.sink.warning(Code::MissingModules, &at);
+                self.sink
+                    .warning(Code::from(&core_codes::MISSING_MODULES), &at);
             } else {
                 // The strict path reports the same error as a non-array.
-                self.sink.error(Code::WrongTypeProperty { text: None }, &at);
+                self.sink
+                    .error(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
             }
             return Vec::new();
         };
         let Some(elements) = value.as_array() else {
-            self.sink.error(Code::WrongTypeProperty { text: None }, &at);
+            self.sink
+                .error(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
             return Vec::new();
         };
         let mut modules = Vec::new();
         for (index, element) in elements.as_slice().iter().enumerate() {
             let at = at.index(index);
             if element.as_object().is_none() {
-                self.sink.error(Code::WrongTypeProperty { text: None }, &at);
+                self.sink
+                    .error(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
                 continue;
             }
             if let Some(module) = self.module(element, &at) {
@@ -505,8 +514,11 @@ impl Legacy<'_, '_> {
             }
         }
         if !modules_consistent(&modules) {
-            self.sink
-                .error_or_upgraded(Code::MultipleModules, self.upgraded, &at);
+            self.sink.error_or_upgraded(
+                Code::from(&core_codes::MULTIPLE_MODULES),
+                self.upgraded,
+                &at,
+            );
             if self.upgraded {
                 // The lenient path keeps only the last module.
                 let last = modules.pop();
@@ -533,11 +545,16 @@ impl Legacy<'_, '_> {
                 let at = below(at, "type");
                 if self.upgraded {
                     // `packupgradewarning.invalidpacktype`: substituted by `resources`.
-                    self.sink.warning(Code::InvalidProperty { text: None }, &at);
+                    self.sink
+                        .warning(Code::from(&core_codes::INVALID_PROPERTY), &at);
                     Some(ModuleType::Resources)
                 } else {
-                    let text = Some(VanillaText::ManifestInvalidValue { path: pointer(&at) });
-                    self.sink.error(Code::InvalidProperty { text }, &at);
+                    self.sink.error(
+                        core_codes::MANIFEST_INVALID_VALUE
+                            .with([pointer(&at)])
+                            .into(),
+                        &at,
+                    );
                     None
                 }
             }
@@ -580,7 +597,8 @@ impl Legacy<'_, '_> {
         for (index, element) in elements.iter().enumerate() {
             let at = list.index(index);
             if element.as_object().is_none() {
-                self.sink.error(Code::WrongTypeProperty { text: None }, &at);
+                self.sink
+                    .error(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
                 continue;
             }
             if let Some(dependency) = self.dependency(element, &at) {
@@ -604,7 +622,8 @@ impl Legacy<'_, '_> {
         if member(object, "uuid").is_some_and(|v| !v.is_null()) {
             // The legacy parser accepts the array and drops an element that has both
             // `module_name` and `uuid`, with an `InvalidProperty` warning.
-            self.sink.warning(Code::InvalidProperty { text: None }, at);
+            self.sink
+                .warning(Code::from(&core_codes::INVALID_PROPERTY), at);
             return None;
         }
         let module_name = self.sink.string(object, "module_name", at, true)?;
@@ -645,9 +664,10 @@ impl Legacy<'_, '_> {
                 }),
                 // A dropped element gets `LegacySettingIgnored`, the crate's own information;
                 // vanilla drops them silently.
-                None => self
-                    .sink
-                    .note(Code::LegacySettingIgnored, &list.index(index)),
+                None => self.sink.note(
+                    Code::from(&core_codes::LEGACY_SETTING_IGNORED),
+                    &list.index(index),
+                ),
             }
         }
         settings
@@ -662,7 +682,8 @@ impl Legacy<'_, '_> {
         for (index, element) in elements.iter().enumerate() {
             let at = list.index(index);
             if element.as_object().is_none() {
-                self.sink.error(Code::WrongTypeProperty { text: None }, &at);
+                self.sink
+                    .error(Code::from(&core_codes::WRONG_TYPE_PROPERTY), &at);
                 continue;
             }
             let folder_name = self
@@ -699,7 +720,7 @@ impl Legacy<'_, '_> {
         if let Some(size) = integer("memory_tier") {
             if size < 0 {
                 self.sink.error(
-                    Code::InvalidProperty { text: None },
+                    Code::from(&core_codes::INVALID_PROPERTY),
                     &below(at, "memory_tier"),
                 );
             }
@@ -711,7 +732,7 @@ impl Legacy<'_, '_> {
                 .and_then(MemoryTier::from_number)
                 .unwrap_or_else(|| {
                     self.sink.error(
-                        Code::InvalidProperty { text: None },
+                        Code::from(&core_codes::INVALID_PROPERTY),
                         &below(at, "memory_performance_tier"),
                     );
                     MemoryTier::Tier0
@@ -719,7 +740,7 @@ impl Legacy<'_, '_> {
         }
         // The game has no pack-report warning for this, so the crate reports an information.
         self.sink.note(
-            Code::WrongTypeProperty { text: None },
+            Code::from(&core_codes::WRONG_TYPE_PROPERTY),
             &below(at, "memory_tier"),
         );
         MemoryTier::Tier0
@@ -735,11 +756,15 @@ impl Legacy<'_, '_> {
             }
             if self.upgraded {
                 header.uuid = ids::hash(&header.uuid.hyphenated().to_string());
-                self.sink
-                    .warning(Code::DuplicateUuid, &path(&["header", "pack_id"]));
+                self.sink.warning(
+                    Code::from(&core_codes::DUPLICATE_UUID),
+                    &path(&["header", "pack_id"]),
+                );
             } else {
-                self.sink
-                    .error(Code::DuplicateUuid, &path(&["header", "uuid"]));
+                self.sink.error(
+                    Code::from(&core_codes::DUPLICATE_UUID),
+                    &path(&["header", "uuid"]),
+                );
             }
         }
     }
@@ -822,9 +847,7 @@ pub(super) fn check_capability(
     match registry.validate(&cx) {
         CapabilityValidation::Succeeded { .. } => {}
         CapabilityValidation::Failed | CapabilityValidation::NotFound => sink.push(
-            Code::InvalidCapability {
-                name: capability.name().to_owned(),
-            },
+            Code::from(core_codes::INVALID_CAPABILITY.with([capability.name().to_owned()])),
             // The capability registry is the crate's own API and the game has no pack-report
             // warning for it, so the crate reports an information.
             bedrock_addon_core::diagnostic::Severity::Info,
@@ -846,7 +869,7 @@ pub(super) fn base_game_version(
     let template = pack_type == PackType::WorldTemplate;
     let Some(value) = member(object, "base_game_version").filter(|v| !v.is_null()) else {
         if template && from_format_2 {
-            sink.error(Code::MissingProperty { text: None }, at);
+            sink.error(Code::from(&core_codes::MISSING_PROPERTY), at);
         }
         return None;
     };
@@ -856,12 +879,12 @@ pub(super) fn base_game_version(
         None => sink.version_array(value, at).map(BaseGameVersion::new),
     };
     let Some(version) = parsed else {
-        sink.error(Code::MalformedPropertyVersion { text: None }, at);
+        sink.error(Code::from(&core_codes::MALFORMED_PROPERTY_VERSION), at);
         return None;
     };
     if !template || !from_format_2 {
         // A pack-report warning, which counts as the level-2 class.
-        sink.warning(Code::IgnoredProperty, at);
+        sink.warning(Code::from(&core_codes::IGNORED_PROPERTY), at);
         return None;
     }
     if let Some(semver) = version.version.as_ref().filter(|v| !v.is_any())
@@ -914,7 +937,7 @@ pub(super) fn metadata(sink: &mut Sink<'_>, container: &Value, at: &JsonPath) ->
         .is_some_and(|p| !p.is_empty() && p != "addon")
     {
         sink.error(
-            Code::InvalidProperty { text: None },
+            Code::from(&core_codes::INVALID_PROPERTY),
             &below(at, "product_type"),
         );
     }
@@ -932,7 +955,7 @@ pub(super) fn metadata(sink: &mut Sink<'_>, container: &Value, at: &JsonPath) ->
                 wrong_type(sink, &below(at, "authors"));
             } else {
                 sink.note(
-                    Code::WrongTypeProperty { text: None },
+                    Code::from(&core_codes::WRONG_TYPE_PROPERTY),
                     &below(at, "authors"),
                 );
             }
@@ -949,7 +972,7 @@ pub(super) fn metadata(sink: &mut Sink<'_>, container: &Value, at: &JsonPath) ->
         for (key, _) in object {
             if !METADATA_MEMBERS.contains(&key.as_str()) {
                 sink.push(
-                    Code::MemberNotKept { text: None },
+                    Code::from(&core_codes::MEMBER_NOT_KEPT),
                     bedrock_addon_core::diagnostic::Severity::Info,
                     bedrock_addon_core::diagnostic::Phase::Parse,
                     &below(at, key.as_str()),
@@ -1004,7 +1027,7 @@ fn generated_with(
                 Some(parsed) => kept.push(parsed),
                 // An unparsable version is an `ignored_property` pack-report warning, which
                 // counts as the level-2 class.
-                None => sink.warning(Code::IgnoredProperty, &at.index(index)),
+                None => sink.warning(Code::from(&core_codes::IGNORED_PROPERTY), &at.index(index)),
             }
         }
         map.insert(tool.as_str().to_owned(), kept);

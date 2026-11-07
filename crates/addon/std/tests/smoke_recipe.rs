@@ -11,10 +11,11 @@
 #[macro_use]
 mod common;
 
+use bedrock_addon::diagnostic::codes as core_codes;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::diagnostic::{DiagnosticCode, Severity};
+use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::recipe::RecipeNamespace;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::PackOrigin;
@@ -87,11 +88,12 @@ fn check_recipes(source: &str, dirs: &[&Path], world_behavior: &[u8], flattened:
         if finding.severity < Severity::Error {
             continue;
         }
-        if matches!(finding.code, DiagnosticCode::UnsupportedFileFormat) && mcb < on_disk {
+        if finding.is(&core_codes::UNSUPPORTED_FILE_FORMAT) && mcb < on_disk {
             mcb += 1;
             continue;
         }
-        if flattened && matches!(finding.code, DiagnosticCode::DuplicateIdentifier { .. }) {
+        // By legacy name: the definitions that were `DuplicateIdentifier` and the variant.
+        if flattened && finding.code.name() == "DuplicateIdentifier" {
             merged += 1;
             continue;
         }
