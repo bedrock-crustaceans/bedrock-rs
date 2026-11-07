@@ -1,8 +1,7 @@
-//! The block family's codes: vanilla's content-log texts for block files, byte for byte (the
-//! game's typos and missing spaces included), each a definition beside the rules that raise it;
-//! findings of the crate's own raise the core's generic definitions. Each
-//! [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the code's
-//! name keeps matching.
+//! The block family's codes: vanilla's content-log texts for block files, byte for byte (the game's
+//! typos and missing spaces included), each a definition beside the rules that raise it; findings
+//! of the crate's own raise the core's generic definitions. Each id is `block/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -15,8 +14,7 @@ pub static MEMBER_MISSING: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the block document misses a required member",
 )
-.game(" -> minecraft:block:  missing required field")
-.was("InvalidType");
+.game(" -> minecraft:block:  missing required field");
 
 /// The legacy reader's `components` is no object.
 pub static COMPONENTS_OBJECT: CodeDef<0> = CodeDef::new(
@@ -25,8 +23,7 @@ pub static COMPONENTS_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "components is no object",
 )
-.game(" -> minecraft:block:  the 'components' member should be an object")
-.was("InvalidType");
+.game(" -> minecraft:block:  the 'components' member should be an object");
 
 /// The legacy reader's `permutations` is no array (the first of two lines).
 pub static PERMUTATIONS_ARRAY: CodeDef<0> = CodeDef::new(
@@ -35,8 +32,7 @@ pub static PERMUTATIONS_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "permutations is no array",
 )
-.game(" -> minecraft:block:  the 'permutations' member should be an array")
-.was("InvalidType");
+.game(" -> minecraft:block:  the 'permutations' member should be an array");
 
 /// The second line of [`PERMUTATIONS_ARRAY`].
 pub static PERMUTATIONS_ARRAY_OBJECT: CodeDef<0> = CodeDef::new(
@@ -45,8 +41,7 @@ pub static PERMUTATIONS_ARRAY_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "permutations is no array",
 )
-.game("Permutations requires an array object")
-.was("InvalidType");
+.game("Permutations requires an array object");
 
 /// A permutation that is no object (the second of two lines).
 pub static PERMUTATIONS_OBJECTS: CodeDef<0> = CodeDef::new(
@@ -55,8 +50,7 @@ pub static PERMUTATIONS_OBJECTS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a permutation is no object",
 )
-.game("Permutations requires an array of objects")
-.was("InvalidType");
+.game("Permutations requires an array of objects");
 
 /// The legacy description's `states` is no object.
 pub static STATES_OBJECT: CodeDef<0> = CodeDef::new(
@@ -65,8 +59,7 @@ pub static STATES_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "description states is no object",
 )
-.game("Block description states must be an object")
-.was("InvalidType");
+.game("Block description states must be an object");
 
 /// A permutation that is no object (the first of two lines).
 pub static PERMUTATION_OBJECT: CodeDef<0> = CodeDef::new(
@@ -75,8 +68,7 @@ pub static PERMUTATION_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a permutation is no object with components",
 )
-.game(" -> minecraft:block -> permutations:  every permutation should be an object containing a 'components' member object")
-.was("InvalidType");
+.game(" -> minecraft:block -> permutations:  every permutation should be an object containing a 'components' member object");
 
 /// The line after [`STATES_OBJECT`]: takes the identifier. The trailing space is vanilla's.
 pub static PARSE_BLOCK_FAILED: CodeDef<1> = CodeDef::new(
@@ -85,8 +77,7 @@ pub static PARSE_BLOCK_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the block {} failed to parse",
 )
-.game("Failed to parse block '{}' ")
-.was("InvalidType");
+.game("Failed to parse block '{}' ");
 
 /// A component key written twice in one object: takes the key. A kept error.
 pub static DUPLICATE_COMPONENT: CodeDef<1> = CodeDef::new(
@@ -95,8 +86,7 @@ pub static DUPLICATE_COMPONENT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the component {} is there twice",
 )
-.game("Duplicate component {} found. Please remove one of the duplicates.")
-.was("DroppedComponent");
+.game("Duplicate component {} found. Please remove one of the duplicates.");
 
 /// A component the legacy document's schema has no child for: takes the key. Core's
 /// [`CHILD_NOT_VALID`](bedrock_addon_core::diagnostic::codes::CHILD_NOT_VALID) is the same line
@@ -107,8 +97,7 @@ pub static CHILD_NOT_VALID: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the component {} has no legacy description",
 )
-.game("child '{}' not valid here.")
-.was("UnrecognizedComponent");
+.game("child '{}' not valid here.");
 
 // ---- the upgrade ----
 
@@ -119,8 +108,7 @@ pub static INVALID_COMPONENT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the component {} is invalid",
 )
-.game(" -> minecraft:block -> components -> {}:  invalid component")
-.was("InvalidValue");
+.game(" -> minecraft:block -> components -> {}:  invalid component");
 
 /// The second line of [`INVALID_COMPONENT`]: takes the target and the document's version.
 pub static UPGRADE_FAILED: CodeDef<2> = CodeDef::new(
@@ -129,8 +117,7 @@ pub static UPGRADE_FAILED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the upgrade to {} from {} failed",
 )
-.game("Failed to upgrade to version '{}' from document version '{}'")
-.was("DocumentRejected");
+.game("Failed to upgrade to version '{}' from document version '{}'");
 
 /// The third line of [`INVALID_COMPONENT`]: takes the target and the document's version.
 pub static FINAL_UPGRADE_FAILED: CodeDef<2> = CodeDef::new(
@@ -139,8 +126,7 @@ pub static FINAL_UPGRADE_FAILED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the final version {} failed to upgrade from {}",
 )
-.game("Final json version '{}' failed to upgrade from document version '{}'")
-.was("DocumentRejected");
+.game("Final json version '{}' failed to upgrade from document version '{}'");
 
 /// A fixer's component without its required field: takes the component and the field. A kept
 /// error.
@@ -150,8 +136,7 @@ pub static COMPONENT_MISSING_FIELD: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the component {} misses the field {} and goes",
 )
-.game("Component {} is missing required field {}, component will be discarded")
-.was("DroppedComponent");
+.game("Component {} is missing required field {}, component will be discarded");
 
 /// An object that has its value member and another: takes the component. A kept error.
 pub static MEMBERS_THROWN_AWAY: CodeDef<1> = CodeDef::new(
@@ -160,8 +145,7 @@ pub static MEMBERS_THROWN_AWAY: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the other members of {} go in the upgrade",
 )
-.game("Members of component {} will be thrown away as part of the upgrade")
-.was("DroppedField");
+.game("Members of component {} will be thrown away as part of the upgrade");
 
 /// The 1.19.30 step's empty `menu_category.category`.
 pub static MENU_CATEGORY_EMPTY: CodeDef<0> = CodeDef::new(
@@ -170,8 +154,7 @@ pub static MENU_CATEGORY_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the menu category is empty",
 )
-.game("Block Menu Category should not have an empty value")
-.was("InvalidValue");
+.game("Block Menu Category should not have an empty value");
 
 /// The 1.19.30 step's unknown `menu_category.category`: takes the value.
 pub static MENU_CATEGORY_INVALID: CodeDef<1> = CodeDef::new(
@@ -180,8 +163,7 @@ pub static MENU_CATEGORY_INVALID: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the menu category {} is invalid",
 )
-.game("Block Menu Category has an invalid value of {}")
-.was("InvalidValue");
+.game("Block Menu Category has an invalid value of {}");
 
 /// The 1.19.40 step drops `minecraft:part_visibility` (the first of two lines). The game writes
 /// neither line when it loads a block: an information.
@@ -191,8 +173,7 @@ pub static PART_VISIBILITY_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "part_visibility is deprecated",
 )
-.game("The part_visibility component has been deprecated, use the bone_visibility field in the geometry component instead. See Block Documentation for more information.")
-.was("DroppedComponent");
+.game("The part_visibility component has been deprecated, use the bone_visibility field in the geometry component instead. See Block Documentation for more information.");
 
 /// The second line of [`PART_VISIBILITY_DEPRECATED`].
 pub static PART_VISIBILITY_UNSUPPORTED: CodeDef<0> = CodeDef::new(
@@ -201,8 +182,7 @@ pub static PART_VISIBILITY_UNSUPPORTED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "part_visibility is no longer supported",
 )
-.game("The part_visibility component is no longer supported. Please use the bone_visibility field in the geometry component instead.")
-.was("DroppedComponent");
+.game("The part_visibility component is no longer supported. Please use the bone_visibility field in the geometry component instead.");
 
 /// A bone's visibility that is no boolean below 1.20.10: takes the bone and the version. A
 /// kept error.
@@ -212,8 +192,7 @@ pub static BONE_VISIBILITY_BOOLEAN: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the bone visibility of {} is no boolean before {}",
 )
-.game("bone_visibility | {}: Only boolean values are supported for bone visibilities in format versions before {}.")
-.was("DroppedField");
+.game("bone_visibility | {}: Only boolean values are supported for bone visibilities in format versions before {}.");
 
 /// The 1.20.10 step's `minecraft:unit_cube` beside `minecraft:geometry`.
 pub static UNIT_CUBE_AND_GEOMETRY: CodeDef<0> = CodeDef::new(
@@ -222,8 +201,7 @@ pub static UNIT_CUBE_AND_GEOMETRY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "both a unit cube and a geometry",
 )
-.game("A block cannot have both a unit cube and a geometry component.")
-.was("InvalidValue");
+.game("A block cannot have both a unit cube and a geometry component.");
 
 /// An event trigger that is no string. The trailing space is vanilla's.
 pub static NONSTRING_JSON: CodeDef<0> = CodeDef::new(
@@ -232,8 +210,7 @@ pub static NONSTRING_JSON: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an event that is no string",
 )
-.game("Invalid, nonstring Json ")
-.was("InvalidType");
+.game("Invalid, nonstring Json ");
 
 /// `description.states` below 1.19.70.
 pub static CUSTOM_PROPERTIES_VERSION: CodeDef<0> = CodeDef::new(
@@ -242,8 +219,7 @@ pub static CUSTOM_PROPERTIES_VERSION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "custom block properties need format 1.19.70",
 )
-.game("To use custom block properties, use format version 1.19.70 or higher")
-.was("MissingToggles");
+.game("To use custom block properties, use format version 1.19.70 or higher");
 
 /// `permutations` below 1.19.70 (vanilla's "verison").
 pub static CUSTOM_PERMUTATIONS_VERSION: CodeDef<0> = CodeDef::new(
@@ -252,8 +228,7 @@ pub static CUSTOM_PERMUTATIONS_VERSION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "custom block permutations need format 1.19.70",
 )
-.game("To use custom block permutations, use format verison 1.19.70 or higher.")
-.was("MissingToggles");
+.game("To use custom block permutations, use format verison 1.19.70 or higher.");
 
 /// A component removed at a version: takes the component and the version. A kept error.
 pub static COMPONENT_NOT_VALID_FROM: CodeDef<2> = CodeDef::new(
@@ -262,8 +237,7 @@ pub static COMPONENT_NOT_VALID_FROM: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the component {} goes from {}",
 )
-.game("{} component is not valid from {} onward.")
-.was("DeprecatedMember");
+.game("{} component is not valid from {} onward.");
 
 /// A permutation's `condition` that is no string.
 pub static CONDITION_NOT_STRING: CodeDef<0> = CodeDef::new(
@@ -272,8 +246,7 @@ pub static CONDITION_NOT_STRING: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a permutation condition that is no string",
 )
-.game("permutation condition must be a string value")
-.was("InvalidType");
+.game("permutation condition must be a string value");
 
 // ---- the description ----
 
@@ -284,8 +257,7 @@ pub static NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the block identifier needs a namespace other than minecraft",
 )
-.game("Must have a namespace and can't use the \"minecraft\" one. Example: \"namespace:my_block\"")
-.was("NamespaceRule");
+.game("Must have a namespace and can't use the \"minecraft\" one. Example: \"namespace:my_block\"");
 
 /// `internal_vanilla_data.block_archetype` with more than one component.
 pub static ARCHETYPE_COUNT: CodeDef<0> = CodeDef::new(
@@ -294,8 +266,7 @@ pub static ARCHETYPE_COUNT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "more than one block_archetype component",
 )
-.game("\"block_archetype\" can only have a maximum of one component.")
-.was("InvalidValue");
+.game("\"block_archetype\" can only have a maximum of one component.");
 
 /// A state whose values are no valid list or range.
 pub static STATE_DESCRIPTION: CodeDef<0> = CodeDef::new(
@@ -304,8 +275,7 @@ pub static STATE_DESCRIPTION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a state description that fails",
 )
-.game("Failed to create Block State Description")
-.was("InvalidType");
+.game("Failed to create Block State Description");
 
 /// A trait the game does not know: takes the trait.
 pub static UNKNOWN_TRAIT: CodeDef<1> = CodeDef::new(
@@ -314,8 +284,7 @@ pub static UNKNOWN_TRAIT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no trait {}",
 )
-.game("Failed to find BlockTrait with identifier: '{}'")
-.was("InvalidEnumValue");
+.game("Failed to find BlockTrait with identifier: '{}'");
 
 /// A trait with an empty `enabled_states`: takes the trait.
 pub static TRAIT_NEEDS_STATE: CodeDef<1> = CodeDef::new(
@@ -324,8 +293,7 @@ pub static TRAIT_NEEDS_STATE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the trait {} enables no state",
 )
-.game("\"{}\" trait requires at least one 'enabled_state' to be specified.")
-.was("MissingRequiredField");
+.game("\"{}\" trait requires at least one 'enabled_state' to be specified.");
 
 /// An enabled state the trait does not have: takes the state and the trait.
 pub static INVALID_STATE_OPTION: CodeDef<2> = CodeDef::new(
@@ -334,8 +302,7 @@ pub static INVALID_STATE_OPTION: CodeDef<2> = CodeDef::new(
     Class::Error,
     "no state {} for the trait {}",
 )
-.game("Invalid state option \"{}\" for \"{}\" trait.")
-.was("InvalidValue");
+.game("Invalid state option \"{}\" for \"{}\" trait.");
 
 /// `placement_direction`'s `y_rotation_offset` without a state it rotates.
 pub static Y_ROTATION_OFFSET_STATES: CodeDef<0> = CodeDef::new(
@@ -344,8 +311,7 @@ pub static Y_ROTATION_OFFSET_STATES: CodeDef<0> = CodeDef::new(
     Class::Error,
     "y_rotation_offset without a rotating state",
 )
-.game("\"y_rotation_offset\" can only be used when \"minecraft:cardinal_direction\", \"minecraft:facing_direction\", and/or \"minecraft:sixteen_way_rotation\" are enabled in \"enabled_states\".")
-.was("InvalidValue");
+.game("\"y_rotation_offset\" can only be used when \"minecraft:cardinal_direction\", \"minecraft:facing_direction\", and/or \"minecraft:sixteen_way_rotation\" are enabled in \"enabled_states\".");
 
 /// `placement_direction`'s `y_rotation_offset` off the axes; the game takes the nearest.
 pub static Y_ROTATION_OFFSET_FACTOR: CodeDef<0> = CodeDef::new(
@@ -354,8 +320,7 @@ pub static Y_ROTATION_OFFSET_FACTOR: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "y_rotation_offset is no multiple of 90",
 )
-.game("\"minecraft:placement_direction\" trait \"y_rotation_offset\" must be a factor of 90.0. Defaulting to the nearest axis-aligned angle.")
-.was("ClampedValue");
+.game("\"minecraft:placement_direction\" trait \"y_rotation_offset\" must be a factor of 90.0. Defaulting to the nearest axis-aligned angle.");
 
 /// `placement_direction`'s `blocks_to_corner_with` without its state.
 pub static CORNER_STATES: CodeDef<0> = CodeDef::new(
@@ -364,8 +329,7 @@ pub static CORNER_STATES: CodeDef<0> = CodeDef::new(
     Class::Error,
     "blocks_to_corner_with without the corner state",
 )
-.game("\"blocks_to_corner_with\" can only be used when \"minecraft:corner_and_cardinal_direction\" is enabled in \"enabled_states\".")
-.was("InvalidValue");
+.game("\"blocks_to_corner_with\" can only be used when \"minecraft:corner_and_cardinal_direction\" is enabled in \"enabled_states\".");
 
 // ---- the components ----
 
@@ -376,8 +340,7 @@ pub static BOX_LIMIT_ONE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the box is outside {} to {}",
 )
-.game("\"origin\" + \"size\", must be inside the following limit: {} and {}")
-.was("InvalidValue");
+.game("\"origin\" + \"size\", must be inside the following limit: {} and {}");
 
 /// A box of a list outside the limit: takes the two corners.
 pub static BOX_LIMIT_EACH: CodeDef<2> = CodeDef::new(
@@ -386,8 +349,9 @@ pub static BOX_LIMIT_EACH: CodeDef<2> = CodeDef::new(
     Class::Error,
     "a box is outside {} to {}",
 )
-.game("The total of each \"origin\" + \"size\" pair, must be inside the following limit: {} and {}")
-.was("InvalidValue");
+.game(
+    "The total of each \"origin\" + \"size\" pair, must be inside the following limit: {} and {}",
+);
 
 /// A collision box with both forms.
 pub static BOX_FORMS_MIXED: CodeDef<0> = CodeDef::new(
@@ -396,8 +360,7 @@ pub static BOX_FORMS_MIXED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "origin/size beside min/max",
 )
-.game("\"origin\"/\"size\" cannot be combined with \"min\"/\"max\"")
-.was("InvalidValue");
+.game("\"origin\"/\"size\" cannot be combined with \"min\"/\"max\"");
 
 /// The union of the boxes outside the limit: takes the two corners. The missing space is
 /// vanilla's.
@@ -407,8 +370,7 @@ pub static BOX_BOUNDS: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the boxes are outside {} to {}",
 )
-.game("Invalid box boundsThe area covered by all boxes must be within {} to {}")
-.was("InvalidValue");
+.game("Invalid box boundsThe area covered by all boxes must be within {} to {}");
 
 /// A legacy selection box whose origin is outside the cell. A kept error.
 pub static SELECTION_ORIGIN: CodeDef<0> = CodeDef::new(
@@ -419,8 +381,7 @@ pub static SELECTION_ORIGIN: CodeDef<0> = CodeDef::new(
 )
 .game(
     "minecraft:selection_box: origin can't be below (-8, 0, -8) and can't be more than (8, 16, 8)",
-)
-.was("InvalidValue");
+);
 
 /// A legacy selection box whose far corner is outside the cell. A kept error.
 pub static SELECTION_EXTENT: CodeDef<0> = CodeDef::new(
@@ -429,8 +390,7 @@ pub static SELECTION_EXTENT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the selection box extent is outside its range",
 )
-.game("minecraft:selection_box: origin with added size can't be below (-8, 0, -8) and can't be more than (8, 16, 8)")
-.was("InvalidValue");
+.game("minecraft:selection_box: origin with added size can't be below (-8, 0, -8) and can't be more than (8, 16, 8)");
 
 /// A legacy tick's `interval_range` out of order: takes the component. A kept error.
 pub static TICK_RANGE: CodeDef<1> = CodeDef::new(
@@ -439,8 +399,7 @@ pub static TICK_RANGE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{}: the tick range ends below its start",
 )
-.game("{}: maximum ticks in interval range must be more than or equal to minimum ticks")
-.was("InvalidValue");
+.game("{}: maximum ticks in interval range must be more than or equal to minimum ticks");
 
 /// A tick's `interval_range` out of order: takes the reason.
 pub static INTERVAL_RANGE: CodeDef<1> = CodeDef::new(
@@ -449,8 +408,7 @@ pub static INTERVAL_RANGE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the interval range is invalid: {}",
 )
-.game("Invalid interval_range: {}")
-.was("InvalidValue");
+.game("Invalid interval_range: {}");
 
 /// `bone_visibility` on a vanilla geometry.
 pub static BONE_VISIBILITY_GEOMETRY: CodeDef<0> = CodeDef::new(
@@ -459,8 +417,7 @@ pub static BONE_VISIBILITY_GEOMETRY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "bone visibility on a vanilla geometry",
 )
-.game("Cannot use bone visibility feature with minecraft:geometry.cross or minecraft:geometry.full_block")
-.was("InvalidValue");
+.game("Cannot use bone visibility feature with minecraft:geometry.cross or minecraft:geometry.full_block");
 
 /// A legacy `bone_visibility` on a vanilla geometry: takes the geometry.
 pub static INVALID_BONES: CodeDef<1> = CodeDef::new(
@@ -469,8 +426,7 @@ pub static INVALID_BONES: CodeDef<1> = CodeDef::new(
     Class::Error,
     "bone visibility on the vanilla geometry {}",
 )
-.game("invalid bones: cannot use bone visibility feature with: {}")
-.was("InvalidValue");
+.game("invalid bones: cannot use bone visibility feature with: {}");
 
 /// A component before its format version: takes the version and the component.
 pub static FORMAT_REQUIRED: CodeDef<2> = CodeDef::new(
@@ -479,8 +435,7 @@ pub static FORMAT_REQUIRED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "format {} is needed for {}",
 )
-.game("Format version {} is at least required to use {}")
-.was("InvalidValue");
+.game("Format version {} is at least required to use {}");
 
 /// The text of core's
 /// [`NOT_MULTIPLE_OF`](bedrock_addon_core::diagnostic::codes::NOT_MULTIPLE_OF) on a component the
@@ -491,8 +446,7 @@ pub static NOT_MULTIPLE_OF: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} is no multiple of {}",
 )
-.game("{} is not multiple of {}")
-.was("InvalidValue");
+.game("{} is not multiple of {}");
 
 /// `minecraft:geometry`'s `uv_lock` below 1.21.90.
 pub static UV_LOCK_VERSION: CodeDef<0> = CodeDef::new(
@@ -501,8 +455,7 @@ pub static UV_LOCK_VERSION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "uv_lock before format 1.21.90",
 )
-.game("Cannot use field \"uv_lock\" before 'format_version' 1.21.90 when 'minecraft:transformation' component was released.")
-.was("InvalidValue");
+.game("Cannot use field \"uv_lock\" before 'format_version' 1.21.90 when 'minecraft:transformation' component was released.");
 
 /// A material instance's `isotropic` below 1.21.70.
 pub static ISOTROPIC_VERSION: CodeDef<0> = CodeDef::new(
@@ -513,8 +466,7 @@ pub static ISOTROPIC_VERSION: CodeDef<0> = CodeDef::new(
 )
 .game(
     "'minecraft:material_instances' cannot use 'isotropic' member with 'format_version' < 1.21.70",
-)
-.was("InvalidValue");
+);
 
 /// A material instance's `alpha_masked_tint` below 1.21.120.
 pub static ALPHA_MASKED_TINT_VERSION: CodeDef<0> = CodeDef::new(
@@ -523,8 +475,7 @@ pub static ALPHA_MASKED_TINT_VERSION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "alpha_masked_tint before format 1.21.120",
 )
-.game("'alpha_masked_tint' is only supported at format_version 1.21.120 or higher")
-.was("InvalidValue");
+.game("'alpha_masked_tint' is only supported at format_version 1.21.120 or higher");
 
 /// `alpha_masked_tint` without a `tint_method`, from 1.26.20.
 pub static ALPHA_MASKED_TINT_METHOD: CodeDef<0> = CodeDef::new(
@@ -533,8 +484,7 @@ pub static ALPHA_MASKED_TINT_METHOD: CodeDef<0> = CodeDef::new(
     Class::Error,
     "alpha_masked_tint without a tint method",
 )
-.game("\"alpha_masked_tint\" requires a non-default \"tint_method\".")
-.was("InvalidValue");
+.game("\"alpha_masked_tint\" requires a non-default \"tint_method\".");
 
 /// `alpha_masked_tint` without a `tint_method`, below 1.26.20.
 pub static ALPHA_MASKED_TINT_METHOD_LEGACY: CodeDef<0> = CodeDef::new(
@@ -543,8 +493,7 @@ pub static ALPHA_MASKED_TINT_METHOD_LEGACY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "alpha_masked_tint without a tint method",
 )
-.game("'alpha_masked_tint' requires a non-default 'tint_method'")
-.was("InvalidValue");
+.game("'alpha_masked_tint' requires a non-default 'tint_method'");
 
 /// `alpha_masked_tint` with another `render_method`, from 1.26.20.
 pub static ALPHA_MASKED_TINT_OPAQUE: CodeDef<0> = CodeDef::new(
@@ -553,8 +502,7 @@ pub static ALPHA_MASKED_TINT_OPAQUE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "alpha_masked_tint without the opaque render method",
 )
-.game("\"alpha_masked_tint\" requires \"render_method\" to be \"opaque\".")
-.was("InvalidValue");
+.game("\"alpha_masked_tint\" requires \"render_method\" to be \"opaque\".");
 
 /// `alpha_masked_tint` with another `render_method`, below 1.26.20.
 pub static ALPHA_MASKED_TINT_OPAQUE_LEGACY: CodeDef<0> = CodeDef::new(
@@ -563,8 +511,7 @@ pub static ALPHA_MASKED_TINT_OPAQUE_LEGACY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "alpha_masked_tint without the opaque render method",
 )
-.game("'alpha_masked_tint' requires 'render_method' to be 'opaque'")
-.was("InvalidValue");
+.game("'alpha_masked_tint' requires 'render_method' to be 'opaque'");
 
 /// A field before its format version: takes the version and the field. The game checks no
 /// experiment.
@@ -574,8 +521,7 @@ pub static FORMAT_REQUIRED_EXPERIMENTAL: CodeDef<2> = CodeDef::new(
     Class::Error,
     "format {} is needed for {}",
 )
-.game("Format version {} is at least required to use {} and experimental creator features")
-.was("InvalidValue");
+.game("Format version {} is at least required to use {} and experimental creator features");
 
 /// From 1.26.20, a random offset that pushes the collision box out of the cell: takes the axis,
 /// the bound and the value.
@@ -585,8 +531,7 @@ pub static RANDOM_OFFSET_OUTSIDE: CodeDef<3> = CodeDef::new(
     Class::Error,
     "the random offset {} {} of {} pushes the collision box out",
 )
-.game("\"random_offset pushes \"collision_box\" outside of unit cube for \"{}\" \"range\" \"{}\" of {}")
-.was("InvalidValue");
+.game("\"random_offset pushes \"collision_box\" outside of unit cube for \"{}\" \"range\" \"{}\" of {}");
 
 /// Below 1.26.20, the same: the game restricts the value. Takes the axis, the bound, the value
 /// and the value kept.
@@ -596,8 +541,7 @@ pub static RANDOM_OFFSET_RESTRICTED: CodeDef<4> = CodeDef::new(
     Class::Warning,
     "the random offset {}->{} goes from {} to {}",
 )
-.game("Random offset pushes collision box outside of cube for '{}->{}'. Restricting value from {} to {}")
-.was("ClampedValue");
+.game("Random offset pushes collision box outside of cube for '{}->{}'. Restricting value from {} to {}");
 
 /// `minecraft:multi_block` with a horizontal direction, without the experiment.
 pub static MULTI_BLOCK_HORIZONTAL_TOGGLE: CodeDef<0> = CodeDef::new(
@@ -606,8 +550,7 @@ pub static MULTI_BLOCK_HORIZONTAL_TOGGLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a horizontal multi_block needs Upcoming Creator Features",
 )
-.game("Upcoming Creator Features experiment is required for trait 'minecraft:multi_block' for horizontal directions")
-.was("MissingToggles");
+.game("Upcoming Creator Features experiment is required for trait 'minecraft:multi_block' for horizontal directions");
 
 /// A member gated by the experiment: takes the member and the component.
 pub static MEMBER_NEEDS_CREATOR_FEATURES: CodeDef<2> = CodeDef::new(
@@ -616,8 +559,7 @@ pub static MEMBER_NEEDS_CREATOR_FEATURES: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} in {} needs Upcoming Creator Features",
 )
-.game("To use '{}' in '{}', experimental creator features are required")
-.was("MissingToggles");
+.game("To use '{}' in '{}', experimental creator features are required");
 
 /// A component gated by the experiment: takes the component.
 pub static NEEDS_CREATOR_FEATURES: CodeDef<1> = CodeDef::new(
@@ -626,8 +568,7 @@ pub static NEEDS_CREATOR_FEATURES: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} needs Upcoming Creator Features",
 )
-.game("To use '{}', experimental creator features are required")
-.was("MissingToggles");
+.game("To use '{}', experimental creator features are required");
 
 /// A collision box's `min`/`max` from 1.26.60, without the experiment.
 pub static COLLISION_MIN_MAX_TOGGLE: CodeDef<0> = CodeDef::new(
@@ -636,8 +577,7 @@ pub static COLLISION_MIN_MAX_TOGGLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "min/max in a collision box needs Upcoming Creator Features",
 )
-.game("Upcoming Creator Features experiment is required to use \"min\"/\"max\" in \"minecraft:collision_box\" from version 1.26.60 and after")
-.was("MissingToggles");
+.game("Upcoming Creator Features experiment is required to use \"min\"/\"max\" in \"minecraft:collision_box\" from version 1.26.60 and after");
 
 /// A block entity's `container` beside `minecraft:crafting_table`.
 pub static CONTAINER_AND_CRAFTING_TABLE: CodeDef<0> = CodeDef::new(
@@ -646,8 +586,7 @@ pub static CONTAINER_AND_CRAFTING_TABLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "both a container and a crafting table",
 )
-.game("Block cannot have both a \"container\" in \"minecraft:block_entity\" and a \"minecraft:crafting_table\" component.")
-.was("InvalidValue");
+.game("Block cannot have both a \"container\" in \"minecraft:block_entity\" and a \"minecraft:crafting_table\" component.");
 
 /// `all` beside another neighbour direction.
 pub static NEIGHBOR_ALL_ALONE: CodeDef<0> = CodeDef::new(
@@ -656,8 +595,7 @@ pub static NEIGHBOR_ALL_ALONE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the neighbour direction all beside another",
 )
-.game("The 'all' neighbor direction must be used alone")
-.was("InvalidValue");
+.game("The 'all' neighbor direction must be used alone");
 
 /// A component in a permutation but not in the base: takes the version and the component.
 pub static PERMUTATION_ONLY_COMPONENT: CodeDef<2> = CodeDef::new(
@@ -666,8 +604,7 @@ pub static PERMUTATION_ONLY_COMPONENT: CodeDef<2> = CodeDef::new(
     Class::Error,
     "from {}, {} in the permutations only",
 )
-.game("For 'format_version' >= {} the block cannot define '{}' in the 'permutations' array and not define it in the base 'components' object")
-.was("InvalidValue");
+.game("For 'format_version' >= {} the block cannot define '{}' in the 'permutations' array and not define it in the base 'components' object");
 
 // ---- the components together ----
 
@@ -678,8 +615,7 @@ pub static GEOMETRY_AND_MATERIALS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "geometry without material instances, or the other way",
 )
-.game("Block needs both a \"geometry\" and \"material_instances\" component.")
-.was("InvalidValue");
+.game("Block needs both a \"geometry\" and \"material_instances\" component.");
 
 /// Below 1.26.20, one of the two without the other.
 pub static GEOMETRY_AND_MATERIALS_LEGACY: CodeDef<0> = CodeDef::new(
@@ -688,8 +624,7 @@ pub static GEOMETRY_AND_MATERIALS_LEGACY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "geometry without material instances, or the other way",
 )
-.game("Block needs both a geometry and material instances component.")
-.was("InvalidValue");
+.game("Block needs both a geometry and material instances component.");
 
 /// `minecraft:flower_pottable` without both.
 pub static FLOWER_POTTABLE: CodeDef<0> = CodeDef::new(
@@ -698,8 +633,7 @@ pub static FLOWER_POTTABLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "flower_pottable without geometry and material instances",
 )
-.game("Block that uses \"flower_pottable\" needs both a \"geometry\" and \"material_instances\" component.")
-.was("InvalidValue");
+.game("Block that uses \"flower_pottable\" needs both a \"geometry\" and \"material_instances\" component.");
 
 /// A legacy `minecraft:item_visual` without both: takes the identifier.
 pub static ITEM_VISUAL: CodeDef<1> = CodeDef::new(
@@ -708,8 +642,7 @@ pub static ITEM_VISUAL: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the block {} has an item visual without geometry and material instances",
 )
-.game("Block {} needs both a geometry and material instances component when using an Item Visual Component.")
-.was("InvalidValue");
+.game("Block {} needs both a geometry and material instances component when using an Item Visual Component.");
 
 /// Snowlogging with a collision box.
 pub static SNOWLOGGING_COLLISION: CodeDef<0> = CodeDef::new(
@@ -718,8 +651,7 @@ pub static SNOWLOGGING_COLLISION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "snowlogging with a collision box",
 )
-.game("Blocks with precipitation interactions \"snowlogging\" must have collision box disabled")
-.was("InvalidValue");
+.game("Blocks with precipitation interactions \"snowlogging\" must have collision box disabled");
 
 /// `minecraft:random_offset` on the full block geometry.
 pub static FULL_BLOCK_RANDOM_OFFSET: CodeDef<0> = CodeDef::new(
@@ -728,8 +660,7 @@ pub static FULL_BLOCK_RANDOM_OFFSET: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a random offset on a full block geometry",
 )
-.game("Block with \"geometry\" set at \"minecraft:geometry.full_block\" cannot have a \"random_offset\"")
-.was("InvalidValue");
+.game("Block with \"geometry\" set at \"minecraft:geometry.full_block\" cannot have a \"random_offset\"");
 
 /// From 1.26.20, both redstone components.
 pub static REDSTONE_BOTH: CodeDef<0> = CodeDef::new(
@@ -738,8 +669,7 @@ pub static REDSTONE_BOTH: CodeDef<0> = CodeDef::new(
     Class::Error,
     "both a redstone producer and consumer",
 )
-.game("Block cannot have both \"minecraft:redstone_producer\" and \"minecraft:redstone_consumer\" components.")
-.was("InvalidValue");
+.game("Block cannot have both \"minecraft:redstone_producer\" and \"minecraft:redstone_consumer\" components.");
 
 /// Below 1.26.20, both redstone components.
 pub static REDSTONE_BOTH_LEGACY: CodeDef<0> = CodeDef::new(
@@ -748,8 +678,7 @@ pub static REDSTONE_BOTH_LEGACY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "both a redstone producer and consumer",
 )
-.game("Block cannot have both 'minecraft:redstone_producer' and 'minecraft:redstone_consumer' components")
-.was("InvalidValue");
+.game("Block cannot have both 'minecraft:redstone_producer' and 'minecraft:redstone_consumer' components");
 
 // ---- multi-block blocks ----
 
@@ -760,8 +689,7 @@ pub static MULTI_BLOCK_MOVABLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a multi_block without movable",
 )
-.game("Blocks with trait 'minecraft:multi_block' must define component 'minecraft:movable'")
-.was("MissingRequiredField");
+.game("Blocks with trait 'minecraft:multi_block' must define component 'minecraft:movable'");
 
 /// A multi-block block's `movement_type`.
 pub static MULTI_BLOCK_MOVEMENT_TYPE: CodeDef<0> = CodeDef::new(
@@ -770,8 +698,7 @@ pub static MULTI_BLOCK_MOVEMENT_TYPE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a multi_block that is neither popped nor immovable",
 )
-.game("Blocks with trait 'minecraft:multi_block' for component 'minecraft:movable' the 'movement_type' must either be 'popped' or 'immovable'")
-.was("InvalidValue");
+.game("Blocks with trait 'minecraft:multi_block' for component 'minecraft:movable' the 'movement_type' must either be 'popped' or 'immovable'");
 
 /// A horizontal multi-block block with `minecraft:random_offset`.
 pub static MULTI_BLOCK_RANDOM_OFFSET: CodeDef<0> = CodeDef::new(
@@ -780,8 +707,7 @@ pub static MULTI_BLOCK_RANDOM_OFFSET: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a horizontal multi_block with a random offset",
 )
-.game("Blocks with trait 'minecraft:multi_block' and a horizontal 'direction' cannot define component 'minecraft:random_offset'")
-.was("InvalidValue");
+.game("Blocks with trait 'minecraft:multi_block' and a horizontal 'direction' cannot define component 'minecraft:random_offset'");
 
 /// A multi-block block with a trait it excludes: takes the trait.
 pub static MULTI_BLOCK_TRAIT: CodeDef<1> = CodeDef::new(
@@ -790,8 +716,7 @@ pub static MULTI_BLOCK_TRAIT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "a multi_block with the trait {}",
 )
-.game("A block with trait 'minecraft:multi_block' cannot also define trait '{}'")
-.was("InvalidValue");
+.game("A block with trait 'minecraft:multi_block' cannot also define trait '{}'");
 
 /// A multi-block block's placement direction with another state.
 pub static MULTI_BLOCK_PLACEMENT_DIRECTION: CodeDef<0> = CodeDef::new(
@@ -800,8 +725,7 @@ pub static MULTI_BLOCK_PLACEMENT_DIRECTION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a multi_block placement direction with another state",
 )
-.game("A block with trait 'minecraft:multi_block' and trait 'minecraft:placement_direction' can only enable state 'minecraft:cardinal_direction'")
-.was("InvalidValue");
+.game("A block with trait 'minecraft:multi_block' and trait 'minecraft:placement_direction' can only enable state 'minecraft:cardinal_direction'");
 
 /// A component a multi-block permutation may not define: takes the component.
 pub static MULTI_BLOCK_PERMUTATION_COMPONENT: CodeDef<1> = CodeDef::new(
@@ -810,8 +734,7 @@ pub static MULTI_BLOCK_PERMUTATION_COMPONENT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} in a multi_block permutation",
 )
-.game("Component '{}' is not valid in multi block permutations, only in the base BlockType components")
-.was("InvalidValue");
+.game("Component '{}' is not valid in multi block permutations, only in the base BlockType components");
 
 // ---- n_way_visual_rotation ----
 
@@ -822,8 +745,7 @@ pub static N_WAY_PERMUTATIONS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "n_way_visual_rotation in a permutation",
 )
-.game("minecraft:geometry 'n_way_visual_rotation' may only be defined on the base block and is not allowed in permutations.")
-.was("InvalidValue");
+.game("minecraft:geometry 'n_way_visual_rotation' may only be defined on the base block and is not allowed in permutations.");
 
 /// `n_way_visual_rotation` on a multi-block block.
 pub static N_WAY_MULTI_BLOCK: CodeDef<0> = CodeDef::new(
@@ -832,8 +754,7 @@ pub static N_WAY_MULTI_BLOCK: CodeDef<0> = CodeDef::new(
     Class::Error,
     "n_way_visual_rotation on a multi_block",
 )
-.game("'minecraft:geometry' field 'n_way_visual_rotation' cannot be defined for a block with trait 'minecraft:multi_block'")
-.was("InvalidValue");
+.game("'minecraft:geometry' field 'n_way_visual_rotation' cannot be defined for a block with trait 'minecraft:multi_block'");
 
 /// `n_way_visual_rotation` without an axis.
 pub static N_WAY_AXIS: CodeDef<0> = CodeDef::new(
@@ -842,8 +763,7 @@ pub static N_WAY_AXIS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "n_way_visual_rotation without an axis",
 )
-.game("'n_way_visual_rotation' must define at least one axis (x, y, or z)")
-.was("MissingRequiredField");
+.game("'n_way_visual_rotation' must define at least one axis (x, y, or z)");
 
 /// An axis naming a state the block does not have: takes the axis and the state.
 pub static N_WAY_UNKNOWN_STATE: CodeDef<2> = CodeDef::new(
@@ -852,8 +772,7 @@ pub static N_WAY_UNKNOWN_STATE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "n_way_visual_rotation.{} names no state {}",
 )
-.game("'minecraft:geometry' field 'n_way_visual_rotation.{}' references unknown state '{}'")
-.was("UnresolvedReference");
+.game("'minecraft:geometry' field 'n_way_visual_rotation.{}' references unknown state '{}'");
 
 // ---- permutations ----
 
@@ -864,8 +783,7 @@ pub static CONDITION_PARSE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a permutation condition that does not parse",
 )
-.game("permutation condition failed to parse")
-.was("InvalidValue");
+.game("permutation condition failed to parse");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

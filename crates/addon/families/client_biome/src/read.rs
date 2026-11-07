@@ -11,7 +11,7 @@ use super::{Description, EnvironmentAttributes};
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Class, Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase,
+    Class, Code, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind, Phase,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentSet};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -174,11 +174,8 @@ pub(crate) fn strict<T>(
 
 /// Whether `finding` tells of an unknown member or component.
 pub(crate) fn is_unknown_member(finding: &Diagnostic) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(
-        finding.code.name(),
-        "UnrecognizedField" | "UnrecognizedComponent"
-    )
+    // The kind holds the unrecognized field and component definitions and no others.
+    matches!(finding.kind(), Kind::UnknownMember(Disposition::Kept))
 }
 
 /// Reads a stable payload object as the struct of `version` binds it.

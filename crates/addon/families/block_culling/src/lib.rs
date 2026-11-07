@@ -93,42 +93,62 @@ impl Family for CullingFamily {
         let mut validate = false;
         for mut finding in found {
             if finding.severity >= Severity::Error {
-                // By legacy name: the variant and the definitions that were it (the pipeline
-                // raises on core's definitions); the plain forms by the variant without a text
-                // or core's plain definition.
+                // By definition: the pipeline raises on core's definitions (the family raises
+                // none of these itself); the plain forms by core's plain definition.
                 let root = finding.location.json_path.is_empty();
-                let use_format = finding.is(&core_codes::USE_FORMAT_VERSION);
                 let plain_unknown = finding.is(&core_codes::UNRECOGNIZED_FIELD);
-                match finding.code.name() {
-                    "UnsupportedVersion" if use_format => {
+                match finding.code.id() {
+                    "core/use_format_version" => {
                         finding.code =
                             codes::MISSING_OBJECT_UNSUPPORTED_VERSION.with([path.as_str()]);
                     }
-                    "UnsupportedVersion" => {
+                    "core/no_parser_for_version"
+                    | "core/unsupported_version"
+                    | "core/unsupported_version_worded"
+                    | "core/version_below_min" => {
                         finding.code = core_codes::NO_PARSER_FOR_VERSION
                             .with([document.map(written_version).unwrap_or_default()]);
                         above = true;
                     }
-                    "MissingFormatVersion" => {
+                    "core/format_version_required"
+                    | "core/missing_format_version"
+                    | "core/missing_format_version_worded"
+                    | "core/no_format_version_field"
+                    | "core/no_valid_version"
+                    | "core/version_not_given_legacy_fields"
+                    | "core/version_not_processable"
+                    | "core/version_not_readable" => {
                         finding.code =
                             codes::MISSING_OBJECT_MISSING_FORMAT_VERSION.with([path.as_str()]);
                     }
-                    "MalformedFormatVersion" => {
+                    "core/malformed_format_version" | "core/malformed_format_version_worded" => {
                         finding.code =
                             codes::MISSING_OBJECT_MALFORMED_FORMAT_VERSION.with([path.as_str()]);
                     }
-                    "MissingPayload" => {
+                    "core/missing_payload"
+                    | "core/missing_payload_worded"
+                    | "core/payload_missing"
+                    | "core/payload_under_other_key" => {
                         finding.code = codes::MISSING_OBJECT_MISSING_PAYLOAD.with([path.as_str()]);
                     }
-                    "MalformedInput" | "EmptyDocument" | "PayloadKeyMismatch"
-                    | "UnknownPayloadKey"
+                    "core/document_json"
+                    | "core/document_member_count"
+                    | "core/document_nearly_too_large"
+                    | "core/document_too_large"
+                    | "core/malformed_input"
+                    | "core/malformed_input_worded"
+                    | "core/parse_error"
+                    | "core/stack_top_unparsable"
+                    | "core/syntax"
+                    | "core/empty_document"
+                    | "core/empty_document_worded"
+                    | "core/payload_key_mismatch"
+                    | "core/unknown_payload_key"
                         if root =>
                     {
                         envelope = true;
                     }
-                    "UnrecognizedField"
-                        if plain_unknown && finding.location.json_path.len() == 1 =>
-                    {
+                    _ if plain_unknown && finding.location.json_path.len() == 1 => {
                         // A third root member: the envelope is not exactly two members.
                         finding.code =
                             codes::MISSING_OBJECT_UNRECOGNIZED_FIELD.with([path.as_str()]);

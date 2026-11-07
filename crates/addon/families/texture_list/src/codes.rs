@@ -1,6 +1,6 @@
 //! The `texture_list` family's codes: the game's content-log lines, byte for byte, each a
-//! definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites
-//! raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the rules that raise it. Each id is `texture_list/<name>`, the name its
+//! constant's in lower case.
 //!
 //! The game's line goes to its developer log, not the content log: the crate reports it as an
 //! information with the game's text.
@@ -15,8 +15,7 @@ pub static NO_LIST_IN_BASE_PACK: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "base pack {} has a textures directory and no list {}",
 )
-.game("Failed to find {} in {} for a base pack with a texture directory, falling back to pack iteration")
-.was("MissingRequiredField");
+.game("Failed to find {} in {} for a base pack with a texture directory, falling back to pack iteration");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[NO_LIST_IN_BASE_PACK.meta()];

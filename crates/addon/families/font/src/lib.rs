@@ -22,7 +22,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::Written;
 
 use crate::stack::Index;
-use bedrock_addon_core::diagnostic::{Code, DiagnosticDetail, JsonPath, JsonPathSegment};
+use bedrock_addon_core::diagnostic::{Code, DiagnosticDetail, JsonPath, JsonPathSegment, Kind};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Origin, Placed, Rejected, unversioned,
 };
@@ -326,10 +326,9 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FontFileCopy<FontMetadata> {
             ))
         );
         let said = is_scale
-            && diagnostics.iter().any(|own| {
-                // By legacy name: the variant and the definitions that were it.
-                matches!(own.code.name(), "ClampedValue") && own.location.json_path == *at
-            });
+            && diagnostics
+                .iter()
+                .any(|own| own.kind() == Kind::Clamped && own.location.json_path == *at);
         if !said {
             diagnostics.push(finding);
         }

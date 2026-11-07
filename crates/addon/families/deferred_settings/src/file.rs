@@ -296,12 +296,19 @@ fn version_texts(diagnostics: &mut Diagnostics, envelope: &Envelope) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
         if envelope.beta_literal {
-            // By legacy name: the variant and the definitions that were it.
-            match finding.code.name() {
-                "UnsupportedVersion" => {
+            // By definition: the chain raises on core's definitions.
+            match finding.code.id() {
+                "core/no_parser_for_version"
+                | "core/unsupported_version"
+                | "core/unsupported_version_worded"
+                | "core/use_format_version"
+                | "core/version_below_min" => {
                     finding.code = Code::from(&codes::BETA_UNSUPPORTED);
                 }
-                "BetaFeaturesNotEnabled" => {
+                "core/beta_documents"
+                | "core/beta_features_not_enabled"
+                | "core/beta_features_not_enabled_worded"
+                | "core/beta_format_version" => {
                     finding.code = Code::from(&codes::BETA_NOT_ENABLED);
                 }
                 _ => {}

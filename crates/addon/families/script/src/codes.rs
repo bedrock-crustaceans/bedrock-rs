@@ -1,6 +1,6 @@
 //! The `script` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `script/<name>`, the name its constant's in lower
+//! case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -11,8 +11,7 @@ pub static PLUGIN_MODULE_EXISTS: CodeDef<3> = CodeDef::new(
     Class::Warning,
     "duplicate identifier",
 )
-.game("Plugin [{}] - module uuid [{}] with version [{}] already exists, skipping.")
-.was("DuplicateIdentifier");
+.game("Plugin [{}] - module uuid [{}] with version [{}] already exists, skipping.");
 
 /// `InvalidEnumValue`: the game's line `Plugin [{}] - using unsupported runtime [{}].`.
 pub static PLUGIN_UNSUPPORTED_RUNTIME: CodeDef<2> = CodeDef::new(
@@ -21,8 +20,7 @@ pub static PLUGIN_UNSUPPORTED_RUNTIME: CodeDef<2> = CodeDef::new(
     Class::Error,
     "invalid enum value",
 )
-.game("Plugin [{}] - using unsupported runtime [{}].")
-.was("InvalidEnumValue");
+.game("Plugin [{}] - using unsupported runtime [{}].");
 
 /// `MissingRequiredField`: the game's line `Plugin [{}] - entry [{}] not supported for runtime [{}].`.
 pub static PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD: CodeDef<3> = CodeDef::new(
@@ -31,8 +29,7 @@ pub static PLUGIN_ENTRY_NOT_SUPPORTED_MISSING_REQUIRED_FIELD: CodeDef<3> = CodeD
     Class::Error,
     "missing required field",
 )
-.game("Plugin [{}] - entry [{}] not supported for runtime [{}].")
-.was("MissingRequiredField");
+.game("Plugin [{}] - entry [{}] not supported for runtime [{}].");
 
 /// `InvalidValue`: the game's line `Plugin [{}] - entry [{}] not supported for runtime [{}].`.
 pub static PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE: CodeDef<3> = CodeDef::new(
@@ -41,8 +38,7 @@ pub static PLUGIN_ENTRY_NOT_SUPPORTED_INVALID_VALUE: CodeDef<3> = CodeDef::new(
     Class::Error,
     "invalid value",
 )
-.game("Plugin [{}] - entry [{}] not supported for runtime [{}].")
-.was("InvalidValue");
+.game("Plugin [{}] - entry [{}] not supported for runtime [{}].");
 
 /// `DeprecatedMember`: the game's line `Plugin [{}] dependency by UUID is deprecated and only supports version 0.1.0, use module_name instead.`.
 pub static PLUGIN_DEPENDENCY_BY_UUID: CodeDef<1> = CodeDef::new(
@@ -51,8 +47,7 @@ pub static PLUGIN_DEPENDENCY_BY_UUID: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "deprecated member",
 )
-.game("Plugin [{}] dependency by UUID is deprecated and only supports version 0.1.0, use module_name instead.")
-.was("DeprecatedMember");
+.game("Plugin [{}] dependency by UUID is deprecated and only supports version 0.1.0, use module_name instead.");
 
 /// `UnresolvedReference`: the game's line `Plugin [{}] - does not contain main file [{}].`.
 pub static PLUGIN_MISSING_MAIN_FILE: CodeDef<2> = CodeDef::new(
@@ -61,8 +56,7 @@ pub static PLUGIN_MISSING_MAIN_FILE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "unresolved reference",
 )
-.game("Plugin [{}] - does not contain main file [{}].")
-.was("UnresolvedReference");
+.game("Plugin [{}] - does not contain main file [{}].");
 
 /// `UnresolvedReference`: the game's line `Plugin [{}] - module [{}] depends on unknown module [{}].`.
 pub static PLUGIN_UNKNOWN_MODULE: CodeDef<3> = CodeDef::new(
@@ -71,8 +65,7 @@ pub static PLUGIN_UNKNOWN_MODULE: CodeDef<3> = CodeDef::new(
     Class::Error,
     "unresolved reference",
 )
-.game("Plugin [{}] - module [{}] depends on unknown module [{}].")
-.was("UnresolvedReference");
+.game("Plugin [{}] - module [{}] depends on unknown module [{}].");
 
 /// `DroppedField`: the game's line `Plugin [{}] - skipping dependency on [{}] because this is not an editor world.`.
 pub static PLUGIN_NOT_EDITOR_WORLD: CodeDef<2> = CodeDef::new(
@@ -81,8 +74,7 @@ pub static PLUGIN_NOT_EDITOR_WORLD: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "field dropped",
 )
-.game("Plugin [{}] - skipping dependency on [{}] because this is not an editor world.")
-.was("DroppedField");
+.game("Plugin [{}] - skipping dependency on [{}] because this is not an editor world.");
 
 /// `MissingToggles`: the game's line `Plugin [{}] - requesting dependency on [{}], but the Beta APIs experiment is not enabled.`.
 pub static PLUGIN_BETA_APIS_MODULE: CodeDef<2> = CodeDef::new(
@@ -91,8 +83,7 @@ pub static PLUGIN_BETA_APIS_MODULE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "needs a toggle that is not enabled",
 )
-.game("Plugin [{}] - requesting dependency on [{}], but the Beta APIs experiment is not enabled.")
-.was("MissingToggles");
+.game("Plugin [{}] - requesting dependency on [{}], but the Beta APIs experiment is not enabled.");
 
 /// `MissingToggles`: the game's line `Plugin [{}] - requesting dependency on beta APIs [{}], but the Beta APIs experiment is not enabled.`.
 pub static PLUGIN_BETA_APIS: CodeDef<2> = CodeDef::new(
@@ -101,8 +92,7 @@ pub static PLUGIN_BETA_APIS: CodeDef<2> = CodeDef::new(
     Class::Error,
     "needs a toggle that is not enabled",
 )
-.game("Plugin [{}] - requesting dependency on beta APIs [{}], but the Beta APIs experiment is not enabled.")
-.was("MissingToggles");
+.game("Plugin [{}] - requesting dependency on beta APIs [{}], but the Beta APIs experiment is not enabled.");
 
 /// `ScriptModulePermission`: the game's line `Plugin [{}] - requesting dependency on internal APIs [{}], but does not have permission to access them.`.
 pub static PLUGIN_INTERNAL_APIS: CodeDef<2> = CodeDef::new(
@@ -111,8 +101,7 @@ pub static PLUGIN_INTERNAL_APIS: CodeDef<2> = CodeDef::new(
     Class::Error,
     "native module not permitted",
 )
-.game("Plugin [{}] - requesting dependency on internal APIs [{}], but does not have permission to access them.")
-.was("ScriptModulePermission");
+.game("Plugin [{}] - requesting dependency on internal APIs [{}], but does not have permission to access them.");
 
 /// `ScriptModulePermission`: the game's line `Plugin [{}] - requesting dependency on module [{}] but it is not configured to use it.`.
 pub static PLUGIN_MODULE_NOT_CONFIGURED: CodeDef<2> = CodeDef::new(
@@ -121,8 +110,7 @@ pub static PLUGIN_MODULE_NOT_CONFIGURED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "native module not permitted",
 )
-.game("Plugin [{}] - requesting dependency on module [{}] but it is not configured to use it.")
-.was("ScriptModulePermission");
+.game("Plugin [{}] - requesting dependency on module [{}] but it is not configured to use it.");
 
 /// `ScriptSyntaxError`: the game's line `SyntaxError: invalid UTF-8 sequence    at {}:{}`.
 pub static SCRIPT_INVALID_UTF8: CodeDef<2> = CodeDef::new(
@@ -131,8 +119,7 @@ pub static SCRIPT_INVALID_UTF8: CodeDef<2> = CodeDef::new(
     Class::Error,
     "syntax error in a script file",
 )
-.game("SyntaxError: invalid UTF-8 sequence    at {}:{}")
-.was("ScriptSyntaxError");
+.game("SyntaxError: invalid UTF-8 sequence    at {}:{}");
 
 /// `ScriptSyntaxError`: the game's line `SyntaxError: expecting ';'    at {}:{}`.
 pub static SCRIPT_EXPECTING_SEMICOLON: CodeDef<2> = CodeDef::new(
@@ -141,8 +128,7 @@ pub static SCRIPT_EXPECTING_SEMICOLON: CodeDef<2> = CodeDef::new(
     Class::Error,
     "syntax error in a script file",
 )
-.game("SyntaxError: expecting ';'    at {}:{}")
-.was("ScriptSyntaxError");
+.game("SyntaxError: expecting ';'    at {}:{}");
 
 /// `ScriptSyntaxError`: the game's line `{} is not UTF-8 at line {}; nothing imports the file, so the engine never reads it`.
 pub static UNREAD_NOT_UTF8: CodeDef<2> = CodeDef::new(
@@ -151,8 +137,7 @@ pub static UNREAD_NOT_UTF8: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "syntax error in a script file",
 )
-.game("{} is not UTF-8 at line {}; nothing imports the file, so the engine never reads it")
-.was("ScriptSyntaxError");
+.game("{} is not UTF-8 at line {}; nothing imports the file, so the engine never reads it");
 
 /// `ScriptSyntaxError`: the game's line `{} is not UTF-8 at line {}; a syntax error comes before it`.
 pub static NOT_UTF8_AFTER_ERROR: CodeDef<2> = CodeDef::new(
@@ -161,8 +146,7 @@ pub static NOT_UTF8_AFTER_ERROR: CodeDef<2> = CodeDef::new(
     Class::Error,
     "syntax error in a script file",
 )
-.game("{} is not UTF-8 at line {}; a syntax error comes before it")
-.was("ScriptSyntaxError");
+.game("{} is not UTF-8 at line {}; a syntax error comes before it");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

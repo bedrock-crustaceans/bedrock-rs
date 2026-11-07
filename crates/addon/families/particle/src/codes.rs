@@ -1,6 +1,6 @@
 //! The particle family's codes: vanilla's content-log lines of the particle loaders, its spelling
-//! kept, each a definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy
-//! code its sites raised, so a pin or a filter on the code's name keeps matching.
+//! kept, each a definition beside the rules that raise it. Each id is `particle/<name>`, the name
+//! its constant's in lower case.
 //!
 //! Most lines are written by the legacy parser (below 1.20.80) at the error level before its parse
 //! returns and the effect loads, and by the 1.20.80 reader where it reads the same way: kept
@@ -17,8 +17,7 @@ pub static NO_PAYLOAD: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no particle_effect member",
 )
-.game("no particle_effect field was given")
-.was("MissingRequiredField");
+.game("no particle_effect field was given");
 
 /// No `description` block: the document is refused.
 pub static NO_DESCRIPTION: CodeDef<0> = CodeDef::new(
@@ -27,8 +26,7 @@ pub static NO_DESCRIPTION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no description block",
 )
-.game("Particle effects file has no description block!")
-.was("MissingRequiredField");
+.game("Particle effects file has no description block!");
 
 /// No `identifier` in the description: the document is refused (the error is the crate's own
 /// there: the game registers an effect named `""`).
@@ -38,8 +36,7 @@ pub static NO_IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the description has no identifier",
 )
-.game("Particle effect description has no identifier field!")
-.was("MissingRequiredField");
+.game("Particle effect description has no identifier field!");
 
 /// No `basic_render_parameters`: the parser stops and the effect loads.
 pub static NO_RENDER_PARAMETERS: CodeDef<0> = CodeDef::new(
@@ -48,8 +45,7 @@ pub static NO_RENDER_PARAMETERS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no basic_render_parameters",
 )
-.game("basic_render_parameters not found when reading in particle effect")
-.was("MissingRequiredField");
+.game("basic_render_parameters not found when reading in particle effect");
 
 /// No `material` in the render parameters: the parser stops and the effect loads.
 pub static NO_MATERIAL: CodeDef<0> = CodeDef::new(
@@ -58,8 +54,7 @@ pub static NO_MATERIAL: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no material",
 )
-.game("particle has no material!")
-.was("MissingRequiredField");
+.game("particle has no material!");
 
 /// A `material` that is no string.
 pub static MATERIAL_NOT_STRING: CodeDef<0> = CodeDef::new(
@@ -68,8 +63,7 @@ pub static MATERIAL_NOT_STRING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "material is not a string",
 )
-.game("particle material field isn't a string")
-.was("InvalidValue");
+.game("particle material field isn't a string");
 
 /// No `texture` in the render parameters.
 pub static NO_TEXTURE: CodeDef<0> = CodeDef::new(
@@ -78,8 +72,7 @@ pub static NO_TEXTURE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no texture",
 )
-.game("particle has no texture!")
-.was("MissingRequiredField");
+.game("particle has no texture!");
 
 /// A `texture` that is no string.
 pub static TEXTURE_NOT_STRING: CodeDef<0> = CodeDef::new(
@@ -88,8 +81,7 @@ pub static TEXTURE_NOT_STRING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "texture is not a string",
 )
-.game("particle texture field isn't a string")
-.was("InvalidValue");
+.game("particle texture field isn't a string");
 
 /// No `components` object: the parser stops and the effect loads.
 pub static NO_COMPONENTS: CodeDef<0> = CodeDef::new(
@@ -98,8 +90,7 @@ pub static NO_COMPONENTS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no components",
 )
-.game("no components found when reading in particle effect")
-.was("MissingRequiredField");
+.game("no components found when reading in particle effect");
 
 /// The render parameters' material is not found.
 pub static MATERIAL_NOT_FOUND: CodeDef<0> = CodeDef::new(
@@ -108,8 +99,7 @@ pub static MATERIAL_NOT_FOUND: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the material is not found",
 )
-.game("Unable to find a material when reading in particle effect .json!")
-.was("MissingRequiredField");
+.game("Unable to find a material when reading in particle effect .json!");
 
 /// The render parameters' texture is not found.
 pub static TEXTURE_NOT_FOUND: CodeDef<0> = CodeDef::new(
@@ -118,8 +108,7 @@ pub static TEXTURE_NOT_FOUND: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the texture is not found",
 )
-.game("Unable to find a texture when reading in particle effect .json!")
-.was("MissingRequiredField");
+.game("Unable to find a texture when reading in particle effect .json!");
 
 /// No emitter lifetime component.
 pub static NEEDS_LIFETIME: CodeDef<0> = CodeDef::new(
@@ -128,8 +117,7 @@ pub static NEEDS_LIFETIME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no emitter lifetime component",
 )
-.game("Particle effect needs an emitter lifetime component!")
-.was("MissingRequiredField");
+.game("Particle effect needs an emitter lifetime component!");
 
 /// No emitter rate component.
 pub static NEEDS_RATE: CodeDef<0> = CodeDef::new(
@@ -138,8 +126,7 @@ pub static NEEDS_RATE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no emitter rate component",
 )
-.game("Particle effect needs an emitter rate component!")
-.was("MissingRequiredField");
+.game("Particle effect needs an emitter rate component!");
 
 // ---- the component list ----
 
@@ -151,8 +138,7 @@ pub static UNRECOGNIZED_COMPONENT: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unrecognized particle component '{}'",
 )
-.game("Unrecognized component name '{}' in particle effect")
-.was("UnrecognizedComponent");
+.game("Unrecognized component name '{}' in particle effect");
 
 /// A component under the empty key.
 pub static COMPONENT_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
@@ -161,8 +147,7 @@ pub static COMPONENT_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a component without a name",
 )
-.game("Attempting to extract a particle effect component that has no name")
-.was("InvalidValue");
+.game("Attempting to extract a particle effect component that has no name");
 
 /// A component whose value holds no data.
 pub static NO_DATA_FIELDS: CodeDef<0> = CodeDef::new(
@@ -171,8 +156,7 @@ pub static NO_DATA_FIELDS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a component without data fields",
 )
-.game("Component has no data fields!")
-.was("InvalidValue");
+.game("Component has no data fields!");
 
 // ---- a number-or-Molang field, and an array of them ----
 
@@ -183,8 +167,7 @@ pub static NOT_MOLANG: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "neither a number nor a Molang expression",
 )
-.game("field is not a number or a Molang expression")
-.was("InvalidValue");
+.game("field is not a number or a Molang expression");
 
 /// A required field is absent.
 pub static REQUIRED_MISSING: CodeDef<0> = CodeDef::new(
@@ -193,8 +176,7 @@ pub static REQUIRED_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a required field is absent",
 )
-.game("required field does not exist")
-.was("InvalidValue");
+.game("required field does not exist");
 
 /// An array field that cannot be read.
 pub static ARRAY_ERROR: CodeDef<0> = CodeDef::new(
@@ -203,8 +185,7 @@ pub static ARRAY_ERROR: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the array is unreadable",
 )
-.game("error reading array")
-.was("InvalidValue");
+.game("error reading array");
 
 /// An array element that is absent.
 pub static ARRAY_ELEMENT_MISSING: CodeDef<0> = CodeDef::new(
@@ -213,8 +194,7 @@ pub static ARRAY_ELEMENT_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an array element is absent",
 )
-.game("field does not exist")
-.was("InvalidValue");
+.game("field does not exist");
 
 /// An array element that is neither a number nor a Molang expression.
 pub static ARRAY_ELEMENT_NOT_MOLANG: CodeDef<0> = CodeDef::new(
@@ -223,8 +203,7 @@ pub static ARRAY_ELEMENT_NOT_MOLANG: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an array element is neither a number nor a Molang expression",
 )
-.game("array field is not a number or a Molang expression")
-.was("InvalidValue");
+.game("array field is not a number or a Molang expression");
 
 // ---- the emitter lifetime events component ----
 
@@ -235,8 +214,7 @@ pub static EVENT_ELEMENT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an event list element is unreadable",
 )
-.game("Error reading array element")
-.was("InvalidValue");
+.game("Error reading array element");
 
 /// An event field that cannot be read.
 pub static EVENT_FIELD: CodeDef<0> = CodeDef::new(
@@ -245,8 +223,7 @@ pub static EVENT_FIELD: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an event field is unreadable",
 )
-.game("Error reading field")
-.was("InvalidValue");
+.game("Error reading field");
 
 /// A `timeline` that cannot be read.
 pub static TIMELINE: CodeDef<0> = CodeDef::new(
@@ -255,8 +232,7 @@ pub static TIMELINE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the timeline is unreadable",
 )
-.game("Error reading timeline")
-.was("InvalidValue");
+.game("Error reading timeline");
 
 /// A `travel_distance_events` that cannot be read.
 pub static TRAVEL_DISTANCE: CodeDef<0> = CodeDef::new(
@@ -265,8 +241,7 @@ pub static TRAVEL_DISTANCE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "travel_distance_events is unreadable",
 )
-.game("Error reading travel_distance_events")
-.was("InvalidValue");
+.game("Error reading travel_distance_events");
 
 /// An entry of `looping_travel_distance_events` that cannot be read.
 pub static LOOPING_ENTRY: CodeDef<0> = CodeDef::new(
@@ -275,8 +250,7 @@ pub static LOOPING_ENTRY: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a looping_travel_distance_events entry is unreadable",
 )
-.game("Error reading and individual event from looping_travel_distance_events")
-.was("InvalidValue");
+.game("Error reading and individual event from looping_travel_distance_events");
 
 /// A `looping_travel_distance_events` that cannot be read.
 pub static LOOPING: CodeDef<0> = CodeDef::new(
@@ -285,8 +259,7 @@ pub static LOOPING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "looping_travel_distance_events is unreadable",
 )
-.game("Error reading looping_travel_distance_events")
-.was("InvalidValue");
+.game("Error reading looping_travel_distance_events");
 
 // ---- the emitter local space component ----
 
@@ -297,8 +270,7 @@ pub static ROTATION_WITHOUT_POSITION: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "rotation without position",
 )
-.game("We do not support rotation being true and position being false")
-.was("InvalidValue");
+.game("We do not support rotation being true and position being false");
 
 // ---- emitter shapes ----
 
@@ -309,8 +281,7 @@ pub static DIRECTION_INVALID: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the direction is invalid",
 )
-.game("direction has invalid value")
-.was("InvalidValue");
+.game("direction has invalid value");
 
 /// The box shape without `half_dimensions` (the game's line says "offset").
 pub static OFFSET_REQUIRED: CodeDef<0> = CodeDef::new(
@@ -319,8 +290,7 @@ pub static OFFSET_REQUIRED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the box shape has no half_dimensions",
 )
-.game("offset field required!")
-.was("InvalidValue");
+.game("offset field required!");
 
 /// A disc shape's `plane_normal` that cannot be read.
 pub static PLANE_NORMAL_INVALID: CodeDef<0> = CodeDef::new(
@@ -329,8 +299,7 @@ pub static PLANE_NORMAL_INVALID: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the plane_normal is invalid",
 )
-.game("plane_normal has invalid value")
-.was("InvalidValue");
+.game("plane_normal has invalid value");
 
 // ---- the block-dependent particle lifetime component ----
 
@@ -341,8 +310,7 @@ pub static BLOCK_NOT_STRING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a block name is not a string",
 )
-.game("Block name is not a string!")
-.was("InvalidValue");
+.game("Block name is not a string!");
 
 /// A component without its block list.
 pub static NO_BLOCK_LIST: CodeDef<0> = CodeDef::new(
@@ -351,8 +319,7 @@ pub static NO_BLOCK_LIST: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no block list",
 )
-.game("Component has no block list!")
-.was("InvalidValue");
+.game("Component has no block list!");
 
 // ---- the particle collision motion component ----
 
@@ -363,8 +330,7 @@ pub static DRAG_NOT_FLOAT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "collision_drag is not a number",
 )
-.game("collision_drag is not a float")
-.was("InvalidValue");
+.game("collision_drag is not a float");
 
 /// A `coefficient_of_restitution` that is no number.
 pub static RESTITUTION_NOT_FLOAT: CodeDef<0> = CodeDef::new(
@@ -373,8 +339,7 @@ pub static RESTITUTION_NOT_FLOAT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "coefficient_of_restitution is not a number",
 )
-.game("coefficient_of_restitution value is not a float")
-.was("InvalidValue");
+.game("coefficient_of_restitution value is not a float");
 
 /// A `collision_radius` that is no number.
 pub static RADIUS_NOT_FLOAT: CodeDef<0> = CodeDef::new(
@@ -383,8 +348,7 @@ pub static RADIUS_NOT_FLOAT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "collision_radius is not a number",
 )
-.game("value is not a float")
-.was("InvalidValue");
+.game("value is not a float");
 
 /// A `collision_radius` below 0: the legacy parser clamps it.
 pub static RADIUS_TOO_SMALL: CodeDef<0> = CodeDef::new(
@@ -393,8 +357,7 @@ pub static RADIUS_TOO_SMALL: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "collision_radius below 0, clamped to 0",
 )
-.game("radius is too small, clamping to 0")
-.was("InvalidValue");
+.game("radius is too small, clamping to 0");
 
 /// A `collision_radius` above 0.5: the legacy parser clamps it.
 pub static RADIUS_TOO_LARGE: CodeDef<0> = CodeDef::new(
@@ -403,8 +366,7 @@ pub static RADIUS_TOO_LARGE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "collision_radius above 0.5, clamped to 0.5",
 )
-.game("radius is too large, clamping to 0.5")
-.was("InvalidValue");
+.game("radius is too large, clamping to 0.5");
 
 /// An `expire_on_contact` that is no boolean.
 pub static EXPIRE_NOT_BOOL: CodeDef<0> = CodeDef::new(
@@ -413,8 +375,7 @@ pub static EXPIRE_NOT_BOOL: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "expire_on_contact is not a boolean",
 )
-.game("expire_on_contact needs to be true/false")
-.was("InvalidValue");
+.game("expire_on_contact needs to be true/false");
 
 /// Collision `events` that are no list of min-speed/event pairs.
 pub static EVENTS_NOT_PAIRS: CodeDef<0> = CodeDef::new(
@@ -423,8 +384,7 @@ pub static EVENTS_NOT_PAIRS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "events is not a list of min-speed/event pairs",
 )
-.game("is not an array of min-speed/event pairs")
-.was("InvalidValue");
+.game("is not an array of min-speed/event pairs");
 
 /// A collision event that is no min-speed/event pair.
 pub static EVENT_NOT_PAIR: CodeDef<0> = CodeDef::new(
@@ -433,8 +393,7 @@ pub static EVENT_NOT_PAIR: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a collision event is not a min-speed/event pair",
 )
-.game("event is not a min-speed/event pair")
-.was("InvalidValue");
+.game("event is not a min-speed/event pair");
 
 /// A collision event without its `event`.
 pub static NO_EVENT_FIELD: CodeDef<0> = CodeDef::new(
@@ -443,8 +402,7 @@ pub static NO_EVENT_FIELD: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a collision event without its event",
 )
-.game("no 'event' field!")
-.was("InvalidValue");
+.game("no 'event' field!");
 
 // ---- the billboard appearance component: its direction settings and its UVs ----
 
@@ -455,8 +413,7 @@ pub static DIRECTION_NOT_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the direction is not an object",
 )
-.game("The direction subsection is not defined as a proper json object!")
-.was("InvalidValue");
+.game("The direction subsection is not defined as a proper json object!");
 
 /// A `direction` whose mode is none the game knows.
 pub static DIRECTION_MODE: CodeDef<0> = CodeDef::new(
@@ -465,8 +422,7 @@ pub static DIRECTION_MODE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the direction mode is invalid",
 )
-.game("The 'direction' sub section is not using a valid mode!")
-.was("InvalidValue");
+.game("The 'direction' sub section is not using a valid mode!");
 
 /// A custom `direction` that is no object.
 pub static DIRECTION_CUSTOM: CodeDef<0> = CodeDef::new(
@@ -475,8 +431,7 @@ pub static DIRECTION_CUSTOM: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the custom direction is not an object",
 )
-.game("The 'direction' sub section is not defined as a proper json object!")
-.was("InvalidValue");
+.game("The 'direction' sub section is not defined as a proper json object!");
 
 /// The legacy billboard parser's line when its direction section fails to read.
 pub static DIRECTION_NOT_PROPERLY_DEFINED: CodeDef<0> = CodeDef::new(
@@ -485,8 +440,7 @@ pub static DIRECTION_NOT_PROPERLY_DEFINED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the direction is not properly defined",
 )
-.game("The direction sub section is not properly defined!")
-.was("InvalidValue");
+.game("The direction sub section is not properly defined!");
 
 /// UV data that cannot be read.
 pub static BAD_UV: CodeDef<0> = CodeDef::new(
@@ -495,8 +449,7 @@ pub static BAD_UV: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the uv data is unreadable",
 )
-.game("bad uv data!")
-.was("InvalidValue");
+.game("bad uv data!");
 
 /// The old spelling `texturewidth`.
 pub static TEXTURE_WIDTH_NAME: CodeDef<0> = CodeDef::new(
@@ -505,8 +458,7 @@ pub static TEXTURE_WIDTH_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "texturewidth instead of texture_width",
 )
-.game("texture width field needs to be named 'texture_width'")
-.was("InvalidValue");
+.game("texture width field needs to be named 'texture_width'");
 
 /// The old spelling `textureheight`.
 pub static TEXTURE_HEIGHT_NAME: CodeDef<0> = CodeDef::new(
@@ -515,8 +467,7 @@ pub static TEXTURE_HEIGHT_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "textureheight instead of texture_height",
 )
-.game("texture height field needs to be named 'texture_height'")
-.was("InvalidValue");
+.game("texture height field needs to be named 'texture_height'");
 
 /// A `flipbook` that cannot be read.
 pub static BAD_FLIPBOOK: CodeDef<0> = CodeDef::new(
@@ -525,8 +476,7 @@ pub static BAD_FLIPBOOK: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the flipbook is unreadable",
 )
-.game("bad data!")
-.was("InvalidValue");
+.game("bad data!");
 
 /// A UV area without `uv`.
 pub static MISSING_UV: CodeDef<0> = CodeDef::new(
@@ -535,8 +485,7 @@ pub static MISSING_UV: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no uv",
 )
-.game("missing uv field")
-.was("InvalidValue");
+.game("missing uv field");
 
 /// A UV area without `uv_size`.
 pub static MISSING_UV_SIZE: CodeDef<0> = CodeDef::new(
@@ -545,8 +494,7 @@ pub static MISSING_UV_SIZE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no uv_size",
 )
-.game("missing uv_size field")
-.was("InvalidValue");
+.game("missing uv_size field");
 
 // ---- the tinting appearance component and its colour expressions ----
 
@@ -557,8 +505,7 @@ pub static NO_COLOR: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no color",
 )
-.game("Component has no color field!")
-.was("InvalidValue");
+.game("Component has no color field!");
 
 /// A tinting component whose `color` cannot be read.
 pub static INVALID_COLOR: CodeDef<0> = CodeDef::new(
@@ -567,8 +514,7 @@ pub static INVALID_COLOR: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the color is invalid",
 )
-.game("Component has invalid color field!")
-.was("InvalidValue");
+.game("Component has invalid color field!");
 
 /// A colour that is neither a string nor an array.
 pub static COLOR_SHAPE: CodeDef<0> = CodeDef::new(
@@ -577,8 +523,7 @@ pub static COLOR_SHAPE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a colour is neither a string nor an array",
 )
-.game("Color value isn't a string or array of values")
-.was("InvalidValue");
+.game("Color value isn't a string or array of values");
 
 /// A colour string that cannot be read.
 pub static COLOR_STRING: CodeDef<0> = CodeDef::new(
@@ -587,8 +532,7 @@ pub static COLOR_STRING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a colour string is unreadable",
 )
-.game("Color value string has problems!")
-.was("InvalidValue");
+.game("Color value string has problems!");
 
 /// A colour array of the wrong number of elements.
 pub static COLOR_COUNT: CodeDef<0> = CodeDef::new(
@@ -597,8 +541,7 @@ pub static COLOR_COUNT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a colour of the wrong number of elements",
 )
-.game("Color value has wrong number of elements")
-.was("InvalidValue");
+.game("Color value has wrong number of elements");
 
 /// A colour gradient that cannot be read.
 pub static GRADIENT: CodeDef<0> = CodeDef::new(
@@ -607,8 +550,7 @@ pub static GRADIENT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the gradient is unreadable",
 )
-.game("Color gradient area not set up correctly")
-.was("InvalidValue");
+.game("Color gradient area not set up correctly");
 
 // ---- the curves section: curves, their node lists and bezier chain nodes ----
 
@@ -619,8 +561,7 @@ pub static NO_CURVES: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "curves is not an object",
 )
-.game("No curves found in curves section!")
-.was("InvalidValue");
+.game("No curves found in curves section!");
 
 /// A curve under the empty key.
 pub static CURVE_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
@@ -629,8 +570,7 @@ pub static CURVE_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve without a name",
 )
-.game("Attempting to extract a curve with an empty name!")
-.was("InvalidValue");
+.game("Attempting to extract a curve with an empty name!");
 
 /// A curve that is no object.
 pub static CURVE_NO_DATA: CodeDef<0> = CodeDef::new(
@@ -639,8 +579,7 @@ pub static CURVE_NO_DATA: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve without data",
 )
-.game("Particle effect curve has no valid data!")
-.was("InvalidValue");
+.game("Particle effect curve has no valid data!");
 
 /// A curve whose `type` is absent or none the game knows.
 pub static CURVE_TYPE: CodeDef<0> = CodeDef::new(
@@ -649,8 +588,7 @@ pub static CURVE_TYPE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve of an invalid type",
 )
-.game("Particle effect curve has invalid type")
-.was("InvalidValue");
+.game("Particle effect curve has invalid type");
 
 /// A curve whose `nodes` are no array.
 pub static CURVE_NODES: CodeDef<0> = CodeDef::new(
@@ -659,8 +597,7 @@ pub static CURVE_NODES: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve's nodes are not an array",
 )
-.game("Particle curve declared with invalid nodes array")
-.was("InvalidValue");
+.game("Particle curve declared with invalid nodes array");
 
 /// A curve of the wrong number of control nodes: it is 0.0.
 pub static CURVE_NODE_COUNT: CodeDef<0> = CodeDef::new(
@@ -669,8 +606,7 @@ pub static CURVE_NODE_COUNT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve of the wrong number of control nodes, read as 0.0",
 )
-.game("Invalid number of control nodes in curve!  Defaulting curve to 0.0")
-.was("InvalidValue");
+.game("Invalid number of control nodes in curve!  Defaulting curve to 0.0");
 
 /// A curve whose node data cannot be read.
 pub static CURVE_NODE_DATA: CodeDef<0> = CodeDef::new(
@@ -679,8 +615,7 @@ pub static CURVE_NODE_DATA: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a curve's node data is invalid",
 )
-.game("Particle curve declared with invalid node data")
-.was("InvalidValue");
+.game("Particle curve declared with invalid node data");
 
 /// A bezier chain node without its `value`.
 pub static CHAIN_VALUE: CodeDef<0> = CodeDef::new(
@@ -689,8 +624,7 @@ pub static CHAIN_VALUE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a bezier chain node without its value",
 )
-.game("Particle curve bezier chain node is missing required value field")
-.was("InvalidValue");
+.game("Particle curve bezier chain node is missing required value field");
 
 /// A bezier chain node without its `slope`.
 pub static CHAIN_SLOPE: CodeDef<0> = CodeDef::new(
@@ -699,8 +633,7 @@ pub static CHAIN_SLOPE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a bezier chain node without its slope",
 )
-.game("Particle curve bezier chain node is missing required slope field")
-.was("InvalidValue");
+.game("Particle curve bezier chain node is missing required slope field");
 
 // ---- the events section and its event nodes ----
 
@@ -711,8 +644,7 @@ pub static NO_EVENTS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "events is not an object",
 )
-.game("No events found in events section!")
-.was("InvalidValue");
+.game("No events found in events section!");
 
 /// An event under the empty key.
 pub static EVENT_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
@@ -721,8 +653,7 @@ pub static EVENT_WITHOUT_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an event without a name",
 )
-.game("Attempting to extract an event with an empty name!")
-.was("InvalidValue");
+.game("Attempting to extract an event with an empty name!");
 
 /// An event node that is no object.
 pub static EVENT_NO_DATA: CodeDef<0> = CodeDef::new(
@@ -731,8 +662,7 @@ pub static EVENT_NO_DATA: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an event without data",
 )
-.game("Particle effect event has no valid data!")
-.was("InvalidValue");
+.game("Particle effect event has no valid data!");
 
 /// A `sequence` that cannot be read.
 pub static SEQUENCE: CodeDef<0> = CodeDef::new(
@@ -741,8 +671,7 @@ pub static SEQUENCE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the sequence is unreadable",
 )
-.game("Error reading sequence field!")
-.was("InvalidValue");
+.game("Error reading sequence field!");
 
 /// A random option's `weight` that cannot be read: the option is ignored.
 pub static WEIGHT: CodeDef<0> = CodeDef::new(
@@ -751,8 +680,7 @@ pub static WEIGHT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a random option's weight is unreadable; the option is ignored",
 )
-.game("Error reading weight field!  Ignoring random option")
-.was("InvalidValue");
+.game("Error reading weight field!  Ignoring random option");
 
 /// A random option's negative `weight`: the option is ignored.
 pub static WEIGHT_NEGATIVE: CodeDef<0> = CodeDef::new(
@@ -761,8 +689,7 @@ pub static WEIGHT_NEGATIVE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a random option's weight is negative; the option is ignored",
 )
-.game("Weight field must be zero or greater.  Ignoring random option")
-.was("InvalidValue");
+.game("Weight field must be zero or greater.  Ignoring random option");
 
 /// A `randomize` that cannot be read.
 pub static RANDOM: CodeDef<0> = CodeDef::new(
@@ -771,8 +698,7 @@ pub static RANDOM: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the randomize list is unreadable",
 )
-.game("Error reading random field!")
-.was("InvalidValue");
+.game("Error reading random field!");
 
 /// A `particle_effect` section that cannot be read.
 pub static EFFECT_SECTION: CodeDef<0> = CodeDef::new(
@@ -781,8 +707,7 @@ pub static EFFECT_SECTION: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the particle_effect section is invalid",
 )
-.game("particle_effect section is invalid")
-.was("InvalidValue");
+.game("particle_effect section is invalid");
 
 /// A `particle_effect` section without its `effect`.
 pub static EFFECT_MISSING: CodeDef<0> = CodeDef::new(
@@ -791,8 +716,7 @@ pub static EFFECT_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the particle_effect section has no effect",
 )
-.game("Effect field missing!")
-.was("InvalidValue");
+.game("Effect field missing!");
 
 /// A `particle_effect` section without its `type`.
 pub static TYPE_MISSING: CodeDef<0> = CodeDef::new(
@@ -801,8 +725,7 @@ pub static TYPE_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the particle_effect section has no type",
 )
-.game("Type field missing!")
-.was("InvalidValue");
+.game("Type field missing!");
 
 /// A `sound_effect` section that is no object.
 pub static SOUND_SECTION: CodeDef<0> = CodeDef::new(
@@ -811,8 +734,7 @@ pub static SOUND_SECTION: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the sound_effect section is not an object",
 )
-.game("sound_effect section should be an object")
-.was("InvalidValue");
+.game("sound_effect section should be an object");
 
 /// A `sound_effect` whose `event_name` is no string.
 pub static SOUND_NAME: CodeDef<0> = CodeDef::new(
@@ -821,8 +743,7 @@ pub static SOUND_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the sound_effect's event_name is not a string",
 )
-.game("sound_effect.event_name should be a string")
-.was("InvalidValue");
+.game("sound_effect.event_name should be a string");
 
 /// Every definition of the family, for the registry of ids.
 pub static ALL: &[&CodeMeta] = &[

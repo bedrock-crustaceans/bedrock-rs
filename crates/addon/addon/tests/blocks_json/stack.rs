@@ -110,24 +110,6 @@ fn vanilla_s_1_26_50_file_as_a_base_game_pack() {
 
 #[test]
 fn vanilla_s_legacy_file_is_split() {
-    // The retail game's `resource_packs/vanilla/blocks.json`, `"format_version": [1, 1, 0]`
-    let text = fixture("bj02_vanilla_legacy/packs/00_vanilla/blocks.json");
-    let loaded = load(&[base(&text)]);
-    let found = loaded.found();
-    assert_eq!(
-        loaded.block("stone").version().effective.to_string(),
-        "1.1.0"
-    );
-    assert_eq!(
-        loaded
-            .block("stone")
-            .version()
-            .written
-            .map(|v| v.to_string())
-            .as_deref(),
-        Some("1.1.0")
-    );
-    // The version is given, as an array: no version warnings, hence no legacy-name finding, and no legacy-name warning below the gates.
     const VERSION_FINDINGS: &[&str] = &[
         "animation_controller/ill_formatted_missing_format_version",
         "block_culling/missing_object_malformed_format_version",
@@ -158,6 +140,24 @@ fn vanilla_s_legacy_file_is_split() {
         "render_controller/required_child",
         "texture_set/set_bad_version",
     ];
+    // The retail game's `resource_packs/vanilla/blocks.json`, `"format_version": [1, 1, 0]`
+    let text = fixture("bj02_vanilla_legacy/packs/00_vanilla/blocks.json");
+    let loaded = load(&[base(&text)]);
+    let found = loaded.found();
+    assert_eq!(
+        loaded.block("stone").version().effective.to_string(),
+        "1.1.0"
+    );
+    assert_eq!(
+        loaded
+            .block("stone")
+            .version()
+            .written
+            .map(|v| v.to_string())
+            .as_deref(),
+        Some("1.1.0")
+    );
+    // The version is given, as an array: no version warnings, hence no legacy-name finding, and no legacy-name warning below the gates.
     assert!(
         found.iter().all(|f| !VERSION_FINDINGS.contains(&f.code)),
         "{:#?}",

@@ -563,8 +563,15 @@ fn unread_by_cereal(document: &Value) -> Result<Option<JsonPath>, EncodeError> {
         .find(|finding| {
             finding.phase == bedrock_addon_core::diagnostic::Phase::Parse
                 && finding.severity >= bedrock_addon_core::diagnostic::Severity::Error
-                // By legacy name: the variant and the definitions that were it.
-                && matches!(finding.code.name(), "UnrecognizedField" | "UnrecognizedComponent" | "DeprecatedMember")
+                // By kind: the unrecognized field and component definitions (the one kind) and
+                // the deprecated ones; the other legacy name of the deprecated kind is the item
+                // family's.
+                && matches!(
+                    finding.kind(),
+                    bedrock_addon_core::diagnostic::Kind::UnknownMember(
+                        bedrock_addon_core::diagnostic::Disposition::Kept
+                    ) | bedrock_addon_core::diagnostic::Kind::Deprecated
+                )
         })
         .map(|finding| finding.location.json_path.clone()))
 }

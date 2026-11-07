@@ -266,8 +266,7 @@ static GLINT_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "glint {} failed",
 )
-.game("glint {} failed")
-.was("DocumentRejected");
+.game("glint {} failed");
 
 /// The toy family's line of each close, and whether the file failed.
 static FLARE_CLOSED: CodeDef<2> = CodeDef::new(
@@ -276,8 +275,7 @@ static FLARE_CLOSED: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "flare {} closed, failed: {}",
 )
-.game("flare {} closed, failed: {}")
-.was("DocumentRejected");
+.game("flare {} closed, failed: {}");
 
 /// Documents the one-version chain must read as `version_chain!`'s chain of one does: a good
 /// one, one below the floor, one without a version, a beta one, one whose payload fails.

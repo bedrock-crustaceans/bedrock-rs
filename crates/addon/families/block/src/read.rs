@@ -356,8 +356,14 @@ fn reject_crate_members(root: &Value, at: &JsonPath, unknown: Severity, d: &mut 
 fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
     let traits = at.with(&["description", "traits"]);
     for finding in d.iter_mut().skip(start) {
-        // By legacy name: the variant and the definitions that were it.
-        if !matches!(finding.code.name(), "UnrecognizedField") {
+        // The cereal document's unknown members are core's unrecognized-field definitions.
+        if !matches!(
+            finding.code.id(),
+            "core/child_not_valid"
+                | "core/member_not_in_schema"
+                | "core/unrecognized_field"
+                | "core/unrecognized_field_worded"
+        ) {
             continue;
         }
         let Some(name) = finding

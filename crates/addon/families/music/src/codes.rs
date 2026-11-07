@@ -1,6 +1,6 @@
 //! The `music` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `music/<name>`, the name its constant's in lower
+//! case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static NO_NAME: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "music definition with no name",
 )
-.game("Cannot define a music definition with no name.")
-.was("InvalidValue");
+.game("Cannot define a music definition with no name.");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[NO_NAME.meta()];

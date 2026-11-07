@@ -1,6 +1,6 @@
 //! The `spawn_rules` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `spawn_rules/<name>`, the name its constant's in
+//! lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static FAILED_RULES: CodeDef<0> = CodeDef::new(
     Class::Error,
     "spawn rules file failed to load",
 )
-.game("Failed to load spawn rules")
-.was("DocumentRejected");
+.game("Failed to load spawn rules");
 
 /// An unknown `population_control`; the argument is the identifier. The game logs this to its
 /// developer log only.
@@ -22,8 +21,7 @@ pub static NO_POPULATION_CONTROL: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "unknown population control for {}",
 )
-.game("No population control specified for '{}'")
-.was("InvalidEnumValue");
+.game("No population control specified for '{}'");
 
 /// `placement.type` not registered; the argument is the identifier.
 pub static PLACEMENT_TYPE: CodeDef<1> = CodeDef::new(
@@ -32,8 +30,7 @@ pub static PLACEMENT_TYPE: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "unregistered placement type in {}",
 )
-.game("Spawn Rules for 'type' in {} must use a registered placement type predicate")
-.was("UnresolvedReference");
+.game("Spawn Rules for 'type' in {} must use a registered placement type predicate");
 
 /// `placement.heightmap` not registered; the argument is the identifier.
 pub static PLACEMENT_HEIGHTMAP: CodeDef<1> = CodeDef::new(
@@ -42,8 +39,7 @@ pub static PLACEMENT_HEIGHTMAP: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "unregistered heightmap in {}",
 )
-.game("Spawn Rules for 'heightmap' in {} must use a registered heightmap type")
-.was("UnresolvedReference");
+.game("Spawn Rules for 'heightmap' in {} must use a registered heightmap type");
 
 /// `placement.spawn_obstruction_predicate` not registered; the argument is the identifier.
 pub static PLACEMENT_OBSTRUCTION: CodeDef<1> = CodeDef::new(
@@ -52,8 +48,7 @@ pub static PLACEMENT_OBSTRUCTION: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "unregistered obstruction predicate in {}",
 )
-.game("Spawn Rules for 'spawn_obstruction_predicate' in {} must use a registered obstruction predicate")
-.was("UnresolvedReference");
+.game("Spawn Rules for 'spawn_obstruction_predicate' in {} must use a registered obstruction predicate");
 
 /// `placement.spawn_predicate` not registered; the argument is the identifier.
 pub static PLACEMENT_PREDICATE: CodeDef<1> = CodeDef::new(
@@ -62,8 +57,7 @@ pub static PLACEMENT_PREDICATE: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "unregistered spawn predicate in {}",
 )
-.game("Spawn Rules for 'spawn_predicate' in {} must use a registered entity spawn predicate")
-.was("UnresolvedReference");
+.game("Spawn Rules for 'spawn_predicate' in {} must use a registered entity spawn predicate");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

@@ -1,6 +1,6 @@
 //! The `credits` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `credits/<name>`, the name its constant's in lower
+//! case.
 //!
 //! The game's asserts on its own file are developer asserts and write no content-log line, so
 //! the crate reports them (but the two that refuse the file) as informations with the game's texts.
@@ -15,8 +15,7 @@ pub static EMPTY_FILE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "credits file is empty",
 )
-.game("File is not supposed to be empty")
-.was("MalformedInput");
+.game("File is not supposed to be empty");
 
 /// The assert for a file that is not JSON; the file is refused, and the finding carries the
 /// reader's message as its syntax detail.
@@ -26,8 +25,7 @@ pub static NOT_JSON: CodeDef<0> = CodeDef::new(
     Class::Error,
     "credits file is not JSON",
 )
-.game("Failed to load json file")
-.was("MalformedInput");
+.game("Failed to load json file");
 
 /// The root is no array: the file has no section.
 pub static ROOT_NOT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -36,8 +34,7 @@ pub static ROOT_NOT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "credits root is no array",
 )
-.game("The root must be an array")
-.was("InvalidType");
+.game("The root must be an array");
 
 /// A section that is no object with a member.
 pub static SECTION_EMPTY: CodeDef<0> = CodeDef::new(
@@ -46,8 +43,7 @@ pub static SECTION_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "empty credits section",
 )
-.game("The section data should not be empty")
-.was("InvalidType");
+.game("The section data should not be empty");
 
 /// A section's `disciplines` is present and no array.
 pub static DISCIPLINES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -56,8 +52,7 @@ pub static DISCIPLINES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "`disciplines` is no array",
 )
-.game("\"disciplines\" must be an array")
-.was("InvalidType");
+.game("\"disciplines\" must be an array");
 
 /// A discipline that is no object with a member.
 pub static DISCIPLINE_EMPTY: CodeDef<0> = CodeDef::new(
@@ -66,8 +61,7 @@ pub static DISCIPLINE_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "empty credits discipline",
 )
-.game("The discipline data should not be empty")
-.was("InvalidType");
+.game("The discipline data should not be empty");
 
 /// A discipline's `titles` is present and no array.
 pub static TITLES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -76,8 +70,7 @@ pub static TITLES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "`titles` is no array",
 )
-.game("\"titles\" must be an array")
-.was("InvalidType");
+.game("\"titles\" must be an array");
 
 /// A title that is no object with a member.
 pub static TITLE_EMPTY: CodeDef<0> = CodeDef::new(
@@ -86,8 +79,7 @@ pub static TITLE_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "empty credits title",
 )
-.game("The title object should not be empty")
-.was("InvalidType");
+.game("The title object should not be empty");
 
 /// A title's `names` is present and no array.
 pub static NAMES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -96,8 +88,7 @@ pub static NAMES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "`names` is no array",
 )
-.game("\"names\" must be an array")
-.was("InvalidType");
+.game("\"names\" must be an array");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

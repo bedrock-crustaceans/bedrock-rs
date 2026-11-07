@@ -30,24 +30,21 @@
 //! - the id is `<family>/<the const's name in lower case>` (`fog/end_below_start`);
 //! - a code the game prints has its sentence as [`game`](CodeDef::game), byte for byte, and a
 //!   line of the crate's own; a code of the toolkit's own has the line alone;
-//! - until the pin rename, a definition [`was`](CodeDef::was) the legacy variant its sites
-//!   raised, so pins and filters on the name hold;
-//! - its [`Kind`] is the legacy variant's, and its [`Class`] the severity its sites raise it at
+//! - its [`Kind`] says what sort of finding it is, and its [`Class`] the severity its sites raise it at
 //!   (a site at another severity keeps it with [`Diagnostic::severity`](super::Diagnostic::severity));
 //! - a helper that took a text (`report(d, severity, text, at)`) takes a `&'static CodeDef<0>`,
 //!   and a reader that still takes a text takes [`CodeDef::template`];
 //! - the family's `texts.rs` goes: its consts become the definitions.
 //!
 //! A finding no family owns (the door, the envelope, the kit, the builders, the link pass) is
-//! a definition of [`codes`](super::codes), the core's: one generic definition per legacy
-//! variant, and a `_WORDED` one taking the game's sentence whole for a site whose sentence has
+//! a definition of [`codes`](super::codes), the core's: one generic definition per kind of
+//! finding, and a `_WORDED` one taking the game's sentence whole for a site whose sentence has
 //! no definition of its own yet.
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use super::Severity;
-use super::legacy::is_legacy_name;
 
 /// What a definition holds, whatever its arity: what a [`Code`] points at, and what a list of
 /// definitions of several arities holds ([`CodeDef::meta`], [`codes::ALL`](super::codes::ALL)).
@@ -56,7 +53,6 @@ pub struct CodeMeta {
     id: &'static str,
     owner: &'static str,
     name: &'static str,
-    legacy: Option<&'static str>,
     kind: Kind,
     class: Class,
     game: Option<&'static str>,
@@ -64,14 +60,6 @@ pub struct CodeMeta {
 }
 
 impl CodeMeta {
-    /// The legacy variant's name when there is one, else the definition's own.
-    const fn stable_name(&self) -> &'static str {
-        match self.legacy {
-            Some(legacy) => legacy,
-            None => self.name,
-        }
-    }
-
     /// The stable id, `owner/name`.
     pub const fn id(&self) -> &'static str {
         self.id
@@ -82,14 +70,9 @@ impl CodeMeta {
         self.owner
     }
 
-    /// The code's stable name: the legacy variant's it [`was`](CodeDef::was), else its own.
+    /// The name within its owner: the id's tail (`density_out_of_unit`).
     pub const fn name(&self) -> &'static str {
-        self.stable_name()
-    }
-
-    /// The name of the legacy variant the definition replaces, when it was one.
-    pub const fn legacy(&self) -> Option<&'static str> {
-        self.legacy
+        self.name
     }
 
     /// The general kind of finding.
@@ -137,9 +120,6 @@ impl CodeMeta {
 /// An id is unique: no two definitions of one owner share a name. Nothing checks it when a
 /// definition is evaluated: the tombstone test (`core/tests/diagnostic_codes.rs`, the list of
 /// code names) is the guard, and a new definition adds its id there.
-///
-/// A definition that [`was`](Self::was) a legacy variant keeps that variant's [`Kind`] and
-/// answers to its name.
 ///
 /// ```compile_fail
 /// use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind};
@@ -191,7 +171,6 @@ impl<const N: usize> CodeDef<N> {
                 id,
                 owner,
                 name,
-                legacy: None,
                 kind,
                 class,
                 game: None,
@@ -217,38 +196,6 @@ impl<const N: usize> CodeDef<N> {
         self
     }
 
-    /// The definition as the replacement of the legacy `DiagnosticCode` variant named
-    /// `legacy` (`"InvalidValue"`): [`name`](Self::name) is then that variant's name, so a
-    /// filter or a pin on the name keeps matching once the raise site moves to the definition.
-    /// The [`id`](Self::id) stays the definition's own.
-    ///
-    /// The definition keeps the legacy variant's [`Kind`]: a question `d.kind() == ..` asked
-    /// of the finding has the answer it had. A legacy variant's typed payload (a
-    /// `ShadowReason`, a `PackIdVersion`, an `io::ErrorKind`, ...) moves into the finding's
-    /// [`detail`](super::Diagnostic::detail). [`testing::assert_replaces`](super::testing::assert_replaces)
-    /// checks the name and the kind.
-    ///
-    /// ```compile_fail
-    /// use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind};
-    /// // No variant has this name: refused when the static is evaluated.
-    /// static WRONG: CodeDef<0> = CodeDef::new("fog/wrong", Kind::InvalidValue, Class::Error, "wrong")
-    ///     .was("NoSuchVariant");
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// When `legacy` is not the name of a legacy variant (the frozen list the enum left): at
-    /// compile time in a `const` or `static`, at run time otherwise.
-    #[must_use]
-    pub const fn was(mut self, legacy: &'static str) -> Self {
-        assert!(
-            is_legacy_name(legacy),
-            "a code replaces a legacy variant of DiagnosticCode"
-        );
-        self.meta.legacy = Some(legacy);
-        self
-    }
-
     /// The code with its arguments, in the order of the placeholders.
     pub fn with<A: Into<String>>(&'static self, args: [A; N]) -> Code {
         Code {
@@ -262,20 +209,14 @@ impl<const N: usize> CodeDef<N> {
         self.meta.id
     }
 
-    /// The name of the legacy variant the definition replaces, when it [`was`](Self::was) one.
-    pub const fn legacy(&self) -> Option<&'static str> {
-        self.meta.legacy
-    }
-
     /// Who declares the code: a family (`"fog"`), `"core"`, `"addon"`.
     pub const fn owner(&self) -> &'static str {
         self.meta.owner
     }
 
-    /// The code's stable name: the legacy variant's it [`was`](Self::was), else its own name
-    /// within its owner.
+    /// The name within its owner: the id's tail (`density_out_of_unit`).
     pub const fn name(&self) -> &'static str {
-        self.meta.stable_name()
+        self.meta.name
     }
 
     /// The general kind of finding.
@@ -327,10 +268,9 @@ impl Code {
         self.meta.owner
     }
 
-    /// The code's stable name: the legacy variant's its definition [`was`](CodeDef::was),
-    /// else its own name within its owner.
+    /// The name within its owner: the id's tail (`density_out_of_unit`).
     pub fn name(&self) -> &'static str {
-        self.meta.stable_name()
+        self.meta.name
     }
 
     /// The stable id: `owner/name` (`fog/density_out_of_unit`).
@@ -359,7 +299,7 @@ impl Code {
     }
 
     /// The arguments of a code of `def`; `None` for a code of another definition. What a
-    /// match site that bound a legacy variant's payload asks.
+    /// site that reads a code's arguments asks.
     pub fn args_of<const N: usize>(&self, def: &CodeDef<N>) -> Option<&[String]> {
         self.is(def).then_some(self.args())
     }
@@ -462,22 +402,6 @@ const fn split_id(id: &str) -> Option<usize> {
         i += 1;
     }
     slash
-}
-
-/// `a == b`, in a `const fn`.
-pub(super) const fn str_eq(a: &str, b: &str) -> bool {
-    let (a, b) = (a.as_bytes(), b.as_bytes());
-    if a.len() != b.len() {
-        return false;
-    }
-    let mut i = 0;
-    while i < a.len() {
-        if a[i] != b[i] {
-            return false;
-        }
-        i += 1;
-    }
-    true
 }
 
 /// Not empty, of `a-z`, `0-9` and `_`, starting with a letter.
@@ -645,7 +569,7 @@ impl From<crate::json::kit::Disposition> for Disposition {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Diagnostic, Location, Phase, codes, testing};
+    use crate::diagnostic::{Diagnostic, Location, Phase, codes};
     use std::collections::hash_map::DefaultHasher;
 
     static FILE_MISSING: CodeDef<1> = CodeDef::new(
@@ -671,14 +595,13 @@ mod tests {
         "a trailing comma",
     );
 
-    /// A definition replacing the legacy `InvalidValue`.
-    static DENSITY_WAS: CodeDef<1> = CodeDef::new(
+    /// A family's definition.
+    static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
         "fog/density_out_of_unit",
         Kind::InvalidValue,
         Class::Error,
         "fog density {} is outside [0, 1]",
-    )
-    .was("InvalidValue");
+    );
 
     fn finding(code: impl Into<Code>) -> Diagnostic {
         Diagnostic::new(code, Severity::Error, Phase::Parse, Location::default())
@@ -763,18 +686,14 @@ mod tests {
     }
 
     #[test]
-    fn a_definition_that_was_a_legacy_code_is_named_as_it() {
-        assert_eq!(DENSITY_WAS.legacy(), Some("InvalidValue"));
-        assert_eq!(DENSITY_WAS.name(), "InvalidValue");
-        assert_eq!(DENSITY_WAS.id(), "fog/density_out_of_unit");
-        let code = DENSITY_WAS.with(["2"]);
-        assert_eq!(code.name(), "InvalidValue");
-        assert_eq!(code.id(), "fog/density_out_of_unit");
-        assert_eq!(FILE_MISSING.legacy(), None);
-        assert_eq!(FILE_MISSING.name(), "file_missing");
-        assert!(is_legacy_name("InvalidValue"));
-        assert!(!is_legacy_name("Specific"));
-        assert!(!is_legacy_name("NoSuchVariant"));
+    fn a_definitions_name_is_the_tail_of_its_id() {
+        assert_eq!(DENSITY_OUT_OF_UNIT.name(), "density_out_of_unit");
+        assert_eq!(
+            DENSITY_OUT_OF_UNIT.with(["2"]).name(),
+            "density_out_of_unit"
+        );
+        assert_eq!(DENSITY_OUT_OF_UNIT.meta().name(), "density_out_of_unit");
+        assert_eq!(DENSITY_OUT_OF_UNIT.owner(), "fog");
     }
 
     #[test]
@@ -783,7 +702,6 @@ mod tests {
         assert_eq!(meta.id(), "core/file_missing");
         assert_eq!(meta.owner(), "core");
         assert_eq!(meta.name(), "file_missing");
-        assert_eq!(meta.legacy(), None);
         assert_eq!(meta.kind(), Kind::UnresolvedReference);
         assert_eq!(meta.class(), Class::Error);
         assert_eq!(meta.game_template(), Some("Failed to load file: {}"));
@@ -791,25 +709,10 @@ mod tests {
         assert_eq!(meta.arity(), 1);
         assert_eq!(FILE_MISSING.template(), "Failed to load file: {}");
         assert_eq!(TRAILING_COMMA.template(), "a trailing comma");
-        let metas: [&CodeMeta; 2] = [TRAILING_COMMA.meta(), DENSITY_WAS.meta()];
+        let metas: [&CodeMeta; 2] = [TRAILING_COMMA.meta(), DENSITY_OUT_OF_UNIT.meta()];
         assert_eq!(metas[0].arity(), 0);
         assert_eq!(metas[0].game_template(), None);
-        assert_eq!(metas[1].name(), "InvalidValue");
-        assert_eq!(metas[1].legacy(), Some("InvalidValue"));
-    }
-
-    #[test]
-    fn a_replacing_definition_keeps_the_legacy_name_and_kind() {
-        testing::assert_replaces(&DENSITY_WAS, "InvalidValue");
-    }
-
-    #[test]
-    #[should_panic(expected = "keeps the kind")]
-    fn a_replacing_definition_of_another_kind_is_refused() {
-        static OTHER_KIND: CodeDef<0> =
-            CodeDef::new("fog/out_of_range", Kind::OutOfRange, Class::Error, "x")
-                .was("InvalidValue");
-        testing::assert_replaces(&OTHER_KIND, "InvalidValue");
+        assert_eq!(metas[1].name(), "density_out_of_unit");
     }
 
     #[test]
@@ -821,7 +724,7 @@ mod tests {
         assert!(!finding(&codes::INVALID_VALUE).is(&FILE_MISSING));
         assert!(FILE_MISSING.with(["a"]).is(&FILE_MISSING_AGAIN));
         assert!(!FILE_MISSING.with(["a"]).is(&TRAILING_COMMA));
-        assert!(!Code::from(&codes::INVALID_VALUE).is(&DENSITY_WAS));
+        assert!(!Code::from(&codes::INVALID_VALUE).is(&DENSITY_OUT_OF_UNIT));
     }
 
     #[test]
@@ -838,38 +741,31 @@ mod tests {
         );
     }
 
-    /// The kind of the legacy variant `name`, as the frozen table holds it.
-    fn legacy_kind(name: &str) -> Kind {
-        super::super::legacy::legacy(name)
-            .unwrap_or_else(|| panic!("{name} is no legacy variant"))
-            .kind
-    }
-
-    /// The four unknown-member codes are one kind, told apart by what became of the member;
-    /// the neighbours that drop or ignore a member go with them.
+    /// The unknown-member codes are one kind, told apart by what became of the member; the
+    /// neighbours that drop or ignore a member go with them.
     #[test]
     fn the_unknown_member_codes_are_one_kind_with_their_disposition() {
         use Disposition as D;
-        let rows = [
-            ("UnrecognizedField", D::Kept),
-            ("UnrecognizedComponent", D::Kept),
-            ("MemberNotKept", D::NotKept),
-            ("DroppedField", D::Dropped),
-            ("DroppedComponent", D::Dropped),
-            ("DuplicateComponentVersion", D::Dropped),
-            ("IgnoredMember", D::Ignored),
-            ("IgnoredProperty", D::Ignored),
-            ("LiteralIgnored", D::Ignored),
-            ("LegacySettingIgnored", D::Ignored),
-            ("PackSettingChangeIgnored", D::Ignored),
-            ("AtomicFilterLightingIgnored", D::Ignored),
-            ("LegacyFogIgnored", D::Ignored),
+        let rows: [(&CodeMeta, D); 12] = [
+            (codes::UNRECOGNIZED_FIELD.meta(), D::Kept),
+            (codes::UNRECOGNIZED_COMPONENT.meta(), D::Kept),
+            (codes::MEMBER_NOT_KEPT.meta(), D::NotKept),
+            (codes::DROPPED_FIELD.meta(), D::Dropped),
+            (codes::DROPPED_COMPONENT.meta(), D::Dropped),
+            (codes::DUPLICATE_COMPONENT_VERSION.meta(), D::Dropped),
+            (codes::IGNORED_MEMBER.meta(), D::Ignored),
+            (codes::IGNORED_PROPERTY.meta(), D::Ignored),
+            (codes::LITERAL_IGNORED.meta(), D::Ignored),
+            (codes::LEGACY_SETTING_IGNORED.meta(), D::Ignored),
+            (codes::ATOMIC_FILTER_LIGHTING_IGNORED.meta(), D::Ignored),
+            (codes::LEGACY_FOG_IGNORED.meta(), D::Ignored),
         ];
-        for (name, disposition) in rows {
+        for (meta, disposition) in rows {
             assert_eq!(
-                legacy_kind(name),
+                meta.kind(),
                 Kind::UnknownMember(disposition),
-                "{name}"
+                "{}",
+                meta.id()
             );
         }
     }
@@ -885,9 +781,9 @@ mod tests {
 
     #[test]
     fn a_closing_line_an_unknown_node_and_a_fallback_have_their_own_kinds() {
-        assert_eq!(legacy_kind("DocumentRejected"), Kind::Closing);
-        assert_eq!(legacy_kind("UnknownNode"), Kind::InvalidEnumValue);
-        assert_eq!(legacy_kind("RenderControllerFallback"), Kind::Shadowed);
+        assert_eq!(codes::DOCUMENT_REJECTED.kind(), Kind::Closing);
+        assert_eq!(codes::UNKNOWN_NODE.kind(), Kind::InvalidEnumValue);
+        assert_eq!(codes::RENDER_CONTROLLER_FALLBACK.kind(), Kind::Shadowed);
     }
 
     #[test]

@@ -1234,9 +1234,7 @@ fn a_number_no_double_holds_refuses_the_block_before_any_permutation_is_checked(
 fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_the_path_of_the_file()
  {
     const AT: &str = "minecraft:block/permutations";
-
     const TICKING: &str = "components/minecraft:queued_ticking";
-
     const FILTER: &str = "components/minecraft:placement_filter/conditions/0/block_filter/0";
 
     use bedrock_addon::diagnostic::{Diagnostics, JsonPath};
@@ -1294,23 +1292,19 @@ fn a_finding_behind_a_permutation_left_out_and_inside_one_a_step_rebuilds_is_at_
         format!("core/invalid_molang {AT}/2/condition"),
     ];
     for index in [1, 3] {
-        // The step's own warning, at the component the file has.
-        expected.push(format!("core/deprecated_in_format {AT}/{index}/{TICKING}"));
-        // Told by the reading of the rebuilt permutation, of `deprecated/queued_ticking`.
-        expected.push(format!(
-            "core/unrecognized_field {AT}/{index}/{TICKING}/bogus"
-        ));
-        expected.push(format!(
-            "core/unresolved_reference {AT}/{index}/{TICKING}/on_tick/event"
-        ));
-        // The Molang walk, of the rebuilt member.
-        expected.push(format!(
-            "core/invalid_molang {AT}/{index}/{TICKING}/on_tick/condition"
-        ));
-        // A rule of 1.26.20, told of the permutations as held once some are left out.
-        expected.push(format!(
-            "core/invalid_value_formatted {AT}/{index}/components/minecraft:light_dampening"
-        ));
+        expected.extend([
+            // The step's own warning, at the component the file has.
+            format!("core/deprecated_in_format {AT}/{index}/{TICKING}"),
+            // Told by the reading of the rebuilt permutation, of `deprecated/queued_ticking`.
+            format!("core/unrecognized_field {AT}/{index}/{TICKING}/bogus"),
+            format!("core/unresolved_reference {AT}/{index}/{TICKING}/on_tick/event"),
+            // The Molang walk, of the rebuilt member.
+            format!("core/invalid_molang {AT}/{index}/{TICKING}/on_tick/condition"),
+            // A rule of 1.26.20, told of the permutations as held once some are left out.
+            format!(
+                "core/invalid_value_formatted {AT}/{index}/components/minecraft:light_dampening"
+            ),
+        ]);
     }
     expected.sort();
     let path = PackPath::from_static("blocks/lamp.json");

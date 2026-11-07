@@ -1,7 +1,6 @@
 //! The feature family's codes: the client's content-log lines of the feature loader stage, the
-//! schema's node lines the core does not hold, and the setters' messages, byte for byte. Each
-//! [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the code's
-//! name keeps matching.
+//! schema's node lines the core does not hold, and the setters' messages, byte for byte. Each id is
+//! `feature/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -15,8 +14,7 @@ pub static INVALID_JSON: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the feature file {} is not valid JSON",
 )
-.game("[Feature Registry] Passed in contents could not be evaluated as valid JSON in the following file: {}")
-.was("MalformedInput");
+.game("[Feature Registry] Passed in contents could not be evaluated as valid JSON in the following file: {}");
 
 /// A file without a description identifier.
 pub static MISSING_IDENTIFIER: CodeDef<1> = CodeDef::new(
@@ -25,8 +23,7 @@ pub static MISSING_IDENTIFIER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the feature file {} has no description identifier",
 )
-.game("[Feature Registry] Missing description identifier for JSON in the following file: {}")
-.was("MissingRequiredField");
+.game("[Feature Registry] Missing description identifier for JSON in the following file: {}");
 
 /// An empty description identifier.
 pub static EMPTY_IDENTIFIER: CodeDef<1> = CodeDef::new(
@@ -35,8 +32,7 @@ pub static EMPTY_IDENTIFIER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the feature file {} has an empty description identifier",
 )
-.game("[Feature Registry] Empty description identifier for JSON in the following file: {}")
-.was("InvalidValue");
+.game("[Feature Registry] Empty description identifier for JSON in the following file: {}");
 
 /// An identifier that is not `namespace:id`.
 pub static NOT_NAMESPACED: CodeDef<1> = CodeDef::new(
@@ -45,8 +41,7 @@ pub static NOT_NAMESPACED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the feature identifier {} is not namespace:id",
 )
-.game("The feature identifier '{}' should be in the format namespace:id")
-.was("NamespaceRule");
+.game("The feature identifier '{}' should be in the format namespace:id");
 
 /// The built-in definitions' namespace rule (the game's spelling).
 pub static NOT_MINECRAFT: CodeDef<1> = CodeDef::new(
@@ -55,8 +50,7 @@ pub static NOT_MINECRAFT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the built-in feature identifier {} is not in the minecraft namespace",
 )
-.game("The feature identifer '{}' should be in the 'minecraft' namespace")
-.was("NamespaceRule");
+.game("The feature identifer '{}' should be in the 'minecraft' namespace");
 
 /// An internal feature type used outside the game's packs.
 pub static INTERNAL_TYPE: CodeDef<1> = CodeDef::new(
@@ -65,8 +59,7 @@ pub static INTERNAL_TYPE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the internal feature type {} outside the game's packs",
 )
-.game("The feature uses the feature type '{}', which is considered internal and thus not compatible with this engine version of the game.")
-.was("MissingToggles");
+.game("The feature uses the feature type '{}', which is considered internal and thus not compatible with this engine version of the game.");
 
 /// A second feature of one identifier in a pack (engine 1.26.40 and later).
 pub static DUPLICATE: CodeDef<1> = CodeDef::new(
@@ -75,8 +68,7 @@ pub static DUPLICATE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the feature {} already exists",
 )
-.game("Feature with identifier '{}' already exists")
-.was("DuplicateIdentifier");
+.game("Feature with identifier '{}' already exists");
 
 // ---- the schema's nodes ----
 
@@ -87,8 +79,7 @@ pub static RANGE_MIN_OUT_OF_RANGE: CodeDef<3> = CodeDef::new(
     Class::Error,
     "range_min {} is outside [{}, {}]",
 )
-.game("'range_min' with value '{}' outside valid range [{}, {}]")
-.was("InvalidValue");
+.game("'range_min' with value '{}' outside valid range [{}, {}]");
 
 /// An `IntRange` whose upper end is outside the node's range.
 pub static RANGE_MAX_OUT_OF_RANGE: CodeDef<3> = CodeDef::new(
@@ -97,8 +88,7 @@ pub static RANGE_MAX_OUT_OF_RANGE: CodeDef<3> = CodeDef::new(
     Class::Error,
     "range_max {} is outside [{}, {}]",
 )
-.game("'range_max' with value '{}' outside valid range [{}, {}]")
-.was("InvalidValue");
+.game("'range_max' with value '{}' outside valid range [{}, {}]");
 
 // ---- the setters of named members (an unknown name) ----
 
@@ -109,8 +99,7 @@ pub static SNAP_SURFACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "bad surface of a snap_to_surface_feature",
 )
-.game("Bad value for surface - should be 'ceiling', 'floor', 'random_horizontal', or `wall`")
-.was("InvalidValue");
+.game("Bad value for surface - should be 'ceiling', 'floor', 'random_horizontal', or `wall`");
 
 /// A `growing_plant_feature`'s unknown `growth_direction`.
 pub static GROWTH_DIRECTION: CodeDef<0> = CodeDef::new(
@@ -119,8 +108,7 @@ pub static GROWTH_DIRECTION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "bad growth_direction",
 )
-.game("Bad value for growth_direction - should be 'UP' or 'DOWN'")
-.was("InvalidValue");
+.game("Bad value for growth_direction - should be 'UP' or 'DOWN'");
 
 /// A `partially_exposed_blob_feature`'s unknown `exposed_face`.
 pub static EXPOSED_FACE: CodeDef<0> = CodeDef::new(
@@ -129,8 +117,7 @@ pub static EXPOSED_FACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "bad exposed_face",
 )
-.game("Bad value for exposed_face - should be 'up' or 'down'")
-.was("InvalidValue");
+.game("Bad value for exposed_face - should be 'up' or 'down'");
 
 /// A `vegetation_patch_feature`'s unknown `surface`.
 pub static VEGETATION_SURFACE: CodeDef<0> = CodeDef::new(
@@ -139,8 +126,7 @@ pub static VEGETATION_SURFACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "bad surface of a vegetation_patch_feature",
 )
-.game("Bad value for surface - should be 'ceiling' or 'floor'")
-.was("InvalidValue");
+.game("Bad value for surface - should be 'ceiling' or 'floor'");
 
 // ---- the setters' checks (kept errors: the client logs and keeps the value) ----
 
@@ -151,8 +137,7 @@ pub static ITERATIONS_NEGATIVE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "negative scatter iterations",
 )
-.game("Bad value for iterations - should be >= 0")
-.was("ScatterParamValue");
+.game("Bad value for iterations - should be >= 0");
 
 /// A constant percent `scatter_chance` outside (0, 100]; 100 is used.
 pub static SCATTER_CHANCE_PERCENT: CodeDef<0> = CodeDef::new(
@@ -161,8 +146,7 @@ pub static SCATTER_CHANCE_PERCENT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "scatter_chance outside (0, 100]",
 )
-.game("Bad value for scatter_chance - should be between 0 and 100 (exclusive)")
-.was("ScatterParamValue");
+.game("Bad value for scatter_chance - should be between 0 and 100 (exclusive)");
 
 /// A fraction `scatter_chance` whose denominator is not above its numerator; 1 is used.
 pub static SCATTER_CHANCE_FRACTION: CodeDef<0> = CodeDef::new(
@@ -171,8 +155,7 @@ pub static SCATTER_CHANCE_FRACTION: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "scatter_chance denominator not above its numerator",
 )
-.game("Bad value for scatter_chance - denominator should be greater than the numerator")
-.was("ScatterParamValue");
+.game("Bad value for scatter_chance - denominator should be greater than the numerator");
 
 /// An absent or empty coordinate; the argument is its key.
 pub static MUST_BE_PROVIDED: CodeDef<1> = CodeDef::new(
@@ -181,8 +164,7 @@ pub static MUST_BE_PROVIDED: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the coordinate {} is absent or empty",
 )
-.game("{} must be provided, either as a Molang expression string or as a sub-object")
-.was("ScatterParamValue");
+.game("{} must be provided, either as a Molang expression string or as a sub-object");
 
 /// A `step_size` beside a distribution that is no grid.
 pub static STEP_SIZE_NOT_GRID: CodeDef<0> = CodeDef::new(
@@ -191,8 +173,7 @@ pub static STEP_SIZE_NOT_GRID: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "step_size outside a grid distribution",
 )
-.game("step_size is only valid when distribution is fixed_grid or jittered_grid")
-.was("ScatterParamValue");
+.game("step_size is only valid when distribution is fixed_grid or jittered_grid");
 
 /// A `grid_offset` beside a distribution that is no grid.
 pub static GRID_OFFSET_NOT_GRID: CodeDef<0> = CodeDef::new(
@@ -201,8 +182,7 @@ pub static GRID_OFFSET_NOT_GRID: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "grid_offset outside a grid distribution",
 )
-.game("grid_offset is only valid when distribution is fixed_grid or jittered_grid")
-.was("ScatterParamValue");
+.game("grid_offset is only valid when distribution is fixed_grid or jittered_grid");
 
 /// A constant `extent` whose maximum is not above its minimum.
 pub static EXTENT_ORDER: CodeDef<0> = CodeDef::new(
@@ -211,8 +191,7 @@ pub static EXTENT_ORDER: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an extent whose maximum is not above its minimum",
 )
-.game("Bad value for extent - maximum must be greater than minimum")
-.was("ScatterParamValue");
+.game("Bad value for extent - maximum must be greater than minimum");
 
 /// The trunk setter's text for a negative `height_modifier` larger than the trunk height.
 pub static INVERTED_TRUNK: CodeDef<0> = CodeDef::new(
@@ -221,8 +200,7 @@ pub static INVERTED_TRUNK: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a negative height_modifier larger than the trunk height",
 )
-.game("A negative 'height_modifier' cannot have greater magnitude than 'trunk_height:range_min' (trunk would invert!)")
-.was("InvalidValue");
+.game("A negative 'height_modifier' cannot have greater magnitude than 'trunk_height:range_min' (trunk would invert!)");
 
 /// The cherry trunk setter's text for a start offset of one value.
 pub static CHERRY_START_OFFSET: CodeDef<0> = CodeDef::new(
@@ -231,8 +209,7 @@ pub static CHERRY_START_OFFSET: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "branch_start_offset_from_top holds one value",
 )
-.game("branch_start_offset_from_top range must contain at least 2 values because branches must start at different heights.")
-.was("InvalidValue");
+.game("branch_start_offset_from_top range must contain at least 2 values because branches must start at different heights.");
 
 /// The simple canopy setter's text for `canopy_offset.min > max`.
 pub static CANOPY_OFFSET: CodeDef<0> = CodeDef::new(
@@ -241,8 +218,7 @@ pub static CANOPY_OFFSET: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "canopy_offset min above max",
 )
-.game("'min' must be <= 'max'")
-.was("InvalidValue");
+.game("'min' must be <= 'max'");
 
 /// "The max values of the Bounding Box must be greater than the min Values."
 pub static BOUNDING_BOX: CodeDef<0> = CodeDef::new(
@@ -251,8 +227,7 @@ pub static BOUNDING_BOX: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a bounding box maximum not above its minimum",
 )
-.game("The max values of the Bounding Box must be greater than the min Values.")
-.was("InvalidValue");
+.game("The max values of the Bounding Box must be greater than the min Values.");
 
 /// "Ragged Factor values must be [0,1] and min must be less than max."
 pub static RAGGED_RANGE: CodeDef<0> = CodeDef::new(
@@ -261,8 +236,7 @@ pub static RAGGED_RANGE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "beard raggedness outside [0, 1] or min not below max",
 )
-.game("Ragged Factor values must be [0,1] and min must be less than max.")
-.was("InvalidValue");
+.game("Ragged Factor values must be [0,1] and min must be less than max.");
 
 /// "Ragged Factor min must be leess than max" (sic).
 pub static RAGGED_ORDER: CodeDef<0> = CodeDef::new(
@@ -271,8 +245,7 @@ pub static RAGGED_ORDER: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "beard raggedness min not below max",
 )
-.game("Ragged Factor min must be leess than max")
-.was("InvalidValue");
+.game("Ragged Factor min must be leess than max");
 
 /// A `rect_layout`'s `ratio_of_empty_space` of 1 or above.
 pub static EMPTY_SPACE: CodeDef<0> = CodeDef::new(
@@ -281,8 +254,7 @@ pub static EMPTY_SPACE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "ratio_of_empty_space of 1 or above",
 )
-.game("100% or above empty space is nonsensical for this feature.")
-.was("InvalidValue");
+.game("100% or above empty space is nonsensical for this feature.");
 
 /// A `height_difference_filter_feature` without any bound; the feature stays registered.
 pub static NO_HEIGHT_DIFFERENCES: CodeDef<0> = CodeDef::new(
@@ -291,8 +263,7 @@ pub static NO_HEIGHT_DIFFERENCES: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a height_difference_filter_feature without a bound",
 )
-.game("height_difference_filter_feature: No height differences specified")
-.was("MissingRequiredField");
+.game("height_difference_filter_feature: No height differences specified");
 
 /// A carver's float range array of another length than two; the range then fails its
 /// validation, which fails the schema.
@@ -302,8 +273,7 @@ pub static FLOAT_RANGE_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a float range array without 2 values",
 )
-.game("Float range array was not parsed. Float range arrays should have 2 values.")
-.was("InvalidValue");
+.game("Float range array was not parsed. Float range arrays should have 2 values.");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

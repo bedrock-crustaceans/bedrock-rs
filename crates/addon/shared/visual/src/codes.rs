@@ -1,6 +1,6 @@
 //! The `visual` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `visual/<name>`, the name its constant's in lower
+//! case.
 //!
 //! What client entities, attachables and atomic client entities share.
 
@@ -14,8 +14,7 @@ pub static NO_ENTITY_DEFINITION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no entity definition",
 )
-.game("No entity definition to parse")
-.was("MissingRequiredField");
+.game("No entity definition to parse");
 
 /// An identifier that is empty names nothing.
 pub static MISSING_IDENTIFIER: CodeDef<0> = CodeDef::new(
@@ -24,8 +23,7 @@ pub static MISSING_IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "identifier is empty",
 )
-.game("Missing or invalid identifier")
-.was("InvalidValue");
+.game("Missing or invalid identifier");
 
 /// A `held_item_scale` number at or below 0: the game logs it and loads the file. The arguments are
 /// the file (the placeholder `rules::FILE` until the load knows the path) and the value.
@@ -35,8 +33,7 @@ pub static HELD_ITEM_SCALE_INVALID: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "held_item_scale of {} is not above zero ({})",
 )
-.game("In file '{}', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '{}'.")
-.was("InvalidValue");
+.game("In file '{}', parameter \"held_item_scale\" has invalid value: must be greater than zero, was '{}'.");
 
 /// A named script the loader cannot parse follows the parser's lines and is not stored; the game
 /// loads the file. The argument is the member name.
@@ -46,8 +43,7 @@ pub static FAILED_TO_PARSE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "script {} dropped",
 )
-.game("Failed to parse '{}'!")
-.was("DroppedField");
+.game("Failed to parse '{}'!");
 
 /// The loader's message for a `format_version` that does not read, or one below 1.0.0; the argument
 /// is the file's path.
@@ -57,8 +53,7 @@ pub static UNKNOWN_VERSION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "unknown format_version in {}",
 )
-.game("Unknown/unsupported version value specified in format_version field in {}")
-.was("UnsupportedVersion");
+.game("Unknown/unsupported version value specified in format_version field in {}");
 
 /// A `format_version` above the engine's: the loader skips the file. The arguments are the version
 /// as written and the engine version.
@@ -68,8 +63,7 @@ pub static ACTOR_ABOVE_ENGINE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "format_version {} exceeds the engine's {}",
 )
-.game("Error: actor resource file has format version: {} exceeds game version: {}. Skipping.")
-.was("UnsupportedVersion");
+.game("Error: actor resource file has format version: {} exceeds game version: {}. Skipping.");
 
 /// A root that is null, no object or empty; the finding carries the same words as its syntax
 /// detail.
@@ -79,8 +73,7 @@ pub static NOTHING_TO_PARSE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "nothing to parse",
 )
-.game("nothing to parse in")
-.was("MalformedInput");
+.game("nothing to parse in");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

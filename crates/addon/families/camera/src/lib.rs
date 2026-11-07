@@ -55,7 +55,7 @@ use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind,
 };
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -265,8 +265,8 @@ impl Family for PresetFamily {
         // is 'Unrecognized field on camera preset!'.
         let unknown = diagnostics
             .iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|d| matches!(d.code.name(), "UnrecognizedField"));
+            // By kind: the unrecognized field definitions (a camera preset has no components).
+            .any(|d| matches!(d.kind(), Kind::UnknownMember(Disposition::Kept)));
         if failed && !unknown {
             closing_line(diagnostics, &codes::FAILED_PRESETS);
         }
@@ -305,26 +305,25 @@ impl Family for ListFamily {
         failed: bool,
     ) {
         let found = std::mem::take(diagnostics);
+        let mut not_json = false;
         for mut finding in found {
             // A syntax finding gets the list's sentence ("Camera List file %s is not valid
             // JSON: %s"), the reader's message from its detail or line kept as its detail.
-            if finding.code.name() == "MalformedInput" {
+            if is_malformed_input(&finding.code) {
                 let message = finding.syntax_message().unwrap_or_default().to_owned();
                 finding.code = codes::LIST_NOT_JSON.with([path.as_str(), &message]);
+                not_json = true;
                 finding.detail = Some(Box::new(DiagnosticDetail::Syntax(message)));
             }
-            // By legacy name: the variant and the definitions that were it.
-            if finding.code.name() == "UnsupportedVersion" {
+            // By kind: the version-range finding is the only one of the kind a camera list
+            // raises.
+            if finding.kind() == Kind::UnsupportedVersion {
                 // The version range is a constraint on the version string, not a slice of the
                 // chain: the game's text for it is not known, so neither generic text stands in.
                 finding.code = Code::from(&core_codes::UNSUPPORTED_VERSION);
             }
             diagnostics.push(finding);
         }
-        let not_json = diagnostics
-            .iter()
-            // By legacy name: the variant and the definitions that were it.
-            .any(|d| matches!(d.code.name(), "MalformedInput"));
         if failed && !not_json {
             closing_line(diagnostics, &codes::LIST_INVALID);
         }
@@ -509,6 +508,23 @@ impl Versioned for CameraSpline {
 
 impl Versioned for CameraEntity {
     const VERSION: FormatVersion = known::V0_0_0;
+}
+
+/// Whether `code` is a malformed input: core's definitions of the reader's syntax failures,
+/// not the empty document or a node of the wrong shape, which are of the same kind.
+fn is_malformed_input(code: &Code) -> bool {
+    matches!(
+        code.id(),
+        "core/document_json"
+            | "core/document_member_count"
+            | "core/document_nearly_too_large"
+            | "core/document_too_large"
+            | "core/malformed_input"
+            | "core/malformed_input_worded"
+            | "core/parse_error"
+            | "core/stack_top_unparsable"
+            | "core/syntax"
+    )
 }
 
 #[cfg(test)]

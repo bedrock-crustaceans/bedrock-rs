@@ -1,6 +1,6 @@
 //! The `spawn` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `spawn/<name>`, the name its constant's in lower
+//! case.
 //!
 //! The texts of the spawn loaders, as the folders quote them. Every condition text is a warning
 //! in the game (code 2, level 2); `{}` is the document's identifier where the text names it.
@@ -14,8 +14,7 @@ pub static WEIGHT_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:weight is not an object",
 )
-.game("Spawn rules for minecraft:weight in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:weight in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:density_limit` is not an object; the argument is the identifier.
 pub static DENSITY_OBJECT: CodeDef<1> = CodeDef::new(
@@ -24,8 +23,7 @@ pub static DENSITY_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:density_limit is not an object",
 )
-.game("Spawn rules for minecraft:density_limit in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:density_limit in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:brightness_filter` is not an object; the argument is the identifier.
 pub static BRIGHTNESS_OBJECT: CodeDef<1> = CodeDef::new(
@@ -34,8 +32,7 @@ pub static BRIGHTNESS_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:brightness_filter is not an object",
 )
-.game("Spawn rules for minecraft:brightness_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:brightness_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:height_filter` is not an object; the argument is the identifier.
 pub static HEIGHT_OBJECT: CodeDef<1> = CodeDef::new(
@@ -44,8 +41,7 @@ pub static HEIGHT_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:height_filter is not an object",
 )
-.game("Spawn rules for minecraft:height_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:height_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:distance_filter` is not an object; the argument is the identifier.
 pub static DISTANCE_OBJECT: CodeDef<1> = CodeDef::new(
@@ -54,8 +50,7 @@ pub static DISTANCE_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:distance_filter is not an object",
 )
-.game("Spawn rules for minecraft:distance_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:distance_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:delay_filter` is not an object; the argument is the identifier.
 pub static DELAY_OBJECT: CodeDef<1> = CodeDef::new(
@@ -64,8 +59,7 @@ pub static DELAY_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:delay_filter is not an object",
 )
-.game("Spawn rules for minecraft:delay_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:delay_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:mob_event_filter` is not an object; the argument is the identifier.
 pub static MOB_EVENT_OBJECT: CodeDef<1> = CodeDef::new(
@@ -74,8 +68,7 @@ pub static MOB_EVENT_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "minecraft:mob_event_filter is not an object",
 )
-.game("Spawn rules for minecraft:mob_event_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:mob_event_filter in {} need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `minecraft:world_age_filter` is not an object. A literal copy of the text: no identifier, single
 /// braces.
@@ -85,8 +78,7 @@ pub static WORLD_AGE_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "minecraft:world_age_filter is not an object",
 )
-.game("Spawn rules for minecraft:world_age_filter need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values")
-.was("InvalidType");
+.game("Spawn rules for minecraft:world_age_filter need to be put inside a json object - it has to start with an \"{\" and end with a \"}\" - using default values");
 
 /// `height_filter.min > max`. The game's text names `distance_filter`.
 pub static HEIGHT_SWAPPED: CodeDef<0> = CodeDef::new(
@@ -95,8 +87,7 @@ pub static HEIGHT_SWAPPED: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "height_filter min above max",
 )
-.game("Spawn rules for minecraft:distance_filter specified a min height > max.")
-.was("InvalidValue");
+.game("Spawn rules for minecraft:distance_filter specified a min height > max.");
 
 /// `distance_filter.min > max`.
 pub static DISTANCE_SWAPPED: CodeDef<0> = CodeDef::new(
@@ -105,8 +96,7 @@ pub static DISTANCE_SWAPPED: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "distance_filter min above max",
 )
-.game("Spawn rules for minecraft:distance_filter specified a min distance > max.")
-.was("InvalidValue");
+.game("Spawn rules for minecraft:distance_filter specified a min distance > max.");
 
 /// `world_age_filter.min > max`.
 pub static WORLD_AGE_SWAPPED: CodeDef<0> = CodeDef::new(
@@ -115,8 +105,7 @@ pub static WORLD_AGE_SWAPPED: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "world_age_filter min above max",
 )
-.game("Spawn rules for minecraft:world_age_filter specified a min world age > max.")
-.was("InvalidValue");
+.game("Spawn rules for minecraft:world_age_filter specified a min world age > max.");
 
 /// `delay_filter.min > max`; the argument is the identifier.
 pub static DELAY_SWAPPED: CodeDef<1> = CodeDef::new(
@@ -125,8 +114,7 @@ pub static DELAY_SWAPPED: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "delay_filter min above max in {}",
 )
-.game("Spawn rules for {} specified a min delay > max.")
-.was("InvalidValue");
+.game("Spawn rules for {} specified a min delay > max.");
 
 /// `delay_filter.identifier` empty or missing; the argument is the identifier.
 pub static DELAY_WITHOUT_IDENTIFIER: CodeDef<1> = CodeDef::new(
@@ -135,8 +123,7 @@ pub static DELAY_WITHOUT_IDENTIFIER: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "delay_filter without an identifier in {}",
 )
-.game("Spawn rules for {} specified a delay without a target identifier.")
-.was("MissingRequiredField");
+.game("Spawn rules for {} specified a delay without a target identifier.");
 
 /// `player_in_village_filter.distance` missing or `null`.
 pub static VILLAGE_DISTANCE_MISSING: CodeDef<0> = CodeDef::new(
@@ -145,8 +132,7 @@ pub static VILLAGE_DISTANCE_MISSING: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "player_in_village_filter without a distance",
 )
-.game("Missing \"distance\" parameter for minecraft:player_in_village_filter")
-.was("MissingRequiredField");
+.game("Missing \"distance\" parameter for minecraft:player_in_village_filter");
 
 /// `description.identifier` missing, `null` or not a string. The literal ends in a newline in the
 /// game, which is trimmed.
@@ -156,8 +142,7 @@ pub static MISSING_IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no description.identifier",
 )
-.game("Missing identifier in spawn rule file")
-.was("MissingRequiredField");
+.game("Missing identifier in spawn rule file");
 
 /// The same text for a spawn group file whose payload key is absent.
 pub static MISSING_IDENTIFIER_PAYLOAD: CodeDef<0> = CodeDef::new(
@@ -166,8 +151,7 @@ pub static MISSING_IDENTIFIER_PAYLOAD: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no payload",
 )
-.game("Missing identifier in spawn rule file")
-.was("MissingPayload");
+.game("Missing identifier in spawn rule file");
 
 /// The root is not a JSON object; the finding carries "the root is not an object" as its syntax
 /// detail.
@@ -177,8 +161,7 @@ pub static NOT_AN_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the root is not an object",
 )
-.game("Spawn rules json was not formatted as an object")
-.was("MalformedInput");
+.game("Spawn rules json was not formatted as an object");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

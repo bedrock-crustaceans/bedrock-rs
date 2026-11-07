@@ -1,7 +1,6 @@
 //! The data-driven UI family's codes: the client's lines for `DataDrivenUI` files, byte for byte,
-//! each a definition beside the loader, reader or validator that raises it. Each
-//! [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the code's
-//! name keeps matching.
+//! each a definition beside the loader, reader or validator that raises it. Each id is
+//! `ddui/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -15,8 +14,7 @@ pub static UNREAD: CodeDef<1> = CodeDef::new(
     Class::Error,
     "cannot read the DataDrivenUI file {}",
 )
-.game("Failed to load the contents of DataDrivenUI file {}; it will be skipped.")
-.was("ReadError");
+.game("Failed to load the contents of DataDrivenUI file {}; it will be skipped.");
 
 /// The loader's "Missing object" error; the argument is the family's payload key.
 pub static MISSING_OBJECT: CodeDef<1> = CodeDef::new(
@@ -25,8 +23,7 @@ pub static MISSING_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no payload object {}",
 )
-.game("Failed to parse DataDrivenUI file. Missing object \"{}\"")
-.was("MissingPayload");
+.game("Failed to parse DataDrivenUI file. Missing object \"{}\"");
 
 /// The loader's closing line.
 pub static FAILED_TO_LOAD: CodeDef<0> = CodeDef::new(
@@ -35,8 +32,7 @@ pub static FAILED_TO_LOAD: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the DataDrivenUI file failed to load",
 )
-.game("Failed to load DataDrivenUI file")
-.was("DocumentRejected");
+.game("Failed to load DataDrivenUI file");
 
 /// A `format_version` that is no version: told before the "Missing object" error, as an
 /// information.
@@ -46,8 +42,7 @@ pub static MALFORMED_VERSION: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "the format_version is no version",
 )
-.game("Malformed format version")
-.was("MalformedFormatVersion");
+.game("Malformed format version");
 
 /// No version in the input and none from the caller.
 pub static NO_VALID_VERSION: CodeDef<0> = CodeDef::new(
@@ -56,8 +51,7 @@ pub static NO_VALID_VERSION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no valid format_version",
 )
-.game("no valid version passed by the caller or found in the input")
-.was("UnsupportedVersion");
+.game("no valid version passed by the caller or found in the input");
 
 /// A composition's extension point no stored root declares; the argument is its name.
 pub static NOT_DEFINED: CodeDef<1> = CodeDef::new(
@@ -66,8 +60,7 @@ pub static NOT_DEFINED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no extension point {}",
 )
-.game("extension_point '{}' is not defined.")
-.was("UnresolvedReference");
+.game("extension_point '{}' is not defined.");
 
 // ---- the reader ----
 
@@ -78,8 +71,7 @@ pub static NOT_NAMESPACED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the identifier has no namespace",
 )
-.game("string must be prefixed with a namespace (eg. namespace:value)")
-.was("InvalidValue");
+.game("string must be prefixed with a namespace (eg. namespace:value)");
 
 /// A number no double holds: the client logs rapidjson's "number too big" message.
 pub static NUMBER_TOO_BIG: CodeDef<0> = CodeDef::new(
@@ -88,8 +80,7 @@ pub static NUMBER_TOO_BIG: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a number no double holds",
 )
-.game("Failed to parse the Minecraft Document JSON: Number too big to be stored in double.")
-.was("InvalidValue");
+.game("Failed to parse the Minecraft Document JSON: Number too big to be stored in double.");
 
 /// A padding that is no two-value box size.
 pub static BOX_SIZE_2: CodeDef<0> = CodeDef::new(
@@ -98,8 +89,7 @@ pub static BOX_SIZE_2: CodeDef<0> = CodeDef::new(
     Class::Error,
     "not a two-value box size",
 )
-.game("Expected [top, right].")
-.was("InvalidValue");
+.game("Expected [top, right].");
 
 /// A padding that is no four-value box size.
 pub static BOX_SIZE_4: CodeDef<0> = CodeDef::new(
@@ -108,8 +98,7 @@ pub static BOX_SIZE_4: CodeDef<0> = CodeDef::new(
     Class::Error,
     "not a four-value box size",
 )
-.game("Expected [top, right, bottom, left].")
-.was("InvalidValue");
+.game("Expected [top, right, bottom, left].");
 
 /// An RGBA colour that is neither four 0-255 values nor a hex string.
 pub static COLOR_RGBA: CodeDef<0> = CodeDef::new(
@@ -118,8 +107,7 @@ pub static COLOR_RGBA: CodeDef<0> = CodeDef::new(
     Class::Error,
     "not an ARGB colour",
 )
-.game("Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF).")
-.was("InvalidValue");
+.game("Expected [r, g, b, a], with values in the 0-255 range, or a hex value with 8 characters (e.g. ARGB as #FFFFFFFF).");
 
 /// An RGB colour that is neither three 0-255 values nor a hex string.
 pub static COLOR_RGB: CodeDef<0> = CodeDef::new(
@@ -128,8 +116,7 @@ pub static COLOR_RGB: CodeDef<0> = CodeDef::new(
     Class::Error,
     "not an RGB colour",
 )
-.game("Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF).")
-.was("InvalidValue");
+.game("Expected [r, g, b], with values in the 0-255 range, or a hex value with 6 characters (e.g. RGB as #FFFFFF).");
 
 // ---- the validators ----
 
@@ -140,8 +127,7 @@ pub static BUILTIN_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a built-in DataDrivenUI document without the minecraft namespace",
 )
-.game("builtin packs must use the 'minecraft' namespace for DataDrivenUI documents")
-.was("NamespaceRule");
+.game("builtin packs must use the 'minecraft' namespace for DataDrivenUI documents");
 
 /// A document of any other pack that has the vanilla namespace.
 pub static EXTERNAL_NAMESPACE: CodeDef<0> = CodeDef::new(
@@ -150,8 +136,7 @@ pub static EXTERNAL_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an add-on DataDrivenUI document with the minecraft namespace",
 )
-.game("external packs must not use the 'minecraft' namespace for DataDrivenUI documents")
-.was("NamespaceRule");
+.game("external packs must not use the 'minecraft' namespace for DataDrivenUI documents");
 
 /// An extension point written by an external pack (vanilla's spelling).
 pub static EXTENSION_POINT_OVERRIDDEN: CodeDef<0> = CodeDef::new(
@@ -160,8 +145,7 @@ pub static EXTENSION_POINT_OVERRIDDEN: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an extension point in an add-on pack",
 )
-.game("extension_point cannot be overriden at external packs.")
-.was("InvalidValue");
+.game("extension_point cannot be overriden at external packs.");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

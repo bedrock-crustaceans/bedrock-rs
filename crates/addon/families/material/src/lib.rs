@@ -42,7 +42,9 @@ pub use values::{
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{
+    Code, Diagnostic, Diagnostics, JsonPath, Kind, Phase, Severity,
+};
 use bedrock_addon_core::document::{
     Content, Document, Merged, Origin, Placed, RawLayer, Rejected, UnknownMembers, unversioned,
 };
@@ -642,7 +644,7 @@ struct Loading<'a> {
     /// The findings of the load itself.
     diagnostics: Diagnostics,
     /// The group findings already reported: a file two groups load reports each once.
-    reported: HashSet<(usize, JsonPath, &'static str)>,
+    reported: HashSet<(usize, JsonPath, Kind)>,
 }
 
 impl Loading<'_> {
@@ -774,7 +776,7 @@ impl Loading<'_> {
         let mut fresh = Vec::new();
         for (_, finding) in found {
             let at = finding.location.json_path.clone();
-            if self.reported.insert((file, at, finding.code.name())) {
+            if self.reported.insert((file, at, finding.kind())) {
                 fresh.push(finding);
             }
         }

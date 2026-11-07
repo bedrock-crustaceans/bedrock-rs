@@ -12,7 +12,7 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Kind as CodeKind, Phase, Severity,
 };
 use bedrock_addon_core::document::{
     CombineRule, Contribution, Definition, Document, Notice, Registry, RegistryBuilder, Rejected,
@@ -380,8 +380,9 @@ fn presets(
                         // An unknown parent also gets the game's own line, besides the
                         // reference finding.
                         Some(finding)
-                            // By legacy name: the variant and the definitions that were it.
-                            if matches!(finding.code.name(), "UnresolvedReference") =>
+                            // By kind: the unknown parent and list entry definitions, the
+                            // only ones of the kind the checks raise.
+                            if finding.kind() == CodeKind::UnresolvedReference =>
                         {
                             // Only where the direct parent is no preset of the stack: a
                             // parent the pass discarded is the chain's, not the validator's.
@@ -431,8 +432,9 @@ fn lists(
                     // Each unknown entry also gets the game's own line, besides the
                     // reference finding.
                     Some(finding)
-                        // By legacy name: the variant and the definitions that were it.
-                        if matches!(finding.code.name(), "UnresolvedReference") =>
+                        // By kind: the unknown list entry definition, the only one of the kind
+                        // `check_list` raises.
+                        if finding.kind() == CodeKind::UnresolvedReference =>
                     {
                         let lines = unknown_camera_lines(&document, defined, stack);
                         let all = std::iter::once(finding).chain(lines);

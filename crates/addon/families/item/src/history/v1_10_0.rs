@@ -53,8 +53,15 @@ impl VersionStruct for Item {
         let mut found = Diagnostics::default();
         let shell: Option<Shell> = parse_payload(payload, cx, &mut found);
         // unknown keys are ignored silently at every version (and kept)
-        // By legacy name: the variant and the definitions that were it.
-        found.retain(|f| !matches!(f.code.name(), "UnrecognizedField"));
+        found.retain(|f| {
+            !matches!(
+                f.code.id(),
+                "core/unrecognized_field"
+                    | "core/unrecognized_field_worded"
+                    | "core/child_not_valid"
+                    | "core/member_not_in_schema"
+            )
+        });
         d.extend_with_unknown(found);
         let mut shell = shell?;
         if let Err(reason) = is_component_based(payload, cx.written) {

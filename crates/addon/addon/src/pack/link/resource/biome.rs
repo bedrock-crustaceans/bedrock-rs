@@ -185,8 +185,10 @@ fn shadowed<'a>(cx: &LinkCx<'a>, out: &mut Findings) -> HashMap<BiomeId, Vec<&'a
     // The load tells each loaded document a higher pack shadows as a `ShadowedDefinition`
     // at its file.
     for finding in cx.resource().client_biomes().diagnostics() {
-        // By legacy name: the variant and the definitions that were it.
-        if !matches!(finding.code.name(), "ShadowedDefinition") {
+        if !matches!(
+            finding.code.id(),
+            "core/shadowed_definition" | "core/shadowed_definition_worded"
+        ) {
             continue;
         }
         let (Some(pack), Some(file)) = (&finding.location.pack, &finding.location.path) else {

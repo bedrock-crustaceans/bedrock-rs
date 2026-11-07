@@ -117,8 +117,7 @@ fn parse_typed<'a, T: Facet<'a>>(
 /// `InvalidEnumValue`, as vanilla's enum binds report it (facet calls it a type mismatch).
 fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -> Diagnostic {
     error.into_diagnostic(&cx.at, |code, error| {
-        // By legacy name: the variant and the definitions that were it.
-        if matches!(code.name(), "InvalidType") && error.describes(UNKNOWN_TAG) {
+        if code.is(&core_codes::INVALID_TYPE) && error.describes(UNKNOWN_TAG) {
             Code::from(&core_codes::INVALID_ENUM_VALUE)
         } else {
             code

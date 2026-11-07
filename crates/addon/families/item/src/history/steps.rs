@@ -26,7 +26,7 @@ use crate::component::{
 };
 use crate::legacy::ItemFormat;
 use crate::{Beta, Item, ItemDescription, codes};
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Kind, Phase, Severity};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
@@ -143,9 +143,7 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
                 // A number no double holds was clamped where the file was read, with its
                 // warning at this path: the number is told once.
                 let said = cx.diagnostics.iter().any(|finding| {
-                    finding.location.json_path == amount_at
-                        // By legacy name: the variant and the definitions that were it.
-                        && matches!(finding.code.name(), "InvalidValue")
+                    finding.location.json_path == amount_at && finding.kind() == Kind::InvalidValue
                 });
                 if !said {
                     tell(cx, amount_at, Severity::Info);
@@ -250,9 +248,7 @@ fn saturated_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx
     }
     let at = use_duration_at();
     let said = cx.diagnostics.iter().any(|finding| {
-        finding.location.json_path.starts_with(&at)
-            // By legacy name: the variant and the definitions that were it.
-            && matches!(finding.code.name(), "InvalidValue")
+        finding.location.json_path.starts_with(&at) && finding.kind() == Kind::InvalidValue
     });
     if !said {
         report(
@@ -279,9 +275,7 @@ fn negative_duration(legacy: &crate::legacy::LegacyItemData, cx: &mut UpgradeCx<
     if negative {
         let at = use_duration_at();
         let said = cx.diagnostics.iter().any(|finding| {
-            finding.location.json_path.starts_with(&at)
-                // By legacy name: the variant and the definitions that were it.
-                && matches!(finding.code.name(), "InvalidValue")
+            finding.location.json_path.starts_with(&at) && finding.kind() == Kind::InvalidValue
         });
         if !said {
             report(
@@ -556,8 +550,7 @@ fn saturation(value: &Value, cx: &mut UpgradeCx<'_>) -> Option<f32> {
     let nearest = number as f32;
     if nearest.is_infinite() {
         let said = cx.diagnostics.iter().any(|finding| {
-            // By legacy name: the variant and the definitions that were it.
-            matches!(finding.code.name(), "InvalidValue")
+            finding.kind() == Kind::InvalidValue
                 && finding.location.json_path
                     == JsonPath::of_keys([
                         "minecraft:item",

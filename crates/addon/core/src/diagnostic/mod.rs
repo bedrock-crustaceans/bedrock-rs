@@ -11,7 +11,6 @@ mod deprecated;
 mod detail;
 mod event;
 mod facet;
-mod legacy;
 mod list;
 mod location;
 mod moves;
@@ -105,7 +104,23 @@ impl Diagnostic {
     /// [`codes::SYNTAX`] (the message as the line); empty for [`codes::MALFORMED_INPUT`].
     /// `None` for any other finding.
     pub fn syntax_message(&self) -> Option<&str> {
-        if self.code.name() != "MalformedInput" {
+        // The syntax kind is shared by the empty-document, invalid-node and invalid-root
+        // definitions, which are not a reader's message.
+        if self.code.kind() != Kind::Syntax
+            || matches!(
+                self.code.id(),
+                "core/empty_document"
+                    | "core/empty_document_worded"
+                    | "fog/empty_after_parse"
+                    | "fog/empty_resource"
+                    | "loot/invalid_table_empty"
+                    | "server_config/commands_malformed_empty_document"
+                    | "server_config/config_parse_failed_empty_document"
+                    | "texture_set/set_empty"
+                    | "core/invalid_node"
+                    | "core/invalid_root"
+            )
+        {
             return None;
         }
         match self.detail.as_deref() {

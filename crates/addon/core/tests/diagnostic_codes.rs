@@ -1,257 +1,10 @@
-//! The code vocabulary, a tombstone: the names of the deleted legacy `DiagnosticCode` variants,
-//! frozen, which a definition's `.was` names until the pin rename retires them; the ids of the
-//! core's definitions; and the names and ids that were considered for codes and rejected, which
-//! no code may take.
+//! The code vocabulary: the ids of the core's definitions, and the ids that were considered for
+//! codes and rejected, which no code may take.
 
-use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind, codes, testing};
+use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind, codes};
 
-/// The names of the legacy variants, frozen when the enum was deleted: the document-level list,
-/// the RP-side and shared codes, every family's codes and the manifest variants.
-const LEGACY_NAMES: &[&str] = &[
-    // document level
-    "UnsupportedVersion",
-    "BetaFeaturesNotEnabled",
-    "PrereleaseFormatVersion",
-    "MissingToggles",
-    "DeprecatedMember",
-    "UnrecognizedField",
-    "UnrecognizedComponent",
-    "InvalidValue",
-    "MissingRequiredField",
-    "ClampedValue",
-    "DroppedComponent",
-    "DroppedField",
-    "MemberNotKept",
-    "ValueRewritten",
-    "DuplicateComponentVersion",
-    "UnknownSound",
-    "GenericGoalSuffixMissing",
-    "MalformedInput",
-    // RP side, lints, UI, shared
-    "FormatVersionAboveEngine",
-    "ClientEntityShadowed",
-    "AttachableShadowed",
-    "ItemBindingShadowed",
-    "RenderControllerShadowed",
-    "IdentifierCollision",
-    "UnresolvedReference",
-    "InvalidReference",
-    "TextureNotFound",
-    "UnresolvedLangKey",
-    "SplashesReplaced",
-    "NoSplashes",
-    "IgnoredFile",
-    "PackIconMissing",
-    "PackIconShape",
-    "GlyphSheetShape",
-    "SkinPackNameMismatch",
-    "SkinPackCreatorRule",
-    "IgnoredMember",
-    "UnmatchedCondition",
-    "WhereArrayNeverMatches",
-    "RebasedOverride",
-    "ShadowedDefinition",
-    "ReadError",
-    "MissingPayload",
-    "NoEffect",
-    "NamespaceRule",
-    "InvalidType",
-    "SkippedCacheDocument",
-    // version and envelope
-    "MissingFormatVersion",
-    "MalformedFormatVersion",
-    "EmptyDocument",
-    "UnusualFormatVersion",
-    "VanillaRejectsVersion",
-    "FormatVersionArray",
-    "PayloadKeyMismatch",
-    "UnknownPayloadKey",
-    "IgnoredPayload",
-    "DocumentRejected",
-    "MissingIdentifier",
-    "SoundDefinitionsWrapperWithoutVersion",
-    "MissingMinEngineVersion",
-    "FieldSinceEngine",
-    "FieldUntilEngine",
-    "UnsupportedValueForm",
-    // values, types and expressions
-    "InvalidEnumValue",
-    "InvalidMolang",
-    "MolangLint",
-    "MolangNotChecked",
-    "KeyframeOutOfDomain",
-    "LossyConversion",
-    "LiteralIgnored",
-    "NonCanonicalMemberCase",
-    "CaseFoldedTransition",
-    "UnorderedRemapCurve",
-    "ImplicitInitialState",
-    "UnrecognizedEventString",
-    "InvalidNode",
-    "InvalidRoot",
-    "UnknownNode",
-    "LegacyItemFormat",
-    "PersonaPiecePack",
-    "LangKeyTrailingSpace",
-    "ScatterParamValue",
-    "UnsupportedOperator",
-    // assets
-    "InvalidTexture",
-    "LayerImageUndecodable",
-    "LayerImageFormat",
-    "CapabilityHint",
-    "VibrantVisualsDisabledByPack",
-    "UnsupportedAudioFormat",
-    "FontFileMissing",
-    "FontNameOverridden",
-    "MixedFontPage",
-    "AtomicFilterLightingIgnored",
-    "AtomicUnsupportedRenderController",
-    // identity, merge and linking
-    "DuplicateIdentifier",
-    "DuplicateBone",
-    "AtomicClientEntityShadowed",
-    "AnimationControllerShadowed",
-    "ShadowedByBuiltin",
-    "ReferenceCycle",
-    "ClientBiomeShadowsLowerPacks",
-    "ClientBiomeOverriddenByBiomesClient",
-    "VanillaBiomesClientSkipped",
-    "LegacyFogIgnored",
-    "BiomeFormatHint",
-    "CaseFoldingDisabled",
-    "SynthesizedComponent",
-    "IdentifierNamespaced",
-    "UpgradeTableMissedBareIdentifier",
-    "ItemBindingOverlap",
-    "RenderControllerFallback",
-    "PoiBlockClaimedTwice",
-    "PoiNoBlocks",
-    "SoundDefinitionsCleared",
-    "SoundsJsonTableCleared",
-    "SoundsClearedByLegacyOverlay",
-    "DistanceResetByLegacyOverlay",
-    "UnusedProperty",
-    "NoUiDefinitions",
-    // pack settings
-    "SettingTypeMismatch",
-    "SettingUnknownOption",
-    "SettingUnknownName",
-    "SettingClamped",
-    "LegacySettingIgnored",
-    "PackSettingChangeIgnored",
-    // loading
-    "PathRejected",
-    "FileNotLoaded",
-    "InternalError",
-    // storage and the stack
-    "UnsupportedFileFormat",
-    "DuplicateEntry",
-    "MissingDependency",
-    "DependencyAutoAdded",
-    "PackNotFound",
-    // scripting
-    "MultipleScriptModules",
-    "ScriptModulePermission",
-    "ScriptModuleVersionUnavailable",
-    "ScriptModuleVersionConflict",
-    "ScriptModulePromoted",
-    "ScriptAlphaDependency",
-    "ScriptEntryOutsideRoot",
-    "ScriptSyntaxError",
-    "ScriptImportNotFound",
-    "ScriptImportCrashesEngine",
-    "ScriptModuleUnrecognized",
-    "ScriptModuleRestricted",
-    "ScriptImportNotChecked",
-    "ScriptFileNotLoadable",
-    "ScriptEvalWithoutCapability",
-    "ScriptImportMetaEmpty",
-    "ScriptsNotChecked",
-    "ScriptSyntaxNotChecked",
-    "PackConfigShadowsDefault",
-    "UnmatchedConfigFolder",
-    "NetConfigRejected",
-    // the manifest variants
-    "InvalidProperty",
-    "MalformedPropertyVersion",
-    "WrongTypeProperty",
-    "MissingProperty",
-    // the other manifest variants
-    "EmptyProperty",
-    "MalformedPropertyUuid",
-    "DuplicateUuid",
-    "MissingModules",
-    "MultipleModules",
-    "InvalidCapability",
-    "IgnoredProperty",
-    "VersionTooHigh",
-    "VersionTooLow",
-    "MinEngineVersionCapFormatVersion1",
-];
-
-/// Names that were considered for codes and rejected: they must never become codes.
-const REJECTED_NAMES: &[&str] = &[
-    "JsonSyntax",
-    "InvalidJson",
-    "ParseError",
-    "InvalidDocument",
-    "MalformedEnvelope",
-    "EnvelopeShape",
-    "MissingField",
-    "MissingTextures",
-    "WrongType",
-    "TypeMismatch",
-    "DeserializeError",
-    "MissingVersion",
-    "InvalidFormatVersion",
-    "InvalidVersionShape",
-    "InvalidVersion",
-    "FutureFormatVersion",
-    "ConstraintViolation",
-    "OutOfRange",
-    "ArrayLength",
-    "EmptyArray",
-    "ValueNotAllowed",
-    "InvalidUuid",
-    "UnknownEnumValue",
-    "UnknownAnimType",
-    "ValueClamped",
-    "ColorChannelOutOfRange",
-    "EmptyFile",
-    "MolangCompile",
-    "DuplicateDefinition",
-    "DuplicatePackId",
-    "Overridden",
-    "ShadowedDocument",
-    "IoError",
-    "UnknownField",
-    "Cycle",
-    "PoiTagCycle",
-    "UnresolvedDefault",
-    "UndeclaredArray",
-    "UnknownParentGeometry",
-    "UnknownParentBone",
-    "PoiUnknownBlock",
-    "PoiUnknownTag",
-    "MissingTexture",
-    "LayerImageMissing",
-    "ReservedNamespace",
-    "IdentifierWithoutNamespace",
-    "InvalidIdentifier",
-    "ExperimentRequired",
-    "TextureSetWithoutPbrCapability",
-    "ScriptModuleSkipped",
-    "ScriptEntryUnsupported",
-    "ScriptEntryMissing",
-    "ModuleNotPermitted",
-    // a variant that no emitter produces; it stays listed so that dropping it is a deliberate edit
-    "PieceIdIgnored",
-];
-
-/// The rejected names as ids of the core's (`JsonSyntax` is `core/json_syntax`): no definition of
-/// the core's may take one. Two rejected names are left out, as their ids are definitions of
-/// the game's sentences: `core/parse_error` (`parse error`, a `MalformedInput`) and
+/// Ids that were considered for the core's codes and rejected: no definition of the core's may
+/// take one. Two are left out, as they are definitions of the game's sentences: `core/parse_error` (`parse error`, a `MalformedInput`) and
 /// `core/value_not_allowed` (a value the schema does not allow, an `InvalidValue`).
 const REJECTED_IDS: &[&str] = &[
     "core/json_syntax",
@@ -308,28 +61,6 @@ const REJECTED_IDS: &[&str] = &[
     "core/piece_id_ignored",
 ];
 
-/// The frozen list is the one `.was` checks against, name for name.
-#[test]
-fn the_frozen_names_are_the_names_was_checks() {
-    let mut frozen = LEGACY_NAMES.to_vec();
-    frozen.sort_unstable();
-    let mut checked: Vec<&str> = testing::legacy_names().collect();
-    checked.sort_unstable();
-    assert_eq!(frozen, checked);
-}
-
-#[test]
-fn no_rejected_name_is_a_legacy_name() {
-    let revived: Vec<_> = REJECTED_NAMES
-        .iter()
-        .filter(|name| LEGACY_NAMES.contains(name))
-        .collect();
-    assert!(
-        revived.is_empty(),
-        "rejected names used as codes: {revived:?}"
-    );
-}
-
 #[test]
 fn no_rejected_id_is_a_core_definition() {
     let revived: Vec<_> = codes::ALL
@@ -343,14 +74,6 @@ fn no_rejected_id_is_a_core_definition() {
     );
 }
 
-#[test]
-fn legacy_names_are_unique() {
-    let mut names = LEGACY_NAMES.to_vec();
-    names.sort_unstable();
-    names.dedup();
-    assert_eq!(names.len(), LEGACY_NAMES.len());
-}
-
 /// A code declared by a definition beside its rule.
 static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
     "fog/density_out_of_unit",
@@ -359,15 +82,13 @@ static DENSITY_OUT_OF_UNIT: CodeDef<1> = CodeDef::new(
     "fog density {} is outside [0, 1]",
 );
 
-/// A code is known by its stable id, `owner/name`: a code that was no legacy variant has its
-/// own name, never a legacy or a rejected variant name.
+/// A code is known by its stable id, `owner/name`; its name is the id's tail.
 #[test]
 fn a_specific_code_is_known_by_owner_and_name() {
     let code = DENSITY_OUT_OF_UNIT.with(["2"]);
     assert_eq!(code.id(), "fog/density_out_of_unit");
     assert_eq!(code.name(), "density_out_of_unit");
-    assert!(!LEGACY_NAMES.contains(&code.name()));
-    assert!(!REJECTED_NAMES.contains(&code.name()));
+    assert_eq!(code.owner(), "fog");
 }
 
 /// Every id of the core's definitions (`diagnostic::codes`), in their order. A definition added
@@ -680,19 +401,14 @@ fn every_core_definition_is_listed_by_id() {
     assert!(gone.is_empty(), "listed ids without a definition: {gone:?}");
 }
 
-/// No two definitions share an id, and every one is the core's and names the legacy variant it
-/// replaces: a legacy one, never a rejected name.
+/// No two definitions share an id, and every one is the core's.
 #[test]
-fn core_definition_ids_are_unique_and_replace_listed_codes() {
+fn core_definition_ids_are_unique_and_the_cores() {
     let mut ids: Vec<&str> = codes::ALL.iter().map(|meta| meta.id()).collect();
     ids.sort_unstable();
     ids.dedup();
     assert_eq!(ids.len(), codes::ALL.len());
     for meta in codes::ALL {
         assert_eq!(meta.owner(), "core", "{}", meta.id());
-        let legacy = meta.legacy().unwrap_or_default();
-        assert!(LEGACY_NAMES.contains(&legacy), "{}", meta.id());
-        assert!(!REJECTED_NAMES.contains(&legacy), "{}", meta.id());
-        assert_eq!(meta.name(), legacy, "{}", meta.id());
     }
 }

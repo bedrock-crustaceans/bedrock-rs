@@ -1,6 +1,6 @@
 //! The entity family's codes: the game's content-log lines for behaviour-pack entity files, byte
-//! for byte, each a definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy
-//! code its sites raised, so a pin or a filter on the code's name keeps matching.
+//! for byte, each a definition beside the rules that raise it. Each id is `entity/<name>`, the name
+//! its constant's in lower case.
 //!
 //! A line the game logs at the error level after which the entity loads is a kept error
 //! ([`Class::KeptError`]). The crate's own sentences that the legacy code carried as a text (the
@@ -19,8 +19,7 @@ pub static ACTOR_ABOVE_ENGINE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "format version {} is above the engine's {}",
 )
-.game("Error: actor resource file has format version: {} exceeds game version: {}. Skipping.")
-.was("UnsupportedVersion");
+.game("Error: actor resource file has format version: {} exceeds game version: {}. Skipping.");
 
 /// The line the game writes when the load of an entity carries errors: the identifier, and the
 /// first error with its log's prefix (`parse errors occurred: `, `upgrade errors occurred: `,
@@ -31,8 +30,7 @@ pub static FAILED_TO_LOAD: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the entity {} failed to load: {}",
 )
-.game("ERROR: Entity '{}' failed to load from JSON: {}")
-.was("DocumentRejected");
+.game("ERROR: Entity '{}' failed to load from JSON: {}");
 
 // ---- the description ----
 
@@ -44,8 +42,7 @@ pub static ALIASES_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "aliases are deprecated",
 )
-.game("Deprecated field: Aliases.")
-.was("DeprecatedMember");
+.game("Deprecated field: Aliases.");
 
 /// One bad property drops the whole property group; the entity loads.
 pub static ACTOR_PROPERTIES_NOT_LOADED: CodeDef<0> = CodeDef::new(
@@ -54,8 +51,7 @@ pub static ACTOR_PROPERTIES_NOT_LOADED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the properties are dropped",
 )
-.game("Error loading Actor Properties")
-.was("DroppedField");
+.game("Error loading Actor Properties");
 
 /// An entry of `scripts.animate` that is an object of other than one member, of its member count.
 pub static ANIMATION_SCRIPT_OBJECT_SIZE: CodeDef<1> = CodeDef::new(
@@ -64,8 +60,7 @@ pub static ANIMATION_SCRIPT_OBJECT_SIZE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "an animation script object of {} members",
 )
-.game("Error: animation script object has {} items - size must be 1.  Skipping.")
-.was("InvalidValue");
+.game("Error: animation script object has {} items - size must be 1.  Skipping.");
 
 // ---- entity_version ----
 
@@ -76,8 +71,7 @@ pub static VERSION_NOT_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "entity_version is not an object",
 )
-.game("Error loading 'entity_version' as it is not a JSON object.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as it is not a JSON object.");
 
 /// An `entity_version` whose `upgrades` is not an array.
 pub static UPGRADES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -86,8 +80,7 @@ pub static UPGRADES_NOT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "entity_version.upgrades is not an array",
 )
-.game("Error loading 'entity_version' as 'upgrades' is not an array.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as 'upgrades' is not an array.");
 
 /// An entry of `upgrades` that is not an object.
 pub static UPGRADE_ENTRY_NOT_OBJECT: CodeDef<0> = CodeDef::new(
@@ -96,8 +89,7 @@ pub static UPGRADE_ENTRY_NOT_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an upgrade entry is not an object",
 )
-.game("Error loading 'entity_version' as 'upgrades' contains an entry that is not a JSON object.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as 'upgrades' contains an entry that is not a JSON object.");
 
 /// An upgrade entry without an integer `upgrade_to`.
 pub static NO_INTEGER_UPGRADE_TO: CodeDef<0> = CodeDef::new(
@@ -108,8 +100,7 @@ pub static NO_INTEGER_UPGRADE_TO: CodeDef<0> = CodeDef::new(
 )
 .game(
     "Error loading 'entity_version' as an upgrade entry does not contain an integer 'upgrade_to'.",
-)
-.was("InvalidValue");
+);
 
 /// An upgrade entry without a string `name`.
 pub static NO_STRING_NAME: CodeDef<0> = CodeDef::new(
@@ -118,8 +109,7 @@ pub static NO_STRING_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an upgrade entry without a string name",
 )
-.game("Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as an upgrade entry does not contain a string 'name'.");
 
 /// An upgrade entry whose `name` is empty.
 pub static EMPTY_NAME: CodeDef<0> = CodeDef::new(
@@ -128,8 +118,7 @@ pub static EMPTY_NAME: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an upgrade entry with an empty name",
 )
-.game("Error loading 'entity_version' as an upgrade entry's 'name' is empty.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as an upgrade entry's 'name' is empty.");
 
 /// An upgrade entry whose `upgrade_to` is 0, the versionless entities' version.
 pub static UPGRADE_TO_ZERO: CodeDef<0> = CodeDef::new(
@@ -138,8 +127,7 @@ pub static UPGRADE_TO_ZERO: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an upgrade entry to version 0",
 )
-.game("Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as an upgrade entry 'upgrade_to' version is 0, which is reserved for versionless entities.");
 
 /// Upgrade versions whose lowest is not 1.
 pub static VERSION_NOT_FROM_ONE: CodeDef<0> = CodeDef::new(
@@ -148,8 +136,7 @@ pub static VERSION_NOT_FROM_ONE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "the upgrade versions do not start at 1",
 )
-.game("Error loading 'entity_version' as its version does not start at 1.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as its version does not start at 1.");
 
 /// Two upgrade entries for one version, of the version.
 pub static VERSION_DUPLICATE: CodeDef<1> = CodeDef::new(
@@ -158,8 +145,7 @@ pub static VERSION_DUPLICATE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "two upgrade entries for version {}",
 )
-.game("Error loading 'entity_version' as it contains multiple upgrade entries for version {}.")
-.was("InvalidValue");
+.game("Error loading 'entity_version' as it contains multiple upgrade entries for version {}.");
 
 /// Upgrade versions with a gap: the entity's identifier and the versions either side of it.
 pub static VERSION_GAP: CodeDef<3> = CodeDef::new(
@@ -168,8 +154,7 @@ pub static VERSION_GAP: CodeDef<3> = CodeDef::new(
     Class::KeptError,
     "{} skips the versions between {} and {}",
 )
-.game("Error loading '{}' as it contains a non-contiguous version between {} and {}.")
-.was("InvalidValue");
+.game("Error loading '{}' as it contains a non-contiguous version between {} and {}.");
 
 /// An upgrade entry naming a handler `upgrades` does not define. The crate's own sentence: the
 /// game's failed lookup has no text.
@@ -179,8 +164,7 @@ pub static UPGRADE_HANDLER_UNDEFINED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "no upgrade handler {}",
 )
-.game("upgrade handler '{}' is not defined in 'upgrades'")
-.was("InvalidValue");
+.game("upgrade handler '{}' is not defined in 'upgrades'");
 
 // ---- the upgrade ----
 
@@ -192,8 +176,7 @@ pub static COMPONENT_REMOVED_BY_UPGRADE: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "{} removed by the {} upgrade",
 )
-.game("`{}` was removed by the {} upgrade")
-.was("DroppedComponent");
+.game("`{}` was removed by the {} upgrade");
 
 /// A member the game's upgrade drops in silence: the member and the step's version. The crate's
 /// own sentence.
@@ -203,8 +186,7 @@ pub static MEMBER_REMOVED_BY_UPGRADE: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "{} removed by the {} upgrade",
 )
-.game("`{}` was removed by the {} upgrade")
-.was("DroppedField");
+.game("`{}` was removed by the {} upgrade");
 
 /// A component group whose value is `null`, removed by the upgrade. The crate's own sentence.
 pub static NULL_GROUP_REMOVED: CodeDef<1> = CodeDef::new(
@@ -213,8 +195,7 @@ pub static NULL_GROUP_REMOVED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "the null component group {} is removed",
 )
-.game("component group '{}' is null and was removed")
-.was("DroppedComponent");
+.game("component group '{}' is null and was removed");
 
 /// `minecraft:damage_sensor` in a document below 1.15, which the 1.13.0 step removes.
 pub static DAMAGE_SENSOR_NOT_ADDED: CodeDef<0> = CodeDef::new(
@@ -223,8 +204,7 @@ pub static DAMAGE_SENSOR_NOT_ADDED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "minecraft:damage_sensor needs format version 1.15",
 )
-.game("The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater.")
-.was("DroppedComponent");
+.game("The component minecraft:damage_sensor will not be added to this entity as it won't work unless the format version is 1.15 or greater.");
 
 // ---- components ----
 
@@ -235,8 +215,7 @@ pub static NOT_A_VALID_VALUE: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "{} is no valid {}",
 )
-.game("'{}' is not a valid '{}' value.")
-.was("InvalidValue");
+.game("'{}' is not a valid '{}' value.");
 
 /// The legacy `transformation` reader's line for a `delay` of another type; the delay keeps its
 /// default.
@@ -246,8 +225,7 @@ pub static DELAY_NOT_NUMBER_OR_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a delay that is neither a number nor an object",
 )
-.game("Expected Number or Object.")
-.was("InvalidValue");
+.game("Expected Number or Object.");
 
 /// A `days_until_insomnia` that is no number, at the typed version.
 pub static INSOMNIA_NOT_A_NUMBER: CodeDef<0> = CodeDef::new(
@@ -256,8 +234,7 @@ pub static INSOMNIA_NOT_A_NUMBER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "days_until_insomnia is not a number",
 )
-.game("days_until_insomnia: invalid numeric value")
-.was("InvalidType");
+.game("days_until_insomnia: invalid numeric value");
 
 /// A string an enum node of the game's component schema does not know: the value and the keys, as
 /// the game lists them.
@@ -267,8 +244,7 @@ pub static ENUM_NOT_ALLOWED: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "value {} is none of the keys {}",
 )
-.game("Value '{}' not allowed.  Must match at least one of the following keys: {}")
-.was("InvalidEnumValue");
+.game("Value '{}' not allowed.  Must match at least one of the following keys: {}");
 
 // ---- validation ----
 
@@ -279,8 +255,7 @@ pub static SPAWN_EGG_NEEDS_OFFSPRING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "minecraft:spawn_egg_interact without minecraft:offspring",
 )
-.game("\"minecraft:spawn_egg_interact\" requires \"minecraft:offspring\" to be present on the same entity definition.")
-.was("MissingRequiredField");
+.game("\"minecraft:spawn_egg_interact\" requires \"minecraft:offspring\" to be present on the same entity definition.");
 
 /// A timer with both `time` and `random_time_choices`: the game logs it at the warning level.
 pub static TIMER_BOTH: CodeDef<0> = CodeDef::new(
@@ -289,8 +264,7 @@ pub static TIMER_BOTH: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "a timer with both time and random_time_choices",
 )
-.game("Both \"time\" and \"random_time_choices\" have been specified for a timer. Defaulting to \"time\".")
-.was("IgnoredMember");
+.game("Both \"time\" and \"random_time_choices\" have been specified for a timer. Defaulting to \"time\".");
 
 /// A preferred path with a block in two costing groups, of the block's name.
 pub static DUPLICATE_PATH_BLOCK: CodeDef<1> = CodeDef::new(
@@ -299,8 +273,7 @@ pub static DUPLICATE_PATH_BLOCK: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the block {} is in two costing groups",
 )
-.game("Duplicate block descriptors in two costing groups {}")
-.was("InvalidValue");
+.game("Duplicate block descriptors in two costing groups {}");
 
 /// A member of an older filter group that is neither a group key nor a member the game maps to a
 /// test.
@@ -310,8 +283,7 @@ pub static INVALID_FILTER_MEMBER: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "{} is no filter group member",
 )
-.game("Invalid EntityFilterGroup member found: {}")
-.was("UnrecognizedField");
+.game("Invalid EntityFilterGroup member found: {}");
 
 // ---- goals ----
 
@@ -322,8 +294,7 @@ pub static SEARCH_DISTANCE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "search_distance holds a value that is not positive",
 )
-.game("behavior.transport_items: \"search_distance\" may only contain positive values")
-.was("InvalidValue");
+.game("behavior.transport_items: \"search_distance\" may only contain positive values");
 
 /// A block of `eat_and_replace_block_pairs` that is not one, of the name as written: the pair is
 /// dropped.
@@ -333,8 +304,7 @@ pub static EAT_BLOCK_INVALID_BLOCK: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "{} is no block",
 )
-.game("Block {} on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block.")
-.was("UnresolvedReference");
+.game("Block {} on \"eat_and_replace_block_pairs\" on \"minecraft:behavior.eat_block\" is not a valid block.");
 
 /// Every definition of the family, for the registry of ids.
 pub static ALL: &[&CodeMeta] = &[

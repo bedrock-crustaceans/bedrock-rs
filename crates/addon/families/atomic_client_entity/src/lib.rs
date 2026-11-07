@@ -431,8 +431,11 @@ impl Placed for AtomicClientEntity {
 fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
     let mut placed = Diagnostics::default();
     for mut finding in found {
-        // By legacy name: the variant and the definitions that were it.
-        let malformed = matches!(finding.code.name(), "MalformedFormatVersion");
+        // The envelope raises the malformed version on core's two definitions.
+        let malformed = matches!(
+            finding.code.id(),
+            "core/malformed_format_version" | "core/malformed_format_version_worded"
+        );
         if finding.is(&core_codes::MISSING_PAYLOAD)
             || finding
                 .code

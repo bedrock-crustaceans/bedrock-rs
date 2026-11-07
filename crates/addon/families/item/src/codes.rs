@@ -1,9 +1,8 @@
-//! The item family's codes: the game's content-log lines for item files and the trim
-//! registries, byte for byte, each a definition beside the reader, upgrade or rule that raises
-//! it. Each [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the
-//! code's name keeps matching. A sentence marked "the crate's own" is worded by this crate (the
-//! game says nothing there, or its line is not known) and kept as the sentence the legacy text
-//! carried.
+//! The item family's codes: the game's content-log lines for item files and the trim registries,
+//! byte for byte, each a definition beside the reader, upgrade or rule that raises it. Each id is
+//! `item/<name>`, the name its constant's in lower case. A sentence marked "the crate's own" is
+//! worded by this crate (the game says nothing there, or its line is not known) and kept as the
+//! sentence the legacy text carried.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -16,8 +15,7 @@ pub static FOIL_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "minecraft:foil is deprecated from 1.20.20",
 )
-.game("minecraft:foil has been deprecated in format versions 1.20.20 and above. Use minecraft:glint instead.")
-.was("DeprecatedMember");
+.game("minecraft:foil has been deprecated in format versions 1.20.20 and above. Use minecraft:glint instead.");
 
 /// `minecraft:foil` below 1.20.20 in a pack without the legacy creator features (the crate's own
 /// sentence; the game says nothing): an information.
@@ -27,8 +25,7 @@ pub static FOIL_IGNORED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "minecraft:foil is ignored for this pack",
 )
-.game("minecraft:foil is ignored for this pack; use minecraft:glint")
-.was("DroppedComponent");
+.game("minecraft:foil is ignored for this pack; use minecraft:glint");
 
 /// `minecraft:mining_speed` at or above 1.20.30: a kept error.
 pub static MINING_SPEED_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -37,8 +34,7 @@ pub static MINING_SPEED_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "minecraft:mining_speed is deprecated from 1.20.30",
 )
-.game("minecraft:mining_speed has been deprecated in format versions 1.20.30 and above. Use minecraft:digger instead.")
-.was("DeprecatedMember");
+.game("minecraft:mining_speed has been deprecated in format versions 1.20.30 and above. Use minecraft:digger instead.");
 
 /// A `tag:` key at or above 1.20.50: a kept error.
 pub static TAG_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -47,8 +43,7 @@ pub static TAG_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "tag: is deprecated from 1.20.50",
 )
-.game("tag: has been deprecated in format versions 1.20.50 and above. Use the minecraft:tags component to store all tags instead.")
-.was("DeprecatedMember");
+.game("tag: has been deprecated in format versions 1.20.50 and above. Use the minecraft:tags component to store all tags instead.");
 
 /// `minecraft:creative_category` at or above 1.20.20; the argument is the document's version:
 /// a kept error.
@@ -58,8 +53,7 @@ pub static CREATIVE_CATEGORY_DEPRECATED: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "minecraft:creative_category is deprecated at format_version {}",
 )
-.game("minecraft:creative_category has been deprecated and is not available in json format {} and above. Use description->menu_category->group instead.")
-.was("DeprecatedMember");
+.game("minecraft:creative_category has been deprecated and is not available in json format {} and above. Use description->menu_category->group instead.");
 
 /// `minecraft:seed` above 1.16.100 (a warning in the game; the key is kept).
 pub static SEED_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -68,8 +62,7 @@ pub static SEED_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "minecraft:seed is deprecated above 1.16.100",
 )
-.game("minecraft:seed has been deprecated in format versions 1.16.100 and 1.17.0 and above. Use minecraft:block_placer instead")
-.was("DeprecatedMember");
+.game("minecraft:seed has been deprecated in format versions 1.16.100 and 1.17.0 and above. Use minecraft:block_placer instead");
 
 /// A legacy-format document whose `components` is no object.
 pub static COMPONENTS_NOT_OBJECT: CodeDef<0> = CodeDef::new(
@@ -78,8 +71,7 @@ pub static COMPONENTS_NOT_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "components is not an object",
 )
-.game("Item 'components' should be a json object")
-.was("InvalidType");
+.game("Item 'components' should be a json object");
 
 /// An unknown effect name of a legacy food (`effect` or `remove_effect`); the arguments are
 /// the item, which list and the name. The game adds the effect on: a kept error.
@@ -89,8 +81,7 @@ pub static LEGACY_EFFECT_NAME: CodeDef<3> = CodeDef::new(
     Class::KeptError,
     "item {}: unknown {} name {}",
 )
-.game("Item[{}] Failed to load {} with name[{}] from Json. bad name?")
-.was("InvalidValue");
+.game("Item[{}] Failed to load {} with name[{}] from Json. bad name?");
 
 // ---- the JSON item path ----
 
@@ -101,8 +92,7 @@ pub static ITEM_IN_RESOURCE_PACK: CodeDef<1> = CodeDef::new(
     Class::Error,
     "item {} at 1.16.100 or above in a resource pack",
 )
-.game("Item '{}' with format_version 1.16.100 or greater cannot be loaded from resource packs.")
-.was("UnsupportedVersion");
+.game("Item '{}' with format_version 1.16.100 or greater cannot be loaded from resource packs.");
 
 /// A JSON item whose root is no object. The finding carries the reader's message as its
 /// `DiagnosticDetail::Syntax`.
@@ -112,8 +102,7 @@ pub static ROOT_NOT_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the item's root is not an object",
 )
-.game("failed to parse file into a json document, root value needs to be a json object")
-.was("MalformedInput");
+.game("failed to parse file into a json document, root value needs to be a json object");
 
 /// The second line the game writes after an unreadable version or a root that is no object,
 /// and the only one for a JSON syntax error; the finding carries the reader's message (or the
@@ -124,8 +113,7 @@ pub static INVALID_JSON_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the item is not a JSON object",
 )
-.game("Item is an invalid json object.")
-.was("MalformedInput");
+.game("Item is an invalid json object.");
 
 /// The JSON path finds no readable version.
 pub static VERSION_NOT_READABLE: CodeDef<0> = CodeDef::new(
@@ -134,8 +122,7 @@ pub static VERSION_NOT_READABLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the item's format_version is not readable",
 )
-.game("document's version not found or not readable")
-.was("MalformedFormatVersion");
+.game("document's version not found or not readable");
 
 /// A JSON item whose version is above the game's current format version.
 pub static VERSION_OUT_OF_RANGE: CodeDef<0> = CodeDef::new(
@@ -144,8 +131,7 @@ pub static VERSION_OUT_OF_RANGE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the item's format_version is above the game's",
 )
-.game("document's version is out of handled range")
-.was("UnsupportedVersion");
+.game("document's version is out of handled range");
 
 /// No `minecraft:item` object.
 pub static PAYLOAD_NOT_OBJECT: CodeDef<0> = CodeDef::new(
@@ -156,8 +142,7 @@ pub static PAYLOAD_NOT_OBJECT: CodeDef<0> = CodeDef::new(
 )
 .game(
     "'minecraft:item' should be a json object - it has to start with an \"{\" and end with a \"}\"",
-)
-.was("MissingPayload");
+);
 
 /// A `minecraft:item` that is no object, told at the payload. The finding carries the crate's
 /// message as its `DiagnosticDetail::Syntax`.
@@ -169,8 +154,7 @@ pub static PAYLOAD_NOT_OBJECT_MALFORMED_INPUT: CodeDef<0> = CodeDef::new(
 )
 .game(
     "'minecraft:item' should be a json object - it has to start with an \"{\" and end with a \"}\"",
-)
-.was("MalformedInput");
+);
 
 // ---- the version history ----
 
@@ -181,8 +165,7 @@ pub static ARMOR_WITHOUT_WEARABLE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "minecraft:armor without minecraft:wearable",
 )
-.game("Item must have a 'minecraft:wearable' component to be equippable")
-.was("MissingRequiredField");
+.game("Item must have a 'minecraft:wearable' component to be equippable");
 
 /// An unknown `saturation_modifier` name of a legacy food; the argument is the name. The game
 /// goes on with 0.6: a kept error.
@@ -192,8 +175,7 @@ pub static SATURATION_MODIFIER: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown saturation_modifier {}",
 )
-.game("unknown saturation_modifier type '{}' in food component, defaulted to 0.6")
-.was("InvalidValue");
+.game("unknown saturation_modifier type '{}' in food component, defaulted to 0.6");
 
 /// An author-written `__deprecated_components` from 1.20.30 below 1.26.30.
 pub static DEPRECATED_COMPONENTS_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -202,8 +184,7 @@ pub static DEPRECATED_COMPONENTS_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "__deprecated_components is deprecated",
 )
-.game("member \"__deprecated_components\" is deprecated")
-.was("DeprecatedMember");
+.game("member \"__deprecated_components\" is deprecated");
 
 /// `deprecated_component_data` at 1.26.30.
 pub static DEPRECATED_COMPONENT_DATA_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -212,8 +193,7 @@ pub static DEPRECATED_COMPONENT_DATA_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "deprecated_component_data is deprecated",
 )
-.game("member \"deprecated_component_data\" is deprecated")
-.was("DeprecatedMember");
+.game("member \"deprecated_component_data\" is deprecated");
 
 /// `legacy_data` at 1.26.30.
 pub static LEGACY_DATA_DEPRECATED: CodeDef<0> = CodeDef::new(
@@ -222,8 +202,7 @@ pub static LEGACY_DATA_DEPRECATED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "legacy_data is deprecated",
 )
-.game("member \"legacy_data\" is deprecated")
-.was("DeprecatedMember");
+.game("member \"legacy_data\" is deprecated");
 
 /// `menu_category.group` longer than 256 characters (the crate's own sentence).
 pub static GROUP_LENGTH: CodeDef<0> = CodeDef::new(
@@ -232,8 +211,7 @@ pub static GROUP_LENGTH: CodeDef<0> = CodeDef::new(
     Class::Error,
     "menu_category group longer than 256 characters",
 )
-.game("menu_category -> group: string must be at most 256 characters")
-.was("InvalidValue");
+.game("menu_category -> group: string must be at most 256 characters");
 
 /// `menu_category.group` without a namespace, from 1.21.60.
 pub static GROUP_NAMESPACE: CodeDef<0> = CodeDef::new(
@@ -242,8 +220,7 @@ pub static GROUP_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "menu_category group without a namespace",
 )
-.game("menu_category -> group: string must be prefixed with a namespace (eg. namespace:value)")
-.was("NamespaceRule");
+.game("menu_category -> group: string must be prefixed with a namespace (eg. namespace:value)");
 
 /// `minecraft:enchantable` with a slot the game does not know; the argument is the slot as
 /// written.
@@ -253,8 +230,7 @@ pub static ENCHANT_SLOT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} is no enchant slot",
 )
-.game("`minecraft:enchantable`: `{}` is an invalid enchant slot, `none` has been used instead")
-.was("InvalidValue");
+.game("`minecraft:enchantable`: `{}` is an invalid enchant slot, `none` has been used instead");
 
 /// A custom component name in the `minecraft` namespace (the crate's own sentence).
 pub static CUSTOM_COMPONENT_NAMESPACE: CodeDef<0> = CodeDef::new(
@@ -263,8 +239,7 @@ pub static CUSTOM_COMPONENT_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a custom component name in the minecraft namespace",
 )
-.game("custom component names must not use the minecraft namespace")
-.was("InvalidValue");
+.game("custom component names must not use the minecraft namespace");
 
 /// A legacy-creator-features component without a release version; the argument is the
 /// component (the crate's own sentence: the game has none).
@@ -274,8 +249,7 @@ pub static LEGACY_ONLY: CodeDef<1> = CodeDef::new(
     Class::Error,
     "item component {} is only for legacy vanilla packs",
 )
-.game("Item component '{}' is only available to legacy vanilla packs")
-.was("MissingToggles");
+.game("Item component '{}' is only available to legacy vanilla packs");
 
 // ---- the rules ----
 
@@ -286,8 +260,7 @@ pub static IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the item identifier breaks the namespace rule",
 )
-.game("must include a namespace and must not use the Minecraft namespace unless overriding a Vanilla item")
-.was("NamespaceRule");
+.game("must include a namespace and must not use the Minecraft namespace unless overriding a Vanilla item");
 
 /// A component that needs `minecraft:use_modifiers > use_duration` (a warning in the game); the
 /// argument is the component.
@@ -297,8 +270,7 @@ pub static USE_DURATION_REQUIRED: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "{} without a non-zero use_duration",
 )
-.game("The \"{}\" component requires \"minecraft:use_modifiers > use_duration\" to be set with a non-zero value.")
-.was("MissingRequiredField");
+.game("The \"{}\" component requires \"minecraft:use_modifiers > use_duration\" to be set with a non-zero value.");
 
 /// A component that needs a `minecraft:durability` with a positive `max_durability` (a warning
 /// in the game); the argument is the component.
@@ -308,8 +280,7 @@ pub static DURABILITY_REQUIRED: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "{} without a positive max_durability",
 )
-.game("The \"{}\" component requires a \"minecraft:durability\" component with positive \"max_durability\"")
-.was("MissingRequiredField");
+.game("The \"{}\" component requires a \"minecraft:durability\" component with positive \"max_durability\"");
 
 /// `minecraft:bundle_interaction` without `minecraft:storage_item` (a warning in the game).
 pub static BUNDLE_NEEDS_STORAGE: CodeDef<0> = CodeDef::new(
@@ -318,8 +289,7 @@ pub static BUNDLE_NEEDS_STORAGE: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "minecraft:bundle_interaction without minecraft:storage_item",
 )
-.game("The \"minecraft:bundle_interaction\" component requires a \"minecraft:storage_item\" component.")
-.was("MissingRequiredField");
+.game("The \"minecraft:bundle_interaction\" component requires a \"minecraft:storage_item\" component.");
 
 /// `minecraft:storage_item` without a stack size of 1.
 pub static STORAGE_NEEDS_STACK_OF_ONE: CodeDef<0> = CodeDef::new(
@@ -328,8 +298,7 @@ pub static STORAGE_NEEDS_STACK_OF_ONE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "minecraft:storage_item without a stack size of 1",
 )
-.game("The \"minecraft:storage_item\" component requires a \"minecraft:max_stack_size\" component set to 1.")
-.was("InvalidValue");
+.game("The \"minecraft:storage_item\" component requires a \"minecraft:max_stack_size\" component set to 1.");
 
 /// `minecraft:swing_sounds` without a member.
 pub static SWING_SOUNDS_EMPTY: CodeDef<0> = CodeDef::new(
@@ -338,8 +307,7 @@ pub static SWING_SOUNDS_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "minecraft:swing_sounds without a member",
 )
-.game("\"minecraft:swing_sounds\" requires at least one of its fields to be defined.")
-.was("MissingRequiredField");
+.game("\"minecraft:swing_sounds\" requires at least one of its fields to be defined.");
 
 /// A wearable without `minecraft:max_stack_size` from 1.26.30; the arguments are the component
 /// and the slot. The item loads: a kept error.
@@ -349,8 +317,7 @@ pub static WEARABLE_STACK_SIZE: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "{} in slot {} defaults to a stack of 1",
 )
-.game("Items with the '{}' component and 'slot' set to '{}' will default to a max stack size of 1. Use the 'minecraft:max_stack_size' component to override.")
-.was("InvalidValue");
+.game("Items with the '{}' component and 'slot' set to '{}' will default to a max stack size of 1. Use the 'minecraft:max_stack_size' component to override.");
 
 /// `minecraft:kinetic_weapon` without `minecraft:use_modifiers`.
 pub static KINETIC_NEEDS_USE_MODIFIERS: CodeDef<0> = CodeDef::new(
@@ -361,8 +328,7 @@ pub static KINETIC_NEEDS_USE_MODIFIERS: CodeDef<0> = CodeDef::new(
 )
 .game(
     "The \"minecraft:kinetic_weapon\" component requires a \"minecraft:use_modifiers\" component.",
-)
-.was("MissingRequiredField");
+);
 
 /// `minecraft:kinetic_weapon` without a condition.
 pub static KINETIC_NEEDS_CONDITION: CodeDef<0> = CodeDef::new(
@@ -371,8 +337,7 @@ pub static KINETIC_NEEDS_CONDITION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "minecraft:kinetic_weapon without a condition",
 )
-.game("\"minecraft:kinetic_weapon\" requires at least one of \"damage_conditions\", \"knockback_conditions\", or \"dismount_conditions\" to be defined.")
-.was("MissingRequiredField");
+.game("\"minecraft:kinetic_weapon\" requires at least one of \"damage_conditions\", \"knockback_conditions\", or \"dismount_conditions\" to be defined.");
 
 /// A kinetic condition with a `max_duration` of zero; the arguments are the condition member,
 /// twice (the game names it twice).
@@ -382,8 +347,7 @@ pub static KINETIC_ZERO_DURATION: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} of minecraft:kinetic_weapon has a max_duration of zero ({})",
 )
-.game("\"minecraft:kinetic_weapon\"'s \"{}\" cannot have a \"max_duration\" of zero. To disable the effect, leave the \"{}\" field undefined.")
-.was("InvalidValue");
+.game("\"minecraft:kinetic_weapon\"'s \"{}\" cannot have a \"max_duration\" of zero. To disable the effect, leave the \"{}\" field undefined.");
 
 /// A kinetic condition with both speeds; the argument is the condition member.
 pub static KINETIC_SPEED_EXCLUSIVE: CodeDef<1> = CodeDef::new(
@@ -392,8 +356,7 @@ pub static KINETIC_SPEED_EXCLUSIVE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} of minecraft:kinetic_weapon has both min_speed and min_relative_speed",
 )
-.game("Within \"minecraft:kinetic_weapon\"'s \"{}\", \"min_speed\" and \"min_relative_speed\" are mutually exclusive. Specify only one.")
-.was("InvalidValue");
+.game("Within \"minecraft:kinetic_weapon\"'s \"{}\", \"min_speed\" and \"min_relative_speed\" are mutually exclusive. Specify only one.");
 
 // ---- the combine ----
 
@@ -405,8 +368,7 @@ pub static OVERRIDDEN_BY_A_HIGHER_PACK: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "item {} already defined by a higher pack",
 )
-.game("Item '{}' has already been overridden by a pack higher in the pack stack!")
-.was("ShadowedDefinition");
+.game("Item '{}' has already been overridden by a pack higher in the pack stack!");
 
 /// A legacy item over a vanilla item that exists only at 1.16.100 or above; the arguments are the
 /// identifier and the version as written.
@@ -416,8 +378,7 @@ pub static VANILLA_IS_COMPONENT_BASED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "item {} ({}) over a component-based vanilla item",
 )
-.game("Item '{}' (format_version: {}) cannot be registered because the Vanilla item only exists as a 1.16.100+ format version!")
-.was("NamespaceRule");
+.game("Item '{}' (format_version: {}) cannot be registered because the Vanilla item only exists as a 1.16.100+ format version!");
 
 /// A data-driven item over a vanilla item that has no 1.16.100+ version (or none at all); the
 /// arguments are the identifier and the version as written.
@@ -427,8 +388,7 @@ pub static VANILLA_IS_LEGACY: CodeDef<2> = CodeDef::new(
     Class::Error,
     "item {} ({}) over no component-based vanilla item",
 )
-.game("Item '{}' (format_version: {}) cannot be registered because no 1.16.100+ Vanilla format version exists!")
-.was("NamespaceRule");
+.game("Item '{}' (format_version: {}) cannot be registered because no 1.16.100+ Vanilla format version exists!");
 
 /// A legacy item in the `minecraft` namespace that is no vanilla item; the argument is the
 /// identifier.
@@ -438,8 +398,7 @@ pub static NON_VANILLA_NAMESPACE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "item {} is no vanilla item and uses the minecraft namespace",
 )
-.game("Non-Vanilla item '{}' should not be using the \"minecraft\" namespace!")
-.was("NamespaceRule");
+.game("Non-Vanilla item '{}' should not be using the \"minecraft\" namespace!");
 
 // ---- the trim registries ----
 
@@ -451,8 +410,7 @@ pub static DUPLICATE_TEMPLATE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "pattern template item {} named twice",
 )
-.game("Overwriting pattern template. Duplicate entries with template item: \"{}\"")
-.was("DuplicateIdentifier");
+.game("Overwriting pattern template. Duplicate entries with template item: \"{}\"");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

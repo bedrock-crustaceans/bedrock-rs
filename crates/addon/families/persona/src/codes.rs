@@ -1,6 +1,6 @@
 //! The persona family's codes: the game's lines for persona pieces, byte for byte, each a
-//! definition beside the load that raises it. Each [`was`](CodeDef::was) the legacy code its
-//! sites raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the load that raises it. Each id is `persona/<name>`, the name its constant's
+//! in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -12,8 +12,7 @@ pub static META_NOT_FOUND: CodeDef<1> = CodeDef::new(
     Class::Error,
     "cannot read the meta file {}",
 )
-.game("Could not find expected metafile json file {}")
-.was("ReadError");
+.game("Could not find expected metafile json file {}");
 
 /// A meta file that is not JSON, or whose root is no object; the argument is its path. The
 /// finding carries the reader's message as its `DiagnosticDetail::Syntax`.
@@ -23,8 +22,7 @@ pub static META_NOT_PARSED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the meta file {} is not a JSON object",
 )
-.game("Could not parse metafile json file {}")
-.was("MalformedInput");
+.game("Could not parse metafile json file {}");
 
 /// A geometry file that cannot be read; the argument is its path. The geometry is left empty
 /// and the piece kept: a kept error, with the host's error kind as its `DiagnosticDetail::Io`.
@@ -34,8 +32,7 @@ pub static GEOMETRY_NOT_FOUND: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "cannot read the geometry file {}",
 )
-.game("Missing expected geometry file {}")
-.was("ReadError");
+.game("Missing expected geometry file {}");
 
 /// A geometry file that is not a JSON object; the argument is its path. The geometry is left
 /// empty and the piece kept: a kept error, with the reader's message as its
@@ -46,8 +43,7 @@ pub static GEOMETRY_NOT_PARSED: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the geometry file {} is not a JSON object",
 )
-.game("Could not parse geometry file {}")
-.was("MalformedInput");
+.game("Could not parse geometry file {}");
 
 /// A `geometry_sources` entry names a geometry the piece's file lacks; the arguments are the
 /// name and the folder searched. The piece is kept: a kept error.
@@ -57,8 +53,7 @@ pub static GEOMETRY_NAME_NOT_FOUND: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "no geometry {} in {}",
 )
-.game("Couldn't find geometry name {} on {}.")
-.was("UnresolvedReference");
+.game("Couldn't find geometry name {} on {}.");
 
 /// A `side` on a piece that is not an arm or leg; the arguments are the piece type and the
 /// side. The game shows it on the error display only, not in the content log: an information.
@@ -68,8 +63,7 @@ pub static SIDE_NOT_ARM_OR_LEG: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "a side on a piece that is not an arm or leg ({}, {})",
 )
-.game("Trying to assign the side attribute to a piece that is not an arm or leg (pieceType: {}, side: '{}')")
-.was("InvalidValue");
+.game("Trying to assign the side attribute to a piece that is not an arm or leg (pieceType: {}, side: '{}')");
 
 /// An emote's animation file that is missing or cannot be read; the arguments are the piece id
 /// and the files. The piece is kept: a kept error, with the host's error kind as its
@@ -80,8 +74,7 @@ pub static ANIMATION_FILE_MISSING: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "emote {} without its animation file {}",
 )
-.game("Trying to parse emote {} with missing anim file: {}")
-.was("ReadError");
+.game("Trying to parse emote {} with missing anim file: {}");
 
 /// An animation an emote piece declares that its file lacks; the arguments are the animation,
 /// the piece id and the files. The piece is kept: a kept error.
@@ -91,8 +84,7 @@ pub static ANIMATION_NOT_IN_FILE: CodeDef<3> = CodeDef::new(
     Class::KeptError,
     "no animation {} of emote {} in {}",
 )
-.game("Animation {} declared by emote piece {} was not found in file {}")
-.was("UnresolvedReference");
+.game("Animation {} declared by emote piece {} was not found in file {}");
 
 /// An emote piece without animation sources; the argument is the piece id. The game stops
 /// reading the emote and keeps the piece: a kept error.
@@ -102,8 +94,7 @@ pub static EMOTE_INVALID: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "emote {} without animation sources",
 )
-.game("Trying to parse invalid emote animation definition with pieceId {}")
-.was("MissingRequiredField");
+.game("Trying to parse invalid emote animation definition with pieceId {}");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

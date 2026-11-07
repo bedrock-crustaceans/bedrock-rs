@@ -7,7 +7,9 @@ use facet::Facet;
 
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Class, Code, Diagnostic, Diagnostics, Disposition, JsonPath, Kind, Severity,
+};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
@@ -114,9 +116,7 @@ fn parse_strict<'a, T: Facet<'a>>(
     let errors = |d: &Diagnostics| {
         d.iter()
             .filter(|f| {
-                f.severity >= Severity::Error
-                    // By legacy name: the variant and the definitions that were it.
-                    && !matches!(f.code.name(), "UnrecognizedField")
+                f.severity >= Severity::Error && f.kind() != Kind::UnknownMember(Disposition::Kept)
             })
             .count()
     };

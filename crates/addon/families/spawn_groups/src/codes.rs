@@ -1,6 +1,6 @@
 //! The `spawn_groups` family's codes: the game's content-log lines, byte for byte, each a
-//! definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites
-//! raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the rules that raise it. Each id is `spawn_groups/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static FAILED_GROUPS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "spawn group file failed to load",
 )
-.game("Failed to load spawn groups")
-.was("DocumentRejected");
+.game("Failed to load spawn groups");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[FAILED_GROUPS.meta()];

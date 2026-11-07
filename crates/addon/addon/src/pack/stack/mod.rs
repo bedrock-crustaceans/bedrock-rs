@@ -410,9 +410,17 @@ fn carried_in_vain(packs: &[StackPack]) -> Diagnostics {
 pub(crate) fn once_per_unread_file(findings: &mut Vec<&Diagnostic>) {
     let mut seen: HashSet<(Option<&PackRef>, &str)> = HashSet::new();
     findings.retain(|finding| {
-        // By legacy name: `READ_ERROR`, `READ_ERROR_WORDED` and the variant a family still
-        // raises are each a read error.
-        if finding.code.name() != "ReadError" {
+        // The read errors: `READ_ERROR`, `READ_ERROR_WORDED` and the families' own.
+        if !matches!(
+            finding.code.id(),
+            "core/read_error"
+                | "core/read_error_worded"
+                | "ddui/unread"
+                | "persona/animation_file_missing"
+                | "persona/geometry_not_found"
+                | "persona/meta_not_found"
+                | "server_config/config_open_failed"
+        ) {
             return true;
         }
         let Some(path) = finding.location.path.as_ref() else {
@@ -504,7 +512,7 @@ impl StackSet {
         // icon: its lints are listed once, as the behaviour stack's.
         let key = |finding: &'_ Diagnostic| {
             let pack = finding.location.pack.as_ref()?;
-            Some((pack.id().clone(), finding.code.name()))
+            Some((pack.id().clone(), finding.code.id()))
         };
         let listed: HashSet<_> = self.behavior.icons.iter().filter_map(key).collect();
         findings.extend(self.behavior.icons.iter());

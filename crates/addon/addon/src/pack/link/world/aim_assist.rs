@@ -125,9 +125,9 @@ fn with_validator_line(mut finding: Diagnostic) -> Diagnostic {
     if !held {
         finding.severity = crate::diagnostic::Severity::Info;
     }
-    // By legacy name and without a sentence: the variant the aim-assist family's own check
-    // raises, and `UNRESOLVED_REFERENCE`.
-    if held && finding.code.name() == "UnresolvedReference" && finding.vanilla().is_none() {
+    // `UNRESOLVED_REFERENCE`, the one the aim-assist family's own check raises, without a
+    // sentence.
+    if held && finding.code.id() == "core/unresolved_reference" && finding.vanilla().is_none() {
         let bare = id.split('<').next().unwrap_or_default();
         // The linked-asset check writes this line to the content log at the error level and
         // drops nothing, so the finding is an error.

@@ -1,6 +1,6 @@
-//! The `behavior_tree` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! The `behavior_tree` family's codes: the game's content-log lines, byte for byte, each a
+//! definition beside the rules that raise it. Each id is `behavior_tree/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static PARSE_ERROR: CodeDef<1> = CodeDef::new(
     Class::Error,
     "malformed input",
 )
-.game("parse error:\n{}")
-.was("MalformedInput");
+.game("parse error:\n{}");
 
 /// Vanilla's text for an element of a block position that is not integral.
 pub static EXPECTED_INTEGRAL: CodeDef<0> = CodeDef::new(
@@ -21,8 +20,7 @@ pub static EXPECTED_INTEGRAL: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "wrong JSON type",
 )
-.game("Expected Integral Number.")
-.was("InvalidType");
+.game("Expected Integral Number.");
 
 /// Vanilla's text for an element of a position that is not a number.
 pub static EXPECTED_NUMBER: CodeDef<0> = CodeDef::new(
@@ -31,8 +29,7 @@ pub static EXPECTED_NUMBER: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "wrong JSON type",
 )
-.game("Expected Number.")
-.was("InvalidType");
+.game("Expected Number.");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

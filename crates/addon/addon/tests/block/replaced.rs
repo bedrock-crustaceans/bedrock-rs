@@ -275,15 +275,6 @@ fn a_component_that_goes_whole_for_one_member_of_another_type_is_told_at_the_com
     // way), pinned in `latest.rs::a_failed_component_read_rejects_a_block_under_both_slices`;
     // what is told names the member.
     {
-        let found = refused(
-            "1.19.40",
-            r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:flammable": {"catch_chance_modifier": "x", "destroy_chance_modifier": 7}, "minecraft:friction": 0.3}}"#,
-        );
-        has(
-            &found,
-            "core/invalid_type Error at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
-        );
-        // The refusal is the one finding: no component is dropped from a refused block.
         // Every definition that was `DroppedComponent`.
         const DROPPED: [&str; 10] = [
             "block/component_missing_field",
@@ -297,6 +288,15 @@ fn a_component_that_goes_whole_for_one_member_of_another_type_is_told_at_the_com
             "item/foil_ignored",
             "core/dropped_component_worded",
         ];
+        let found = refused(
+            "1.19.40",
+            r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:flammable": {"catch_chance_modifier": "x", "destroy_chance_modifier": 7}, "minecraft:friction": 0.3}}"#,
+        );
+        has(
+            &found,
+            "core/invalid_type Error at minecraft:block/components/minecraft:flammable/catch_chance_modifier",
+        );
+        // The refusal is the one finding: no component is dropped from a refused block.
         assert!(
             !found
                 .iter()

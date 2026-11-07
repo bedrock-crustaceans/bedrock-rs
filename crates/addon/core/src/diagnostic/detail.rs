@@ -57,11 +57,11 @@ pub enum ShadowReason {
 
 /// An attachment of a [`Diagnostic`](super::Diagnostic): what the code alone does not say.
 ///
-/// A [`CodeDef`](super::CodeDef) that [`was`](super::CodeDef::was) a legacy code with a typed payload (a
-/// `ShadowReason`, a `PackIdVersion`, an `io::ErrorKind`, a UUID, a `NotFoundHint`, a
-/// `FormatVersion`) puts that payload here: the definition's arguments are the text the line
-/// says, the detail is the data a caller matches on. Those payload variants are data only and
-/// add nothing to the content-log line.
+/// A [`CodeDef`](super::CodeDef) whose finding carries a typed payload (a `ShadowReason`, a
+/// `PackIdVersion`, an `io::ErrorKind`, a UUID, a `NotFoundHint`, a `FormatVersion`) puts that
+/// payload here: the definition's arguments are the text the line says, the detail is the data
+/// a caller matches on. Those payload variants are data only and add nothing to the content-log
+/// line.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum DiagnosticDetail {

@@ -407,8 +407,14 @@ fn stage<F: Family>(document: JsonSlice<'_>, cx: &LoadContext) -> Stage<F> {
 fn no_parser(diagnostics: &mut Diagnostics, version: &str) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
-        // By legacy name: the variant and the definitions that were it.
-        if matches!(finding.code.name(), "BetaFeaturesNotEnabled") {
+        // The pipeline's beta findings are core's four definitions.
+        if matches!(
+            finding.code.id(),
+            "core/beta_documents"
+                | "core/beta_features_not_enabled"
+                | "core/beta_features_not_enabled_worded"
+                | "core/beta_format_version"
+        ) {
             finding.code = core_codes::NO_PARSER_FOR_VERSION.with([version]);
         }
         diagnostics.push(finding);

@@ -1,7 +1,6 @@
 //! The biome family's codes: vanilla's content-log texts for biome files, byte for byte, each a
-//! definition beside the rules that raise it; findings of the crate's own raise the core's
-//! generic definitions. Each [`was`](CodeDef::was) the legacy code its sites raised, so a pin
-//! or a filter on the code's name keeps matching.
+//! definition beside the rules that raise it; findings of the crate's own raise the core's generic
+//! definitions. Each id is `biome/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -15,8 +14,7 @@ pub static INVALID_BIOME_FILE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "invalid biome file",
 )
-.game("Invalid Biome file")
-.was("MalformedInput");
+.game("Invalid Biome file");
 
 /// The world gate of a non-base-game pack.
 pub static WORLD_GATE: CodeDef<0> = CodeDef::new(
@@ -25,8 +23,7 @@ pub static WORLD_GATE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "custom biomes need a world of version 1.21.110 or later",
 )
-.game("Custom Biomes can only be added for world versions 1.21.110 and up!")
-.was("IgnoredFile");
+.game("Custom Biomes can only be added for world versions 1.21.110 and up!");
 
 /// A second document with an identifier already loaded.
 pub static DUPLICATE: CodeDef<1> = CodeDef::new(
@@ -35,8 +32,7 @@ pub static DUPLICATE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "another biome document has the identifier {}",
 )
-.game("Multiple biome documents with same identifier: {}")
-.was("DuplicateIdentifier");
+.game("Multiple biome documents with same identifier: {}");
 
 // ---- the identifier and the components ----
 
@@ -47,8 +43,7 @@ pub static IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the biome identifier has an upper case letter or no namespace",
 )
-.game("identifier has an upper case letter or does not specify any namespace")
-.was("NamespaceRule");
+.game("identifier has an upper case letter or does not specify any namespace");
 
 /// `minecraft:climate` validation.
 pub static SNOW_ACCUMULATION: CodeDef<0> = CodeDef::new(
@@ -57,8 +52,7 @@ pub static SNOW_ACCUMULATION: CodeDef<0> = CodeDef::new(
     Class::Error,
     "snow_accumulation minimum above its maximum",
 )
-.game("Incorrect values for snow_accumulation - first element (minimum) cannot be larger than second element (maximum)")
-.was("InvalidValue");
+.game("Incorrect values for snow_accumulation - first element (minimum) cannot be larger than second element (maximum)");
 
 /// `minecraft:overworld_height` validation.
 pub static BOTH_NOISE: CodeDef<0> = CodeDef::new(
@@ -67,8 +61,7 @@ pub static BOTH_NOISE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "both noise_type and noise_params",
 )
-.game("Cannot specify both noise_type and noise_params")
-.was("InvalidValue");
+.game("Cannot specify both noise_type and noise_params");
 
 /// `minecraft:overworld_generation_rules` validation, a malformed transformation entry.
 pub static WEIGHTED_BIOME: CodeDef<0> = CodeDef::new(
@@ -77,8 +70,7 @@ pub static WEIGHTED_BIOME: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a malformed weighted biome entry",
 )
-.game("Weighted biome name entries must be arrays with 2 elements, the first being a string name and the second being a positive weight integer")
-.was("InvalidValue");
+.game("Weighted biome name entries must be arrays with 2 elements, the first being a string name and the second being a positive weight integer");
 
 /// `minecraft:overworld_generation_rules` validation, a malformed climate entry.
 pub static WEIGHTED_CLIMATE: CodeDef<0> = CodeDef::new(
@@ -87,8 +79,7 @@ pub static WEIGHTED_CLIMATE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a malformed weighted climate entry",
 )
-.game("Weighted temperature categories must be arrays with 2 elements, the first being a string temperature category and the second being a positive weight integer")
-.was("InvalidValue");
+.game("Weighted temperature categories must be arrays with 2 elements, the first being a string temperature category and the second being a positive weight integer");
 
 /// `minecraft:replace_biomes` validation: replacements in two dimensions (a warning).
 pub static MULTIPLE_DIMENSIONS: CodeDef<0> = CodeDef::new(
@@ -97,8 +88,7 @@ pub static MULTIPLE_DIMENSIONS: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "replacements in several dimensions",
 )
-.game("Replacement present in multiple Dimensions")
-.was("InvalidValue");
+.game("Replacement present in multiple Dimensions");
 
 /// `minecraft:surface_material_adjustments` validation: a constant `height_range` whose upper
 /// bound is not above the lower one.
@@ -108,8 +98,7 @@ pub static HEIGHT_RANGE_BOUNDS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "height_range upper bound not above its lower bound",
 )
-.game("Incorrect values for height_range bounds - upper bound (second value) should be strictly greater than lower bound (first value)")
-.was("InvalidValue");
+.game("Incorrect values for height_range bounds - upper bound (second value) should be strictly greater than lower bound (first value)");
 
 /// The same for `noise_range`.
 pub static NOISE_RANGE_BOUNDS: CodeDef<0> = CodeDef::new(
@@ -118,8 +107,7 @@ pub static NOISE_RANGE_BOUNDS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "noise_range upper bound not above its lower bound",
 )
-.game("Incorrect values for noise_range bounds - upper bound (second value) should be strictly greater than lower bound (first value)")
-.was("InvalidValue");
+.game("Incorrect values for noise_range bounds - upper bound (second value) should be strictly greater than lower bound (first value)");
 
 /// A `height_range` expression that fails to compile.
 pub static EXPRESSION: CodeDef<1> = CodeDef::new(
@@ -128,8 +116,7 @@ pub static EXPRESSION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the height_range expression {} does not parse",
 )
-.game("Expression Text: '{}', failed to parse.")
-.was("InvalidValue");
+.game("Expression Text: '{}', failed to parse.");
 
 /// A nether replacement with a builder the Nether does not support.
 pub static NETHER_BUILDERS: CodeDef<0> = CodeDef::new(
@@ -138,8 +125,7 @@ pub static NETHER_BUILDERS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a surface builder the Nether does not take",
 )
-.game("Biomes in Nether are only compatible with following Surface Builders: overworld, frozen_ocean, capped, the_end")
-.was("InvalidValue");
+.game("Biomes in Nether are only compatible with following Surface Builders: overworld, frozen_ocean, capped, the_end");
 
 /// A nether replacement with a subsurface builder (a warning).
 pub static NO_EFFECT_IN_NETHER: CodeDef<1> = CodeDef::new(
@@ -148,8 +134,7 @@ pub static NO_EFFECT_IN_NETHER: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "{} has no effect on Nether biomes",
 )
-.game("{} will have no effect on Biomes in the Nether")
-.was("NoEffect");
+.game("{} will have no effect on Biomes in the Nether");
 
 /// `minecraft:multinoise_generation_rules` outside the `minecraft` namespace: the component is
 /// skipped and the biome registered.
@@ -159,8 +144,7 @@ pub static PRE_CAVES: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "the biome {} has the pre-caves-and-cliffs component {}",
 )
-.game("Biome named: {} contains {} component which is a pre-caves and cliffs component and is unused for custom biomes")
-.was("InvalidValue");
+.game("Biome named: {} contains {} component which is a pre-caves and cliffs component and is unused for custom biomes");
 
 /// Overlapping noise-gradient ranges.
 pub static OVERLAP: CodeDef<0> = CodeDef::new(
@@ -169,8 +153,7 @@ pub static OVERLAP: CodeDef<0> = CodeDef::new(
     Class::Error,
     "overlapping noise gradient ranges",
 )
-.game("The provided NoiseBlockSpecifiers have overlapping ranges. They should be specified as closed intervals [a, b] with optionally overlapping endpoints.")
-.was("InvalidValue");
+.game("The provided NoiseBlockSpecifiers have overlapping ranges. They should be specified as closed intervals [a, b] with optionally overlapping endpoints.");
 
 /// Any failure of the surface builder's validation, after the specific text.
 pub static SURFACE_BUILDER_UNRESOLVED: CodeDef<0> = CodeDef::new(
@@ -179,8 +162,7 @@ pub static SURFACE_BUILDER_UNRESOLVED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the surface builder does not resolve",
 )
-.game("The SurfaceBuilderComponent could not be resolved.")
-.was("InvalidValue");
+.game("The SurfaceBuilderComponent could not be resolved.");
 
 /// A value without `namespace:`.
 pub static NAMESPACE_MISSING: CodeDef<0> = CodeDef::new(
@@ -189,8 +171,7 @@ pub static NAMESPACE_MISSING: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the value has no namespace",
 )
-.game("string must be prefixed with a namespace (eg. namespace:value)")
-.was("NamespaceRule");
+.game("string must be prefixed with a namespace (eg. namespace:value)");
 
 /// A disallowed namespace.
 pub static NAMESPACE_INVALID: CodeDef<1> = CodeDef::new(
@@ -199,8 +180,7 @@ pub static NAMESPACE_INVALID: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the value has the namespace {}",
 )
-.game("string has invalid namespace ({})")
-.was("NamespaceRule");
+.game("string has invalid namespace ({})");
 
 // ---- minecraft:replace_biomes ----
 
@@ -211,8 +191,7 @@ pub static EMPTY_REPLACEMENTS_1_21_80: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no replacement",
 )
-.game("expected array with at least 1 element")
-.was("InvalidValue");
+.game("expected array with at least 1 element");
 
 /// A document of 1.26.0 or later: no replacement.
 pub static EMPTY_REPLACEMENTS_1_26_0: CodeDef<0> = CodeDef::new(
@@ -221,8 +200,7 @@ pub static EMPTY_REPLACEMENTS_1_26_0: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no replacement",
 )
-.game("Expected array with at least 1 element")
-.was("InvalidValue");
+.game("Expected array with at least 1 element");
 
 /// A document older than 1.26.0: a dimension other than the overworld; the arguments are the
 /// overworld and the dimension.
@@ -232,8 +210,7 @@ pub static DIMENSION_1_21_80: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the dimension must be {} but is {}",
 )
-.game("Dimension must be '{}' but is '{}'")
-.was("InvalidValue");
+.game("Dimension must be '{}' but is '{}'");
 
 /// A document of 1.26.0 or later: a dimension other than the overworld and the Nether.
 pub static DIMENSION_1_26_0: CodeDef<3> = CodeDef::new(
@@ -242,8 +219,7 @@ pub static DIMENSION_1_26_0: CodeDef<3> = CodeDef::new(
     Class::Error,
     "the dimension must be {} or {} but is {}",
 )
-.game("Dimension must be either '{}' or '{}' but is '{}'")
-.was("InvalidValue");
+.game("Dimension must be either '{}' or '{}' but is '{}'");
 
 /// Both constraints: a repeated `(dimension, target)` pair.
 pub static DUPLICATE_PAIR: CodeDef<2> = CodeDef::new(
@@ -252,8 +228,7 @@ pub static DUPLICATE_PAIR: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the dimension and target pair {}, {} is given twice",
 )
-.game("Dimension and target biome pairing already defined: '{}', '{}'")
-.was("InvalidValue");
+.game("Dimension and target biome pairing already defined: '{}', '{}'");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

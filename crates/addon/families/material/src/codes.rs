@@ -1,6 +1,6 @@
 //! The material family's codes: the client's lines for `.material` files, byte for byte, each a
-//! definition beside the reader that raises it. Each [`was`](CodeDef::was) the legacy code its
-//! sites raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the reader that raises it. Each id is `material/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -12,8 +12,7 @@ pub static DEFINED_TWICE: CodeDef<4> = CodeDef::new(
     Class::KeptError,
     "material {} defined twice in {} ({}, {})",
 )
-.game("Material \"{}\" is defined twice in \"{}\" as \"{}\" and \"{}\". You cannot redefine a material.")
-.was("DuplicateIdentifier");
+.game("Material \"{}\" is defined twice in \"{}\" as \"{}\" and \"{}\". You cannot redefine a material.");
 
 /// The render state the client names and ignores; the argument is the state.
 pub static STATE_IGNORED: CodeDef<1> = CodeDef::new(
@@ -22,8 +21,7 @@ pub static STATE_IGNORED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "render state {} has no effect",
 )
-.game("Render state {} is ignored and will have no effect")
-.was("NoEffect");
+.game("Render state {} is ignored and will have no effect");
 
 /// A render state the client does not know; the argument is the state. The state is ignored
 /// and the material loads: a kept error.
@@ -33,8 +31,7 @@ pub static STATE_UNKNOWN: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown render state {}",
 )
-.game("Trying to use a non-existing render state {} for this material!")
-.was("InvalidValue");
+.game("Trying to use a non-existing render state {} for this material!");
 
 /// A list entry's removed keyword; the argument is the key. The entry still loads: a kept
 /// error.
@@ -44,8 +41,7 @@ pub static KEY_REMOVED: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the key {} is no longer read",
 )
-.game("key \"{}\" is no longer supported, please remove")
-.was("DeprecatedMember");
+.game("key \"{}\" is no longer supported, please remove");
 
 /// A copy that is no JSON; the arguments are the path and the reader's messages. The finding
 /// carries the messages again as its `DiagnosticDetail::Syntax`.
@@ -55,8 +51,7 @@ pub static PARSE_ERROR: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} is not JSON: {}",
 )
-.game("Error parsing {} :\n {}")
-.was("MalformedInput");
+.game("Error parsing {} :\n {}");
 
 /// A material variant a later group replaces; the argument is the variant's name.
 pub static VARIANT_REPLACED: CodeDef<1> = CodeDef::new(
@@ -65,8 +60,7 @@ pub static VARIANT_REPLACED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "material variant {} replaced",
 )
-.game("Variant: {} was replaced with a new version")
-.was("ShadowedDefinition");
+.game("Variant: {} was replaced with a new version");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

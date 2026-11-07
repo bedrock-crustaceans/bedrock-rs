@@ -1,6 +1,6 @@
-//! The structure family's codes: vanilla's content-log lines of the structure loader, byte for
-//! byte (`text.rs` fills their arguments). Each [`was`](CodeDef::was) the legacy code its
-//! sites raised, so a pin or a filter on the code's name keeps matching.
+//! The structure family's codes: vanilla's content-log lines of the structure loader, byte for byte
+//! (`text.rs` fills their arguments). Each id is `structure/<name>`, the name its constant's in
+//! lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -15,8 +15,7 @@ pub static NOT_NBT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the file is not an NBT compound",
 )
-.game("\"{}\" field, a required field, is missing from the structure.")
-.was("MalformedInput");
+.game("\"{}\" field, a required field, is missing from the structure.");
 
 /// `"%s" field, a required field, is missing from the structure.`
 pub static REQUIRED: CodeDef<1> = CodeDef::new(
@@ -25,8 +24,7 @@ pub static REQUIRED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the required field {} is missing",
 )
-.game("\"{}\" field, a required field, is missing from the structure.")
-.was("MissingRequiredField");
+.game("\"{}\" field, a required field, is missing from the structure.");
 
 /// `"%s" field has a value larger than the current version.  We expect a format version with
 /// a value at most %d and got %d.` (two spaces after "version.").
@@ -36,8 +34,7 @@ pub static LARGER_VERSION: CodeDef<3> = CodeDef::new(
     Class::Error,
     "{} is above the current version {} (got {})",
 )
-.game("\"{}\" field has a value larger than the current version.  We expect a format version with a value at most {} and got {}.")
-.was("UnsupportedVersion");
+.game("\"{}\" field has a value larger than the current version.  We expect a format version with a value at most {} and got {}.");
 
 /// `"%s" field has a value smaller than the current version.  We expect a format version with
 /// a value at most %d and got %d.`
@@ -47,8 +44,7 @@ pub static SMALLER_VERSION: CodeDef<3> = CodeDef::new(
     Class::Error,
     "{} is below the current version {} (got {})",
 )
-.game("\"{}\" field has a value smaller than the current version.  We expect a format version with a value at most {} and got {}.")
-.was("UnsupportedVersion");
+.game("\"{}\" field has a value smaller than the current version.  We expect a format version with a value at most {} and got {}.");
 
 /// `"%s" field is not an integer.`
 pub static NOT_AN_INTEGER: CodeDef<1> = CodeDef::new(
@@ -57,8 +53,7 @@ pub static NOT_AN_INTEGER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} is not an integer",
 )
-.game("\"{}\" field is not an integer.")
-.was("InvalidValue");
+.game("\"{}\" field is not an integer.");
 
 /// `"%s" field has an invalid value of %i. Valid values are %i and up to %i.`
 pub static INVALID_VALUE: CodeDef<4> = CodeDef::new(
@@ -67,8 +62,7 @@ pub static INVALID_VALUE: CodeDef<4> = CodeDef::new(
     Class::Error,
     "{} has the invalid value {} (valid: {} to {})",
 )
-.game("\"{}\" field has an invalid value of {}. Valid values are {} and up to {}.")
-.was("InvalidValue");
+.game("\"{}\" field has an invalid value of {}. Valid values are {} and up to {}.");
 
 /// `The "%s" field expects 3 elements.`
 pub static THREE_ELEMENTS: CodeDef<1> = CodeDef::new(
@@ -77,8 +71,7 @@ pub static THREE_ELEMENTS: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} does not have 3 elements",
 )
-.game("The \"{}\" field expects 3 elements.")
-.was("InvalidValue");
+.game("The \"{}\" field expects 3 elements.");
 
 /// `The "%s" field shouldn't have any negative values.`
 pub static NEGATIVE: CodeDef<1> = CodeDef::new(
@@ -87,8 +80,7 @@ pub static NEGATIVE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} has a negative value",
 )
-.game("The \"{}\" field shouldn't have any negative values.")
-.was("InvalidValue");
+.game("The \"{}\" field shouldn't have any negative values.");
 
 // ---- the block indices ----
 
@@ -99,8 +91,7 @@ pub static TWO_ARRAYS: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} holds {} arrays, not 2",
 )
-.game("The \"{}\" field should be an array with 2 arrays and instead we have {} arrays.")
-.was("InvalidValue");
+.game("The \"{}\" field should be an array with 2 arrays and instead we have {} arrays.");
 
 /// `The "%s" field's first array is either missing or not a list.`
 pub static FIRST_ARRAY: CodeDef<1> = CodeDef::new(
@@ -109,8 +100,7 @@ pub static FIRST_ARRAY: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the first array of {} is missing or not a list",
 )
-.game("The \"{}\" field's first array is either missing or not a list.")
-.was("InvalidValue");
+.game("The \"{}\" field's first array is either missing or not a list.");
 
 /// `The "%s" field's arrays need to both be the same size.`
 pub static SAME_SIZE: CodeDef<1> = CodeDef::new(
@@ -119,8 +109,7 @@ pub static SAME_SIZE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the arrays of {} differ in size",
 )
-.game("The \"{}\" field's arrays need to both be the same size.")
-.was("InvalidValue");
+.game("The \"{}\" field's arrays need to both be the same size.");
 
 /// `The "%s" field should have as many elements as defined by the "%s" field.`
 pub static VOLUME: CodeDef<2> = CodeDef::new(
@@ -129,8 +118,7 @@ pub static VOLUME: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} does not hold one element per position of {}",
 )
-.game("The \"{}\" field should have as many elements as defined by the \"{}\" field.")
-.was("InvalidValue");
+.game("The \"{}\" field should have as many elements as defined by the \"{}\" field.");
 
 // ---- the palettes, positions and entities ----
 
@@ -141,8 +129,7 @@ pub static COMPOUND_ELEMENTS: CodeDef<1> = CodeDef::new(
     Class::Error,
     "an element of {} is not a compound",
 )
-.game("Expected a compound tag when parsing elements of \"{}\" field.")
-.was("InvalidValue");
+.game("Expected a compound tag when parsing elements of \"{}\" field.");
 
 /// `At index %d while reading "%s", we found an invalid block in the palette, we were
 /// expecting a compound tag here.` (the field is `block_palette`)
@@ -152,8 +139,7 @@ pub static INVALID_BLOCK: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the palette entry {} of {} is not a compound",
 )
-.game("At index {} while reading \"{}\", we found an invalid block in the palette, we were expecting a compound tag here.")
-.was("InvalidValue");
+.game("At index {} while reading \"{}\", we found an invalid block in the palette, we were expecting a compound tag here.");
 
 /// `Expected a string formatted as a number when parsing contents of the "%s" field, but got
 /// "%s"` (no final period)
@@ -163,8 +149,7 @@ pub static NOT_A_NUMBER: CodeDef<2> = CodeDef::new(
     Class::Error,
     "a key of {} is not a number: {}",
 )
-.game("Expected a string formatted as a number when parsing contents of the \"{}\" field, but got \"{}\"")
-.was("InvalidValue");
+.game("Expected a string formatted as a number when parsing contents of the \"{}\" field, but got \"{}\"");
 
 /// `Expected a compound tag when parsing elements of "%s" field at the value for "%s".`
 pub static COMPOUND_VALUE: CodeDef<2> = CodeDef::new(
@@ -173,8 +158,7 @@ pub static COMPOUND_VALUE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the value of {} at {} is not a compound",
 )
-.game("Expected a compound tag when parsing elements of \"{}\" field at the value for \"{}\".")
-.was("InvalidValue");
+.game("Expected a compound tag when parsing elements of \"{}\" field at the value for \"{}\".");
 
 /// `Expected a compound tag for the "%s" field.`
 pub static COMPOUND_FIELD: CodeDef<1> = CodeDef::new(
@@ -183,8 +167,7 @@ pub static COMPOUND_FIELD: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} is not a compound",
 )
-.game("Expected a compound tag for the \"{}\" field.")
-.was("InvalidValue");
+.game("Expected a compound tag for the \"{}\" field.");
 
 /// `Expected a list tag for the "%s" field.`
 pub static LIST_FIELD: CodeDef<1> = CodeDef::new(
@@ -193,8 +176,7 @@ pub static LIST_FIELD: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} is not a list",
 )
-.game("Expected a list tag for the \"{}\" field.")
-.was("InvalidValue");
+.game("Expected a list tag for the \"{}\" field.");
 
 /// `Expected a compound tag at index %d when parsing elements of "%s" field.`
 pub static COMPOUND_AT: CodeDef<2> = CodeDef::new(
@@ -203,8 +185,7 @@ pub static COMPOUND_AT: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the element {} of {} is not a compound",
 )
-.game("Expected a compound tag at index {} when parsing elements of \"{}\" field.")
-.was("InvalidValue");
+.game("Expected a compound tag at index {} when parsing elements of \"{}\" field.");
 
 /// `At index %d while reading "%s", we found an invalid entity in the list of entities.`
 /// (the field is `entities`)
@@ -214,8 +195,7 @@ pub static INVALID_ENTITY: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the entity {} of {} is not a compound",
 )
-.game("At index {} while reading \"{}\", we found an invalid entity in the list of entities.")
-.was("InvalidValue");
+.game("At index {} while reading \"{}\", we found an invalid entity in the list of entities.");
 
 // ---- the lookup ----
 
@@ -226,8 +206,7 @@ pub static NOT_NAMESPACED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the structure {} has no namespace",
 )
-.game("Structure '{}' must be prefixed by a namespace")
-.was("NamespaceRule");
+.game("Structure '{}' must be prefixed by a namespace");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

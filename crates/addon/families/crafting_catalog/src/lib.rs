@@ -366,11 +366,14 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
             .code
             .args_of(&core_codes::NO_PARSER_FOR_VERSION)
             .and_then(|args| args.first().cloned());
-        // By legacy name: the variant and the definitions that were it.
-        match finding.code.name() {
+        // By definition: the pipeline raises on core's definitions.
+        match finding.code.id() {
             // Below its minimum version vanilla does not look at the shape of the root.
             _ if member_count && floor => diagnostics.push(below_floor()),
-            "MalformedFormatVersion" | "EmptyDocument" => {
+            "core/malformed_format_version"
+            | "core/malformed_format_version_worded"
+            | "core/empty_document"
+            | "core/empty_document_worded" => {
                 finding.severity = Severity::Info;
                 diagnostics.push(finding);
                 diagnostics.push(no_valid_version());
@@ -380,7 +383,10 @@ fn vanilla_checks(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
                 diagnostics.push(finding);
                 diagnostics.push(no_valid_version());
             }
-            "MissingPayload" => diagnostics.push(if written.is_none() {
+            "core/missing_payload"
+            | "core/missing_payload_worded"
+            | "core/payload_missing"
+            | "core/payload_under_other_key" => diagnostics.push(if written.is_none() {
                 no_valid_version()
             } else if floor {
                 below_floor()

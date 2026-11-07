@@ -1,7 +1,6 @@
-//! The jigsaw family's codes: the game's content-log lines for jigsaw structures, template
-//! pools, structure sets and processor lists, byte for byte, and the lines of the crate's own.
-//! Each [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the
-//! code's name keeps matching.
+//! The jigsaw family's codes: the game's content-log lines for jigsaw structures, template pools,
+//! structure sets and processor lists, byte for byte, and the lines of the crate's own. Each id is
+//! `jigsaw/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -14,8 +13,7 @@ pub static STRUCTURE_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the jigsaw structure {} failed to parse",
 )
-.game("Failed to parse jigsaw structure definition '{}'.")
-.was("DocumentRejected");
+.game("Failed to parse jigsaw structure definition '{}'.");
 
 /// A template pool file failed to parse; the argument is its path.
 pub static POOL_FAILED: CodeDef<1> = CodeDef::new(
@@ -24,8 +22,7 @@ pub static POOL_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the template pool {} failed to parse",
 )
-.game("Failed to parse jigsaw structure template pool '{}'.")
-.was("DocumentRejected");
+.game("Failed to parse jigsaw structure template pool '{}'.");
 
 /// A structure set file failed to parse; the argument is its path.
 pub static SET_FAILED: CodeDef<1> = CodeDef::new(
@@ -34,8 +31,7 @@ pub static SET_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the structure set {} failed to parse",
 )
-.game("Failed to parse structure set definition '{}'.")
-.was("DocumentRejected");
+.game("Failed to parse structure set definition '{}'.");
 
 /// A processor list file failed to parse; the argument is its path.
 pub static PROCESSORS_FAILED: CodeDef<1> = CodeDef::new(
@@ -44,8 +40,7 @@ pub static PROCESSORS_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the processor list {} failed to parse",
 )
-.game("Failed to parse jigsaw structure processor list '{}'.")
-.was("DocumentRejected");
+.game("Failed to parse jigsaw structure processor list '{}'.");
 
 // ---- the identifier check, in the game's order ----
 
@@ -56,8 +51,7 @@ pub static NO_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the identifier has no namespace",
 )
-.game("Identifier must have a namespace")
-.was("InvalidValue");
+.game("Identifier must have a namespace");
 
 /// An empty namespace or name, or a second `:`.
 pub static INVALID_IDENTIFIER: CodeDef<0> = CodeDef::new(
@@ -66,8 +60,7 @@ pub static INVALID_IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the identifier is invalid",
 )
-.game("Invalid identifier")
-.was("InvalidValue");
+.game("Invalid identifier");
 
 /// A space, tab, LF or CR in the namespace or the name; the next line says which.
 pub static ILLEGAL_CHARACTERS: CodeDef<0> = CodeDef::new(
@@ -76,8 +69,7 @@ pub static ILLEGAL_CHARACTERS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the identifier has illegal characters",
 )
-.game("Identifier cannot have illegal characters")
-.was("InvalidValue");
+.game("Identifier cannot have illegal characters");
 
 /// The namespace holds an illegal character.
 pub static NAMESPACE_INVALID: CodeDef<0> = CodeDef::new(
@@ -86,8 +78,7 @@ pub static NAMESPACE_INVALID: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the namespace is invalid",
 )
-.game("Namespace is invalid")
-.was("InvalidValue");
+.game("Namespace is invalid");
 
 /// The name holds an illegal character.
 pub static NAME_INVALID: CodeDef<0> = CodeDef::new(
@@ -96,8 +87,7 @@ pub static NAME_INVALID: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the identifier name is invalid",
 )
-.game("Identifier name is invalid")
-.was("InvalidValue");
+.game("Identifier name is invalid");
 
 /// What a jigsaw structure's identifier failure says after the check's own reason.
 pub static STRUCTURE_REGISTER: CodeDef<1> = CodeDef::new(
@@ -106,8 +96,7 @@ pub static STRUCTURE_REGISTER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the jigsaw structure identifier {} failed validation",
 )
-.game("Identifier '{}' failed validation when registering jigsaw structure json")
-.was("InvalidValue");
+.game("Identifier '{}' failed validation when registering jigsaw structure json");
 
 /// The template pool's.
 pub static POOL_REGISTER: CodeDef<1> = CodeDef::new(
@@ -116,8 +105,7 @@ pub static POOL_REGISTER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the template pool identifier {} failed validation",
 )
-.game("Identifier '{}' failed validation when registering jigsaw structure template pool json")
-.was("InvalidValue");
+.game("Identifier '{}' failed validation when registering jigsaw structure template pool json");
 
 /// The structure set's (also for a set entry).
 pub static SET_REGISTER: CodeDef<1> = CodeDef::new(
@@ -126,8 +114,7 @@ pub static SET_REGISTER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the structure set identifier {} failed validation",
 )
-.game("Identifier '{}' failed validation when registering jigsaw structure set json")
-.was("InvalidValue");
+.game("Identifier '{}' failed validation when registering jigsaw structure set json");
 
 /// The processor list's.
 pub static PROCESSORS_REGISTER: CodeDef<1> = CodeDef::new(
@@ -136,8 +123,7 @@ pub static PROCESSORS_REGISTER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the processor list identifier {} failed validation",
 )
-.game("Identifier '{}' failed validation when registering jigsaw structure processor list json")
-.was("InvalidValue");
+.game("Identifier '{}' failed validation when registering jigsaw structure processor list json");
 
 // ---- the registration checks of one document ----
 
@@ -149,8 +135,7 @@ pub static START_POOL_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "the jigsaw structure's start_pool is empty",
 )
-.game("[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure")
-.was("InvalidValue");
+.game("[Jigsaw Structure Builder] start_pool is empty. Fill it in with a valid template pool e.g. minecraft:example/structure");
 
 /// A structure set whose spacing is not more than twice its separation; the argument is the set's identifier.
 pub static SPACING_SEPARATION: CodeDef<1> = CodeDef::new(
@@ -159,8 +144,7 @@ pub static SPACING_SEPARATION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the structure set {} has a spacing not above twice its separation",
 )
-.game("Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.")
-.was("InvalidValue");
+.game("Invalid spacing and separation combination for structure set '{}'. Value 'separation' must be less than half of 'spacing'.");
 
 /// An `append_loot` modifier with an empty loot table: the modifier is cleared, the rule stays.
 pub static EMPTY_LOOT_TABLE: CodeDef<0> = CodeDef::new(
@@ -169,8 +153,7 @@ pub static EMPTY_LOOT_TABLE: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an append_loot modifier with an empty loot table",
 )
-.game("Empty loot table")
-.was("InvalidValue");
+.game("Empty loot table");
 
 /// A metadata file whose leading format version string does not parse; the argument is its path.
 pub static BAD_FORMAT_VERSION_STRING: CodeDef<1> = CodeDef::new(
@@ -179,8 +162,7 @@ pub static BAD_FORMAT_VERSION_STRING: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the metadata file {} has no readable format version string",
 )
-.game("Failed to parse format version string of file {}; it will be skipped.")
-.was("MalformedFormatVersion");
+.game("Failed to parse format version string of file {}; it will be skipped.");
 
 // ---- the checks over several documents ----
 
@@ -192,8 +174,7 @@ pub static POOL_NAME_REGISTERED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "the template pool name {} is already registered",
 )
-.game("Jigsaw pool name `{}` already registered")
-.was("DuplicateIdentifier");
+.game("Jigsaw pool name `{}` already registered");
 
 /// A pool element whose location another element holds with other contents: the game keeps one
 /// silently, so the text is the crate's own (an information).
@@ -203,8 +184,7 @@ pub static ELEMENT_REDEFINED: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "the element location {} is redefined",
 )
-.game("Redefinition of existing element with location '{}'.")
-.was("InvalidValue");
+.game("Redefinition of existing element with location '{}'.");
 
 /// A pack's `minecraft:trial_chambers` set against the game's own record, which is refused.
 pub static SET_ALREADY_REGISTERED: CodeDef<1> = CodeDef::new(
@@ -213,8 +193,7 @@ pub static SET_ALREADY_REGISTERED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the structure set {} is already registered",
 )
-.game("Structure set '{}' has already been registered")
-.was("DuplicateIdentifier");
+.game("Structure set '{}' has already been registered");
 
 // ---- the link pass ----
 
@@ -225,8 +204,7 @@ pub static MISSING_ASSET: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{}: missing referenced asset {}",
 )
-.game("{}:  Missing referenced asset {}")
-.was("UnresolvedReference");
+.game("{}:  Missing referenced asset {}");
 
 /// The validator's line for a file reference (a structure, a loot table) no pack holds.
 pub static INVALID_ASSET_PATH: CodeDef<2> = CodeDef::new(
@@ -235,8 +213,7 @@ pub static INVALID_ASSET_PATH: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{}: invalid asset path {}",
 )
-.game("{}:  Invalid asset path {}")
-.was("UnresolvedReference");
+.game("{}:  Invalid asset path {}");
 
 /// The game's generation-failure line for a missing structure, written at generation time: an
 /// information of the crate's own at link.
@@ -246,8 +223,7 @@ pub static STRUCTURE_MISSING: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "the structure {} referenced in the template pool {} does not exist",
 )
-.game("[JIGSAW GENERATION FAILURE] Structure name [{}] referenced in template pool [{}] does not exist.")
-.was("UnresolvedReference");
+.game("[JIGSAW GENERATION FAILURE] Structure name [{}] referenced in template pool [{}] does not exist.");
 
 /// The game's line for a feature element that does not resolve, written when the pool is
 /// generated: an information of the crate's own at link.
@@ -257,8 +233,7 @@ pub static FEATURE_MISSING: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "the feature {} of a feature_pool_element does not resolve",
 )
-.game("Cannot find 'feature' '{}' for 'feature_pool_element'. Make sure to include the 'namespace_name:' prefix.")
-.was("UnresolvedReference");
+.game("Cannot find 'feature' '{}' for 'feature_pool_element'. Make sure to include the 'namespace_name:' prefix.");
 
 /// A rule's block that does not resolve: the game skips the rule and keeps the list.
 pub static BLOCK_MISSING: CodeDef<1> = CodeDef::new(
@@ -267,8 +242,7 @@ pub static BLOCK_MISSING: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the block {} does not resolve",
 )
-.game("Cannot find block '{}'")
-.was("UnresolvedReference");
+.game("Cannot find block '{}'");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

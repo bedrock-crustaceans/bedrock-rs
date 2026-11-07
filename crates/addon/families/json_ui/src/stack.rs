@@ -19,7 +19,8 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, builders,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Kind, Phase, Severity,
+    builders,
 };
 use bedrock_addon_core::document::{
     Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
@@ -359,9 +360,8 @@ impl Report {
         path: &[&str],
         detail: Option<DiagnosticDetail>,
     ) {
-        // By legacy name: the variant and the definitions that were it.
         let code = code.into();
-        let phase = if matches!(code.name(), "MalformedInput") {
+        let phase = if code.kind() == Kind::Syntax {
             Phase::Parse
         } else {
             Phase::Validate

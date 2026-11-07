@@ -23,7 +23,9 @@ use crate::codes;
 use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{
+    Code, Diagnostic, Diagnostics, JsonPath, Kind, Phase, Severity,
+};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef};
 use bedrock_addon_core::id::syntax::{has_namespace, split_namespace};
 use bedrock_addon_core::json::Value;
@@ -1187,10 +1189,11 @@ fn constraint_code(code: &Code) -> Code {
     if let Some([value, step]) = code.args_of(&core_codes::NOT_MULTIPLE_OF) {
         return codes::NOT_MULTIPLE_OF.with([value.as_str(), step.as_str()]);
     }
-    // By legacy name: the definitions that were `InvalidValue`, by their game sentence, which
-    // the pins hold whole as a formatted text.
+    // By kind: the schema checks raise core's range and size definitions, which are of the
+    // invalid-value kind and no other; their game sentence, which the pins hold whole as a
+    // formatted text.
     match code.vanilla() {
-        Some(line) if code.name() == "InvalidValue" => {
+        Some(line) if code.kind() == Kind::InvalidValue => {
             core_codes::INVALID_VALUE_FORMATTED.with([line])
         }
         _ => Code::from(&core_codes::INVALID_VALUE),

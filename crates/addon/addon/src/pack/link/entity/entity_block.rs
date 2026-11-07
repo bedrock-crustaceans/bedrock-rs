@@ -1,5 +1,5 @@
 //! The blocks an entity's components name.
-use bedrock_addon_core::diagnostic::{JsonPath, JsonPathSegment, Severity, sentence};
+use bedrock_addon_core::diagnostic::{JsonPath, JsonPathSegment, Kind, Severity, sentence};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
@@ -99,9 +99,9 @@ fn eat_block(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
             // a copy.
             let mut checked = goal.clone();
             for finding in eat_block_pairs(&mut checked, is_block) {
-                // By legacy name: the variant the entity family raises and the definitions
-                // that were it; the game's sentence, if any, goes on to the link's finding.
-                if finding.code.name() != "UnresolvedReference" {
+                // By kind: the check raises only `entity/eat_block_invalid_block`; the game's
+                // sentence, if any, goes on to the link's finding.
+                if finding.code.kind() != Kind::UnresolvedReference {
                     continue;
                 }
                 let text = finding.code.vanilla();

@@ -1238,13 +1238,13 @@ fn every_member_of_the_legacy_reading_is_written_or_told() {
                 // by version and writer, is `legacy_audit.rs`.
                 use bedrock_addon_core::diagnostic::Severity;
                 let severity = match *code {
-                    // (`seed`'s is the level-2 `upgradeJson` line)
-                    "item/seed_deprecated" => Severity::Warning,
                     "item/mining_speed_deprecated"
                     | "item/creative_category_deprecated"
                     | "item/tag_deprecated"
                     | "item/foil_deprecated" => Severity::Error,
-                    "core/unrecognized_field"
+                    // (`seed`'s is the level-2 `upgradeJson` line)
+                    "item/seed_deprecated"
+                    | "core/unrecognized_field"
                     | "core/member_not_kept"
                     | "core/member_not_kept_worded" => Severity::Warning,
                     _ => Severity::Info,

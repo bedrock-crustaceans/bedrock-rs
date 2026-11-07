@@ -17,6 +17,7 @@ use indexmap::IndexMap;
 use super::Value;
 use super::lex::{Kind, Lexer, Rules};
 use super::slice::{JsonSlice, parse_at};
+use crate::diagnostic::Kind as DiagnosticKind;
 use crate::diagnostic::{Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Span};
 use crate::molang::beyond_f32_warning;
 
@@ -148,15 +149,16 @@ fn same_file(theirs: &Diagnostic, ours: &Diagnostic) -> bool {
 /// key) is not: such a member is kept as written by the families that keep what they do not
 /// read, and the number in it is then the clamp's to tell.
 ///
-/// The question is asked by the legacy name: each of the three names is shared by the legacy
-/// variant and every definition that [`was`](crate::diagnostic::CodeDef::was) it (core's plain
-/// and `_WORDED` ones, `core/child_not_valid` and the families' own), and the findings come
-/// from every family.
+/// The question is asked by kind for the first two (`Kind::UnknownMember(Disposition::Kept)`,
+/// whichever family raised it) and by the ids of the definitions that were `UnknownSound`
+/// (core's plain and worded ones and `sounds_json/not_an_event`) for the third.
 fn speaks_of(finding: &Diagnostic, warning: &Diagnostic) -> bool {
     same_file(finding, warning)
+        && finding.code.kind()
+            != DiagnosticKind::UnknownMember(crate::diagnostic::Disposition::Kept)
         && !matches!(
-            finding.code.name(),
-            "UnrecognizedField" | "UnrecognizedComponent" | "UnknownSound"
+            finding.code.id(),
+            "core/unknown_sound" | "core/unknown_sound_worded" | "sounds_json/not_an_event"
         )
 }
 

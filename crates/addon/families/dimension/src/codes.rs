@@ -1,6 +1,6 @@
 //! The `dimension` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `dimension/<name>`, the name its constant's in lower
+//! case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -12,8 +12,7 @@ pub static GENERATOR_UNSUPPORTED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "generator_type is not void",
 )
-.game("minecraft:generation: generator_type unsupported")
-.was("InvalidValue");
+.game("minecraft:generation: generator_type unsupported");
 
 /// A validator failure: the content-log text, then the validation error text (`Invalid dimension
 /// height.` for the height rules of part A, `Invalid custom dimension document.` for the identifier
@@ -24,8 +23,7 @@ pub static VALIDATION_FAILED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "dimension validation failed: {} ({})",
 )
-.game("{}\n{}")
-.was("InvalidValue");
+.game("{}\n{}");
 
 /// The runtime's failure to create a dimension; the arguments are the identifier and the pack's
 /// UUID. Logged at the warning level.
@@ -35,8 +33,7 @@ pub static CREATION_FAILED: CodeDef<2> = CodeDef::new(
     Class::Warning,
     "dimension {} from pack {} could not be created",
 )
-.game("Dimension '{}' from pack id '{}' was invalid and could not be created!")
-.was("InvalidValue");
+.game("Dimension '{}' from pack id '{}' was invalid and could not be created!");
 
 /// A pack definition that replaces a script registration; the arguments are the identifier and the
 /// pack's UUID. Logged at the warning level.
@@ -46,8 +43,7 @@ pub static REPLACED_REGISTRATION: CodeDef<2> = CodeDef::new(
     Class::Warning,
     "dimension {} registered via scripting was replaced by pack {}",
 )
-.game("Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'")
-.was("ShadowedDefinition");
+.game("Dimension definition identifier '{}' registered via scripting was replaced by the definition from pack id '{}'");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

@@ -320,8 +320,8 @@ fn components(
                     // tests and which `older_members` holds to the game's list. Told in the
                     // phase a typed component's filter is told in.
                     let unknown_tests = found.into_iter().filter(|finding| {
-                        // By legacy name: the variant and the definitions that were it.
-                        matches!(finding.code.name(), "UnresolvedReference")
+                        // The shared check raises only core's unknown test definition.
+                        finding.is(&core_codes::FILTER_TEST_NOT_FOUND)
                     });
                     cx.diagnostics.extend(unknown_tests.map(|mut finding| {
                         finding.phase = Phase::Parse;

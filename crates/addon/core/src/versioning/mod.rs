@@ -348,19 +348,20 @@ pub struct Identity {
 /// payload gives none, `Family::payload_version`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MissingVersion {
-    /// Parse the document at the family's floor, telling `code` (a definition that `was`
-    /// `MissingFormatVersion`) at `severity`; `None` tells nothing (trading). The default tells
-    /// the crate's own information, [`codes::MISSING_FORMAT_VERSION`].
+    /// Parse the document at the family's floor, telling `code` (a definition of kind
+    /// [`Kind::FormatVersion`](crate::diagnostic::Kind::FormatVersion)) at `severity`; `None`
+    /// tells nothing (trading). The default tells the crate's own information,
+    /// [`codes::MISSING_FORMAT_VERSION`].
     Floor {
         /// The finding's definition.
         code: &'static CodeDef<0>,
         /// The severity of the finding; `None` for no finding, and then `code` is not read.
         severity: Option<Severity>,
     },
-    /// Reject the document with an error of `code` (a definition that `was`
-    /// `MissingFormatVersion`). The default is the game's version-check line
-    /// ([`codes::NO_VALID_VERSION`]: "no valid version passed by the caller or found in the
-    /// input").
+    /// Reject the document with an error of `code` (a definition of kind
+    /// [`Kind::FormatVersion`](crate::diagnostic::Kind::FormatVersion)). The default is the
+    /// game's version-check line ([`codes::NO_VALID_VERSION`]: "no valid version passed by the
+    /// caller or found in the input").
     Reject {
         /// The error's definition.
         code: &'static CodeDef<0>,

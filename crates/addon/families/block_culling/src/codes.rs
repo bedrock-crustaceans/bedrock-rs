@@ -1,6 +1,6 @@
-//! The `block_culling` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! The `block_culling` family's codes: the game's content-log lines, byte for byte, each a
+//! definition beside the rules that raise it. Each id is `block_culling/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -11,8 +11,7 @@ pub static MISSING_OBJECT_UNSUPPORTED_VERSION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "unsupported format_version",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("UnsupportedVersion");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 1 and 2: the file's path.
 pub static MISSING_OBJECT_MISSING_FORMAT_VERSION: CodeDef<1> = CodeDef::new(
@@ -21,8 +20,7 @@ pub static MISSING_OBJECT_MISSING_FORMAT_VERSION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no format_version",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("MissingFormatVersion");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 1 and 2: the file's path.
 pub static MISSING_OBJECT_MALFORMED_FORMAT_VERSION: CodeDef<1> = CodeDef::new(
@@ -31,8 +29,7 @@ pub static MISSING_OBJECT_MALFORMED_FORMAT_VERSION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "Malformed format version",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("MalformedFormatVersion");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 1 and 2: the file's path.
 pub static MISSING_OBJECT_MISSING_PAYLOAD: CodeDef<1> = CodeDef::new(
@@ -41,8 +38,7 @@ pub static MISSING_OBJECT_MISSING_PAYLOAD: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the document has no payload member",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("MissingPayload");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 1 and 2: the file's path.
 pub static MISSING_OBJECT_UNRECOGNIZED_FIELD: CodeDef<1> = CodeDef::new(
@@ -51,8 +47,7 @@ pub static MISSING_OBJECT_UNRECOGNIZED_FIELD: CodeDef<1> = CodeDef::new(
     Class::Unknown,
     "unrecognized field",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("UnrecognizedField");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 1 and 2: the file's path.
 pub static MISSING_OBJECT_DOCUMENT_REJECTED: CodeDef<1> = CodeDef::new(
@@ -61,8 +56,7 @@ pub static MISSING_OBJECT_DOCUMENT_REJECTED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "document failed schema validation",
 )
-.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"")
-.was("DocumentRejected");
+.game("Failed to parse block culling file '{}'. Missing object \"minecraft:block_culling_rules\"");
 
 /// Rules 2 and 3: the file's path.
 pub static FAILED_TO_PARSE: CodeDef<1> = CodeDef::new(
@@ -71,8 +65,7 @@ pub static FAILED_TO_PARSE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "document failed schema validation",
 )
-.game("Failed to parse block culling file '{}'.")
-.was("DocumentRejected");
+.game("Failed to parse block culling file '{}'.");
 
 /// Rules 4 and 5: the file's path.
 pub static FAILED_INTERNAL: CodeDef<1> = CodeDef::new(
@@ -81,8 +74,7 @@ pub static FAILED_INTERNAL: CodeDef<1> = CodeDef::new(
     Class::Error,
     "document failed schema validation",
 )
-.game("Failed to parse block culling file '{}' into internal format")
-.was("DocumentRejected");
+.game("Failed to parse block culling file '{}' into internal format");
 
 /// Rule 4.
 pub static INVALID_IDENTIFIER: CodeDef<0> = CodeDef::new(
@@ -91,8 +83,7 @@ pub static INVALID_IDENTIFIER: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Invalid identifier")
-.was("NamespaceRule");
+.game("Invalid identifier");
 
 /// Rule 4.
 pub static NEEDS_NAMESPACE: CodeDef<0> = CodeDef::new(
@@ -101,8 +92,7 @@ pub static NEEDS_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Identifier must have a namespace")
-.was("NamespaceRule");
+.game("Identifier must have a namespace");
 
 /// Rule 4.
 pub static MINECRAFT_NAMESPACE: CodeDef<0> = CodeDef::new(
@@ -111,8 +101,7 @@ pub static MINECRAFT_NAMESPACE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Identifier not allowed to use Minecraft namespace")
-.was("NamespaceRule");
+.game("Identifier not allowed to use Minecraft namespace");
 
 /// Rule 4.
 pub static ILLEGAL_CHARACTERS: CodeDef<0> = CodeDef::new(
@@ -121,8 +110,7 @@ pub static ILLEGAL_CHARACTERS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Identifier cannot have illegal characters")
-.was("NamespaceRule");
+.game("Identifier cannot have illegal characters");
 
 /// Rule 4.
 pub static NAMESPACE_INVALID: CodeDef<0> = CodeDef::new(
@@ -131,8 +119,7 @@ pub static NAMESPACE_INVALID: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Namespace is invalid")
-.was("NamespaceRule");
+.game("Namespace is invalid");
 
 /// Rule 4.
 pub static NAME_INVALID: CodeDef<0> = CodeDef::new(
@@ -141,8 +128,7 @@ pub static NAME_INVALID: CodeDef<0> = CodeDef::new(
     Class::Error,
     "namespace rule failed",
 )
-.game("Identifier name is invalid")
-.was("NamespaceRule");
+.game("Identifier name is invalid");
 
 /// Rule 4: the identifier.
 pub static IDENTIFIER_FAILED: CodeDef<1> = CodeDef::new(
@@ -151,8 +137,7 @@ pub static IDENTIFIER_FAILED: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no usable identifier",
 )
-.game("Identifier '{}' failed validation when registering block culling json")
-.was("MissingIdentifier");
+.game("Identifier '{}' failed validation when registering block culling json");
 
 /// Rule 5.1: the rule's index, the bone.
 pub static CUBE_WITHOUT_FACE: CodeDef<2> = CodeDef::new(
@@ -161,8 +146,7 @@ pub static CUBE_WITHOUT_FACE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "invalid value",
 )
-.game("Rule {} with geometry part '{}' had a cube index but no face specified")
-.was("InvalidValue");
+.game("Rule {} with geometry part '{}' had a cube index but no face specified");
 
 /// Rule 5.2: the rule's index, the bone.
 pub static FACE_WITHOUT_CUBE: CodeDef<2> = CodeDef::new(
@@ -171,8 +155,7 @@ pub static FACE_WITHOUT_CUBE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "invalid value",
 )
-.game("Rule {} with geometry part '{}' had a face specified, but no cube index")
-.was("InvalidValue");
+.game("Rule {} with geometry part '{}' had a face specified, but no cube index");
 
 /// Rule 5.3: the rule's index, the bone, the cube index (-1 without one), the face
 /// (`Unknown facing` without one).
@@ -182,8 +165,7 @@ pub static DUPLICATE_PART: CodeDef<4> = CodeDef::new(
     Class::Error,
     "duplicate identifier",
 )
-.game("Rule {} had geometry part '{}' cube index {} face index '{}' that matches an earlier rule")
-.was("DuplicateIdentifier");
+.game("Rule {} had geometry part '{}' cube index {} face index '{}' that matches an earlier rule");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

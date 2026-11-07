@@ -37,7 +37,9 @@ use crate::component::{
 use crate::deprecated::ItemDeprecatedData;
 use crate::legacy::{LegacyItemData, is_legacy_read, read_legacy};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{
+    Class, Code, Diagnostic, Diagnostics, Disposition, JsonPath, Kind, Severity,
+};
 use bedrock_addon_core::load::LoadContext;
 
 /// A packed `major.minor.patch` (`major × 1 000 000 + minor × 1 000 + patch`), the version
@@ -734,10 +736,7 @@ pub(crate) fn parse_parts(
     );
     if !strict {
         // Not told, and kept all the same.
-        found.retain(|f| {
-            // By legacy name: the variant and the definitions that were it.
-            !matches!(f.code.name(), "UnrecognizedField" | "UnrecognizedComponent")
-        });
+        found.retain(|f| f.kind() != Kind::UnknownMember(Disposition::Kept));
     }
     d.extend_with_unknown(found);
     Some(Parts {
@@ -896,11 +895,7 @@ fn side_car(
 
 /// Whether `finding` tells an unknown member or component.
 fn is_unknown_member(finding: &Diagnostic) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(
-        finding.code.name(),
-        "UnrecognizedField" | "UnrecognizedComponent"
-    )
+    finding.kind() == Kind::UnknownMember(Disposition::Kept)
 }
 
 /// The description members `version` binds: `category` up to 1.20.0, `menu_category` from

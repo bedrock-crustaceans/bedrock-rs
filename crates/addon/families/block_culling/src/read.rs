@@ -12,7 +12,7 @@ use super::{Condition, Description, Facing, GeometryPart, Rule};
 use bedrock_addon_core::diagnostic::cereal;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Span,
+    Code, Diagnostic, Diagnostics, Disposition, JsonPath, JsonPathSegment, Kind, Span,
 };
 use bedrock_addon_core::id::CullingRulesId;
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -197,13 +197,16 @@ impl Reader<'_> {
     /// breadcrumb: `-> rules[0] -> direction: <text>`.
     fn cereal(&mut self, code: Code, at: &JsonPath) {
         let line = format!("{}: {code}", breadcrumb(at));
-        // By legacy name: the variant and the definitions that were it.
-        let code = match code.name() {
-            "MissingRequiredField" => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([line]),
-            "UnrecognizedField" => core_codes::UNRECOGNIZED_FIELD_WORDED.with([line]),
-            "InvalidType" => core_codes::INVALID_TYPE_WORDED.with([line]),
-            "InvalidEnumValue" => core_codes::INVALID_ENUM_VALUE_WORDED.with([line]),
-            "InvalidValue" => core_codes::INVALID_VALUE_WORDED.with([line]),
+        // By kind: the generic findings reach here (a missing field, an unknown member, a wrong
+        // type, an enum name, a value out of range) and no other definition of these kinds.
+        let code = match code.kind() {
+            Kind::MissingRequired => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([line]),
+            Kind::UnknownMember(Disposition::Kept) => {
+                core_codes::UNRECOGNIZED_FIELD_WORDED.with([line])
+            }
+            Kind::WrongType => core_codes::INVALID_TYPE_WORDED.with([line]),
+            Kind::InvalidEnumValue => core_codes::INVALID_ENUM_VALUE_WORDED.with([line]),
+            Kind::InvalidValue => core_codes::INVALID_VALUE_WORDED.with([line]),
             _ => code,
         };
         self.fail(code, at);

@@ -179,14 +179,23 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
             .args_of(&core_codes::NO_PARSER_FOR_VERSION)
             .and_then(|args| args.first().map(String::as_str));
         let out_of_range = no_parser.is_some_and(|version| version != "beta");
-        // By legacy name: the variant and the definitions that were it.
-        match finding.code.name() {
-            "MalformedFormatVersion" => {
+        match finding.code.id() {
+            "core/malformed_format_version" | "core/malformed_format_version_worded" => {
                 finding.code = (&codes::VERSION_NOT_READABLE).into();
                 invalid_object = true;
             }
-            "MissingFormatVersion" => invalid_object = true,
-            "MissingPayload" => {
+            "core/missing_format_version"
+            | "core/missing_format_version_worded"
+            | "core/no_valid_version"
+            | "core/format_version_required"
+            | "core/no_format_version_field"
+            | "core/version_not_given_legacy_fields"
+            | "core/version_not_processable"
+            | "core/version_not_readable" => invalid_object = true,
+            "core/missing_payload"
+            | "core/missing_payload_worded"
+            | "core/payload_missing"
+            | "core/payload_under_other_key" => {
                 finding.code = (&codes::PAYLOAD_NOT_OBJECT).into();
             }
             _ if out_of_range => {

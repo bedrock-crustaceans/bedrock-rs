@@ -11,7 +11,7 @@ use super::codes;
 use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, Span,
+    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Kind as CodeKind, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
@@ -602,8 +602,9 @@ pub(crate) fn keyframes<'a, T>(
         let mistyped = read.is_err()
             && own
                 .iter()
-                // By legacy name: the variant and the definitions that were it.
-                .any(|f| matches!(f.code.name(), "InvalidType"));
+                // By kind: the value readers raise the family's and core's wrong-type
+                // definitions, the only ones of the kind that can occur here.
+                .any(|f| f.kind() == CodeKind::WrongType);
         if mistyped {
             return Err(node.error(Code::from(&codes::KEYFRAMES), d));
         }

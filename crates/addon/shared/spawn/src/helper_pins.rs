@@ -34,8 +34,7 @@ fn same(left: &Diagnostic, right: &Diagnostic) {
 fn the_closing_line_and_the_load_error() {
     // A definition of the test's own: a closing line is a family's.
     static CLOSING: CodeDef<0> =
-        CodeDef::new("spawn/closing", Kind::Closing, Class::Error, "closing")
-            .was("DocumentRejected");
+        CodeDef::new("spawn/closing", Kind::Closing, Class::Error, "closing");
     same(
         &crate::load::closing(&CLOSING),
         &Diagnostic::new(

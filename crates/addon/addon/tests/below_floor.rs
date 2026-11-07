@@ -91,7 +91,7 @@ fn told<T>(outcome: &Result<Document<T>, Rejected>) -> String {
             }
             // The variant and the definitions that were it.
             code if MALFORMED_FORMAT_VERSION.contains(&code.id()) => {
-                lines.push("malformed".to_owned())
+                lines.push("malformed".to_owned());
             }
             _ => {}
         }

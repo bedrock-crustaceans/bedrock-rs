@@ -124,8 +124,11 @@ impl VersionStruct for AtomicClientEntity {
                 // A wrong type is the declared value's, however deep the reader got into it.
                 // The code reads the slice's own blank flag where the old code forced `false`:
                 // a member slice cannot be blank, so the result is equal.
-                // By legacy name: the variant and the definitions that were it.
-                if matches!(error.code_with_path(error.has_path()).name(), "InvalidType") {
+                // The facet table's wrong type is core's one definition.
+                if error
+                    .code_with_path(error.has_path())
+                    .is(&core_codes::INVALID_TYPE)
+                {
                     error.path = declared(&error.path);
                 }
                 d.push(error.into_diagnostic(&cx.at, |code, _| code));

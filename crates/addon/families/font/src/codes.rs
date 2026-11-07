@@ -1,6 +1,5 @@
-//! The `font` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! The `font` family's codes: the game's content-log lines, byte for byte, each a definition beside
+//! the rules that raise it. Each id is `font/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +10,7 @@ pub static NOT_JSON: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "malformed input",
 )
-.game("Couldn't parse font_metadata.json")
-.was("MalformedInput");
+.game("Couldn't parse font_metadata.json");
 
 /// A `version` that is not the integer 1.
 pub static VERSION: CodeDef<0> = CodeDef::new(
@@ -21,8 +19,7 @@ pub static VERSION: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "unsupported format_version",
 )
-.game("Unsupported version number.")
-.was("UnsupportedVersion");
+.game("Unsupported version number.");
 
 /// `MissingRequiredField`: the game's line `Font is missing font_format.`.
 pub static NO_FORMAT: CodeDef<0> = CodeDef::new(
@@ -31,8 +28,7 @@ pub static NO_FORMAT: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("Font is missing font_format.")
-.was("MissingRequiredField");
+.game("Font is missing font_format.");
 
 /// `MissingRequiredField`: the game's line `Font is missing font_name.`.
 pub static NO_NAME: CodeDef<0> = CodeDef::new(
@@ -41,8 +37,7 @@ pub static NO_NAME: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("Font is missing font_name.")
-.was("MissingRequiredField");
+.game("Font is missing font_name.");
 
 /// `MissingRequiredField`: the game's line `Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified`.
 pub static NO_BITMAP_FILE: CodeDef<0> = CodeDef::new(
@@ -51,8 +46,7 @@ pub static NO_BITMAP_FILE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified")
-.was("MissingRequiredField");
+.game("Bitmap font must have either an ascii_font_file or a unicode_file_prefix specified");
 
 /// `MissingRequiredField`: the game's line `TTF is missing font_file.`.
 pub static NO_TTF_FILE: CodeDef<0> = CodeDef::new(
@@ -61,8 +55,7 @@ pub static NO_TTF_FILE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("TTF is missing font_file.")
-.was("MissingRequiredField");
+.game("TTF is missing font_file.");
 
 /// `MissingRequiredField`: the game's line `MSDF is missing font_file.`.
 pub static NO_MSDF_FILE: CodeDef<0> = CodeDef::new(
@@ -71,8 +64,7 @@ pub static NO_MSDF_FILE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("MSDF is missing font_file.")
-.was("MissingRequiredField");
+.game("MSDF is missing font_file.");
 
 /// `MissingRequiredField`: the game's line `Font Alias missing alias.`.
 pub static NO_ALIAS: CodeDef<0> = CodeDef::new(
@@ -81,8 +73,7 @@ pub static NO_ALIAS: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("Font Alias missing alias.")
-.was("MissingRequiredField");
+.game("Font Alias missing alias.");
 
 /// `MissingRequiredField`: the game's line `Font alias missing font_reference`.
 pub static NO_REFERENCE: CodeDef<0> = CodeDef::new(
@@ -91,8 +82,7 @@ pub static NO_REFERENCE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "missing required field",
 )
-.game("Font alias missing font_reference")
-.was("MissingRequiredField");
+.game("Font alias missing font_reference");
 
 /// `InvalidValue`: the game's line `Invalid format for the generate_pages_on_start json object.`.
 pub static PAGES_FORMAT: CodeDef<0> = CodeDef::new(
@@ -101,8 +91,7 @@ pub static PAGES_FORMAT: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "invalid value",
 )
-.game("Invalid format for the generate_pages_on_start json object.")
-.was("InvalidValue");
+.game("Invalid format for the generate_pages_on_start json object.");
 
 /// `InvalidType`: the game's line `Font Alias property fonts must be an array.`.
 pub static ALIAS_FONTS: CodeDef<0> = CodeDef::new(
@@ -111,8 +100,7 @@ pub static ALIAS_FONTS: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "wrong JSON type",
 )
-.game("Font Alias property fonts must be an array.")
-.was("InvalidType");
+.game("Font Alias property fonts must be an array.");
 
 /// `InvalidType`: the game's line `Font alias font_language_code must be a string`.
 pub static LANGUAGE_CODE: CodeDef<0> = CodeDef::new(
@@ -121,8 +109,7 @@ pub static LANGUAGE_CODE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "wrong JSON type",
 )
-.game("Font alias font_language_code must be a string")
-.was("InvalidType");
+.game("Font alias font_language_code must be a string");
 
 /// `InvalidType`: the game's line `Font alias font_ranges must be an array`.
 pub static RANGES: CodeDef<0> = CodeDef::new(
@@ -131,8 +118,7 @@ pub static RANGES: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "wrong JSON type",
 )
-.game("Font alias font_ranges must be an array")
-.was("InvalidType");
+.game("Font alias font_ranges must be an array");
 
 /// `InvalidType`: the game's line `Font alias font_ranges first and last values must be integers.`.
 pub static RANGE_BOUNDS: CodeDef<0> = CodeDef::new(
@@ -141,8 +127,7 @@ pub static RANGE_BOUNDS: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "wrong JSON type",
 )
-.game("Font alias font_ranges first and last values must be integers.")
-.was("InvalidType");
+.game("Font alias font_ranges first and last values must be integers.");
 
 /// The game's assert for a metrics file whose header is not 0.
 pub static FONTDATA_VERSION: CodeDef<0> = CodeDef::new(
@@ -151,8 +136,7 @@ pub static FONTDATA_VERSION: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "malformed input",
 )
-.game("Version of MSDF data file should be 0")
-.was("MalformedInput");
+.game("Version of MSDF data file should be 0");
 
 /// The game's assert for an emoticon file it cannot use.
 pub static MALFORMED: CodeDef<0> = CodeDef::new(
@@ -161,8 +145,7 @@ pub static MALFORMED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "malformed input",
 )
-.game("Malformed JSON")
-.was("MalformedInput");
+.game("Malformed JSON");
 
 /// `FontFileMissing`: the game's line `Failed to load font from resource pack`.
 pub static FONT_LOAD_FAILED: CodeDef<0> = CodeDef::new(
@@ -171,8 +154,7 @@ pub static FONT_LOAD_FAILED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "font file not found",
 )
-.game("Failed to load font from resource pack")
-.was("FontFileMissing");
+.game("Failed to load font from resource pack");
 
 /// `FontFileMissing`: the game's line `Couldn't load MSDF Font information`.
 pub static MSDF_INFO_MISSING: CodeDef<0> = CodeDef::new(
@@ -181,8 +163,7 @@ pub static MSDF_INFO_MISSING: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "font file not found",
 )
-.game("Couldn't load MSDF Font information")
-.was("FontFileMissing");
+.game("Couldn't load MSDF Font information");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

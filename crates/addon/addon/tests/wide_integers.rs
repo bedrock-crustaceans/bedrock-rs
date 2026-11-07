@@ -222,6 +222,22 @@ fn wide() -> Vec<(String, String)> {
     .collect()
 }
 
+/// A syntax error of the whole file, other than the game's JSON reader refusing a number no
+/// double holds.
+fn is_a_syntax_error_of_the_file(d: &Diagnostic) -> bool {
+    d.location.json_path.is_empty()
+        && d.severity >= Severity::Error
+        && d.code.kind() == Kind::Syntax
+        && {
+            let told = format!(
+                "{} {}",
+                bedrock_addon::diagnostic::testing::shown(d),
+                d.code.vanilla().unwrap_or_default()
+            );
+            !told.contains("Number too big") && !told.contains("the item is not loaded")
+        }
+}
+
 /// In every family, at every place a number can stand, a wide integer is what the real number
 /// it spells is: the file loads or not as with the real, to the same value, with the same
 /// findings at the same members.
@@ -274,18 +290,7 @@ fn a_wide_integer_is_in_every_family_the_real_number_it_spells() {
                 // (A `MinecraftDocumentInput` refuses a number no double holds with the game's JSON
                 // reader's own message: the same for the wide integer and for the real.)
                 assert!(
-                    !ours.findings.iter().any(|d| d.location.json_path.is_empty()
-                        && d.severity >= Severity::Error
-                        && d.code.kind() == Kind::Syntax
-                        && {
-                            let told = format!(
-                                "{} {}",
-                                bedrock_addon::diagnostic::testing::shown(d),
-                                d.code.vanilla().unwrap_or_default()
-                            );
-                            !told.contains("Number too big")
-                                && !told.contains("the item is not loaded")
-                        }),
+                    !ours.findings.iter().any(is_a_syntax_error_of_the_file),
                     "{shown}: {:?}",
                     ours.findings
                 );

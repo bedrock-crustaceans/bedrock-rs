@@ -11,7 +11,7 @@ use super::version::{self, BLOCKS_JSON_MAX_FORMAT_VERSION, Effective, Log};
 use super::{BlocksJson, ClientBlock};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind, Phase, Severity,
 };
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::{
@@ -531,11 +531,12 @@ fn push(
 
 /// Whether a finding of [`entry::read`] is one the client logs.
 fn has_vanilla_text(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it; the game's text is the
-    // variant's `text` or the definition's sentence.
+    // By kind: `entry::read` raises only core's invalid type, invalid value and ignored member
+    // and the family's own textures, blockshape and custom blockshape, which are of these
+    // kinds and no others; the game's text is the definition's sentence.
     matches!(
-        code.name(),
-        "InvalidType" | "InvalidValue" | "IgnoredMember"
+        code.kind(),
+        Kind::WrongType | Kind::InvalidValue | Kind::UnknownMember(Disposition::Ignored)
     ) && code.vanilla().is_some()
 }
 

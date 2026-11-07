@@ -1,8 +1,7 @@
-//! The geometry family's codes: the game's loader lines for geometry files, byte for byte, and
-//! the crate's own wording, each a definition beside the rules that raise it. The node-tree lines
-//! every schema walk shares are core's ([`codes`](bedrock_addon_core::diagnostic::codes)). Each
-//! [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the code's name
-//! keeps matching.
+//! The geometry family's codes: the game's loader lines for geometry files, byte for byte, and the
+//! crate's own wording, each a definition beside the rules that raise it. The node-tree lines every
+//! schema walk shares are core's ([`codes`](bedrock_addon_core::diagnostic::codes)). Each id is
+//! `geometry/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 use bedrock_addon_core::json::node_tree;
@@ -16,8 +15,7 @@ pub static DID_NOT_VALIDATE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "geometry file did not validate",
 )
-.game("geometry file didn't validate")
-.was("InvalidValue");
+.game("geometry file didn't validate");
 
 /// A root that is not an object. The finding carries the crate's message as its
 /// `DiagnosticDetail::Syntax`.
@@ -27,8 +25,7 @@ pub static NOT_AN_OBJECT: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the geometry file's root is not an object",
 )
-.game("geometry file could not be loaded: expected the contents to be inside a JSON object - The file has to start with an \"{\" and end with a \"}\"")
-.was("MalformedInput");
+.game("geometry file could not be loaded: expected the contents to be inside a JSON object - The file has to start with an \"{\" and end with a \"}\"");
 
 /// A file newer than the game; the arguments are the version as written and the engine version.
 pub static EXCEEDS_GAME_VERSION: CodeDef<2> = CodeDef::new(
@@ -37,8 +34,7 @@ pub static EXCEEDS_GAME_VERSION: CodeDef<2> = CodeDef::new(
     Class::Error,
     "geometry format_version {} above the game's {}",
 )
-.game("Error: geometry file format version: {} exceeds game version: {}. Skipping.")
-.was("UnsupportedVersion");
+.game("Error: geometry file format version: {} exceeds game version: {}. Skipping.");
 
 /// A base-game `models/blocks/` file below 1.19.30.
 pub static INTERNAL_BLOCKS_FLOOR: CodeDef<0> = CodeDef::new(
@@ -47,8 +43,7 @@ pub static INTERNAL_BLOCKS_FLOOR: CodeDef<0> = CodeDef::new(
     Class::Error,
     "base-game block geometry below 1.19.30",
 )
-.game("Internal blocks are required to use geometry version >= 1.19.30")
-.was("UnsupportedVersion");
+.game("Internal blocks are required to use geometry version >= 1.19.30");
 
 /// The keyed (1.8) layout's version node maximum: 1.11.1 up to 1.12.0 fails the schema (the
 /// node tree's `ABOVE_MAX_VERSION`).
@@ -58,8 +53,7 @@ pub static ABOVE_MAX_VERSION: CodeDef<2> = CodeDef::new(
     Class::Error,
     "format_version {} above the keyed layout's maximum {}",
 )
-.game(node_tree::ABOVE_MAX_VERSION)
-.was("UnsupportedVersion");
+.game(node_tree::ABOVE_MAX_VERSION);
 
 /// The crate's own information for an unreadable `format_version`.
 pub static VERSION_NOT_VALID: CodeDef<1> = CodeDef::new(
@@ -68,8 +62,7 @@ pub static VERSION_NOT_VALID: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "format_version '{}' is not a valid version; treated as 1.0.0",
 )
-.game("format_version '{}' is not a valid version; treated as 1.0.0")
-.was("MalformedFormatVersion");
+.game("format_version '{}' is not a valid version; treated as 1.0.0");
 
 // ---- identifiers ----
 
@@ -80,8 +73,7 @@ pub static NO_NAMESPACE_CUSTOM: CodeDef<1> = CodeDef::new(
     Class::Error,
     "namespace in custom geometry identifier {}",
 )
-.game("Error: namespaces are not supported for custom geometry: identifier: {}")
-.was("InvalidValue");
+.game("Error: namespaces are not supported for custom geometry: identifier: {}");
 
 /// The identifier loop: a namespace in a base-game entity geometry.
 pub static NO_NAMESPACE_INTERNAL: CodeDef<1> = CodeDef::new(
@@ -90,8 +82,7 @@ pub static NO_NAMESPACE_INTERNAL: CodeDef<1> = CodeDef::new(
     Class::Error,
     "namespace in base-game entity geometry identifier {}",
 )
-.game("Error: namespaces are not supported for internal entity geometry: identifier: {}")
-.was("InvalidValue");
+.game("Error: namespaces are not supported for internal entity geometry: identifier: {}");
 
 /// The identifier loop: a base-game block geometry outside `minecraft:`.
 pub static NEEDS_MINECRAFT_NAMESPACE: CodeDef<1> = CodeDef::new(
@@ -100,8 +91,7 @@ pub static NEEDS_MINECRAFT_NAMESPACE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "base-game block geometry {} outside the minecraft namespace",
 )
-.game("Error: Internal block geometries required the minecraft namespace: {}")
-.was("InvalidValue");
+.game("Error: Internal block geometries required the minecraft namespace: {}");
 
 // ---- item display transforms ----
 
@@ -112,8 +102,7 @@ pub static EMBEDDED_TOO_OLD: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "embedded display transform of {} below 1.21.110",
 )
-.game("\"item_display_transform\" for \"{}\" is invalid - \"embedded\" can only be used in a file versioned 1.21.110 or higher")
-.was("InvalidValue");
+.game("\"item_display_transform\" for \"{}\" is invalid - \"embedded\" can only be used in a file versioned 1.21.110 or higher");
 
 /// `shelf` below 1.26.40; the arguments are the geometry's identifier and the transform's name.
 pub static SHELF_TOO_OLD: CodeDef<2> = CodeDef::new(
@@ -122,8 +111,7 @@ pub static SHELF_TOO_OLD: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} display transform {} below 1.26.40",
 )
-.game("\"item_display_transform\" for \"{}\" is invalid - \"{}\" can only be used in a file version 1.26.40 or higher")
-.was("InvalidValue");
+.game("\"item_display_transform\" for \"{}\" is invalid - \"{}\" can only be used in a file version 1.26.40 or higher");
 
 /// A display-transform vector outside its range; the game does not apply it and loads the
 /// geometry.
@@ -133,8 +121,7 @@ pub static TRANSFORM_OUT_OF_BOUNDS: CodeDef<10> = CodeDef::new(
     Class::KeptError,
     "display transform {} ({}, {}, {}) outside ({}, {}, {}) to ({}, {}, {})",
 )
-.game("\"item_display_transform\" - {} ({}, {}, {}) is out of bounds. Allowed range: ({}, {}, {}) to ({}, {}, {}).")
-.was("InvalidValue");
+.game("\"item_display_transform\" - {} ({}, {}, {}) is out of bounds. Allowed range: ({}, {}, {}) to ({}, {}, {}).");
 
 // ---- bones, cubes and meshes ----
 
@@ -145,8 +132,7 @@ pub static INVALID_UV_ROTATION: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "uv rotation {} is not a quarter turn",
 )
-.game("Invalid uv rotation value '{}', valid values are 0, 90, 180 and 270")
-.was("InvalidValue");
+.game("Invalid uv rotation value '{}', valid values are 0, 90, 180 and 270");
 
 /// An index-less mesh whose lists differ in length.
 pub static NO_POLYS_SECTION: CodeDef<3> = CodeDef::new(
@@ -155,8 +141,7 @@ pub static NO_POLYS_SECTION: CodeDef<3> = CodeDef::new(
     Class::KeptError,
     "poly_mesh lists of unequal lengths ({}, {}, {})",
 )
-.game("No 'polys' section, and the number of positions, normals, and UVs aren't equal ({}, {}, {} resp)")
-.was("InvalidValue");
+.game("No 'polys' section, and the number of positions, normals, and UVs aren't equal ({}, {}, {} resp)");
 
 /// A `tri_list` whose positions are not triangles.
 pub static NOT_TRIANGLES: CodeDef<0> = CodeDef::new(
@@ -165,8 +150,7 @@ pub static NOT_TRIANGLES: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "tri_list positions are not triangles",
 )
-.game("\"polys\" specifies \"tri_list\" but positions[] isn't a multiple of three?")
-.was("InvalidValue");
+.game("\"polys\" specifies \"tri_list\" but positions[] isn't a multiple of three?");
 
 /// A `quad_list` whose positions are not quads.
 pub static NOT_QUADS: CodeDef<0> = CodeDef::new(
@@ -175,8 +159,7 @@ pub static NOT_QUADS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "quad_list positions are not quads",
 )
-.game("\"polys\" specifies \"quad_list\" but positions[] isn't a multiple of four?")
-.was("InvalidValue");
+.game("\"polys\" specifies \"quad_list\" but positions[] isn't a multiple of four?");
 
 /// The model build: a bone that names itself as its parent (a developer assertion of the
 /// game's, told as an information of the crate's own).
@@ -186,8 +169,7 @@ pub static PARENT_IS_SELF: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "bone is its own parent",
 )
-.game("Error: parenting model part to itself!")
-.was("ReferenceCycle");
+.game("Error: parenting model part to itself!");
 
 /// The crate's own information for a bone whose parent is no bone of the geometry.
 pub static BONE_PARENT_MISSING: CodeDef<3> = CodeDef::new(
@@ -196,8 +178,7 @@ pub static BONE_PARENT_MISSING: CodeDef<3> = CodeDef::new(
     Class::Lint,
     "bone '{}' has parent '{}', which is not a bone of geometry '{}'",
 )
-.game("bone '{}' has parent '{}', which is not a bone of geometry '{}'")
-.was("UnresolvedReference");
+.game("bone '{}' has parent '{}', which is not a bone of geometry '{}'");
 
 /// The crate's own information for a bone's `name` or `parent` written in another case than the
 /// lower case it is read in.
@@ -207,8 +188,7 @@ pub static BONE_LOWER_CASED: CodeDef<3> = CodeDef::new(
     Class::Lint,
     "bone {} '{}' is read as '{}'",
 )
-.game("bone {} '{}' is read as '{}'")
-.was("InvalidValue");
+.game("bone {} '{}' is read as '{}'");
 
 /// The crate's own information for a clamped bound.
 pub static BOUNDS_CLAMPED: CodeDef<3> = CodeDef::new(
@@ -217,8 +197,7 @@ pub static BOUNDS_CLAMPED: CodeDef<3> = CodeDef::new(
     Class::Lint,
     "visible_bounds_{} {} clamped to {}",
 )
-.game("visible_bounds_{} {} clamped to {}")
-.was("ClampedValue");
+.game("visible_bounds_{} {} clamped to {}");
 
 /// The crate's own information for a box `uv` component with a fraction, which the game's
 /// integer read drops.
@@ -228,8 +207,7 @@ pub static UV_TRUNCATED: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "box uv {} is read as the whole number {}",
 )
-.game("box uv {} is read as the whole number {}")
-.was("InvalidValue");
+.game("box uv {} is read as the whole number {}");
 
 /// The crate's own information for a `poly_mesh` index that is no whole number of 32 bits,
 /// which the game's unsigned read turns into one.
@@ -239,8 +217,7 @@ pub static INDEX_NOT_WHOLE: CodeDef<2> = CodeDef::new(
     Class::Lint,
     "poly_mesh index {} is read as {}",
 )
-.game("poly_mesh index {} is read as {}")
-.was("InvalidValue");
+.game("poly_mesh index {} is read as {}");
 
 // ---- inheritance and the upgrade ----
 
@@ -251,8 +228,7 @@ pub static PARENT_NOT_DEFINED: CodeDef<2> = CodeDef::new(
     Class::Error,
     "geometry '{}' inherits from '{}', which is not defined",
 )
-.game("geometry '{}' inherits from '{}', which is not defined")
-.was("UnresolvedReference");
+.game("geometry '{}' inherits from '{}', which is not defined");
 
 /// The crate's own information for the geometry-level `cape`, which is lost.
 pub static CAPE_DROPPED: CodeDef<0> = CodeDef::new(
@@ -261,8 +237,7 @@ pub static CAPE_DROPPED: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "cape is not carried over from format 1.8 geometry",
 )
-.game("cape is not carried over from format 1.8 geometry")
-.was("DroppedField");
+.game("cape is not carried over from format 1.8 geometry");
 
 /// Every definition of the family, for the registry of ids.
 pub static ALL: &[&CodeMeta] = &[

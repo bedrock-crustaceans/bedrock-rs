@@ -1,6 +1,6 @@
 //! The trade family's codes: vanilla's content-log lines of trade tables, byte for byte, each a
-//! definition beside the reader or rule that raises it. Each [`was`](CodeDef::was) the legacy
-//! code its sites raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the reader or rule that raises it. Each id is `trade/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static MUST_CONTAIN_TIERS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the trade table has no tiers",
 )
-.game("Trade table file must containt \"tiers\"")
-.was("MissingPayload");
+.game("Trade table file must containt \"tiers\"");
 
 /// `tiers` is missing.
 pub static TIERS_MISSING: CodeDef<0> = CodeDef::new(
@@ -21,8 +20,7 @@ pub static TIERS_MISSING: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no tiers array",
 )
-.game("\"tiers\" must be an array")
-.was("MissingPayload");
+.game("\"tiers\" must be an array");
 
 /// `tiers` is not an array.
 pub static TIERS_ARRAY: CodeDef<0> = CodeDef::new(
@@ -31,8 +29,7 @@ pub static TIERS_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "tiers is not an array",
 )
-.game("\"tiers\" must be an array")
-.was("InvalidType");
+.game("\"tiers\" must be an array");
 
 /// A tier's `groups` is present and not an array.
 pub static GROUPS_ARRAY: CodeDef<0> = CodeDef::new(
@@ -41,8 +38,7 @@ pub static GROUPS_ARRAY: CodeDef<0> = CodeDef::new(
     Class::Error,
     "groups is not an array",
 )
-.game("\"groups\" must be an array")
-.was("InvalidType");
+.game("\"groups\" must be an array");
 
 /// A group's `trades` (or a tier's flat `trades`) is missing; the group is dropped and the
 /// rest of the table loads: a kept error.
@@ -52,8 +48,7 @@ pub static TRADES_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no trades array",
 )
-.game("\"trades\" must be an array")
-.was("MissingRequiredField");
+.game("\"trades\" must be an array");
 
 /// A group's `trades` (or a tier's flat `trades`) is not an array; the group is dropped: a
 /// kept error.
@@ -63,8 +58,7 @@ pub static TRADES_ARRAY: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "trades is not an array",
 )
-.game("\"trades\" must be an array")
-.was("InvalidType");
+.game("\"trades\" must be an array");
 
 /// A group's `num_to_select` is above its number of trades; the arguments are the two
 /// numbers.
@@ -74,8 +68,7 @@ pub static NUM_TO_SELECT: CodeDef<2> = CodeDef::new(
     Class::Error,
     "num_to_select {} above the {} trades",
 )
-.game("num_to_select[{}] must not be greater than the number of trades[{}]")
-.was("InvalidValue");
+.game("num_to_select[{}] must not be greater than the number of trades[{}]");
 
 /// A trade without `wants`; the argument is the trade as styled JSON text. The trade is
 /// dropped: a kept error.
@@ -85,8 +78,7 @@ pub static NO_OFFERS: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the trade {} wants nothing",
 )
-.game("Trade table {} doesn't contain any offers, at least one is required")
-.was("InvalidValue");
+.game("Trade table {} doesn't contain any offers, at least one is required");
 
 /// A trade without `gives`; the argument is the trade as styled JSON text. The trade is
 /// dropped: a kept error.
@@ -96,8 +88,7 @@ pub static NO_RECEIVES: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "the trade {} gives nothing",
 )
-.game("Trade {} doesn't have any recieves, at least one is required")
-.was("InvalidValue");
+.game("Trade {} doesn't have any recieves, at least one is required");
 
 /// A `weight` of 0 or less; the argument is the weight. The trade is dropped: a kept error.
 pub static INVALID_WEIGHT: CodeDef<1> = CodeDef::new(
@@ -106,8 +97,7 @@ pub static INVALID_WEIGHT: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "weight {} is not above 0",
 )
-.game("Invalid weight value: {}")
-.was("InvalidValue");
+.game("Invalid weight value: {}");
 
 /// `weight` in a group that picks every trade (a warning of the legacy parser; the typed
 /// document tells it as an information).
@@ -117,8 +107,7 @@ pub static WEIGHT_NO_EFFECT: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "weight in a group that picks every trade",
 )
-.game("\"weight\" key used for a trade without using \"groups\" key or with \"num_to_select\" set to -1. Weight value will have no effect as every trade will be chosen.")
-.was("NoEffect");
+.game("\"weight\" key used for a trade without using \"groups\" key or with \"num_to_select\" set to -1. Weight value will have no effect as every trade will be chosen.");
 
 /// Every definition of this table, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

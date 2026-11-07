@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
+use bedrock_addon_core::diagnostic::{Diagnostic, Disposition, JsonPath, Kind};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, Unknown, UnknownMembers};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Value, WriteStyle, merge_unknown, write_json,
@@ -373,11 +373,8 @@ fn refuse_what_the_format_refuses<S: VersionStruct>(payload: &Value) -> Result<(
     let mut told = Diagnostics::default();
     let _ = S::parse(JsonSlice::new(&text), &parse, &mut told);
     let refused = told.iter().find(|finding| {
-        // By legacy name: the variant and the definitions that were it.
-        matches!(
-            finding.code.name(),
-            "UnrecognizedField" | "UnrecognizedComponent"
-        ) && finding.location.json_path.starts_with(&at)
+        finding.kind() == Kind::UnknownMember(Disposition::Kept)
+            && finding.location.json_path.starts_with(&at)
     });
     match refused {
         Some(finding) => Err(EncodeError::NotRepresentable {

@@ -10,7 +10,9 @@ use crate::codes;
 use crate::component::{BiomeComponent, child};
 use crate::read::payload;
 use crate::write::object;
-use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics};
+use bedrock_addon_core::diagnostic::{
+    Diagnostic, DiagnosticDetail, Diagnostics, Disposition, Kind,
+};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
@@ -121,9 +123,6 @@ impl Upgrade for Biome {
 
 /// Whether `finding` tells of an unknown member or component.
 fn is_unknown_member(finding: &Diagnostic) -> bool {
-    // By legacy name: the variant and the definitions that were it.
-    matches!(
-        finding.code.name(),
-        "UnrecognizedField" | "UnrecognizedComponent"
-    )
+    // The kind holds the unrecognized field and component definitions and no others.
+    matches!(finding.kind(), Kind::UnknownMember(Disposition::Kept))
 }

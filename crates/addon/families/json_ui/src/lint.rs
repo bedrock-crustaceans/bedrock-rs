@@ -24,7 +24,7 @@ use super::resolve::base_of;
 use super::value::{first_key, member, number, string_or_empty};
 use super::{Control, DefKey, DefRef, UiDefinitions};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, CodeDef, DiagnosticDetail};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, DiagnosticDetail, Kind as CodeKind};
 use bedrock_addon_core::json::Value;
 
 /// The note of a finding with the game's text: when the game would log it.
@@ -32,16 +32,17 @@ pub(crate) const CREATION_TIME: &str = "the game logs this only when a screen cr
 
 /// Whether `code` carries a text of the game (the creation-time texts), not one of the crate's own.
 fn game_text(code: &Code) -> bool {
-    // By legacy name: the variant and the definitions that were it; the game's text is the
-    // variant's `text` or the definition's sentence.
+    // The crate's own definitions of these kinds, and the core's unknown enum value, whose
+    // sentence is the game's.
     matches!(
-        code.name(),
-        "InvalidType"
-            | "InvalidValue"
-            | "InvalidEnumValue"
-            | "MissingRequiredField"
-            | "UnresolvedReference"
-    ) && code.vanilla().is_some()
+        code.kind(),
+        CodeKind::WrongType
+            | CodeKind::InvalidValue
+            | CodeKind::InvalidEnumValue
+            | CodeKind::MissingRequired
+            | CodeKind::UnresolvedReference
+    ) && (code.id().starts_with("json_ui/") || code.is(&core_codes::INVALID_ENUM_VALUE))
+        && code.vanilla().is_some()
 }
 
 /// One finding: the listed file, the breadcrumb inside it and the code.

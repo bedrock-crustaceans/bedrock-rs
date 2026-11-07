@@ -1,6 +1,6 @@
 //! The `loading_messages` family's codes: the game's content-log lines, byte for byte, each a
-//! definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites
-//! raised, so a pin or a filter on the code's name keeps matching.
+//! definition beside the rules that raise it. Each id is `loading_messages/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -12,8 +12,7 @@ pub static LOADING_NOT_JSON: CodeDef<0> = CodeDef::new(
     Class::Error,
     "loading messages file is not JSON",
 )
-.game("Failed to read loading messages file")
-.was("MalformedInput");
+.game("Failed to read loading messages file");
 
 /// The game's assert for a file with neither a non-empty `loading_messages` nor a
 /// `beginner_loading_messages`.
@@ -23,8 +22,7 @@ pub static BEGINNER_MISSING: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "no beginner messages",
 )
-.game("Beginner messages are missing in ProgressTips::_parseLoadingMessages")
-.was("MissingRequiredField");
+.game("Beginner messages are missing in ProgressTips::_parseLoadingMessages");
 
 /// The game's assert when the beginner list is empty.
 pub static BEGINNER_EMPTY: CodeDef<0> = CodeDef::new(
@@ -33,8 +31,7 @@ pub static BEGINNER_EMPTY: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "the beginner list is empty",
 )
-.game("ProgressTips::getProgressTipStage called before loading the tips!")
-.was("InvalidValue");
+.game("ProgressTips::getProgressTipStage called before loading the tips!");
 
 /// The game's assert for a list the file lacks; the argument is the member name.
 pub static LIST_MISSING: CodeDef<1> = CodeDef::new(
@@ -43,8 +40,7 @@ pub static LIST_MISSING: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "no {} list",
 )
-.game("JSON passed to ProgressTips::_parseConditionalLoadingMessages does not contain messages of type: {}")
-.was("MissingRequiredField");
+.game("JSON passed to ProgressTips::_parseConditionalLoadingMessages does not contain messages of type: {}");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

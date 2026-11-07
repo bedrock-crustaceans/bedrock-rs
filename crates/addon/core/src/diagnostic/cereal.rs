@@ -365,7 +365,7 @@ mod tests {
 
     /// The code's name and its rendered text.
     fn shown(code: &Code) -> (&'static str, String) {
-        (code.name(), code.to_string())
+        (code.id(), code.to_string())
     }
 
     #[test]
@@ -374,7 +374,7 @@ mod tests {
         assert_eq!(
             shown(&enum_expects("Facing", &facing, "sideways")),
             (
-                "InvalidEnumValue",
+                "core/enum_expects",
                 "This value is bound to 'Facing' and expects one of the following strings: 'down', 'up', 'north', ... (3 others). Found: 'sideways'".to_owned()
             )
         );
@@ -389,14 +389,14 @@ mod tests {
         assert_eq!(
             shown(&enum_expects_string("Facing")),
             (
-                "InvalidType",
+                "core/enum_expects_string",
                 "This value is bound to 'Facing' and expects a \"named value\" (i.e. a string)"
                     .to_owned()
             )
         );
         assert_eq!(
             shown(&invalid_enum_value()),
-            ("InvalidEnumValue", "invalid enum value".to_owned())
+            ("core/invalid_enum_line", "invalid enum value".to_owned())
         );
     }
 
@@ -410,7 +410,7 @@ mod tests {
         assert_eq!(
             shown(&NumericRange::inclusive(0.0, 0.9).code()),
             (
-                "InvalidValue",
+                "core/outside_accepted_range",
                 "the input is outside of the accepted range [0, 0.900000]".to_owned()
             )
         );
@@ -446,7 +446,10 @@ mod tests {
         assert!(!above.contains(0.0));
         assert_eq!(
             shown(&not_multiple_of(45.0, 90.0)),
-            ("InvalidValue", "45 is not multiple of 90".to_owned())
+            (
+                "core/not_multiple_of",
+                "45 is not multiple of 90".to_owned()
+            )
         );
     }
 
@@ -455,43 +458,47 @@ mod tests {
         let cases = [
             (
                 string_mismatch("^\\S+$"),
-                "InvalidValue",
+                "core/string_mismatch",
                 "expected string to match the \"^\\S+$\" regex",
             ),
             (
                 array_too_small(1),
-                "InvalidValue",
+                "core/array_at_least",
                 "expected array with at least 1 elements",
             ),
             (
                 object_too_small(2),
-                "InvalidValue",
+                "core/object_at_least",
                 "expected object with at least 2 elements",
             ),
-            (no_duplicates(), "InvalidValue", "No duplicates allowed"),
+            (
+                no_duplicates(),
+                "core/no_duplicates",
+                "No duplicates allowed",
+            ),
             (
                 key_not_allowed("side"),
-                "InvalidValue",
+                "core/key_not_allowed",
                 "key side is not allowed",
             ),
             (
                 too_many_elements(64),
-                "InvalidValue",
+                "core/too_many_elements",
                 "too many input elements, expected no more than 64",
             ),
             (
                 too_many_characters(64),
-                "InvalidValue",
+                "core/too_many_characters",
                 "too many characters, expected no more than 64",
             ),
             (
                 too_many_map_elements(),
-                "InvalidValue",
+                "core/too_many_map_elements",
                 "too many input elements for an associative container",
             ),
             (
                 too_few_components(1),
-                "InvalidValue",
+                "core/too_few_components",
                 "too few input components, expected at least 1",
             ),
         ];
@@ -505,23 +512,27 @@ mod tests {
         let cases = [
             (
                 member_not_in_schema(),
-                "UnrecognizedField",
+                "core/member_not_in_schema",
                 "this member was found in the input, but is not present in the Schema",
             ),
             (
                 component_not_in_schema(),
-                "UnrecognizedComponent",
+                "core/component_not_in_schema",
                 "this component was found in the input, but is not present in the Schema",
             ),
             (
                 missing_required_field(),
-                "MissingRequiredField",
+                "core/required_field_missing",
                 "missing required field",
             ),
-            (expected_object(), "InvalidType", "expected an object"),
+            (
+                expected_object(),
+                "core/expected_object",
+                "expected an object",
+            ),
             (
                 invalid_numeric_value(),
-                "InvalidType",
+                "core/invalid_numeric_value",
                 "invalid numeric value",
             ),
         ];
@@ -535,37 +546,37 @@ mod tests {
         let cases = [
             (
                 payload_missing(),
-                "MissingPayload",
+                "core/payload_missing",
                 "The payload of the Minecraft Document is missing",
             ),
             (
                 payload_key_mismatch("minecraft:block", "minecraft:item"),
-                "MissingPayload",
+                "core/payload_under_other_key",
                 "The payload key does not match the expected one. Expected: 'minecraft:block'. Actual: 'minecraft:item'.",
             ),
             (
                 required_child("format_version"),
-                "MissingRequiredField",
+                "core/required_child",
                 "Required child format_version not found",
             ),
             (
                 too_few_children(0, 1),
-                "InvalidValue",
+                "core/too_few_children",
                 "Node has too few children (0 < 1)",
             ),
             (
                 too_many_children(3, 2),
-                "InvalidValue",
+                "core/too_many_children",
                 "Node has too many children (3 > 2)",
             ),
             (
                 unknown_child_option("object"),
-                "InvalidType",
+                "core/unknown_child_option",
                 "unknown child schema option type.  Allowed types: object",
             ),
             (
                 version_below_min("1.8.0", "1.10.0"),
-                "UnsupportedVersion",
+                "core/version_below_min",
                 "Version 1.8.0 below min required version (1.10.0)",
             ),
         ];

@@ -1,6 +1,5 @@
-//! The `lang` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! The `lang` family's codes: the game's content-log lines, byte for byte, each a definition beside
+//! the rules that raise it. Each id is `lang/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +10,7 @@ pub static NEW_LINE_IN_KEY: CodeDef<2> = CodeDef::new(
     Class::Warning,
     "malformed input",
 )
-.game("Line: {} - Invalid lang file format. New line character was found while parsing key: '{}'.")
-.was("MalformedInput");
+.game("Line: {} - Invalid lang file format. New line character was found while parsing key: '{}'.");
 
 /// `MalformedInput`: the game's line `Line: {} - Invalid lang file format. Null character was found while parsing key: '{}'.`.
 pub static NULL_IN_KEY: CodeDef<2> = CodeDef::new(
@@ -21,8 +19,7 @@ pub static NULL_IN_KEY: CodeDef<2> = CodeDef::new(
     Class::Warning,
     "malformed input",
 )
-.game("Line: {} - Invalid lang file format. Null character was found while parsing key: '{}'.")
-.was("MalformedInput");
+.game("Line: {} - Invalid lang file format. Null character was found while parsing key: '{}'.");
 
 /// `InvalidType`: the game's line `Languange name entries should be an array with 2 elements, a code and a name`.
 pub static NAME_ENTRY_SHAPE_INVALID_TYPE: CodeDef<0> = CodeDef::new(
@@ -31,8 +28,7 @@ pub static NAME_ENTRY_SHAPE_INVALID_TYPE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "wrong JSON type",
 )
-.game("Languange name entries should be an array with 2 elements, a code and a name")
-.was("InvalidType");
+.game("Languange name entries should be an array with 2 elements, a code and a name");
 
 /// `InvalidValue`: the game's line `Languange name entries should be an array with 2 elements, a code and a name`.
 pub static NAME_ENTRY_SHAPE_INVALID_VALUE: CodeDef<0> = CodeDef::new(
@@ -41,8 +37,7 @@ pub static NAME_ENTRY_SHAPE_INVALID_VALUE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "invalid value",
 )
-.game("Languange name entries should be an array with 2 elements, a code and a name")
-.was("InvalidValue");
+.game("Languange name entries should be an array with 2 elements, a code and a name");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

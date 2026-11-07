@@ -1,6 +1,6 @@
-//! The `sound_definitions` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised,
-//! so a pin or a filter on the code's name keeps matching.
+//! The `sound_definitions` family's codes: the game's content-log lines, byte for byte, each a
+//! definition beside the rules that raise it. Each id is `sound_definitions/<name>`, the name its
+//! constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Kind};
 
@@ -11,8 +11,7 @@ pub static NOT_A_LIST: CodeDef<0> = CodeDef::new(
     Class::Error,
     "invalid value",
 )
-.game("sound definition field isn't a list of sound definitions!")
-.was("InvalidValue");
+.game("sound definition field isn't a list of sound definitions!");
 
 /// Vanilla's text (sic, no space) for a definition that is no object.
 pub static MALFORMED_SOUND: CodeDef<1> = CodeDef::new(
@@ -21,8 +20,7 @@ pub static MALFORMED_SOUND: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "invalid value",
 )
-.game("sound definitions has sound '{}'that is malformed")
-.was("InvalidValue");
+.game("sound definitions has sound '{}'that is malformed");
 
 /// Vanilla's text for a merged root that is no object.
 pub static CONTENTS_MALFORMED: CodeDef<0> = CodeDef::new(
@@ -31,8 +29,7 @@ pub static CONTENTS_MALFORMED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "invalid value",
 )
-.game("sound_definitions.json contents is malformed")
-.was("InvalidValue");
+.game("sound_definitions.json contents is malformed");
 
 /// Vanilla's text for a merged `sound_definitions` member that is no object.
 pub static SECTION_MALFORMED: CodeDef<0> = CodeDef::new(
@@ -41,8 +38,7 @@ pub static SECTION_MALFORMED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "invalid value",
 )
-.game("sound_definitions section is malformed")
-.was("InvalidValue");
+.game("sound_definitions section is malformed");
 
 /// Vanilla's text for a `music.*` definition of another category.
 pub static NOT_MUSIC: CodeDef<1> = CodeDef::new(
@@ -51,8 +47,7 @@ pub static NOT_MUSIC: CodeDef<1> = CodeDef::new(
     Class::Warning,
     "invalid value",
 )
-.game("The sound category of '{}' is not set as music in sound_definitions.json")
-.was("InvalidValue");
+.game("The sound category of '{}' is not set as music in sound_definitions.json");
 
 /// Every definition of this module, for the id registry.
 pub static ALL: &[&CodeMeta] = &[

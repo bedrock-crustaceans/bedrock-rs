@@ -91,8 +91,7 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
         }
         Err(ScalarFailure::Read(error)) => {
             let mut finding = slice_error(error, &cx.at);
-            // By legacy name: the variant and the definitions that were it.
-            if finding.code.name() == "InvalidValue" {
+            if finding.code.is(&core_codes::INVALID_VALUE) {
                 let key = last_key(&finding.location.json_path);
                 if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
                     finding.code = Code::from(*message);
@@ -125,12 +124,11 @@ pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
 fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
     error.into_diagnostic(base, |code, error| {
         let at = || base.join(error.relative_path());
-        // By legacy name: the variant and the definitions that were it.
-        match code.name() {
+        match code.id() {
             // The client's enum members reject an unknown name as a value.
-            "InvalidEnumValue" => Code::from(&core_codes::INVALID_VALUE),
-            "MissingRequiredField" => core_codes::REQUIRED_CHILD.with([last_key(&at())]),
-            "UnrecognizedField" => core_codes::CHILD_NOT_VALID.with([last_key(&at())]),
+            "core/invalid_enum_value" => Code::from(&core_codes::INVALID_VALUE),
+            "core/missing_required_field" => core_codes::REQUIRED_CHILD.with([last_key(&at())]),
+            "core/unrecognized_field" => core_codes::CHILD_NOT_VALID.with([last_key(&at())]),
             _ => code,
         }
     })

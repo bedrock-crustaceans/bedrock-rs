@@ -399,10 +399,10 @@ fn refused(
         None => span,
     };
     // A wrong type is the declared member's, however deep the reader got into it.
-    // By legacy name: the variant and the definitions that were it.
-    let path = match code.name() {
-        "InvalidType" => declared(&failed, names_only),
-        _ => failed.clone(),
+    let path = if code.is(&core_codes::INVALID_TYPE) {
+        declared(&failed, names_only)
+    } else {
+        failed.clone()
     };
     let mut at = described.at.clone();
     at.append(&path);
@@ -414,14 +414,13 @@ fn refused(
         return (own.refused)(described, span);
     }
     let (member, in_array) = last_member(&path);
-    // By legacy name: the variant and the definitions that were it.
-    match code.name() {
-        "MissingRequiredField" => {
+    match code.id() {
+        "core/missing_required_field" => {
             // The missing member is the path's last key; it is reported at its parent.
             at.pop();
             required(member.unwrap_or_default(), at)
         }
-        "InvalidType" => {
+        "core/invalid_type" => {
             let allowed = match profile.condition_types {
                 ConditionTypes::ByPlace => allowed_at(&path, names_only, own),
                 ConditionTypes::ByName => match (member, in_array) {

@@ -1,8 +1,7 @@
 //! The loot family's codes: vanilla's content-log lines of the loot walkers, byte for byte with
-//! `%s` / `%d` written `{}`, each a definition beside the walker that raises it. Each
-//! [`was`](CodeDef::was) the legacy code its sites raised, so a pin or a filter on the code's
-//! name keeps matching. The arity is the definition's own, so a finding cannot be built with
-//! the wrong number of arguments.
+//! `%s` / `%d` written `{}`, each a definition beside the walker that raises it. Each id is
+//! `loot/<name>`, the name its constant's in lower case. The arity is the definition's own, so a
+//! finding cannot be built with the wrong number of arguments.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
 
@@ -14,8 +13,7 @@ pub static INVALID_TABLE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the loot table {} is not a JSON object",
 )
-.game("Loot table for {} is invalid.")
-.was("MalformedInput");
+.game("Loot table for {} is invalid.");
 
 /// A file of no value at all (no bytes, a byte-order mark alone, whitespace and comments,
 /// `null`); the argument is its path.
@@ -25,8 +23,7 @@ pub static INVALID_TABLE_EMPTY: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the loot table {} is empty",
 )
-.game("Loot table for {} is invalid.")
-.was("EmptyDocument");
+.game("Loot table for {} is invalid.");
 
 /// A pool without `entries`; the pool is kept empty: a kept error.
 pub static ENTRIES_MISSING: CodeDef<0> = CodeDef::new(
@@ -35,8 +32,7 @@ pub static ENTRIES_MISSING: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a pool without entries",
 )
-.game("There must be an \"entries\" array inside the loot table pool.")
-.was("MissingRequiredField");
+.game("There must be an \"entries\" array inside the loot table pool.");
 
 /// A pool's `entries` that is not an array; the pool is kept empty: a kept error.
 pub static ENTRIES_ARRAY: CodeDef<0> = CodeDef::new(
@@ -45,8 +41,7 @@ pub static ENTRIES_ARRAY: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a pool's entries is not an array",
 )
-.game("There must be an \"entries\" array inside the loot table pool.")
-.was("InvalidType");
+.game("There must be an \"entries\" array inside the loot table pool.");
 
 /// An entry that is no object; it is dropped: a kept error.
 pub static ENTRY_OBJECT: CodeDef<0> = CodeDef::new(
@@ -55,8 +50,7 @@ pub static ENTRY_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "an entry is not an object",
 )
-.game("Every entry of \"entries\" must be a JSON object - it has to start with an \"{\" and end with a \"}\"")
-.was("InvalidType");
+.game("Every entry of \"entries\" must be a JSON object - it has to start with an \"{\" and end with a \"}\"");
 
 /// An entry of no known type; the argument is the type as written. It is dropped: a kept
 /// error.
@@ -66,8 +60,7 @@ pub static ENTRY_TYPE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "an entry of the unknown type {}",
 )
-.game("Every entry of \"entries\" must specify a type of either \"item\", \"loot_table\", or \"empty\". Given: {}")
-.was("InvalidValue");
+.game("Every entry of \"entries\" must specify a type of either \"item\", \"loot_table\", or \"empty\". Given: {}");
 
 /// A function that is no object; it is dropped: a kept error.
 pub static FUNCTION_OBJECT: CodeDef<0> = CodeDef::new(
@@ -76,8 +69,7 @@ pub static FUNCTION_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a function is not an object",
 )
-.game("Error loading loot table \"functions\" as it is not a valid Json object. \"functions\" must be key: value pairs")
-.was("InvalidType");
+.game("Error loading loot table \"functions\" as it is not a valid Json object. \"functions\" must be key: value pairs");
 
 /// A function the game does not know; the argument is its name. It is dropped: a kept error.
 pub static UNSUPPORTED_FUNCTION: CodeDef<1> = CodeDef::new(
@@ -86,8 +78,7 @@ pub static UNSUPPORTED_FUNCTION: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown loot function {}",
 )
-.game("Unsupported looting function: {}")
-.was("UnrecognizedComponent");
+.game("Unsupported looting function: {}");
 
 /// A function of the Upcoming Creator Features experiment without the toggle; the argument is
 /// its name. It is dropped: a kept error.
@@ -97,8 +88,7 @@ pub static UCF_FUNCTION: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "loot function {} needs the Upcoming Creator Features toggle",
 )
-.game("Unsupported looting function outside of Upcoming Creator Features Experiment: {}")
-.was("MissingToggles");
+.game("Unsupported looting function outside of Upcoming Creator Features Experiment: {}");
 
 /// `carry_over_block_entity_data`'s `dynamic_properties` that is no boolean: a kept error.
 pub static DYNAMIC_PROPERTIES: CodeDef<0> = CodeDef::new(
@@ -107,8 +97,7 @@ pub static DYNAMIC_PROPERTIES: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "dynamic_properties is not a boolean",
 )
-.game("Error loading loot table \"carry_over_block_entity_data\" dynamic_properties as it is not a bool")
-.was("InvalidType");
+.game("Error loading loot table \"carry_over_block_entity_data\" dynamic_properties as it is not a bool");
 
 /// A condition that is no object; it is dropped: a kept error.
 pub static CONDITION_OBJECT: CodeDef<0> = CodeDef::new(
@@ -117,8 +106,7 @@ pub static CONDITION_OBJECT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a condition is not an object",
 )
-.game("Error loading loot table \"conditions\" as it is not a valid Json object. \"conditions\" must be key: value pairs")
-.was("InvalidType");
+.game("Error loading loot table \"conditions\" as it is not a valid Json object. \"conditions\" must be key: value pairs");
 
 /// A condition's operator that is none of the four; the argument is the operator as written.
 /// The condition is dropped: a kept error.
@@ -128,8 +116,7 @@ pub static CONDITION_OPERATOR: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown loot condition operator {}",
 )
-.game("Invalid loot condition operator \"{}\". Expected \"==\", \"equals\", \"!=\", or \"not\".")
-.was("InvalidValue");
+.game("Invalid loot condition operator \"{}\". Expected \"==\", \"equals\", \"!=\", or \"not\".");
 
 /// A condition the game does not know; the argument is its name. The game writes the line to
 /// its developer log, not the content log: an information.
@@ -139,8 +126,7 @@ pub static UNKNOWN_CONDITION: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "unknown loot condition {}",
 )
-.game("There is unknown or supressed condition[{}]")
-.was("UnrecognizedComponent");
+.game("There is unknown or supressed condition[{}]");
 
 /// A banner `type` the game does not know; the argument is the value as written: a kept error.
 pub static BANNER_TYPE: CodeDef<1> = CodeDef::new(
@@ -149,8 +135,7 @@ pub static BANNER_TYPE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown banner type {}",
 )
-.game("Invalid banner type input: {}")
-.was("InvalidValue");
+.game("Invalid banner type input: {}");
 
 /// A banner `base_color` the game does not know; the argument is the value as written: a kept
 /// error.
@@ -160,8 +145,7 @@ pub static BANNER_BASE_COLOR: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown banner base_color {}",
 )
-.game("Invalid banner base_color input: {}")
-.was("InvalidValue");
+.game("Invalid banner base_color input: {}");
 
 /// Patterns on a banner type other than the default: a kept error.
 pub static BANNER_NON_DEFAULT: CodeDef<0> = CodeDef::new(
@@ -170,8 +154,7 @@ pub static BANNER_NON_DEFAULT: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "patterns on a banner that is not of the default type",
 )
-.game("Non-default banner types cannot have custom patterns")
-.was("InvalidValue");
+.game("Non-default banner types cannot have custom patterns");
 
 /// More patterns than a banner takes; the arguments are the limit and the number given: a
 /// kept error.
@@ -181,8 +164,7 @@ pub static BANNER_MAX: CodeDef<2> = CodeDef::new(
     Class::KeptError,
     "more than {} banner patterns ({})",
 )
-.game("Banner exceeds maximum number of {} patterns! Patterns given: {}")
-.was("InvalidValue");
+.game("Banner exceeds maximum number of {} patterns! Patterns given: {}");
 
 /// A banner pattern the game does not know; the argument is its name (the game prints none):
 /// a kept error.
@@ -192,8 +174,7 @@ pub static BANNER_PATTERN: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown banner pattern {}",
 )
-.game("Invalid banner pattern name: {}")
-.was("UnresolvedReference");
+.game("Invalid banner pattern name: {}");
 
 /// A banner pattern's colour the game does not know; the argument is the value as written: a
 /// kept error.
@@ -203,8 +184,7 @@ pub static BANNER_PATTERN_COLOR: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown colour {} of a banner pattern",
 )
-.game("Invalid color input in banner pattern {}")
-.was("InvalidValue");
+.game("Invalid color input in banner pattern {}");
 
 /// `set_data` with neither `data` nor `values` (a warning in the game).
 pub static SET_DATA_KEY: CodeDef<0> = CodeDef::new(
@@ -213,8 +193,7 @@ pub static SET_DATA_KEY: CodeDef<0> = CodeDef::new(
     Class::Warning,
     "set_data without data or values",
 )
-.game("Invalid json keyname for specifying the data range for set_data function. Only 'data' and 'values' are supported.")
-.was("MissingRequiredField");
+.game("Invalid json keyname for specifying the data range for set_data function. Only 'data' and 'values' are supported.");
 
 /// `enchant_book_for_trading`'s `enchantments` that is no array: a kept error.
 pub static ENCHANT_ARRAY: CodeDef<0> = CodeDef::new(
@@ -223,8 +202,9 @@ pub static ENCHANT_ARRAY: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "enchantments is not an array",
 )
-.game("Error loading \"enchant_book_for_trading\" function, \"enchantments\": should be type array")
-.was("InvalidType");
+.game(
+    "Error loading \"enchant_book_for_trading\" function, \"enchantments\": should be type array",
+);
 
 /// An `enchant_book_for_trading` enchantment the game does not know; the argument is its name
 /// as written. It is dropped: a kept error.
@@ -234,8 +214,7 @@ pub static ENCHANT_NAME: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "unknown enchantment {}",
 )
-.game("Error loading \"enchant_book_for_trading\" function, \"name\": {} is not a valid enchantment name")
-.was("UnresolvedReference");
+.game("Error loading \"enchant_book_for_trading\" function, \"name\": {} is not a valid enchantment name");
 
 /// Vanilla's line for a loot entry's item name the game does not have, with `%s` written `{}`.
 /// The link pass raises it (`addon/src/pack/link/content/loot_item.rs`), which resolves item

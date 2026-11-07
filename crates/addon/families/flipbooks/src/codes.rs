@@ -1,6 +1,6 @@
 //! The `flipbooks` family's codes: the game's content-log lines, byte for byte, each a definition
-//! beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its sites raised, so
-//! a pin or a filter on the code's name keeps matching.
+//! beside the rules that raise it. Each id is `flipbooks/<name>`, the name its constant's in lower
+//! case.
 //!
 //! The link rule (`bedrock_addon`'s `flipbooks_texture`) raises them; the game's debug assertions are
 //! informations here.
@@ -15,8 +15,7 @@ pub static TILE_MISSING: CodeDef<1> = CodeDef::new(
     Class::Error,
     "flipbook tile {} is not in the terrain atlas",
 )
-.game("Texture {} is missing from atlas textures")
-.was("UnresolvedReference");
+.game("Texture {} is missing from atlas textures");
 
 /// A flipbook's index is outside its tile; the arguments are the tile, the index and the tile's
 /// index count.
@@ -26,8 +25,7 @@ pub static BAD_ATLAS_INDEX: CodeDef<3> = CodeDef::new(
     Class::Error,
     "flipbook tile {} has no atlas index {} (it has {})",
 )
-.game("Texture {} is using an invalid atlas index {} for the expected UV count {}")
-.was("InvalidValue");
+.game("Texture {} is using an invalid atlas index {} for the expected UV count {}");
 
 /// A flipbook's image is in no pack; the argument is the path.
 pub static NO_METADATA: CodeDef<1> = CodeDef::new(
@@ -36,8 +34,7 @@ pub static NO_METADATA: CodeDef<1> = CodeDef::new(
     Class::Lint,
     "flipbook image {} is in no pack",
 )
-.game("Texture metadata for texture: {} is invalid")
-.was("TextureNotFound");
+.game("Texture metadata for texture: {} is invalid");
 
 /// A flipbook image wider than tall (the trailing space is the game's).
 pub static NO_FRAMES: CodeDef<0> = CodeDef::new(
@@ -46,8 +43,7 @@ pub static NO_FRAMES: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "flipbook image has no frame",
 )
-.game("Flipbook texture should have at least one frame. ")
-.was("InvalidValue");
+.game("Flipbook texture should have at least one frame. ");
 
 /// A frame index outside the image's frames.
 pub static FRAME_OUT_OF_RANGE: CodeDef<0> = CodeDef::new(
@@ -56,8 +52,7 @@ pub static FRAME_OUT_OF_RANGE: CodeDef<0> = CodeDef::new(
     Class::Lint,
     "flipbook frame index out of range",
 )
-.game("frame index out of range!")
-.was("InvalidValue");
+.game("frame index out of range!");
 
 /// Every definition of this module.
 pub static ALL: &[&CodeMeta] = &[

@@ -104,10 +104,9 @@ fn unread(
     findings
         .into_iter()
         .filter(|finding| {
-            // By legacy name: the variant and the definitions that were it.
             matches!(
-                finding.code.name(),
-                "UnsupportedFileFormat" | "FileNotLoaded"
+                finding.code.id(),
+                "core/unsupported_file_format" | "core/file_not_loaded"
             )
         })
         .filter_map(|finding| finding.location.path.as_ref())

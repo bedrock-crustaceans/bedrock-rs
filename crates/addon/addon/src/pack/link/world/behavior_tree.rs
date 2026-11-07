@@ -12,8 +12,8 @@ use crate::id::BehaviorTreeId;
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     let trees = cx.behavior().behavior_trees();
     for finding in behavior_tree::link_subtrees(trees) {
-        // By legacy name: the variant and the definitions that were it.
-        let hosted = matches!(finding.code.name(), "UnresolvedReference")
+        // The link raises `UNRESOLVED_REFERENCE` or `REFERENCE_CYCLE`.
+        let hosted = finding.code.id() == "core/unresolved_reference"
             && matches!(
                 finding.detail.as_deref(),
                 Some(DiagnosticDetail::Reference { id, .. })

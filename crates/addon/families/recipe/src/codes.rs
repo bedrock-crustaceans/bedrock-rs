@@ -1,6 +1,6 @@
-//! The recipe family's codes: the game's content-log lines for recipe files, byte for byte, each
-//! a definition beside the rules that raise it. Each [`was`](CodeDef::was) the legacy code its
-//! sites raised, so a pin or a filter on the code's name keeps matching.
+//! The recipe family's codes: the game's content-log lines for recipe files, byte for byte, each a
+//! definition beside the rules that raise it. Each id is `recipe/<name>`, the name its constant's
+//! in lower case.
 //!
 //! A line the game logs at the error level and after which the recipe loads is a kept error
 //! ([`Class::KeptError`]); an ingredient's own line is kept or refuses the recipe as its site
@@ -18,8 +18,7 @@ pub static JSON_ERROR: CodeDef<2> = CodeDef::new(
     Class::Error,
     "the file {} is not JSON: {}",
 )
-.game("JSON: {} has an error: \n {}")
-.was("MalformedInput");
+.game("JSON: {} has an error: \n {}");
 
 /// `JSON: %s root value is not a object`, of the file's path.
 pub static ROOT_NOT_OBJECT: CodeDef<1> = CodeDef::new(
@@ -28,8 +27,7 @@ pub static ROOT_NOT_OBJECT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "the root of {} is not an object",
 )
-.game("JSON: {} root value is not a object")
-.was("MalformedInput");
+.game("JSON: {} root value is not a object");
 
 /// `JSON: %s has no identifier`, of the file's path: no payload, or one without a non-empty
 /// identifier.
@@ -39,8 +37,7 @@ pub static NO_IDENTIFIER: CodeDef<1> = CodeDef::new(
     Class::Error,
     "{} has no identifier",
 )
-.game("JSON: {} has no identifier")
-.was("MissingIdentifier");
+.game("JSON: {} has no identifier");
 
 /// `JSON: %s has duplicate identifier in same pack: %s`: the file's path and the identifier.
 pub static DUPLICATE_IDENTIFIER: CodeDef<2> = CodeDef::new(
@@ -49,8 +46,7 @@ pub static DUPLICATE_IDENTIFIER: CodeDef<2> = CodeDef::new(
     Class::Error,
     "{} repeats the identifier {} of its pack",
 )
-.game("JSON: {} has duplicate identifier in same pack: {}")
-.was("DuplicateIdentifier");
+.game("JSON: {} has duplicate identifier in same pack: {}");
 
 /// No readable `format_version`: the recipe is read as 1.0.0 and loads.
 pub static MISSING_VERSION_TAG: CodeDef<0> = CodeDef::new(
@@ -59,8 +55,7 @@ pub static MISSING_VERSION_TAG: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no readable format_version; read as 1.0.0",
 )
-.game("Missing version tag")
-.was("MissingFormatVersion");
+.game("Missing version tag");
 
 // ---- tags ----
 
@@ -71,8 +66,7 @@ pub static NO_TAGS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "no tags: nothing is registered",
 )
-.game("No tags specified")
-.was("NoEffect");
+.game("No tags specified");
 
 /// The `smithing_table` tag on a recipe that is not a smithing one.
 pub static SMITHING_TABLE_TAG_MISUSED: CodeDef<0> = CodeDef::new(
@@ -81,8 +75,7 @@ pub static SMITHING_TABLE_TAG_MISUSED: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "smithing_table tag on a recipe that is not a smithing one",
 )
-.game("smithing_table tag is only supported by recipes of type recipe_smithing_transform and of type recipe_smithing_trim")
-.was("InvalidValue");
+.game("smithing_table tag is only supported by recipes of type recipe_smithing_transform and of type recipe_smithing_trim");
 
 // ---- ingredients ----
 
@@ -94,8 +87,7 @@ pub static DATA_NOT_MOLANG: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "ingredient data of JSON type {} is no Molang expression",
 )
-.game("Type not convertible to Molang expression: {}")
-.was("InvalidType");
+.game("Type not convertible to Molang expression: {}");
 
 /// A `count` on an ingredient that takes none.
 pub static COUNT_NOT_ALLOWED: CodeDef<0> = CodeDef::new(
@@ -104,8 +96,7 @@ pub static COUNT_NOT_ALLOWED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an item count where none is allowed",
 )
-.game("Recipe ingredient is invalid: Cannot specify an item count for input items")
-.was("InvalidValue");
+.game("Recipe ingredient is invalid: Cannot specify an item count for input items");
 
 /// An ingredient without a string `item` where no tag is allowed.
 pub static NO_ITEM_NAME: CodeDef<0> = CodeDef::new(
@@ -114,8 +105,7 @@ pub static NO_ITEM_NAME: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an ingredient without an item name",
 )
-.game("Recipe ingredient is invalid: Must contain a valid item name")
-.was("InvalidValue");
+.game("Recipe ingredient is invalid: Must contain a valid item name");
 
 /// An ingredient with neither a string `item` nor a string `tag`.
 pub static NO_ITEM_OR_TAG: CodeDef<0> = CodeDef::new(
@@ -124,8 +114,7 @@ pub static NO_ITEM_OR_TAG: CodeDef<0> = CodeDef::new(
     Class::Error,
     "an ingredient without an item name or a tag",
 )
-.game("Recipe ingredient is invalid: Must contain either a valid item name or item tag")
-.was("InvalidValue");
+.game("Recipe ingredient is invalid: Must contain either a valid item name or item tag");
 
 /// An absent ingredient: the item lookup with an empty name fails (the argument is empty).
 pub static ITEM_MISSING: CodeDef<1> = CodeDef::new(
@@ -134,8 +123,7 @@ pub static ITEM_MISSING: CodeDef<1> = CodeDef::new(
     Class::Error,
     "an ingredient is missing",
 )
-.game("The Item: {} is missing or invalid, can't make the recipe")
-.was("MissingRequiredField");
+.game("The Item: {} is missing or invalid, can't make the recipe");
 
 /// An ingredient that is neither a string nor an object: the item lookup with an empty name
 /// fails (the argument is empty).
@@ -145,8 +133,7 @@ pub static ITEM_INVALID: CodeDef<1> = CodeDef::new(
     Class::Error,
     "an ingredient is neither a string nor an object",
 )
-.game("The Item: {} is missing or invalid, can't make the recipe")
-.was("InvalidType");
+.game("The Item: {} is missing or invalid, can't make the recipe");
 
 /// The item-name parser: an aux value that is no number.
 pub static INVALID_AUX: CodeDef<1> = CodeDef::new(
@@ -155,8 +142,7 @@ pub static INVALID_AUX: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "invalid aux value in item {}",
 )
-.game("Invalid aux value in item ID \"{}\"")
-.was("InvalidValue");
+.game("Invalid aux value in item ID \"{}\"");
 
 /// The item-name parser: an empty namespace.
 pub static EMPTY_NAMESPACE: CodeDef<1> = CodeDef::new(
@@ -165,8 +151,7 @@ pub static EMPTY_NAMESPACE: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "empty namespace in item {}",
 )
-.game("Empty namespace in item ID \"{}\"")
-.was("InvalidValue");
+.game("Empty namespace in item ID \"{}\"");
 
 /// The item-name parser: more tokens than an item name has.
 pub static EXCESSIVE_TOKENS: CodeDef<1> = CodeDef::new(
@@ -175,8 +160,7 @@ pub static EXCESSIVE_TOKENS: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "too many tokens in item {}",
 )
-.game("Excessive number of tokens in item ID \"{}\"")
-.was("InvalidValue");
+.game("Excessive number of tokens in item ID \"{}\"");
 
 // ---- results ----
 
@@ -188,8 +172,7 @@ pub static RESULT_MALFORMED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the result is malformed",
 )
-.game("Recipe result malformed")
-.was("DocumentRejected");
+.game("Recipe result malformed");
 
 /// An empty result list.
 pub static NO_RESULT_ITEMS: CodeDef<0> = CodeDef::new(
@@ -198,8 +181,7 @@ pub static NO_RESULT_ITEMS: CodeDef<0> = CodeDef::new(
     Class::Error,
     "the result list is empty",
 )
-.game("Recipe has no result item(s)")
-.was("DocumentRejected");
+.game("Recipe has no result item(s)");
 
 /// A shapeless recipe with more than one result: it loads with the first.
 pub static MULTIPLE_OUTPUTS: CodeDef<0> = CodeDef::new(
@@ -208,8 +190,7 @@ pub static MULTIPLE_OUTPUTS: CodeDef<0> = CodeDef::new(
     Class::KeptError,
     "a shapeless recipe with more than one result; the first is used",
 )
-.game("unsupported multiple output types for result list in shapeless")
-.was("IgnoredMember");
+.game("unsupported multiple output types for result list in shapeless");
 
 // ---- unlock ----
 
@@ -220,8 +201,7 @@ pub static EMPTY_UNLOCK: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "recipe {} has an empty unlock list",
 )
-.game("Recipe: {} has an empty unlocking ingredient array")
-.was("InvalidValue");
+.game("Recipe: {} has an empty unlocking ingredient array");
 
 /// An invalid `unlock` ingredient: the requirement is zeroed.
 pub static INVALID_UNLOCK_INGREDIENT: CodeDef<1> = CodeDef::new(
@@ -230,8 +210,7 @@ pub static INVALID_UNLOCK_INGREDIENT: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "recipe {} has an invalid unlock ingredient",
 )
-.game("Recipe: {} has an invalid unlock ingredient")
-.was("InvalidValue");
+.game("Recipe: {} has an invalid unlock ingredient");
 
 /// An `unlock` that is neither a list nor an object with a string `context`.
 pub static UNLOCK_WITHOUT_LIST_OR_CONTEXT: CodeDef<1> = CodeDef::new(
@@ -240,8 +219,7 @@ pub static UNLOCK_WITHOUT_LIST_OR_CONTEXT: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "recipe {} has an unlock that is neither a list nor a context",
 )
-.game("Recipe: {} has an unlocking element but does not contain an ingredient list or and unlocking context")
-.was("InvalidType");
+.game("Recipe: {} has an unlocking element but does not contain an ingredient list or and unlocking context");
 
 /// An `unlock` context the game does not know.
 pub static MALFORMED_UNLOCK_CONTEXT: CodeDef<1> = CodeDef::new(
@@ -250,8 +228,7 @@ pub static MALFORMED_UNLOCK_CONTEXT: CodeDef<1> = CodeDef::new(
     Class::KeptError,
     "recipe {} has an unknown unlock context",
 )
-.game("Recipe: {} has a malformed unlocking context")
-.was("InvalidValue");
+.game("Recipe: {} has a malformed unlocking context");
 
 /// A shaped or shapeless recipe from 1.20.10 without `unlock`.
 pub static UNLOCK_REQUIRED: CodeDef<0> = CodeDef::new(
@@ -260,8 +237,7 @@ pub static UNLOCK_REQUIRED: CodeDef<0> = CodeDef::new(
     Class::Error,
     "no unlock from format 1.20.10",
 )
-.game("1.20+ Recipes require unlock data")
-.was("MissingRequiredField");
+.game("1.20+ Recipes require unlock data");
 
 // ---- shaped recipes ----
 
@@ -272,8 +248,7 @@ pub static PATTERN_TOO_LARGE: CodeDef<2> = CodeDef::new(
     Class::Error,
     "a pattern of {} by {}, larger than 3x3",
 )
-.game("Adding a recipe larger than 3x3: {} width, {} height")
-.was("InvalidValue");
+.game("Adding a recipe larger than 3x3: {} width, {} height");
 
 /// A `key` entry that is no valid ingredient.
 pub static KEY_INGREDIENT_MISSING: CodeDef<1> = CodeDef::new(
@@ -282,8 +257,7 @@ pub static KEY_INGREDIENT_MISSING: CodeDef<1> = CodeDef::new(
     Class::Error,
     "recipe {} has an invalid key ingredient",
 )
-.game("Recipe for: {} is missing (unknown) ingredient")
-.was("DocumentRejected");
+.game("Recipe for: {} is missing (unknown) ingredient");
 
 /// A pattern of spaces only.
 pub static EMPTY_RECIPE: CodeDef<0> = CodeDef::new(
@@ -292,8 +266,7 @@ pub static EMPTY_RECIPE: CodeDef<0> = CodeDef::new(
     Class::Error,
     "a pattern of spaces only",
 )
-.game("Recipes::addShapedRecipe: adding an empty recipe!")
-.was("InvalidValue");
+.game("Recipes::addShapedRecipe: adding an empty recipe!");
 
 /// A pattern none of whose symbols has a key.
 pub static NO_VALID_KEY: CodeDef<1> = CodeDef::new(
@@ -302,8 +275,7 @@ pub static NO_VALID_KEY: CodeDef<1> = CodeDef::new(
     Class::Error,
     "no symbol of recipe {}'s pattern has a key",
 )
-.game("Recipes::addShapedRecipe: '{}' doesn't have a single valid key in its pattern!")
-.was("InvalidValue");
+.game("Recipes::addShapedRecipe: '{}' doesn't have a single valid key in its pattern!");
 
 // ---- material reduction recipes ----
 
@@ -315,8 +287,7 @@ pub static REDUCTION_TOO_MANY_OUTPUTS: CodeDef<2> = CodeDef::new(
     Class::Error,
     "material reduction recipe {} has more than {} outputs",
 )
-.game("Material Reduction Recipe: {} has too many outputs, the max is {}.")
-.was("InvalidValue");
+.game("Material Reduction Recipe: {} has too many outputs, the max is {}.");
 
 /// An invalid material reduction input.
 pub static REDUCTION_INVALID_INPUT: CodeDef<1> = CodeDef::new(
@@ -325,8 +296,7 @@ pub static REDUCTION_INVALID_INPUT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "material reduction recipe {} has an invalid input",
 )
-.game("Material Reduction Recipe: {} has an invalid input item")
-.was("DocumentRejected");
+.game("Material Reduction Recipe: {} has an invalid input item");
 
 /// An invalid material reduction output.
 pub static REDUCTION_INVALID_OUTPUT: CodeDef<1> = CodeDef::new(
@@ -335,8 +305,7 @@ pub static REDUCTION_INVALID_OUTPUT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "material reduction recipe {} has an invalid output",
 )
-.game("Material Reduction Recipe: {} has an invalid output item")
-.was("DocumentRejected");
+.game("Material Reduction Recipe: {} has an invalid output item");
 
 // ---- brewing container recipes ----
 
@@ -347,8 +316,7 @@ pub static BREWING_INVALID_INPUT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "brewing container recipe {} has an invalid input",
 )
-.game("Brewing Container Recipe: {} has an invalid input item")
-.was("DocumentRejected");
+.game("Brewing Container Recipe: {} has an invalid input item");
 
 /// An invalid brewing container reagent.
 pub static BREWING_INVALID_REAGENT: CodeDef<1> = CodeDef::new(
@@ -357,8 +325,7 @@ pub static BREWING_INVALID_REAGENT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "brewing container recipe {} has an invalid reagent",
 )
-.game("Brewing Container Recipe: {} has an invalid reagent item")
-.was("DocumentRejected");
+.game("Brewing Container Recipe: {} has an invalid reagent item");
 
 /// An invalid brewing container output.
 pub static BREWING_INVALID_OUTPUT: CodeDef<1> = CodeDef::new(
@@ -367,8 +334,7 @@ pub static BREWING_INVALID_OUTPUT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "brewing container recipe {} has an invalid output",
 )
-.game("Brewing Container Recipe: {} has an invalid output item")
-.was("DocumentRejected");
+.game("Brewing Container Recipe: {} has an invalid output item");
 
 // ---- smithing recipes ----
 
@@ -380,8 +346,7 @@ pub static TRANSFORM_INVALID_TAG: CodeDef<2> = CodeDef::new(
     Class::Error,
     "smithing transform recipe {} has a tag other than {}",
 )
-.game("Smithing Transform Recipe: {} has an invalid tag. They only supported one is {}.")
-.was("DocumentRejected");
+.game("Smithing Transform Recipe: {} has an invalid tag. They only supported one is {}.");
 
 /// An invalid smithing transform template.
 pub static TRANSFORM_INVALID_TEMPLATE: CodeDef<1> = CodeDef::new(
@@ -390,8 +355,7 @@ pub static TRANSFORM_INVALID_TEMPLATE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "smithing transform recipe {} has an invalid template",
 )
-.game("Smithing Transform Recipe: {} has an invalid template item.")
-.was("DocumentRejected");
+.game("Smithing Transform Recipe: {} has an invalid template item.");
 
 /// An invalid smithing transform base.
 pub static TRANSFORM_INVALID_BASE: CodeDef<1> = CodeDef::new(
@@ -400,8 +364,7 @@ pub static TRANSFORM_INVALID_BASE: CodeDef<1> = CodeDef::new(
     Class::Error,
     "smithing transform recipe {} has an invalid base",
 )
-.game("Smithing Transform Recipe: {} has an invalid base item.")
-.was("DocumentRejected");
+.game("Smithing Transform Recipe: {} has an invalid base item.");
 
 /// An invalid smithing transform addition.
 pub static TRANSFORM_INVALID_ADDITION: CodeDef<1> = CodeDef::new(
@@ -410,8 +373,7 @@ pub static TRANSFORM_INVALID_ADDITION: CodeDef<1> = CodeDef::new(
     Class::Error,
     "smithing transform recipe {} has an invalid addition",
 )
-.game("Smithing Transform Recipe: {} has an invalid addition item.")
-.was("DocumentRejected");
+.game("Smithing Transform Recipe: {} has an invalid addition item.");
 
 /// An invalid smithing transform result.
 pub static TRANSFORM_INVALID_RESULT: CodeDef<1> = CodeDef::new(
@@ -420,8 +382,7 @@ pub static TRANSFORM_INVALID_RESULT: CodeDef<1> = CodeDef::new(
     Class::Error,
     "smithing transform recipe {} has an invalid result",
 )
-.game("Smithing Transform Recipe: {} has an invalid result item.")
-.was("DocumentRejected");
+.game("Smithing Transform Recipe: {} has an invalid result item.");
 
 /// A smithing trim recipe whose tags are not `smithing_table` alone: the arguments are the
 /// identifier and `smithing_table`.
@@ -431,8 +392,7 @@ pub static TRIM_INVALID_TAG: CodeDef<2> = CodeDef::new(
     Class::Error,
     "smithing trim recipe {} has a tag other than {}",
 )
-.game("Smithing Trim Recipe: {} has an invalid tag. They only supported one is {}.")
-.was("DocumentRejected");
+.game("Smithing Trim Recipe: {} has an invalid tag. They only supported one is {}.");
 
 /// A smithing trim recipe in a world before Trails & Tales (1.20).
 pub static TRIM_BEFORE_TRAILS_AND_TALES: CodeDef<1> = CodeDef::new(
@@ -441,8 +401,7 @@ pub static TRIM_BEFORE_TRAILS_AND_TALES: CodeDef<1> = CodeDef::new(
     Class::Error,
     "smithing trim recipe {} in a world before 1.20",
 )
-.game("Smithing Trim Recipe: {} is invalid. Smithing Trim Recipes are only supported from version 1.20 onwards.")
-.was("DocumentRejected");
+.game("Smithing Trim Recipe: {} is invalid. Smithing Trim Recipes are only supported from version 1.20 onwards.");
 
 /// Every definition of the family, for the registry of ids.
 pub static ALL: &[&CodeMeta] = &[

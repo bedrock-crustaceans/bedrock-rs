@@ -1,38 +1,10 @@
-//! Checks for the tests of a family whose raise sites moved from a legacy `DiagnosticCode`
-//! variant to a [`CodeDef`], and the bridges its pins render through until the pin rename.
+//! Helpers for the tests of a family: how a pin shows a finding, and the checks of a site that
+//! holds the game's sentence.
 
 use std::fmt::Write as _;
 
 use super::def::Code;
-use super::legacy::legacy;
 use super::{CodeDef, Diagnostic, DiagnosticDetail};
-
-pub use super::legacy::legacy_names;
-
-/// Asserts that `def` replaces the legacy variant named `legacy` as [`CodeDef::was`]
-/// promises: it has the variant's name and [`kind`](super::Kind).
-///
-/// # Panics
-///
-/// When `legacy` names no legacy variant, or the name or the kind differs.
-pub fn assert_replaces<const N: usize>(def: &CodeDef<N>, legacy_name: &str) {
-    let variant =
-        legacy(legacy_name).unwrap_or_else(|| panic!("{legacy_name} is no legacy variant"));
-    assert_eq!(
-        def.name(),
-        variant.name,
-        "{} replaces {} under its name",
-        def.id(),
-        variant.name
-    );
-    assert_eq!(
-        def.kind(),
-        variant.kind,
-        "{} keeps the kind of {}",
-        def.id(),
-        variant.name
-    );
-}
 
 /// A finding's code as a pin holds it: the definition's id, then its arguments when it has
 /// any, then the reader's message when the finding carries one as its detail.
@@ -59,7 +31,7 @@ pub fn shown(finding: &Diagnostic) -> String {
 /// The `Debug` of the legacy `text` field (an `Option<VanillaText>`) a definition without
 /// arguments stands for: what a reading table pinned before a family's `MissingVersion` held a
 /// definition (`None`, `Some(NoValidVersion)`, `Some(Fixed(".."))`).
-// hidden: a bridge for the pins of the migration, deleted with the legacy names
+// hidden: a bridge for the reading tables, which still pin the legacy text shape
 #[doc(hidden)]
 #[must_use]
 pub fn legacy_text_debug(def: &'static CodeDef<0>) -> String {
@@ -159,8 +131,7 @@ mod tests {
         Class::Error,
         "{} and {}",
     )
-    .game("between {} and {}")
-    .was("InvalidValue");
+    .game("between {} and {}");
 
     fn finding(code: impl Into<Code>) -> Diagnostic {
         Diagnostic::error(code)
@@ -216,13 +187,16 @@ mod tests {
         assert_eq!(finding(&codes::INVALID_VALUE).syntax_message(), None);
     }
 
-    /// `syntax` renders as the legacy code without a text rendered, an empty message included.
+    /// `syntax` renders the reader's message, an empty one as the plain line.
     #[test]
-    fn the_syntax_code_renders_the_legacy_line() {
-        for (message, line) in [("", "malformed input"), ("expected `,`", "expected `,`")] {
+    fn the_syntax_code_renders_the_readers_message() {
+        for (message, line, id) in [
+            ("", "malformed input", "core/malformed_input"),
+            ("expected `,`", "expected `,`", "core/syntax"),
+        ] {
             let code = builders::syntax(message);
             assert_eq!(code.to_string(), line);
-            assert_eq!(code.name(), "MalformedInput");
+            assert_eq!(code.id(), id);
         }
     }
 
