@@ -5,7 +5,7 @@
 //! repository at a release tag).
 //!
 //! The checkout must be at a tag; the tag goes into `versions.rs` as `SAMPLES_TAG`.
-//! Every family is parsed with the strict model of `bedrock_addon::families::script::meta::model` (an
+//! Every family is parsed with the strict model of `bedrock_addon_family_script::meta::model` (an
 //! unknown key fails the run), every type descriptor is lowered and every privilege list read,
 //! and the vendoring checks run before anything is written: an error row fails the run, warnings
 //! and info rows are printed. The raw metadata files are never committed.
@@ -20,19 +20,19 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::{fs, str};
 
-use bedrock_addon::families::script::meta::model::commands::CommandsFile;
-use bedrock_addon::families::script::meta::model::engine::AfterEventsOrdering;
-use bedrock_addon::families::script::meta::model::molang::MolangQueriesFile;
-use bedrock_addon::families::script::meta::model::script::{
+use bedrock_addon_core::version::SemVersion;
+use bedrock_addon_family_script::meta::model::commands::CommandsFile;
+use bedrock_addon_family_script::meta::model::engine::AfterEventsOrdering;
+use bedrock_addon_family_script::meta::model::molang::MolangQueriesFile;
+use bedrock_addon_family_script::meta::model::script::{
     Class, ClassConstant, ConstValue, Function, Interface, PeerDependency, Property, RawTypeDesc,
 };
-use bedrock_addon::families::script::meta::model::vanilla::{
+use bedrock_addon_family_script::meta::model::vanilla::{
     BiomeEntry, BlockEntry, EnchantmentEntry, ItemEntry, NameEntry, VanillaDataFile,
 };
-use bedrock_addon::families::script::meta::{
+use bedrock_addon_family_script::meta::{
     MetaError, ModuleMetadata, NativeModule, PrivilegeList, TypeDescriptor,
 };
-use bedrock_addon::version::SemVersion;
 
 /// The generated catalog, relative to the workspace root.
 pub const VERSIONS_OUT: &str = "crates/addon/families/script/src/meta/generated/versions.rs";
@@ -625,7 +625,7 @@ struct Declarations<'a> {
     base_types: Vec<&'a RawTypeDesc>,
     privileges: Vec<(
         &'a str,
-        &'a [bedrock_addon::families::script::meta::model::script::PrivilegeName],
+        &'a [bedrock_addon_family_script::meta::model::script::PrivilegeName],
     )>,
     details: Vec<(&'a str, Option<f64>, Option<f64>)>,
 }

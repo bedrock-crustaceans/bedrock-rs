@@ -11,5 +11,8 @@ proc-macro2 = "1.0.106"
 quote = "1.0.45"
 syn = { version = "3.0.6", features = ["full"] }
 prettyplease = "0.3.0"
-# `script-meta` parses the game's metadata files with the strict model.
-bedrock_addon = { path = "../crates/addon/addon", default-features = false, features = ["script"] }
+# `addon-features` reads the family crates' manifests and the composing crate's.
+toml = { version = "1.1", default-features = false, features = ["std", "parse", "serde"] }
+# `script-meta` parses the game's metadata files with the strict model of the script family.
+bedrock_addon_core = { path = "../crates/addon/core" }
+bedrock_addon_family_script = { path = "../crates/addon/families/script" }

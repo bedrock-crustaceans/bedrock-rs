@@ -1,6 +1,6 @@
 //! The committed command tables against the generator's list of built-in parameter types.
 
-use bedrock_addon::vanilla;
+use bedrock_addon_core::vanilla;
 
 #[test]
 fn every_parameter_type_is_an_enum_or_a_built_in_token() {
