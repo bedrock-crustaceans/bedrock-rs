@@ -13,7 +13,6 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{Merged, RawLayer};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-use super::super::{Findings, LinkCx, Target, kinds};
 use crate::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
@@ -23,6 +22,7 @@ use crate::families::flipbooks::{Flipbook, FlipbookKey, Flipbooks};
 use crate::families::texture_atlas::{AtlasItem, TextureAtlas};
 use crate::families::texture_file::{ImageFormat, ImageInfo};
 use crate::id::{AtlasKey, Kind, kind};
+use crate::pack::link::prelude::*;
 use bedrock_addon_shared_shapes::texture::files::{Found, IMAGE, StackFiles};
 
 /// What the link pass tells the checker about an image file: the header of the file at a path
@@ -289,9 +289,9 @@ mod tests {
     use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::load::LoadOptions;
 
-    #[cfg(feature = "texture_set")]
-    use super::super::texture_set_texture_file::run as layer_images;
     use super::run as flipbooks;
+    #[cfg(feature = "texture_set")]
+    use crate::pack::link::resource::texture_set_texture_file::run as layer_images;
     use crate::pack::link::tests::support::{File, pack, set_of};
     use crate::pack::link::{LinkOptions, link_with_rules};
 

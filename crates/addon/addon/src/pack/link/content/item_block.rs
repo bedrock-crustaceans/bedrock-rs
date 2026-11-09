@@ -4,9 +4,7 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity, sentence};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
-use super::super::{
-    At, Findings, LinkCx, Target, block_descriptor, block_specifier, kinds, unresolved,
-};
+use crate::pack::link::prelude::*;
 use super::item::{Entry, component, descriptor_of, items};
 use crate::families::item::component::{BlockPlacer, Digger, EntityPlacer};
 

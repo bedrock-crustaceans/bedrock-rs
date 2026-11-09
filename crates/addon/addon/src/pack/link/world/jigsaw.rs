@@ -2,12 +2,12 @@
 //! structures, and the feature of a pool element. What the documents name in other modules
 //! (blocks, loot tables, structures) is in the pair files.
 
-use super::super::{Findings, LinkCx};
 use crate::families::jigsaw;
 use crate::id::{
     BlockId, FeatureId, JigsawStructureId, LootTablePath, ProcessorListId, StructureId,
     TemplatePoolId,
 };
+use crate::pack::link::prelude::*;
 
 /// The lookups of the pass, for the jigsaw checker. A target whose module is compiled out
 /// counts as resolved: nobody can tell, and nothing is told.

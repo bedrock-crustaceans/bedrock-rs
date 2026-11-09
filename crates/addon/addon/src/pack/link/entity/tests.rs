@@ -5,10 +5,10 @@
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::Value;
 
-use super::super::tests::support::{all_said, block, pack, set_of};
-use super::super::{LinkOptions, link_with_rules};
 use super::table::{self, Row};
 use super::walk::{members, path};
+use crate::pack::link::tests::support::{all_said, block, pack, set_of};
+use crate::pack::link::{LinkOptions, link_with_rules};
 
 /// Every table, by name.
 fn tables() -> Vec<(&'static str, &'static [Row])> {

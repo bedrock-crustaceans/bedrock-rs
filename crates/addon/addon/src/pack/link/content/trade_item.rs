@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use crate::families::trade::{ItemList, TradeItem};
 
 /// The `item` of every trade item (`name` or `name:aux`) is an item of the stack or

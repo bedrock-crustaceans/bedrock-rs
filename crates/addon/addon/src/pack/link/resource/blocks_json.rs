@@ -8,8 +8,8 @@ use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
-use super::super::{Findings, LinkCx};
 use crate::families::blocks_json::entry_members;
+use crate::pack::link::prelude::*;
 
 /// The one `blocks.json` of a pack, by the path the collection keys it with.
 pub(super) const BLOCKS_JSON: &str = "blocks.json";

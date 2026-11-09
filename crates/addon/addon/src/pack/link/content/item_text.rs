@@ -1,6 +1,6 @@
 //! The localisation keys the crafting catalogue names.
 
-use super::super::{Findings, LinkCx};
+use crate::pack::link::prelude::*;
 
 /// The name of a group a pack adds to the crafting catalogue, outside the `minecraft`
 /// namespace, is its localisation key. Vanilla does not look it up: a lint, told by the

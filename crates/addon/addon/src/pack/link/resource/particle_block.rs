@@ -10,10 +10,10 @@ use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::BlockId;
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved};
 use super::particle::component;
 use crate::families::particle::ParticleEffect;
 use crate::families::particle::component::{ParticleExpireIfInBlocks, ParticleExpireIfNotInBlocks};
+use crate::pack::link::prelude::*;
 
 /// Each name of `minecraft:particle_expire_if_in_blocks` and of
 /// `minecraft:particle_expire_if_not_in_blocks` is a block a behaviour pack defines or one of

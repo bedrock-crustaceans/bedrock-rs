@@ -3,13 +3,11 @@ use bedrock_addon_core::diagnostic::{JsonPath, JsonPathSegment, Kind, Severity, 
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
-use super::super::{
-    At, Findings, LinkCx, Member, States, Target, block_descriptor, kinds, unresolved,
-};
 use super::table::{BLOCK_NAMES, BLOCKS, BLOCKS_AS_ITEMS};
 use super::walk::{Entities, sections};
 use crate::families::entity::goal::EatBlock;
 use crate::families::entity::goal::convert::eat_block_pairs;
+use crate::pack::link::prelude::*;
 
 /// The key of the goal.
 const EAT_BLOCK: &str = "minecraft:behavior.eat_block";

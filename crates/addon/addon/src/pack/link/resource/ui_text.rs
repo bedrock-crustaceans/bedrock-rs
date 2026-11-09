@@ -11,9 +11,9 @@ use std::collections::HashMap;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 
-use super::super::{At, Findings, LinkCx, unresolved_lang_key};
 use crate::families::loading_messages::{LoadingMessage, LoadingMessages, MessageList};
 use crate::json::Value;
+use crate::pack::link::prelude::*;
 
 /// The three lists a stage of the game is answered from.
 const STAGES: [MessageList; 3] = [

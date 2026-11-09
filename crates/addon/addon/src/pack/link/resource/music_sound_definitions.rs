@@ -7,8 +7,8 @@
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 
-use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use crate::id::SoundEventName;
+use crate::pack::link::prelude::*;
 
 /// The `event_name` of every music definition is a sound definition of category `music`.
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {

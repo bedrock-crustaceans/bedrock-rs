@@ -3,8 +3,8 @@
 
 use bedrock_addon_core::diagnostic::{Severity, sentence};
 
-use super::super::{At, Findings, LinkCx, kinds, texture_not_found};
 use super::user::User;
+use crate::pack::link::prelude::*;
 
 /// The texture-set loader's line for an image no pack has; the texture's path.
 // The texture-set loader's line for an image no pack has, logged at the warning level.

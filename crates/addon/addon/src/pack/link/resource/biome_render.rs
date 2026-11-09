@@ -12,7 +12,6 @@ use std::collections::HashSet;
 
 use bedrock_addon_core::document::{ComponentRef, Merged, Origin, RawLayer};
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved, validator_miss};
 use super::biome::{Claim, Shadowed, claims, is_unknown, path};
 use super::biome::{overridden, own_entry};
 use crate::diagnostic::{Diagnostic, JsonPath, Severity, sentence};
@@ -20,6 +19,7 @@ use crate::families::biomes_client::{LegacyClientBiome, LegacyClientBiomes};
 use crate::families::client_biome::component::{ClientBiomeComponent, FogAppearance};
 use crate::id::{BiomeId, FogId};
 use crate::json::Value;
+use crate::pack::link::prelude::*;
 
 /// One component of a client biome that names a definition: its key, its one member, the
 /// kind it names and the client's line for a name nothing defines.
@@ -360,9 +360,9 @@ pub(super) fn fog_overrides(cx: &LinkCx<'_>, out: &mut Findings) {
 mod tests {
     use bedrock_addon_core::load::LoadOptions;
 
-    use super::super::super::tests::support::{pack, set_of};
-    use super::super::super::{LinkOptions, link_with_rules};
     use crate::pack::StackSet;
+    use crate::pack::link::tests::support::{pack, set_of};
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     /// `text` for the life of the test process.
     fn leak(text: String) -> &'static str {
@@ -448,10 +448,10 @@ mod tests {
                     set,
                     LinkOptions::default(),
                     &[
-                        super::super::biome::run,
+                        crate::pack::link::resource::biome::run,
                         super::run,
                         super::legacy_fogs,
-                        super::super::biome::water,
+                        crate::pack::link::resource::biome::water,
                         super::fog_overrides,
                     ],
                 );

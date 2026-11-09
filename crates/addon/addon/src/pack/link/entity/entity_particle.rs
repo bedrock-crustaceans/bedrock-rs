@@ -8,9 +8,9 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::Id;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::table::PARTICLES;
 use super::walk::{Entities, members};
+use crate::pack::link::prelude::*;
 
 /// The component whose member holds an effect name, not a particle type.
 const EXPLODE: &str = "minecraft:explode";

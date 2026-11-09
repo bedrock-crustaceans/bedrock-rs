@@ -3,11 +3,11 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::AtlasKey;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::blocks_json::{Writers, entry_key, entry_path};
 use super::told::{Told, formatted};
 use crate::families::blocks_json::FaceTextures;
 use crate::families::texture_atlas::TextureAtlas;
+use crate::pack::link::prelude::*;
 
 /// A tile without elements: the texture name. The game logs this at the warning level of the
 /// content log.
@@ -154,9 +154,9 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 mod tests {
     use std::fmt::Write as _;
 
-    use super::super::super::tests::support::set;
-    use super::super::super::{LinkOptions, link_with_rules};
     use super::{NO_ELEMENTS, NO_SUCH_ITEM, run, tile_and_element};
+    use crate::pack::link::tests::support::set;
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     #[test]
     fn a_name_is_a_tile_or_a_tile_and_its_element() {

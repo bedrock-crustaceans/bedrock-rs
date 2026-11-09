@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
+use crate::pack::link::prelude::*;
 
 /// Each client entity whose identifier, in lower case as the game keys it, is no entity: a
 /// note at `description.identifier`. The game keeps such a definition and says nothing.

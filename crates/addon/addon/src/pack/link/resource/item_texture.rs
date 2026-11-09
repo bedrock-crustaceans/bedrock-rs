@@ -11,13 +11,13 @@ use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, Origin};
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::{Code, JsonPath, Severity, sentence};
 use crate::families::item::component::{Icon, ItemComponent, Tags, Wearable, WearableSlot};
 use crate::families::item::trim::TrimData;
 use crate::families::item::{ItemFormat, LegacyItemData};
 use crate::id::{AtlasKey, ItemId};
 use crate::json::Value;
+use crate::pack::link::prelude::*;
 
 /// The linked-asset validator's line for an item-atlas name that is no tile: the breadcrumb
 /// (the item's name, `-> components -> minecraft:icon: `), then the name.
@@ -96,7 +96,7 @@ struct Subject<'a> {
     components: &'a ComponentMap<ItemComponent>,
     legacy: &'a LegacyItemData,
     /// Whether the world has a view of the item atlas.
-    atlas_in_view: super::super::View,
+    atlas_in_view: View,
 }
 
 impl Subject<'_> {

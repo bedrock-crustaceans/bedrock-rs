@@ -3,8 +3,8 @@
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json;
 
-use super::super::{Findings, LinkCx, LinkOptions, Member, States, link_with_rules};
 use super::support::{all_said, block, item, origin, set};
+use crate::pack::link::{Findings, LinkCx, LinkOptions, Member, States, link_with_rules};
 
 /// The descriptor's path in its file: `minecraft:entity/components/demo:holder`.
 fn prefix() -> JsonPath {
@@ -44,8 +44,8 @@ fn told(lints: bool, resolve: for<'a, 'b, 'c> fn(&'a LinkCx<'b>, &'c mut Finding
 mod items {
     use bedrock_addon_shared_shapes::ItemDescriptor;
 
-    use super::super::super::item_descriptor;
     use super::*;
+    use crate::pack::link::item_descriptor;
 
     fn resolve_all(cx: &LinkCx<'_>, out: &mut Findings, cases: &[(&str, Severity)]) {
         let origin = origin("entities/pet.json");
@@ -166,8 +166,8 @@ mod items {
 mod blocks {
     use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
-    use super::super::super::{block_descriptor, block_specifier};
     use super::*;
+    use crate::pack::link::{block_descriptor, block_specifier};
 
     fn resolve_all(cx: &LinkCx<'_>, out: &mut Findings, cases: &[(&str, Severity)]) {
         let origin = origin("entities/pet.json");

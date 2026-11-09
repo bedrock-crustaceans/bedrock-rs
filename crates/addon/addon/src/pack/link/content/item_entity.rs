@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::id::EntityId;
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use super::item::{Entry, component, items};
 use crate::families::item::component::{EntityPlacer, Projectile};
 

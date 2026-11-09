@@ -6,9 +6,9 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::Id;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::walk::{Entities, PAYLOAD, path};
 use crate::pack::PackSide;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     for definition in &entities.definitions {

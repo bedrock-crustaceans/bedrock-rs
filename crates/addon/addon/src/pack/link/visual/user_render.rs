@@ -5,8 +5,8 @@ use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::id::{MaterialId, RenderControllerId};
 use bedrock_addon_shared_visual::ControllerUse;
 
-use super::super::{At, Findings, LinkCx, Target, invalid, kinds, unresolved};
 use super::user::{Family, User};
+use crate::pack::link::prelude::*;
 
 /// Vanilla's text for a material no group has: the name in lower case, then the file.
 const MATERIAL_NOT_DEFINED: &str = "Material \"{}\" is referenced in file \"{}\" but not defined.";
@@ -35,7 +35,7 @@ pub(super) fn materials(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
         return;
     }
     let view = cx.material_view(out);
-    if !view.judges() || (view == super::super::View::Partial && !cx.lints()) {
+    if !view.judges() || (view == View::Partial && !cx.lints()) {
         return;
     }
     for (key, value) in user.materials.into_iter().flatten() {

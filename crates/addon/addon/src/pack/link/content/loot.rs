@@ -4,7 +4,7 @@
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Document;
 
-use super::super::{At, Findings, LinkCx, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use crate::families::loot::{
     Entry, EntryKind, FunctionKind, LootCondition, LootFunction, LootTable, Pool,
 };

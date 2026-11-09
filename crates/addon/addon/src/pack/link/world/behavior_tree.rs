@@ -1,9 +1,9 @@
 //! The tree a `minecraft:subtree` node of a behaviour tree names.
 
-use super::super::{Findings, LinkCx};
 use crate::diagnostic::DiagnosticDetail;
 use crate::families::behavior_tree;
 use crate::id::BehaviorTreeId;
+use crate::pack::link::prelude::*;
 
 /// Each `subtree_id` that names no tree is an `UnresolvedReference` finding, and each through
 /// which its tree reaches itself a `ReferenceCycle` finding, at the member. The registry holds

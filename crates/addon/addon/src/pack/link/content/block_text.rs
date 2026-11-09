@@ -3,7 +3,7 @@
 
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::super::{At, Findings, LinkCx, unresolved_lang_key};
+use crate::pack::link::prelude::*;
 use super::block::{placed, sections};
 use crate::families::block::component::{CraftingTable, DisplayName};
 

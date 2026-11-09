@@ -20,7 +20,6 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, Origin, VersionInfo};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::{Code, Diagnostic, JsonPath, ReferenceHint, Severity, sentence};
 #[cfg(feature = "biomes_client")]
 use crate::families::biomes_client::{LegacyClientBiome, LegacyClientBiomes};
@@ -28,6 +27,7 @@ use crate::families::client_biome::component::ClientBiomeComponent;
 #[cfg(feature = "biomes_client")]
 use crate::families::client_biome::component::WaterAppearance;
 use crate::id::BiomeId;
+use crate::pack::link::prelude::*;
 
 /// The client's line for a client biome of a biome the server does not name. The client logs
 /// it at the error level (content log, `BiomeRegistry`).

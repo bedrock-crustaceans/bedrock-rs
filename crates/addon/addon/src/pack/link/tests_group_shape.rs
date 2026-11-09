@@ -1,15 +1,16 @@
-//! What a unit test in a rule group's directory can reach: the fixtures of the frame's own
-//! tests (`super::tests::support` from a group's `mod.rs`, `super::super::tests::support`
-//! from a test module inside it), the context, the sink and a pass over rules of its own.
+//! What a unit test in a rule group's directory can reach: the vocabulary of the rule files
+//! (`crate::pack::link::prelude`), the fixtures of the frame's own tests
+//! (`crate::pack::link::tests::support`) and a pass over rules of its own.
 
 mod tests {
     use bedrock_addon_core::diagnostic::{JsonPath, Severity};
     use bedrock_addon_core::id::BlockId;
 
+    use crate::pack::link::prelude::*;
     #[cfg(feature = "block")]
-    use super::super::tests::support::all_said;
-    use super::super::tests::support::{block, hosted, origin, set, set_with};
-    use super::super::{At, Findings, LinkCx, LinkOptions, kinds, link_with_rules, unresolved};
+    use crate::pack::link::tests::support::all_said;
+    use crate::pack::link::tests::support::{block, hosted, origin, set, set_with};
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     /// A rule as a group writes one: every block of a fixed list that is missing.
     fn rule(cx: &LinkCx<'_>, out: &mut Findings) {

@@ -7,14 +7,12 @@
 
 use bedrock_addon_core::document::ComponentRef;
 
-use super::super::{At, Findings, LinkCx, Validator, kinds, unknown_sound};
-#[cfg(feature = "music")]
-use super::super::{Target, unresolved};
 use super::biome::{Claim, claims, path};
 use crate::diagnostic::Severity;
 #[cfg(feature = "music")]
 use crate::families::client_biome::component::BiomeMusic;
 use crate::families::client_biome::component::{AmbientSounds, ClientBiomeComponent};
+use crate::pack::link::prelude::*;
 use crate::version::FormatVersion;
 
 /// The component's key.

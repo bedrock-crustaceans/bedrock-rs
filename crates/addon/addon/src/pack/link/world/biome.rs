@@ -4,9 +4,6 @@
 //! The game does not register a biome with such a miss, so each is an error. The pass tells
 //! it and leaves the registry as it was loaded.
 
-use super::super::{
-    At, Findings, LinkCx, Target, Validator, invalid, kinds, unresolved, validator_miss,
-};
 use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::document::{ComponentMap, ComponentRef, Origin};
 use crate::families::biome::component::{
@@ -15,6 +12,7 @@ use crate::families::biome::component::{
 };
 use crate::id::BiomeId;
 use crate::pack::PackSide;
+use crate::pack::link::prelude::*;
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 
@@ -245,9 +243,9 @@ fn of_the_game(cx: &LinkCx<'_>, id: &BiomeId, definition: &Origin) -> bool {
 mod tests {
     use bedrock_addon_core::load::LoadOptions;
 
-    use super::super::super::tests::support::{File, pack, set_of};
-    use super::super::super::{LinkOptions, link_with_rules};
     use super::*;
+    use crate::pack::link::tests::support::{File, pack, set_of};
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     /// A biome document of `id`.
     fn biome(id: &str) -> String {

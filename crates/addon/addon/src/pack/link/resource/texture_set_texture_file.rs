@@ -5,7 +5,7 @@
 
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{Findings, LinkCx};
+use crate::pack::link::prelude::*;
 
 /// The image of every image layer of every loaded texture set of the resource stack: an image
 /// whose header does not read, and one whose channel count the layer does not take, is an

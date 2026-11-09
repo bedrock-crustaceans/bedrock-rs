@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::super::{At, Findings, LinkCx, unresolved};
+use crate::pack::link::prelude::*;
 use super::block::sections;
 use crate::families::block::component::CraftingTable;
 use crate::families::recipe::{Recipe, Tags};

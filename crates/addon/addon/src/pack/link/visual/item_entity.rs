@@ -7,7 +7,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::id::EntityId;
 
-use super::super::{At, Findings, LinkCx, kinds};
+use crate::pack::link::prelude::*;
 
 /// Each attachable whose identifier, compared in lower case, is a client entity's: an
 /// `IdentifierCollision` warning at its `description.identifier`.

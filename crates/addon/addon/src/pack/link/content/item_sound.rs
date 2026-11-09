@@ -5,7 +5,7 @@
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::id::SoundEventName;
 
-use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
+use crate::pack::link::prelude::*;
 use super::item::{Entry, component, items};
 use crate::families::item::component::{DurabilitySensor, Record, SwingSounds, UseModifiers};
 

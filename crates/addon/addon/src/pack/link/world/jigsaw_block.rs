@@ -1,7 +1,7 @@
 //! The blocks a jigsaw document names: a jigsaw processor's blocks.
 
-use super::super::LinkCx;
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 
 /// Whether a block of a processor (`block_ignore.blocks[]`, `block_match.block`,
 /// `random_block_match.block`, `output_state`, `blockstate_match.block_state`) is a block of

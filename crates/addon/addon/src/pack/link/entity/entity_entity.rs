@@ -4,9 +4,9 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::EntityId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unknown_sound, unresolved};
 use super::table::{BREEDS_WITH, ENTITIES, OFFSPRING, SOUNDS};
 use super::walk::Entities;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     entities.each(ENTITIES, &mut |component, at, value| {

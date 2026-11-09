@@ -10,11 +10,11 @@ use bedrock_addon_core::load::Experiment;
 use bedrock_addon_core::pack_identity::PackSide;
 use indexmap::IndexMap;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::blocks_json::{BLOCKS_JSON, Writers, creator_origin, entry_key, entry_path};
 use super::told::{Told, formatted};
 use crate::families::block::component::{Geometry, MaterialInstances};
 use crate::families::blocks_json::entry_settings;
+use crate::pack::link::prelude::*;
 
 /// The text for a key that names no block: the key.
 const NO_SUCH_BLOCK: &str =
@@ -198,12 +198,12 @@ mod tests {
     use bedrock_addon_core::load::LoadOptions;
     use bedrock_addon_core::pack_identity::PackOrigin;
 
-    use super::super::super::tests::support::{
+    use super::{TEMPLATES, keys, tessellation};
+    use crate::pack::link::resource::told::formatted;
+    use crate::pack::link::tests::support::{
         all_said, block, hosted, leak, pack, set, set_of, set_with,
     };
-    use super::super::super::{LinkOptions, link_with_rules};
-    use super::super::told::formatted;
-    use super::{TEMPLATES, keys, tessellation};
+    use crate::pack::link::{LinkOptions, link_with_rules};
     use crate::pack::tests::pack_from;
 
     #[test]
@@ -489,7 +489,7 @@ mod tests {
     fn the_legacy_block_names_are_exactly_what_the_vanilla_files_need() {
         use std::collections::BTreeSet;
 
-        use super::super::super::tests::support::{vanilla_behavior_text, written_in};
+        use crate::pack::link::tests::support::{vanilla_behavior_text, written_in};
         use crate::vanilla::names::LEGACY_BLOCK_NAMES;
 
         let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())

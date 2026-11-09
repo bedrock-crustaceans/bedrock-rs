@@ -2,9 +2,9 @@
 
 use bedrock_addon_core::diagnostic::{Kind, Severity};
 
-use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use super::blocks_json::{Writers, entry_key, entry_path};
 use super::told::Told;
+use crate::pack::link::prelude::*;
 
 /// What the client reads of a `sound` that is no string: `""` for a number, an array or an
 /// object, the word for a boolean.

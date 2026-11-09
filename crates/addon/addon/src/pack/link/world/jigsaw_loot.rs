@@ -1,8 +1,8 @@
 //! The loot tables world generation names (`append_loot.loot_table` of a jigsaw processor
 //! rule).
 
-use super::super::LinkCx;
 use crate::id::LootTablePath;
+use crate::pack::link::prelude::*;
 
 /// Whether the loot table a processor rule appends is a table of the stack (compared
 /// without case, with or without its `.json`) or one of the game's.

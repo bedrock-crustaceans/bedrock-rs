@@ -18,11 +18,11 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{Document, Origin};
 use bedrock_addon_core::id::ParticleId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::families::particle::component::{
     EmitterLifetimeEvents, ParticleLifetimeEvents, ParticleMotionCollision, VectorEvents,
 };
 use crate::families::particle::{EventNode, ParticleEffect};
+use crate::pack::link::prelude::*;
 
 /// What a finding calls an event of a particle effect (a key of its `events`): the crate has
 /// no shared kind for it.

@@ -16,8 +16,8 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::MaterialId;
 
-use super::super::{At, Findings, LinkCx, kinds, unresolved};
 use super::particle::payload;
+use crate::pack::link::prelude::*;
 
 /// `description.basic_render_parameters.material` of every effect names a material
 /// (or a variant of one) that a material file of the stack defines, or one the host says the
@@ -26,7 +26,7 @@ use super::particle::payload;
 /// without a view of the materials, and a miss is an information with a partial one.
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     let view = cx.material_view(out);
-    if !view.judges() || (view == super::super::View::Partial && !cx.lints()) {
+    if !view.judges() || (view == View::Partial && !cx.lints()) {
         return;
     }
     for (_, document) in cx.resource().particles() {

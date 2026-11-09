@@ -1,7 +1,7 @@
 //! The structures a jigsaw document names (`single_pool_element.location`).
 
-use super::super::LinkCx;
 use crate::id::StructureId;
+use crate::pack::link::prelude::*;
 
 /// Whether a pool element's template is a file of the stack
 /// (`structures/<location without its namespace>.mcstructure`), one a host says the game

@@ -2,14 +2,11 @@
 //! of `surface_material_adjustments` and of the surface builders, the noise gradient's
 //! `non_replaceable_blocks` and `noise_block_specifiers[].block`).
 
-use super::super::{
-    At, Findings, LinkCx, Member, States, Target, Validator, block_specifier, kinds, unresolved,
-    validator_miss,
-};
 use crate::diagnostic::{JsonPath, JsonPathSegment, Severity, sentence};
 use crate::document::Origin;
 use crate::families::biome::block_references;
 use crate::families::biome::component::BiomeComponent;
+use crate::pack::link::prelude::*;
 
 /// vanilla's text for a block that does not resolve: the member's label, then the name. It is
 /// the game's biome-component block lookup that writes it.

@@ -11,7 +11,7 @@ use bedrock_addon_core::document::{ComponentMap, Origin};
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{At, Findings, LinkCx, Member, States, Target, item_descriptor, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use crate::families::item::LegacyItemData;
 use crate::families::item::component::{Food, ItemComponent, Repairable, Shooter, StorageItem, Tags};
 use crate::families::item::trim::TrimData;

@@ -6,8 +6,9 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, JsonPath, Phase, ReferenceHint, Severity, sentence,
 };
 
-use super::super::{
-    At, cycle, invalid, kinds, texture_not_found, unknown_sound, unresolved, unresolved_lang_key,
+use crate::pack::link::finding::cycle;
+use crate::pack::link::{
+    At, invalid, kinds, texture_not_found, unknown_sound, unresolved, unresolved_lang_key,
 };
 use bedrock_addon_core::pack_identity::PackPath;
 
@@ -228,7 +229,7 @@ fn a_finding_of_any_code_is_built_with_the_frames_place_severity_and_phase() {
 #[test]
 fn link_types_implement_debug() {
     fn assert_debug<T: std::fmt::Debug>() {}
-    assert_debug::<super::super::Findings>();
+    assert_debug::<crate::pack::link::Findings>();
     assert_debug::<At<'static>>();
-    assert_debug::<super::super::LinkCx<'static>>();
+    assert_debug::<crate::pack::link::LinkCx<'static>>();
 }

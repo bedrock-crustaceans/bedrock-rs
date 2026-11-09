@@ -4,10 +4,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::super::{Findings, LinkCx, Validator, kinds, validator_text};
 use crate::diagnostic::{Diagnostic, DiagnosticDetail, JsonPath, JsonPathSegment};
 use crate::document::Origin;
 use crate::families::aim_assist::{self, Targets};
+use crate::pack::link::prelude::*;
 use crate::vanilla::GeneratedBuiltIns;
 use crate::version::FormatVersion;
 use bedrock_addon_core::load::BuiltIns;

@@ -5,11 +5,9 @@ use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_shared_shapes::{ItemDescriptor, ItemDescriptorForm};
 
-use super::super::{
-    At, Findings, LinkCx, Member, States, Target, item_descriptor, kinds, unresolved,
-};
 use super::table::ITEMS;
 use super::walk::Entities;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     entities.each(ITEMS, &mut |component, at, value| {
@@ -40,7 +38,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
         };
         // A name the game's own entity files write here and the game does not have: let
         // through in these rows alone.
-        if crate::vanilla::names::is_entity_file_only_item(&super::super::canonical(&looked_up)) {
+        if crate::vanilla::names::is_entity_file_only_item(&canonical(&looked_up)) {
             return;
         }
         if (component.key, *form) == SHAREABLE {

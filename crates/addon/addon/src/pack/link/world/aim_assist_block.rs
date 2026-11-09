@@ -1,8 +1,8 @@
 //! The blocks an aim-assist document names: `exclusion_settings.blocks`, the entries of
 //! an old `exclusion_list`, and the keys of a category's `priorities.blocks`.
 
-use super::super::LinkCx;
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 
 /// Whether `key` (the name lower-cased, as the game registers it) is a block of the stack or
 /// one of the game's.

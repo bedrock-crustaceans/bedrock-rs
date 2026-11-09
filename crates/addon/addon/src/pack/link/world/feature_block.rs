@@ -1,14 +1,11 @@
 //! The blocks a feature names: every block member of a feature, and the `places_block` of a
 //! `single_block_feature` and of a `multi_block_feature`.
 
-use super::super::{
-    At, Findings, LinkCx, Member, States, Target, block_descriptor, block_specifier, invalid,
-    kinds, unresolved,
-};
 use crate::diagnostic::{JsonPath, JsonPathSegment, Severity};
 use crate::document::Document;
 use crate::families::feature::{Feature, Reference};
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 use crate::shared::{BlockDescriptor, StateValue};
 
 /// vanilla's text for a `places_block` of a single-block feature that names no block.

@@ -5,8 +5,8 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::AnimationRef;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::user::User;
+use crate::pack::link::prelude::*;
 
 /// `animations`: each value names an animation or an animation controller of the resource
 /// stack, its prefix saying which; a value with neither prefix is ignored by the game and

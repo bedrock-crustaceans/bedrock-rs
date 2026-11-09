@@ -8,10 +8,10 @@ use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::id::RenderControllerId;
 use bedrock_addon_core::molang::{Molang, MolangSource};
 
-use super::super::{At, Findings, LinkCx};
 use super::user::{Family, User};
 use super::{plain_reference, user_render};
 use crate::families::render_controller::RenderController;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &[User<'_>]) {
     for user in entities {

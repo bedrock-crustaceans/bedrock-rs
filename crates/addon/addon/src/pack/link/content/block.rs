@@ -4,7 +4,7 @@
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document, Origin};
 
-use super::super::{Findings, LinkCx, Member, States, block_descriptor};
+use crate::pack::link::prelude::*;
 use crate::families::block::Block;
 use crate::families::block::component::{BlockComponent, Geometry, PlacementFilter};
 

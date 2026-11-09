@@ -4,8 +4,8 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::GeometryId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::user::User;
+use crate::pack::link::prelude::*;
 
 /// `geometry`: each value names a geometry.
 pub(super) fn check(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {

@@ -1,8 +1,8 @@
 //! The default biome of a dimension (`minecraft:default_biome.biome`, from format
 //! 1.26.50).
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::{JsonPath, Severity};
+use crate::pack::link::prelude::*;
 
 /// A default biome that is no biome of the stack and none of the game's is an
 /// `UnresolvedReference` information: a lint, since whether the game checks the name is not

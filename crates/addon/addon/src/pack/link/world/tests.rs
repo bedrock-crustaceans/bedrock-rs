@@ -9,9 +9,9 @@
 
 use bedrock_addon_core::load::LoadOptions;
 
-use super::super::tests::support::{File, pack, set, set_of};
-use super::super::{LinkOptions, link_with_rules};
 use crate::pack::StackSet;
+use crate::pack::link::tests::support::{File, pack, set, set_of};
+use crate::pack::link::{LinkOptions, link_with_rules};
 use crate::test_cost::assert_linear_at;
 
 /// A path for the life of the test process.

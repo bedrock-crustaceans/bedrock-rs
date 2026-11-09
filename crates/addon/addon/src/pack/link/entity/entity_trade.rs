@@ -5,9 +5,9 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::Id;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::table::TRADE_TABLES;
 use super::walk::Entities;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     // The trade tables the load could not read, gathered on the first miss.

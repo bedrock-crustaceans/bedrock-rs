@@ -20,8 +20,8 @@ use crate::pack::PackOrigin;
 use crate::pack::StackSet;
 use crate::pack::tests::pack_from;
 
-use super::super::tests::support::{leak, pack, set_of};
-use super::super::{LinkOptions, link_with_rules};
+use crate::pack::link::tests::support::{leak, pack, set_of};
+use crate::pack::link::{LinkOptions, link_with_rules};
 use bedrock_addon_core::load::LoadOptions;
 
 /// A world whose behaviour pack has `files` and whose resource pack has one language of `keys`
@@ -171,7 +171,7 @@ fn n_items_placed_outside_their_category_cost_n() {
         assert_eq!(found.len(), n, "{found:#?}");
         set
     }
-    fn placements(cx: &super::super::LinkCx<'_>, out: &mut super::super::Findings) {
+    fn placements(cx: &crate::pack::link::LinkCx<'_>, out: &mut crate::pack::link::Findings) {
         let stack = cx.behavior();
         out.extend(crate::families::crafting_catalog::link_placements(
             stack.crafting_catalog(),

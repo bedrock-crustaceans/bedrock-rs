@@ -15,7 +15,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{Document, Origin};
 use bedrock_addon_core::id::ItemId;
 
-use super::super::{At, Findings, LinkCx, Target, invalid, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use crate::families::item::component::{MaxStackSize, Tags};
 use crate::families::item::trim::{ItemTags, TrimData};
 use crate::families::recipe::{Ingredient, Recipe, Unlock};

@@ -1,10 +1,10 @@
 //! The feature a rule places.
 
-use super::super::{At, Findings, LinkCx, Target, invalid, kinds, unresolved};
 use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::families::feature::Feature;
 use crate::families::feature_rules::PlacementPass;
 use crate::pack::PackSide;
+use crate::pack::link::prelude::*;
 
 /// vanilla's text for a feature of another type in the pregeneration pass.
 const ONLY_CAVE_CARVERS: &str =

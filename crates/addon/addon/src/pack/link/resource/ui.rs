@@ -16,11 +16,11 @@ use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{At, Findings, LinkCx};
 use crate::families::font::{
     FontFile, FontFormat, Fonts, GlyphPage, GlyphRemapping, MsdfPage, check_glyph_sheet,
     remapping_path,
 };
+use crate::pack::link::prelude::*;
 
 /// The page prefix of the game's built-in bitmap fonts (`font/glyph_4E`).
 const GLYPH_PREFIX: &str = "font/glyph_";

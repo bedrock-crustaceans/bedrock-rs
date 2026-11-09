@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::super::{At, Findings, LinkCx, Validator, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use super::block::{placed, sections};
 use crate::families::block::component::Loot;
 

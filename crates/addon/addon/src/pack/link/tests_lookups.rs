@@ -7,9 +7,10 @@ use bedrock_addon_core::id::{Id, Kind, kind};
 use bedrock_addon_core::load::LoadOptions;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 
-use super::super::{Findings, LinkCx, LinkOptions, Names, Target, canonical, link_with_rules};
 #[allow(unused_imports, reason = "each feature set uses part of the helpers")]
 use super::support::{block, empty_set, entity, hosted, item, origin, pack, set, set_of, set_with};
+use crate::pack::link::lookup::Names;
+use crate::pack::link::{Findings, LinkCx, LinkOptions, Target, canonical, link_with_rules};
 
 const ALL: LinkOptions = LinkOptions {
     lints: true,
@@ -741,7 +742,7 @@ fn without_the_lints_a_file_not_loaded_is_skipped_in_silence() {
 fn every_name(cx: &LinkCx<'_>, out: &mut Findings) {
     use bedrock_addon_core::diagnostic::JsonPath;
 
-    use super::super::{At, kinds, unresolved};
+    use crate::pack::link::{At, kinds, unresolved};
     for (name, origin) in cx.block_names().iter() {
         let at = At::new(origin, JsonPath::new(), Severity::Info);
         out.push(unresolved(at, kinds::BLOCK, name.as_str(), None));

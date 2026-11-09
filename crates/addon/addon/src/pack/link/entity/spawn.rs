@@ -3,8 +3,8 @@
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::Origin;
 
-use super::super::LinkCx;
 use crate::families::spawn_rules::{Condition, SpawnRules};
+use crate::pack::link::prelude::*;
 
 /// The payload key of a spawn-rules document.
 pub(super) const RULES: &str = "minecraft:spawn_rules";

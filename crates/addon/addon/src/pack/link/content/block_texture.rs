@@ -4,7 +4,7 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Document;
 use bedrock_addon_core::id::Id;
 
-use super::super::{At, Findings, LinkCx, Target, Validator, View, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use super::block::{placed, sections};
 use crate::families::block::Block;
 use crate::families::block::component::{

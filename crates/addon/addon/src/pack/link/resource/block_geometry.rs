@@ -5,9 +5,9 @@ use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::GeometryId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::block_culling::{culled, rule_path, rules_of};
 use super::told::{Told, formatted};
+use crate::pack::link::prelude::*;
 
 /// The bone check: the named bone must exist in the geometry.
 const NO_SUCH_BONE: &str = "Did not find any bones with name `{}`";
@@ -79,9 +79,9 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::tests::support::{leak, set};
-    use super::super::super::{LinkOptions, link_with_rules};
     use super::{CUBE_OUT_OF_BOUNDS, NO_SUCH_BONE, run};
+    use crate::pack::link::tests::support::{leak, set};
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     #[test]
     fn every_template_takes_the_arguments_it_is_given() {

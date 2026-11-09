@@ -1,9 +1,9 @@
 //! The references a feature names: the features a feature names; what it names in other
 //! modules (blocks, structures) is in the pair files.
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::Severity;
 use crate::families::feature::{self, Reference};
+use crate::pack::link::prelude::*;
 
 /// The rules of the features.
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {

@@ -10,10 +10,10 @@ use std::cell::RefCell;
 
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{Findings, LinkCx};
 use crate::families::deferred_settings::{Targets, Texture, check_links};
 use crate::families::texture_file::ImageInfo;
 use crate::id::{BlockId, TexturePath};
+use crate::pack::link::prelude::*;
 
 /// An image nothing is said of: one frame.
 const ONE_FRAME: Texture = Texture::Image {
@@ -90,9 +90,9 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 mod tests {
     use bedrock_addon_core::load::LoadOptions;
 
-    use super::super::super::tests::support::{pack, set_of};
-    use super::super::super::{LinkOptions, link_with_rules};
     use crate::pack::StackSet;
+    use crate::pack::link::tests::support::{pack, set_of};
+    use crate::pack::link::{LinkOptions, link_with_rules};
 
     /// `text` for the life of the test process.
     fn leak(text: String) -> &'static str {

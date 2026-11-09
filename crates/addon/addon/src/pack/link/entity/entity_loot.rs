@@ -2,9 +2,9 @@
 //! written and looks the file up when it rolls the table, saying nothing of a missing one.
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::super::{At, Findings, LinkCx, kinds, unresolved};
 use super::table::LOOT_TABLES;
 use super::walk::Entities;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     if !cx.lints() {

@@ -16,9 +16,9 @@ use bedrock_addon_core::document::{ComponentMap, ComponentRef, Origin};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_shared_shapes::event;
 
-use super::super::LinkCx;
 use crate::families::entity::Entity;
 use crate::families::entity::component::EntityComponent;
+use crate::pack::link::prelude::*;
 
 /// The payload key of an entity document.
 pub(super) const PAYLOAD: &str = "minecraft:entity";

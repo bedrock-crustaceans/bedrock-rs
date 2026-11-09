@@ -13,8 +13,8 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::{Content, Origin};
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use crate::families::server_sound_definitions::SoundMetadataFile;
+use crate::pack::link::prelude::*;
 
 /// The payload member of a server sound definitions file: the array of the definitions.
 const PAYLOAD: &str = "minecraft:server_sound_definitions";

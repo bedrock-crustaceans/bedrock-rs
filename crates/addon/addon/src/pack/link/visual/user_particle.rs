@@ -4,8 +4,8 @@
 use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::id::ParticleId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::user::{Family, User};
+use crate::pack::link::prelude::*;
 
 /// Vanilla's text for a particle the particle group lacks: the file, then the value as
 /// written.

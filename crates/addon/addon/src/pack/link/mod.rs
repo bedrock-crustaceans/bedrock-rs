@@ -77,46 +77,24 @@ mod finding;
 mod group_shape;
 mod lookup;
 mod options;
+/// What a rule file imports with one glob.
+mod prelude;
 mod shared;
 #[cfg(test)]
 mod tests;
 
 pub use options::LinkOptions;
 
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
 pub(crate) use cx::LinkCx;
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
 pub(crate) use finding::{
-    At, Validator, cycle, invalid, texture_not_found, unknown_sound, unresolved,
-    unresolved_lang_key, validator_miss, validator_text,
+    At, Validator, invalid, texture_not_found, unknown_sound, unresolved, unresolved_lang_key,
+    validator_miss, validator_text,
 };
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
-pub(crate) use lookup::{Names, Target, View, canonical, kinds};
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
+pub(crate) use lookup::{Target, View, canonical, kinds};
 #[cfg(feature = "item")]
 pub(crate) use shared::item_descriptor;
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
 #[cfg(any(feature = "block", feature = "item"))]
 pub(crate) use shared::{Member, States};
-#[allow(
-    unused_imports,
-    reason = "the vocabulary of the rule packages: each uses the part its rows need"
-)]
 #[cfg(feature = "block")]
 pub(crate) use shared::{block_descriptor, block_specifier};
 

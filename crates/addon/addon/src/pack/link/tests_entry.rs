@@ -3,8 +3,8 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Location, Phase, Severity};
 
-use super::super::{Findings, LinkCx, LinkOptions, link_with_rules};
 use super::support::{empty_set, set};
+use crate::pack::link::{Findings, LinkCx, LinkOptions, link_with_rules};
 
 /// A finding of `severity` and `phase` at the JSON member `name`.
 fn finding(name: &str, severity: Severity, phase: Phase) -> Diagnostic {

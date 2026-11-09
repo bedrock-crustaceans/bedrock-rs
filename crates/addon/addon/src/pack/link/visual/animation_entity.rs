@@ -13,9 +13,9 @@ use std::collections::{HashMap, HashSet};
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 
-use super::super::{At, Findings, LinkCx, unresolved};
 use super::user::{Family, User, lowered_keys};
 use crate::families::animation::{OneOrMany, ParticleEffect, SoundEffect};
+use crate::pack::link::prelude::*;
 
 /// The kind of a finding about `particle_effects` of a client entity.
 const PARTICLE_EFFECT: &str = "particle effect";

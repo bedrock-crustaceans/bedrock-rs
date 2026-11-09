@@ -63,9 +63,9 @@ fn a_plain_reference_is_the_prefix_and_a_name_and_nothing_else() {
 mod cost {
     use bedrock_addon_core::load::LoadOptions;
 
-    use super::super::super::tests::support::{leak, pack, set_of};
-    use super::super::super::{Findings, LinkCx, LinkOptions};
     use crate::pack::StackSet;
+    use crate::pack::link::tests::support::{leak, pack, set_of};
+    use crate::pack::link::{Findings, LinkCx, LinkOptions};
 
     /// What the whole group tells of `set`.
     fn told(set: &StackSet) -> usize {
@@ -75,7 +75,7 @@ mod cost {
         };
         let cx = LinkCx::new(set, options);
         let mut out = Findings::new(options);
-        super::super::run(&cx, &mut out);
+        crate::pack::link::visual::run(&cx, &mut out);
         out.finish().len()
     }
 
@@ -235,7 +235,7 @@ mod cost {
         };
         let cx = LinkCx::new(&set, options);
         let mut out = Findings::new(options);
-        super::super::run(&cx, &mut out);
+        crate::pack::link::visual::run(&cx, &mut out);
         let mut by_kind: BTreeMap<(&str, &str), usize> = BTreeMap::new();
         for finding in &out.finish() {
             let kind = match finding.detail.as_deref() {

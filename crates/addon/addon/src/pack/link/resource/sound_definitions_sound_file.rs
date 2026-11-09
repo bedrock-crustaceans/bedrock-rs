@@ -7,8 +7,8 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, ReferenceHint, Severity};
 
-use super::super::{At, Findings, LinkCx};
 use crate::families::sound_file::{AudioExt, SOUND_FILE_KIND, SoundAsset};
+use crate::pack::link::prelude::*;
 use indexmap::IndexMap;
 
 /// The longest name the client's 1024-byte path buffer still holds with an extension.

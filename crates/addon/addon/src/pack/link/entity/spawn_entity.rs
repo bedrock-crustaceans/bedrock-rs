@@ -4,9 +4,9 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::EntityId;
 
-use super::super::{At, Findings, LinkCx, Target, Validator, kinds, unresolved};
 use super::spawn::{self, Conditions, RULES};
 use crate::families::spawn_rules::{OneOrMany, SpawnRules};
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     rules_without_entity(cx, out);
@@ -74,7 +74,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 /// Whether `name` is one of the identifiers the game's patrol spawn rules write where an
 /// entity is named: no actor, let through in the rules' identifier and a delay's alone.
 fn patrol(name: &EntityId) -> bool {
-    crate::vanilla::names::is_spawn_rule_identifier(&super::super::canonical(name))
+    crate::vanilla::names::is_spawn_rule_identifier(&canonical(name))
 }
 
 /// `name` is an entity; an absent or empty name names none (an empty delay identifier is the

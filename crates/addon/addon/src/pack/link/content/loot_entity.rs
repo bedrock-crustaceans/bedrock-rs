@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use super::loot::{Site, walk};
 use crate::families::loot::{ConditionKind, FunctionKind};
 

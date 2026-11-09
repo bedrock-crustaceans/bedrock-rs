@@ -7,9 +7,9 @@
 // The check and its text are the deferred-settings family's (`check_links`): this file
 // answers what a key names.
 
-use super::super::{Findings, LinkCx};
 use crate::families::deferred_settings::{Targets, Texture, check_links};
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 
 /// What the local-light keys of the deferred settings name on the stacks of a pass.
 #[derive(Debug)]

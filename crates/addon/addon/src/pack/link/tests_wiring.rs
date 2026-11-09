@@ -12,9 +12,9 @@ use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::load::{Experiment, Experiments, LoadOptions};
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{LinkCx, LinkOptions, Target};
 use super::support::{hosted, pack, set, set_of, set_with};
 use crate::pack::StackSet;
+use crate::pack::link::{LinkCx, LinkOptions, Target};
 
 const ALL: LinkOptions = LinkOptions {
     lints: true,

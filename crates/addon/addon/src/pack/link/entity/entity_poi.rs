@@ -8,9 +8,9 @@ use std::collections::HashSet;
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::Id;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::table::POIS;
 use super::walk::Entities;
+use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     // The tags the types carry, gathered on the first name that is no type and no tag

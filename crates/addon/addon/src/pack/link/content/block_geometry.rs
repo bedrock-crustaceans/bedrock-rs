@@ -3,7 +3,7 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::GeometryId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
+use crate::pack::link::prelude::*;
 use super::block::{geometries, placed};
 use crate::families::block::component::Geometry;
 

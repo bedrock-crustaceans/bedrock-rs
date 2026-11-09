@@ -1,9 +1,9 @@
 //! The blocks of a structure's palettes (`structure.palette.<name>.block_palette[]`,
 //! each raw block NBT `{name, states, version}`).
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::{JsonPath, Severity};
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 
 /// A palette entry whose `name` is no block of the stack and none of the game's is an
 /// `UnresolvedReference` information at the name: the game puts an unknown-block placeholder

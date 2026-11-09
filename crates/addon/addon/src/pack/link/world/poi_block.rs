@@ -1,8 +1,8 @@
 //! The blocks of a point-of-interest type (`poi_block.blocks[]`).
 
-use super::super::{Findings, LinkCx};
 use crate::families::poi;
 use crate::id::BlockId;
+use crate::pack::link::prelude::*;
 
 /// The blocks of the pass, for the family's checker.
 #[derive(Debug)]

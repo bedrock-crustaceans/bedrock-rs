@@ -4,8 +4,8 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::SoundEventName;
 
-use super::super::{At, Findings, LinkCx, kinds, unknown_sound};
 use super::user::User;
+use crate::pack::link::prelude::*;
 
 /// `sound_effects`: each value names a sound event of `sound_definitions.json`, as written. A
 /// miss is an `UnknownSound` finding.

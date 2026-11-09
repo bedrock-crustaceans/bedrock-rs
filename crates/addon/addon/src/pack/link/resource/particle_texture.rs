@@ -12,9 +12,9 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::TexturePath;
 
-use super::super::{At, Findings, LinkCx, Validator, kinds, texture_not_found};
 use super::particle::payload;
 use crate::families::texture_atlas::AtlasKind;
+use crate::pack::link::prelude::*;
 
 /// Whether `texture` is the resource name of one of the two atlases (`atlas.terrain`,
 /// `atlas.items`), byte for byte: a particle of a block or of an item is drawn from the atlas

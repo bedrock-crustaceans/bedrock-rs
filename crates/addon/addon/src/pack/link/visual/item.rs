@@ -11,8 +11,8 @@ use bedrock_addon_core::diagnostic::{JsonPath, ReferenceHint, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::pack_identity::PackSide;
 
-use super::super::{At, Findings, LinkCx, canonical, kinds, unresolved};
 use crate::families::attachable::{ItemBinding, ItemBindingEntry};
+use crate::pack::link::prelude::*;
 
 /// The full identifiers of the stack's items, as their definitions write them.
 #[derive(Debug)]

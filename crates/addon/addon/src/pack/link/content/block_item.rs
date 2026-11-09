@@ -1,7 +1,7 @@
 //! The items a block names: `minecraft:destructible_by_mining`'s `item_specific_speeds[].item`,
 //! held by the game's linked-asset check.
 
-use super::super::{Findings, LinkCx, item_descriptor};
+use crate::pack::link::prelude::*;
 use super::block::{placed, sections};
 use super::item::descriptor_of;
 use crate::families::block::component::DestructibleByMining;

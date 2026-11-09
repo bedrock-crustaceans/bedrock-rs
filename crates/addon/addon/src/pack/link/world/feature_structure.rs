@@ -1,10 +1,10 @@
 //! The structure a feature places (`structure_template_feature.structure_name`).
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use crate::diagnostic::{JsonPath, Severity, sentence};
 use crate::document::Document;
 use crate::families::feature::Feature;
 use crate::id::StructureId;
+use crate::pack::link::prelude::*;
 use bedrock_addon_core::diagnostic::builders;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 

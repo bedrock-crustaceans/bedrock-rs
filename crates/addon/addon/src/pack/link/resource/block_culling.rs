@@ -6,11 +6,11 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document};
 use bedrock_addon_core::id::CullingRulesId;
 
-use super::super::{At, Findings, LinkCx, Target, kinds, unresolved};
 use super::told::{Told, formatted};
 use crate::families::block::Block;
 use crate::families::block::component::{BlockComponent, Geometry, GeometryParams};
 use crate::families::block_culling::{Condition, CullingRules};
+use crate::pack::link::prelude::*;
 
 /// The culling name check. The two spaces in the text are the game's.
 const MISSING_ASSET: &str =
@@ -170,8 +170,8 @@ const TEMPLATES: &[(&str, usize)] = &[(MISSING_ASSET, 1), (NO_CULLING_LAYER, 0)]
 
 #[cfg(test)]
 mod tests {
-    use super::super::told::formatted;
     use super::TEMPLATES;
+    use crate::pack::link::resource::told::formatted;
 
     #[test]
     fn every_template_takes_the_arguments_it_is_given() {
