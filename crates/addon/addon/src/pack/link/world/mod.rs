@@ -5,66 +5,36 @@
 //! the aim-assist documents), the rule hands it the lookups of the pass and tells what it
 //! finds; a target whose module is compiled out counts as resolved, so nothing is told of it.
 
-#[cfg(feature = "aim_assist")]
-mod aim_assist;
-#[cfg(all(feature = "aim_assist", feature = "block"))]
-mod aim_assist_block;
-#[cfg(all(feature = "aim_assist", feature = "entity"))]
-mod aim_assist_entity;
-#[cfg(all(feature = "aim_assist", feature = "item"))]
-mod aim_assist_item;
-#[cfg(feature = "behavior_tree")]
-mod behavior_tree;
-#[cfg(feature = "biome")]
-mod biome;
-#[cfg(all(feature = "biome", feature = "block"))]
-mod biome_block;
-#[cfg(all(feature = "dimension", feature = "biome"))]
-mod dimension_biome;
-#[cfg(feature = "feature")]
-mod feature;
-#[cfg(all(feature = "feature", feature = "block"))]
-mod feature_block;
-#[cfg(all(feature = "feature_rules", feature = "feature"))]
-mod feature_rules;
-#[cfg(all(feature = "feature", feature = "structure"))]
-mod feature_structure;
-#[cfg(feature = "jigsaw")]
-mod jigsaw;
-#[cfg(all(feature = "jigsaw", feature = "block"))]
-mod jigsaw_block;
-#[cfg(all(feature = "jigsaw", feature = "loot"))]
-mod jigsaw_loot;
-#[cfg(all(feature = "jigsaw", feature = "structure"))]
-mod jigsaw_structure;
-#[cfg(all(feature = "poi", feature = "block"))]
-mod poi_block;
-#[cfg(all(feature = "structure", feature = "block"))]
-mod structure_block;
+rules! {
+    mod aim_assist needs ["aim_assist"];
+    mod aim_assist_block needs ["aim_assist", "block"];
+    mod aim_assist_entity needs ["aim_assist", "entity"];
+    mod aim_assist_item needs ["aim_assist", "item"];
+    mod behavior_tree needs ["behavior_tree"];
+    mod biome needs ["biome"];
+    mod biome_block needs ["biome", "block"];
+    mod dimension_biome needs ["dimension", "biome"];
+    mod feature needs ["feature"];
+    mod feature_block needs ["feature", "block"];
+    mod feature_rules needs ["feature_rules", "feature"];
+    mod feature_structure needs ["feature", "structure"];
+    mod jigsaw needs ["jigsaw"];
+    mod jigsaw_block needs ["jigsaw", "block"];
+    mod jigsaw_loot needs ["jigsaw", "loot"];
+    mod jigsaw_structure needs ["jigsaw", "structure"];
+    mod poi_block needs ["poi", "block"];
+    mod structure_block needs ["structure", "block"];
 
-#[allow(
-    unused_variables,
-    reason = "without a content module the group has no rule"
-)]
-pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
-    #[cfg(feature = "feature")]
-    feature::run(cx, out);
-    #[cfg(all(feature = "feature_rules", feature = "feature"))]
-    feature_rules::run(cx, out);
-    #[cfg(feature = "jigsaw")]
-    jigsaw::run(cx, out);
-    #[cfg(feature = "biome")]
-    biome::run(cx, out);
-    #[cfg(all(feature = "dimension", feature = "biome"))]
-    dimension_biome::run(cx, out);
-    #[cfg(all(feature = "structure", feature = "block"))]
-    structure_block::run(cx, out);
-    #[cfg(all(feature = "poi", feature = "block"))]
-    poi_block::run(cx, out);
-    #[cfg(feature = "behavior_tree")]
-    behavior_tree::run(cx, out);
-    #[cfg(feature = "aim_assist")]
-    aim_assist::run(cx, out);
+    run pub(super) run() =
+        feature::run,
+        feature_rules::run,
+        jigsaw::run,
+        biome::run,
+        dimension_biome::run,
+        structure_block::run,
+        poi_block::run,
+        behavior_tree::run,
+        aim_assist::run;
 }
 
 #[cfg(test)]

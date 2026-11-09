@@ -4,13 +4,13 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::EntityId;
 
-use super::spawn::{self, Conditions, RULES};
+use super::spawn_rules::{self, Conditions, RULES};
 use crate::families::spawn_rules::{OneOrMany, SpawnRules};
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
     rules_without_entity(cx, out);
-    for conditions in spawn::each_condition(cx) {
+    for conditions in spawn_rules::each_condition(cx) {
         let Conditions {
             origin,
             ref at,

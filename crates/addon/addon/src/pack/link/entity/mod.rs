@@ -5,63 +5,43 @@
 //! [`walk`]) and judge each name. The findings of one rule are in document order; within one
 //! component, in the order of the family's table for the kind.
 
-#[cfg(all(
-    feature = "entity",
-    feature = "animation",
-    feature = "animation_controller"
-))]
-mod entity_animation;
-#[cfg(all(feature = "entity", feature = "block"))]
-mod entity_block;
-#[cfg(feature = "entity")]
-mod entity_entity;
-#[cfg(all(feature = "entity", feature = "item"))]
-mod entity_item;
-#[cfg(all(feature = "entity", feature = "loot"))]
-mod entity_loot;
-#[cfg(all(feature = "entity", feature = "particle"))]
-mod entity_particle;
-#[cfg(all(feature = "entity", feature = "poi"))]
-mod entity_poi;
-#[cfg(all(feature = "entity", feature = "trade"))]
-mod entity_trade;
-#[cfg(all(feature = "spawn_rules", any(feature = "block", feature = "entity")))]
-mod spawn;
-#[cfg(all(feature = "spawn_rules", feature = "block"))]
-mod spawn_block;
-#[cfg(all(feature = "spawn_rules", feature = "entity"))]
-mod spawn_entity;
+rules! {
+    mod spawn_rules needs ["spawn_rules", any["block", "entity"]];
+    mod spawn_rules_block needs ["spawn_rules", "block"];
+    mod spawn_rules_entity needs ["spawn_rules", "entity"];
+
+    with entities = walk::Entities::new(cx) needs ["entity"] {
+        mod entity_animation needs ["animation", "animation_controller"];
+        mod entity_block needs ["block"];
+        mod entity_entity needs [];
+        mod entity_item needs ["item"];
+        mod entity_loot needs ["loot"];
+        mod entity_particle needs ["particle"];
+        mod entity_poi needs ["poi"];
+        mod entity_trade needs ["trade"];
+
+        /// The rules over the references of the stack's entities, gathered once.
+        run references =
+            entity_animation::run,
+            entity_block::run,
+            entity_loot::run,
+            entity_trade::run,
+            entity_entity::run,
+            entity_item::run,
+            entity_particle::run,
+            entity_poi::run;
+    }
+
+    /// The rules over the conditions of spawn rules and spawn groups.
+    run spawns() = spawn_rules_block::run, spawn_rules_entity::run;
+}
+
 #[cfg(all(test, feature = "entity"))]
 mod tests;
-#[cfg(feature = "entity")]
-mod walk;
 
 pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
-    #[cfg(feature = "entity")]
-    {
-        let entities = walk::Entities::new(cx);
-        #[cfg(all(feature = "animation", feature = "animation_controller"))]
-        entity_animation::run(cx, out, &entities);
-        #[cfg(feature = "block")]
-        entity_block::run(cx, out, &entities);
-        #[cfg(feature = "loot")]
-        entity_loot::run(cx, out, &entities);
-        #[cfg(feature = "trade")]
-        entity_trade::run(cx, out, &entities);
-        entity_entity::run(cx, out, &entities);
-        #[cfg(feature = "item")]
-        entity_item::run(cx, out, &entities);
-        #[cfg(feature = "particle")]
-        entity_particle::run(cx, out, &entities);
-        #[cfg(feature = "poi")]
-        entity_poi::run(cx, out, &entities);
-    }
-    #[cfg(all(feature = "spawn_rules", feature = "block"))]
-    spawn_block::run(cx, out);
-    #[cfg(all(feature = "spawn_rules", feature = "entity"))]
-    spawn_entity::run(cx, out);
-    #[cfg(not(any(feature = "entity", all(feature = "spawn_rules", feature = "block"))))]
-    let _ = (cx, out);
+    references(cx, out);
+    spawns(cx, out);
 }
 
 /// Whether the paths [`unread`] gives are folded to lower case.

@@ -81,44 +81,45 @@ macro_rules! at {
     };
 }
 
-/// The rule files of the group, in the order their rules run: each is one module with one
-/// `run`, compiled when the modules it relates are.
-macro_rules! rules {
-    ($(#[cfg($cfg:meta)] $name:ident;)*) => {
-        $(
-            #[cfg($cfg)]
-            mod $name;
-        )*
-
-        pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
-            $(
-                #[cfg($cfg)]
-                $name::run(cx, out);
-            )*
-            let _ = (cx, out);
-        }
-    };
-}
-
 rules! {
-    #[cfg(all(feature = "block", feature = "geometry"))] block_geometry;
-    #[cfg(feature = "block")] block;
-    #[cfg(all(feature = "block", feature = "voxel_shape"))] block_voxel_shape;
-    #[cfg(all(feature = "block", feature = "texture_atlas"))] block_texture;
-    #[cfg(all(feature = "block", feature = "loot"))] block_loot;
-    #[cfg(all(feature = "block", feature = "lang", feature = "languages"))] block_text;
-    #[cfg(all(feature = "block", feature = "item"))] block_item;
-    #[cfg(feature = "item")] item;
-    #[cfg(all(feature = "item", feature = "entity"))] item_entity;
-    #[cfg(all(feature = "item", feature = "block"))] item_block;
-    #[cfg(all(feature = "item", feature = "sound_definitions", feature = "sounds_json"))] item_sound;
-    #[cfg(all(feature = "crafting_catalog", feature = "lang", feature = "languages"))] item_text;
-    #[cfg(all(feature = "loot", feature = "item"))] loot_item;
-    #[cfg(feature = "loot")] loot;
-    #[cfg(all(feature = "loot", feature = "entity"))] loot_entity;
-    #[cfg(all(feature = "trade", feature = "item"))] trade_item;
-    #[cfg(all(feature = "recipe", feature = "item"))] recipe_item;
-    #[cfg(all(feature = "recipe", feature = "block"))] recipe_block;
+    mod block_geometry needs ["block", "geometry"];
+    mod block needs ["block"];
+    mod block_voxel_shape needs ["block", "voxel_shape"];
+    mod block_texture needs ["block", "texture_atlas"];
+    mod block_loot needs ["block", "loot"];
+    mod block_text needs ["block", "lang", "languages"];
+    mod block_item needs ["block", "item"];
+    mod item needs ["item"];
+    mod item_entity needs ["item", "entity"];
+    mod item_block needs ["item", "block"];
+    mod item_sound needs ["item", "sound_definitions", "sounds_json"];
+    mod crafting_catalog_text needs ["crafting_catalog", "lang", "languages"];
+    mod loot_item needs ["loot", "item"];
+    mod loot needs ["loot"];
+    mod loot_entity needs ["loot", "entity"];
+    mod trade_item needs ["trade", "item"];
+    mod recipe_item needs ["recipe", "item"];
+    mod recipe_block needs ["recipe", "block"];
+
+    run pub(super) run() =
+        block_geometry::run,
+        block::run,
+        block_voxel_shape::run,
+        block_texture::run,
+        block_loot::run,
+        block_text::run,
+        block_item::run,
+        item::run,
+        item_entity::run,
+        item_block::run,
+        item_sound::run,
+        crafting_catalog_text::run,
+        loot_item::run,
+        loot::run,
+        loot_entity::run,
+        trade_item::run,
+        recipe_item::run,
+        recipe_block::run;
 }
 
 #[cfg(test)]

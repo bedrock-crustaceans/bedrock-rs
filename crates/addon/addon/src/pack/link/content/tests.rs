@@ -135,7 +135,11 @@ fn n_group_names_no_language_defines_cost_n() {
             groups.join(", ")
         );
         let set = cataloged(&catalog, Vec::new());
-        let found = link_with_rules(&set, LinkOptions::default(), &[super::item_text::run]);
+        let found = link_with_rules(
+            &set,
+            LinkOptions::default(),
+            &[super::crafting_catalog_text::run],
+        );
         assert_eq!(found.len(), n, "{found:#?}");
         set
     }
@@ -143,7 +147,13 @@ fn n_group_names_no_language_defines_cost_n() {
         "link: n group names no language defines",
         2_000,
         input,
-        |set: &StackSet| link_with_rules(set, LinkOptions::default(), &[super::item_text::run]),
+        |set: &StackSet| {
+            link_with_rules(
+                set,
+                LinkOptions::default(),
+                &[super::crafting_catalog_text::run],
+            )
+        },
     );
 }
 

@@ -2,12 +2,12 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
-use super::spawn::{self, Conditions};
+use super::spawn_rules::{self, Conditions};
 use crate::families::spawn_rules::OneOrMany;
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
-    for conditions in spawn::each_condition(cx) {
+    for conditions in spawn_rules::each_condition(cx) {
         filters(cx, out, &conditions);
     }
 }

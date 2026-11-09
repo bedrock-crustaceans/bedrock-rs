@@ -11,92 +11,78 @@
 //! and atomic client entity, then each over every attachable; within a check in the order of
 //! the documents.
 
-#[cfg(any(
-    feature = "client_entity",
-    feature = "atomic_client_entity",
-    feature = "attachable"
-))]
-mod user;
+rules! {
+    mod user needs any["client_entity", "atomic_client_entity", "attachable"];
 
-#[cfg(all(
-    feature = "animation",
-    feature = "animation_controller",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod user_animation;
-#[cfg(all(
-    feature = "geometry",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod user_geometry;
-#[cfg(all(
-    feature = "particle",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod user_particle;
-#[cfg(all(
-    feature = "render_controller",
-    feature = "material",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod user_render;
-#[cfg(all(
-    feature = "sound_definitions",
-    any(feature = "client_entity", feature = "atomic_client_entity")
-))]
-mod user_sound;
-#[cfg(all(
-    feature = "texture_atlas",
-    feature = "texture_file",
-    feature = "texture_set",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod user_texture;
+    mod user_animation needs [
+        "animation",
+        "animation_controller",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
+    mod user_geometry needs [
+        "geometry",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
+    mod user_particle needs [
+        "particle",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
+    mod user_render needs [
+        "render_controller",
+        "material",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
+    mod user_sound needs ["sound_definitions", any["client_entity", "atomic_client_entity"]];
+    mod user_texture needs [
+        "texture_atlas",
+        "texture_file",
+        "texture_set",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
 
-#[cfg(all(feature = "client_entity", feature = "entity"))]
-mod entity;
+    mod entity needs ["client_entity", "entity"];
 
-#[cfg(all(feature = "attachable", feature = "client_entity"))]
-mod attachable_client_entity;
-#[cfg(all(feature = "attachable", feature = "item"))]
-mod attachable_item;
+    mod attachable_client_entity needs ["attachable", "client_entity"];
+    mod attachable_item needs ["attachable", "item"];
 
-#[cfg(all(
-    feature = "animation",
-    feature = "animation_controller",
-    any(feature = "client_entity", feature = "atomic_client_entity")
-))]
-mod animation_entity;
-#[cfg(all(
-    feature = "render_controller",
-    feature = "material",
-    any(
-        feature = "client_entity",
-        feature = "atomic_client_entity",
-        feature = "attachable"
-    )
-))]
-mod render_user;
+    mod animation_entity needs [
+        "animation",
+        "animation_controller",
+        any["client_entity", "atomic_client_entity"],
+    ];
+    mod render_user needs [
+        "render_controller",
+        "material",
+        any["client_entity", "atomic_client_entity", "attachable"],
+    ];
+
+    /// The checks of a client entity and of an atomic client entity, check by check over
+    /// every one of `users`.
+    #[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+    run entity_checks(users: &[user::User<'_>]) for user in users =
+        user_render::materials,
+        user_render::material_shaders,
+        user_render::render_controllers,
+        user_render::atomic_controllers,
+        user_particle::check,
+        user_geometry::check,
+        user_animation::check,
+        user_texture::check,
+        user_sound::check;
+
+    /// The checks of an attachable, check by check over every one of `users`: those of a
+    /// client entity but the atomic one and sounds (an attachable's `sound_effects` are not
+    /// checked).
+    #[cfg(feature = "attachable")]
+    run attachable_checks(users: &[user::User<'_>]) for user in users =
+        user_render::materials,
+        user_render::material_shaders,
+        user_render::render_controllers,
+        user_particle::check,
+        user_geometry::check,
+        user_animation::check,
+        user_texture::check;
+}
 
 #[cfg(test)]
 mod tests;
@@ -113,35 +99,18 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
 
     // The references of a client entity and of an atomic client entity.
     #[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
-    each(cx, out, ENTITY_CHECKS, &entities);
-    #[cfg(all(feature = "client_entity", feature = "entity"))]
-    entity::run(cx, out);
+    entity_checks(cx, out, &entities);
+    entity! { entity::run(cx, out); }
 
     // The references of an attachable and its identifier.
     #[cfg(feature = "attachable")]
-    each(cx, out, ATTACHABLE_CHECKS, &attachables);
-    #[cfg(all(feature = "attachable", feature = "item"))]
-    attachable_item::run(cx, out);
-    #[cfg(all(feature = "attachable", feature = "client_entity"))]
-    attachable_client_entity::run(cx, out);
+    attachable_checks(cx, out, &attachables);
+    attachable_item! { attachable_item::run(cx, out); }
+    attachable_client_entity! { attachable_client_entity::run(cx, out); }
 
     // From an animation and from a render controller to the descriptions that use it.
-    #[cfg(all(
-        feature = "animation",
-        feature = "animation_controller",
-        any(feature = "client_entity", feature = "atomic_client_entity")
-    ))]
-    animation_entity::run(cx, out, &entities);
-    #[cfg(all(
-        feature = "render_controller",
-        feature = "material",
-        any(
-            feature = "client_entity",
-            feature = "atomic_client_entity",
-            feature = "attachable"
-        )
-    ))]
-    {
+    animation_entity! { animation_entity::run(cx, out, &entities); }
+    render_user! {
         let mut uses = render_user::Uses::default();
         // A client entity is a user of each render controller it names; an atomic client
         // entity is not: its controllers are judged by what the game says when it draws the
@@ -158,84 +127,6 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
             uses.add(user);
         }
         render_user::run(cx, out, &uses);
-    }
-}
-
-/// A check of one description, as `user_<target>.rs` writes it.
-#[cfg(any(
-    feature = "client_entity",
-    feature = "atomic_client_entity",
-    feature = "attachable"
-))]
-type Check = fn(&super::LinkCx<'_>, &mut super::Findings, &user::User<'_>);
-
-/// The checks of a client entity and of an atomic client entity, in the order they run.
-#[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
-const ENTITY_CHECKS: &[Check] = &[
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::materials,
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::material_shaders,
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::render_controllers,
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::atomic_controllers,
-    #[cfg(feature = "particle")]
-    user_particle::check,
-    #[cfg(feature = "geometry")]
-    user_geometry::check,
-    #[cfg(all(feature = "animation", feature = "animation_controller"))]
-    user_animation::check,
-    #[cfg(all(
-        feature = "texture_atlas",
-        feature = "texture_file",
-        feature = "texture_set"
-    ))]
-    user_texture::check,
-    #[cfg(feature = "sound_definitions")]
-    user_sound::check,
-];
-
-/// The checks of an attachable, in the order they run: those of a client entity but the
-/// atomic one and sounds (an attachable's `sound_effects` are not checked).
-#[cfg(feature = "attachable")]
-const ATTACHABLE_CHECKS: &[Check] = &[
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::materials,
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::material_shaders,
-    #[cfg(all(feature = "render_controller", feature = "material"))]
-    user_render::render_controllers,
-    #[cfg(feature = "particle")]
-    user_particle::check,
-    #[cfg(feature = "geometry")]
-    user_geometry::check,
-    #[cfg(all(feature = "animation", feature = "animation_controller"))]
-    user_animation::check,
-    #[cfg(all(
-        feature = "texture_atlas",
-        feature = "texture_file",
-        feature = "texture_set"
-    ))]
-    user_texture::check,
-];
-
-/// Each of `checks` over every one of `users`, check by check.
-#[cfg(any(
-    feature = "client_entity",
-    feature = "atomic_client_entity",
-    feature = "attachable"
-))]
-fn each(
-    cx: &super::LinkCx<'_>,
-    out: &mut super::Findings,
-    checks: &[Check],
-    users: &[user::User<'_>],
-) {
-    for check in checks {
-        for user in users {
-            check(cx, out, user);
-        }
     }
 }
 

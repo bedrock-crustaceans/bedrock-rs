@@ -60,7 +60,10 @@
 //!   (`ScriptConfig::unmatched_folders` with `unmatched_folders_of_modules`,
 //!   `ScriptConfig::parse`, `pack::settings::unmatched_entries`).
 // The six groups run in a fixed order, so two passes over the same stacks give the same
-// findings in the same order.
+// findings in the same order. `rules` comes first: its macros are in scope in every group
+// declared below it.
+#[macro_use]
+mod rules;
 mod content;
 mod entity;
 mod resource;
