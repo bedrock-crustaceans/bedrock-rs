@@ -107,6 +107,46 @@ mod writer {
     }
 
     #[test]
+    fn an_f32_is_written_in_its_own_shortest_form() {
+        assert_eq!(text(&McbValue::F32(0.1)), "0.1");
+        for x in [16_777_217.0_f32, 1e-45, f32::MAX, f32::MIN_POSITIVE, 0.3] {
+            let written = text(&McbValue::F32(x));
+            assert_eq!(written.parse::<f32>().unwrap(), x, "{written} is not {x:?}");
+            assert_eq!(written, format!("{x:?}"), "not the f32's own shortest text");
+        }
+    }
+
+    #[test]
+    fn nested_values_keep_their_order_and_escapes_in_compact_form() {
+        let value = McbValue::Object(vec![
+            (
+                "b".into(),
+                McbValue::Array(vec![McbValue::Int(-1), McbValue::UInt(2)]),
+            ),
+            ("a".into(), McbValue::String("\u{8}\u{c}\r\u{1f}".into())),
+        ]);
+        assert_eq!(text(&value), r#"{"b":[-1,2],"a":"\b\f\r\u001f"}"#);
+    }
+
+    #[test]
+    fn a_del_character_is_escaped() {
+        assert_eq!(text(&McbValue::String("a\u{7f}b".into())), r#""a\u007fb""#);
+    }
+
+    #[test]
+    fn a_value_too_deep_is_refused() {
+        let nested =
+            |depth: usize| (0..depth).fold(McbValue::Null, |inner, _| McbValue::Array(vec![inner]));
+        assert!(write_json(&nested(127)).is_ok());
+        assert!(matches!(
+            write_json(&nested(129)),
+            Err(StorageError::Mcb {
+                fault: McbFault::TooDeep
+            })
+        ));
+    }
+
+    #[test]
     fn an_integer_never_has_one() {
         assert_eq!(text(&McbValue::Int(1)), "1");
         assert_eq!(text(&McbValue::Int(-64)), "-64");

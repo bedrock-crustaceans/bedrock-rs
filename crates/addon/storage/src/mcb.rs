@@ -1,10 +1,10 @@
 //! `\x7FMCB` binary documents → JSON text.
 //!
 //! An MCB document is a baked "Minecraft document" `{ format_version, <payload key> }`. Its
-//! output here is JSON **text**, written by this module (not `facet_json::to_string`), so it
-//! takes the same facet-json path as a `.json` file and `RawJson` isolation works. The writer
-//! keeps the stored types in the lexical form: a float always gets a fraction or an exponent
-//! and an integer never does, so the int/float tag survives the parse.
+//! output here is JSON **text**, written by the core `json` door's `Value` writer, so it takes
+//! the same facet-json path as a `.json` file and `RawJson` isolation works. The text keeps the
+//! stored types in the lexical form: a float always gets a fraction or an exponent and an
+//! integer never does, so the int/float tag survives the parse.
 //!
 //! The header is read (magic, format version, payload key). The body is typed per payload: it
 //! has no type tags, its fields are in the order of the payload's schema, and a component is
@@ -32,7 +32,10 @@ mod reader;
 mod trade;
 mod voxel;
 
-use std::fmt::Write as _;
+use bedrock_addon_core::json::build;
+use bedrock_addon_core::json::{
+    EncodeError, Indent, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle,
+};
 
 use super::magic::MCB_MAGIC;
 use super::{McbFault, StorageError};
@@ -217,88 +220,75 @@ fn decode_body(header: &McbHeader<'_>, body: &[u8]) -> Result<McbValue, StorageE
     decode(body)
 }
 
-/// `value` as compact JSON text. A float keeps a fraction or an exponent (`1.0`, `-0.0`,
-/// `1e300`) and an integer never gets one; a NaN or infinite float is `Mcb { NonFiniteFloat }`.
+/// `value` as compact JSON text, written by the door's `Value` writer. A float keeps a fraction
+/// or an exponent (`1.0`, `-0.0`, `1e300`) and an integer never gets one; a NaN or infinite
+/// float is `Mcb { NonFiniteFloat }` and a value nested past the door's depth is
+/// `Mcb { TooDeep }`.
 pub fn write_json(value: &McbValue) -> Result<String, StorageError> {
-    let mut out = String::new();
-    write_value(&mut out, value)?;
-    Ok(out)
+    let value = to_value(value, 0)?;
+    let mut out = Vec::new();
+    build::json_text(&value, &mut out, COMPACT).map_err(|error| fault(&error))?;
+    String::from_utf8(out).map_err(|_| StorageError::Mcb {
+        fault: McbFault::UnsupportedBody,
+    })
 }
 
-fn write_value(out: &mut String, value: &McbValue) -> Result<(), StorageError> {
-    match value {
-        McbValue::Null => out.push_str("null"),
-        McbValue::Bool(value) => out.push_str(if *value { "true" } else { "false" }),
-        McbValue::Int(value) => {
-            let _ = write!(out, "{value}");
-        }
-        McbValue::UInt(value) => {
-            let _ = write!(out, "{value}");
-        }
-        // `Debug` of a finite float is its shortest round-tripping form and always has a `.`
-        // or an `e` (`1.0`, `1e300`, `1.5e-7`), which is the lexical float tag.
-        McbValue::F32(value) => write_float(out, value.is_finite(), format_args!("{value:?}"))?,
-        McbValue::F64(value) => write_float(out, value.is_finite(), format_args!("{value:?}"))?,
-        McbValue::String(text) => write_string(out, text),
+/// How the text is laid out: no spaces and no final newline.
+const COMPACT: WriteStyle = WriteStyle {
+    indent: Indent::Compact,
+    trailing_newline: false,
+};
+
+/// The door's `Value` for `value`. An `f32` goes through its own shortest text, so `0.1f32` is
+/// `0.1` and not the `f64` that holds the same `f32`.
+fn to_value(value: &McbValue, depth: usize) -> Result<Value, StorageError> {
+    let too_deep = || StorageError::Mcb {
+        fault: McbFault::TooDeep,
+    };
+    Ok(match value {
+        McbValue::Null => Value::NULL,
+        McbValue::Bool(value) => Value::from(*value),
+        McbValue::Int(value) => Value::from(*value),
+        McbValue::UInt(value) => Value::from(*value),
+        McbValue::F32(value) => build::float(*value).map_err(|error| fault(&error))?,
+        McbValue::F64(value) => Value::from(*value),
+        McbValue::String(text) => Value::from(&**text),
         McbValue::Array(items) => {
-            out.push('[');
-            for (index, item) in items.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                write_value(out, item)?;
+            if depth >= MAX_JSON_DEPTH {
+                return Err(too_deep());
             }
-            out.push(']');
+            build::array(
+                items
+                    .iter()
+                    .map(|item| to_value(item, depth + 1))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )
         }
         McbValue::Object(members) => {
-            out.push('{');
-            for (index, (key, item)) in members.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                write_string(out, key);
-                out.push(':');
-                write_value(out, item)?;
+            if depth >= MAX_JSON_DEPTH {
+                return Err(too_deep());
             }
-            out.push('}');
+            let mut object = build::Object::default();
+            for (key, item) in members {
+                object.put(key, Some(to_value(item, depth + 1)?));
+            }
+            object.finish()
         }
-    }
-    Ok(())
+    })
 }
 
-fn write_float(
-    out: &mut String,
-    finite: bool,
-    text: std::fmt::Arguments<'_>,
-) -> Result<(), StorageError> {
-    if !finite {
-        return Err(StorageError::Mcb {
-            fault: McbFault::NonFiniteFloat,
-        });
+/// The storage fault for a writer refusal.
+fn fault(error: &EncodeError) -> StorageError {
+    StorageError::Mcb {
+        fault: match *error {
+            EncodeError::NotRepresentable {
+                what:
+                    Unrepresentable::NaN | Unrepresentable::Infinity | Unrepresentable::NegativeInfinity,
+                ..
+            } => McbFault::NonFiniteFloat,
+            _ => McbFault::TooDeep,
+        },
     }
-    let _ = out.write_fmt(text);
-    Ok(())
-}
-
-/// A JSON string literal: `"` and `\` escaped, control characters as `\n`, `\t`, … or `\u00XX`.
-fn write_string(out: &mut String, text: &str) {
-    out.push('"');
-    for ch in text.chars() {
-        match ch {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            '\u{8}' => out.push_str("\\b"),
-            '\u{c}' => out.push_str("\\f"),
-            ch if u32::from(ch) < 0x20 => {
-                let _ = write!(out, "\\u{:04x}", u32::from(ch));
-            }
-            ch => out.push(ch),
-        }
-    }
-    out.push('"');
 }
 
 #[cfg(test)]

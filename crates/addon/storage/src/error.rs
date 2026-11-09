@@ -111,6 +111,10 @@ pub enum McbFault {
     /// A float that is NaN or infinite, which JSON cannot write.
     #[error("non-finite float")]
     NonFiniteFloat,
+    /// A value nested deeper than the readers of the crate follow, which the text writer
+    /// refuses.
+    #[error("nested too deep")]
+    TooDeep,
 }
 
 #[cfg(test)]
