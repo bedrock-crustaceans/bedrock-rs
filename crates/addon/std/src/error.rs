@@ -4,7 +4,7 @@
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::document::Rejected;
-use bedrock_addon::load::LoaderError;
+use bedrock_addon::load::{DriveError, LoaderError};
 use bedrock_addon::pack::OpenError;
 
 /// Why the driver produced no pack, repository or stacks.
@@ -32,6 +32,16 @@ pub enum LoadError {
     #[cfg_attr(docsrs, doc(cfg(feature = "rayon")))]
     #[error(transparent)]
     Pool(#[from] rayon::ThreadPoolBuildError),
+}
+
+/// `Stalled` and `Loader` keep their meaning; a later `DriveError` is a stall too.
+impl From<DriveError> for LoadError {
+    fn from(error: DriveError) -> Self {
+        match error {
+            DriveError::Loader(error) => LoadError::Loader(error),
+            _ => LoadError::Stalled,
+        }
+    }
 }
 
 /// Why a server-side file could not be read.

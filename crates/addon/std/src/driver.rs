@@ -1,14 +1,16 @@
 //! The driver: a root table plus a strategy, and the loop that runs any loader to completion.
 
+use std::collections::VecDeque;
 use std::fmt;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+#[cfg(feature = "rayon")]
 use std::sync::mpsc::{self, Receiver, Sender};
 
 use bedrock_addon::load::{
-    Input, Job, KeyRequest, Loader, Output, PackLoader, Place, RepositoryLoader, Request, RootId,
-    Source, StackLoader, StackOptions,
+    self, Answerer, Input, KeyRequest, Loader, PackLoader, Place, RepositoryLoader, RootId, Source,
+    StackLoader, StackOptions, Work,
 };
 use bedrock_addon::pack::{OpenError, OpenOptions, Pack, PackOrigin, PackRepository, StackSet};
 use bedrock_addon::storage::ContentKey;
@@ -287,70 +289,19 @@ impl Driver {
     /// `LoadError::Loader` when the loader reports a protocol violation, and
     /// `LoadError::Stalled` when it waits with no request or job outstanding.
     pub fn drive<T, L: Loader<T>>(&self, mut loader: L) -> Result<T, LoadError> {
-        let (answers, received) = mpsc::channel();
         #[cfg(feature = "rayon")]
         if let Some(pool) = &self.pool {
-            let roots = &self.roots;
             return pool.in_place_scope(|scope| {
-                self.run(&mut loader, &received, |work| {
-                    let answers = answers.clone();
-                    scope.spawn(move |_| {
-                        // The receiver is gone only if the loop already returned an error.
-                        let _ = answers.send(work.perform(roots));
-                    });
-                })
+                Ok(load::drive(&mut loader, &mut Pooled::new(self, scope))?)
             });
         }
-        self.run(&mut loader, &received, |work| {
-            Self::answer_inline(&answers, work.perform(&self.roots));
-        })
-    }
-
-    fn answer_inline(answers: &Sender<Input>, input: Input) {
-        // The receiver lives on the caller's stack for the whole loop.
-        let _ = answers.send(input);
-    }
-
-    /// Drains every output, then waits for one answer, until the loader is done.
-    // One channel per call: every read and job reports its answer here, and the loop feeds them
-    // to the loader until it finishes, stalls or errors.
-    fn run<T, L: Loader<T>>(
-        &self,
-        loader: &mut L,
-        received: &Receiver<Input>,
-        mut dispatch: impl FnMut(Work),
-    ) -> Result<T, LoadError> {
-        let mut in_flight = 0usize;
-        loop {
-            while let Some(output) = loader.poll() {
-                match output {
-                    Output::Request(request) => {
-                        dispatch(Work::Read(request));
-                        in_flight += 1;
-                    }
-                    Output::Job(job) => {
-                        dispatch(Work::Job(job));
-                        in_flight += 1;
-                    }
-                    Output::NeedKey(request) => {
-                        let key = self.key_for(&request);
-                        loader.handle(Input::Key {
-                            identity: request.identity,
-                            key,
-                        })?;
-                    }
-                    Output::Done(value) => return Ok(value),
-                }
-            }
-            if in_flight == 0 {
-                return Err(LoadError::Stalled);
-            }
-            // Every dispatched piece of work sends exactly one answer, and the sender outlives
-            // this loop, so `recv` only fails if that promise is broken.
-            let input = received.recv().map_err(|_| LoadError::Stalled)?;
-            in_flight -= 1;
-            loader.handle(input)?;
-        }
+        Ok(load::drive(
+            &mut loader,
+            &mut Inline {
+                driver: self,
+                answers: VecDeque::new(),
+            },
+        )?)
     }
 
     /// The answer to a `NeedKey`: the sidecar when opted in, then the provider.
@@ -459,24 +410,87 @@ fn open_error_location(error: &OpenError) -> Option<&Place> {
     }
 }
 
-/// One piece of work the loop hands to the strategy.
-enum Work {
-    Read(Request),
-    Job(Job),
+/// Does `work` and returns the input that answers it. Never panics: a job's panic is caught
+/// and reported as `Input::JobPanicked`.
+fn perform(work: Work, roots: &io::Roots) -> Input {
+    match work {
+        Work::Read(request) => io::respond(roots, request),
+        Work::Job(job) => {
+            let id = job.id();
+            panic::catch_unwind(AssertUnwindSafe(|| job.run()))
+                .map_or(Input::JobPanicked(id), Input::JobDone)
+        }
+    }
 }
 
-impl Work {
-    /// Does the work and returns the input that answers it. Never panics: a job's panic is
-    /// caught and reported as `Input::JobPanicked`.
-    fn perform(self, roots: &io::Roots) -> Input {
-        match self {
-            Work::Read(request) => io::respond(roots, request),
-            Work::Job(job) => {
-                let id = job.id();
-                panic::catch_unwind(AssertUnwindSafe(|| job.run()))
-                    .map_or(Input::JobPanicked(id), Input::JobDone)
-            }
+/// `Strategy::Sequential`: every read and job done on the calling thread as it is dispatched.
+struct Inline<'d> {
+    /// The roots and the keys.
+    driver: &'d Driver,
+    /// Answers not yet fed back, in dispatch order.
+    answers: VecDeque<Input>,
+}
+
+impl Answerer for Inline<'_> {
+    fn dispatch(&mut self, work: Work) {
+        self.answers.push_back(perform(work, &self.driver.roots));
+    }
+
+    fn next(&mut self) -> Option<Input> {
+        self.answers.pop_front()
+    }
+
+    fn key(&mut self, request: &KeyRequest) -> Option<ContentKey> {
+        self.driver.key_for(request)
+    }
+}
+
+/// A rayon strategy: every read and job spawned on the pool's scope, its answer sent back on
+/// a channel the calling thread waits on.
+#[cfg(feature = "rayon")]
+struct Pooled<'d, 's, 'scope> {
+    /// The roots and the keys.
+    driver: &'d Driver,
+    /// The pool's scope, alive for the whole loop.
+    scope: &'s rayon::Scope<'scope>,
+    /// Cloned into every spawned piece of work.
+    sender: Sender<Input>,
+    /// Where the answers arrive.
+    received: Receiver<Input>,
+}
+
+#[cfg(feature = "rayon")]
+impl<'d, 's, 'scope> Pooled<'d, 's, 'scope> {
+    fn new(driver: &'d Driver, scope: &'s rayon::Scope<'scope>) -> Self {
+        let (sender, received) = mpsc::channel();
+        Pooled {
+            driver,
+            scope,
+            sender,
+            received,
         }
+    }
+}
+
+#[cfg(feature = "rayon")]
+impl<'d: 'scope, 'scope> Answerer for Pooled<'d, '_, 'scope> {
+    fn dispatch(&mut self, work: Work) {
+        let sender = self.sender.clone();
+        let roots = &self.driver.roots;
+        self.scope.spawn(move |_| {
+            // The receiver is gone only if the loop already returned an error.
+            let _ = sender.send(perform(work, roots));
+        });
+    }
+
+    fn next(&mut self) -> Option<Input> {
+        // Every dispatched piece of work sends exactly one answer, and the sender outlives
+        // the loop, so `recv` only fails if that promise is broken.
+        self.received.recv().ok()
+    }
+
+    fn key(&mut self, request: &KeyRequest) -> Option<ContentKey> {
+        self.driver.key_for(request)
     }
 }
 

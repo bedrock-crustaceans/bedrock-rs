@@ -1,7 +1,7 @@
 //! Opening a pack from bytes already in memory, and reading its files: the container behind a
 //! pack's file index (loose files, a zip archive, the brarchive layer, marketplace encryption).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, codes,
@@ -11,13 +11,13 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bytes::Bytes;
 
 use super::{FileSlot, OpenError, OpenOptions, Pack, PackFiles, PackInner};
-use crate::load::{DirEntry, EntryKind, Input, Output, PackLoader, Sans};
-use crate::storage::StorageError;
+use crate::load::{Answerer, DirEntry, EntryKind, Input, KeyRequest, PackLoader, Work};
 use crate::storage::brarchive::{Brarchive, BrarchiveLayer, archive_dir};
 #[cfg(feature = "encrypted")]
 use crate::storage::contents::ContentsTable;
 #[cfg(feature = "zip")]
 use crate::storage::zip::ZipIndex;
+use crate::storage::{ContentKey, StorageError};
 
 /// What stands behind a pack's file index besides its resident loose files.
 #[derive(Clone, Debug, Default)]
@@ -511,27 +511,36 @@ enum Answer {
     File(Option<Bytes>),
 }
 
-/// Runs `loader` to its result, answering each request with `answer` and running every job
-/// inline, in issue order.
+/// Runs `loader` to its result through [`crate::load::drive`], answering each request with
+/// `answer` and running every job inline, in dispatch order.
 fn drive_in_memory(
     loader: &mut PackLoader,
     answer: impl Fn(&Place) -> Answer,
 ) -> Result<Pack, OpenError> {
-    loop {
-        let Some(output) = loader.poll() else {
-            // A loader that waits with nothing asked is a bug of this crate.
-            return Err(OpenError::Internal {
-                location: Place::root(RootId::MEMORY),
-            });
-        };
-        let input = match output {
-            Output::Done(result) => return result,
-            Output::Job(job) => Input::JobDone(job.run()),
-            Output::NeedKey(request) => Input::Key {
-                identity: request.identity,
-                key: None,
-            },
-            Output::Request(request) => {
+    let mut memory = Memory {
+        answer,
+        answers: VecDeque::new(),
+    };
+    // A loader that stalls or refuses an answer is a bug of this crate.
+    crate::load::drive(loader, &mut memory).map_err(|_| OpenError::Internal {
+        location: Place::root(RootId::MEMORY),
+    })?
+}
+
+/// The in-memory answerer: reads answered by `answer`, jobs run inline on the calling thread
+/// (a panicking job unwinds through the caller), no keys beyond the options'.
+struct Memory<F> {
+    /// The answer to a read.
+    answer: F,
+    /// Answers not yet fed back, in dispatch order.
+    answers: VecDeque<Input>,
+}
+
+impl<F: Fn(&Place) -> Answer> Answerer for Memory<F> {
+    fn dispatch(&mut self, work: Work) {
+        let input = match work {
+            Work::Job(job) => Input::JobDone(job.run()),
+            Work::Read(request) => {
                 let location = match &request {
                     crate::load::Request::ListDir { location, .. }
                     | crate::load::Request::ReadFile { location, .. } => location.clone(),
@@ -540,7 +549,7 @@ fn drive_in_memory(
                     crate::load::Request::ReadFile { range, .. } => Some(*range),
                     crate::load::Request::ListDir { .. } => None,
                 };
-                match answer(&location) {
+                match (self.answer)(&location) {
                     Answer::Dir(entries) => Input::Dir { location, entries },
                     Answer::File(Some(bytes)) => Input::File {
                         bytes: prefix(bytes, range),
@@ -550,11 +559,15 @@ fn drive_in_memory(
                 }
             }
         };
-        if loader.handle(input).is_err() {
-            return Err(OpenError::Internal {
-                location: Place::root(RootId::MEMORY),
-            });
-        }
+        self.answers.push_back(input);
+    }
+
+    fn next(&mut self) -> Option<Input> {
+        self.answers.pop_front()
+    }
+
+    fn key(&mut self, _: &KeyRequest) -> Option<ContentKey> {
+        None
     }
 }
 

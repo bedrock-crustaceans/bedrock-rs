@@ -157,6 +157,83 @@ fn every_zip_pack_opens_with_from_archive_by_the_shallowest_manifest() {
 }
 
 #[cfg(feature = "zip")]
+/// The files of a zip fixture, unzipped into memory: every file entry whose name is a pack path.
+fn unzipped(bytes: &[u8]) -> Vec<(PackPath, Bytes)> {
+    use std::io::{Cursor, Read};
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let mut files = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).unwrap();
+        if file.is_dir() {
+            continue;
+        }
+        let Ok(name) = PackPath::new(file.name()) else {
+            continue;
+        };
+        let mut contents = Vec::new();
+        file.read_to_end(&mut contents).unwrap();
+        files.push((name, Bytes::from(contents)));
+    }
+    files
+}
+
+#[cfg(feature = "zip")]
+/// The zip fixtures whose manifests sit two folders deep: `from_files` finds none, the
+/// archive opener finds several.
+const DEEPER_THAN_A_DIRECTORY_LOOKS: [&str; 5] = [
+    "BlockTessellationPerfWorld.zip",
+    "FlatWorldWithEditorPacksAndPlayerData.zip",
+    "TestRealWorld.zip",
+    "blockbonevisibilityworldLevel.zip",
+    "blockfacecullingworld.zip",
+];
+
+#[cfg(feature = "zip")]
+#[test]
+fn from_files_and_from_archive_agree_on_every_zip_fixture() {
+    let dir = fixtures().join("../../../storage/tests/fixtures/zip_packs");
+    let mut zips: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    zips.sort();
+    assert_eq!(zips.len(), 23);
+    let mut deeper = 0;
+    for zip in zips {
+        let bytes = fixture(&format!("../../../storage/tests/fixtures/zip_packs/{zip}"));
+        let from_files = Pack::from_files(unzipped(&bytes), &OpenOptions::default());
+        let from_archive = Pack::from_archive(bytes, &OpenOptions::default());
+        match (&from_files, &from_archive) {
+            (Ok(files), Ok(archive)) => {
+                assert_eq!(files.id(), archive.id(), "{zip}: the same pack");
+                assert_eq!(
+                    files.location().path,
+                    archive.location().path,
+                    "{zip}: the same pack root"
+                );
+                let files_paths: Vec<&PackPath> = files.paths().collect();
+                let archive_paths: Vec<&PackPath> = archive.paths().collect();
+                assert_eq!(files_paths, archive_paths, "{zip}: the same paths");
+            }
+            // A directory is searched to one level below the root; an archive to its
+            // shallowest manifest, so the worlds holding `*_packs/<pack>/manifest.json` differ.
+            (Err(OpenError::NoManifest { .. }), Err(OpenError::MultipleManifests { .. }))
+                if DEEPER_THAN_A_DIRECTORY_LOOKS.contains(&zip.as_str()) =>
+            {
+                deeper += 1;
+            }
+            (Err(files), Err(archive)) => assert_eq!(
+                std::mem::discriminant(files),
+                std::mem::discriminant(archive),
+                "{zip}: {files:?} and {archive:?}"
+            ),
+            _ => panic!("{zip}: {from_files:?} and {from_archive:?}"),
+        }
+    }
+    assert_eq!(deeper, DEEPER_THAN_A_DIRECTORY_LOOKS.len());
+}
+
+#[cfg(feature = "zip")]
 #[test]
 fn an_archive_pack_reads_its_files_inflated() {
     let pack = Pack::from_archive(

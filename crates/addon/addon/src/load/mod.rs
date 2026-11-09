@@ -11,6 +11,7 @@ pub use bedrock_addon_core::load::{
     json_document_size_against,
 };
 
+mod drive;
 mod io;
 mod job;
 mod pack;
@@ -20,6 +21,7 @@ mod stack;
 mod tests;
 
 pub use crate::pack::stack::{Collection, CollectionSet};
+pub use drive::{Answerer, DriveError, Work, drive};
 pub use job::{Job, JobDone, JobId, JobKind};
 pub use pack::PackLoader;
 pub(crate) use pack::strip;
