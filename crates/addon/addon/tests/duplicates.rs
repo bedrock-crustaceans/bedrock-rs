@@ -3,8 +3,6 @@
 //! a reader of its own: a member doubled at the root, and one doubled inside. `FIRST` marks
 //! the copy that must vanish, `LAST` the one that stands.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;

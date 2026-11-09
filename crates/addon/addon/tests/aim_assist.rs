@@ -1,7 +1,6 @@
 //! The aim-assist family (`aim_assist/`): the fixture rows, the validation rules, the chains,
 //! round trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "aim_assist")]
 
 #[path = "pack/common.rs"]

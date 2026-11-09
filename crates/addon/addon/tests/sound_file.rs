@@ -2,7 +2,6 @@
 //! `sounds/` of the resource packs): the listing, the probe order, what is ignored, and what a
 //! load asks the host for.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "sound_file")]
 
 #[path = "sound_file/assets.rs"]

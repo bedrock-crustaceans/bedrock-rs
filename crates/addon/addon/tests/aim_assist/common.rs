@@ -1,7 +1,5 @@
 //! Helpers of the aim-assist tests.
 
-#![allow(dead_code)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::aim_assist::{AimAssistCategories, AimAssistPreset};

@@ -2,6 +2,11 @@
 //! tests of the deliberate deviations from vanilla that this binary pins by name (each ends in
 //! `deviation`, or is a manifest rule's).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use bedrock_addon::document::{Document, Rejected};
 use bedrock_addon::json::Value;

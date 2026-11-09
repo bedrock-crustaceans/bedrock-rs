@@ -1,6 +1,11 @@
 //! What the upgrade steps of the attachable chain do: the 1.8 step's refusals, the 1.10 step's
 //! conversion and lower-casing, the chain's shape, and documents read as written and upgraded.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::attachable::Attachable;

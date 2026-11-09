@@ -3,6 +3,11 @@
 //! value; each built value is either written as text that reads back equal, or refused with
 //! `NotRepresentable`.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::material::{
     KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, MaterialList,

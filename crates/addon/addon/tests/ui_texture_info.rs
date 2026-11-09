@@ -1,7 +1,6 @@
 //! `textures/ui/*.json`, the side files of UI images: the reader, the writer and the stack's
 //! highest-pack rule.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "ui_texture_info")]
 
 #[path = "common/resource_stacks.rs"]

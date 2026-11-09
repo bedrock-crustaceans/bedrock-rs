@@ -15,7 +15,11 @@
 //! }
 //! ```
 
-#![allow(dead_code, unused_macros)]
+#![allow(
+    dead_code,
+    unused_macros,
+    reason = "a helper module shared by the smoke tests; none of them uses every helper"
+)]
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};

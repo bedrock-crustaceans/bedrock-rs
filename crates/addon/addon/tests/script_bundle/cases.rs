@@ -15,7 +15,10 @@ macro_rules! cases {
     ($($name:ident),* $(,)?) => {
         $(
             #[test]
-            #[allow(non_snake_case)]
+            #[allow(
+                non_snake_case,
+                reason = "the test is named for its fixture folder, and some fixtures are named with capitals (lang_JS_upper)"
+            )]
             fn $name() {
                 check(stringify!($name));
             }

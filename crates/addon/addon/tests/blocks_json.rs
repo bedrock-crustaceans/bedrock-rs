@@ -1,7 +1,6 @@
 //! The `blocks.json` family (`ClientBlock`): its rules, the version gates, round trips and the
 //! stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "blocks_json")]
 
 #[path = "blocks_json/common.rs"]

@@ -2,7 +2,6 @@
 //! every row of its fixtures, the rules it shares with client entities, the upgrade steps, the
 //! chain, round trips, Molang and the stack resolution.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "attachable")]
 
 #[path = "attachable/bindings.rs"]

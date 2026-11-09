@@ -2,6 +2,11 @@
 //! (identity) step, `parse_as_written` / `history::upgrade`, a file read
 //! on its own, and the write side.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::Severity::Warning;
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::texture_set::history::{

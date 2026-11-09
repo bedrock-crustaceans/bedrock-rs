@@ -7,8 +7,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! full_strategies_client_install_b -- --show-output`; without the variable the test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 #[path = "common/collections.rs"]

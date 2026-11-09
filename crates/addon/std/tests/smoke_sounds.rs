@@ -10,7 +10,10 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_sounds`;
 //! without the variable every test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 #[macro_use]
 mod common;

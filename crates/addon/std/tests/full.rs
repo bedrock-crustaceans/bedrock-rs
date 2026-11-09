@@ -38,8 +38,6 @@
 //! prints `skipped:` and passes, which is no pass of the smoke. The pinned numbers are the
 //! files of `full/pins/`; `full/support.rs` says how they are taken again.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 #[macro_use]

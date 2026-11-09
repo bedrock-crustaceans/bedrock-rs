@@ -3,8 +3,6 @@
 //! name, a string written back in quotes), and a file that has one loads, whatever its size:
 //! the family finds there what it finds for the real number of that value.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Kind, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::load::LoadContext;

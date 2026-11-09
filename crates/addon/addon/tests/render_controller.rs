@@ -1,7 +1,6 @@
 //! The render controller family (`bedrock_addon::families::render_controller`): the rows of
 //! its fixtures.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "render_controller")]
 
 use bedrock_addon_core::test_cost as cost;

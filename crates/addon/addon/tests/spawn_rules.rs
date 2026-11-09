@@ -2,7 +2,6 @@
 //! gates, the chains, round trips, Molang and the stack accessor.
 
 #![cfg(all(feature = "spawn_rules", feature = "spawn_groups"))]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 #[path = "spawn_rules/chain.rs"]
 mod chain;

@@ -1,6 +1,5 @@
 //! The shape of the link pass's sources: what a reader finding a rule by its file name relies
 //! on. The tests read the crate's own source files, which library code may never do.
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use std::collections::BTreeMap;
 use std::fs;

@@ -1,6 +1,9 @@
 //! Helpers of the `blocks.json` tests: small resource stacks and the registry's findings.
 
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "a helper module shared by the test files of this folder; none of them uses every helper"
+)]
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::{Document, Registry};

@@ -2,7 +2,6 @@
 //! The fixtures, the validation rules, the node catalogue of
 //! The schema, the stack rules, write-back and the deviations.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "behavior_tree")]
 
 #[path = "behavior_tree/common.rs"]

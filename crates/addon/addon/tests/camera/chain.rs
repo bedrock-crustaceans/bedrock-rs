@@ -1,6 +1,11 @@
 //! The camera chains, the history path, write-back (the Value level) and the vanilla name
 //! lists against core's generated identifiers.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::camera::history::{
     self, EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,

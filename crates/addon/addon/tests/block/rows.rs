@@ -3,6 +3,11 @@
 //! Findings are matched on their code, severity and path, and where the row (or the rule it
 //! names) gives vanilla's text, on that text exactly.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon::families::block::component::{
     BlockEntity, ChestObstruction, DestructibleByMining, DestructionParticles, Flammable, Friction,
@@ -1541,7 +1546,10 @@ fn molang(cx: bedrock_addon::load::LoadContext) -> bedrock_addon::load::LoadCont
 }
 
 /// `findings` and `errors` are used by the feature-gated halves.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "this function only uses findings and errors, which the feature-gated halves use"
+)]
 fn _uses(text: &str) -> usize {
     let (_, d) = findings(text, &context());
     errors(&d).len() + warnings(&d).len()

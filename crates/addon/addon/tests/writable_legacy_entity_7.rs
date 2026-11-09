@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(
     dead_code,
     unused_imports,

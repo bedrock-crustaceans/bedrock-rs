@@ -1,7 +1,6 @@
 //! The persona-piece family (`bedrock_addon::families::persona`): the rows of its fixtures and
 //! its rules. The fixture packs are built in memory by the tests.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "persona")]
 
 #[path = "persona/common.rs"]

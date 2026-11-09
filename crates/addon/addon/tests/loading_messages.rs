@@ -1,7 +1,6 @@
 //! `loading_messages.json`: reading the file, the highest pack's copy, write-back as authored,
 //! the cost of a long list and the tips no language translates.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "loading_messages")]
 
 #[path = "common/resource_stacks.rs"]

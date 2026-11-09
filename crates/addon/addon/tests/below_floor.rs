@@ -9,7 +9,6 @@
 //! bare number under the root member's reading is malformed. Block culling and the crafting
 //! catalog keep texts of their own below the floor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(any(
     feature = "camera",
     feature = "poi",

@@ -8,7 +8,6 @@
 //! small hand-written documents of the same shapes, and the tests over the real tag read
 //! `$BEDROCK_ADDON_CORPUS/bedrock-samples` and skip with a message when it is unset.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "script")]
 
 #[path = "script_meta/privilege.rs"]

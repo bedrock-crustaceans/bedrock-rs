@@ -4,7 +4,6 @@
 //!
 //! The test reads the toolkit's own source files, which library code may never do; the scan
 //! needs no feature, so a family whose feature is off is checked too.
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use std::fs;
 use std::path::{Path, PathBuf};

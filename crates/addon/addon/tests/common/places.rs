@@ -338,7 +338,11 @@ pub fn path_of(finding: &Diagnostic) -> Vec<String> {
 /// negated truncation of its magnitude, saturating at the bounds of the conversion: the 8,
 /// 16 and 32 bit readers convert through `i32`, the 64 bit ones through `i64` and `u64`).
 pub fn non_strict_readings(replacement: &str) -> Vec<f64> {
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the casts are the saturating float to integer conversions the readers are pinned to"
+    )]
     fn through(x: f64) -> [u64; 3] {
         let via = |t: fn(f64) -> u64| if x >= 0.0 { t(x) } else { t(-x).wrapping_neg() };
         [
@@ -347,7 +351,11 @@ pub fn non_strict_readings(replacement: &str) -> Vec<f64> {
             via(|v| v as u64),
         ]
     }
-    #[allow(clippy::cast_precision_loss, clippy::cast_possible_wrap)]
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_wrap,
+        reason = "the casts re-read the low bits of an integer as signed and as a double, as the readers do"
+    )]
     fn widths(bits: u64) -> Vec<f64> {
         let mut out = Vec::new();
         for width in [8u32, 16, 32, 64] {

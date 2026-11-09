@@ -1,7 +1,6 @@
 //! The dimension family (`dimensions/`, `minecraft:dimension`): the fixture rows, the
 //! validation rules, the chain, round trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "dimension")]
 
 #[path = "../../families/dimension/tests/dimension/common.rs"]

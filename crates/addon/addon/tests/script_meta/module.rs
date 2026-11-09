@@ -2,6 +2,11 @@
 //!. The documents are hand-written in the
 //! generator's shapes, abbreviated.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it and serializes a value to compare it with the written text; not yet moved to the door"
+)]
+
 use bedrock_addon::families::script::meta::model::script::ConstValue;
 use bedrock_addon::families::script::meta::{MetaError, ModuleMetadata};
 

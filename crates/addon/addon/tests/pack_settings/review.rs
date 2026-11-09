@@ -21,7 +21,10 @@ fn value_of(value: &str) -> SettingValue {
 
 #[test]
 fn an_integer_of_any_size_reads_as_the_nearest_float() {
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "the test pins how a large integer rounds when cast to f32"
+    )]
     for (text, expected) in [
         ("16777217", 16_777_216.0_f32),
         ("9007199254740993", 9_007_199_254_740_993_u64 as f32),

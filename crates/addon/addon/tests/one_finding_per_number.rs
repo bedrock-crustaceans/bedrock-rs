@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A number no double holds is told once: where the member that holds the number
 //! gives a finding of its own at the number (it does not take it, it reads it at a width of
@@ -9,7 +8,6 @@
 //! member's own finding and nothing else, by code and severity (a manifest's
 //! `format_version` is malformed; its `version` is refused whole, at the version).
 
-#[allow(unused_imports)]
 #[path = "terrain_texture/common.rs"]
 mod common;
 

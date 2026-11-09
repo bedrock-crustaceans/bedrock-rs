@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 //! Pins of present behaviour: what a refused definition in the pack that would win does to a
 //! valid definition of the same identifier (or the same path) in the other packs of a behaviour
 //! stack. Either another pack's definition is effective ("fallback") or the identifier stays

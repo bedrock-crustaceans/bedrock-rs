@@ -23,8 +23,6 @@
 //! fragments, where the gated documents (POI, simplified spawn rules, a loot function behind
 //! Upcoming Creator Features) and the app-data ones (spawn groups, features, feature rules) load.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[path = "common/responder.rs"]
 mod responder;
 // The comparison the corpus strategy tests of the driver crate use too: one text in both

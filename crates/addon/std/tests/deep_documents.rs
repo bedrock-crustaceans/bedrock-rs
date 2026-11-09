@@ -23,8 +23,6 @@
 //!
 //! Needs no game files.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;

@@ -1,8 +1,6 @@
 //! `write_dir` and `write_archive` through the public API. The disk side is tested in
 //! `src/write.rs` without a `PackWriter`; the round trips here go through one.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::pack::WriteError;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon_std::SaveError;

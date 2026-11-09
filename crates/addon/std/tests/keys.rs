@@ -1,7 +1,5 @@
 //! `keys`: the provider a `Driver` asks for content keys, and the `<file>.key` sidecar.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::load::{KeyRequest, Place, RootId};
 use bedrock_addon::pack::{PackIdVersion, PackType};
 use bedrock_addon::storage::{ContentIdentity, ContentKey, ContentKeys};

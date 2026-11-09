@@ -36,7 +36,6 @@
 //! ([`RECORDS_OF_THE_FILE`]). The `round-trip:` lines name them.
 //! And the second write of the written packs is byte-identical to the first.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(dead_code, reason = "each feature set uses part of the helpers")]
 
 #[path = "writer_round_trip/rows.rs"]

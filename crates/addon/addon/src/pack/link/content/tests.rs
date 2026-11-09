@@ -8,8 +8,6 @@
     reason = "which tests exist depends on the enabled features"
 )]
 #![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
     clippy::needless_pass_by_value,
     clippy::format_push_string,
     clippy::items_after_statements,

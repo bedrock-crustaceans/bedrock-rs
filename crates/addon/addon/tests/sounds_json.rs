@@ -2,7 +2,6 @@
 //! `sounds.json`): every row of the fixtures and the rules of the file, the merge of the
 //! block `base` chains, and round trips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(clippy::float_cmp, reason = "the readers give exact values")]
 #![cfg(feature = "sounds_json")]
 

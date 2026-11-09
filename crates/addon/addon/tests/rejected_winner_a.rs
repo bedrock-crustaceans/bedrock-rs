@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! Pins of present behaviour: a higher behaviour pack holds a *refused* definition of an
 //! identifier (or, for loot tables, of a file path) and a lower pack a valid one. Either the

@@ -1,7 +1,6 @@
 //! The client-biome family (`bedrock_addon::families::client_biome`): every row of its
 //! fixtures, the steps, the chain, the validation rules, round trips and the stack's registry.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "client_biome")]
 
 #[path = "client_biome/chain.rs"]

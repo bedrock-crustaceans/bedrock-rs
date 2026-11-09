@@ -1,6 +1,11 @@
 //! The chain of geometry files: the struct each version selects, what each upgrade step does
 //! (the callbacks of the steps run one at a time), and the upgrade rows u01–u15.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::families::geometry::history::{
     self, GeometryHistory, VERSIONS, v0_0_0, v1_8_0, v1_12_0, v1_14_0, v1_16_0, v1_19_30, v1_21_0,

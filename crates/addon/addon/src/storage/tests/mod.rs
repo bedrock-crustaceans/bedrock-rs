@@ -3,8 +3,6 @@
 //! container tests themselves are beside the code in `bedrock_addon_storage`, whose fixtures
 //! these read too (`crates/addon/storage/tests/fixtures/`).
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 mod mcb;
 
 use std::path::PathBuf;

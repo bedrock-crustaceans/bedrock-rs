@@ -4,6 +4,11 @@
 //!
 //! Needs `BEDROCK_ADDON_CORPUS`; skipped with a message without it.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 

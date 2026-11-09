@@ -5,7 +5,6 @@
 //! unknown members and tells each (`DroppedField`, a warning of the write).
 
 #![cfg(feature = "full")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, missing_docs)]
 
 #[path = "characterize_unknown/fixtures.rs"]
 mod fixtures;

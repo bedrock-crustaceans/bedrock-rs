@@ -2,6 +2,11 @@
 //! cost of a long list. The tips no language translates wait for the link stage; the game's
 //! stage-list bug no file can cause.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: serializes a value to compare it with the written text; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::loading_messages::{LoadingMessage, LoadingMessages, MessageList};

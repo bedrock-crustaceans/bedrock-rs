@@ -3,8 +3,6 @@
 //! `tests/manifest/settings.rs`), the upgrade step, the chain, round trips, the runtime values and
 //! the save algorithm.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[path = "pack_settings/common.rs"]
 mod common;
 #[path = "pack_settings/document.rs"]

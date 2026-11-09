@@ -2,7 +2,6 @@
 //! app data only.
 
 #![cfg(all(feature = "spawn_rules", feature = "spawn_groups"))]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 #[path = "spawn_rules/common.rs"]
 mod common;

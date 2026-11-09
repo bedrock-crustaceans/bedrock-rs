@@ -3,7 +3,6 @@
 //! 1.26.36.1 probe run, resolved against `catalog_bds_1_26_36.toml`.
 
 #![cfg(feature = "script")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 #[path = "script_module/catalog.rs"]
 mod catalog;

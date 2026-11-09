@@ -2,6 +2,11 @@
 //! `format_version`. Each file has the keys `stone` (gate 1.20.50) and `wool` (gate 1.21.30),
 //! so the effective version shows in how they are read.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::Content;
 use bedrock_addon::families::blocks_json::{
     BLOCKS_JSON_DEFAULT_VERSION, BLOCKS_JSON_MAX_FORMAT_VERSION, BlocksJson,

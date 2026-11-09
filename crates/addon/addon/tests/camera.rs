@@ -1,7 +1,6 @@
 //! The camera family (`cameras/`): the fixture rows, the validation rules, the chains, round
 //! trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "camera")]
 
 // The crate's one protocol for cost tests, and this binary's one lock.

@@ -2,7 +2,6 @@
 //! `PackLoader` request sequences, the `RepositoryLoader` and `StackLoader`, driven by the
 //! scripted responder of `common/responder.rs` (12 "Loader conformance layer").
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 // The archive and encryption tests compile only with their features.
 #![cfg_attr(
     not(all(feature = "zip", feature = "encrypted")),

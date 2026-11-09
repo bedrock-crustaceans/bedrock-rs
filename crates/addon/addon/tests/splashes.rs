@@ -1,7 +1,6 @@
 //! `splashes.json`: reading one copy, the stack's pool, write-back as authored and the cost of
 //! a long list.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "splashes")]
 
 #[path = "common/resource_stacks.rs"]

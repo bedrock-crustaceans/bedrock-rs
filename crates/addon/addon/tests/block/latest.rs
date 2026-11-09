@@ -3,6 +3,11 @@
 //! document, the new components and the changed rules. The game's own test
 //! documents under `fixtures/block/block/engine/` are the data.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Code, Diagnostics, Kind, Severity};
 use bedrock_addon::load::LoadContext;
 

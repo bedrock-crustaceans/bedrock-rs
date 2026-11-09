@@ -1,7 +1,6 @@
 //! The block-culling family (`block_culling/`, `minecraft:block_culling_rules`): every row of
 //! its rules, the chain and its step, round trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "block_culling")]
 
 #[path = "../../families/block_culling/tests/block_culling/common.rs"]

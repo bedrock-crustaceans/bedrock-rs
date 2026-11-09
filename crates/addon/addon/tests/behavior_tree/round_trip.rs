@@ -2,6 +2,11 @@
 //! again to the same value, and written again to the same text; a member the author did not
 //! write is not written.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::JsonPath;
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};

@@ -1,6 +1,11 @@
 //! Writing a material file and a list back: what was read is
 //! written, nothing else, and what the loader would read differently is refused.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::material::{
     KeyRules, ListEntry, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey,

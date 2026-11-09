@@ -191,7 +191,6 @@ fn create_temp_file(
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
     use std::fs;
     use std::io::ErrorKind;

@@ -1,8 +1,6 @@
 //! `Driver`: the loop that runs a loader to completion, its strategies and its key lookup,
 //! driven by small scripted loaders over a temporary directory.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::fs;
 use std::io::ErrorKind;
 use std::sync::Arc;

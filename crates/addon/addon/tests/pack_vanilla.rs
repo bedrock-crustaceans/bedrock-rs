@@ -3,7 +3,10 @@
 //! (the Drop 4 rows) in the 1.26.60 install. Needs `BEDROCK_ADDON_CORPUS`;
 //! skipped with a message without it; the 1.26.60 rows need `BEDROCK_ADDON_VANILLA_1_26_60`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 #[path = "pack/common.rs"]
 mod common;

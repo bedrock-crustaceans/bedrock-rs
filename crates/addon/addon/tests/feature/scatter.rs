@@ -1,6 +1,11 @@
 //! `scatter_feature`: the 1.21.10 move into `distribution`, the strict schema of both eras and
 //! the runtime scatter checks (fixtures f01–f03).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::feature::{Feature, ScatterFeature};

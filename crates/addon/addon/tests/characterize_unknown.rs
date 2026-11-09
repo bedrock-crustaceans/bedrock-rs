@@ -9,7 +9,6 @@
 //! `BEDROCK_ADDON_CHARACTERIZE=write` writes the pin file instead of comparing.
 
 #![cfg(feature = "full")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, missing_docs)]
 
 #[path = "characterize_unknown/fixtures.rs"]
 mod fixtures;
@@ -76,7 +75,10 @@ macro_rules! kind {
             name: $name,
             claims: $claims,
             run: |path, bytes, cx| {
-                #[allow(unused_imports)]
+                #[allow(
+unused_imports,
+    reason = "a JsonDocument type takes parse_as_written from the trait and the others have it inherent, so the import is unused for them"
+)]
                 use ba::document::JsonDocument as _;
                 let mut out = outcome::<$ty>(path, bytes, cx);
                 out.push_str("\n-- as written --\n");

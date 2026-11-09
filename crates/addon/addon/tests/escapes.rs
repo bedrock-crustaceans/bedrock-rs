@@ -6,8 +6,6 @@
 //!
 //! One list of the families' document types serves every test: a new family adds its line.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::load::LoadContext;

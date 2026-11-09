@@ -1,6 +1,11 @@
 //! The pack settings "Runtime" fixture rows `rt01`–`rt18`: the values of one pack
 //! (`PackSettings`, rules A1–A5) and the save algorithm.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::json::Value;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest};
@@ -65,7 +70,7 @@ fn expected(row: &str) -> Value {
 /// A JSON value as a setting value.
 fn setting_value(value: &Value) -> SettingValue {
     if let Some(number) = value.as_number() {
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
         return SettingValue::Float(number.to_f64().unwrap() as f32);
     }
     if let Some(flag) = value.as_bool() {

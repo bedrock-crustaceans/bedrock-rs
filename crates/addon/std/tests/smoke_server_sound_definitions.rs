@@ -8,8 +8,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_server_sound_definitions`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 

@@ -8,8 +8,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_text`;
 //! without the variable every test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 

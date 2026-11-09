@@ -2,7 +2,6 @@
 //! its fixtures.md and every rule of its validation.md, through the files read on their own
 //! and through the stack accessor `rp.materials()`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "material")]
 
 #[path = "material/common.rs"]

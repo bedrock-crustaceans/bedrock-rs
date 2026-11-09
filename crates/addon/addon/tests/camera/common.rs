@@ -1,6 +1,9 @@
 //! Helpers of the camera tests.
 
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "a helper module shared by the test files of this folder; none of them uses every helper"
+)]
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};

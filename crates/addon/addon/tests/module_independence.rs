@@ -14,7 +14,6 @@
 //! crates only, never on a family, a shared crate or `bedrock_addon`.
 //!
 //! The tests read the crate's own source files, which library code may never do.
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use std::fs;
 use std::path::{Path, PathBuf};

@@ -17,6 +17,10 @@
 //! entry one finding; `path`, `json_path` and `text` are compared when given.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};

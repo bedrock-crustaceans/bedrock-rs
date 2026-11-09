@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A document that loads can be written: a number no double
 //! holds (`1e999`, `-1e999`, an integer of 400 digits) never loads as an infinity that

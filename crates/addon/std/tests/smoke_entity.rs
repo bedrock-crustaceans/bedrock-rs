@@ -9,7 +9,10 @@
 //!
 //! Components and goals are typed, so the zero-error gate covers them too; the warnings are printed by code.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 #[macro_use]
 mod common;

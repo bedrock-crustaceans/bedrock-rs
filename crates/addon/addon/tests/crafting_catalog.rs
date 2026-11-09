@@ -1,13 +1,16 @@
 //! The crafting item catalogue (`item_catalog/crafting_item_catalog.json`,
 //! `minecraft:crafting_items_catalog`): its rules, the chain, round trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "crafting_catalog")]
 
 #[path = "common/responder.rs"]
 mod responder;
 
 #[path = "../../families/crafting_catalog/tests/crafting_catalog/common.rs"]
+#[allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture into a json Value to compare it; not yet moved to the door"
+)]
 mod common;
 
 #[path = "crafting_catalog/link.rs"]

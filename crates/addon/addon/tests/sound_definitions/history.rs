@@ -1,6 +1,11 @@
 //! The chain of `sounds/sound_definitions.json` (contiguity, struct selection, no floor and no
 //! ceiling), the three `Upgrade` steps, the history path and write-back (the raw Value level).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::Diagnostics;
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::sound_definitions::SoundDefinitions;

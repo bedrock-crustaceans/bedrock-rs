@@ -1,8 +1,6 @@
 //! The link pass, `StackSet::link`: the frame (`link/infra`) and one module per rule group,
 //! each filled by its rule package. The helpers every group shares are in `link/common`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[path = "link/common/mod.rs"]
 mod common;
 #[path = "pack/common.rs"]

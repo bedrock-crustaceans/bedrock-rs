@@ -10,8 +10,6 @@
 //! smoke_script_bundle`, and once more with `--features bedrock_addon/script-syntax`; without
 //! the variable every test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 

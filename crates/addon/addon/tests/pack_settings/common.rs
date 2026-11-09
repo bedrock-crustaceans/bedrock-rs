@@ -1,6 +1,9 @@
 //! Fixture access and finding helpers shared by the pack-settings tests.
 
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "a helper module shared by the test files of this folder; none of them uses every helper"
+)]
 
 use std::path::PathBuf;
 

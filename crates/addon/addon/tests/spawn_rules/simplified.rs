@@ -2,6 +2,11 @@
 //! `s10`–`s22`. The first five inputs are vanilla's
 //! unit-test documents (`ActorSpawnRuleDataLoaderUpgradeUnitTests`).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Code, Severity};
 use bedrock_addon::families::spawn_rules::{Placement, SpawnRules};
 use bedrock_addon::version::ENGINE_VERSION;

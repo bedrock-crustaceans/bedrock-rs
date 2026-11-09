@@ -1,6 +1,5 @@
 //! The fog family (`bedrock_addon::families::fog`): the rows of its fixtures.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "fog")]
 
 use bedrock_addon_core::test_cost as cost;

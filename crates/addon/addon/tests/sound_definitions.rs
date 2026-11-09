@@ -2,7 +2,6 @@
 //! pack's `sounds/sound_definitions.json`): every row of the fixtures, the rules, the chain,
 //! round trips and the document's loader.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(clippy::float_cmp, reason = "the readers give exact values")]
 #![cfg(feature = "sound_definitions")]
 

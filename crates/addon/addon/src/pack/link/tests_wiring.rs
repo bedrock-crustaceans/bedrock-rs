@@ -1748,7 +1748,6 @@ fn n_lang_keys_among_the_n_keys_of_an_unlisted_lang_file_cost_n() {
 /// The list of the game's languages is `texts/languages.json` of the game's own resource
 /// pack, in its order.
 #[cfg(all(feature = "lang", feature = "languages"))]
-#[allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #[test]
 fn the_languages_of_the_game_are_the_vanilla_resource_packs_list() {
     let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())

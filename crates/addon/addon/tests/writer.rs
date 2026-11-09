@@ -1,7 +1,6 @@
 //! `PackWriter`: a pack built in memory, its files in order, its zip
 //! bytes, and the pack it opens as; the round trips run over the fixture packs.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(dead_code, reason = "each feature set uses part of the helpers")]
 
 #[cfg(all(feature = "block", feature = "block_culling"))]

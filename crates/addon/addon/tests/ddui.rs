@@ -1,7 +1,6 @@
 //! Data-driven UI (`ddui/root`, `ddui/composition`, `ddui/styling`): the rows of its fixtures,
 //! the loader's rules, the control catalogue, the chains, round trips and the stack accessor.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "ddui")]
 
 #[path = "common/responder.rs"]

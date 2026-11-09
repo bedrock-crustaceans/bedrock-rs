@@ -11,8 +11,6 @@
 //!
 //! Needs no game files.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::fs;
 use std::path::Path;
 

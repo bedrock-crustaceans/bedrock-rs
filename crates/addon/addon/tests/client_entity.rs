@@ -1,7 +1,6 @@
 //! The client entity family (`bedrock_addon::families::client_entity::ClientEntity`): every row
 //! of its fixtures, the steps, the chain, round trips, Molang and the stack resolution.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "client_entity")]
 
 #[path = "client_entity/common.rs"]

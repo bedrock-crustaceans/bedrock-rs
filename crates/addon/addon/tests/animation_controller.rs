@@ -1,7 +1,6 @@
 //! The animation controller family (`bedrock_addon::families::animation_controller`) on the
 //! resource stack: the rows and the chain.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(all(feature = "animation", feature = "animation_controller"))]
 
 #[path = "animation/common.rs"]

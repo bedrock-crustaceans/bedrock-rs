@@ -1,8 +1,6 @@
 //! `io::Roots` and `io::respond`: the root table and the blocking answer to one loader request,
 //! against a real directory tree built in a temporary directory.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};

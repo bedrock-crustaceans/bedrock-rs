@@ -1,6 +1,11 @@
 //! For the block family: a member the author did not write is not written back, and one
 //! the author wrote at its default is.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it and serializes a value to compare it with the written text; not yet moved to the door"
+)]
+
 use bedrock_addon::families::block::component::{
     BlockEntity, CollisionBox, CraftingTable, EntityFallOn, Flammable, Leashable, LiquidDetection,
     RandomOffset, RedstoneConductivity, RedstoneConsumer, RedstoneProducer, Tick,

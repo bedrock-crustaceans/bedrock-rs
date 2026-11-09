@@ -943,7 +943,6 @@ fn every_item_name_of_the_vanilla_loot_tables_is_an_item() {
 /// enough is the test above for the loot tables, and the tests over the game's files in
 /// `tests/` for the recipes, trade tables, items and entity files.)
 #[cfg(feature = "item")]
-#[allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #[test]
 fn every_legacy_item_name_is_one_a_vanilla_file_writes() {
     let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())

@@ -18,7 +18,6 @@
 //! This is a file of its own, and not a test of `determinism.rs`, so that the helpers are
 //! repeated here: the two files were worked on at the same time.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(
     dead_code,
     unused_imports,

@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! Pins of present behaviour, part C (the client families): a refused definition in the pack
 //! that would win an identifier (or a path), over a valid definition of the same identifier in

@@ -3,8 +3,6 @@
 //! read through core's `parse_at`. One test per family with a map level; the families without
 //! one are listed below.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Kind};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::LoadContext;

@@ -12,8 +12,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_particle --no-capture`; without the variable every test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 #[allow(dead_code, reason = "this family uses the key-aware check")]

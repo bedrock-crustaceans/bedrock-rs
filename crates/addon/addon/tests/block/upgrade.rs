@@ -2,6 +2,11 @@
 //! `Upgrade::upgrade` on `upgrade/<name>.before.json` and compares the written result with
 //! `<name>.after.json`, then checks the findings by code (and text where the row quotes it).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::codes;
 use bedrock_addon::diagnostic::{Code, Diagnostics, JsonPath, Kind, Severity};
 use bedrock_addon::families::block::history::{

@@ -1,8 +1,6 @@
 //! `Driver` with the real loaders: pack folders, archives, repositories and key sidecars on a
 //! temporary disk tree and the storage fixtures of `bedrock_addon`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::fs;
 use std::path::Path;
 

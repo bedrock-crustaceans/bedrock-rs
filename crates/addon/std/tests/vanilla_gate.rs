@@ -29,8 +29,6 @@
 //! Run: `BEDROCK_ADDON_VANILLA_1_26_60=<root> cargo nextest run -p bedrock_addon_std --test
 //! vanilla_gate --no-capture`.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 #[macro_use]

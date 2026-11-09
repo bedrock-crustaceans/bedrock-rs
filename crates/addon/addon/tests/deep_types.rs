@@ -8,7 +8,6 @@
 //! Its own binary: an overflow aborts the process.
 
 #![cfg(all(feature = "script", feature = "block"))]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon::families::block::component::DeprecatedDefinitionEvent;
 use bedrock_addon::families::script::meta::TypeDescriptor;

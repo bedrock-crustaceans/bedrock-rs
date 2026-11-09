@@ -13,13 +13,10 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test
 //! smoke_render_controller`; without the variable every test skips.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 // The pairs loop is written out below (key occurrences, folded pointers); the shared helper
 // gives the member walk and the error list.
-#[allow(dead_code)]
 #[path = "common/pairs.rs"]
 mod pairs;
 

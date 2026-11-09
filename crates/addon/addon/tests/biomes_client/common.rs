@@ -2,6 +2,10 @@
 //! one resource pack of in-memory files and the stacks of a world.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 use std::path::PathBuf;
 

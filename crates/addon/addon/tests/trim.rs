@@ -2,7 +2,6 @@
 //! and the deviations. The folder has no pack format, so there is no chain, round trip of a
 //! document or stack accessor to test.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "item")]
 
 #[path = "trim/common.rs"]

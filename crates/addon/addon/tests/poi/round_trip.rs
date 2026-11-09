@@ -2,6 +2,11 @@
 //! every row document that loads, a stable rewrite, the members in vanilla's bind order, and
 //! no member the author left out; and the as-written parse
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use std::fmt::Debug;
 
 use bedrock_addon::document::{Content, JsonDocument};

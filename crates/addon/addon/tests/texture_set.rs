@@ -11,7 +11,6 @@
     feature = "texture_list",
     feature = "flipbooks"
 ))]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 // The crate's one protocol for cost tests, and this binary's one lock.
 use bedrock_addon_core::test_cost as cost;

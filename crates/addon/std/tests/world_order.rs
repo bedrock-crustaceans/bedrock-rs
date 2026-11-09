@@ -2,8 +2,6 @@
 //! install, with the base-game layer in the order the game stacks its base-game packs. Needs no
 //! game files: the install is a handful of manifests in a temporary directory.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 mod common;
 
 use std::fs;

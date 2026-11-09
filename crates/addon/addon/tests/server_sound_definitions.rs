@@ -3,7 +3,6 @@
 //! rule of the file, at the one stable slice 1.26.60 of 1.26.60. No vanilla file exists, so
 //! every input is written here from the schemas.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![allow(clippy::float_cmp, reason = "the readers give exact values")]
 #![cfg(feature = "server_sound_definitions")]
 

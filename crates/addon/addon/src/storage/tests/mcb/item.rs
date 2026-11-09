@@ -19,7 +19,6 @@ mod baked_items_load {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../storage/tests/fixtures/mcb")
             .join(format!("{name}.json"));
-        #[allow(clippy::disallowed_methods, reason = "a test reads its fixture")]
         let bytes = std::fs::read(&path).unwrap();
         to_json_text(&bytes).unwrap()
     }

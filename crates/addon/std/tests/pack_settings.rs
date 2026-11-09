@@ -1,8 +1,6 @@
 //! `read_saved_settings`: the saved pack-settings files read from disk, and the smoke test over
 //! every such file the game's own files hold.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[macro_use]
 mod common;
 

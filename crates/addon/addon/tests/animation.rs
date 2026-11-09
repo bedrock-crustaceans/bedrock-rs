@@ -2,7 +2,6 @@
 //! pack controller rows: the behaviour-pack side (`behavior`), the resource-pack side
 //! (`resource`), the deviations, round trips and Molang.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(all(feature = "animation", feature = "animation_controller"))]
 
 #[path = "animation/common.rs"]

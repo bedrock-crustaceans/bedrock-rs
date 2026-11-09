@@ -2,7 +2,6 @@
 //! and the link rules that check a block's or an item's texture against them.
 
 #![cfg(feature = "texture_atlas")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 #[path = "terrain_texture/common.rs"]
 mod common;

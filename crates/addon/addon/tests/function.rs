@@ -3,7 +3,6 @@
 //! rules, the command-table lints, the tick list's merge and the write side.
 
 #![cfg(feature = "function")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 #[path = "common/responder.rs"]
 mod responder;

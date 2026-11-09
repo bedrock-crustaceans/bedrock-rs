@@ -2,6 +2,11 @@
 //! (an `ExtensionPoint` without a string `attribs.name`). The rows that need the stack are in
 //! `stack.rs`.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::families::ddui::{Component, Control, UiRoot};
 

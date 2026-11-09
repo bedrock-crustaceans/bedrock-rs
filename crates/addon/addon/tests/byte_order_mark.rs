@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! A file that starts with a UTF-8 byte-order mark: vanilla's reader skips the mark,
 //! and every span of a finding is an offset into the file as written, the three bytes of the
@@ -7,7 +6,6 @@
 //! Three read paths: a family of the versioned load (a block), a family with a reader of its
 //! own (a loot table), and the copy of a file a stack walk reads (the terrain atlas).
 
-#[allow(unused_imports)]
 #[path = "terrain_texture/common.rs"]
 mod common;
 

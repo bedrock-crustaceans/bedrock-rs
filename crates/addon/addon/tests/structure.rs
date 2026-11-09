@@ -2,7 +2,6 @@
 //! The fixtures, the exact round trip, the lookups by identifier, the stack
 //! and the deviations.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "structure")]
 
 #[path = "common/responder.rs"]

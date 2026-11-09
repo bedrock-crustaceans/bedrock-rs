@@ -3,7 +3,6 @@
 //! observed table, the validation rules that no fixture row reaches, and the costs.
 
 #![cfg(feature = "script")]
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::test_cost as cost;
 #[path = "common/responder.rs"]

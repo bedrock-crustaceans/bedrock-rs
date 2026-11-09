@@ -5,7 +5,10 @@
 //! layer's definitions, where in the game a pack whose experiment is off is not loaded at
 //! all and so never wins.
 
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "a helper module shared by the test files of this folder; none of them uses every helper"
+)]
 
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackIdVersion, PackRepository, PackSelection, PackType, WorldPacks};

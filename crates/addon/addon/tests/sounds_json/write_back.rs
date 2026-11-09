@@ -1,6 +1,11 @@
 //! A `sounds.json` file written back: what it read, and what its author wrote, at the Value
 //! level.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::sounds_json::SoundBindings;
 use bedrock_addon::json::Value;

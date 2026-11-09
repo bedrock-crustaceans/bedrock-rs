@@ -1,4 +1,3 @@
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "full")]
 //! What a stack load yields can be written: `non_finite.rs` proves each
 //! document type's single-file entry; this file proves the stack accessors whose copies are
@@ -26,6 +25,11 @@
 //! else fails the test: a silent infinity, a silent clamp, a finding in the wrong pack.
 //!
 //! `audit:` lines (shown with `--show-output`) give the outcomes per copy and place.
+
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
 
 #[path = "common/two_packs.rs"]
 mod two_packs;

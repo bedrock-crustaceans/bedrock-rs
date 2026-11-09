@@ -3,8 +3,6 @@
 //! `#[facet(skip, rename = "\u{0}<name>")]` (core's `Extra`, "Skipped fields"). One test holds
 //! the source to it; the others load documents whose members are named like a skipped field.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use std::path::{Path, PathBuf};
 
 /// The source roots the convention holds for, as paths below the workspace's `crates/`.

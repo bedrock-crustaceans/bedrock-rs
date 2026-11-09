@@ -2,7 +2,6 @@
 //! (`bedrock_addon::families::atomic_client_entity::AtomicClientEntity`): every row of its
 //! fixtures, the chain, round trips and the stack resolution.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 #![cfg(feature = "atomic_client_entity")]
 
 #[path = "atomic_client_entity/common.rs"]

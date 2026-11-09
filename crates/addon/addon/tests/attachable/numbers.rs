@@ -6,6 +6,11 @@
 //! number; what was read is what is written. An integer token beyond 64 bits is the number
 //! it spells (core's reader), in each of those places.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::json::Value;

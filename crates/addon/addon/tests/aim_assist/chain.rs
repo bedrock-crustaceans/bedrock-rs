@@ -1,6 +1,11 @@
 //! The aim-assist chains, the step from 1.21.50, the history path and write-back (the Value
 //! level).
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::document::{Content, JsonDocument};
 use bedrock_addon::families::aim_assist::AimAssistPreset;
 use bedrock_addon::families::aim_assist::history::{

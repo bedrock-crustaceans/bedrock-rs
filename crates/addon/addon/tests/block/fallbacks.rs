@@ -4,6 +4,11 @@
 //! member, as the file has it. Every test loads a legacy document of the version the step
 //! upgrades from through `Block::parse`.
 
+#![allow(
+    clippy::disallowed_methods,
+    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
+)]
+
 use bedrock_addon::diagnostic::{Disposition, Kind, Phase, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::json::Value;

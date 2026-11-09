@@ -458,11 +458,6 @@ mod tests {
         assert!(found.is_empty(), "{found:#?}");
     }
     /// The `blocks.json` of every resource pack directly below `packs`.
-    #[allow(
-        clippy::disallowed_methods,
-        clippy::disallowed_types,
-        reason = "a test reads the game's files"
-    )]
     fn files_below(packs: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
         let Ok(entries) = std::fs::read_dir(packs) else {
             return;
@@ -480,11 +475,6 @@ mod tests {
     /// of legacy block names is exactly what the game's files need: the identifiers those files
     /// give a block that the generated list lacks, and the names the game's entity files, spawn
     /// rules and features write.
-    #[allow(
-        clippy::disallowed_methods,
-        clippy::disallowed_types,
-        reason = "a test reads the game's files"
-    )]
     #[test]
     fn the_legacy_block_names_are_exactly_what_the_vanilla_files_need() {
         use std::collections::BTreeSet;

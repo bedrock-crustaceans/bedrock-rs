@@ -1,8 +1,6 @@
 //! The frame of the link pass, tested with rules made up here, so that the frame's behaviour
 //! does not depend on what the six rule groups report.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[path = "tests_support.rs"]
 pub(in crate::pack::link) mod support;
 
