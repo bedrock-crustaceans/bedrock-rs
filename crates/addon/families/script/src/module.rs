@@ -462,11 +462,6 @@ pub(crate) struct Stage1 {
     pub(crate) refused: bool,
 }
 
-/// The native module a pack dependency's UUID stands for: vanilla knows two.
-pub fn native_module_of(uuid: Uuid) -> Option<&'static str> {
-    match uuid.as_u128() {
-        0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678 => Some("@minecraft/server"),
-        0x2bd5_0a27_ab5f_4f40_a596_3641_627c_635e => Some("@minecraft/server-ui"),
-        _ => None,
-    }
-}
+/// The table is the manifest crate's, where stack composition reads it too.
+#[doc(inline)]
+pub use bedrock_addon_manifest::native_module_of;

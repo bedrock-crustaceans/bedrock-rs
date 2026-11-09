@@ -39,7 +39,7 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::MinEngineVersion;
 use bytes::Bytes;
 
-use crate::manifest::{CapabilityRegistry, Dependency, Manifest};
+use crate::manifest::{CapabilityRegistry, Dependency, Manifest, native_module_of};
 use crate::storage::{ContentKeys, StorageError};
 
 /// One pack: its manifest, its files and what went wrong reading them.
@@ -105,37 +105,6 @@ pub(crate) struct PackFacts {
     pub(crate) min_engine_version: Option<MinEngineVersion>,
 }
 
-/// Whether `uuid` is one of the two UUIDs a manifest may name a native script module by
-/// (`@minecraft/server`, `@minecraft/server-ui`): the deprecated way to depend on the module,
-/// which the script host reads and which names no pack.
-pub(crate) fn is_native_module_uuid(uuid: uuid::Uuid) -> bool {
-    matches!(
-        uuid.as_u128(),
-        0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678 | 0x2bd5_0a27_ab5f_4f40_a596_3641_627c_635e
-    )
-}
-
-#[cfg(all(test, feature = "script"))]
-mod native_uuids {
-    /// Stack composition leaves out exactly the UUIDs discovery reads as native modules.
-    #[test]
-    fn the_uuids_composition_skips_are_the_ones_discovery_knows() {
-        for n in [
-            0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678_u128,
-            0x2bd5_0a27_ab5f_4f40_a596_3641_627c_635e,
-            0xb26a_4d4c_afdf_4690_88f8_9318_4631_2679,
-            0,
-        ] {
-            let uuid = uuid::Uuid::from_u128(n);
-            assert_eq!(
-                super::is_native_module_uuid(uuid),
-                crate::families::script::native_module_of(uuid).is_some(),
-                "{uuid}"
-            );
-        }
-    }
-}
-
 impl PackFacts {
     /// What composition reads of `manifest`: its identity (the last module decides the pack
     /// type), header name, every module's pack type, the pack dependencies (native-module ones
@@ -161,7 +130,7 @@ impl PackFacts {
                 .filter_map(|dependency| match dependency {
                     // A dependency on a script module's UUID names no pack, so it is not a pack
                     // dependency.
-                    Dependency::Pack { uuid, .. } if is_native_module_uuid(*uuid) => None,
+                    Dependency::Pack { uuid, .. } if native_module_of(*uuid).is_some() => None,
                     Dependency::Pack { uuid, version } => Some(PackIdVersion::new(
                         *uuid,
                         version.clone(),

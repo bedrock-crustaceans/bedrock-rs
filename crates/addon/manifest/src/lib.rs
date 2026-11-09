@@ -240,6 +240,19 @@ pub enum Dependency {
     },
 }
 
+/// The native script module a pack dependency's UUID stands for, `None` for any other UUID.
+///
+/// A manifest may name `@minecraft/server` and `@minecraft/server-ui` by UUID, as a
+/// [`Dependency::Pack`]: the deprecated way to depend on them, which the script host reads and
+/// which names no pack. Vanilla knows these two.
+pub fn native_module_of(uuid: Uuid) -> Option<&'static str> {
+    match uuid.as_u128() {
+        0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678 => Some("@minecraft/server"),
+        0x2bd5_0a27_ab5f_4f40_a596_3641_627c_635e => Some("@minecraft/server-ui"),
+        _ => None,
+    }
+}
+
 /// A native-module dependency's `version`: a version, or a selector for the newest of a
 /// channel.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -432,5 +445,25 @@ impl StackPackManifest for StackPack {
 
     fn manifest(&self) -> Option<&Manifest> {
         self.opened::<Manifest>()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_server_module_uuid_is_a_native_module() {
+        let module = |n: u128| native_module_of(Uuid::from_u128(n));
+        assert_eq!(
+            module(0xb26a_4d4c_afdf_4690_88f8_9318_4631_2678),
+            Some("@minecraft/server")
+        );
+        assert_eq!(
+            module(0x2bd5_0a27_ab5f_4f40_a596_3641_627c_635e),
+            Some("@minecraft/server-ui")
+        );
+        assert_eq!(module(0xb26a_4d4c_afdf_4690_88f8_9318_4631_2679), None);
+        assert_eq!(module(0), None);
     }
 }
