@@ -290,7 +290,7 @@ impl<S: Side> PackStack<S> {
     // accessor caches them with the collection and `StackReport` borrows them.
     #[allow(
         dead_code,
-        reason = "the accessor lines call it; the list fills as the families land"
+        reason = "only the accessor lines call it, and no line is compiled in when no family feature is on"
     )]
     pub(crate) fn drive<C, P>(&self, loader: CollectionLoader<C, P>) -> (C, Diagnostics) {
         let entries = self.listed_files();

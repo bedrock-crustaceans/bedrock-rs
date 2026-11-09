@@ -34,8 +34,10 @@
 //!
 //! The list is expanded one line at a time (a recursive macro), and each line costs two levels
 //! of the crate's recursion limit (`@munch` takes the line to `@line`, which hands the rest back
-//! to `@munch`). The 58 lines of the family list take some 120 levels; `lib.rs` sets
-//! `recursion_limit = "512"`, room for about 250.
+//! to `@munch`). The 58 lines of the family list take some 120 levels, and the list's own
+//! wrappers add about 2, so the default limit of 128 holds with a few levels to spare; a crate
+//! attribute `recursion_limit` is needed again only when the list outgrows it (a few more
+//! lines).
 
 use std::fmt;
 use std::hash::Hash;
@@ -65,7 +67,7 @@ use crate::{
 /// cache ([`BothSides`]) holds one per side.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) trait Sided {
     /// The cache of one side.
@@ -92,7 +94,7 @@ impl<K, C> Sided for Keyed<K, C> {
 #[derive(Default)]
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) struct BothSides<T> {
     behavior: T,
@@ -112,7 +114,7 @@ impl<T> Sided for BothSides<T> {
 /// The collection in `cache`, loaded through `loader` on first call.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) fn load_once<'a, S: Side, C, P>(
     cache: &'a OnceLock<Loaded<C>>,
@@ -131,7 +133,7 @@ pub(crate) fn load_once<'a, S: Side, C, P>(
 /// loaded value per listed key.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) struct Keyed<K, C> {
     /// Every key the walk reached a file of, in walk order, from a `StackLoader` or `load_all`.
@@ -151,7 +153,7 @@ impl<K, C> Default for Keyed<K, C> {
 
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 impl<K: Eq + Hash, C> Keyed<K, C> {
     /// The collection of `key`: `None` when `keys` does not give it; else the value loaded for
@@ -280,7 +282,7 @@ impl<K: Eq + Hash, C> Keyed<K, C> {
 /// a key.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 fn keyed_parse<K, C, P>(
     loader: CollectionLoader<C, P>,
@@ -294,7 +296,7 @@ fn keyed_parse<K, C, P>(
 /// A keyed line's `Combine` job: each key's files, in walk order, combined.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 fn keyed_combine<K: Eq + Hash, C, P>(
     loader: CollectionLoader<C, P>,
@@ -314,7 +316,7 @@ fn keyed_combine<K: Eq + Hash, C, P>(
 /// [`keyed_parse`], type-erased for the `StackLoader`.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) fn erased_keyed_parse<K: Send + Sync + 'static, C, P: Send + Sync + 'static>(
     loader: CollectionLoader<C, P>,
@@ -328,7 +330,7 @@ pub(crate) fn erased_keyed_parse<K: Send + Sync + 'static, C, P: Send + Sync + '
 /// [`keyed_combine`], type-erased for the `StackLoader`; `key_of` only names `K`.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 pub(crate) fn erased_keyed_combine<
     K: Eq + Hash + Send + Sync + 'static,
@@ -355,7 +357,7 @@ pub(crate) fn erased_keyed_combine<
 // files.
 #[allow(
     dead_code,
-    reason = "the accessor lines use it; the list fills as the families land"
+    reason = "only the accessor lines use it, and no line is compiled in when no family feature is on"
 )]
 fn visit<S: Side>(
     walk: &Walk,

@@ -205,7 +205,7 @@ impl Reader<'_> {
     /// own; a slider clamps either to its own maximum). The game reads the float without a line,
     /// so the note is an information.
     fn float(&mut self, number: f64, node: &Node<'_>) -> SettingValue {
-        #[allow(clippy::cast_possible_truncation)] // the game reads a float
+        #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
         let value = number as f32;
         if value.is_finite() {
             return SettingValue::Float(value);

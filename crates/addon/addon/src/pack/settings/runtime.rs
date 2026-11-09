@@ -309,7 +309,10 @@ fn check(definition: &Setting, value: SettingValue) -> Result<(SettingValue, boo
     match (definition, value) {
         (Setting::Slider { min, max, .. }, SettingValue::Float(x)) => {
             let clamped = clamp(x, *min, *max);
-            #[allow(clippy::float_cmp)] // the clamp returns `x` itself when it is in range
+            #[allow(
+                clippy::float_cmp,
+                reason = "the clamp returns `x` itself when it is in range"
+            )]
             let changed = clamped != x;
             Ok((SettingValue::Float(clamped), changed))
         }

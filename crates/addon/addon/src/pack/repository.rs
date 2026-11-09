@@ -94,13 +94,11 @@ impl PackRepository {
     }
 
     /// Records a pack that could not be opened.
-    #[allow(dead_code, reason = "the pack loader calls it")]
     pub(crate) fn push_invalid(&mut self, invalid: InvalidPack) {
         self.invalid.push(invalid);
     }
 
     /// Records what one source yielded.
-    #[allow(dead_code, reason = "the pack loader calls it")]
     pub(crate) fn push_source_report(&mut self, report: SourceReport) {
         self.source_reports.push(report);
     }
@@ -211,7 +209,6 @@ pub struct SourceReport {
 
 impl SourceReport {
     /// An empty report for the source at `location`.
-    #[allow(dead_code, reason = "the pack loader calls it")]
     pub(crate) fn new(location: Place, origin: PackOrigin) -> Self {
         Self {
             location,
@@ -237,7 +234,6 @@ pub struct InvalidPack {
 
 impl InvalidPack {
     /// A pack at `location` that failed to open.
-    #[allow(dead_code, reason = "the pack loader calls it")]
     pub(crate) fn new(location: Place, origin: PackOrigin, error: OpenError) -> Self {
         Self {
             location,

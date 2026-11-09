@@ -125,7 +125,10 @@ impl PackFiles {
 
     /// Without `zip` no pack has archived files.
     #[cfg(not(feature = "zip"))]
-    #[allow(clippy::unused_self)]
+    #[allow(
+        clippy::unused_self,
+        reason = "the twin of the zip method, which reads the archive from self"
+    )]
     fn read_archived(&self, _path: &PackPath) -> Result<Bytes, StorageError> {
         Err(StorageError::NotFound)
     }

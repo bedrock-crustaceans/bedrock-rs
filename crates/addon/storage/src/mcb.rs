@@ -93,7 +93,10 @@ impl<'a> McbHeader<'a> {
 
 /// A decoded MCB value, in the types an MCB body stores.
 // No known layout holds a null or a 64-bit float; the writer is ready for both.
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "no known layout holds a null or a 64-bit float, so only tests build those variants"
+)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum McbValue {
     /// `null`.

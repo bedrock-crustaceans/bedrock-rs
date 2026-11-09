@@ -539,8 +539,6 @@ impl StackSet {
 
 /// A pack given to [`PackStack::of`] has no module of the stack's kind. Read-only: the crate
 /// produces it.
-// A struct only the crate produces is `#[non_exhaustive]`, so a field can be added without
-// breaking callers.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 #[error("pack {pack} is a {found:?} pack, not {expected:?}")]

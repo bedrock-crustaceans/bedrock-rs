@@ -101,16 +101,7 @@
 //! `diagnostics_gate` here, `load_stacks`, `rayon_driver` and `ruby_pack` in
 //! `bedrock_addon_std`.
 
-// `#[must_use]` goes on methods returning a changed copy and on values whose loss is a bug, not
-// on every pure getter.
-// The error enums' variants document each failure.
-// A panic here is a broken invariant of the crate, never an outcome a caller handles, so no
-// function carries a `# Panics` section.
-// Names such as `PackPath` in `pack` stay descriptive.
 #![cfg_attr(docsrs, feature(doc_cfg))]
-// The entity component enum carries 145 `#[component]` rows on its `Dynamic` variant, one
-// nested expansion each.
-#![recursion_limit = "512"]
 
 /// Every public item has its path in its module; none resolves at the crate root.
 ///
