@@ -129,7 +129,7 @@ fn sc08_a_missing_folder_is_an_empty_configuration() {
 fn a_config_path_that_is_a_file_is_an_io_error() {
     let path = fixture("sc10_stray_file").join("config/afile.json");
     match read_script_config(&path) {
-        Err(ReadError::Io { path: reported, .. }) => assert_eq!(reported, path),
+        Err(ReadError::Io(error)) => assert_eq!(error.path, path),
         other => panic!("{other:?}"),
     }
 }
@@ -291,7 +291,7 @@ fn a_missing_server_properties_holds_no_line() {
     );
     // A path that cannot be read as a file is an error.
     match read_server_properties(dir.path()) {
-        Err(ReadError::Io { path, .. }) => assert_eq!(path, dir.path()),
+        Err(ReadError::Io(error)) => assert_eq!(error.path, dir.path()),
         other => panic!("{other:?}"),
     }
 }

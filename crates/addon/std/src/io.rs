@@ -9,7 +9,14 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::load::{
     DirEntry, EntryKind, Input, ListDepth, Place, ReadRange, Request, RootId,
 };
+use bedrock_addon::storage::PackPath;
 use bytes::Bytes;
+
+/// `path` below the host directory `root`, one component per segment.
+pub fn host_path(root: &Path, path: &PackPath) -> PathBuf {
+    path.segments()
+        .fold(root.to_path_buf(), |host, segment| host.join(segment))
+}
 
 /// The driver's root table: `RootId` → host path.
 ///
@@ -52,12 +59,7 @@ impl Roots {
             return None;
         }
         let root = self.paths.get(usize::try_from(location.root.0).ok()?)?;
-        Some(
-            location
-                .path
-                .segments()
-                .fold(root.clone(), |path, segment| path.join(segment)),
-        )
+        Some(host_path(root, &location.path))
     }
 
     /// Answers one request with blocking `std::fs` calls. Never panics and never fails: an
@@ -286,4 +288,23 @@ fn without_cycles_and_twins(children: Vec<Child>, ancestors: &[PathBuf]) -> Vec<
     }
     kept.sort_by(|a, b| a.entry.name.cmp(&b.entry.name));
     kept
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn host_path_joins_each_segment_below_the_root() {
+        assert_eq!(
+            host_path(Path::new("r"), &PackPath::from_static("a/b.json")),
+            Path::new("r").join("a").join("b.json"),
+            "every segment of the pack path joins onto the root"
+        );
+        assert_eq!(
+            host_path(Path::new("r"), &PackPath::ROOT),
+            Path::new("r"),
+            "the pack root is the host root"
+        );
+    }
 }

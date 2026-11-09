@@ -68,7 +68,7 @@ fn a_file_that_cannot_be_read_is_an_io_error() {
     let path = world.path().join(WORLD_FILE);
     fs::create_dir(&path).unwrap();
     match read_saved_settings(&path) {
-        Err(ReadError::Io { path: reported, .. }) => assert_eq!(reported, path),
+        Err(ReadError::Io(error)) => assert_eq!(error.path, path),
         other => panic!("{other:?}"),
     }
 }
@@ -257,7 +257,7 @@ fn the_document_reader_fails_as_the_plain_reader_does() {
     fs::remove_file(&path).unwrap();
     fs::create_dir(&path).unwrap();
     match read_saved_settings_document(&path) {
-        Err(ReadError::Io { path: reported, .. }) => assert_eq!(reported, path),
+        Err(ReadError::Io(error)) => assert_eq!(error.path, path),
         other => panic!("{other:?}"),
     }
 }

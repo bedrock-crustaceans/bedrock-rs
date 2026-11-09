@@ -3,7 +3,6 @@
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
-use bedrock_addon::diagnostic::codes as core_codes;
 use std::fs;
 use std::path::Path;
 
@@ -181,6 +180,7 @@ fn repository_registers_the_packs_of_every_source_in_order() {
 #[test]
 fn an_encrypted_pack_folder_is_decrypted_with_its_sidecar_key_only_when_opted_in() {
     use bedrock_addon::diagnostic::Code;
+    use bedrock_addon::diagnostic::codes as core_codes;
     use bedrock_addon::pack::Pack;
     use bedrock_addon::storage::PackPath;
 

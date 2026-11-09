@@ -9,7 +9,7 @@ use bedrock_addon::load::{AppData, EntryKind, ListDepth};
 use bedrock_addon::pack::WorldPacks;
 use bedrock_addon::storage::PackPath;
 
-use crate::{ReadError, io as host};
+use crate::{HostIoError, HostOp, ReadError, io as host};
 
 /// Reads a world's `world_behavior_packs.json` and `world_resource_packs.json` and parses them
 /// with the pure `WorldPacks::parse`. A missing file is an empty list, as in vanilla; a file
@@ -43,50 +43,50 @@ pub fn read_world_packs(world_dir: impl AsRef<Path>) -> Result<WorldPacks, ReadE
 /// `dir` is the app-data root: the folder holding `definitions/` (a BDS install, a client's
 /// `data/`). Every file at any depth below each of [`AppData::DIRECTORIES`] is read, following
 /// symlinks, with its path relative to `dir`; the families decide which of them they parse. A
-/// directory or single file that does not exist is skipped. `ReadError::Io` when `dir` itself is missing or
-/// not a directory, when a directory or file cannot be read, and (with
-/// `ErrorKind::InvalidData`) when a file's name is not a valid pack path.
+/// directory or single file that does not exist is skipped.
 ///
 /// # Errors
 ///
-/// `ReadError::Io` as described above.
+/// `ReadError::Io` when `dir` itself is missing or cannot be looked up, and when a directory
+/// or file cannot be listed or read. `ReadError::NotADirectory` when `dir` is not a
+/// directory. `ReadError::NotUtf8` when a file's name is not valid UTF-8, and
+/// `ReadError::NotAPackPath` when it is valid UTF-8 but breaks a pack-path rule (a `:`, say).
 pub fn read_app_data(dir: impl AsRef<Path>) -> Result<AppData, ReadError> {
     let root = dir.as_ref();
     match fs::metadata(root) {
         Ok(metadata) if metadata.is_dir() => {}
-        Ok(_) => return Err(ReadError::io(root, ErrorKind::NotADirectory.into())),
-        Err(source) => return Err(ReadError::io(root, source)),
+        Ok(_) => return Err(ReadError::NotADirectory { path: root.into() }),
+        Err(source) => return Err(HostIoError::new(HostOp::Metadata, root, source).into()),
     }
     let mut files = Vec::new();
     for directory in AppData::DIRECTORIES {
-        let base = directory
-            .split('/')
-            .fold(root.to_path_buf(), |path, segment| path.join(segment));
+        let directory = PackPath::from_static(directory);
+        let base = host::host_path(root, &directory);
         let entries = match host::walk(&base, ListDepth::Recursive) {
             Ok(entries) => entries,
             Err(source) if source.kind() == ErrorKind::NotFound => continue,
-            Err(source) => return Err(ReadError::io(&base, source)),
+            Err(source) => return Err(HostIoError::new(HostOp::List, &base, source).into()),
         };
         for (path, entry) in entries {
             if !matches!(entry.kind, EntryKind::File { .. }) {
                 continue;
             }
-            let name = format!("{directory}/{}", entry.name);
-            let pack_path = (!entry.lossy)
-                .then(|| PackPath::new(&name).ok())
-                .flatten()
-                .ok_or_else(|| ReadError::io(&path, ErrorKind::InvalidData.into()))?;
-            let bytes = fs::read(&path).map_err(|source| ReadError::io(&path, source))?;
+            if entry.lossy {
+                return Err(ReadError::NotUtf8 { path });
+            }
+            let pack_path = match PackPath::new(&entry.name) {
+                Ok(name) => directory.join(&name),
+                Err(source) => return Err(ReadError::NotAPackPath { path, source }),
+            };
+            let bytes =
+                fs::read(&path).map_err(|source| HostIoError::new(HostOp::Read, &path, source))?;
             files.push((pack_path, bytes));
         }
     }
     for file in AppData::FILES {
-        let path = file
-            .split('/')
-            .fold(root.to_path_buf(), |path, segment| path.join(segment));
+        let pack_path = PackPath::from_static(file);
+        let path = host::host_path(root, &pack_path);
         if let Some(bytes) = read_optional(&path)? {
-            let pack_path = PackPath::new(file)
-                .map_err(|_| ReadError::io(&path, ErrorKind::InvalidData.into()))?;
             files.push((pack_path, bytes));
         }
     }
@@ -98,6 +98,6 @@ pub(crate) fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, ReadError> {
     match fs::read(path) {
         Ok(bytes) => Ok(Some(bytes)),
         Err(source) if source.kind() == ErrorKind::NotFound => Ok(None),
-        Err(source) => Err(ReadError::io(path, source)),
+        Err(source) => Err(HostIoError::new(HostOp::Read, path, source).into()),
     }
 }

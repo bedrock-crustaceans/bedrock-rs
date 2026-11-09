@@ -7,7 +7,8 @@ use std::path::Path;
 use bedrock_addon::pack::PackWriter;
 use bedrock_addon::storage::PackPath;
 
-use crate::SaveError;
+use crate::io::host_path;
+use crate::{HostIoError, HostOp, SaveError};
 
 /// Writes `writer.files()` under `dir`, creating it; `SaveError::NotEmpty` if it exists and
 /// is not empty (the writer never merges into an existing pack folder).
@@ -76,8 +77,9 @@ fn require_manifest(writer: &PackWriter) -> Result<(), SaveError> {
 ///
 /// # Errors
 ///
-/// `SaveError::Pack` when the archive cannot be built, and `SaveError::Io` when the
-/// temporary file cannot be written or renamed.
+/// `SaveError::Pack` when the archive cannot be built, `SaveError::NoFileName` when `path` ends
+/// in no file name, and `SaveError::Io` when the temporary file cannot be created, written or
+/// renamed.
 #[cfg(feature = "zip")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zip")))]
 pub fn write_archive(writer: &PackWriter, path: impl AsRef<Path>) -> Result<(), SaveError> {
@@ -94,12 +96,11 @@ fn ensure_empty_dir(dir: &Path) -> Result<(), SaveError> {
             Some(Ok(_)) => Err(SaveError::NotEmpty {
                 path: dir.to_path_buf(),
             }),
-            Some(Err(source)) => Err(SaveError::io(dir, source)),
+            Some(Err(source)) => Err(HostIoError::new(HostOp::List, dir, source).into()),
         },
-        Err(source) if source.kind() == ErrorKind::NotFound => {
-            fs::create_dir_all(dir).map_err(|source| SaveError::io(dir, source))
-        }
-        Err(source) => Err(SaveError::io(dir, source)),
+        Err(source) if source.kind() == ErrorKind::NotFound => fs::create_dir_all(dir)
+            .map_err(|source| HostIoError::new(HostOp::CreateDir, dir, source).into()),
+        Err(source) => Err(HostIoError::new(HostOp::List, dir, source).into()),
     }
 }
 
@@ -109,13 +110,12 @@ fn write_files<'a>(
     dir: &Path,
 ) -> Result<(), SaveError> {
     for (path, bytes) in files {
-        let host = path
-            .segments()
-            .fold(dir.to_path_buf(), |host, segment| host.join(segment));
+        let host = host_path(dir, path);
         if let Some(parent) = host.parent() {
-            fs::create_dir_all(parent).map_err(|source| SaveError::io(parent, source))?;
+            fs::create_dir_all(parent)
+                .map_err(|source| HostIoError::new(HostOp::CreateDir, parent, source))?;
         }
-        fs::write(&host, bytes).map_err(|source| SaveError::io(&host, source))?;
+        fs::write(&host, bytes).map_err(|source| HostIoError::new(HostOp::Write, &host, source))?;
     }
     Ok(())
 }
@@ -127,15 +127,21 @@ fn replace_file(path: &Path, bytes: &[u8]) -> Result<(), SaveError> {
     use std::io::Write;
 
     let Some(name) = path.file_name() else {
-        return Err(SaveError::io(path, ErrorKind::InvalidInput.into()));
+        return Err(SaveError::NoFileName { path: path.into() });
     };
     let (temp, mut file) = create_temp_file(temp_dir_of(path), name)?;
     let written = file.write_all(bytes).and_then(|()| file.sync_all());
     drop(file);
-    if let Err(source) = written.and_then(|()| fs::rename(&temp, path)) {
+    let failed = match written {
+        Err(source) => Some(HostIoError::new(HostOp::Write, &temp, source)),
+        Ok(()) => fs::rename(&temp, path)
+            .err()
+            .map(|source| HostIoError::new(HostOp::Rename, path, source)),
+    };
+    if let Some(error) = failed {
         // Best effort: the error to report is the write's, not the cleanup's.
         let _ = fs::remove_file(&temp);
-        return Err(SaveError::io(path, source));
+        return Err(error.into());
     }
     Ok(())
 }
@@ -177,10 +183,10 @@ fn create_temp_file(
         {
             Ok(file) => return Ok((temp, file)),
             Err(source) if source.kind() == ErrorKind::AlreadyExists => {}
-            Err(source) => return Err(SaveError::io(&temp, source)),
+            Err(source) => return Err(HostIoError::new(HostOp::CreateTemp, &temp, source).into()),
         }
     }
-    Err(SaveError::io(dir, ErrorKind::AlreadyExists.into()))
+    Err(HostIoError::new(HostOp::CreateTemp, dir, ErrorKind::AlreadyExists.into()).into())
 }
 
 #[cfg(test)]
@@ -314,9 +320,10 @@ mod tests {
             let file = temp.path().join("ruby.mcpack");
             fs::write(&file, b"PK").unwrap();
             match write_dir_of(&files(), &file) {
-                Err(SaveError::Io { path, source }) => {
-                    assert_eq!(path, file);
-                    assert_eq!(source.kind(), ErrorKind::NotADirectory);
+                Err(SaveError::Io(error)) => {
+                    assert_eq!(error.op, HostOp::List);
+                    assert_eq!(error.path, file);
+                    assert_eq!(error.source.kind(), ErrorKind::NotADirectory);
                 }
                 other => panic!("expected an I/O error, got {other:?}"),
             }
@@ -334,7 +341,8 @@ mod tests {
                 ),
             ];
             match write_dir_of(&clash, &temp.path().join("out")) {
-                Err(SaveError::Io { path, .. }) => {
+                Err(SaveError::Io(error)) => {
+                    let path = &error.path;
                     assert!(path.starts_with(temp.path().join("out/blocks")), "{path:?}");
                 }
                 other => panic!("expected an I/O error, got {other:?}"),
@@ -390,11 +398,29 @@ mod tests {
             fs::create_dir(&path).unwrap();
             fs::write(path.join("inside"), b"x").unwrap();
             match replace_file(&path, ZIP) {
-                Err(SaveError::Io { path: failed, .. }) => assert_eq!(failed, path),
+                Err(SaveError::Io(error)) => assert_eq!(error.path, path),
                 other => panic!("expected an I/O error, got {other:?}"),
             }
             assert_eq!(names_in(temp.path()), vec!["ruby.mcpack".to_owned()]);
             assert_eq!(names_in(&path), vec!["inside".to_owned()]);
+        }
+
+        #[test]
+        fn a_failed_rename_names_the_operation() {
+            let (_temp, path) = archive_dir();
+            // A non-empty directory where the archive goes: only the rename over it fails.
+            fs::create_dir(&path).unwrap();
+            fs::write(path.join("inside"), b"x").unwrap();
+            assert!(
+                matches!(
+                    replace_file(&path, ZIP),
+                    Err(SaveError::Io(HostIoError {
+                        op: HostOp::Rename,
+                        ..
+                    }))
+                ),
+                "the failed call was the rename"
+            );
         }
 
         #[test]
@@ -403,16 +429,17 @@ mod tests {
             let path = temp.path().join("missing/ruby.mcpack");
             assert!(matches!(
                 replace_file(&path, ZIP),
-                Err(SaveError::Io { source, .. }) if source.kind() == ErrorKind::NotFound
+                Err(SaveError::Io(HostIoError { op: HostOp::CreateTemp, source, .. }))
+                    if source.kind() == ErrorKind::NotFound
             ));
             assert!(names_in(temp.path()).is_empty());
         }
 
         #[test]
-        fn a_path_without_a_file_name_is_an_io_error() {
+        fn a_path_without_a_file_name_is_no_io_error() {
             assert!(matches!(
                 replace_file(Path::new("/"), ZIP),
-                Err(SaveError::Io { source, .. }) if source.kind() == ErrorKind::InvalidInput
+                Err(SaveError::NoFileName { .. })
             ));
         }
 

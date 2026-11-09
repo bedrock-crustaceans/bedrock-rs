@@ -80,7 +80,7 @@ mod write;
 #[cfg(feature = "zip")]
 pub use driver::load_archive;
 pub use driver::{DirSource, DirSourceKind, Driver, Options, Strategy, load_dir};
-pub use error::{LoadError, ReadError, SaveError};
+pub use error::{HostIoError, HostOp, LoadError, ReadError, SaveError};
 pub use read::{read_app_data, read_world_packs};
 #[cfg(feature = "script")]
 #[cfg_attr(docsrs, doc(cfg(feature = "script")))]

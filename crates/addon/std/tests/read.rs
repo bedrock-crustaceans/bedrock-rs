@@ -8,7 +8,7 @@ use std::path::Path;
 
 use bedrock_addon::load::AppData;
 use bedrock_addon::pack::WorldPacks;
-use bedrock_addon_std::{ReadError, read_app_data, read_world_packs};
+use bedrock_addon_std::{HostOp, ReadError, read_app_data, read_world_packs};
 
 fn write(dir: &Path, path: &str, bytes: &[u8]) {
     let path = dir.join(path);
@@ -67,9 +67,10 @@ mod world_packs {
         let world = tempfile::tempdir().unwrap();
         fs::create_dir(world.path().join(WorldPacks::RESOURCE_FILE)).unwrap();
         match read_world_packs(world.path()) {
-            Err(ReadError::Io { path, source }) => {
-                assert_eq!(path, world.path().join(WorldPacks::RESOURCE_FILE));
-                assert_eq!(source.kind(), ErrorKind::IsADirectory);
+            Err(ReadError::Io(error)) => {
+                assert_eq!(error.op, HostOp::Read);
+                assert_eq!(error.path, world.path().join(WorldPacks::RESOURCE_FILE));
+                assert_eq!(error.source.kind(), ErrorKind::IsADirectory);
             }
             other => panic!("expected an I/O error, got {other:?}"),
         }
@@ -151,31 +152,32 @@ mod app_data {
         let root = tempfile::tempdir().unwrap();
         let missing = root.path().join("no_such_install");
         match read_app_data(&missing) {
-            Err(ReadError::Io { path, source }) => {
-                assert_eq!(path, missing);
-                assert_eq!(source.kind(), ErrorKind::NotFound);
+            Err(ReadError::Io(error)) => {
+                assert_eq!(error.op, HostOp::Metadata);
+                assert_eq!(error.path, missing);
+                assert_eq!(error.source.kind(), ErrorKind::NotFound);
             }
             other => panic!("expected an I/O error, got {other:?}"),
         }
     }
 
     #[test]
-    fn a_root_that_is_a_file_is_an_io_error() {
+    fn a_root_that_is_a_file_is_not_a_directory() {
         let root = tempfile::tempdir().unwrap();
         write(root.path(), "file", b"");
         assert!(matches!(
             read_app_data(root.path().join("file")),
-            Err(ReadError::Io { source, .. }) if source.kind() == ErrorKind::NotADirectory
+            Err(ReadError::NotADirectory { .. })
         ));
     }
 
     #[test]
-    fn a_name_that_is_not_a_pack_path_is_an_invalid_data_error() {
+    fn an_app_data_name_that_is_no_pack_path_is_not_an_io_error() {
         let root = tempfile::tempdir().unwrap();
         write(root.path(), "definitions/features/c:oak.json", b"oak");
         assert!(matches!(
             read_app_data(root.path()),
-            Err(ReadError::Io { source, .. }) if source.kind() == ErrorKind::InvalidData
+            Err(ReadError::NotAPackPath { .. })
         ));
     }
 
@@ -225,9 +227,10 @@ mod app_data {
         let result = read_app_data(root.path());
         fs::set_permissions(&file, fs::Permissions::from_mode(0o644)).unwrap();
         match result {
-            Err(ReadError::Io { path, source }) => {
-                assert_eq!(path, file);
-                assert_eq!(source.kind(), ErrorKind::PermissionDenied);
+            Err(ReadError::Io(error)) => {
+                assert_eq!(error.op, HostOp::Read);
+                assert_eq!(error.path, file);
+                assert_eq!(error.source.kind(), ErrorKind::PermissionDenied);
             }
             other => panic!("expected an I/O error, got {other:?}"),
         }

@@ -11,8 +11,8 @@ use bedrock_addon::families::server_config::{
 };
 use bytes::Bytes;
 
-use crate::ReadError;
 use crate::read::read_optional;
+use crate::{HostIoError, HostOp, ReadError};
 
 /// Reads a server's `config/` folder and parses it with the pure `ScriptConfig::parse`.
 ///
@@ -46,7 +46,7 @@ pub fn read_script_config_files(
     let entries = match fs::read_dir(dir) {
         Ok(entries) => entries,
         Err(source) if source.kind() == ErrorKind::NotFound => return Ok(files),
-        Err(source) => return Err(ReadError::io(dir, source)),
+        Err(source) => return Err(HostIoError::new(HostOp::List, dir, source).into()),
     };
     let mut file = |folder: Option<&str>, path: &Path, name: &str| -> Option<Bytes> {
         match fs::read(path.join(name)) {
@@ -64,7 +64,9 @@ pub fn read_script_config_files(
     };
     let mut folders = Vec::new();
     for entry in entries {
-        let path = entry.map_err(|source| ReadError::io(dir, source))?.path();
+        let path = entry
+            .map_err(|source| HostIoError::new(HostOp::List, dir, source))?
+            .path();
         // `metadata` follows a link; an entry that vanished or cannot be looked at is no
         // folder.
         if !fs::metadata(&path).is_ok_and(|metadata| metadata.is_dir()) {
