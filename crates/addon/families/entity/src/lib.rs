@@ -43,6 +43,7 @@ mod game_schema;
 pub use dynamic::DESCRIPTORS;
 pub mod goal;
 pub mod history;
+pub mod links;
 mod molang;
 #[cfg(feature = "nbt")]
 mod network;
@@ -56,8 +57,6 @@ mod write;
 #[cfg(feature = "nbt")]
 #[cfg_attr(docsrs, doc(cfg(feature = "nbt")))]
 pub use network::actor_identifiers;
-#[doc(hidden)]
-pub use write::component as component_json;
 
 pub use entity_types::EntityTypes as EntityTypesOf;
 pub use types::{

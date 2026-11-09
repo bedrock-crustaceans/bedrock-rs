@@ -8,8 +8,8 @@ use std::collections::HashSet;
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::Id;
 
-use super::table::POIS;
 use super::walk::Entities;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
@@ -17,8 +17,8 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
     // document.
     // A tag only a type names is a leaf tag.
     let mut carried: Option<HashSet<&str>> = None;
-    entities.each(POIS, &mut |component, at, value| {
-        let Some(name) = super::name(value) else {
+    entities.each(ReferenceKind::Poi, &mut |definition, at, found| {
+        let Reference::Poi(name) = found.reference else {
             return;
         };
         let Target::Missing(hint) = cx.poi_type(&Id::parse(name)) else {
@@ -38,7 +38,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
         if carried.contains(name) {
             return;
         }
-        let at = At::new(component.origin, at, Severity::Info);
+        let at = At::new(definition.origin, at, Severity::Info);
         out.push(unresolved(at, kinds::POI_TYPE, name, hint));
     });
 }

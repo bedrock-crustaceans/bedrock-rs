@@ -1,7 +1,7 @@
 //! Which members of an entity's components hold a reference: one table per kind of target,
-//! each row a component key and a member pattern (`walk::members`: keys joined by `.`, `[]`
-//! after a key for "each element, or the member itself when it is no array", `*` for every
-//! member of an object).
+//! each row a component key and a member pattern (the pattern language of
+//! `references::members`: keys joined by `.`, `[]` after a key for "each
+//! element, or the member itself when it is no array", `*` for each member that is an object).
 //!
 //! The rows are the members of the game's entity components whose value names a definition,
 //! with the nesting the game's own entity files show for them; a member the game also reads
@@ -13,7 +13,6 @@ pub(super) type Row = (&'static str, &'static str);
 
 /// Members that hold a list of block names: plain strings, which the game reads as
 /// names (no `{name, states}` and no `{tags}` can stand there; the typed read refuses one).
-#[cfg(feature = "block")]
 pub(super) const BLOCK_NAMES: &[Row] = &[
     ("minecraft:behavior.raid_garden", "blocks[]"),
     ("minecraft:home", "home_block_list[]"),
@@ -21,7 +20,6 @@ pub(super) const BLOCK_NAMES: &[Row] = &[
 
 /// Members that hold a block descriptor (a name, `{name, states}` or `{tags}`), one or a
 /// list.
-#[cfg(feature = "block")]
 pub(super) const BLOCKS: &[Row] = &[
     ("minecraft:behavior.lay_egg", "egg_type"),
     ("minecraft:behavior.lay_egg", "target_blocks[]"),
@@ -85,7 +83,6 @@ pub(super) const BLOCKS: &[Row] = &[
 
 /// Goal members that name blocks and that the game reads as item descriptors (every
 /// block has an item of its name): a name that is a block or an item resolves.
-#[cfg(feature = "block")]
 pub(super) const BLOCKS_AS_ITEMS: &[Row] = &[
     ("minecraft:behavior.avoid_block", "target_blocks[]"),
     ("minecraft:behavior.jump_to_block", "forbidden_blocks[]"),
@@ -94,7 +91,6 @@ pub(super) const BLOCKS_AS_ITEMS: &[Row] = &[
 ];
 
 /// Members that hold a loot table path.
-#[cfg(feature = "loot")]
 pub(super) const LOOT_TABLES: &[Row] = &[
     ("minecraft:barter", "barter_table"),
     ("minecraft:behavior.drop_item_for", "loot_table"),
@@ -108,7 +104,6 @@ pub(super) const LOOT_TABLES: &[Row] = &[
 ];
 
 /// Members that hold a trade table path.
-#[cfg(feature = "trade")]
 pub(super) const TRADE_TABLES: &[Row] = &[
     ("minecraft:economy_trade_table", "table"),
     ("minecraft:trade_table", "table"),
@@ -150,7 +145,6 @@ pub(super) const BREEDS_WITH: Row = ("minecraft:breedable", "breeds_with");
 /// (`{item}`, `{name}`, `{item_tag}`, `{tags}`), one or a list. An entry object of a
 /// component the game reads at run time (`{"item": …, "result_item": …}`) reads as the
 /// descriptor of its `item`; its other item members have rows of their own.
-#[cfg(feature = "item")]
 pub(super) const ITEMS: &[Row] = &[
     ("minecraft:ageable", "drop_items[]"),
     ("minecraft:ageable", "feedItems[]"),
@@ -237,7 +231,6 @@ pub(super) const SOUNDS: &[Row] = &[
 ];
 
 /// Members that hold a particle: a particle type of the game or a particle effect.
-#[cfg(feature = "particle")]
 pub(super) const PARTICLES: &[Row] = &[
     ("minecraft:explode", "particle_effect"),
     (
@@ -253,7 +246,6 @@ pub(super) const PARTICLES: &[Row] = &[
 ];
 
 /// Members that hold the name of a point of interest (a type or a tag).
-#[cfg(feature = "poi")]
 pub(super) const POIS: &[Row] = &[
     (
         "minecraft:memory_sensor.find_nearest_poi",

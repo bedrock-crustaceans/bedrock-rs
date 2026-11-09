@@ -5,15 +5,15 @@
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::Id;
 
-use super::table::TRADE_TABLES;
 use super::walk::Entities;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     // The trade tables the load could not read, gathered on the first miss.
     let mut files = None;
-    entities.each(TRADE_TABLES, &mut |component, at, value| {
-        let Some(path) = super::name(value) else {
+    entities.each(ReferenceKind::TradeTable, &mut |definition, at, found| {
+        let Reference::TradeTable(path) = found.reference else {
             return;
         };
         if let Target::Missing(hint) = cx.trade_table(&Id::parse(path)) {
@@ -24,7 +24,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
             {
                 return;
             }
-            let at = At::new(component.origin, at, Severity::Info);
+            let at = At::new(definition.origin, at, Severity::Info);
             out.push(unresolved(at, kinds::TRADE_TABLE, path, hint));
         }
     });

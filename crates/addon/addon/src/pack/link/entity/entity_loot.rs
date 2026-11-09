@@ -2,8 +2,8 @@
 //! written and looks the file up when it rolls the table, saying nothing of a missing one.
 use bedrock_addon_core::diagnostic::Severity;
 
-use super::table::LOOT_TABLES;
 use super::walk::Entities;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
@@ -12,8 +12,8 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
     }
     // The loot tables the load could not read, in lower case, gathered on the first miss.
     let mut files = None;
-    entities.each(LOOT_TABLES, &mut |component, at, value| {
-        let Some(path) = super::name(value) else {
+    entities.each(ReferenceKind::LootTable, &mut |definition, at, found| {
+        let Reference::LootTable(path) = found.reference else {
             return;
         };
         // The path's normalisation is the loot lookup's.
@@ -28,7 +28,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
             if files.contains(&file) || files.contains(&format!("{file}.json")) {
                 return;
             }
-            let at = At::new(component.origin, at, Severity::Info);
+            let at = At::new(definition.origin, at, Severity::Info);
             out.push(unresolved(at, kinds::LOOT_TABLE, path, None));
         }
     });

@@ -7,9 +7,6 @@
 #[cfg(feature = "block")]
 mod eat_block_link;
 
-#[path = "entity/descriptors.rs"]
-mod descriptors;
-
 #[path = "common/responder.rs"]
 mod responder;
 

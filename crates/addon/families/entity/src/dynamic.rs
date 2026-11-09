@@ -45,9 +45,9 @@ const TAGS: MolangFieldSpec = MolangFieldSpec::KEPT.tags();
 /// element, or the member itself when it is no array"). A descriptor is a name or an object;
 /// the object may be an entry whose `item` is the descriptor.
 ///
-/// They are the rows of the link pass's tables of block and item members whose component is
+/// They are the rows of the reference tables of block and item members whose component is
 /// kept as JSON (`BLOCKS`, `BLOCKS_AS_ITEMS` and `ITEMS` in
-/// `crates/addon/addon/src/pack/link/entity/table.rs`); a test holds the two lists to each other.
+/// `links/table.rs`); a test holds the two lists to each other.
 /// The game's own files write a `tags` at two of them (`navigation.walk` `blocks_to_avoid[]`,
 /// `behavior.tempt` `items[]`), and the rule is the same for all.
 #[doc(hidden)]

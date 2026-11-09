@@ -218,8 +218,7 @@ fn nodes(
     events: &HashSet<&str>,
     cx: &mut ValidateCx<'_>,
 ) {
-    let mut pending = vec![(at, root)];
-    while let Some((at, node)) = pending.pop() {
+    for (at, node) in event_nodes(root, at) {
         let Some(object) = node.as_object() else {
             continue;
         };
@@ -234,16 +233,31 @@ fn nodes(
                 }
             }
         }
+    }
+}
+
+/// The event node `root` (at `at`) and the nodes nested in its `sequence`, `randomize` and
+/// `first_valid`, each with its path, in document order. A node that is no object is none.
+pub(crate) fn event_nodes(root: &Value, at: JsonPath) -> Vec<(JsonPath, &Value)> {
+    let mut out = Vec::new();
+    // A stack of the nodes still to visit: an event's nesting is the file's, not the stack's.
+    let mut pending = vec![(at, root)];
+    while let Some((at, node)) = pending.pop() {
+        if !node.is_object() {
+            continue;
+        }
         let mut nested = Vec::new();
         for (key, list) in event::children(node).lists {
             let list_at = at.child(key);
             for (index, node) in list.iter().enumerate() {
-                let node_at = list_at.index(index);
-                nested.push((node_at, node));
+                nested.push((list_at.index(index), node));
             }
         }
+        out.push((at, node));
+        // Document order: the first nested node is visited next.
         pending.extend(nested.into_iter().rev());
     }
+    out
 }
 
 /// E5 on one trigger at `at`: a bare event name, or an object whose target is the entity
@@ -376,8 +390,16 @@ fn older_members(filters: &Value, at: &JsonPath, cx: &mut ValidateCx<'_>) {
 }
 
 /// Calls `found` with every value `pattern` names below `value` (which is at `at`), with its
-/// path.
-fn members(value: &Value, pattern: &str, at: &JsonPath, found: &mut dyn FnMut(JsonPath, &Value)) {
+/// path. A pattern is member keys joined by `.`; a key followed by `[]` names each element of
+/// the member when it is an array and the member itself when it is not (the game reads one or
+/// a list there); `*` names each member of an object that is itself an object (the values of a
+/// map); the empty pattern names `value`.
+pub(crate) fn members<'v>(
+    value: &'v Value,
+    pattern: &str,
+    at: &JsonPath,
+    found: &mut dyn FnMut(JsonPath, &'v Value),
+) {
     if pattern.is_empty() {
         found(at.clone(), value);
         return;

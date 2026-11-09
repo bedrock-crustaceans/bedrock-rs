@@ -1,9 +1,9 @@
 //! The link rules of the entity group: entity and spawn references.
 //!
-//! The rules over an entity's components read them as JSON in the newest format's shape
-//! ([`walk`]) and find the members that hold a reference through one table per kind of
-//! target ([`table`]): a row is a component key and a member pattern. The findings of one
-//! rule are in document order; within one component, in the order of the rule's table.
+//! The rules over an entity's components read the members the entity family names as
+//! references of each kind of target (`Entity::references`, gathered once per pass in
+//! [`walk`]) and judge each name. The findings of one rule are in document order; within one
+//! component, in the order of the family's table for the kind.
 
 #[cfg(all(
     feature = "entity",
@@ -31,8 +31,6 @@ mod spawn;
 mod spawn_block;
 #[cfg(all(feature = "spawn_rules", feature = "entity"))]
 mod spawn_entity;
-#[cfg(feature = "entity")]
-mod table;
 #[cfg(all(test, feature = "entity"))]
 mod tests;
 #[cfg(feature = "entity")]
@@ -64,16 +62,6 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
     spawn_entity::run(cx, out);
     #[cfg(not(any(feature = "entity", all(feature = "spawn_rules", feature = "block"))))]
     let _ = (cx, out);
-}
-
-/// The name a member holds: its string, unless it is empty (an empty name names nothing: it
-/// is what a member that was not written reads as).
-#[cfg(feature = "entity")]
-fn name(value: &bedrock_addon_core::json::Value) -> Option<&str> {
-    value
-        .as_string()
-        .map(facet_value::VString::as_str)
-        .filter(|name| !name.is_empty())
 }
 
 /// Whether the paths [`unread`] gives are folded to lower case.

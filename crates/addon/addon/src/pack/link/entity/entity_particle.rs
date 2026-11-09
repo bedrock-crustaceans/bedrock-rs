@@ -8,33 +8,22 @@ use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::id::Id;
 
-use super::table::PARTICLES;
-use super::walk::{Entities, members};
+use super::walk::Entities;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
-/// The component whose member holds an effect name, not a particle type.
-const EXPLODE: &str = "minecraft:explode";
-
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
-    entities.each(PARTICLES, &mut |component, at, value| {
-        if let Some(name) = super::name(value) {
-            let effect = component.key == EXPLODE;
-            particle(cx, out, component.origin, at, name, effect);
+    entities.each(ReferenceKind::Particle, &mut |definition, at, found| {
+        if let Reference::Particle { name, effect } = found.reference {
+            particle(cx, out, definition.origin, at, name, effect);
         }
     });
     // The event response `emit_particle`, in an event's body or in any node nested in it.
-    for node in &entities.events {
-        members(
-            node.json,
-            "emit_particle.particle",
-            &node.at,
-            &mut |at, value| {
-                if let Some(name) = super::name(value) {
-                    particle(cx, out, node.origin, at, name, true);
-                }
-            },
-        );
-    }
+    entities.emitted_particles(&mut |definition, found| {
+        if let Reference::Particle { name, effect } = found.reference {
+            particle(cx, out, definition.origin, found.at.clone(), name, effect);
+        }
+    });
 }
 
 /// One particle name; `effect` when the member holds an effect name the client spawns an

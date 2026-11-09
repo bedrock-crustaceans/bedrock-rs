@@ -3,10 +3,10 @@ use bedrock_addon_core::diagnostic::{JsonPath, JsonPathSegment, Kind, Severity, 
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 
-use super::table::{BLOCK_NAMES, BLOCKS, BLOCKS_AS_ITEMS};
 use super::walk::{Entities, sections};
 use crate::families::entity::goal::EatBlock;
 use crate::families::entity::goal::convert::eat_block_pairs;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
 /// The key of the goal.
@@ -27,28 +27,27 @@ const STATE_NOT_OF_BLOCK: &str = "Block of type '{}' does not have the state '{}
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
     eat_block(cx, out, entities);
     // One walk for both tables: the findings of a document are in its components' order.
-    let rows = [BLOCKS, BLOCK_NAMES].concat();
-    entities.each(&rows, &mut |component, at, value| {
-        if BLOCK_NAMES.iter().any(|(key, _)| *key == component.key) {
-            // A name of a list of names; what is no string there, the load has refused. The
-            // game binds the members of `home` and of the `raid_garden` goal as names, not as
-            // deferred descriptors, and logs no line for a name it lacks: the game writes no
-            // content-log line for this, so the crate reports it as an information.
-            let Some(name) = value.as_string() else {
+    entities.each(ReferenceKind::Block, &mut |definition, at, found| {
+        let descriptor = match &found.reference {
+            Reference::Block(descriptor) => descriptor,
+            Reference::BlockName(name) => {
+                // A name of a list of names. The game binds the members of `home` and of the
+                // `raid_garden` goal as names, not as deferred descriptors, and logs no line for a
+                // name it lacks: the game writes no content-log line for this, so the crate
+                // reports it as an information.
+                let descriptor = BlockDescriptor::block(name.clone());
+                let member = Member {
+                    origin: definition.origin,
+                    path: &at,
+                    severity: Severity::Info,
+                    validator: None,
+                    states: States::Lint,
+                };
+                block_descriptor(cx, out, &descriptor, member);
                 return;
-            };
-            let descriptor = BlockDescriptor::block(BlockId::parse(name.as_str()));
-            let member = Member {
-                origin: component.origin,
-                path: &at,
-                severity: Severity::Info,
-                validator: None,
-                states: States::Lint,
-            };
-            block_descriptor(cx, out, &descriptor, member);
-            return;
-        }
-        let descriptor = BlockDescriptor::from(value.clone());
+            }
+            _ => return,
+        };
         if let BlockDescriptor::Block { name, object, .. } = &descriptor
             && let Target::Missing(hint) = cx.block(name)
         {
@@ -57,28 +56,30 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
                 path.push("name");
             }
             let text = sentence(UNKNOWN_BLOCK, &[name.as_str().to_owned()]);
-            let place = At::new(component.origin, path, Severity::Error).with_text(text);
+            let place = At::new(definition.origin, path, Severity::Error).with_text(text);
             out.push(unresolved(place, kinds::BLOCK, name.as_str(), hint).into_kept());
             return;
         }
-        let states = if component.key == INSIDE_BLOCK_NOTIFIER {
+        let states = if found.component == INSIDE_BLOCK_NOTIFIER {
             States::Kept(STATE_NOT_OF_BLOCK)
         } else {
             // A state is the crate's own check: an information.
             States::Lint
         };
         let member = Member {
-            origin: component.origin,
+            origin: definition.origin,
             path: &at,
             // A name nothing defines was told above; no other path reads this.
             severity: Severity::Error,
             validator: None,
             states,
         };
-        block_descriptor(cx, out, &descriptor, member);
+        block_descriptor(cx, out, descriptor, member);
     });
-    entities.each(BLOCKS_AS_ITEMS, &mut |component, at, value| {
-        block_as_item(cx, out, component.origin, at, value);
+    entities.each(ReferenceKind::BlockAsItem, &mut |definition, at, found| {
+        if let Reference::BlockAsItem(descriptor) = &found.reference {
+            block_as_item(cx, out, definition.origin, at, descriptor);
+        }
     });
 }
 
@@ -157,20 +158,20 @@ fn block_as_item(
     out: &mut Findings,
     origin: &bedrock_addon_core::document::Origin,
     at: JsonPath,
-    value: &bedrock_addon_core::json::Value,
+    descriptor: &ItemDescriptor,
 ) {
     #[cfg(feature = "item")]
     {
         use bedrock_addon_shared_shapes::ItemDescriptorForm;
         let mut at = at;
-        let ItemDescriptor::Item { id, form, .. } = ItemDescriptor::from(value.clone()) else {
+        let ItemDescriptor::Item { id, form, .. } = descriptor else {
             return;
         };
         let block = BlockId::parse(id.as_str());
         let Target::Missing(hint) = cx.block(&block) else {
             return;
         };
-        if !cx.item(&id).is_missing() {
+        if !cx.item(id).is_missing() {
             return;
         }
         match form {
@@ -181,6 +182,4 @@ fn block_as_item(
         let at = At::new(origin, at, Severity::Info);
         out.push(unresolved(at, kinds::BLOCK, id.as_str(), hint));
     }
-    #[cfg(not(feature = "item"))]
-    let _ = ItemDescriptor::from(value.clone());
 }

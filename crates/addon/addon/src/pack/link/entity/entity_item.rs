@@ -5,29 +5,29 @@ use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_shared_shapes::{ItemDescriptor, ItemDescriptorForm};
 
-use super::table::ITEMS;
 use super::walk::Entities;
+use crate::families::entity::links::{Reference, ReferenceKind};
 use crate::pack::link::prelude::*;
 
 pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) {
-    entities.each(ITEMS, &mut |component, at, value| {
-        if value
-            .as_string()
-            .is_some_and(|name| name.as_str().is_empty())
-        {
+    entities.each(ReferenceKind::Item, &mut |definition, at, found| {
+        let Reference::Item {
+            descriptor,
+            or_item_tag,
+        } = &found.reference
+        else {
             return;
-        }
-        let descriptor = ItemDescriptor::from(value.clone());
-        let ItemDescriptor::Item { id, form, .. } = &descriptor else {
+        };
+        let ItemDescriptor::Item { id, form, .. } = descriptor else {
             // An item tag (the shared resolver's lint) or a tag expression (the game's).
             let member = Member {
-                origin: component.origin,
+                origin: definition.origin,
                 path: &at,
                 severity: Severity::Info,
                 validator: None,
                 states: States::Lint,
             };
-            item_descriptor(cx, out, &descriptor, member);
+            item_descriptor(cx, out, descriptor, member);
             return;
         };
         // The member's own normalisation: the legacy `name:aux` of an entity file
@@ -41,9 +41,9 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
         if crate::vanilla::names::is_entity_file_only_item(&canonical(&looked_up)) {
             return;
         }
-        if (component.key, *form) == SHAREABLE {
-            // An item or an item tag: without a host the game's tags are not known, so a
-            // name that is neither here is a lint.
+        if *or_item_tag {
+            // An item or an item tag (`shareables.items[].item`): without a host the game's
+            // tags are not known, so a name that is neither here is a lint.
             if !cx.item_tag(id.as_str()).is_missing() || !cx.lints() {
                 return;
             }
@@ -54,14 +54,10 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, entities: &Entities<'_>) 
             ItemDescriptorForm::Name => at.push("name"),
             _ => {}
         }
-        let at = At::new(component.origin, at, Severity::Info);
+        let at = At::new(definition.origin, at, Severity::Info);
         out.push(unresolved(at, kinds::ITEM, id.as_str(), hint));
     });
 }
-
-/// `minecraft:shareables.items[].item`: an item or an item tag (the game's own fox shares
-/// `minecraft:is_food`, its sulfur cube twelve `minecraft:sulfur_cube_archetype_…` tags).
-const SHAREABLE: (&str, ItemDescriptorForm) = ("minecraft:shareables", ItemDescriptorForm::Item);
 
 /// The name of a legacy `name:aux` item text without a namespace (`bucket:0` → `bucket`):
 /// one `:` followed by digits alone. `None` for any other text (`ns:name`, `ns:name:aux`,
