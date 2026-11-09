@@ -5,15 +5,15 @@
 //!
 //! The families are registered once, in the list of `list.rs`; the modules here expand from it.
 
-// The exceptions: the glue that names a family by hand rather than through the list, one line
-// each, lands with the list's last consumer.
+// The glue that names a family by hand rather than through the list is listed, one line each,
+// in the module doc of `list.rs`.
 
 mod list;
 pub(crate) use list::with_families;
 
 /// The re-export of each family's module, and under test the feature names in list order.
 macro_rules! reexports {
-    ($($feature:literal $name:ident = $krate:ident $(:: $module:ident)* { $($body:tt)* })*) => {
+    ($($feature:literal $name:ident = $krate:ident $(:: $module:ident)* { $($body:tt)* } $(lookups { $($lookups:tt)* })?)*) => {
         $(
             #[cfg(feature = $feature)]
             #[cfg_attr(docsrs, doc(cfg(feature = $feature)))]

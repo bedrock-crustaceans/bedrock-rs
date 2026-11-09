@@ -853,7 +853,7 @@ macro_rules! family_accessors {
                 = $loader:path, $(keys = $keys:path, key_of = $key_of:path,)?
                 collection = $variant:ident, side = $side:ident;
         )*
-    })*) => {
+    } $(lookups { $($lookups:tt)* })?)*) => {
         accessors! {
             $($(
                 $(#[doc = $doc])*

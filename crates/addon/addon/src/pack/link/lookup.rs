@@ -95,6 +95,7 @@ use uuid::Uuid;
 #[cfg(any(feature = "material", feature = "texture_atlas"))]
 use super::Findings;
 use super::LinkCx;
+use crate::families::with_families;
 
 /// The names of the target kinds, as a finding's `DiagnosticDetail::Reference::kind` has them:
 /// `Kind::NAME` of each identifier kind a lookup resolves, and the names of the targets that
@@ -436,6 +437,10 @@ macro_rules! lookups {
             pub(super) special: Special<'a>,
         }
 
+        /// The name of every lookup of the table, compiled in or not, in table order.
+        #[cfg(test)]
+        const LOOKUPS: &[&str] = &[$(stringify!($name)),*];
+
         impl<'a> LinkCx<'a> {
             $(
                 $(#[doc = $doc])+
@@ -461,201 +466,31 @@ macro_rules! lookups {
     (@game $names:ident, game) => { $names.with_vanilla() };
 }
 
-lookups! {
-    /// A block: a custom block of the behaviour stack, one of the game's, or a name of an
-    /// older version the game still answers to
-    /// ([`LEGACY_BLOCK_NAMES`](crate::vanilla::names::LEGACY_BLOCK_NAMES), with any host).
-    #[cfg(feature = "block")]
-    block, block_names: Block [game] + is_legacy_block_name = |set| registered(set.behavior.blocks());
-
-    /// The `blocks.json` entry of a block, on the resource stack.
-    #[cfg(feature = "blocks_json")]
-    client_block, client_block_names: Block = |set| registered(set.resource.client_blocks());
-
-    /// A voxel shape of the behaviour stack.
-    #[cfg(feature = "voxel_shape")]
-    voxel_shape, voxel_shape_names: VoxelShape = |set| registered(set.behavior.voxel_shapes());
-
-    /// The culling rules of a block geometry, on the resource stack: compared as written.
-    #[cfg(feature = "block_culling")]
-    culling_rules, culling_rules_names: CullingRules = |set| registered(set.resource.block_culling());
-
-    /// An item a behaviour pack defines or one of the game's, by the definitions alone: no
-    /// block item and no legacy name (the rules ask [`LinkCx::item`]).
-    #[cfg(feature = "item")]
-    item_definition, item_names: Item [game] = |set| registered(set.behavior.items());
-
-    /// An entity of the behaviour stack, one of the game's, or one of the game's that no
-    /// file defines ([`FILELESS_ENTITIES`](crate::vanilla::names::FILELESS_ENTITIES), with any
-    /// host); an `<event>` suffix is not part of the name.
-    #[cfg(feature = "entity")]
-    entity, entity_names: Entity [game] + is_fileless_entity = |set| registered(set.behavior.entities());
-
-    /// The client entity of an entity, on the resource stack.
-    #[cfg(feature = "client_entity")]
-    client_entity, client_entity_names: Entity [game] = |set| registered(set.resource.client_entities());
-
-    /// The spawn rules of an entity.
-    #[cfg(feature = "spawn_rules")]
-    spawn_rules, spawn_rules_names: SpawnRules = |set| registered(set.behavior.spawn_rules());
-
-    /// A biome of the behaviour stack or one of the game's.
-    #[cfg(feature = "biome")]
-    biome, biome_names: Biome [game] = |set| registered(set.behavior.biomes());
-
-    /// A world-generation feature: one of the behaviour stack (its packs' and the app
-    /// data's), or one the game registers in code
-    /// ([`CODE_FEATURES`](crate::vanilla::names::CODE_FEATURES)).
-    #[cfg(feature = "feature")]
-    feature, feature_names: Feature [game] = |set| registered(set.behavior.features());
-
-    /// A jigsaw template pool.
-    #[cfg(feature = "jigsaw")]
-    template_pool, template_pool_names: TemplatePool = |set| registered(&set.behavior.jigsaw().pools);
-
-    /// A jigsaw processor list.
-    #[cfg(feature = "jigsaw")]
-    processor_list, processor_list_names: ProcessorList = |set| registered(&set.behavior.jigsaw().processors);
-
-    /// A jigsaw structure of the stack or a structure feature of the game.
-    #[cfg(feature = "jigsaw")]
-    jigsaw_structure, jigsaw_structure_names: JigsawStructure [game] = |set| registered(&set.behavior.jigsaw().structures);
-
-    /// A jigsaw structure set.
-    #[cfg(feature = "jigsaw")]
-    structure_set, structure_set_names: StructureSet = |set| registered(&set.behavior.jigsaw().structure_sets);
-
-    /// A dimension of the stack or one of the game's.
-    #[cfg(feature = "dimension")]
-    dimension, dimension_names: Dimension [game] = |set| registered(set.behavior.dimensions());
-
-    /// A structure, as `/structure load` names it: `structures/<namespace>/<name>.mcstructure`,
-    /// a file directly in `structures/` being `mystructure:<name>`.
-    #[cfg(feature = "structure")]
-    structure, structure_names: Structure = |set| set.behavior.structures().iter().filter_map(|(path, document)| {
-        Some((crate::families::structure::Structure::id_of(path)?, document.origin()))
-    });
-
-    /// A trade table, by its path in the pack (`trading/economy_trades/farmer_trades.json`).
-    #[cfg(feature = "trade")]
-    trade_table, trade_table_names: TradeTable = |set| set.behavior.trade_tables().iter().map(|(path, document)| {
-        (Id::parse(path.as_str()), document.origin())
-    });
-
-    /// A function, by its path under `functions/` without the extension.
-    #[cfg(feature = "function")]
-    function, function_names: Function = |set| registered(set.behavior.functions());
-
-    /// A camera preset of the stack or one of the game's.
-    #[cfg(feature = "camera")]
-    camera_preset, camera_preset_names: CameraPreset [game] = |set| registered(&set.behavior.cameras().presets);
-
-    /// An aim-assist preset.
-    #[cfg(feature = "aim_assist")]
-    aim_assist_preset, aim_assist_preset_names: AimAssistPreset = |set| registered(&set.behavior.aim_assist().presets);
-
-    /// An aim-assist category.
-    #[cfg(feature = "aim_assist")]
-    aim_assist_category, aim_assist_category_names: AimAssistCategory = |set| registered(&set.behavior.aim_assist().categories);
-
-    /// A point-of-interest type.
-    #[cfg(feature = "poi")]
-    poi_type, poi_type_names: PoiType = |set| registered(&set.behavior.poi().types);
-
-    /// A point-of-interest tag that has a tag document.
-    #[cfg(feature = "poi")]
-    poi_tag, poi_tag_names: PoiTag = |set| registered(&set.behavior.poi().tags);
-
-    /// A behaviour tree.
-    #[cfg(feature = "behavior_tree")]
-    behavior_tree, behavior_tree_names: BehaviorTree = |set| registered(set.behavior.behavior_trees());
-
-    /// A geometry of the resource stack. Compared without ASCII case, as the identifier kind
-    /// compares: a reference that differs from the definition only in case resolves.
-    #[cfg(feature = "geometry")]
-    geometry, geometry_names: Geometry = |set| registered(set.resource.geometries());
-
-    /// A render controller of the resource stack. Compared without ASCII case, as the
-    /// identifier kind compares; a controller the game registered under a name its lower-cased
-    /// references never reach (`CaseFoldingDisabled`) resolves here all the same.
-    #[cfg(feature = "render_controller")]
-    render_controller, render_controller_names: RenderController = |set| registered(set.resource.render_controllers());
-
-    /// Fog settings.
-    #[cfg(feature = "fog")]
-    fog, fog_names: Fog = |set| registered(set.resource.fogs());
-
-    /// Deferred lighting settings.
-    #[cfg(feature = "deferred_settings")]
-    lighting_settings, lighting_settings_names: LightingSettings = |set| registered(&set.resource.deferred_settings().lighting);
-
-    /// Deferred water settings.
-    #[cfg(feature = "deferred_settings")]
-    water_settings, water_settings_names: WaterSettings = |set| registered(&set.resource.deferred_settings().water);
-
-    /// Deferred atmosphere settings.
-    #[cfg(feature = "deferred_settings")]
-    atmosphere_settings, atmosphere_settings_names: AtmosphereSettings = |set| registered(&set.resource.deferred_settings().atmosphere);
-
-    /// Deferred colour-grading settings.
-    #[cfg(feature = "deferred_settings")]
-    color_grading_settings, color_grading_settings_names: ColorGradingSettings = |set| registered(&set.resource.deferred_settings().color_grading);
-
-    /// Deferred cubemap settings.
-    #[cfg(feature = "deferred_settings")]
-    cubemap_settings, cubemap_settings_names: CubemapSettings = |set| registered(&set.resource.deferred_settings().cubemaps);
-
-    /// A particle effect of the resource stack: read from `rp.particles()` alone (the pass
-    /// needs no provider line for it).
-    #[cfg(feature = "particle")]
-    particle, particle_names: Particle = |set| registered(set.resource.particles());
-
-    /// A behaviour-pack animation (`animation.…`).
-    #[cfg(feature = "animation")]
-    behavior_animation, behavior_animation_names: Animation = |set| registered(set.behavior.animations());
-
-    /// A behaviour-pack animation controller (`controller.animation.…`).
-    #[cfg(feature = "animation_controller")]
-    behavior_animation_controller, behavior_animation_controller_names: Animation = |set| registered(set.behavior.animation_controllers());
-
-    /// A resource-pack animation (`animation.…`).
-    #[cfg(feature = "animation")]
-    client_animation, client_animation_names: Animation = |set| registered(set.resource.animations());
-
-    /// A resource-pack animation controller (`controller.animation.…`).
-    #[cfg(feature = "animation_controller")]
-    client_animation_controller, client_animation_controller_names: Animation = |set| registered(set.resource.animation_controllers());
-
-    /// A tile of the terrain atlas (`textures/terrain_texture.json`), compared as written; the
-    /// near miss of a missing key is the key of the same atlas that differs only in case.
-    #[cfg(feature = "texture_atlas")]
-    terrain_atlas_key, terrain_atlas_names: AtlasTexture = |set| {
-        let atlas = &set.resource.texture_atlases().terrain_atlas;
-        atlas.value().texture_data.iter().flatten().filter_map(move |(key, _)| Some((key.clone(), atlas.origin(key)?)))
-    };
-
-    /// A tile of the item atlas (`textures/item_texture.json`), compared as written; the near
-    /// miss of a missing key is the key of the same atlas that differs only in case.
-    #[cfg(feature = "texture_atlas")]
-    item_atlas_key, item_atlas_names: AtlasTexture = |set| {
-        let atlas = &set.resource.texture_atlases().item_atlas;
-        atlas.value().texture_data.iter().flatten().filter_map(move |(key, _)| Some((key.clone(), atlas.origin(key)?)))
-    };
-
-    /// A sound event of the merged `sound_definitions.json`, compared as written.
-    #[cfg(feature = "sound_definitions")]
-    sound_definition, sound_definition_names: SoundEvent = |set| {
-        let definitions = set.resource.sound_definitions();
-        definitions.value().sound_definitions.keys().filter_map(move |name| Some((name.clone(), definitions.origin(name)?)))
-    };
-
-    /// A music definition of the merged `music_definitions.json`.
-    #[cfg(feature = "music")]
-    music_definition, music_definition_names: MusicDefinition = |set| {
-        let music = set.resource.music();
-        music.value().definitions.keys().filter_map(move |name| Some((name.clone(), music.origin(name)?)))
+/// The `lookups { … }` blocks of the family list, each entry behind its family's feature, as one
+/// `lookups!` table.
+macro_rules! family_lookups {
+    ($($family:literal $module:ident = $krate:ident $(:: $path:ident)* { $($accessors:tt)* }
+        $(lookups {
+            $(
+                $(#[doc = $doc:literal])+
+                $name:ident, $names:ident: $kind:ident $([$game:ident])? $(+ $legacy:ident)?
+                    = |$set:ident| $build:expr;
+            )*
+        })?
+    )*) => {
+        lookups! {
+            $($($(
+                $(#[doc = $doc])+
+                #[cfg(feature = $family)]
+                $name, $names: $kind $([$game])? $(+ $legacy)? = |$set| $build;
+            )*)?)*
+        }
     };
 }
+
+// The lookup table: the `lookups` blocks of the family list. A new identifier kind adds its
+// entry to its family's group in `families/list.rs`.
+with_families!(family_lookups);
 
 /// The caches of the lookups that are not one collection by identifier.
 #[derive(Debug, Default)]
@@ -1435,5 +1270,66 @@ impl<'a> LinkCx<'a> {
             .packs()
             .chain(set.resource.packs())
             .find(|pack| pack.id().uuid == uuid)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LOOKUPS;
+
+    #[test]
+    fn the_lookup_table_holds_every_identifier_lookup() {
+        let mut listed = LOOKUPS.to_vec();
+        listed.sort_unstable();
+        let before = listed.len();
+        listed.dedup();
+        assert_eq!(listed.len(), before, "a lookup is listed twice");
+        assert_eq!(
+            listed,
+            [
+                "aim_assist_category",
+                "aim_assist_preset",
+                "atmosphere_settings",
+                "behavior_animation",
+                "behavior_animation_controller",
+                "behavior_tree",
+                "biome",
+                "block",
+                "camera_preset",
+                "client_animation",
+                "client_animation_controller",
+                "client_block",
+                "client_entity",
+                "color_grading_settings",
+                "cubemap_settings",
+                "culling_rules",
+                "dimension",
+                "entity",
+                "feature",
+                "fog",
+                "function",
+                "geometry",
+                "item_atlas_key",
+                "item_definition",
+                "jigsaw_structure",
+                "lighting_settings",
+                "music_definition",
+                "particle",
+                "poi_tag",
+                "poi_type",
+                "processor_list",
+                "render_controller",
+                "sound_definition",
+                "spawn_rules",
+                "structure",
+                "structure_set",
+                "template_pool",
+                "terrain_atlas_key",
+                "trade_table",
+                "voxel_shape",
+                "water_settings",
+            ],
+            "the identifier lookups differ from the table's"
+        );
     }
 }
