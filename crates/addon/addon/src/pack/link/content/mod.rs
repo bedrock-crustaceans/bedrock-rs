@@ -1,8 +1,9 @@
 //! The link rules of the behaviour-pack content: block, item, loot, trade, recipe, catalogue and
 //! trim references.
 //!
-//! One file per pair of modules, the first being the module that holds the reference; a rule
-//! is one function per row, called from [`run`] in the order of the rows. The
+//! One file per pair of modules, the first being the module that holds the reference, listed
+//! once with `rules!` and its needs; a rule is one function per row, and [`run`] calls them in
+//! the order of the rows. The
 //! rows that are not link rows (checked at load, at run time or not at all) have no rule
 //! here: their tests are in `tests/link/content`.
 

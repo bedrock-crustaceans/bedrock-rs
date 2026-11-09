@@ -13,6 +13,9 @@
 //! Both blocks are rendered from one reading of the tree and written in one rename, so the
 //! dependency line and the feature line of a family arrive together: cargo loads every member's
 //! manifest, and a feature naming a missing `dep:` would stop every cargo command, this one too.
+//! That is also the order an author keeps: a new family crate first, then this command, then
+//! (if needed) its feature line moved into the hand block and the command again; to remove a
+//! family, delete its generated lines by hand, then the crate, then run the command.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;

@@ -49,8 +49,10 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Fold {
     /// The paths as the load has them.
+    #[cfg(feature = "trade")]
     Keep,
     /// The paths in lower case.
+    #[cfg(feature = "loot")]
     Lower,
 }
 
@@ -84,7 +86,9 @@ fn unread(
                 .is_some_and(|rest| rest.starts_with('/'))
         })
         .map(|path| match fold {
+            #[cfg(feature = "loot")]
             Fold::Lower => path.as_str().to_lowercase(),
+            #[cfg(feature = "trade")]
             Fold::Keep => path.as_str().to_owned(),
         })
         .collect()

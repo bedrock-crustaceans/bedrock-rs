@@ -494,10 +494,6 @@ const KNOWN_OUTSIDE: &[(&str, &str)] = &[
     ),
     (
         "bedrock_addon",
-        "tests/entity/descriptors.rs: ../../../families/entity/src/component/mod.rs",
-    ),
-    (
-        "bedrock_addon",
         "tests/feature.rs: ../../families/feature/tests/feature/common.rs",
     ),
     (

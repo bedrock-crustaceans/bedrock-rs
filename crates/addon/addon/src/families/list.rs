@@ -16,6 +16,18 @@
 //! order of `ENTRIES`, which is the order a stack loads and reports in
 //! (`entries_keep_the_accessor_order` pins it). The families with no accessor stand at the end.
 //!
+//! Adding a family, in this order: create its crate under `crates/addon/families/` (the
+//! workspace glob picks it up); run `cargo xtask addon-features`, which writes its dependency
+//! line and feature line into the generated blocks of this crate's `Cargo.toml` together (a
+//! feature line written by hand before that names a `dep:` cargo cannot find and locks every
+//! cargo command out, `cargo xtask` included); if the family's feature must pull in more than
+//! its own crate, move its line into the hand block above the markers and rerun the generator;
+//! then write its group here. Removing one is the mirror: delete its lines from the generated
+//! blocks by hand first, then the crate, then rerun. The `accessors!` muncher behind the
+//! accessor lines takes about two recursion levels per line and the 58 lines stand near the
+//! compiler's default limit of 128 (`pack/stack/accessors.rs` says how near): a few more lines
+//! bring back `#![recursion_limit]` on the crate.
+//!
 //! The glue names a few families by hand rather than through the list, and no `Family` hook
 //! fits any of them: the trait is about reading one document of a version chain, and these are
 //! facts of a pack, of the game's data or of two families together. Each stays where it is:
@@ -35,6 +47,9 @@
 //!   identifier.
 //! - The `structure` lookup's entry calls `structure::Structure::id_of` to name a file by the
 //!   identifier `/structure load` gives it.
+//! - `providers!` (`pack/stack/accessors.rs`) names the families whose definitions other
+//!   collections ask about by kind (block, item, function): a second small hand list, until an
+//!   accessor line can carry that flag.
 
 /// Hands the family list to `$consumer`: `with_families!(m)` expands to
 /// `m! { $( "feature" module = crate_path { … } $(lookups { … })? )* }`, one group per family in

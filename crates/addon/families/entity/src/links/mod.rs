@@ -71,6 +71,7 @@ impl ReferenceKind {
 
 /// One member that holds a reference.
 #[derive(Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct Referenced<'a> {
     /// The key of the component that holds the member (`minecraft:loot`), or `emit_particle`
     /// for the response of an event node.
@@ -82,8 +83,9 @@ pub struct Referenced<'a> {
     pub reference: Reference<'a>,
 }
 
-/// What a member names, read the way the game reads that member. A name is never empty: an
-/// empty name is what a member that was not written reads as, and names nothing.
+/// What a member names, read the way the game reads that member. A name is never empty, a
+/// [`Reference::BlockName`]'s apart: an empty name is what a member that was not written reads
+/// as, and names nothing.
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Reference<'a> {

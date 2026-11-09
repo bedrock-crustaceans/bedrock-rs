@@ -237,7 +237,7 @@ mod item {
 #[test]
 fn t1_without_the_item_feature_nothing_is_told() {
     let table = trades(r#"[{"item": "demo:none"}]"#, r#"[{"item": "demo:none"}]"#);
-    let found = linked(&[(FILE, &table)], LoadOptions::default(), &NO_LINTS);
+    let found = linked(&[(FILE, &table)], LoadOptions::default(), NO_LINTS);
     assert_eq!(found.iter().map(said_of).collect::<Vec<_>>(), []);
 }
 

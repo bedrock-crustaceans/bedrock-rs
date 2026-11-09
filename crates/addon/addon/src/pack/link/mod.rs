@@ -6,11 +6,15 @@
 //! The frame is here: the context of one pass ([`LinkCx`]) with one lookup per kind of target,
 //! the resolvers of the shared descriptor types, the constructors of the findings and the sink
 //! they go into ([`Findings`]). The rules are in six group modules, one per rule package, each
-//! with one `run(&LinkCx, &mut Findings)`; inside a group a rule relating the modules `a`
-//! and `b` is the file `<a>_<b>.rs` under `#[cfg(all(feature = "a", feature = "b"))]`, `a`
-//! being the module that holds the reference (a pair inside one module is `<a>.rs` under
-//! `#[cfg(feature = "a")]`), so that with either feature off the rule does not run and
-//! nothing is reported.
+//! with one `run(&LinkCx, &mut Findings)`. A group lists its rule files once with `rules!`
+//! (`rules.rs`), each with the features it needs, and the macro derives the `cfg` of the module
+//! and of every entry that runs it, so that with a needed feature off the rule does not run and
+//! nothing is reported. A rule relating the modules `a` and `b` is the file `<a>_<b>.rs`, `a`
+//! being the module that holds the reference (a pair inside one module is `<a>.rs`); every word
+//! of a rule file's name is one of its needs, with a few words standing for a set of families
+//! (`entity` for the entity and client entity families, `item` also for attachables, `user`,
+//! `render`, `sound`, `text`, `texture`, `ui`: the table is `WORDS` in `rules.rs`, and the test
+//! `every_rule_needs_only_features_the_crate_has_and_its_name_says` enforces it).
 //!
 //! No rule reads the arguments of a Molang expression: a reference carried as the argument
 //! of a query (`q.block_state('s')`, `q.property('p')`, `q.had_component_group('g')`, the

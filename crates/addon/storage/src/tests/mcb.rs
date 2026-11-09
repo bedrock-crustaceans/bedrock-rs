@@ -138,6 +138,7 @@ mod writer {
         let nested =
             |depth: usize| (0..depth).fold(McbValue::Null, |inner, _| McbValue::Array(vec![inner]));
         assert!(write_json(&nested(127)).is_ok());
+        assert!(write_json(&nested(128)).is_ok());
         assert!(matches!(
             write_json(&nested(129)),
             Err(StorageError::Mcb {

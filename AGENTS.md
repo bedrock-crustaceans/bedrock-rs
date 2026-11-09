@@ -139,7 +139,9 @@ pass; report which ran. `bedrock_addon` is sans-IO by convention: no file, threa
 `std`. The workspace `clippy.toml` keeps every facet-json call behind `core`'s `json` door. The tables
 under `core/src/vanilla/generated/`, `vanilla/src/generated/`, `families/script/src/meta/generated/` and the entity
 schema tables are generator output (`cargo xtask script-meta`, `actor-types`,
-`entity-schemas`): change `xtask/` and regenerate, never edit by hand. The test that
+`entity-schemas`): change `xtask/` and regenerate, never edit by hand. So are the family blocks
+between the marker comments of `crates/addon/addon/Cargo.toml` (`cargo xtask addon-features`,
+whose check test fails when they are stale). The test that
 regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a release tag from
 `$BEDROCK_ADDON_CORPUS/bedrock-samples`.
 

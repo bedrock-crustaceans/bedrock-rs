@@ -387,6 +387,10 @@ fn every_completion_order_gives_the_same_report_and_collections() {
 ///
 /// An identifier alone is no proof: a file that is refused names its identifier in the
 /// finding's text. `document` asks for the registry entry, `<identifier>: Document {`.
+#[allow(
+    clippy::vec_init_then_push,
+    reason = "every push is behind its family's feature; with few on, the lint sees a plain list"
+)]
 fn gated() -> Vec<(&'static str, String)> {
     // The entry of `identifier` in a registry's `Debug`, as a stack's `Debug` holds it (the
     // text of a string literal: the quotes are escaped).

@@ -38,7 +38,9 @@
 //! of the block needs those too, on top of its own (`entity_block` needs `entity` and
 //! `block`). The block's one run is a function of `cx` and `out` alone. Under the block's
 //! needs it builds the state with the path called on `cx` and calls each entry as
-//! `module::function(cx, out, &entities)`, in the order written.
+//! `module::function(cx, out, &entities)`, in the order written. The block's own needs are a
+//! plain list of at least one feature (no `any[..]`, not empty), and the block holds one run,
+//! written without a parameter list.
 //!
 //! For each module the macro also defines a macro of the module's name: `name! { .. }` is
 //! its argument under the module's needs, for a group that calls a rule by hand. Under
@@ -243,7 +245,7 @@ mod tests {
     type Needs = &'static [(&'static str, &'static [&'static str])];
 
     /// The groups whose rules are listed with `rules!`, each with the needs table the macro
-    /// emits for it.
+    /// emits for it. A hand list: a new group joins it here, or its needs go unchecked.
     const GROUPS: &[(&str, Needs)] = &[
         ("content", crate::pack::link::content::NEEDS),
         ("entity", crate::pack::link::entity::NEEDS),
@@ -352,11 +354,5 @@ mod tests {
             }
         }
         assert_eq!(wrong, [""; 0], "rule modules whose needs and name disagree");
-        let listed: Vec<&str> = GROUPS.iter().map(|(group, _)| *group).collect();
-        assert_eq!(
-            listed,
-            ["content", "entity", "resource", "visual", "world"],
-            "the groups whose rules! emits a needs table"
-        );
     }
 }

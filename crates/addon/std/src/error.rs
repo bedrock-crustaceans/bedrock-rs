@@ -72,7 +72,7 @@ impl fmt::Display for HostOp {
         f.write_str(match self {
             HostOp::Read => "read",
             HostOp::List => "list",
-            HostOp::Metadata => "inspect",
+            HostOp::Metadata => "read the metadata of",
             HostOp::CreateDir => "create directory",
             HostOp::Write => "write",
             HostOp::Rename => "rename",
@@ -126,7 +126,7 @@ pub enum ReadError {
         /// The host path.
         path: PathBuf,
     },
-    /// A file's name, read as a pack path, breaks a path rule (a `:` or a control character).
+    /// A file's name, read as a pack path, breaks a pack-path rule; `source` says which.
     #[error("{path} is not a valid pack path")]
     NotAPackPath {
         /// The host path.
