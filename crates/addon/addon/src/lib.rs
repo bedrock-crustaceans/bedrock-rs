@@ -196,11 +196,11 @@ pub use bedrock_addon_core::versioning;
 #[doc(inline)]
 pub use bedrock_addon_shared_visual as visual;
 
+/// One module per game document family, each behind the feature of its name.
+// First, so the family list it defines comes before the modules that expand it.
+pub mod families;
 pub mod load;
 pub mod pack;
 pub mod storage;
 #[cfg(test)]
 use bedrock_addon_core::test_cost;
-
-/// One module per game document family, each behind the feature of its name.
-pub mod families;

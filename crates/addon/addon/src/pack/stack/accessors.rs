@@ -1,8 +1,9 @@
-//! The one list of stack accessors. The macro invocation at the bottom names every accessor
-//! once; it expands to the cache fields (behind each feature), the accessor methods on
-//! `PackStack`, the `load::Collection` enum and the table the `StackLoader` drives.
+//! The stack accessors. The family list (`families/list.rs`) names every accessor once, in its
+//! family's group; `family_accessors!` hands its lines, each with its family's feature, to
+//! `accessors!`, which expands them to the cache fields (behind each feature), the accessor
+//! methods on `PackStack`, the `load::Collection` enum and the table the `StackLoader` drives.
 //!
-//! An accessor line reads
+//! An accessor line, as `accessors!` takes it, reads
 //! `blocks: Registry<Block> = block::LOADER, collection = Blocks, feature = "block", side = Behavior;`:
 //! the method name and the collection it returns, the module's loader (a
 //! `const LOADER: load::CollectionLoader<C, P>`, the per-collection loader), the
@@ -33,7 +34,7 @@
 //!
 //! The list is expanded one line at a time (a recursive macro), and each line costs two levels
 //! of the crate's recursion limit (`@munch` takes the line to `@line`, which hands the rest back
-//! to `@munch`). The 58 lines here take some 120 levels; `lib.rs` sets
+//! to `@munch`). The 58 lines of the family list take some 120 levels; `lib.rs` sets
 //! `recursion_limit = "512"`, room for about 250.
 
 use std::fmt;
@@ -46,6 +47,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
 
 use super::{PackStack, Side, read_item, walk_items};
+use crate::families::with_families;
 use crate::pack::stack::{Erased, Loaded};
 // What the accessor lines name: the document collections and the family modules, which
 // are whichever families the features compile in.
@@ -840,244 +842,33 @@ macro_rules! accessors {
     };
 }
 
-// The accessor list: one line per accessor. A new family adds its line here.
-accessors! {
-    /// The custom blocks of the behaviour packs (`blocks/**/*.json`), the higher pack's
-    /// definition winning.
-    blocks: Registry<block::Block> = block::LOADER, collection = Blocks, feature = "block", side = Behavior;
-
-    /// The items of the behaviour packs (`items/`), by identifier, the higher pack's
-    /// definition winning.
-    items: Registry<item::Item> = item::LOADER, collection = Items, feature = "item", side = Behavior;
-
-    /// The crafting item catalogue of the behaviour stack
-    /// (`item_catalog/crafting_item_catalog.json`): the topmost vanilla behaviour pack's file
-    /// and every file above it, merged bottom-up into the four creative categories.
-    crafting_catalog: Merged<crafting_catalog::CraftingCatalog> = crafting_catalog::LOADER, collection = CraftingCatalog, feature = "crafting_catalog", side = Behavior;
-
-    /// The entity definitions of the behaviour packs (`entities/`), by identifier, the higher
-    /// pack's definition winning.
-    entities: Registry<entity::Entity> = entity::LOADER, collection = Entities, feature = "entity", side = Behavior;
-
-    /// The server biomes of the behaviour packs (`biomes/`), by identifier, the higher pack's
-    /// definition winning; beta documents are in its `beta()` registry.
-    biomes: Registry<biome::Biome> = biome::LOADER, collection = Biomes, feature = "biome", side = Behavior;
-
-    /// The client biomes of the resource packs (`biomes/**/*.json`), by biome: the highest
-    /// pack's document claims its identifier; beta documents are in its `beta()` registry.
-    client_biomes: Registry<client_biome::ClientBiome> = client_biome::LOADER, collection = ClientBiomes, feature = "client_biome", side = Resource;
-
-    /// The legacy client-biome settings (`biomes_client.json` of every resource pack that
-    /// takes part), merged lowest pack first; base-game packs take no part from world
-    /// base-game version 1.21.40.
-    legacy_client_biomes: Merged<biomes_client::LegacyClientBiomes, RawLayer> = biomes_client::LOADER, collection = LegacyClientBiomes, feature = "biomes_client", side = Resource;
-    /// The spawn rules of the behaviour packs (`spawn_rules/**/*.json`), by entity, the higher
-    /// pack's definition winning.
-    spawn_rules: Registry<spawn_rules::SpawnRules> = spawn_rules::LOADER, collection = SpawnRules, feature = "spawn_rules", side = Behavior;
-
-    /// The raid spawn groups of the app data (`definitions/spawn_groups/*.json`; never from a
-    /// pack), by identifier.
-    spawn_groups: Registry<spawn_groups::SpawnGroup> = spawn_groups::LOADER, collection = SpawnGroups, feature = "spawn_groups", side = Behavior;
-
-    /// The features of the behaviour stack (`features/**/*.json` and the app's
-    /// `definitions/features`), by identifier, the highest-priority definition winning.
-    features: Registry<feature::Feature> = feature::LOADER, collection = Features, feature = "feature", side = Behavior;
-
-    /// The jigsaw documents of the behaviour packs (`worldgen/{structures, template_pools,
-    /// structure_sets, processors}/**/*.json` and `worldgen/metadata/*.dat`), by identifier
-    /// (metadata by path), the higher pack's definition winning.
-    jigsaw: jigsaw::Jigsaw = jigsaw::LOADER, collection = Jigsaw, feature = "jigsaw", side = Behavior;
-
-    /// The recipes of the behaviour packs (`recipes/**/*.json`): one registry per recipe
-    /// namespace, the higher pack's valid recipe winning.
-    recipes: recipe::Recipes = recipe::LOADER, collection = Recipes, feature = "recipe", side = Behavior;
-
-    /// The animations of the stack's packs (`animations/**/*.json`), by identifier
-    /// (`animation.<name>`, lower-cased), the higher pack's animation winning.
-    animations: Registry<animation::Animation> = animation::LOADER, collection = Animations, feature = "animation", side = Both;
-
-    /// The animation controllers of the stack's packs (`animation_controllers/*.json`), by
-    /// identifier (`controller.animation.<name>`, lower-cased), the higher pack's controller
-    /// winning.
-    animation_controllers: Registry<animation_controller::AnimationController> = animation_controller::LOADER, collection = AnimationControllers, feature = "animation_controller", side = Both;
-    /// The feature rules of the behaviour packs (`feature_rules/`) and of the app data, one
-    /// registry per placement pass, the higher pack's rule winning per pass and identifier.
-    feature_rules: feature_rules::FeatureRules = feature_rules::LOADER, collection = FeatureRules, feature = "feature_rules", side = Behavior;
-
-    /// The dimension documents of the behaviour packs (`dimensions/*.json`), by identifier, the
-    /// lowest pack's definition winning (vanilla keeps the first file it walks).
-    dimensions: Registry<dimension::Dimension> = dimension::LOADER, collection = Dimensions, feature = "dimension", side = Behavior;
-
-    /// The points of interest of the behaviour packs (`poi/**/*.json`, with the `poi`
-    /// experiment): the POI types, the definition loaded last winning, and the tag documents,
-    /// unioned per identifier.
-    poi: poi::Poi = poi::LOADER, collection = Poi, feature = "poi", side = Behavior;
-    /// The NPC dialogue scenes of the behaviour packs (`dialogue/**/*.json`), by scene tag, the
-    /// lowest-priority pack's scene winning.
-    dialogue: Registry<dialogue::DialogueScene> = dialogue::LOADER, collection = Dialogue, feature = "dialogue", side = Behavior;
-    /// The trade tables of the behaviour packs (`trading/**/*.json`), by path, the top pack's
-    /// copy winning.
-    trade_tables: Files<trade::TradeTable> = trade::LOADER, collection = TradeTables, feature = "trade", side = Behavior;
-    /// The structure files of the behaviour packs (`structures/**/*.mcstructure`), by path
-    /// (`Structure::find` looks one up by identifier); a copy that fails to load falls through
-    /// to the next pack's.
-    structures: Files<structure::Structure> = structure::LOADER, collection = Structures, feature = "structure", side = Behavior;
-
-    /// The loot tables of the behaviour packs (`loot_tables/**/*.json`), by path, the top
-    /// pack's copy winning.
-    loot_tables: Files<loot::LootTable> = loot::LOADER, collection = LootTables, feature = "loot", side = Behavior;
-
-    /// The functions of the behaviour packs (`functions/**/*.mcfunction`), by name, the higher
-    /// pack's function winning.
-    functions: Registry<function::Function> = function::LOADER, collection = Functions, feature = "function", side = Behavior;
-
-    /// The functions that run every tick (`functions/tick.json` of every behaviour pack), in
-    /// run order: the lowest-priority pack's entries first.
-    tick_functions: Merged<function::TickList> = function::TICK_LOADER, collection = TickFunctions, feature = "function", side = Behavior;
-
-    /// The languages of the stack's packs (`texts/languages.json`, `texts/language_names.json`):
-    /// the union of the listed codes, lowest pack first, and the highest pack's name per code.
-    languages: Merged<languages::Languages> = languages::LOADER, collection = Languages, feature = "languages", side = Both;
-
-    /// The translations of one listed language (`texts/<code>.lang` of every pack), the
-    /// highest pack's value winning per key; `None` for a code no `languages.json` lists.
-    translations[language: lang::Language]: Merged<lang::Translations> = lang::LOADER, keys = listed_languages, key_of = lang::language_of, collection = Translations, feature = "lang", side = Both;
-
-    /// The script files of the stack's packs (`scripts/**/*.js`), one bundle per pack that has
-    /// a script module (`script` in a behaviour pack, `client_script` in a resource pack) or
-    /// any file below `scripts/`, the highest pack first. A bundle is its pack's alone: no
-    /// import crosses packs.
-    scripts: [script::ScriptBundle] = script::LOADER, collection = Scripts, feature = "script", side = Both;
-
-    /// The automation behavior trees of the behaviour packs (`behavior_trees/**/*.json`) and
-    /// the nine trees built into the game, by `minecraft:name`: the higher pack's tree wins,
-    /// and a built-in tree replaces a pack tree of its name.
-    behavior_trees: Registry<behavior_tree::BehaviorTree> = behavior_tree::LOADER, collection = BehaviorTrees, feature = "behavior_tree", side = Behavior;
-    /// The voxel shapes of the behaviour packs (`shapes/**/*.json`), by identifier, the higher
-    /// pack's shape winning (vanilla binds an identifier to the shape it loads last).
-    voxel_shapes: Registry<voxel_shape::VoxelShape> = voxel_shape::LOADER, collection = VoxelShapes, feature = "voxel_shape", side = Behavior;
-
-    /// The geometries of the resource packs (`models/mobs.json`, `models/entity/**/*.json`,
-    /// `models/blocks/**/*.json`), by identifier (`geometry.<name>`, compared without case),
-    /// the higher pack's geometry winning.
-    geometries: Registry<geometry::Geometry> = geometry::LOADER, collection = Geometries, feature = "geometry", side = Resource;
-    /// The camera documents of the behaviour packs (`cameras/{presets, lists, splines}/`):
-    /// presets and lists by identifier, the higher pack's winning, and every spline file.
-    cameras: camera::Cameras = camera::LOADER, collection = Cameras, feature = "camera", side = Behavior;
-
-    /// The aim-assist documents of the behaviour packs (`aim_assist/{presets, categories}/`):
-    /// presets by identifier and categories by name, the higher pack's winning.
-    aim_assist: aim_assist::AimAssist = aim_assist::LOADER, collection = AimAssist, feature = "aim_assist", side = Behavior;
-    /// The sound definitions of the resource packs (`sounds/sound_definitions.json`): the sound
-    /// events and the audio each plays, merged across the stack as JSON.
-    sound_definitions: Merged<sound_definitions::SoundDefinitions, RawLayer> = sound_definitions::LOADER, collection = SoundDefinitions, feature = "sound_definitions", side = Resource;
-
-    /// The event bindings of the resource packs (`sounds.json`): which sound event each game
-    /// event plays, merged across the stack as JSON.
-    sounds_json: Merged<sounds_json::SoundBindings, RawLayer> = sounds_json::LOADER, collection = SoundsJson, feature = "sounds_json", side = Resource;
-
-    /// The music of the resource packs (`sounds/music_definitions.json`): the music of each
-    /// situation, merged across the stack as JSON.
-    music: Merged<music::MusicDefinitions, RawLayer> = music::LOADER, collection = Music, feature = "music", side = Resource;
-
-    /// The audio files under `sounds/` of the resource packs, as sound names resolve to them.
-    sound_files: sound_file::SoundFiles = sound_file::LOADER, collection = SoundFiles, feature = "sound_file", side = Resource;
-
-    /// The server's definitions of the sound events the behaviour packs declare
-    /// (`sounds/sound_definitions.json`, beta), by sound event name; the lowest pack's
-    /// definition of a name is the one kept.
-    server_sound_definitions: Registry<server_sound_definitions::SoundMetadata> = server_sound_definitions::LOADER, collection = ServerSoundDefinitions, feature = "server_sound_definitions", side = Behavior;
-
-    /// The deferred renderer's settings of the resource packs (`lighting/`, `atmospherics/`,
-    /// `water/`, `color_grading/`, `cubemaps/`, `shadows/global.json`, `pbr/global.json`,
-    /// `local_lighting/local_lighting.json`): the identifier maps, the two single files and
-    /// the merged local lights, the higher pack's winning.
-    deferred_settings: deferred_settings::DeferredSettings = deferred_settings::LOADER, collection = DeferredSettings, feature = "deferred_settings", side = Resource;
-
-    /// The JSON UI of the resource packs: the files every pack's `ui/_ui_defs.json` lists,
-    /// each merged from the lowest pack up, the definitions they resolve to, and
-    /// `ui/_global_variables.json`.
-    ui: Merged<json_ui::UiDefinitions, RawLayer> = json_ui::LOADER, collection = Ui, feature = "json_ui", side = Resource;
-
-    /// What the client draws and plays for each block (`blocks.json` of every resource pack),
-    /// by block: the packs' entries merged field by field, a higher pack's field replacing a
-    /// lower pack's. A bare key is a vanilla block's name (`stone` is `minecraft:stone`).
-    client_blocks: Registry<blocks_json::ClientBlock> = blocks_json::LOADER, collection = ClientBlocks, feature = "blocks_json", side = Resource;
-
-    /// The culling rules of the resource packs (`block_culling/**/*.json`), by identifier, the
-    /// higher pack's document winning.
-    block_culling: Registry<block_culling::CullingRules> = block_culling::LOADER, collection = BlockCulling, feature = "block_culling", side = Resource;
-    /// The data-driven UI of the resource packs (`ddui/{root, composition}/`): roots and
-    /// compositions by identifier, the lowest pack's definition of an identifier winning.
-    data_driven_ui: ddui::DataDrivenUi = ddui::LOADER, collection = DataDrivenUi, feature = "ddui", side = Resource;
-    /// The terrain and item atlases of the resource packs (`textures/terrain_texture.json` and
-    /// `textures/item_texture.json`), each merged across the stack.
-    texture_atlases: texture_atlas::TextureAtlases = texture_atlas::LOADER, collection = TextureAtlases, feature = "texture_atlas", side = Resource;
-
-    /// The flipbooks of the resource packs (`textures/flipbook_textures.json`), merged entry
-    /// by entry from the lowest pack up.
-    flipbooks: Merged<flipbooks::Flipbooks, RawLayer> = flipbooks::LOADER, collection = Flipbooks, feature = "flipbooks", side = Resource;
-
-    /// The texture lists of the resource packs (`textures/textures_list.json`): each pack's
-    /// list, what the client does with it and the paths the packs claim for preloading.
-    texture_lists: texture_list::TextureLists = texture_list::LOADER, collection = TextureLists, feature = "texture_list", side = Resource;
-
-    /// The texture sets of the resource packs (`*.texture_set.json`), by the texture each sits
-    /// beside.
-    texture_sets: texture_set::TextureSets = texture_set::LOADER, collection = TextureSets, feature = "texture_set", side = Resource;
-
-    /// The texture files of the resource packs: which pack has which image or texture set, as
-    /// the packs list them.
-    texture_files: texture_file::TextureFiles = texture_file::LOADER, collection = TextureFiles, feature = "texture_file", side = Resource;
-    /// The splash texts of the resource packs (`splashes.json` of every pack, lowest first):
-    /// the pool the full game picks from, a copy without `canMerge: true` replacing the lower
-    /// packs' splashes.
-    splashes: Merged<splashes::Splashes> = splashes::LOADER, collection = Splashes, feature = "splashes", side = Resource;
-    /// The loading-screen tips of the resource packs (`loading_messages.json`): the highest
-    /// pack's file, whole.
-    loading_messages: Merged<loading_messages::LoadingMessages> = loading_messages::LOADER, collection = LoadingMessages, feature = "loading_messages", side = Resource;
-    /// The credits: the game's own `credits/credits.json` when the app data holds it, else
-    /// none. No pack's copy is read; a pack that carries one, another file only the game's
-    /// own data supplies, or a `persona/` folder is named in the stack's report.
-    credits: Merged<credits::Credits> = credits::LOADER, collection = Credits, feature = "credits", side = Resource;
-    /// The fonts of the resource packs: `font/font_metadata.json` and `font/emoticons.json`,
-    /// each the highest pack's file, whole, and the pack that supplies each font file.
-    fonts: font::Fonts = font::LOADER, collection = Fonts, feature = "font", side = Resource;
-    /// The side files of the UI images of the resource packs (`textures/ui/**/*.json`: a
-    /// nine-slice description or an Aseprite sheet), by path: the highest pack's copy,
-    /// whichever pack supplies the image.
-    ui_texture_infos: Files<ui_texture_info::UiTextureInfo> = ui_texture_info::LOADER, collection = UiTextureInfos, feature = "ui_texture_info", side = Resource;
-
-    /// The render controllers of the resource packs (`render_controllers/**/*.json`) by name,
-    /// the highest pack's winning; a controller that failed leaves the lower one in place.
-    render_controllers: Registry<render_controller::RenderController> = render_controller::LOADER, collection = RenderControllers, feature = "render_controller", side = Resource;
-
-    /// The fog settings of the resource packs (`fogs/*.json`) by identifier, the highest
-    /// pack's winning.
-    fogs: Registry<fog::FogSettings> = fog::LOADER, collection = Fogs, feature = "fog", side = Resource;
-
-    /// The client entities of the resource packs (`entity/**/*.json`), by identifier in lower
-    /// case: across packs the definition with the highest `description.min_engine_version`
-    /// wins, and definitions with the same one are merged, the higher pack's members last.
-    client_entities: Registry<client_entity::ClientEntity> = client_entity::LOADER, collection = ClientEntities, feature = "client_entity", side = Resource;
-    /// The atomic client entities of the resource packs (`atomic_client_entities/**/*.json`),
-    /// by their own identifiers, the higher pack's definition replacing the lower one whole.
-    atomic_client_entities: Registry<atomic_client_entity::AtomicClientEntity> = atomic_client_entity::LOADER, collection = AtomicClientEntities, feature = "atomic_client_entity", side = Resource;
-    /// The attachables of the resource packs (`attachables/**/*.json`), by identifier in lower
-    /// case: across packs the definition with the highest `description.min_engine_version`
-    /// wins, and definitions with the same one are merged, the higher pack's members last.
-    attachables: Registry<attachable::Attachable> = attachable::LOADER, collection = Attachables, feature = "attachable", side = Resource;
-
-    /// The materials of the resource packs: the list files (`materials/common.json`,
-    /// `fancy.json`, `sad.json`), every `.material` file merged over the stack, and the names
-    /// each list creates.
-    materials: material::Materials = material::LOADER, collection = Materials, feature = "material", side = Resource;
-
-    /// The particle effects of the resource packs (`particles/**/*.json`), by identifier, the
-    /// higher pack's effect winning (vanilla binds an identifier to the effect it loads
-    /// last); a file that fails to load leaves a lower pack's effect in place.
-    particles: Registry<particle::ParticleEffect> = particle::LOADER, collection = Particles, feature = "particle", side = Resource;
+/// The accessor lines of the family list ([`with_families!`]), each with its family's feature,
+/// handed to [`accessors!`] in list order.
+macro_rules! family_accessors {
+    ($($family:literal $module:ident = $krate:ident $(:: $path:ident)* {
+        $(
+            $(#[doc = $doc:literal])*
+            $name:ident $([$param:ident : $key:ty])?
+                : $([$element:ty])? $($($segment:ident)::+ $(<$($argument:ty),+>)?)?
+                = $loader:path, $(keys = $keys:path, key_of = $key_of:path,)?
+                collection = $variant:ident, side = $side:ident;
+        )*
+    })*) => {
+        accessors! {
+            $($(
+                $(#[doc = $doc])*
+                $name $([$param : $key])?
+                    : $([$element])? $($($segment)::+ $(<$($argument),+>)?)?
+                    = $loader, $(keys = $keys, key_of = $key_of,)?
+                    collection = $variant, feature = $family, side = $side;
+            )*)*
+        }
+    };
 }
+
+// The accessor list: the lines of the family list. A new family adds its lines to its group in
+// `families/list.rs`.
+with_families!(family_accessors);
 
 /// The collection that registers each identifier kind another collection's `combine` may ask
 /// the stack about (`StackCx::registered`): a `CollectionLoader::needs` entry names a kind, and

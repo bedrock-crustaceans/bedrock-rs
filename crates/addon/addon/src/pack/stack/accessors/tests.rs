@@ -195,3 +195,161 @@ fn a_both_sides_line_loads_the_same_way_on_both_sides() {
     );
     let _ = seen;
 }
+
+/// The collections under every family, in accessor order.
+#[cfg(feature = "full")]
+const ACCESSOR_ORDER: &[&str] = &[
+    "Blocks",
+    "Items",
+    "CraftingCatalog",
+    "Entities",
+    "Biomes",
+    "ClientBiomes",
+    "LegacyClientBiomes",
+    "SpawnRules",
+    "SpawnGroups",
+    "Features",
+    "Jigsaw",
+    "Recipes",
+    "Animations",
+    "AnimationControllers",
+    "FeatureRules",
+    "Dimensions",
+    "Poi",
+    "Dialogue",
+    "TradeTables",
+    "Structures",
+    "LootTables",
+    "Functions",
+    "TickFunctions",
+    "Languages",
+    "Translations",
+    "Scripts",
+    "BehaviorTrees",
+    "VoxelShapes",
+    "Geometries",
+    "Cameras",
+    "AimAssist",
+    "SoundDefinitions",
+    "SoundsJson",
+    "Music",
+    "SoundFiles",
+    "ServerSoundDefinitions",
+    "DeferredSettings",
+    "Ui",
+    "ClientBlocks",
+    "BlockCulling",
+    "DataDrivenUi",
+    "TextureAtlases",
+    "Flipbooks",
+    "TextureLists",
+    "TextureSets",
+    "TextureFiles",
+    "Splashes",
+    "LoadingMessages",
+    "Credits",
+    "Fonts",
+    "UiTextureInfos",
+    "RenderControllers",
+    "Fogs",
+    "ClientEntities",
+    "AtomicClientEntities",
+    "Attachables",
+    "Materials",
+    "Particles",
+];
+
+/// The entries under every family: one per line and side, behaviour first.
+#[cfg(feature = "full")]
+const ENTRY_ORDER: &[&str] = &[
+    "Blocks Behavior",
+    "Items Behavior",
+    "CraftingCatalog Behavior",
+    "Entities Behavior",
+    "Biomes Behavior",
+    "ClientBiomes Resource",
+    "LegacyClientBiomes Resource",
+    "SpawnRules Behavior",
+    "SpawnGroups Behavior",
+    "Features Behavior",
+    "Jigsaw Behavior",
+    "Recipes Behavior",
+    "Animations Behavior",
+    "Animations Resource",
+    "AnimationControllers Behavior",
+    "AnimationControllers Resource",
+    "FeatureRules Behavior",
+    "Dimensions Behavior",
+    "Poi Behavior",
+    "Dialogue Behavior",
+    "TradeTables Behavior",
+    "Structures Behavior",
+    "LootTables Behavior",
+    "Functions Behavior",
+    "TickFunctions Behavior",
+    "Languages Behavior",
+    "Languages Resource",
+    "Translations Behavior",
+    "Translations Resource",
+    "Scripts Behavior",
+    "Scripts Resource",
+    "BehaviorTrees Behavior",
+    "VoxelShapes Behavior",
+    "Geometries Resource",
+    "Cameras Behavior",
+    "AimAssist Behavior",
+    "SoundDefinitions Resource",
+    "SoundsJson Resource",
+    "Music Resource",
+    "SoundFiles Resource",
+    "ServerSoundDefinitions Behavior",
+    "DeferredSettings Resource",
+    "Ui Resource",
+    "ClientBlocks Resource",
+    "BlockCulling Resource",
+    "DataDrivenUi Resource",
+    "TextureAtlases Resource",
+    "Flipbooks Resource",
+    "TextureLists Resource",
+    "TextureSets Resource",
+    "TextureFiles Resource",
+    "Splashes Resource",
+    "LoadingMessages Resource",
+    "Credits Resource",
+    "Fonts Resource",
+    "UiTextureInfos Resource",
+    "RenderControllers Resource",
+    "Fogs Resource",
+    "ClientEntities Resource",
+    "AtomicClientEntities Resource",
+    "Attachables Resource",
+    "Materials Resource",
+    "Particles Resource",
+];
+
+/// The order of the accessor lines is the order a stack loads and reports in (`ENTRIES`, one
+/// entry per line and side, behaviour first): pinned, so that moving the lines cannot reorder a
+/// report.
+#[cfg(feature = "full")]
+#[test]
+fn entries_keep_the_accessor_order() {
+    let collections: Vec<String> = super::Collection::ALL
+        .iter()
+        .map(|collection| format!("{collection:?}"))
+        .collect();
+    assert_eq!(
+        collections, ACCESSOR_ORDER,
+        "the collections are in accessor order"
+    );
+    let entries: Vec<String> = super::ENTRIES
+        .iter()
+        .map(|entry| {
+            let collection = entry.collection().expect("a real entry has its collection");
+            format!("{collection:?} {:?}", entry.side())
+        })
+        .collect();
+    assert_eq!(
+        entries, ENTRY_ORDER,
+        "the entries are in accessor order, behaviour side first"
+    );
+}
