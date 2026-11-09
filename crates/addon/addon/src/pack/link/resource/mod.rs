@@ -5,21 +5,21 @@
 //! the effects and texts (particles, sounds, loading messages, fonts).
 
 // The client block data.
-#[cfg(all(feature = "block", feature = "blocks_json"))]
-mod block;
 #[cfg(all(feature = "block", feature = "block_culling"))]
 mod block_culling;
 #[cfg(all(feature = "block", feature = "block_culling", feature = "geometry"))]
-mod block_geometry;
+mod block_culling_geometry;
 #[cfg(all(feature = "blocks_json", feature = "sounds_json"))]
 mod block_sound;
-#[cfg(all(feature = "block", feature = "blocks_json", feature = "texture_atlas"))]
-mod block_texture;
 #[cfg(all(
     feature = "blocks_json",
     any(feature = "block", feature = "sounds_json")
 ))]
 mod blocks_json;
+#[cfg(all(feature = "block", feature = "blocks_json"))]
+mod blocks_json_block;
+#[cfg(all(feature = "block", feature = "blocks_json", feature = "texture_atlas"))]
+mod blocks_json_texture;
 #[cfg(any(
     all(
         feature = "block",
@@ -42,8 +42,6 @@ mod item_texture;
 mod texture_set_texture_file;
 
 // The client biomes and the render settings.
-#[cfg(all(feature = "biome", feature = "client_biome"))]
-mod biome;
 #[cfg(all(
     feature = "biome",
     feature = "client_biome",
@@ -54,6 +52,8 @@ mod biome;
 mod biome_render;
 #[cfg(all(feature = "biome", feature = "client_biome", feature = "sounds_json"))]
 mod biome_sound;
+#[cfg(all(feature = "biome", feature = "client_biome"))]
+mod client_biome_biome;
 #[cfg(all(feature = "deferred_settings", feature = "block"))]
 mod render_block;
 #[cfg(all(
@@ -105,19 +105,19 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
 fn blocks(cx: &LinkCx<'_>, out: &mut Findings) {
     let _ = (cx, &*out);
     #[cfg(all(feature = "block", feature = "blocks_json"))]
-    block::keys(cx, out);
+    blocks_json_block::keys(cx, out);
     #[cfg(all(feature = "block", feature = "blocks_json", feature = "texture_atlas"))]
-    block_texture::run(cx, out);
+    blocks_json_texture::run(cx, out);
     #[cfg(all(feature = "blocks_json", feature = "sounds_json"))]
     block_sound::run(cx, out);
     #[cfg(all(feature = "block", feature = "blocks_json"))]
-    block::exponents(cx, out);
+    blocks_json_block::exponents(cx, out);
     #[cfg(all(feature = "block", feature = "blocks_json"))]
-    block::tessellation(cx, out);
+    blocks_json_block::tessellation(cx, out);
     #[cfg(all(feature = "block", feature = "block_culling"))]
     block_culling::culling_names(cx, out);
     #[cfg(all(feature = "block", feature = "block_culling", feature = "geometry"))]
-    block_geometry::run(cx, out);
+    block_culling_geometry::run(cx, out);
     #[cfg(all(feature = "block", feature = "block_culling"))]
     block_culling::culling_layers(cx, out);
 }
@@ -141,7 +141,7 @@ fn textures(cx: &LinkCx<'_>, out: &mut Findings) {
 fn biomes(cx: &LinkCx<'_>, out: &mut Findings) {
     let _ = (cx, &*out);
     #[cfg(all(feature = "biome", feature = "client_biome"))]
-    biome::run(cx, out);
+    client_biome_biome::run(cx, out);
     #[cfg(all(
         feature = "biome",
         feature = "client_biome",
@@ -161,7 +161,7 @@ fn biomes(cx: &LinkCx<'_>, out: &mut Findings) {
     ))]
     biome_render::legacy_fogs(cx, out);
     #[cfg(all(feature = "biome", feature = "client_biome", feature = "biomes_client"))]
-    biome::water(cx, out);
+    client_biome_biome::water(cx, out);
     #[cfg(all(
         feature = "biome",
         feature = "client_biome",

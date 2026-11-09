@@ -1,8 +1,8 @@
 //! What a client entity, an attachable and an atomic client entity share: a description whose
 //! maps name materials, textures, geometries, animations, particles and sounds and whose list
 //! names render controllers. [`User`] is that description of one document, borrowed; the
-//! checks of the maps are here once, each behind the feature of its target, and the files of
-//! the pairs (`entity_render.rs`, `item_geometry.rs`, …) call them for their documents.
+//! checks of the maps are in the `user_<target>.rs` files, each behind the feature of its
+//! target, and the group's `run` calls them over each family's descriptions.
 
 #![allow(
     dead_code,

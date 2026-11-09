@@ -7,7 +7,7 @@
 
 use bedrock_addon_core::document::ComponentRef;
 
-use super::biome::{Claim, claims, path};
+use super::client_biome_biome::{Claim, claims, path};
 use crate::diagnostic::Severity;
 #[cfg(feature = "music")]
 use crate::families::client_biome::component::BiomeMusic;

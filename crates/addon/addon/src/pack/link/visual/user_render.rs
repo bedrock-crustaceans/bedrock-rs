@@ -1,5 +1,6 @@
 //! `description.materials` and `description.render_controllers` of a client entity, an
-//! attachable or an atomic client entity: each names a material or a render controller.
+//! attachable or an atomic client entity: each names a material or a render controller; and
+//! the render-controller features an atomic client entity cannot use.
 
 use bedrock_addon_core::diagnostic::{Severity, sentence};
 use bedrock_addon_core::id::{MaterialId, RenderControllerId};
@@ -136,4 +137,120 @@ pub(super) fn material_shaders(cx: &LinkCx<'_>, out: &mut Findings, user: &User<
         );
         out.push(invalid(at, kinds::MATERIAL, &name).into_kept());
     }
+}
+
+/// Each render controller an atomic client entity names, judged by what the game says of it
+/// when it draws the entity; nothing for a description of another family. A controller with
+/// a feature atomic entities do not support is skipped by the game for this entity; of one it
+/// draws, `filter_lighting` is ignored and a `light_color_multiplier` that is an expression
+/// counts as 1.
+///
+/// The three features of the game's text are read from the controller's members: an array,
+/// a `geometry`, `textures` or `materials` value that is no plain `geometry.<name>` /
+/// `texture.<name>` / `material.<name>`, or a `part_visibility` entry.
+// The mapping of the three features to the controller's members is inferred from the
+// game's text.
+#[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+pub(super) fn atomic_controllers(cx: &LinkCx<'_>, out: &mut Findings, user: &User<'_>) {
+    use bedrock_addon_core::diagnostic::Code;
+    use bedrock_addon_core::diagnostic::builders;
+    use bedrock_addon_core::diagnostic::codes as core_codes;
+    use bedrock_addon_core::molang::Molang;
+
+    if user.family != Family::Atomic {
+        return;
+    }
+    let controllers = cx.resource().render_controllers();
+    for (index, entry) in user.render_controllers.iter().enumerate() {
+        let Some(name) = entry.controller() else {
+            continue;
+        };
+        // A controller nothing defines is told by the render-controller reference rule.
+        let Some(document) = controllers.get(&RenderControllerId::parse(name.as_str())) else {
+            continue;
+        };
+        let controller = document.value();
+        let at = || {
+            let mut path = user.member("render_controllers");
+            path.push_index(index);
+            // Logged at the warning level, once when the entity is drawn: the unsupported
+            // controller, `filter_lighting` and `light_color_multiplier`: a warning.
+            At::new(user.origin, path, Severity::Warning)
+        };
+        if !atomic_compatible(controller) {
+            out.push(at().diagnostic(Code::from(
+                &core_codes::ATOMIC_UNSUPPORTED_RENDER_CONTROLLER,
+            )));
+            continue;
+        }
+        if controller.filter_lighting() {
+            out.push(at().diagnostic(Code::from(&core_codes::ATOMIC_FILTER_LIGHTING_IGNORED)));
+        }
+        if let Some(Molang::Expr(source)) = &controller.light_color_multiplier
+            && !is_constant(source)
+        {
+            out.push(at().diagnostic(builders::worded(
+                &core_codes::NO_EFFECT,
+                &core_codes::NO_EFFECT_WORDED,
+                Some("Atomic Entity - light_color_multiplier expressions are not supported."),
+            )));
+        }
+    }
+}
+
+/// Whether `controller` uses none of the features an atomic client entity cannot.
+#[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+fn atomic_compatible(controller: &crate::families::render_controller::RenderController) -> bool {
+    use bedrock_addon_core::molang::MolangSource;
+
+    let no_arrays = controller.arrays.as_ref().is_none_or(|arrays| {
+        arrays.geometries.is_empty() && arrays.materials.is_empty() && arrays.textures.is_empty()
+    });
+    let plain =
+        |source: &MolangSource, prefix| super::plain_reference(source.as_str(), prefix).is_some();
+    no_arrays
+        && controller.part_visibility.is_empty()
+        && plain(&controller.geometry, "geometry.")
+        && controller
+            .textures
+            .iter()
+            .all(|texture| plain(texture, "texture."))
+        && controller
+            .materials
+            .iter()
+            .all(|(_, material)| plain(material, "material."))
+}
+
+/// Whether the expression `source` is a number: its text is one, or it compiles to one.
+#[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+fn is_constant(source: &bedrock_addon_core::molang::MolangSource) -> bool {
+    if source.as_str().trim().parse::<f32>().is_ok() {
+        return true;
+    }
+    folds_to_a_constant(source)
+}
+
+#[cfg(all(
+    feature = "molang",
+    any(feature = "client_entity", feature = "atomic_client_entity")
+))]
+fn folds_to_a_constant(source: &bedrock_addon_core::molang::MolangSource) -> bool {
+    use bedrock_addon_core::molang::{CheckOptions, CompileOptions, Side, check};
+    let catalog = bedrock_addon_core::molang::molang::stdlib::queries(Side::Client).clone();
+    let Some(version) = source.raw_version() else {
+        return false;
+    };
+    // A rejection has no expression, nor does an expression that uses arrays or resources.
+    let options = CheckOptions::new(CompileOptions::from_raw_version(catalog, version));
+    check(source, &options)
+        .expr()
+        .is_some_and(|expression| expression.as_constant().is_some())
+}
+
+#[cfg(all(
+    not(feature = "molang"),
+    any(feature = "client_entity", feature = "atomic_client_entity")
+))]
+fn folds_to_a_constant(_: &bedrock_addon_core::molang::MolangSource) -> bool {
+    false
 }

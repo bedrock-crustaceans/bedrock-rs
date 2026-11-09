@@ -1594,7 +1594,7 @@ fn the_scan_for_path_text_sees_a_path_in_a_format() {
 fn the_library_part_of_a_file_with_an_early_test_item_is_the_rest_of_it() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     for file in [
-        "src/pack/link/resource/block.rs",
+        "src/pack/link/resource/blocks_json_block.rs",
         "../families/material/src/patch.rs",
         "src/pack/link/mod.rs",
         "../families/feature/src/lib.rs",

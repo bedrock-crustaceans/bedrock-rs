@@ -419,3 +419,144 @@ mod cost {
     /// The size of the smaller world of the three tests above.
     const COUNT: usize = 2_000;
 }
+
+/// The order of the group's findings: check by check, every client entity and atomic client
+/// entity in turn, the client entities' identifiers; then the same for the attachables and
+/// their items; then the rules from an animation and a render controller to their users.
+#[cfg(all(
+    feature = "entity",
+    feature = "attachable",
+    feature = "client_entity",
+    feature = "atomic_client_entity",
+    feature = "item",
+    feature = "render_controller",
+    feature = "material",
+    feature = "geometry",
+    feature = "animation",
+    feature = "animation_controller",
+    feature = "particle",
+    feature = "texture_atlas",
+    feature = "texture_file",
+    feature = "texture_set",
+    feature = "sound_definitions"
+))]
+mod order {
+    use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail};
+    use bedrock_addon_core::load::LoadOptions;
+
+    use crate::pack::link::tests::support::set_with;
+    use crate::pack::link::{Findings, LinkCx, LinkOptions};
+
+    const GHOST: &str = "entity/ghost.entity.json";
+    const WISP: &str = "atomic_client_entities/wisp.json";
+    const WAND: &str = "attachables/wand.json";
+    const CONTROLLERS: &str = "render_controllers/all.render_controllers.json";
+
+    /// The members every description has: one name of each kind of target that nothing
+    /// defines, a material that is no actor's, and two render controllers that exist, one
+    /// naming a slot no description has and one with an array.
+    const MEMBERS: &str = r#""materials": {"default": "mat_none", "wrong": "mat_flat"}, "textures": {"default": "textures/entity/none"}, "geometry": {"default": "geometry.none"}, "animations": {"walk": "animation.none"}, "particle_effects": {"spark": "demo:none"}, "sound_effects": {"step": "demo.none"}, "render_controllers": ["controller.render.none", "controller.render.slot", "controller.render.arrays"]"#;
+
+    #[test]
+    fn visual_findings_come_check_by_check_entities_then_attachables() {
+        let entity = format!(
+            r#"{{"format_version": "1.10.0", "minecraft:client_entity": {{"description": {{"identifier": "demo:ghost", {MEMBERS}}}}}}}"#
+        );
+        let atomic = format!(
+            r#"{{"format_version": "beta", "minecraft:atomic_client_entity": {{"description": {{"identifier": "demo:wisp", {MEMBERS}}}}}}}"#
+        );
+        let attachable = format!(
+            r#"{{"format_version": "1.10.0", "minecraft:attachable": {{"description": {{"identifier": "demo:wand", "item": "demo:wand", {MEMBERS}}}}}}}"#
+        );
+        let materials = r#"{"materials": {"version": "1.0.0", "mat_flat": {"vertexShader": "shaders/color.vertex"}}}"#;
+        let controllers = r#"{"format_version": "1.8.0", "render_controllers": {"controller.render.slot": {"geometry": "Geometry.default", "materials": [{"*": "Material.default"}], "textures": ["Texture.missing"]}, "controller.render.arrays": {"arrays": {"textures": {"Array.all": ["Texture.default"]}}, "geometry": "Geometry.default", "materials": [{"*": "Material.default"}], "textures": ["Array.all[0]"]}}}"#;
+        let set = set_with(
+            &[],
+            &[
+                (GHOST, &entity),
+                (WISP, &atomic),
+                (WAND, &attachable),
+                ("materials/entity.material", materials),
+                (
+                    "materials/fancy.json",
+                    r#"[{"path": "materials/entity.material"}]"#,
+                ),
+                (CONTROLLERS, controllers),
+            ],
+            &LoadOptions::default(),
+        );
+        let options = LinkOptions {
+            lints: true,
+            ..Default::default()
+        };
+        let cx = LinkCx::new(&set, options);
+        let mut out = Findings::new(options);
+        crate::pack::link::visual::run(&cx, &mut out);
+        let told: Vec<String> = out.finish().iter().map(told_of).collect();
+        let expected = [
+            // The render checks of the client entity and the atomic client entity: materials,
+            // the materials' shaders (none of the atomic's), render controllers, the atomic's
+            // controllers.
+            "unresolved_reference_worded | Info | ghost | materials/default | material | mat_none",
+            "unresolved_reference | Info | wisp | materials/default | material | mat_none",
+            "invalid_reference_worded | Error | ghost | materials/wrong | material | mat_flat",
+            "unresolved_reference | Info | ghost | render_controllers/0 | render controller | controller.render.none",
+            "unresolved_reference | Info | wisp | render_controllers/0 | render controller | controller.render.none",
+            "atomic_unsupported_render_controller | Warning | wisp | render_controllers/2 |  | ",
+            // Particles, geometries, animations, textures, sounds.
+            "unresolved_reference_worded | Error | ghost | particle_effects/spark | particle | demo:none",
+            "unresolved_reference | Info | wisp | particle_effects/spark | particle | demo:none",
+            "unresolved_reference | Info | ghost | geometry/default | geometry | geometry.none",
+            "unresolved_reference | Info | wisp | geometry/default | geometry | geometry.none",
+            "unresolved_reference | Info | ghost | animations/walk | animation | animation.none",
+            "unresolved_reference | Info | wisp | animations/walk | animation | animation.none",
+            "texture_not_found_worded | Warning | ghost | textures/default | texture | textures/entity/none",
+            "texture_not_found_worded | Warning | wisp | textures/default | texture | textures/entity/none",
+            "unknown_sound | Info | ghost | sound_effects/step | sound event | demo.none",
+            "unknown_sound | Info | wisp | sound_effects/step | sound event | demo.none",
+            // The client entity's identifier.
+            "unresolved_reference | Info | ghost | identifier | entity | demo:ghost",
+            // The same checks of the attachable, but no sounds: its `sound_effects` are not
+            // checked.
+            "unresolved_reference_worded | Info | wand | materials/default | material | mat_none",
+            "invalid_reference_worded | Error | wand | materials/wrong | material | mat_flat",
+            "unresolved_reference | Info | wand | render_controllers/0 | render controller | controller.render.none",
+            "unresolved_reference_worded | Error | wand | particle_effects/spark | particle | demo:none",
+            "unresolved_reference | Info | wand | geometry/default | geometry | geometry.none",
+            "unresolved_reference | Info | wand | animations/walk | animation | animation.none",
+            "texture_not_found_worded | Warning | wand | textures/default | texture | textures/entity/none",
+            // The attachable's item.
+            "unresolved_reference | Info | wand | item | item | demo:wand",
+            // From a render controller to its users.
+            "unresolved_reference | Error | controllers | render_controllers/controller.render.slot/textures/0 | texture slot | missing",
+        ];
+        assert_eq!(told, expected);
+    }
+
+    /// A finding as one line: the code's name, the severity, the file (by its stem), the
+    /// member (below the description, in a description), and the kind and name of the target.
+    fn told_of(finding: &Diagnostic) -> String {
+        let (kind, id) = match finding.detail.as_deref() {
+            Some(DiagnosticDetail::Reference { kind, id, .. }) => (*kind, id.as_str()),
+            _ => ("", ""),
+        };
+        let file = finding.location.path.as_ref().map(ToString::to_string);
+        let file = match file.as_deref() {
+            Some(GHOST) => "ghost",
+            Some(WISP) => "wisp",
+            Some(WAND) => "wand",
+            Some(CONTROLLERS) => "controllers",
+            _ => "?",
+        };
+        let path = finding.location.json_path.to_string();
+        let member = path
+            .split_once("/description/")
+            .map_or(path.as_str(), |(_, member)| member);
+        let code = finding.code.id();
+        let code = code.strip_prefix("core/").unwrap_or(code);
+        format!(
+            "{code} | {:?} | {file} | {member} | {kind} | {id}",
+            finding.severity
+        )
+    }
+}

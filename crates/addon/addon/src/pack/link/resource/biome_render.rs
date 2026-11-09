@@ -12,8 +12,8 @@ use std::collections::HashSet;
 
 use bedrock_addon_core::document::{ComponentRef, Merged, Origin, RawLayer};
 
-use super::biome::{Claim, Shadowed, claims, is_unknown, path};
-use super::biome::{overridden, own_entry};
+use super::client_biome_biome::{Claim, Shadowed, claims, is_unknown, path};
+use super::client_biome_biome::{overridden, own_entry};
 use crate::diagnostic::{Diagnostic, JsonPath, Severity, sentence};
 use crate::families::biomes_client::{LegacyClientBiome, LegacyClientBiomes};
 use crate::families::client_biome::component::{ClientBiomeComponent, FogAppearance};
@@ -448,10 +448,10 @@ mod tests {
                     set,
                     LinkOptions::default(),
                     &[
-                        crate::pack::link::resource::biome::run,
+                        crate::pack::link::resource::client_biome_biome::run,
                         super::run,
                         super::legacy_fogs,
-                        crate::pack::link::resource::biome::water,
+                        crate::pack::link::resource::client_biome_biome::water,
                         super::fog_overrides,
                     ],
                 );

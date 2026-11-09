@@ -2,12 +2,13 @@
 //!
 //! A client entity, an attachable and an atomic client entity share one description
 //! ([`user::User`]); the checks of its maps are written once per kind of target
-//! (`user_<target>.rs`) and called by the file of each pair of modules (`entity_<target>.rs`,
-//! `item_<target>.rs`). The rules that go the other way, from an animation or a render
+//! (`user_<target>.rs`), and [`run`] calls each over the descriptions of each family that can
+//! name the target. The rules that go the other way, from an animation or a render
 //! controller to the descriptions that use it, are `animation_entity.rs` and
-//! `render_user.rs` (fed by `render_entity.rs` and `render_item.rs`).
+//! `render_user.rs`.
 //!
-//! The findings come rule by rule, in the order of [`run`], and within a rule in the order of
+//! The findings come check by check, in the order of [`run`]: each check over every client
+//! and atomic client entity, then each over every attachable; within a check in the order of
 //! the documents.
 
 #[cfg(any(
@@ -74,68 +75,11 @@ mod user_texture;
 
 #[cfg(all(feature = "client_entity", feature = "entity"))]
 mod entity;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "animation",
-    feature = "animation_controller"
-))]
-mod entity_animation;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "geometry"
-))]
-mod entity_geometry;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "particle"
-))]
-mod entity_particle;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "render_controller",
-    feature = "material"
-))]
-mod entity_render;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "sound_definitions"
-))]
-mod entity_sound;
-#[cfg(all(
-    any(feature = "client_entity", feature = "atomic_client_entity"),
-    feature = "texture_atlas",
-    feature = "texture_file",
-    feature = "texture_set"
-))]
-mod entity_texture;
 
-#[cfg(all(feature = "attachable", feature = "item"))]
-mod item;
-#[cfg(all(
-    feature = "attachable",
-    feature = "animation",
-    feature = "animation_controller"
-))]
-mod item_animation;
 #[cfg(all(feature = "attachable", feature = "client_entity"))]
-mod item_entity;
-#[cfg(all(feature = "attachable", feature = "geometry"))]
-mod item_geometry;
-#[cfg(all(feature = "attachable", feature = "particle"))]
-mod item_particle;
-#[cfg(all(
-    feature = "attachable",
-    feature = "render_controller",
-    feature = "material"
-))]
-mod item_render;
-#[cfg(all(
-    feature = "attachable",
-    feature = "texture_atlas",
-    feature = "texture_file",
-    feature = "texture_set"
-))]
-mod item_texture;
+mod attachable_client_entity;
+#[cfg(all(feature = "attachable", feature = "item"))]
+mod attachable_item;
 
 #[cfg(all(
     feature = "animation",
@@ -143,18 +87,6 @@ mod item_texture;
     any(feature = "client_entity", feature = "atomic_client_entity")
 ))]
 mod animation_entity;
-#[cfg(all(
-    feature = "render_controller",
-    feature = "material",
-    any(feature = "client_entity", feature = "atomic_client_entity")
-))]
-mod render_entity;
-#[cfg(all(
-    feature = "render_controller",
-    feature = "material",
-    feature = "attachable"
-))]
-mod render_item;
 #[cfg(all(
     feature = "render_controller",
     feature = "material",
@@ -180,71 +112,18 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
     let attachables = attachables(cx);
 
     // The references of a client entity and of an atomic client entity.
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "render_controller",
-        feature = "material"
-    ))]
-    entity_render::run(cx, out, &entities);
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "particle"
-    ))]
-    entity_particle::run(cx, out, &entities);
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "geometry"
-    ))]
-    entity_geometry::run(cx, out, &entities);
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "animation",
-        feature = "animation_controller"
-    ))]
-    entity_animation::run(cx, out, &entities);
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "texture_atlas",
-        feature = "texture_file",
-        feature = "texture_set"
-    ))]
-    entity_texture::run(cx, out, &entities);
-    #[cfg(all(
-        any(feature = "client_entity", feature = "atomic_client_entity"),
-        feature = "sound_definitions"
-    ))]
-    entity_sound::run(cx, out, &entities);
+    #[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+    each(cx, out, ENTITY_CHECKS, &entities);
     #[cfg(all(feature = "client_entity", feature = "entity"))]
     entity::run(cx, out);
 
     // The references of an attachable and its identifier.
-    #[cfg(all(
-        feature = "attachable",
-        feature = "render_controller",
-        feature = "material"
-    ))]
-    item_render::run(cx, out, &attachables);
-    #[cfg(all(feature = "attachable", feature = "particle"))]
-    item_particle::run(cx, out, &attachables);
-    #[cfg(all(feature = "attachable", feature = "geometry"))]
-    item_geometry::run(cx, out, &attachables);
-    #[cfg(all(
-        feature = "attachable",
-        feature = "animation",
-        feature = "animation_controller"
-    ))]
-    item_animation::run(cx, out, &attachables);
-    #[cfg(all(
-        feature = "attachable",
-        feature = "texture_atlas",
-        feature = "texture_file",
-        feature = "texture_set"
-    ))]
-    item_texture::run(cx, out, &attachables);
+    #[cfg(feature = "attachable")]
+    each(cx, out, ATTACHABLE_CHECKS, &attachables);
     #[cfg(all(feature = "attachable", feature = "item"))]
-    item::run(cx, out);
+    attachable_item::run(cx, out);
     #[cfg(all(feature = "attachable", feature = "client_entity"))]
-    item_entity::run(cx, out);
+    attachable_client_entity::run(cx, out);
 
     // From an animation and from a render controller to the descriptions that use it.
     #[cfg(all(
@@ -264,11 +143,99 @@ pub(super) fn run(cx: &super::LinkCx<'_>, out: &mut super::Findings) {
     ))]
     {
         let mut uses = render_user::Uses::default();
+        // A client entity is a user of each render controller it names; an atomic client
+        // entity is not: its controllers are judged by what the game says when it draws the
+        // entity (`user_render::atomic_controllers`).
         #[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
-        render_entity::uses(&entities, &mut uses);
+        for user in entities
+            .iter()
+            .filter(|user| user.family == user::Family::ClientEntity)
+        {
+            uses.add(user);
+        }
         #[cfg(feature = "attachable")]
-        render_item::uses(&attachables, &mut uses);
+        for user in &attachables {
+            uses.add(user);
+        }
         render_user::run(cx, out, &uses);
+    }
+}
+
+/// A check of one description, as `user_<target>.rs` writes it.
+#[cfg(any(
+    feature = "client_entity",
+    feature = "atomic_client_entity",
+    feature = "attachable"
+))]
+type Check = fn(&super::LinkCx<'_>, &mut super::Findings, &user::User<'_>);
+
+/// The checks of a client entity and of an atomic client entity, in the order they run.
+#[cfg(any(feature = "client_entity", feature = "atomic_client_entity"))]
+const ENTITY_CHECKS: &[Check] = &[
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::materials,
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::material_shaders,
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::render_controllers,
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::atomic_controllers,
+    #[cfg(feature = "particle")]
+    user_particle::check,
+    #[cfg(feature = "geometry")]
+    user_geometry::check,
+    #[cfg(all(feature = "animation", feature = "animation_controller"))]
+    user_animation::check,
+    #[cfg(all(
+        feature = "texture_atlas",
+        feature = "texture_file",
+        feature = "texture_set"
+    ))]
+    user_texture::check,
+    #[cfg(feature = "sound_definitions")]
+    user_sound::check,
+];
+
+/// The checks of an attachable, in the order they run: those of a client entity but the
+/// atomic one and sounds (an attachable's `sound_effects` are not checked).
+#[cfg(feature = "attachable")]
+const ATTACHABLE_CHECKS: &[Check] = &[
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::materials,
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::material_shaders,
+    #[cfg(all(feature = "render_controller", feature = "material"))]
+    user_render::render_controllers,
+    #[cfg(feature = "particle")]
+    user_particle::check,
+    #[cfg(feature = "geometry")]
+    user_geometry::check,
+    #[cfg(all(feature = "animation", feature = "animation_controller"))]
+    user_animation::check,
+    #[cfg(all(
+        feature = "texture_atlas",
+        feature = "texture_file",
+        feature = "texture_set"
+    ))]
+    user_texture::check,
+];
+
+/// Each of `checks` over every one of `users`, check by check.
+#[cfg(any(
+    feature = "client_entity",
+    feature = "atomic_client_entity",
+    feature = "attachable"
+))]
+fn each(
+    cx: &super::LinkCx<'_>,
+    out: &mut super::Findings,
+    checks: &[Check],
+    users: &[user::User<'_>],
+) {
+    for check in checks {
+        for user in users {
+            check(cx, out, user);
+        }
     }
 }
 
