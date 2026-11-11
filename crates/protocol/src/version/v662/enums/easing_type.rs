@@ -1,6 +1,8 @@
 use bedrock_macros::ProtoCodec;
+use strum_macros::{Display, EnumString};
 
-#[derive(ProtoCodec, Clone, Debug)]
+#[derive(ProtoCodec, Clone, Debug, EnumString, Display)]
+#[strum(serialize_all = "snake_case")]
 #[enum_repr(u8)]
 #[repr(u8)]
 pub enum EasingType {

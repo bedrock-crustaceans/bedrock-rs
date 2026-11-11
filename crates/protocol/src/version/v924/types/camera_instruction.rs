@@ -1,4 +1,5 @@
 use crate::ProtoVersion;
+use crate::version::v662::enums::EasingType;
 use bedrock_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Clone, Debug)]
@@ -7,7 +8,8 @@ pub struct CameraInstruction<V: ProtoVersion> {
     pub clear: Option<bool>,
     pub fade: Option<FadeInstruction>,
     pub target: Option<TargetInstruction<V>>,
-    pub field_of_view: Option<FieldOfViewInstruction<V>>,
+    pub remove_target: Option<bool>,
+    pub field_of_view: Option<FieldOfViewInstruction>,
     pub spline: Option<V::CameraSplineInstruction>,
     pub attach: Option<AttachInstruction>,
     pub detach: Option<bool>,
@@ -73,12 +75,13 @@ pub struct TargetInstruction<V: ProtoVersion> {
 }
 
 #[derive(ProtoCodec, Clone, Debug)]
-pub struct FieldOfViewInstruction<V: ProtoVersion> {
+pub struct FieldOfViewInstruction {
     #[endianness(le)]
     pub field_of_view: f32,
     #[endianness(le)]
     pub ease_time: f32,
-    pub ease_type: V::EasingType,
+    #[str]
+    pub ease_type: EasingType,
     pub clear: bool,
 }
 

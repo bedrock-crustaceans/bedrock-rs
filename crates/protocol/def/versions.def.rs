@@ -627,6 +627,7 @@ versions![
     (827, "r/21_u10", "1.21.100"): {
         packets: [
             % CameraAimAssistPacket: CameraAimAssistPacket^,
+            % CameraInstructionPacket: CameraInstructionPacket^,
             % CorrectPlayerMovePredictionPacket: CorrectPlayerMovePredictionPacket^,
             % StartGamePacket: StartGamePacket^,
         ] in crate::version::v827::packets,
