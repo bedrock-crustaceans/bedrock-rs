@@ -213,7 +213,6 @@ versions![
             + BaseDescription: BaseDescription^,
             + BaseGameVersion: BaseGameVersion,
             + BlockPos: BlockPos,
-            + CameraInstruction: CameraInstruction^,
             + CameraPreset: CameraPreset,
             + CameraPresets: CameraPresets^,
             + ChunkPos: ChunkPos,
@@ -441,7 +440,6 @@ versions![
         types: [
             + FullContainerName: FullContainerName^,
             % ActorLink: ActorLink^,
-            % CameraInstruction: CameraInstruction^,
             % CameraPreset: CameraPreset,
             % ItemStackRequestSlotInfo: ItemStackRequestSlotInfo^,
             % ItemStackResponseContainerInfo: ItemStackResponseContainerInfo^,
@@ -479,6 +477,7 @@ versions![
         packets: [
             + MovementEffectPacket: MovementEffectPacket^,
             + SetMovementAuthorityPacket: SetMovementAuthorityPacket^,
+            % CameraInstructionPacket: CameraInstructionPacket^,
             % InventoryContentPacket: InventoryContentPacket^,
             % InventorySlotPacket: InventorySlotPacket^,
             % MobEffectPacket: MobEffectPacket^,
@@ -486,7 +485,6 @@ versions![
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
         ] in crate::version::v748::packets,
         types: [
-            % CameraInstruction: CameraInstruction^,
             % CameraPreset: CameraPreset,
             % ShulkerBoxRecipe: ShulkerBoxRecipe^,
         ] in crate::version::v748::types,
@@ -602,13 +600,13 @@ versions![
     (818, "r/21_u9", "1.21.90"): {
         packets: [
             + DebugDrawerPacket: DebugDrawerPacket^,
+            % CameraInstructionPacket: CameraInstructionPacket^,
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
             % SubChunkPacket: SubChunkPacket^,
             - SetMovementAuthorityPacket,
         ] in crate::version::v818::packets,
         types: [
             + DebugShape: DebugShape^,
-            % CameraInstruction: CameraInstruction^,
             % CameraPreset: CameraPreset^,
             % LevelSettings: LevelSettings^,
             % SyncedPlayerMovementSettings: SyncedPlayerMovementSettings,
@@ -633,7 +631,6 @@ versions![
         ] in crate::version::v827::packets,
         types: [
             % BiomeDefinition: BiomeDefinition^,
-            % CameraInstruction: CameraInstruction^,
         ] in crate::version::v827::types,
         enums: [
             % LevelSoundEventType: LevelSoundEventType,
@@ -662,12 +659,12 @@ versions![
         packets: [
             + GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             % AnimatePacket: AnimatePacket^,
+            % CameraInstructionPacket: CameraInstructionPacket^,
             % ShowStoreOfferPacket: ShowStoreOfferPacket^,
         ] in crate::version::v859::packets,
         types: [
             + BiomeReplacementData: BiomeReplacementData,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
-            % CameraInstruction: CameraInstruction^,
             % DebugShape: DebugShape^,
         ] in crate::version::v859::types,
         enums: [
@@ -714,6 +711,7 @@ versions![
             + ClientBoundTextureShiftPacket: ClientBoundTextureShiftPacket,
             + VoxelShapesPacket: VoxelShapesPacket,
             % BookEditPacket: BookEditPacket^,
+            % CameraInstructionPacket: CameraInstructionPacket^,
             % ClientBoundDataStorePacket: ClientBoundDataStorePacket,
             % GraphicsParameterOverridePacket: GraphicsParameterOverridePacket,
             % ServerBoundDataStorePacket: ServerBoundDataStorePacket,
@@ -726,7 +724,6 @@ versions![
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % CameraAimAssistCategory: CameraAimAssistCategory^,
             % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
-            % CameraInstruction: CameraInstruction^,
             % DebugShape: DebugShape^,
             % LevelSettings: LevelSettings^,
         ] in crate::version::v924::types,

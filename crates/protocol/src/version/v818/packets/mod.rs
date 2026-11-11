@@ -5,6 +5,7 @@ macro_rules! export {
     };
 }
 
+export!(camera_instruction);
 export!(debug_drawer);
 export!(resource_packs_info);
 export!(sub_chunk);

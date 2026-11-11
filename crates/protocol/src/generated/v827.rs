@@ -8396,7 +8396,6 @@ mod inner {
         type CameraAimAssistPresetDefinition =
             crate::version::v776::types::CameraAimAssistPresetDefinition<Self>;
         type CameraAimAssistPriority = crate::version::v766::types::CameraAimAssistPriority;
-        type CameraInstruction = crate::version::v827::types::CameraInstruction<Self>;
         type CameraPreset = crate::version::v818::types::CameraPreset<Self>;
         type CameraPresets = crate::version::v662::types::CameraPresets<Self>;
         type CameraSplineInstruction = ();

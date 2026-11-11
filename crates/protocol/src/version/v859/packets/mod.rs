@@ -6,5 +6,6 @@ macro_rules! export {
 }
 
 export!(animate);
+export!(camera_instruction);
 export!(graphics_parameter_override);
 export!(show_store_offer);

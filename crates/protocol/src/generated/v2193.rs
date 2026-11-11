@@ -9054,7 +9054,7 @@ mod inner {
         type CameraAimAssistPacket = crate::version::v827::packets::CameraAimAssistPacket<Self>;
         type CameraAimAssistPresetsPacket =
             crate::version::v800::packets::CameraAimAssistPresetsPacket<Self>;
-        type CameraInstructionPacket = crate::version::v827::packets::CameraInstructionPacket<Self>;
+        type CameraInstructionPacket = crate::version::v924::packets::CameraInstructionPacket<Self>;
         type CameraPacket = crate::version::v662::packets::CameraPacket<Self>;
         type CameraPresetsPacket = crate::version::v662::packets::CameraPresetsPacket<Self>;
         type CameraShakePacket = crate::version::v662::packets::CameraShakePacket<Self>;
@@ -9388,7 +9388,6 @@ mod inner {
         type CameraAimAssistPresetDefinition =
             crate::version::v924::types::CameraAimAssistPresetDefinition<Self>;
         type CameraAimAssistPriority = crate::version::v766::types::CameraAimAssistPriority;
-        type CameraInstruction = crate::version::v924::types::CameraInstruction<Self>;
         type CameraPreset = crate::version::v2193::types::CameraPreset<Self>;
         type CameraPresets = crate::version::v662::types::CameraPresets<Self>;
         type CameraSplineInstruction = crate::version::v944::types::CameraSplineInstruction<Self>;

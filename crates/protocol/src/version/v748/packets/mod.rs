@@ -5,6 +5,7 @@ macro_rules! export {
     };
 }
 
+export!(camera_instruction);
 export!(inventory_content);
 export!(inventory_slot);
 export!(mob_effect);

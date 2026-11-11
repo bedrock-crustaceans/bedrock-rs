@@ -7,6 +7,7 @@ macro_rules! export {
 
 export!(book_edit);
 export!(camera_aim_assist_actor_priority);
+export!(camera_instruction);
 export!(camera_spline);
 export!(client_bound_data_driven_ui_close_all_screens);
 export!(client_bound_data_driven_ui_reload);

@@ -406,7 +406,6 @@ mod inner {
         type CameraAimAssistPreset = ();
         type CameraAimAssistPresetDefinition = ();
         type CameraAimAssistPriority = ();
-        type CameraInstruction = ();
         type CameraPreset = ();
         type CameraPresets = ();
         type CameraSplineInstruction = ();

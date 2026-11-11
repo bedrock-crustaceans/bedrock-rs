@@ -1694,12 +1694,6 @@ pub trait ProtoVersionTypes {
         + Send
         + Sync
         + 'static;
-    type CameraInstruction: bedrock_protocol_core::ProtoCodec
-        + Clone
-        + std::fmt::Debug
-        + Send
-        + Sync
-        + 'static;
     type CameraPreset: bedrock_protocol_core::ProtoCodec
         + Clone
         + std::fmt::Debug

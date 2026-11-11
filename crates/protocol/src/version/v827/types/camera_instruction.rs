@@ -2,16 +2,6 @@ use crate::ProtoVersion;
 use crate::version::v662::enums::EasingType;
 use bedrock_macros::ProtoCodec;
 
-#[derive(ProtoCodec, Clone, Debug)]
-pub struct CameraInstruction<V: ProtoVersion> {
-    pub set: Option<SetInstruction<V>>,
-    pub clear: Option<bool>,
-    pub fade: Option<FadeInstruction>,
-    pub target: Option<TargetInstruction<V>>,
-    pub remove_target: Option<bool>,
-    pub field_of_view: Option<FieldOfViewInstruction>,
-}
-
 // VERIFY: SetInstruction & FadeInstruction
 
 #[derive(ProtoCodec, Clone, Debug)]
