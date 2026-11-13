@@ -8,10 +8,8 @@ use uuid::Uuid;
 
 use bedrock_addon::families::persona::PersonaPiece;
 
-use crate::common::{
-    ORDINARY_PACK, PIECE_PACK, Reversed, builtin_pack, lines, load, manifest, only, open,
-    ordinary_pack, piece_pack,
-};
+use crate::common::{ORDINARY_PACK, PIECE_PACK, lines, manifest, only};
+use crate::stacks::{Reversed, builtin_pack, load, open, ordinary_pack, piece_pack};
 
 /// A meta file of a hair piece named `hat` with `members` after its name and type.
 pub fn meta(members: &str) -> String {

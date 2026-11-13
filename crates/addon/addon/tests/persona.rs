@@ -3,7 +3,7 @@
 
 #![cfg(feature = "persona")]
 
-#[path = "persona/common.rs"]
+#[path = "../../families/persona/tests/persona/common.rs"]
 mod common;
 
 #[path = "persona/packs.rs"]
@@ -15,11 +15,8 @@ mod meta;
 #[path = "persona/files.rs"]
 mod files;
 
-#[path = "persona/write.rs"]
-mod write;
-
-#[path = "persona/vanilla.rs"]
-mod vanilla;
-
 #[path = "persona/strict.rs"]
 mod strict;
+
+#[path = "persona/stacks.rs"]
+mod stacks;

@@ -24,6 +24,7 @@ use bedrock_addon::versioning::{
 };
 
 use super::common::*;
+use super::stacks::stack;
 
 fn selects<F: Family>(version: &str) -> Selection {
     select::<F>(&FormatVersionInput::parse(version).expect("a version"))
@@ -394,7 +395,7 @@ fn a_list_naming_a_vanilla_preset_loads_without_the_vanilla_pack_but_not_an_unkn
     )]]);
     assert_eq!(stack.cameras().lists.len(), 1);
     assert!(group(stack.cameras(), Severity::Error).is_empty());
-    let stack = super::common::stack(&[&[file(
+    let stack = super::stacks::stack(&[&[file(
         "cameras/lists/l.json",
         r#"["minecraft:death_camera"]"#,
     )]]);
@@ -420,7 +421,7 @@ fn a_hosts_provider_replaces_the_vanilla_preset_names() {
             "cameras/lists/l.json",
             list_json("1.21.60", "ex:l", cameras),
         );
-        super::common::stack_with(&[&[file]], options)
+        super::stacks::stack_with(&[&[file]], options)
     };
     assert_eq!(with_host(r#"["host:cam"]"#).cameras().lists.len(), 1);
     assert!(

@@ -6,9 +6,8 @@ use bedrock_addon::families::script::{Resolution, ScriptPath};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack};
 
-use super::common::{
-    bundle_of, case_files, check, check_in, pack_of, script_manifest, script_stack, stack_of,
-};
+use super::common::{case_files, script_manifest};
+use super::stacks::{bundle_of, check, check_in, pack_of, script_stack, stack_of};
 
 /// A test named for its fixture pack.
 macro_rules! cases {

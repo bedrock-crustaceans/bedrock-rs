@@ -5,7 +5,8 @@
 
 use bedrock_addon::families::persona::PersonaPieces;
 
-use crate::common::{hat, refused_at};
+use crate::common::refused_at;
+use crate::stacks::hat;
 
 const FILE: &str = "pieces/hat/hat.meta.json";
 

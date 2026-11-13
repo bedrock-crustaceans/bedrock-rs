@@ -5,6 +5,7 @@ use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::id::{CameraListId, CameraPresetId};
 
 use super::common::*;
+use super::stacks::stack;
 
 fn id(text: &str) -> CameraPresetId {
     CameraPresetId::parse(text)

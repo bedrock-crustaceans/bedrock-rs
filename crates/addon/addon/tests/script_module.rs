@@ -4,17 +4,11 @@
 
 #![cfg(feature = "script")]
 
-#[path = "script_module/catalog.rs"]
-mod catalog;
-#[path = "script_module/common.rs"]
+#[path = "../../families/script/tests/script_module/common.rs"]
+#[allow(
+    dead_code,
+    reason = "the fixture runner is the family crate's; rules.rs, the one file here, uses part of it"
+)]
 mod common;
-#[path = "script_module/discovery.rs"]
-mod discovery;
-#[path = "script_module/resolution.rs"]
-mod resolution;
 #[path = "script_module/rules.rs"]
 mod rules;
-#[path = "script_module/small_stack.rs"]
-mod small_stack;
-#[path = "script_module/stage1.rs"]
-mod stage1;

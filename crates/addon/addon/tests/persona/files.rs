@@ -13,8 +13,9 @@ use bedrock_addon::pack::PackIdVersion;
 use bedrock_addon::storage::PackPath;
 use bytes::Bytes;
 
-use crate::common::{OfPack, PIECE_PACK, builtin_pack, hat, lines, message, only, piece_pack};
+use crate::common::{PIECE_PACK, lines, message, only};
 use crate::packs::meta;
+use crate::stacks::{OfPack, builtin_pack, hat, piece_pack};
 
 const META: &str = "pieces/hat/hat.meta.json";
 
@@ -425,7 +426,7 @@ fn pm15_m13_a_texture_resolves_with_or_without_its_extension() {
         ("hat.png", "png"),
         ("texts/en_US.lang", "persona.hat.title=Hat\n"),
     ]);
-    assert_eq!(found(&crate::common::load(&pack)).len(), 1);
+    assert_eq!(found(&crate::stacks::load(&pack)).len(), 1);
     // A name in a folder below the piece's.
     let pieces = hat(
         &meta(r#""texture_sources": [{ "texture": "sub/hat" }]"#),
@@ -564,7 +565,7 @@ fn the_pack_root_geometry_file_is_named_and_not_read() {
     assert_eq!(read, [META, "texts/en_US.lang"]);
 
     // Only that name, only at the root, only in a persona pack.
-    let elsewhere = crate::common::load(&piece_pack(&[
+    let elsewhere = crate::stacks::load(&piece_pack(&[
         (META, &meta("")),
         ("Geometry.json", "{}"),
         ("geometry.JSON", "{}"),
@@ -574,12 +575,12 @@ fn the_pack_root_geometry_file_is_named_and_not_read() {
     ]));
     assert_eq!(elsewhere.shared_geometry, None);
     assert_eq!(found(&elsewhere), Vec::<String>::new());
-    let built_in = crate::common::load(&builtin_pack(&[("geometry.json", "{}")]));
+    let built_in = crate::stacks::load(&builtin_pack(&[("geometry.json", "{}")]));
     assert_eq!(
         built_in.shared_geometry.as_ref().map(PackPath::as_str),
         Some("geometry.json")
     );
-    let ordinary = crate::common::load(&crate::common::ordinary_pack(&[("geometry.json", "{}")]));
+    let ordinary = crate::stacks::load(&crate::stacks::ordinary_pack(&[("geometry.json", "{}")]));
     assert_eq!(ordinary.shared_geometry, None);
     assert_eq!(found(&ordinary), Vec::<String>::new());
 }
@@ -781,7 +782,7 @@ fn pe01_a_built_in_emote_is_stored_under_its_piece_id() {
         ),
     ]);
     assert_eq!(pack.id().uuid, BUILTIN_PACK);
-    let pieces = crate::common::load(&pack);
+    let pieces = crate::stacks::load(&pack);
     assert_eq!(found(&pieces), Vec::<String>::new());
     assert_eq!(
         only(&pieces).animations[0].stored_name,
@@ -1138,7 +1139,7 @@ fn pe07_an_emote_s_molang_is_of_version_0() {
     assert_eq!(EMOTE_MOLANG_VERSION, MolangVersion::V0);
     let animation = r#"{ "format_version": "1.8.0", "animations": { "animation.wave": { "blend_weight": "query.is_on_screen ? 1 : 0", "anim_time_update": "query.distance_from_camera", "start_delay": "'a' + 1", "bones": { "head": { "rotation": ["math.sin(query.anim_time * 180) * 10", 0, 0] } } } } }"#;
     // The piece pack's manifest says 1.21.0.
-    let pack = crate::common::open(
+    let pack = crate::stacks::open(
         &crate::common::manifest(PIECE_PACK, "persona_piece", Some("[1, 21, 0]")),
         &[
             (
@@ -1223,7 +1224,7 @@ fn with_store(store: &str) -> PersonaPieces {
         ("textures/x.png", "png"),
         ("texts/en_US.lang", "persona.a.title=A\npersona.b.title=B\n"),
     ]);
-    crate::common::load(&pack)
+    crate::stacks::load(&pack)
 }
 
 const STORE: &str = "pieces/hat/hat.store_info.json";
@@ -1388,7 +1389,7 @@ fn s3_a_name_no_text_translates() {
         r#"{ "piece_id": "aa8d3c95-f189-cf08-0ae3-5cc1e090343b", "piece_name": "wig", "piece_type": "persona_hair" }"#,
     );
     let unnamed = piece_pack(&[piece, ("texts/en_US.lang", "persona.hat.title=Hat\n")]);
-    let pieces = crate::common::load(&unnamed);
+    let pieces = crate::stacks::load(&unnamed);
     assert_eq!(
         found(&pieces),
         [format!("info core/unresolved_lang_key {META}")]
@@ -1409,7 +1410,7 @@ fn s3_a_name_no_text_translates() {
             "## a comment\n\npersona.wig.title=Per\u{fc}cke\t# note\n",
         ),
     ]);
-    assert_eq!(found(&crate::common::load(&named)), Vec::<String>::new());
+    assert_eq!(found(&crate::stacks::load(&named)), Vec::<String>::new());
 
     // A text the caller supplies (the vanilla resource pack's) names it.
     let supplied = PersonaPiece::load_all_with_texts(
@@ -1423,14 +1424,14 @@ fn s3_a_name_no_text_translates() {
         piece,
         ("pieces/hat/texts/en_US.lang", "persona.offer.title=Wig\n"),
     ]);
-    let pieces = crate::common::load(&own);
+    let pieces = crate::stacks::load(&own);
     assert_eq!(found(&pieces), Vec::<String>::new());
     assert_eq!(only(&pieces).offer_title.as_deref(), Some("Wig"));
 
     // Its own texts without that key do not.
     let other = piece_pack(&[piece, ("pieces/hat/texts/en_US.lang", "persona.other=x\n")]);
     assert_eq!(
-        found(&crate::common::load(&other)),
+        found(&crate::stacks::load(&other)),
         [format!("info core/unresolved_lang_key {META}")]
     );
 }
@@ -1480,7 +1481,7 @@ fn a_piece_at_the_pack_root_looks_its_files_up_there() {
         ),
         ("texts/en_US.lang", "persona.hat.title=Hat\n"),
     ]);
-    let pieces = crate::common::load(&pack);
+    let pieces = crate::stacks::load(&pack);
     assert_eq!(found(&pieces), Vec::<String>::new());
     let piece = only(&pieces);
     assert_eq!(piece.directory.as_str(), "");
@@ -1505,7 +1506,7 @@ fn a_piece_at_the_pack_root_has_the_root_texts_as_its_own() {
         ),
         ("texts/en_US.lang", "persona.offer.title=The Hat\n"),
     ]);
-    let pieces = crate::common::load(&pack);
+    let pieces = crate::stacks::load(&pack);
     // The root piece is shown by its offer title (no S3); a piece of another folder is not.
     assert_eq!(
         found(&pieces),
@@ -1527,7 +1528,7 @@ fn a_piece_at_the_pack_root_has_the_root_texts_as_its_own() {
         ),
         ("texts/de_DE.lang", "persona.offer.title=Der Hut\n"),
     ]);
-    let pieces = crate::common::load(&pack);
+    let pieces = crate::stacks::load(&pack);
     assert_eq!(
         found(&pieces),
         ["info core/unresolved_lang_key root.meta.json"]

@@ -9,23 +9,14 @@ use bedrock_addon_core::test_cost as cost;
 #[path = "pack/common.rs"]
 mod pack_common;
 
-#[path = "camera/common.rs"]
+#[path = "../../families/camera/tests/camera/common.rs"]
 mod common;
-
-#[path = "camera/presets.rs"]
-mod presets;
-
-#[path = "camera/envelope.rs"]
-mod envelope;
 
 #[path = "camera/stack.rs"]
 mod stack;
 
-#[path = "camera/splines.rs"]
-mod splines;
-
-#[path = "camera/entity.rs"]
-mod entity;
+#[path = "camera/stacks.rs"]
+mod stacks;
 
 #[path = "camera/chain.rs"]
 mod chain;

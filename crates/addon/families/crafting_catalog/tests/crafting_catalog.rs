@@ -29,3 +29,6 @@ mod strict;
 
 #[path = "crafting_catalog/versions.rs"]
 mod versions;
+
+#[path = "crafting_catalog/located.rs"]
+mod located;

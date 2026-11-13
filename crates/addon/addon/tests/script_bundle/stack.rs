@@ -11,8 +11,9 @@ use bedrock_addon::pack::{
     Behavior, OpenOptions, PackOrigin, PackSide, PackStack, Resource, StackSet, WorldPacks,
 };
 
-use super::common::{pack_of, script_manifest, script_stack};
+use super::common::script_manifest;
 use super::responder::{Order, Responder};
+use super::stacks::{pack_of, script_stack};
 
 /// A manifest named `name` with the modules `modules` (`(type, entry)`), its UUIDs from `n`.
 fn manifest(name: &str, n: u128, modules: &[(&str, Option<&str>)], rest: &str) -> Vec<u8> {

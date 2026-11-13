@@ -13,8 +13,9 @@ use bedrock_addon::pack::PackIdVersion;
 use bedrock_addon::storage::PackPath;
 use bytes::Bytes;
 
-use crate::common::{OfPack, hat, line, lines, message, only, piece_pack, refused_at};
+use crate::common::{line, lines, message, only, refused_at};
 use crate::packs::meta;
+use crate::stacks::{OfPack, hat, piece_pack};
 
 const FILE: &str = "pieces/hat/hat.meta.json";
 

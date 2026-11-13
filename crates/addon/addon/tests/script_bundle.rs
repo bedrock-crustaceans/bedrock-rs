@@ -4,19 +4,14 @@
 
 #![cfg(feature = "script")]
 
-use bedrock_addon_core::test_cost as cost;
 #[path = "common/responder.rs"]
 mod responder;
 
 #[path = "script_bundle/cases.rs"]
 mod cases;
-#[path = "script_bundle/common.rs"]
+#[path = "../../families/script/tests/script_bundle/common.rs"]
 mod common;
-#[path = "script_bundle/normalize.rs"]
-mod normalize;
-#[path = "script_bundle/parser.rs"]
-mod parser;
-#[path = "script_bundle/rules.rs"]
-mod rules;
 #[path = "script_bundle/stack.rs"]
 mod stack;
+#[path = "script_bundle/stacks.rs"]
+mod stacks;
