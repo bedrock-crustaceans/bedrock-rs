@@ -4,8 +4,11 @@
 
 #![cfg(feature = "behavior_tree")]
 
-#[path = "behavior_tree/common.rs"]
+#[path = "../../families/behavior_tree/tests/behavior_tree/common.rs"]
 mod common;
+
+#[path = "behavior_tree/stacks.rs"]
+mod stacks;
 
 #[path = "common/responder.rs"]
 mod responder;
@@ -16,20 +19,11 @@ mod requests;
 #[path = "behavior_tree/rows.rs"]
 mod rows;
 
-#[path = "behavior_tree/catalogue.rs"]
-mod catalogue;
-
 #[path = "behavior_tree/stack.rs"]
 mod stack;
-
-#[path = "behavior_tree/rules.rs"]
-mod rules;
 
 #[path = "behavior_tree/round_trip.rs"]
 mod round_trip;
 
 #[path = "behavior_tree/link.rs"]
 mod link;
-
-#[path = "behavior_tree/located.rs"]
-mod located;

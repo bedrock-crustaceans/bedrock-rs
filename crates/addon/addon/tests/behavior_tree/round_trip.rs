@@ -13,6 +13,7 @@ use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::json::{EncodeError, Indent, Unrepresentable, Value, WriteStyle};
 
 use super::common::*;
+use super::stacks::*;
 
 const COMPACT: WriteStyle = WriteStyle {
     indent: Indent::Compact,

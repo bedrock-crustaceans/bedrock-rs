@@ -10,6 +10,7 @@ use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
 use bedrock_addon::pack::{Behavior, PackStack};
 
 use super::common::*;
+use super::stacks::*;
 
 /// The nine trees built into the game, in the order they are registered.
 const BUILT_INS: [&str; 9] = [

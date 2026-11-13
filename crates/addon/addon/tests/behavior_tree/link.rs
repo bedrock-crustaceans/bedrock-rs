@@ -7,6 +7,7 @@ use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
 use super::common::*;
+use super::stacks::*;
 
 /// The link findings of fixture `name`'s stack, in `expected.toml`'s terms.
 fn link_fixture(name: &str) -> Vec<Finding> {

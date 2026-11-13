@@ -4,23 +4,14 @@
 
 #![cfg(feature = "item")]
 
-#[path = "trim/common.rs"]
+#[path = "../../families/item/tests/trim/common.rs"]
 mod common;
-
-#[path = "trim/table.rs"]
-mod table;
 
 #[path = "pack/common.rs"]
 mod pack_common;
 
 #[path = "trim/gates.rs"]
 mod gates;
-
-#[path = "trim/packet.rs"]
-mod packet;
-
-#[path = "trim/corpus.rs"]
-mod corpus;
 
 #[cfg(feature = "loot")]
 #[path = "trim/link.rs"]

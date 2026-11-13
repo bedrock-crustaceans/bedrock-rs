@@ -15,7 +15,9 @@ use bedrock_addon_test_support::package::{includes_outside_the_package, rust_fil
 const KNOWN_OUTSIDE: &[&str] = &[
     "tests/atomic_client_entity.rs: ../../families/client_entity/tests/client_entity/generate.rs",
     "tests/attachable.rs: ../../families/attachable/tests/attachable/common.rs",
+    "tests/behavior_tree.rs: ../../families/behavior_tree/tests/behavior_tree/common.rs",
     "tests/biome.rs: ../../families/biome/tests/biome/common.rs",
+    "tests/block.rs: ../../families/block/tests/block/common.rs",
     "tests/block_culling.rs: ../../families/block_culling/tests/block_culling/common.rs",
     "tests/camera.rs: ../../families/camera/tests/camera/common.rs",
     "tests/client_entity.rs: ../../families/client_entity/tests/client_entity/common.rs",
@@ -35,6 +37,7 @@ const KNOWN_OUTSIDE: &[&str] = &[
     "tests/spawn_groups.rs: ../../families/spawn_rules/tests/spawn_rules/common.rs",
     "tests/spawn_rules.rs: ../../families/spawn_rules/tests/spawn_rules/common.rs",
     "tests/structure.rs: ../../families/structure/tests/structure/common.rs",
+    "tests/trim.rs: ../../families/item/tests/trim/common.rs",
 ];
 
 /// This package builds from its own files: no test file includes one of another crate but the

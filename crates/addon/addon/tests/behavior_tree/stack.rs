@@ -6,6 +6,7 @@ use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack};
 
 use super::common::*;
+use super::stacks::*;
 
 const WAIT: &str = r#"{"minecraft:wait": {}}"#;
 const ATTACK: &str = r#"{"minecraft:attack": {}}"#;

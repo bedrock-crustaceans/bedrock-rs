@@ -7,7 +7,8 @@ use bedrock_addon::id::BlockId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack, Resource};
 
-use super::common::{manifest, pack};
+use super::common::manifest;
+use super::stacks::pack;
 
 /// The block: base components only.
 const RUBY: &str = r#"{
