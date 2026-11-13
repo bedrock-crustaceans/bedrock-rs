@@ -25,8 +25,8 @@
 
 #[path = "common/responder.rs"]
 mod responder;
-// The comparison the corpus strategy tests of the driver crate use too: one text in both
-// packages (`collections.rs` says how it is kept so).
+// The comparison the corpus strategy tests of the driver crate use too: they include this
+// file (`collections.rs` says so).
 #[path = "common/collections.rs"]
 mod collections;
 // What a `Debug` leaves out, for the same comparison. The file names the content modules:

@@ -21,6 +21,7 @@ pub mod diagnostics;
 pub mod document;
 pub mod fixture;
 pub mod json;
+pub mod package;
 pub mod value;
 
 pub use diagnostics::{clean, errors, line, lines, with_code};

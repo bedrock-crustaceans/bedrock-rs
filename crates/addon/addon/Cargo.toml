@@ -276,6 +276,8 @@ zip = { workspace = true }
 aes = { workspace = true }
 # The skeleton bench (`benches/skeleton.rs`).
 criterion = { workspace = true }
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../test_support" }
 
 [[example]]
 name = "in_memory_pack"

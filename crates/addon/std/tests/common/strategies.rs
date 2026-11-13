@@ -35,7 +35,7 @@ macro_rules! family {
         $item
     };
 }
-#[path = "unprinted.rs"]
+#[path = "../../../addon/tests/common/unprinted.rs"]
 mod unprinted;
 
 /// The accessor lines the driver crate's tests compile in (its dev-dependency turns every

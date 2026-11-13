@@ -33,6 +33,8 @@ tempfile = { workspace = true }
 uuid = { workspace = true }
 bedrock_addon = { path = "../addon", default-features = false, features = ["full", "molang"] }
 facet-json = { workspace = true }
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../test_support" }
 
 [[example]]
 name = "rayon_driver"

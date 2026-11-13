@@ -11,7 +11,8 @@
 //! of, whether or not it has an effective document, with every layer in order; the same of
 //! the beta registry, with its rejected files and findings.
 //!
-//! This file is in both packages, as `collections.rs` is and for the same reason. It names
+//! The driver crate includes this file from `bedrock_addon`'s tests, as it does
+//! `collections.rs`. It names
 //! the content modules of `bedrock_addon`, each of which is behind a feature there and always
 //! compiled in for the driver crate's tests. So the file that includes it defines, before
 //! its `mod unprinted;`, the macro `family!("<feature>" => …)` over a block or an item: in

@@ -23,7 +23,7 @@
 
 #[macro_use]
 mod common;
-#[path = "common/collections.rs"]
+#[path = "../../addon/tests/common/collections.rs"]
 mod collections;
 #[path = "common/strategies.rs"]
 mod strategies;
