@@ -1,18 +1,15 @@
 //! Helpers of the deferred-settings tests.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::pack::{PackStack, Resource};
 use bedrock_addon::storage::PackPath;
 
 use super::pack_common::rp;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
 
 /// The fixture folder of this family.
 pub const FIXTURES: &str = concat!(
@@ -132,12 +129,6 @@ pub fn one_error<T: Content + std::fmt::Debug>(json: &str) -> (&'static str, Str
     let mut errors = errors(&d);
     assert_eq!(errors.len(), 1, "{json}\n{errors:#?}");
     errors.remove(0)
-}
-
-/// The JSON of `text`.
-#[track_caller]
-pub fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap_or_else(|error| panic!("{text}: {error}"))
 }
 
 /// Writes `value`, reads the text back strictly (no finding at all) and requires the second

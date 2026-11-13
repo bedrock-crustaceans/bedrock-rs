@@ -3,7 +3,6 @@
 
 use bedrock_addon_core::document::{Content, Placed};
 use bedrock_addon_core::id::CullingRulesId;
-use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_block_culling::history::v1_20_60;
 use bedrock_addon_family_block_culling::{
@@ -11,14 +10,10 @@ use bedrock_addon_family_block_culling::{
 };
 
 use super::common::{BONE1_EAST, fixture, floor, latest, loads};
+use bedrock_addon_test_support::json;
 
 fn id(text: &str) -> CullingRulesId {
     CullingRulesId::new(text).unwrap()
-}
-
-/// The JSON of `text`, for comparing documents whatever their layout.
-fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap_or_else(|e| panic!("{e}: {text}"))
 }
 
 #[test]

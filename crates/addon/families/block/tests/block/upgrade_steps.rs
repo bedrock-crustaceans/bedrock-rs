@@ -4,12 +4,8 @@
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon_family_block::history::v1_18_0;
+use bedrock_addon_test_support::json;
 use facet_value::VNumber;
-
-/// A JSON value from text.
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).expect("test JSON")
-}
 
 /// The value at a `/`-separated path.
 fn at<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {

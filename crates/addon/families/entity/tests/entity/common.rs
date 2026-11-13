@@ -3,13 +3,16 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::versioning::{LoadOutcome, Loaded, load};
 use bedrock_addon_family_entity::Entity;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{json, with_code};
 
 /// The fixtures of the entity family.
 pub fn fixtures() -> PathBuf {
@@ -71,16 +74,6 @@ pub fn codes(diagnostics: &Diagnostics, severity: Severity) -> Vec<&'static str>
         .filter(|d| d.severity >= severity)
         .map(|d| d.code.id())
         .collect()
-}
-
-/// The findings whose code is `name`.
-pub fn with_code<'a>(diagnostics: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    diagnostics.iter().filter(|d| d.code.id() == name).collect()
-}
-
-/// `text` as a JSON value.
-pub fn json(text: &str) -> Value {
-    facet_json::from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("{e}: {text}"))
 }
 
 /// A 1.26.50 document whose payload is `payload` (JSON text of the `minecraft:entity` object).

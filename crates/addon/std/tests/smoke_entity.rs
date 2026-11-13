@@ -9,11 +9,6 @@
 //!
 //! Components and goals are typed, so the zero-error gate covers them too; the warnings are printed by code.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 #[macro_use]
 mod common;
 
@@ -29,6 +24,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Behavior, OpenOptions, PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{Driver, Options};
+use bedrock_addon_test_support::json;
 
 use common::game_files;
 
@@ -440,10 +436,6 @@ fn written(stack: &PackStack<Behavior>, id: &str) -> Value {
         .get(&EntityId::parse(id))
         .unwrap_or_else(|| panic!("{id} loads"));
     json(&entity.to_json().unwrap())
-}
-
-fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap()
 }
 
 /// Every value of `goal.member` in the `components` and the groups of a written document.

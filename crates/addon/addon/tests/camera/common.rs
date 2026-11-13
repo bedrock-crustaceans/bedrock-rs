@@ -16,6 +16,9 @@ use bedrock_addon::storage::PackPath;
 
 use super::pack_common::bp;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{loaded as loads, rejected as rejects};
+
 /// The fixture folder of this family.
 pub const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/camera/camera");
 
@@ -52,24 +55,6 @@ pub fn spline(json: &str) -> Result<Document<CameraSpline>, Rejected> {
 /// Loads `json` as a camera entity document.
 pub fn entity(json: &str) -> Result<Document<CameraEntity>, Rejected> {
     load("cameras/test.json", json)
-}
-
-/// The document of an outcome that must have loaded.
-#[track_caller]
-pub fn loads<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Document<T> {
-    match outcome {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {:#?}", rejected.diagnostics),
-    }
-}
-
-/// The findings of an outcome that must have been rejected.
-#[track_caller]
-pub fn rejects<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Diagnostics {
-    match outcome {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
 }
 
 /// `(code name, JSON path, message)` of each finding at `severity`.

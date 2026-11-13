@@ -8,12 +8,9 @@ use bedrock_addon::json::{EncodeError, Value, WriteStyle};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 const FAMILY: &str = "client_entity";
-
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc(text).expect("test JSON")
-}
 
 /// `experimental_y_2026_drop_4/entity/frostbite.entity.json` of 1.26.60
 /// (client entity 1.26.0): it loads without a warning, round-trips, and

@@ -2,11 +2,14 @@
 
 #![allow(dead_code)]
 
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_voxel_shape::VoxelShape;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::with_code;
 
 /// The fixture folder of this family.
 pub const FIXTURES: &str = concat!(
@@ -76,11 +79,6 @@ pub fn rejects_in(json: &str, cx: &LoadContext) -> Diagnostics {
 #[track_caller]
 pub fn rejects(json: &str) -> Diagnostics {
     rejects_in(json, &user_pack())
-}
-
-/// The findings whose code is `name`.
-pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// `(code name, text, JSON path)` of every finding, all of which must be errors.

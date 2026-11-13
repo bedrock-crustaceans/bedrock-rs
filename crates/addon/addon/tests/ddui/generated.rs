@@ -7,9 +7,9 @@
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::Content;
 use bedrock_addon::families::ddui::{Catalogue, Component};
-use bedrock_addon::json::Value;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 /// A small deterministic generator (an LCG; the low bits are dropped), and what the document
 /// being generated is for: most of its choices are ones that reader takes.
@@ -335,13 +335,6 @@ fn document(rng: &mut Rng) -> (String, bool) {
         rng,
     );
     (text, root)
-}
-
-/// `text` as the family reads it: through the crate's JSON reader, where an integer beyond
-/// 64 bits is the number it spells (so it compares equal to the double written back for it).
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc::<Value>(text)
-        .unwrap_or_else(|error| panic!("{text}: {error}"))
 }
 
 /// One document through the property: `None` when it was refused, otherwise whether the read

@@ -11,18 +11,14 @@ use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::{
     BaseGameVersion, ENGINE_VERSION, FormatVersion, FormatVersionInput, MinEngineVersion,
     SemVersion, VersionRange,
 };
+use bedrock_addon_test_support::json;
 
 fn sem(text: &str) -> SemVersion {
     SemVersion::parse(text).unwrap_or_else(|| panic!("{text:?} parses"))
-}
-
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).unwrap()
 }
 
 fn hash_of<T: Hash>(value: &T) -> u64 {

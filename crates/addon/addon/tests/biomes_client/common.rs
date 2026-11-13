@@ -2,11 +2,6 @@
 //! one resource pack of in-memory files and the stacks of a world.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use std::path::PathBuf;
 
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -14,6 +9,9 @@ use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackType};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
 
 /// The file every single-file test loads from.
 pub const PATH: &str = "biomes/demo.client_biome.json";
@@ -33,10 +31,6 @@ pub fn context() -> LoadContext {
 /// The path every single-file test loads from.
 pub fn path() -> PackPath {
     PackPath::from_static(PATH)
-}
-
-pub fn json(text: &str) -> facet_value::Value {
-    facet_json::from_str_jsonc(text).unwrap_or_else(|e| panic!("{e}: {text}"))
 }
 
 /// The fixture directory `tests/fixtures/biome/biomes_client/<rest>`.

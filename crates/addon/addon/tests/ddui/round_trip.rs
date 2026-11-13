@@ -9,11 +9,7 @@ use bedrock_addon::json::{EncodeError, Value};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
-
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc::<Value>(text)
-        .unwrap_or_else(|error| panic!("{text}: {error}"))
-}
+use bedrock_addon_test_support::json;
 
 /// The path of a refusal.
 #[track_caller]

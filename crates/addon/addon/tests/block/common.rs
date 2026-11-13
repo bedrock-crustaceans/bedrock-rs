@@ -13,6 +13,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::errors;
+
 /// Whether `code` asks for a toggle the pack does not have (`upcoming_creator_features`,
 /// the beta APIs): the toggle rules a block document meets, its own and the core's. Not the
 /// beta-features gate, which shares the kind.
@@ -131,11 +134,6 @@ pub fn has(
     diagnostics
         .iter()
         .any(|d| code(&d.code) && d.severity == severity && d.code.to_string().contains(text))
-}
-
-/// The errors.
-pub fn errors(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
-    diagnostics.at_least(Severity::Error).collect()
 }
 
 /// The fixture directory `tests/fixtures/block/block/<rest>`.

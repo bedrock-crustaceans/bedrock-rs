@@ -4,16 +4,12 @@
 //! member, as the file has it. Every test loads a legacy document of the version the step
 //! upgrades from through `Block::parse`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Disposition, Kind, Phase, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::json::Value;
 
 use super::common::{allow_listed, document, loads};
+use bedrock_addon_test_support::json;
 
 const BLOCK: &str = "minecraft:block";
 
@@ -34,11 +30,6 @@ fn misread(version: &str, payload: &str) -> (Vec<String>, Value) {
         .map(|f| f.location.json_path.to_string())
         .collect();
     (told, super::common::newest_shape(&block))
-}
-
-/// A JSON value from text.
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).expect("JSON")
 }
 
 /// The value at a `/`-separated path of the written payload.

@@ -8,6 +8,9 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_dimension::Dimension;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::with_code;
+
 /// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
 /// included by `bedrock_addon`'s own test root, which owns the folder.
 fn fixtures_root() -> std::path::PathBuf {
@@ -90,11 +93,6 @@ pub fn rejects(json: &str) -> Diagnostics {
         Ok(document) => panic!("loaded: {json}\n{:#?}", document.value()),
         Err(rejected) => rejected.diagnostics,
     }
-}
-
-/// The findings whose code is `name`.
-pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// The texts of the rejecting errors of `d`.

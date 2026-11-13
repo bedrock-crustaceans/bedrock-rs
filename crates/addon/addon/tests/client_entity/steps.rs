@@ -1,11 +1,6 @@
 //! The two `Upgrade` impls of `families::client_entity::history`, the chain's shape, and
 //! `s01`–`s02d`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostics, Disposition, Kind, Severity};
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::client_entity::ClientEntity;
@@ -23,12 +18,9 @@ use bedrock_addon::versioning::{
 };
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 const FAMILY: &str = "client_entity";
-
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).expect("test JSON")
-}
 
 /// The value at a `/`-separated path.
 fn at<'v>(value: &'v Value, path: &str) -> Option<&'v Value> {

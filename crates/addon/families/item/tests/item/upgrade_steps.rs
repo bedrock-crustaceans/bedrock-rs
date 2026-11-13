@@ -8,6 +8,7 @@ use bedrock_addon_family_item::history;
 use facet_value::VObject;
 
 use super::common::allowlisted;
+use bedrock_addon_test_support::json;
 
 /// The JSON at `path` (`/`-separated) of `value`.
 fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
@@ -16,11 +17,6 @@ fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
             .and_then(|o| o.get(key))
             .or_else(|| key.parse::<usize>().ok().and_then(|i| v.as_array()?.get(i)))
     })
-}
-
-/// `text` as a JSON value.
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).unwrap()
 }
 
 /// Runs `S`'s step on `input` with the allowlisted load context.

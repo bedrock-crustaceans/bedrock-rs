@@ -1,14 +1,10 @@
 //! What the client-biome tests share: loading one document, contexts, packs, fixture files.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::client_biome::{Beta, ClientBiome};
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -16,6 +12,9 @@ use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackType};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{BaseGameVersion, MinEngineVersion, SemVersion};
 use uuid::Uuid;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{errors, json};
 
 /// The file every single-file test loads from.
 pub const PATH: &str = "biomes/demo.client_biome.json";
@@ -106,12 +105,6 @@ pub fn written(document: &Document<ClientBiome>) -> facet_value::Value {
     json(&document.to_json().expect("the document writes"))
 }
 
-/// `text` as JSON.
-#[track_caller]
-pub fn json(text: &str) -> facet_value::Value {
-    facet_json::from_str_jsonc(text).unwrap_or_else(|e| panic!("{e}: {text}"))
-}
-
 /// The `components` object a document writes back.
 pub fn components(document: &Document<ClientBiome>) -> facet_value::Value {
     written(document)
@@ -129,11 +122,6 @@ pub fn component(document: &Document<ClientBiome>, name: &str) -> Option<facet_v
         .as_object()
         .and_then(|components| components.get(name))
         .cloned()
-}
-
-/// The errors.
-pub fn errors(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
-    diagnostics.at_least(Severity::Error).collect()
 }
 
 /// How many findings have a code `code` accepts.

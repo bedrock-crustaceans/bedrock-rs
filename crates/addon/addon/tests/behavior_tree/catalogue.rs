@@ -1,15 +1,10 @@
 //! The node catalogue of the schema: every node type, every literal member with its type and
 //! default, every key member with its default key.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::families::behavior_tree::Node;
-use bedrock_addon::json::Value;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 /// One parameter of a leaf or decorator: the node type, the field of `Node` (as the dump
 /// names it), the literal member with a value of its type, the literal's default, the key
@@ -81,10 +76,6 @@ const ROWS: [Row; 27] = [
     row("minecraft:wait", "seconds", "wait_duration", "3", "0", "wait_duration", "duration"),
     row("minecraft:wait_ticks", "ticks", "num_of_ticks", "7", "0", TICKS.0, TICKS.1),
 ];
-
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).unwrap_or_else(|e| panic!("{text}: {e}"))
-}
 
 /// The field `field` of the root node `{kind: body}`, as the dump writes a parameter, and the
 /// number of findings.

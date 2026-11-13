@@ -8,11 +8,7 @@ use bedrock_addon::families::persona::{
 use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
-
-/// A JSON text as a value.
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("{text}: {e}"))
-}
+use bedrock_addon_test_support::json;
 
 /// A JSON text as this file's own reader takes it, token by token. The written text and the
 /// input are compared in this form and not as the library's values, so that a reading the

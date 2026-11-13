@@ -14,6 +14,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
+
 /// The file every single-file test loads from.
 pub const PATH: &str = "particles/demo.particle.json";
 
@@ -117,13 +120,6 @@ pub const CEREAL: &str = "1.26.10";
 #[track_caller]
 pub fn written(document: &Document<ParticleEffect>) -> facet_value::Value {
     json(&document.to_json().expect("the document writes"))
-}
-
-/// `text` as JSON.
-#[track_caller]
-pub fn json(text: &str) -> facet_value::Value {
-    bedrock_addon::json::from_str_jsonc::<facet_value::Value>(text)
-        .unwrap_or_else(|e| panic!("{e}: {text}"))
 }
 
 /// The value at `pointer` (`/`-separated members and indices) of `value`.

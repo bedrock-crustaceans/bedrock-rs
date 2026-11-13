@@ -13,6 +13,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::errors;
+
 /// A behaviour-pack context of a pack other than a base-game pack: the engine version, no
 /// toggles, no world version.
 pub fn context() -> LoadContext {
@@ -104,11 +107,6 @@ pub fn payload(identifier: &str, components: &str) -> String {
 /// A document of `version` named `identifier` with `components`.
 pub fn biome(version: &str, identifier: &str, components: &str) -> String {
     document(version, &payload(identifier, components))
-}
-
-/// The errors.
-pub fn errors(diagnostics: &Diagnostics) -> Vec<&Diagnostic> {
-    diagnostics.at_least(Severity::Error).collect()
 }
 
 /// The findings whose code matches `code`.

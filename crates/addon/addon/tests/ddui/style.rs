@@ -9,11 +9,12 @@ use bedrock_addon::families::ddui::{
     BorderImageRepeat, BoxSize, FormLabelStyle, FormPanelStyle, FormTextFieldStyle, StyleColor,
     StyleComponents, UiStyle, UiStyleId,
 };
-use bedrock_addon::json::{EncodeError, Value};
+use bedrock_addon::json::EncodeError;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 const NO_PARSER: &str = "unsupported version: no parser available for version ";
 const BOX_2: &str = "Expected [top, right].";
@@ -48,11 +49,6 @@ fn style_in(json: &str, cx: &LoadContext) -> Result<Document<UiStyle>, Rejected>
 /// Loads `json` as a style file of an add-on pack on engine 1.26.60.
 fn style(json: &str) -> Result<Document<UiStyle>, Rejected> {
     style_in(json, &cx(E60, false))
-}
-
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc::<Value>(text)
-        .unwrap_or_else(|error| panic!("{text}: {error}"))
 }
 
 /// `text` loads, writes the JSON it was read from, reads back equal and writes again the same.

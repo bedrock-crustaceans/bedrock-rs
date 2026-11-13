@@ -1,15 +1,11 @@
 //! `ComponentMap<C>` over a toy component enum that implements `ComponentSet`
 //! and `Component` by hand, as `#[derive(Components)]` will.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent,
 };
 use bedrock_addon_core::json::Value;
+use bedrock_addon_test_support::json;
 
 #[derive(Clone, Debug, PartialEq)]
 struct Friction(f32);
@@ -79,10 +75,6 @@ macro_rules! component {
 
 component!(Friction, "minecraft:friction");
 component!(LightEmission, "minecraft:light_emission");
-
-fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap()
-}
 
 fn names(map: &ComponentMap<ToyComponent>) -> Vec<String> {
     map.iter()

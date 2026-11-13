@@ -4,14 +4,11 @@
 
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::geometry::{Bone, Cube, Geometry, GeometryFile, TextureMesh};
-use bedrock_addon::json::{EncodeError, Unrepresentable, Value};
+use bedrock_addon::json::{EncodeError, Unrepresentable};
 use bedrock_addon::version::FormatVersion;
 
 use crate::common::{base_game, clean, load, load_at, loaded, round_trip};
-
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str(text).unwrap_or_else(|e| panic!("{text}: {e}"))
-}
+use bedrock_addon_test_support::json;
 
 /// Every member of the newest schema, once.
 const FULL: &str = r#"{

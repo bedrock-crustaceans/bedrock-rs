@@ -1,28 +1,19 @@
 //! Fixture `a10`: what the 1.8 step does to an attachable, which is
 //! not what it does to a client entity.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::attachable::Attachable;
 use bedrock_addon::families::attachable::history::{self, AttachableHistory};
-use bedrock_addon::json::Value;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
 use bedrock_addon::versioning::VersionStruct;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 const FAMILY: &str = "attachable";
 const CONTROLLERS_AT: &str = "minecraft:attachable/description/animation_controllers";
-
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).expect("test JSON")
-}
 
 #[test]
 fn a10_1_8_controllers_rejected_deviation() {

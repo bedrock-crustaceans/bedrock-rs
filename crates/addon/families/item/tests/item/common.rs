@@ -10,6 +10,9 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_item::Item;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::with_code;
+
 /// One of the ten vanilla pack UUIDs that satisfy `LegacyCreatorFeatures`.
 pub const ALLOWLISTED: Uuid = Uuid::from_u128(0xda09_e399_6f5e_4287_a013_4cf1_3de3_2166);
 /// A third-party pack UUID.
@@ -62,11 +65,6 @@ pub fn findings(json: &str, cx: &LoadContext) -> Diagnostics {
         Ok(document) => document.diagnostics().clone(),
         Err(rejected) => rejected.diagnostics,
     }
-}
-
-/// The findings whose code is `name`.
-pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// Whether a finding's message contains `text`.

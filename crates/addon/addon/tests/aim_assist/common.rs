@@ -1,6 +1,6 @@
 //! Helpers of the aim-assist tests.
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::aim_assist::{AimAssistCategories, AimAssistPreset};
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -8,6 +8,9 @@ use bedrock_addon::pack::{Behavior, PackStack};
 use bedrock_addon::storage::PackPath;
 
 use super::pack_common::bp;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{loaded as loads, rejected as rejects};
 
 /// The fixture folder of this family.
 pub const FIXTURES: &str = concat!(
@@ -37,24 +40,6 @@ pub fn categories(json: &str) -> Result<Document<AimAssistCategories>, Rejected>
         json.as_bytes(),
         &LoadContext::detached(),
     )
-}
-
-/// The document of an outcome that must have loaded.
-#[track_caller]
-pub fn loads<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Document<T> {
-    match outcome {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {:#?}", rejected.diagnostics),
-    }
-}
-
-/// The findings of an outcome that must have been rejected.
-#[track_caller]
-pub fn rejects<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Diagnostics {
-    match outcome {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
 }
 
 /// `(code name, JSON path, message)` of each error.

@@ -3,11 +3,6 @@
 //! `expected.json` that says what the merge must give.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
@@ -18,14 +13,12 @@ use bedrock_addon::json::Value;
 use bedrock_addon::pack::{OpenOptions, Pack, PackStack, Resource};
 use bedrock_addon::storage::PackPath;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
+
 /// The fixture directory of the family.
 pub fn fixtures() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ui/ui")
-}
-
-/// A JSON(C) text as a value.
-pub fn json(text: &str) -> Value {
-    facet_json::from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
 /// Every file below `dir`, as paths relative to it, sorted.

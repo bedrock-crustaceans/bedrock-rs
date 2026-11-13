@@ -8,6 +8,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_trade::{ItemList, Quantity, TradeItem, TradeTable};
 
 use super::common::{doc, found_at, loads, trade};
+use bedrock_addon_test_support::json;
 
 /// A one-trade table whose `wants` entry is `entry` (JSON).
 fn table_with(version: Option<&str>, entry: &str) -> String {
@@ -41,11 +42,6 @@ fn mark_variants(values: &[i32]) -> Value {
 /// name (`round_trip.rs`, the `k107_` test): not what these tests are about.
 fn announcement(finding: &bedrock_addon_core::diagnostic::Diagnostic) -> bool {
     finding.code.id() == "core/value_rewritten" && finding.severity == Severity::Info
-}
-
-/// JSON text as a `Value`.
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).unwrap()
 }
 
 #[test]

@@ -12,17 +12,13 @@ use bedrock_addon_family_trade::history::{self, TradeHistory, v0};
 use bedrock_addon_family_trade::{Group, ItemList, Quantity, Tier, Trade, TradeItem, TradeTable};
 
 use super::common::{above_info, cx, doc, fixture, loads, with};
+use bedrock_addon_test_support::json;
 
 /// The findings of `d` at `severity` of the kind `kind`.
 fn of_kind(d: &Diagnostics, kind: Kind, severity: Severity) -> Vec<&Diagnostic> {
     d.iter()
         .filter(|f| f.code.kind() == kind && f.severity == severity)
         .collect()
-}
-
-/// JSON(C) text as a `Value`.
-fn json(text: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc(text).unwrap()
 }
 
 /// The member `key` of the object `value`.

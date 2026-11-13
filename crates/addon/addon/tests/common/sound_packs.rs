@@ -3,14 +3,8 @@
 //! such packs.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon::document::{Merge, Merged};
-use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{
     OpenOptions, Pack, PackOrigin, PackRepository, PackSelection, PackStack, Resource, StackSet,
@@ -18,6 +12,9 @@ use bedrock_addon::pack::{
 };
 use bedrock_addon::storage::PackPath;
 use uuid::Uuid;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
 
 /// The sound definitions path.
 pub const DEFINITIONS: &str = "sounds/sound_definitions.json";
@@ -74,11 +71,6 @@ pub fn copies(path: &str, texts: &[&str]) -> PackStack<Resource> {
         .map(|(i, text)| pack(10 * (i as u128 + 1), &[(path, text)]))
         .collect();
     stack_of(packs, LoadOptions::default())
-}
-
-/// JSON text as a value.
-pub fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
 /// Whatever holds findings: a merged document, the audio files, a list.

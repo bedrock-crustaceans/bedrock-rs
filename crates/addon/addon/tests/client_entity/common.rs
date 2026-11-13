@@ -16,6 +16,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{clean, line, lines, loaded, rejected, round_trip};
+
 /// The path the single-file tests load their document as; vanilla's texts name it.
 pub const PATH: &str = "entity/x.entity.json";
 
@@ -61,40 +64,6 @@ pub fn ghost(version: &str, members: &str) -> String {
     doc(
         version,
         &format!(r#"{{"identifier": "demo:ghost"{comma}{members}}}"#),
-    )
-}
-
-/// Requires a load to succeed.
-#[track_caller]
-pub fn loaded<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Document<T> {
-    match result {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {}", lines(&rejected.diagnostics).join("\n")),
-    }
-}
-
-/// Requires a load to fail; its findings.
-#[track_caller]
-pub fn rejected<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Diagnostics {
-    match result {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
-}
-
-/// The findings, one line each: severity, code name, path and text.
-pub fn lines(d: &Diagnostics) -> Vec<String> {
-    d.iter().map(line).collect()
-}
-
-/// One finding as a line.
-pub fn line(f: &Diagnostic) -> String {
-    format!(
-        "{:?} {} {} {}",
-        f.severity,
-        f.code.id(),
-        f.location.json_path,
-        f.code
     )
 }
 
@@ -149,13 +118,6 @@ pub fn none(d: &Diagnostics, name: &str) {
     );
 }
 
-/// Requires no finding at warning level or above.
-#[track_caller]
-pub fn clean(d: &Diagnostics) {
-    let found: Vec<_> = d.at_least(Severity::Warning).collect();
-    assert!(found.is_empty(), "{}", lines(d).join("\n"));
-}
-
 /// Requires exactly one finding at warning level or above: the warning with code `name` at
 /// `path`.
 #[track_caller]
@@ -177,20 +139,6 @@ pub fn only_info_at(d: &Diagnostics, name: &str, path: &str) {
 #[track_caller]
 pub fn silent(d: &Diagnostics) {
     assert!(d.is_empty(), "{}", lines(d).join("\n"));
-}
-
-/// Writes `document`, reads the text again with `parse` and requires an equal value and an
-/// identical second write.
-#[track_caller]
-pub fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
-    document: &Document<T>,
-    parse: impl Fn(&str) -> Result<Document<T>, Rejected>,
-) -> String {
-    let text = document.to_json().unwrap();
-    let again = loaded(parse(&text));
-    assert_eq!(again.value(), document.value(), "{text}");
-    assert_eq!(again.to_json().unwrap(), text);
-    text
 }
 
 /// One resource pack of an in-memory stack: its manifest `min_engine_version` and its files.

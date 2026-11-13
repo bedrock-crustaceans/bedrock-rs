@@ -4,15 +4,12 @@
 
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::json::{Value, from_str};
+use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, FailureKind, Run, step_output};
 
 use crate::toy::{v1_0_0, v1_1_0};
-
-fn json(text: &str) -> Value {
-    from_str(text).expect("JSON")
-}
+use bedrock_addon_test_support::json;
 
 /// A payload of the 1.1.0 struct.
 fn second_base() -> Value {

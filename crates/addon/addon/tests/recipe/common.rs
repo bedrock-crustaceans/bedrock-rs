@@ -15,6 +15,9 @@ use bedrock_addon::version::{BaseGameVersion, MinEngineVersion, SemVersion};
 use bytes::Bytes;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::clean;
+
 /// The fixture directory of the family.
 pub fn fixtures() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipe/recipe")
@@ -195,12 +198,6 @@ pub fn one<'d>(
     );
     assert_eq!(found[0].severity, severity, "{:#?}", found[0]);
     found[0]
-}
-
-/// No finding at warning level or above.
-pub fn clean(diagnostics: &Diagnostics) {
-    let loud: Vec<_> = diagnostics.at_least(Severity::Warning).collect();
-    assert!(loud.is_empty(), "unexpected findings:\n{loud:#?}");
 }
 
 /// No finding at all.

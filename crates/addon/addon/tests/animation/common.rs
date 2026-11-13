@@ -17,6 +17,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{clean, lines, loaded, rejected, round_trip};
+
 /// A context of a pack of `pack_type` with `min_engine_version` `version` (`None`: absent), the
 /// Molang compile check on when the feature is.
 pub fn context(pack_type: PackType, version: Option<(u16, u16, u16)>) -> LoadContext {
@@ -67,39 +70,6 @@ pub fn controller(
     )
 }
 
-/// Requires a load to succeed.
-#[track_caller]
-pub fn loaded<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Document<T> {
-    match result {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {}", lines(&rejected.diagnostics).join("\n")),
-    }
-}
-
-/// Requires a load to fail; its findings.
-#[track_caller]
-pub fn rejected<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Diagnostics {
-    match result {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
-}
-
-/// The findings, one line each: severity, code name, path and text.
-pub fn lines(d: &Diagnostics) -> Vec<String> {
-    d.iter()
-        .map(|f| {
-            format!(
-                "{:?} {} {} {}",
-                f.severity,
-                f.code.id(),
-                f.location.json_path,
-                f.code
-            )
-        })
-        .collect()
-}
-
 /// The finding with code `name` and severity, if any.
 pub fn find<'d>(d: &'d Diagnostics, name: &str, severity: Severity) -> Option<&'d Diagnostic> {
     d.iter()
@@ -127,26 +97,6 @@ pub fn expect_prefix(d: &Diagnostics, name: &str, severity: Severity, prefix: &s
         "no {severity:?} {name} \"{prefix}…\" in\n{}",
         lines(d).join("\n")
     );
-}
-
-/// Requires no finding at warning level or above.
-#[track_caller]
-pub fn clean(d: &Diagnostics) {
-    let found: Vec<_> = d.at_least(Severity::Warning).collect();
-    assert!(found.is_empty(), "{}", lines(d).join("\n"));
-}
-
-/// Writes `document`, reads the text again with `parse` and requires an equal value and an
-/// identical second write.
-#[track_caller]
-pub fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
-    document: &Document<T>,
-    parse: impl Fn(&str) -> Result<Document<T>, Rejected>,
-) {
-    let text = document.to_json().unwrap();
-    let again = loaded(parse(&text));
-    assert_eq!(again.value(), document.value(), "{text}");
-    assert_eq!(again.to_json().unwrap(), text);
 }
 
 /// A stack set read from in-memory packs: `behavior` and `resource` packs, each a list of

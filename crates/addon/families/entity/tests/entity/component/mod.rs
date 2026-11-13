@@ -9,6 +9,9 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::EntityComponent;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
+
 mod corpus;
 mod health;
 mod interact;
@@ -129,11 +132,6 @@ where
     let (second, _) = strict::<T>(&text);
     assert_eq!(first, second, "{} round trip through {text}", T::NAME);
     first
-}
-
-/// The JSON value of `text`.
-pub fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).expect("valid JSON")
 }
 
 /// Whether `d` holds a finding of `code` (by variant) at `path`.

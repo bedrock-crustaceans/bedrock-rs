@@ -5,6 +5,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, Run, StepOutput, step_output};
 use bedrock_addon_family_trade::history::v0;
+use bedrock_addon_test_support::json;
 
 /// The JSON at `path` (`/`-separated; a number indexes an array) of `value`.
 fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
@@ -40,11 +41,6 @@ fn run(item: &str, version: Option<(u16, u16, u16)>) -> StepOutput {
 /// Whether `out` has a finding of code `name`.
 fn reported(out: &StepOutput, name: &str) -> bool {
     out.diagnostics.iter().any(|f| f.code.id() == name)
-}
-
-/// JSON text as a `Value`.
-fn json(text: &str) -> Value {
-    facet_json::from_str(text).unwrap()
 }
 
 #[test]

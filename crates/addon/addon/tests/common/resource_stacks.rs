@@ -6,7 +6,6 @@
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::Content;
-use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::load::{AppData, LoadOptions};
 use bedrock_addon::pack::{
@@ -14,10 +13,8 @@ use bedrock_addon::pack::{
 };
 use bedrock_addon::storage::PackPath;
 
-/// A JSON(C) text as a value.
-pub fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("{text}: {e}"))
-}
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json;
 
 /// The UUID of pack `n`.
 pub fn pack_uuid(n: usize) -> uuid::Uuid {

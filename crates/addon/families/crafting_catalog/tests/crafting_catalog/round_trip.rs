@@ -7,11 +7,7 @@ use bedrock_addon_core::json::{Indent, Value, WriteStyle};
 use bedrock_addon_family_crafting_catalog::CraftingCatalog;
 
 use super::common::*;
-
-/// The JSON `text` holds.
-fn json(text: &str) -> Value {
-    bedrock_addon_core::json::from_str(text).unwrap_or_else(|error| panic!("{error}: {text}"))
-}
+use bedrock_addon_test_support::json;
 
 /// Writes `catalog`, re-reads the text strictly (no comments, no finding) and requires the
 /// re-read value to equal it and to write the same text again.

@@ -9,6 +9,9 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_core::version::MinEngineVersion;
 use bedrock_addon_family_feature_rules::FeatureRule;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::with_code;
+
 /// The fixture folder of this family, found from whichever crate includes this file: the
 /// fixtures live in `bedrock_addon`'s `tests/fixtures`.
 pub fn fixtures() -> std::path::PathBuf {
@@ -81,11 +84,6 @@ pub fn rejects(json: &str) -> Diagnostics {
         Ok(document) => panic!("loaded: {:#?}", document.value()),
         Err(rejected) => rejected.diagnostics,
     }
-}
-
-/// The findings whose code is `name`.
-pub fn with_code<'a>(d: &'a Diagnostics, name: &str) -> Vec<&'a Diagnostic> {
-    d.iter().filter(|f| f.code.id() == name).collect()
 }
 
 /// Whether a finding's message is exactly `text`.

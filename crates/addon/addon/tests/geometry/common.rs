@@ -14,6 +14,9 @@ use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{FormatVersion, MinEngineVersion};
 use uuid::Uuid;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{clean, lines, loaded, rejected};
+
 /// A resource pack's context at `min_engine_version` `version` (`None`: absent), the Molang
 /// compile check on when the feature is.
 pub fn context(version: Option<(u16, u16, u16)>) -> LoadContext {
@@ -66,43 +69,10 @@ pub fn load_at(
     load_file(&PackPath::from_static(path), text.as_bytes(), cx)
 }
 
-/// Requires a load to succeed.
-#[track_caller]
-pub fn loaded<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Document<T> {
-    match result {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {}", lines(&rejected.diagnostics).join("\n")),
-    }
-}
-
-/// Requires a load to fail; its findings.
-#[track_caller]
-pub fn rejected<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Diagnostics {
-    match result {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
-}
-
 /// The first geometry of a file that loads.
 #[track_caller]
 pub fn first(text: &str) -> Geometry {
     loaded(load(text)).value().geometries[0].clone()
-}
-
-/// The findings, one line each: severity, code name, path and text.
-pub fn lines(d: &Diagnostics) -> Vec<String> {
-    d.iter()
-        .map(|f| {
-            format!(
-                "{:?} {} {} {}",
-                f.severity,
-                f.code.id(),
-                f.location.json_path,
-                f.code
-            )
-        })
-        .collect()
 }
 
 /// How many findings have code `name` and `severity`.
@@ -157,13 +127,6 @@ pub fn fails_schema(
         "",
         DID_NOT_VALIDATE,
     );
-}
-
-/// Requires no finding at warning level or above.
-#[track_caller]
-pub fn clean(d: &Diagnostics) {
-    let found: Vec<_> = d.at_least(Severity::Warning).collect();
-    assert!(found.is_empty(), "{}", lines(d).join("\n"));
 }
 
 /// Writes `document`, reads the text again and requires an equal value and an identical second

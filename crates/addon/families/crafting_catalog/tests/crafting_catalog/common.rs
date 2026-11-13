@@ -11,6 +11,9 @@ use bedrock_addon_family_crafting_catalog::{
     CatalogItem, Category, CategoryName, CraftingCatalog, Group, GroupIdentifier,
 };
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::errors;
+
 /// The fixture folder of this family. The file is included by the family crate's tests and by
 /// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is picked
 /// by the package that compiles it.
@@ -57,11 +60,6 @@ pub fn rejects(json: &str) -> Diagnostics {
         Ok(document) => panic!("loaded: {:#?}", document.value()),
         Err(rejected) => rejected.diagnostics,
     }
-}
-
-/// The error-level findings.
-pub fn errors(d: &Diagnostics) -> Vec<&Diagnostic> {
-    d.iter().filter(|f| f.severity == Severity::Error).collect()
 }
 
 /// The one error-level finding of `d`.

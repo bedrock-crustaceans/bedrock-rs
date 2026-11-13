@@ -1,11 +1,6 @@
 //! The pack settings "Runtime" fixture rows `rt01`–`rt18`: the values of one pack
 //! (`PackSettings`, rules A1–A5) and the save algorithm.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::json::Value;
 use bedrock_addon::manifest::{CapabilityRegistry, Manifest};
@@ -19,6 +14,7 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use super::common::{fixture, names};
+use bedrock_addon_test_support::json;
 
 /// The vanilla unit tests' pack.
 const PACK: Uuid = Uuid::from_u128(0xd334_9771_6782_4420_875a_fcd6_179a_8915);
@@ -55,11 +51,6 @@ fn saved_file(row: &str, file: &str) -> SavedSettings {
 /// `runtime/<row>/saved.json`.
 fn saved(row: &str) -> SavedSettings {
     saved_file(row, "saved.json")
-}
-
-/// A JSON text as a value.
-fn json(text: &str) -> Value {
-    facet_json::from_str::<Value>(text).unwrap()
 }
 
 /// `runtime/<row>/expected.json`.

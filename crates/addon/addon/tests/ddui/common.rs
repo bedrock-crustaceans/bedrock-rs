@@ -5,13 +5,16 @@
     reason = "a helper module shared by the test files of this folder; none of them uses every helper"
 )]
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::families::ddui::{UiComposition, UiRoot};
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackStack, Resource};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{loaded as loads, rejected as rejects};
 
 /// The fixture folder of this family.
 pub const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/ui/ddui");
@@ -80,24 +83,6 @@ pub fn composition_in(json: &str, cx: &LoadContext) -> Result<Document<UiComposi
         json.as_bytes(),
         cx,
     )
-}
-
-/// The document of an outcome that must have loaded.
-#[track_caller]
-pub fn loads<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Document<T> {
-    match outcome {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {:#?}", rejected.diagnostics),
-    }
-}
-
-/// The findings of an outcome that must have been rejected.
-#[track_caller]
-pub fn rejects<T: std::fmt::Debug>(outcome: Result<Document<T>, Rejected>) -> Diagnostics {
-    match outcome {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
 }
 
 /// One finding as the tests compare it: severity, code name, JSON path, message.

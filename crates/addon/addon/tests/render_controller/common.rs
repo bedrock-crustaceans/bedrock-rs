@@ -7,11 +7,13 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::pack::PackType;
 use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::{clean, loaded, rejected, round_trip};
 
 /// A resource pack's context at `min_engine_version` `version` (`None`: one that did not
 /// parse, Molang version −1), the Molang compile check on when the feature is.
@@ -46,24 +48,6 @@ pub fn unchecked() -> LoadContext {
         cx.molang = None;
     }
     cx
-}
-
-/// Requires a load to succeed.
-#[track_caller]
-pub fn loaded<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Document<T> {
-    match result {
-        Ok(document) => document,
-        Err(rejected) => panic!("rejected: {}", lines(&rejected.diagnostics).join("\n")),
-    }
-}
-
-/// Requires a load to fail; its findings.
-#[track_caller]
-pub fn rejected<T: std::fmt::Debug>(result: Result<Document<T>, Rejected>) -> Diagnostics {
-    match result {
-        Ok(document) => panic!("loaded: {:#?}", document.value()),
-        Err(rejected) => rejected.diagnostics,
-    }
 }
 
 /// One finding as a line: severity, code name, path and text.
@@ -144,30 +128,10 @@ pub fn expect_line(d: &Diagnostics, name: &str, severity: Severity, needle: &str
     );
 }
 
-/// Requires no finding at warning level or above.
-#[track_caller]
-pub fn clean(d: &Diagnostics) {
-    let found: Vec<_> = d.at_least(Severity::Warning).collect();
-    assert!(found.is_empty(), "{}", lines(d).join("\n"));
-}
-
 /// Requires no finding at all.
 #[track_caller]
 pub fn silent(d: &Diagnostics) {
     assert!(d.is_empty(), "{}", lines(d).join("\n"));
-}
-
-/// Writes `document`, reads the text again with `parse` and requires an equal value and an
-/// identical second write.
-#[track_caller]
-pub fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
-    document: &Document<T>,
-    parse: impl Fn(&str) -> Result<Document<T>, Rejected>,
-) {
-    let text = document.to_json().unwrap();
-    let again = loaded(parse(&text));
-    assert_eq!(again.value(), document.value(), "{text}");
-    assert_eq!(again.to_json().unwrap(), text);
 }
 
 /// A format-2 resource-pack manifest with UUID `n` and `min_engine_version` `version` (JSON).

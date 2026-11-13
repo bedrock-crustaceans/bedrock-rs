@@ -4,16 +4,12 @@
 use bedrock_addon::document::Content;
 use bedrock_addon::families::attachable::{Attachable, Description};
 use bedrock_addon::id::AttachableId;
-use bedrock_addon::json::Value;
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
+use bedrock_addon_test_support::json;
 
 const FAMILY: &str = "attachable";
-
-fn json(text: &str) -> Value {
-    bedrock_addon::json::from_str_jsonc(text).expect("test JSON")
-}
 
 #[test]
 fn the_full_1_26_shape_round_trips() {
