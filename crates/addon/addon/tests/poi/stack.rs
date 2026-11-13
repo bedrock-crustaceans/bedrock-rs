@@ -9,10 +9,8 @@ use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackStack};
 
-use super::common::{
-    block_of, context_with, describe, fixture_packs, fixture_stack, load_with, names, pack, stack,
-    stack_with, tag_of,
-};
+use super::common::{block_of, context_with, describe, load_with, names, tag_of};
+use super::stacks::{fixture_packs, fixture_stack, pack, stack, stack_with};
 
 /// A type identifier.
 fn ty(text: &str) -> PoiTypeId {
@@ -293,7 +291,7 @@ fn only_files_with_the_extension_json_in_the_poi_directories_are_read() {
 
 #[test]
 fn poi30_vanilla_1_26_20_set_loads_and_resolves_its_tags() {
-    let stack = stack(super::common::fixture_packs_from(
+    let stack = stack(super::stacks::fixture_packs_from(
         "poi30_vanilla_1_26_20_set",
         bedrock_addon::pack::PackOrigin::Package,
     ));

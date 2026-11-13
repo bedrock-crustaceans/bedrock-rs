@@ -12,7 +12,8 @@ use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics, Sever
 use bedrock_addon::load::BuiltIns;
 use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
-use super::common::{fixture_packs, poi_options};
+use super::common::poi_options;
+use super::stacks::fixture_packs;
 
 /// The vanilla palette of these rows: every `minecraft:` block is built in.
 struct VanillaBlocks;

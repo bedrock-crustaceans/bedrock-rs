@@ -87,7 +87,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
 
     let started = Instant::now();
     // A tag naming itself, as parent and as child.
-    let stack = super::common::stack(vec![super::common::pack(
+    let stack = super::stacks::stack(vec![super::stacks::pack(
         10,
         &[(
             "poi/tags/a.json",
@@ -106,7 +106,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
     assert!(poi.parents(&a).is_empty() && poi.children(&a).is_empty());
 
     // Two tags naming each other, each side saying it twice over.
-    let stack = super::common::stack(vec![super::common::pack(
+    let stack = super::stacks::stack(vec![super::stacks::pack(
         10,
         &[
             (
@@ -140,7 +140,7 @@ fn cyclic_tag_graphs_terminate_quickly_with_their_findings() {
         .iter()
         .map(|(path, text)| (path.as_str(), text.as_str()))
         .collect();
-    let stack = super::common::stack(vec![super::common::pack(10, &borrowed)]);
+    let stack = super::stacks::stack(vec![super::stacks::pack(10, &borrowed)]);
     let poi = stack.poi();
     assert_eq!(
         names(poi.diagnostics(), Severity::Info).len(),
@@ -258,7 +258,7 @@ fn the_struct_parse_gives_no_value_once_it_reported_an_error() {
 /// first.
 #[test]
 fn a_claimed_block_is_reported_at_its_own_entry() {
-    let stack = super::common::stack(vec![super::common::pack(
+    let stack = super::stacks::stack(vec![super::stacks::pack(
         10,
         &[
             (
@@ -353,7 +353,7 @@ fn json_nested_past_the_limit_is_malformed_input() {
 /// unioned into an earlier one of its pack are kept.
 #[test]
 fn a_merged_tag_document_keeps_its_findings() {
-    let stack = super::common::stack(vec![super::common::pack(
+    let stack = super::stacks::stack(vec![super::stacks::pack(
         10,
         &[
             ("poi/tags/t_a.json", &tag_of("test:t", "")),
@@ -373,18 +373,18 @@ fn a_merged_tag_document_keeps_its_findings() {
 /// loaded document and for a rejected one.
 #[test]
 fn a_documents_findings_carry_its_pack_and_file() {
-    let low = super::common::pack(
+    let low = super::stacks::pack(
         20,
         &[("poi/blocks/empty.json", &block_of("test:empty", "", "[]"))],
     );
-    let top = super::common::pack(
+    let top = super::stacks::pack(
         10,
         &[(
             "poi/blocks/bad.json",
             &block_of("forge", "", r#"["minecraft:anvil"]"#),
         )],
     );
-    let stack = super::common::stack(vec![top, low]);
+    let stack = super::stacks::stack(vec![top, low]);
     let mut found: Vec<(&str, Option<usize>, Option<&str>)> = stack
         .poi()
         .diagnostics()

@@ -3,7 +3,7 @@
 
 #![cfg(feature = "poi")]
 
-#[path = "poi/common.rs"]
+#[path = "../../families/poi/tests/poi/common.rs"]
 mod common;
 
 #[path = "poi/determinism.rs"]
@@ -15,26 +15,20 @@ mod deviations;
 #[path = "poi/link.rs"]
 mod link;
 
-#[path = "poi/located.rs"]
-mod located;
-
 #[path = "poi/pins.rs"]
 mod pins;
 
 #[path = "common/responder.rs"]
 mod responder;
 
-#[path = "poi/round_trip.rs"]
-mod round_trip;
-
 #[path = "poi/rows.rs"]
 mod rows;
 
-#[path = "poi/rules.rs"]
-mod rules;
-
 #[path = "poi/stack.rs"]
 mod stack;
+
+#[path = "poi/stacks.rs"]
+mod stacks;
 
 #[path = "poi/vanilla.rs"]
 mod vanilla;

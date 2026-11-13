@@ -32,3 +32,6 @@ mod chain;
 
 #[path = "trade/input.rs"]
 mod input;
+
+#[path = "trade/located.rs"]
+mod located;

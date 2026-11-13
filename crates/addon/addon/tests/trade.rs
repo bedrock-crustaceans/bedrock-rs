@@ -14,6 +14,3 @@ mod stack;
 #[cfg(all(feature = "item", feature = "block"))]
 #[path = "trade/link.rs"]
 mod link;
-
-#[path = "trade/located.rs"]
-mod located;

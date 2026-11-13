@@ -9,7 +9,8 @@ use bedrock_addon::pack::{
     Pack, PackOrigin, PackRepository, PackSelection, PackStack, Resource, WorldPacks,
 };
 
-use super::common::{BASE, CEREAL, DESCRIPTION, LEGACY, document, number, options, pack};
+use super::common::{BASE, CEREAL, DESCRIPTION, LEGACY, document, number, options};
+use super::stacks::pack;
 
 /// An effect named `identifier` that emits `count` particles: what tells the packs apart.
 fn spark(version: &str, identifier: &str, count: u32) -> String {

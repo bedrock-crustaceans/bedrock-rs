@@ -14,6 +14,3 @@ mod link;
 
 #[path = "loot/stack.rs"]
 mod stack;
-
-#[path = "loot/located.rs"]
-mod located;

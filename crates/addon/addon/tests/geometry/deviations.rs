@@ -6,7 +6,8 @@
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::id::GeometryId;
 
-use crate::common::{count, expect_at, load, loaded, rejected, stack, with_bone};
+use crate::common::{count, expect_at, load, loaded, rejected, with_bone};
+use crate::stacks::stack;
 
 /// The family notes: below 1.19.30 an unknown member is a warning and is dropped
 /// (`vanilla = "silently removed during the upgrade-time lenient validation"`).

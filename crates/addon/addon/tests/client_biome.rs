@@ -3,20 +3,9 @@
 
 #![cfg(feature = "client_biome")]
 
-#[path = "client_biome/chain.rs"]
-mod chain;
-#[path = "client_biome/common.rs"]
+#[path = "../../families/client_biome/tests/client_biome/common.rs"]
 mod common;
-#[path = "client_biome/engine.rs"]
-mod engine;
-#[path = "client_biome/rows.rs"]
-mod rows;
-#[path = "client_biome/rules.rs"]
-mod rules;
 #[path = "client_biome/stack.rs"]
 mod stack;
-#[path = "client_biome/steps.rs"]
-mod steps;
-
-#[path = "client_biome/located.rs"]
-mod located;
+#[path = "client_biome/stacks.rs"]
+mod stacks;

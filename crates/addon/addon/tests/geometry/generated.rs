@@ -5,7 +5,8 @@ use bedrock_addon::document::Content;
 use bedrock_addon::families::geometry::{Geometry, GeometryFile, Locator};
 use bedrock_addon::json::EncodeError;
 
-use crate::common::{load, loaded, stack};
+use crate::common::{load, loaded};
+use crate::stacks::stack;
 
 /// A xorshift generator: the same files on every run.
 struct Random(u64);

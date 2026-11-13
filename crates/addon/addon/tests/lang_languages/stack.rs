@@ -7,6 +7,7 @@ use bedrock_addon::families::lang::Language;
 use bedrock_addon::pack::{Behavior, Pack, PackStack, Resource, Side};
 
 use super::common::*;
+use super::stacks::*;
 
 fn lang_of(code: &str) -> Language {
     Language::new(code)

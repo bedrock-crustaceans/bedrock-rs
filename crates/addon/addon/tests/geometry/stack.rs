@@ -6,7 +6,7 @@ use bedrock_addon::document::Registry;
 use bedrock_addon::families::geometry::Geometry;
 use bedrock_addon::id::GeometryId;
 
-use crate::common::stack;
+use crate::stacks::stack;
 
 fn modern(identifier: &str, bone: &str) -> String {
     format!(

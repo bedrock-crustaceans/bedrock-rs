@@ -8,6 +8,7 @@ use bedrock_addon::pack::{PackOrigin, PackRepository, WorldPacks};
 
 use super::common::*;
 use super::pack_common::bp;
+use super::stacks::{leak, stack};
 
 fn preset_id(text: &str) -> AimAssistPresetId {
     AimAssistPresetId::parse(text)

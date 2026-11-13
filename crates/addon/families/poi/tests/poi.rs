@@ -5,3 +5,15 @@
 
 #[path = "poi/chain.rs"]
 mod chain;
+
+#[path = "poi/common.rs"]
+mod common;
+
+#[path = "poi/located.rs"]
+mod located;
+
+#[path = "poi/round_trip.rs"]
+mod round_trip;
+
+#[path = "poi/rules.rs"]
+mod rules;

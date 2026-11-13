@@ -9,9 +9,9 @@ use bedrock_addon::pack::PackOrigin;
 use bedrock_addon::version::ENGINE_VERSION;
 
 use super::common::{
-    context_with, describe, fixture, fixture_packs_from, fixture_stack, is_closing, load_with,
-    loads, names, poi_options, rejected, stack,
+    context_with, describe, fixture, is_closing, load_with, loads, names, poi_options, rejected,
 };
+use super::stacks::{fixture_packs_from, fixture_stack, stack};
 
 /// The one error of `findings`.
 #[track_caller]

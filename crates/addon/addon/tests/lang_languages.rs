@@ -4,7 +4,7 @@
 
 #![cfg(all(feature = "lang", feature = "languages"))]
 
-#[path = "lang_languages/common.rs"]
+#[path = "../../families/lang/tests/lang_languages/common.rs"]
 mod common;
 
 #[path = "common/responder.rs"]
@@ -16,8 +16,8 @@ mod requests;
 #[path = "lang_languages/stack.rs"]
 mod stack;
 
+#[path = "lang_languages/stacks.rs"]
+mod stacks;
+
 #[path = "lang_languages/overlay.rs"]
 mod overlay;
-
-#[path = "lang_languages/content.rs"]
-mod content;

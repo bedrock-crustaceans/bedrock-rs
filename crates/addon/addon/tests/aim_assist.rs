@@ -6,14 +6,11 @@
 #[path = "pack/common.rs"]
 mod pack_common;
 
-#[path = "aim_assist/common.rs"]
+#[path = "../../families/aim_assist/tests/aim_assist/common.rs"]
 mod common;
-
-#[path = "aim_assist/rows.rs"]
-mod rows;
 
 #[path = "aim_assist/stack.rs"]
 mod stack;
 
-#[path = "aim_assist/chain.rs"]
-mod chain;
+#[path = "aim_assist/stacks.rs"]
+mod stacks;

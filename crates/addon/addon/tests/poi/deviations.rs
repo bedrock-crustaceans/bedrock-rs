@@ -6,10 +6,8 @@ use bedrock_addon::families::poi::{Poi, PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::load::LoadOptions;
 
-use super::common::{
-    block_of, context_with, fixture_packs, fixture_stack, load_with, loads, names, pack, stack,
-    stack_with, tag_of,
-};
+use super::common::{block_of, context_with, load_with, loads, names, tag_of};
+use super::stacks::{fixture_packs, fixture_stack, pack, stack, stack_with};
 
 /// The findings of the group named `code`.
 fn found<'a>(poi: &'a Poi, code: &str) -> Vec<&'a Diagnostic> {

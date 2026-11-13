@@ -10,9 +10,10 @@ use bedrock_addon::id::BiomeId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, Pack, PackOrigin, PackSide, PackStack, Resource};
 
+use super::common::{biome, document};
 #[cfg(feature = "biome")]
-use super::common::world_stacks;
-use super::common::{biome, document, manifest, pack};
+use super::stacks::world_stacks;
+use super::stacks::{manifest, pack};
 
 /// A client biome named `identifier` whose sky colour tells the packs apart.
 fn sky(identifier: &str, color: &str) -> String {

@@ -7,7 +7,8 @@
 use bedrock_addon::id::ParticleId;
 use bedrock_addon::pack::{PackStack, Resource};
 
-use super::common::{CEREAL, document, options, pack};
+use super::common::{CEREAL, document, options};
+use super::stacks::pack;
 
 /// A stack: `COUNT` files in one pack, each its own effect, under a pack that replaces half
 /// of them and one whose files all fail.

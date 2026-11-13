@@ -5,3 +5,6 @@
 
 #[path = "render_controller/chain.rs"]
 mod chain;
+
+#[path = "render_controller/located.rs"]
+mod located;

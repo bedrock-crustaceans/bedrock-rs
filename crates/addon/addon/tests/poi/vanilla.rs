@@ -12,7 +12,8 @@ use bedrock_addon::families::poi::{PoiTag, PoiType};
 use bedrock_addon::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon::pack::PackOrigin;
 
-use super::common::{describe, fixture, fixture_packs_from, loads, pack_from, stack};
+use super::common::{describe, fixture, loads};
+use super::stacks::{fixture_packs_from, pack_from, stack};
 
 /// The decoded set, as a pack of the game.
 const SET: &str = "poi42_experimental_poi";

@@ -7,6 +7,7 @@ use bedrock_addon::pack::{PackStack, Resource};
 use bedrock_addon::storage::PackPath;
 
 use super::common::*;
+use super::stacks::*;
 
 fn lang_of(code: &str) -> Language {
     Language::new(code)

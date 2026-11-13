@@ -26,3 +26,6 @@ mod edges;
 
 #[path = "loot/kept.rs"]
 mod kept;
+
+#[path = "loot/located.rs"]
+mod located;
