@@ -1,5 +1,5 @@
 //! 20 R24: the names of a geometry that nothing resolves. (R22 and R23 are the load's:
-//! `tests/geometry/stack.rs`, `tests/geometry/gates.rs`.)
+//! `tests/geometry/stack.rs` here, `tests/geometry/gates.rs` in the geometry family.)
 
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail};
 use bedrock_addon::load::LoadOptions;

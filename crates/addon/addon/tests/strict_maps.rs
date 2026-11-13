@@ -502,7 +502,7 @@ fn a_blocks_json_entry_that_is_an_array_is_a_type_error() {
 
 // the slot maps of an attachable, at each of its versions, and
 // the object form of a list entry. `item` given an array is rule 15's `InvalidValue`
-// (tests/attachable/rows.rs::a15_item_wrong_type), not an `InvalidType`.
+// (families/attachable/tests/attachable/rows.rs::a15_item_wrong_type), not an `InvalidType`.
 #[cfg(feature = "attachable")]
 #[test]
 fn attachable_slot_maps_that_are_an_array_are_a_type_error() {

@@ -1,8 +1,8 @@
 //! The scalar judge: how a scalar token is read against its member's declared type under each
 //! profile a slice reads by. Its oracles are the readers it stands for: the strict wrappers
 //! (`Strict`, and `NonStrict` under `with_reader_mode`), the post-hoc misread walk of a plain
-//! member (`ConvertAndTell`), and the legacy block reader's fixtures (`addon/tests/block/
-//! legacy_reader.rs`). The `JsonCpp` accept set is held against entity's generated game table
+//! member (`ConvertAndTell`), and the legacy block reader's fixtures
+//! (`families/block/tests/block/legacy_reader.rs`). The `JsonCpp` accept set is held against entity's generated game table
 //! in the entity crate.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
@@ -345,7 +345,7 @@ fn a_128_bit_member_takes_every_integer_token_of_its_sign() {
     );
 }
 
-/// `addon/tests/block/legacy_reader.rs`, the legacy block reader's fixtures, as respellings.
+/// `families/block/tests/block/legacy_reader.rs`, the legacy block reader's fixtures, as respellings.
 #[test]
 fn the_legacy_reader_fixtures_respell_as_pinned() {
     let u8 = Declared::Int {

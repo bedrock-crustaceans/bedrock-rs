@@ -1,5 +1,6 @@
 //! What the geometry test files share: contexts, loading one file, finding diagnostics by code
-//! and text, round trips, and in-memory resource pack stacks.
+//! and text and round trips. The in-memory resource pack stacks are in `bedrock_addon`'s
+//! `tests/geometry/stacks.rs`.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 

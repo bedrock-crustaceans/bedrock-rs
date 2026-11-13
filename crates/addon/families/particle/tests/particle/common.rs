@@ -1,4 +1,5 @@
-//! What the particle tests share: loading one document, contexts, packs, fixture files.
+//! What the particle tests share: loading one document, contexts, document builders and fixture
+//! files. The in-memory packs are in `bedrock_addon`'s `tests/particle/stacks.rs`.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 

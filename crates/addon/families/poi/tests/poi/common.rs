@@ -1,4 +1,5 @@
-//! What the POI tests share: the fixture packs and loading one document.
+//! What the POI tests share: the fixture files and loading one document. The packs and stacks
+//! built from them are in `bedrock_addon`'s `tests/poi/stacks.rs`.
 //!
 //! A fixture is `tests/fixtures/poi/poi/<name>/`: one behaviour-pack tree (`poi/…`) or, for a
 //! stack, `stack/<n>_<pack>/poi/…` with `0_…` the highest priority. Unless a test says

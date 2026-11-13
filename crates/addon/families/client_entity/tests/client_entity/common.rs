@@ -1,6 +1,6 @@
-//! What the client entity tests share: resource-pack contexts,
-//! loading one file, finding diagnostics by code and vanilla text, round trips, in-memory
-//! resource stacks and the fixture files.
+//! What the client entity tests share: resource-pack contexts, loading one file, finding
+//! diagnostics by code and vanilla text, round trips and the fixture files. The in-memory
+//! resource stacks are in `bedrock_addon`'s `tests/client_entity/stacks.rs`.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 

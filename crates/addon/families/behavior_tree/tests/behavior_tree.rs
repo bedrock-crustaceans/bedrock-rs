@@ -1,6 +1,6 @@
-//! The behavior-tree family (`behavior_trees/`, `minecraft:behavior_tree`): every row of
-//! The fixtures, the validation rules, the node catalogue of
-//! The schema, the stack rules, write-back and the deviations.
+//! The behavior-tree family (`behavior_trees/`, `minecraft:behavior_tree`), the tests that read
+//! one document: the node catalogue of the schema, the validation rules on single files and
+//! the pack and path every finding of a file read alone carries.
 
 #[path = "behavior_tree/common.rs"]
 mod common;

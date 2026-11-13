@@ -1,4 +1,5 @@
-//! What the block tests share: loading one document, in-memory packs, the fixture files.
+//! What the block tests share: contexts, loading one document, a pack manifest and the fixture
+//! files. The pack built from files is in `bedrock_addon`'s `tests/block/stacks.rs`.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 

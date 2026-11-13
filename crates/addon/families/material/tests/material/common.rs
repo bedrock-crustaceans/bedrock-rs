@@ -1,6 +1,6 @@
-//! Helpers of the material tests: files read on their own, in-line resource stacks (the lowest
-//! pack first: `pack_0` is the lowest priority) and the shape a
-//! test compares of a finding.
+//! Helpers of the material tests: files read on their own, the shape a test compares of a
+//! finding and the check that a written file keeps what was authored. The in-line resource
+//! stacks are in `bedrock_addon`'s `tests/material/stacks.rs`.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 

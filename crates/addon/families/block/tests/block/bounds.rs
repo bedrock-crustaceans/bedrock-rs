@@ -8,7 +8,7 @@
 //! This pins today's code, not the game: no capture of the game reading these forms is at
 //! hand. It reads `OffsetAxis` through facet directly, not through the block loader, so it
 //! pins neither what `parse_component` reports for a refused `range` nor the findings of
-//! `random_offset` in `validate.rs` (`addon/tests/block/latest.rs` exercises some of those).
+//! `random_offset` in `validate.rs` (`latest.rs` beside this file exercises some of those).
 
 use bedrock_addon_core::json::{from_str_jsonc, to_json};
 use bedrock_addon_core::shared::{FloatRange, RangeForm};

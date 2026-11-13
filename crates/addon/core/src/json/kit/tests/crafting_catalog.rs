@@ -188,8 +188,8 @@ fn crafting_catalog_s_reader_reads_as_the_kit() {
     });
 }
 
-/// Catalogue payloads after `addon/tests/crafting_catalog` (`loader.rs`, `located.rs`,
-/// `stack.rs`) and the reader's own failures.
+/// Catalogue payloads after `addon/tests/crafting_catalog` (`loader.rs`, `stack.rs`), the
+/// family's `tests/crafting_catalog/located.rs` and the reader's own failures.
 const FIXTURES: &[&str] = &[
     r#"{"categories": [{"category_name": "construction", "groups": [{"group_identifier": {"name": "custom:g"}, "items": ["custom:thing", "custom:ore"]}]}]}"#,
     r"{}",

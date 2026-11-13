@@ -1,6 +1,14 @@
-//! The helpers the tests of the `bedrock_addon` crates share: findings as lines, the outcome of
-//! a document read, test JSON, fixture reads and the line a test prints when the game's files
-//! it needs are absent.
+//! The helpers the tests of the `bedrock_addon` crates share, one module each:
+//!
+//! - [`corpus`]: the line a test prints when the game's files it needs are absent.
+//! - [`diagnostics`]: findings as lines and by code.
+//! - [`document`]: the outcome of a document read, loaded or refused, and its round trip.
+//! - [`fixture`]: fixture reads below the caller's own manifest directory.
+//! - [`json`](mod@json): test JSON, read through the door.
+//! - [`package`]: what a package's test files include from outside the package.
+//! - [`value`]: a shared-type value read from JSON text, written back and compared.
+//! - [`write_back`]: a document written back as the JSON value it was read from.
+//! - [`written_pins`]: the pinned write-back of the sound documents.
 //!
 //! The crate is for tests alone: a crate names it in `[dev-dependencies]` and nowhere else.
 //! It is never a normal dependency, so no library item of another crate can name it.

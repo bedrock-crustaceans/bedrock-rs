@@ -1,5 +1,6 @@
-//! Fixtures and pack builders for the tests that need both the `.lang` files and the language
-//! list: the files under `tests/fixtures/text/text/` and packs and stacks built from them.
+//! Fixtures for the tests that need both the `.lang` files and the language list: the files
+//! under `tests/fixtures/text/text/`. The packs and stacks built from them are in
+//! `bedrock_addon`'s `tests/lang_languages/stacks.rs`.
 
 use std::path::PathBuf;
 

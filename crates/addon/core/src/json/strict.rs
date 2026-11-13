@@ -7,7 +7,7 @@
 //!
 //! | user | lines | waits on |
 //! |---|---|---|
-//! | block's shell structs (`families/block/src/{types,states,validate}.rs`, `component/deprecated.rs`; `addon/tests/block/{rows,rules}.rs`) | 30 (+5 in tests) | the shell is read under `ScalarRules::PLAIN`, outside the slice's `Reading`: a per-struct strict scalar rule, or the shell read under the slice's `Reading` |
+//! | block's shell structs (`families/block/src/{types,states,validate}.rs`, `component/deprecated.rs`; `families/block/tests/block/{rows,rules}.rs`) | 30 (+5 in tests) | the shell is read under `ScalarRules::PLAIN`, outside the slice's `Reading`: a per-struct strict scalar rule, or the shell read under the slice's `Reading` |
 //! | trade's wire structs (`families/trade/src/read.rs`: `TableWire`, `GroupWire`, `TradeWire`, `EntryWire`, `quantity_int`) | 12 | each element is read from its own `RawJson` slice with `parse_at`: a per-element slice attribute (the element read under the slice's rules) |
 //! | `shared::MenuCategory::is_hidden_in_commands` (`shared/shapes/src/menu.rs`; `shared/shapes/tests/menu_category.rs`) | 2 (+2) | read in block's description, under its shell's `PLAIN` rules, and in item's: the block shell gap, and a pin of item's reading of it |
 //! | [`ReaderMode`] / [`with_reader_mode`] (`core/tests/json_scalars.rs`) | 34 (tests) | no reader sets it: kept as the oracle the pre-pass's `Scalars::NonStrict` is held equal to |

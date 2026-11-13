@@ -962,7 +962,7 @@ fn a_clamped_scale_leaves_the_span_of_a_later_wrong_type_where_it_is() {
 #[test]
 fn a_clamped_scale_leaves_the_path_of_a_later_wrong_type_where_it_is() {
     // An array is no Molang: the finding is `scripts.scale`'s, not the clamped member's. (A
-    // number beyond `f32` there is clamped as the scale is: tests/attachable/numbers.rs.)
+    // number beyond `f32` there is clamped as the scale is: families/attachable/tests/attachable/numbers.rs.)
     let members = r#""held_item_scale": 1e39, "scripts": {"scale": []}"#;
     let text = ghost("1.26.0", members);
     clamp_changes_no_other_finding(&text, &[("1e39", "1e30", SCALE_AT)], entity_findings);

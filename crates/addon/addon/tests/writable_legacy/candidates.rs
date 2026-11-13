@@ -281,7 +281,7 @@ fn trd1_trd2_a_null_member_is_the_absent_member_and_nothing_is_owed() {
 
 /// TRD3: below 1.20.30 `biomes` becomes the item's filter; an empty list makes none and
 /// goes: noted at the member. TRD4, its control: a list with names is converted, and the
-/// conversion is announced at `biomes` (`tests/trading/round_trip.rs`, `k107_`).
+/// conversion is announced at `biomes` (`families/trade/tests/trade/round_trip.rs`, `k107_`).
 #[test]
 fn trd3_trd4_an_empty_biomes_list_is_noted_and_a_list_with_names_is_converted() {
     let at = "tiers/0/trades/0/wants/0/biomes";

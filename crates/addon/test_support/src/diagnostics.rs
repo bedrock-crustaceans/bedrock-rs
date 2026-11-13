@@ -13,7 +13,7 @@ pub fn line(f: &Diagnostic) -> String {
     )
 }
 
-/// The findings, one line each ([`line`]).
+/// The findings, one line each ([`line`](fn@line)).
 pub fn lines(d: &Diagnostics) -> Vec<String> {
     d.iter().map(line).collect()
 }

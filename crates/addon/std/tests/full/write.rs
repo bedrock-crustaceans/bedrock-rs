@@ -311,7 +311,7 @@ pub fn copy(tree: &Tree, packs: Vec<Pack>, folders: &[PathBuf], options: &LoadOp
 
 /// The baked documents of a tree whose JSON twin reads as another value than the decoded text,
 /// by tree and path: the storage crate's own list
-/// (`storage/tests/mcb/vanilla.rs::READ_DIFFERENTLY`). Six particle effects ship a twin in the form their author wrote where the body has the
+/// (`addon/src/storage/tests/mcb/vanilla.rs::READ_DIFFERENTLY`). Six particle effects ship a twin in the form their author wrote where the body has the
 /// baked form (defaults written out, a gradient's colours as numbers, no `velocity`, the Molang
 /// version); two items have their components in another order in the twin. (The storage
 /// crate's list also has a camera whose `-0.0` is `-0` in the twin: it compares `Debug` texts,

@@ -131,7 +131,9 @@ content family (`families/<name>`) owns the types and rules of one kind of game 
 composes them into packs, stacks, the link pass and the writer, and `std` drives them over the
 file system. Oracle: the game's own files. Red tests are small JSON
 documents in the family's or `addon`'s `tests/`, asserting the typed value and the findings the
-game's content log would print; write the document back and require it to read the same.
+game's content log would print; write the document back and require it to read the same. A
+family's document tests live in the family crate's `tests/`; stack, link and cross-family tests in
+`addon/tests`; the helpers they share in `bedrock_addon_test_support`.
 The tests that load whole trees of the game's packs (`full*` in `std/tests`) and the vanilla
 gate (`vanilla_gate`) need files that are not in the repository: they read
 `BEDROCK_ADDON_CORPUS` and `BEDROCK_ADDON_VANILLA_1_26_60` and skip without them, which is not a

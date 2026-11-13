@@ -7,7 +7,9 @@
 //! `<name>/stack/<index>_<pack>/behavior_trees/…` (index 0 is the highest priority); a fixture
 //! without either is the empty stack. The `expected.json` files were produced from the
 //! family's tables by a second implementation written before the reader; the tests compare
-//! the loaded registry against them.
+//! the loaded registry against them. The packs and stacks built from a fixture, and the check
+//! of its stack against the golden files, are in `bedrock_addon`'s
+//! `tests/behavior_tree/stacks.rs`.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 #![allow(

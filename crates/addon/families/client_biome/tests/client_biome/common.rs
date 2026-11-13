@@ -1,4 +1,5 @@
-//! What the client-biome tests share: loading one document, contexts, packs, fixture files.
+//! What the client-biome tests share: loading one document, contexts and fixture files. The
+//! packs and world stacks are in `bedrock_addon`'s `tests/client_biome/stacks.rs`.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
