@@ -1,7 +1,7 @@
 //! `TrueOnly`: `true` reads and writes back, `false` is refused, and an absent member is
 //! `None`.
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_shared_shapes::{NotTrue, TrueOnly};
 use common::{read, round_trip};

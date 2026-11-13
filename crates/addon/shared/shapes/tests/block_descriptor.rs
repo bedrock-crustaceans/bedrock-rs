@@ -1,7 +1,7 @@
 //! `BlockDescriptor`, `BlockSpecifier`, `StateValue`: the JSON forms round trip;
 //! `Mixed` and `Invalid` are kept and reported with vanilla's texts as `InvalidValue` warnings.
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Kind, Severity};
 use bedrock_addon_core::id::BlockId;

@@ -3,8 +3,7 @@
 //! one of the game's JSON readers) and `min` / `max` (read by another) are one type that
 //! records which spelling was read.
 
-#[path = "shared/common.rs"]
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity, codes};
 use bedrock_addon_core::shared::{FloatRange, IntRange, Range, RangeForm};

@@ -2,7 +2,7 @@
 //! `Invalid` with vanilla's `InvalidType` text; several keys follow the interim rule of taking one
 //! and keeping the rest.
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};

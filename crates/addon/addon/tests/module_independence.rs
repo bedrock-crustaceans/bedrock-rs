@@ -52,29 +52,49 @@ fn lifted_families() -> &'static [String] {
 /// The dependency names of a `Cargo.toml` (every `[*dependencies]` table, target-specific ones
 /// included, and `[dependencies.<name>]` tables), each with its line.
 fn manifest_dependencies(manifest: &str) -> Vec<(usize, String)> {
+    manifest_dependency_tables(manifest)
+        .into_iter()
+        .map(|(line, name, _)| (line, name))
+        .collect()
+}
+
+/// [`manifest_dependencies`], each with the kind of table it is listed in: `dependencies`,
+/// `dev-dependencies` or `build-dependencies`, whether or not the table is target-specific.
+fn manifest_dependency_tables(manifest: &str) -> Vec<(usize, String, String)> {
     let mut names = Vec::new();
-    let mut in_dependencies = false;
+    let mut in_dependencies = None;
     for (index, line) in manifest.lines().enumerate() {
         let line = line.trim();
         if let Some(table) = line.strip_prefix('[') {
             let table = table.trim_end_matches(']').trim();
             let (head, last) = table.rsplit_once('.').unwrap_or(("", table));
+            let kind = head.rsplit('.').next().unwrap_or(head);
             if last.ends_with("dependencies") {
-                in_dependencies = true;
+                in_dependencies = Some(last.to_owned());
             } else if head.ends_with("dependencies") {
                 // `[dependencies.name]`
-                in_dependencies = false;
-                names.push((index + 1, last.trim_matches('"').to_owned()));
+                in_dependencies = None;
+                names.push((
+                    index + 1,
+                    last.trim_matches('"').to_owned(),
+                    kind.to_owned(),
+                ));
             } else {
-                in_dependencies = false;
+                in_dependencies = None;
             }
             continue;
         }
-        if in_dependencies && let Some((key, _)) = line.split_once('=') {
+        if let Some(kind) = &in_dependencies
+            && let Some((key, _)) = line.split_once('=')
+        {
             let key = key.trim().trim_matches('"');
             if !key.is_empty() && !key.starts_with('#') {
                 // `name.workspace = true` names `name`.
-                names.push((index + 1, key.split('.').next().unwrap().to_owned()));
+                names.push((
+                    index + 1,
+                    key.split('.').next().unwrap().to_owned(),
+                    kind.clone(),
+                ));
             }
         }
     }
@@ -215,6 +235,7 @@ fn lifted_violations(family: &str, manifest: &str, sources: &[(String, String)])
             }
         }
     }
+    violations.extend(test_support_violations(family, manifest, sources));
     violations
 }
 
@@ -364,7 +385,8 @@ fn lifted_families_depend_on_no_other_family_and_not_on_bedrock_addon() {
     assert!(
         violations.is_empty(),
         "a lifted family depends on bedrock_addon_core, bedrock_addon_derive, \
-         bedrock_addon_manifest and the bedrock_addon_shared_* crates only (and biome_json of \
+         bedrock_addon_manifest, bedrock_addon_test_support (a dev-dependency, for the tests) \
+         and the bedrock_addon_shared_* crates only (and biome_json of \
          bedrock_addon_support for the biome_json allowance, and SCRIPT_ITEMS of \
          bedrock_addon_family_script for server_config):\n{}",
         violations.join("\n")
@@ -681,13 +703,61 @@ fn shared_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../shared")
 }
 
+/// The dev-only helper crate of the tests ([`shared_may_name`]).
+const TEST_SUPPORT: &str = "bedrock_addon_test_support";
+
+/// Where a family or shared crate (`label`) lists [`TEST_SUPPORT`] outside its
+/// `[dev-dependencies]` in its manifest (`manifest`), or its library code names it (`sources`,
+/// each with its path below the crate's `src/`, without their files and items of tests): the
+/// helpers are the tests' alone.
+fn test_support_violations(
+    label: &str,
+    manifest: &str,
+    sources: &[(String, String)],
+) -> Vec<String> {
+    let mut violations = Vec::new();
+    for (line, name, table) in manifest_dependency_tables(manifest) {
+        if name == TEST_SUPPORT && table != "dev-dependencies" {
+            violations.push(format!(
+                "{label}/Cargo.toml:{line} depends on {name} outside [dev-dependencies]"
+            ));
+        }
+    }
+    for (relative, source) in sources {
+        if is_test_file(Path::new(relative)) {
+            continue;
+        }
+        // The library part keeps string literals; the name in one is no path.
+        let (code, literals_blank) = (library_part(source), code_of(source));
+        for (index, _) in code.match_indices(TEST_SUPPORT) {
+            if literals_blank.as_bytes()[index] == b' ' {
+                continue;
+            }
+            let before = code[..index].chars().next_back().is_some_and(is_ident);
+            let after = code[index + TEST_SUPPORT.len()..]
+                .chars()
+                .next()
+                .is_some_and(is_ident);
+            if !before && !after {
+                let line = code[..index].matches('\n').count() + 1;
+                violations.push(format!(
+                    "{label}/src/{relative}:{line} names {TEST_SUPPORT} outside its tests"
+                ));
+            }
+        }
+    }
+    violations
+}
+
 /// Whether a shared crate may name the `bedrock_addon*` crate `name`: core, the derive (its
-/// tests derive) and another shared crate, never a family, `bedrock_addon`, the support crate
-/// or the std driver.
+/// tests derive), another shared crate and the tests' helper crate (a dev-dependency that no
+/// library item names, [`test_support_violations`]), never a family, `bedrock_addon`, the
+/// support crate or the std driver.
 fn shared_may_name(name: &str) -> bool {
     name == "bedrock_addon_core"
         || name == "bedrock_addon_derive"
         || name.starts_with("bedrock_addon_shared_")
+        || name == TEST_SUPPORT
 }
 
 /// What a shared crate (`crates/addon/shared/<name>/`) depends on or names that it may not:
@@ -715,6 +785,7 @@ fn shared_violations(name: &str, manifest: &str, sources: &[(String, String)]) -
             }
         }
     }
+    violations.extend(test_support_violations(name, manifest, sources));
     violations
 }
 
@@ -755,7 +826,9 @@ fn shared_crates_depend_on_core_and_no_family() {
     }
     assert!(
         violations.is_empty(),
-        "a shared crate depends on bedrock_addon_core and the other shared crates only:\n{}",
+        "a shared crate depends on bedrock_addon_core, bedrock_addon_derive, \
+         bedrock_addon_test_support (a dev-dependency, for the tests) and the other shared \
+         crates only:\n{}",
         violations.join("\n")
     );
 }
@@ -782,6 +855,69 @@ fn the_shared_scan_reads_manifests_and_paths() {
             "shapes/src/lib.rs:3 names bedrock_addon_family_fog::",
             "shapes/src/lib.rs:4 names bedrock_addon_support::",
         ]
+    );
+}
+
+#[test]
+fn test_support_under_dependencies_is_refused_and_under_dev_dependencies_allowed() {
+    let normal = "[package]\nname = \"bedrock_addon_family_fog\"\n\n[dependencies]\n\
+        bedrock_addon_test_support = { path = \"../../test_support\" }\n\
+        [dependencies.bedrock_addon_test_support]\npath = \"../../test_support\"\n\
+        [build-dependencies]\nbedrock_addon_test_support.workspace = true\n";
+    let dev = "[package]\nname = \"bedrock_addon_family_fog\"\n\n[dev-dependencies]\n\
+        bedrock_addon_test_support = { path = \"../../test_support\" }\n\
+        [target.'cfg(unix)'.dev-dependencies]\nbedrock_addon_test_support.workspace = true\n\
+        [dev-dependencies.bedrock_addon_test_support]\npath = \"../../test_support\"\n";
+    assert_eq!(
+        lifted_violations("fog", normal, &[]),
+        [
+            "fog/Cargo.toml:5 depends on bedrock_addon_test_support outside [dev-dependencies]",
+            "fog/Cargo.toml:6 depends on bedrock_addon_test_support outside [dev-dependencies]",
+            "fog/Cargo.toml:9 depends on bedrock_addon_test_support outside [dev-dependencies]",
+        ]
+    );
+    assert_eq!(lifted_violations("fog", dev, &[]), [] as [&str; 0]);
+    let normal = normal.replace("bedrock_addon_family_fog", "bedrock_addon_shared_shapes");
+    let dev = dev.replace("bedrock_addon_family_fog", "bedrock_addon_shared_shapes");
+    assert_eq!(
+        shared_violations("shapes", &normal, &[]),
+        [
+            "shapes/Cargo.toml:5 depends on bedrock_addon_test_support outside [dev-dependencies]",
+            "shapes/Cargo.toml:6 depends on bedrock_addon_test_support outside [dev-dependencies]",
+            "shapes/Cargo.toml:9 depends on bedrock_addon_test_support outside [dev-dependencies]",
+        ]
+    );
+    assert_eq!(shared_violations("shapes", &dev, &[]), [] as [&str; 0]);
+}
+
+#[test]
+fn test_support_in_library_code_is_refused_and_in_tests_allowed() {
+    let manifest = "[package]\nname = \"bedrock_addon_family_fog\"\n\n[dev-dependencies]\n\
+        bedrock_addon_test_support = { path = \"../../test_support\" }\n";
+    let sources = [
+        (
+            "lib.rs".to_owned(),
+            "use bedrock_addon_test_support::json;\n\
+             // bedrock_addon_test_support::lines in a comment\n\
+             #[cfg(test)]\nmod tests {\n    use bedrock_addon_test_support::lines;\n}\n\
+             use bedrock_addon_test_support as helpers;\n\
+             const NAME: &str = \"bedrock_addon_test_support\";\n"
+                .to_owned(),
+        ),
+        (
+            "fog/tests.rs".to_owned(),
+            "use bedrock_addon_test_support::corpus;\n".to_owned(),
+        ),
+    ];
+    let expected = [
+        "fog/src/lib.rs:1 names bedrock_addon_test_support outside its tests",
+        "fog/src/lib.rs:7 names bedrock_addon_test_support outside its tests",
+    ];
+    assert_eq!(lifted_violations("fog", manifest, &sources), expected);
+    let manifest = manifest.replace("bedrock_addon_family_fog", "bedrock_addon_shared_shapes");
+    assert_eq!(
+        shared_violations("shapes", &manifest, &sources),
+        expected.map(|line| line.replacen("fog/", "shapes/", 1))
     );
 }
 

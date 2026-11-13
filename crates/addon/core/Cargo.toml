@@ -50,3 +50,6 @@ bedrock_addon_core = { path = ".", features = ["test-cost"] }
 # The version-chain tests derive a toy family's component enum (a dev-only cycle: the derive's
 # tests depend on core).
 bedrock_addon_derive = { path = "../derive" }
+# The tests' helpers (a dev-only cycle: test_support depends on core). Only `tests/` may use
+# it: a unit test in `src` is built in a second core whose types are not test_support's.
+bedrock_addon_test_support = { path = "../test_support" }

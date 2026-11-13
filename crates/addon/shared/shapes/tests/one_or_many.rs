@@ -1,7 +1,7 @@
 //! `OneOrMany`: the one form and the array form read and write as written, and the walks
 //! step into the array form only.
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::schema::{self, Schema, SchemaCx};

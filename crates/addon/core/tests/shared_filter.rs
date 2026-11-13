@@ -2,8 +2,7 @@
 //! eight group keys kept apart, test members with the interim typing, the unknown-test-name
 //! warning, and unknown members kept at every level.
 
-#[path = "shared/common.rs"]
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity, codes};
 use bedrock_addon_core::json::Value;

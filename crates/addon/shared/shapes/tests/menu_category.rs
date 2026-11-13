@@ -6,7 +6,7 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::document::Unknown;

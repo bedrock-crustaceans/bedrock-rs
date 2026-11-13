@@ -1,8 +1,7 @@
 //! `EventTrigger`: `"ns:event"` or `{event, target?, filters?}`; a legacy
 //! `condition` and other members are kept in `extra`.
 
-#[path = "shared/common.rs"]
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity, codes};
 use bedrock_addon_core::json::Value;

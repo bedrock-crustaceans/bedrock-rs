@@ -2,7 +2,7 @@
 //! reads exactly its channels, and both write back as read (a unit channel written as an
 //! integer token comes back as a real).
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;

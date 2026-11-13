@@ -1,0 +1,16 @@
+[package]
+name = "bedrock_addon_test_support"
+description = "The helpers the tests of the bedrock_addon crate family share: diagnostics as lines, document outcomes, test JSON and fixture reads; dev-only"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bedrock_addon_core = { path = "../core" }
+# `value`: the typed value read and written as a family member.
+facet = { workspace = true }
+facet-json = { workspace = true }

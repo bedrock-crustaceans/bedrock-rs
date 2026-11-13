@@ -1,7 +1,7 @@
 //! `Vec3` and `Vec2`: both forms read and write as written (the object form with its unknown
 //! members), and a vector of the wrong shape is refused with entity's texts.
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::JsonType;

@@ -17,6 +17,7 @@ members = [
     "crates/addon/storage",
     "crates/addon/std",
     "crates/addon/support",
+    "crates/addon/test_support",
     "crates/addon/vanilla",
     "crates/addon/families/*",
     "crates/addon/shared/*",

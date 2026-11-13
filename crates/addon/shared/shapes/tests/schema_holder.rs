@@ -2,7 +2,7 @@
 //! derive's check and Molang walks reach them through their hand `SchemaFields` and
 //! `MolangFields` impls (the derive takes no generics, and the leaf macros none either).
 
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::schema::{self, Schema, SchemaCx};

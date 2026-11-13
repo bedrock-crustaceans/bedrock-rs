@@ -10,8 +10,7 @@
     clippy::disallowed_types,
     reason = "tests read fixtures and call facet-json directly"
 )]
-#[path = "shared/common.rs"]
-mod common;
+use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::shared::{Filter, FilterScalar, FilterSubject};
