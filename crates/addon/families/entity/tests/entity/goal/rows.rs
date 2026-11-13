@@ -1,4 +1,5 @@
-//! The goal rows of and the goal rules of.
+//! How a goal row reads a bad member and a deprecated inherited name: kept and reported in a
+//! lenient conversion, dropped in a strict parse.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
@@ -15,10 +16,10 @@ fn strict_fixture<T: Component<Set = EntityComponent>>(name: &str, key: &str) ->
     (value.unwrap_or_else(|| panic!("{key} is kept: {d:?}")), d)
 }
 
-/// `v07_strict_vs_lenient`: the same bad `melee_attack` is a warning and kept in a
+/// The same bad `melee_attack` is a warning and kept in a
 /// lenient conversion (1.21.130), an error and dropped in a strict parse (1.26.0).
 #[test]
-fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
+fn a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
     let json = r#"{"priority": 2, "speed_multiplier": "fast", "track_target": true}"#;
     let (kept, d) = goal::<goal::MeleeAttack>(
         "minecraft:behavior.melee_attack",
@@ -41,13 +42,13 @@ fn v07_a_bad_melee_attack_is_kept_leniently_and_dropped_strictly() {
     assert_finding(&d, "core/invalid_type", "speed_multiplier", Severity::Error);
 }
 
-/// `v13_deprecated_inherited_names`: `delayed_attack.cooldown_time`,
+/// `delayed_attack.cooldown_time`,
 /// `stomp_attack.melee_fov` and `hurt_by_target.must_see` are `DeprecatedMember` with vanilla's
 /// text and are dropped: errors in a typed read (in both masks), which
 /// reject the document; `move_outdoors.search_count`, deprecated and re-bound, is an ordinary
 /// member.
 #[test]
-fn v13_deprecated_inherited_names_are_reported_and_dropped() {
+fn deprecated_inherited_names_are_reported_and_dropped() {
     const NAME: &str = "v13_deprecated_inherited_names";
     let deprecated = |d: &Diagnostics, member: &str, text: &'static str| {
         let found = finding(d, "core/deprecated_member_worded", member)

@@ -1,5 +1,5 @@
-//! The checks over every loaded document, run once when the group combines: which type a block
-//! belongs to and the tag hierarchy.
+//! The checks over every loaded document, run once when the group combines: which type each block
+//! belongs to, and the tag hierarchy.
 
 use indexmap::{IndexMap, IndexSet};
 

@@ -5,7 +5,7 @@
 //! registered with the strict flag clear, so its members go to the non-strict loader. That
 //! reader's float read takes a JSON bool as `0.0` or `1.0` and fails every other type but a
 //! number with `errc` 22; the strict reader's float read takes numbers only. The game's own tests load `"ambient_occlusion": false` in a
-//! `1.20.0` block .
+//! `1.20.0` block and expect it to read as `0.0`.
 
 use bedrock_addon_core::diagnostic::Kind;
 use bedrock_addon_family_block::component::{LightEmission, MaterialInstances};

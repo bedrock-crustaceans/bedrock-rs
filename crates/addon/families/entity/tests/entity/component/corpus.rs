@@ -356,7 +356,7 @@ fn vanilla_entity_files_read_this_modules_components_without_an_error() {
 }
 
 #[test]
-fn v11_retail_sulfur_cube_presets_upgrade_to_the_retail_1_26_40_copy() {
+fn retail_sulfur_cube_presets_upgrade_to_the_retail_1_26_40_copy() {
     // v11: "`sulfur_cube` 1.26.30 → 1.26.40 carries `require_collision_overlap:
     // false` equal to the retail 1.26.40 copy".
     let Some(root) = corpus() else { return };

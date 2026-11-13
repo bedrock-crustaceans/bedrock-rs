@@ -361,7 +361,7 @@ mod tests {
     /// `eat_block` with an unknown block in a pair:
     /// the game's text, and the pair is dropped; the other pairs stay.
     #[test]
-    fn v12_an_eat_block_pair_naming_an_unknown_block_is_dropped_with_vanillas_text() {
+    fn an_eat_block_pair_naming_an_unknown_block_is_dropped_with_vanillas_text() {
         let pair = |eat: &str, replace: &str| EatAndReplaceBlockPair {
             eat_block: Some(eat.to_owned()),
             replace_block: Some(replace.to_owned()),

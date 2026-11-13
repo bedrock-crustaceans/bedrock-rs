@@ -9,7 +9,7 @@ use bedrock_addon_family_entity::component::{
 
 use super::{fixture, has, json, read, read_as, round_trip, strict, write, write_with};
 
-/// The 49 marker keys of
+/// The 49 `minecraft:` marker keys: components whose whole value is the empty object.
 const MARKERS: [&str; 49] = [
     "body_rotation_always_follows_head",
     "body_rotation_blocked",

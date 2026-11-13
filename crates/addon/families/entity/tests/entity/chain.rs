@@ -121,8 +121,7 @@ fn a_missing_version_is_an_information_and_parses_at_the_floor_deviation() {
 
 #[test]
 fn the_in_payload_version_stands_in_for_a_missing_root_one() {
-    // `v00_floor_envelope`: a 1.2-era file gets the floor text, not the
-    // missing-version warning.
+    // A 1.2-era file gets the floor text, not the missing-version warning.
     let text = r#"{"minecraft:entity": {"format_version": "1.2.0", "description": {"identifier": "demo:old"}, "components": {}}}"#;
     let outcome = outcome(text, &cx());
     assert!(outcome.value.is_none());

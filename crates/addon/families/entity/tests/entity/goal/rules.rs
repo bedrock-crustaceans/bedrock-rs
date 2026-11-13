@@ -1,5 +1,6 @@
-//! The goal rules of: (strict typed parse), 16
-//! (bounds), 17 (component value messages), and (triggers, filters, Molang).
+//! The goal rules: the strict typed parse (a wrong JSON type or an unknown name fails it), the
+//! bounds (errors in a strict parse, defaults in a lenient one), the component value messages,
+//! and the triggers, filters and Molang fields of a goal.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Kind, Severity};
@@ -399,10 +400,10 @@ fn charge_held_item_needs_items() {
     assert!(value.is_some() && d.is_empty(), "{d:?}");
 }
 
-/// `v12_component_value_messages`, `transport_items.search_distance: 0`: vanilla's
-/// retail text; the default is used. An error in a strict parse, a warning in a lenient one.
+/// `transport_items.search_distance: 0`: vanilla's retail text; the default is used. An error
+/// in a strict parse, a warning in a lenient one.
 #[test]
-fn v12_transport_items_search_distance_must_be_positive() {
+fn transport_items_search_distance_must_be_positive() {
     let key = "minecraft:behavior.transport_items";
     let json = r#"{"search_distance": [0, 32]}"#;
     for (mode, severity) in [
@@ -432,12 +433,12 @@ fn load_entity(
     )
 }
 
-/// `v06_generic_goal_suffix` through a document load: a missing suffix and a
+/// The generic goal through a document load: a missing suffix and a
 /// 33-character suffix are `GenericGoalSuffixMissing` informations and the goal is dropped; a valid
 /// suffix loads the goal. Needs the component map's key routing (`goal::versioned`,
 /// `goal::GenericGoal::finding`, unit-tested in `goal/memory.rs`).
 #[test]
-fn v06_generic_goal_suffix_through_the_component_map() {
+fn generic_goal_suffix_through_the_component_map() {
     let long = "a".repeat(33);
     let outcome = load_entity(
         "1.26.20",

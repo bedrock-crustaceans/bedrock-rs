@@ -776,10 +776,10 @@ mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::{Code, Severity};
 
-    /// `v06_generic_goal_suffix`: a missing suffix and a 33-character suffix are
-    /// refused; a 32-character one is a named goal.
+    /// A missing suffix and a 33-character suffix are refused; a 32-character one is a named
+    /// goal.
     #[test]
-    fn v06_the_generic_goal_needs_a_suffix_of_1_to_32_word_characters() {
+    fn the_generic_goal_needs_a_suffix_of_1_to_32_word_characters() {
         assert_eq!(generic_goal(MOVE_TO_POSITION), GenericGoal::MissingSuffix);
         let long = "a".repeat(33);
         let key = format!("{MOVE_TO_POSITION}.{long}");

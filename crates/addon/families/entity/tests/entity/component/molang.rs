@@ -219,7 +219,7 @@ fn e29c_experience_reward_fold_moves_a_single_element_into_an_empty_scalar() {
 }
 
 #[test]
-fn v13_experience_reward_arrays_are_deprecated_names_in_1_21_110() {
+fn experience_reward_arrays_are_deprecated_names_in_1_21_110() {
     // v13: `experience_reward.on_bred_array` hidden-deprecated.
     let text = r#"{"on_death": 1, "on_bred_array": ["1"]}"#;
     let mut d = Diagnostics::default();

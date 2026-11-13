@@ -1,5 +1,5 @@
 //! `apply_knockback_rules` and `pushable_by_entity`, with their older shapes and the
-//! component-side upgrades of and
+//! component-side upgrades of both to the preset defaults of 1.26.30 and 1.26.40.
 
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::json::JsonSlice;

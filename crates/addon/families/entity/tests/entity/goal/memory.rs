@@ -8,11 +8,10 @@ use super::{assert_finding, fixture_member, goal, strict};
 
 const MOVE_TO_POSITION: &str = "minecraft:memory_behavior.move_to_position";
 
-/// `v15_brain_move_to_position_names`: `speed_modifier`, `goal_radius`,
-/// `maximum_range`, `interval`, `memory`, `on_reach` and `chance_to_start` are read;
-/// `speed_mod` / `interval_seconds` are `UnrecognizedField`.
+/// `speed_modifier`, `goal_radius`, `maximum_range`, `interval`, `memory`, `on_reach` and
+/// `chance_to_start` are read; `speed_mod` / `interval_seconds` are `UnrecognizedField`.
 #[test]
-fn v15_move_to_position_reads_its_members_and_not_the_draft_spellings() {
+fn move_to_position_reads_its_members_and_not_the_draft_spellings() {
     const NAME: &str = "v15_brain_move_to_position_names";
     let json = fixture_member(NAME, "minecraft:memory_behavior.move_to_position.x");
     let (g, d) = goal::<goal::MemoryMoveToPosition>(MOVE_TO_POSITION, &json, ConvertMode::Strict);

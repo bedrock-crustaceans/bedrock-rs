@@ -40,7 +40,7 @@ fn snapshot(name: &str) -> bedrock_addon_core::diagnostic::Diagnostics {
 }
 
 #[test]
-fn v09_full_chain_1_16_0() {
+fn full_chain_1_16_0() {
     let found = snapshot("v09_zombieish_1_16_0");
     // `move_towards_restriction` without `dweller` and `controlling_seat` are
     // dropped with the crate's texts; the root filter of `demo:killed` is ignored below 1.19.20.
@@ -58,7 +58,7 @@ fn v09_full_chain_1_16_0() {
 }
 
 #[test]
-fn v10_full_chain_1_8_0() {
+fn full_chain_1_8_0() {
     for name in [
         "v10_cloud_1_8_0",
         "v10_pearl_1_12_0",
@@ -74,7 +74,7 @@ fn v10_full_chain_1_8_0() {
 }
 
 #[test]
-fn v00_a_floor_document_without_components_gets_no_op() {
+fn a_floor_document_without_components_gets_no_op() {
     // at or below 1.8.0 without `components`, vanilla runs neither fixer section.
     let text = r#"{"format_version": "1.8.0", "minecraft:entity": {"description": {"identifier": "minecraft:wither"}}}"#;
     let (entity, found) = stable(text, &cx());
@@ -99,7 +99,7 @@ fn v00_a_floor_document_without_components_gets_no_op() {
 }
 
 #[test]
-fn v08_do_not_upgrade() {
+fn do_not_upgrade() {
     // A 1.20.0 vanilla cow with `do_not_upgrade`: section A is skipped (no `spawn_category`,
     // no `uses_legacy_friction`), sections B and C still run (`panic.damage_sources`).
     let text = r#"{"format_version": "1.20.0", "minecraft:entity": {"description": {"identifier": "minecraft:cow"},

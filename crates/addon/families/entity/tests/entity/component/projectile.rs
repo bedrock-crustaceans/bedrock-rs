@@ -103,7 +103,7 @@ fn spawn_chance_above_one_is_an_error() {
 }
 
 #[test]
-fn v12_projectile_value_messages_are_warnings_with_the_retail_texts() {
+fn projectile_value_messages_are_warnings_with_the_retail_texts() {
     // v12;: warnings, `no` / `none` used.
     let (value, d) = strict::<Projectile>(&fixture("v12_projectile_value_messages.json"));
     assert_eq!(value.should_bounce, ShouldBounce::No);
@@ -171,7 +171,7 @@ fn an_integer_anchor_is_an_error_in_a_1_26_50_document() {
 }
 
 #[test]
-fn v14_legacy_aliases_are_read_by_the_lenient_conversion_only() {
+fn legacy_aliases_are_read_by_the_lenient_conversion_only() {
     // v14: a 1.26.40 `projectile` with `reflectOnHurt` read by the legacy path; the
     // same member in a 1.26.50 document is `UnrecognizedField`.
     let text = fixture("v14_projectile_reflect_on_hurt.json");

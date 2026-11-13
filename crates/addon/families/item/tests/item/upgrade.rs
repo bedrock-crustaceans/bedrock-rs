@@ -1,4 +1,4 @@
-//! The upgrade steps on their fixture pairs : each runs one
+//! The upgrade steps on their fixture pairs: each pair runs one
 //! `Upgrade::upgrade` on `<name>.before.json` and compares the result with `<name>.after.json`
 //! parsed by the target struct at the source's `original_version`; `legacy.shared` (the raw
 //! values the legacy reader keeps) is compared apart.

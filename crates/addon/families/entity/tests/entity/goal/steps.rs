@@ -1,5 +1,5 @@
-//! The goal parts of the step rows of: what the lenient conversion
-//! of a goal (a document below the goal's typed version) makes of the older shapes.
+//! The goal parts of the step rows: what the lenient conversion of a goal (a document below the
+//! goal's typed version) makes of the older shapes.
 
 use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
