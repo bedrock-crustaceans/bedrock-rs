@@ -20,6 +20,7 @@ use bedrock_addon::id::FunctionPath;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options, Strategy};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::world_list;
@@ -201,7 +202,10 @@ const TEST_PACK: &[u8] =
 fn check_test_assets(install_a: &Path, folder: &str) {
     let assets = install_a.join("test").join("assets").join(folder);
     if !assets.is_dir() {
-        eprintln!("skipped: {} is not in the game files", assets.display());
+        corpus::skipped(
+            format_args!("the test assets {folder}"),
+            format_args!("{} is not in the game files", assets.display()),
+        );
         return;
     }
     let dirs = [assets.as_path()];

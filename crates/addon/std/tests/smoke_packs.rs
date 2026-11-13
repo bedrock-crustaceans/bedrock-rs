@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 
 use bedrock_addon::pack::{Pack, PackOrigin};
 use bedrock_addon_std::{DirSource, Driver, LoadError, Options, Strategy};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 
@@ -160,7 +161,10 @@ fn candidates_in(dirs: &[PathBuf]) -> Vec<PathBuf> {
 #[test]
 fn the_game_files_layout_is_reported() {
     let Some(root) = game_files::root() else {
-        eprintln!("skipped: {} is not set", game_files::VARIABLE);
+        corpus::skipped(
+            "the game files layout",
+            corpus::not_set(game_files::VARIABLE),
+        );
         return;
     };
     assert!(
@@ -171,7 +175,7 @@ fn the_game_files_layout_is_reported() {
     );
     for entry in game_files::ENTRIES {
         if game_files::source(entry).is_none() {
-            eprintln!("{}", game_files::missing(entry));
+            game_files::skipped(entry);
         }
     }
 }

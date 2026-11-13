@@ -24,6 +24,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Behavior, OpenOptions, PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{Driver, Options};
+use bedrock_addon_test_support::corpus;
 use bedrock_addon_test_support::json;
 
 use common::game_files;
@@ -363,7 +364,10 @@ fn upgraded_sulfur_cube_presets_equal_the_shipped_ones() {
             .map(|document| document.value().clone())
     };
     let (Some(upgraded), Some(install_b)) = (at("vanilla_1.26.30"), at("vanilla_1.26.40")) else {
-        eprintln!("sulfur_cube is not in both packs of client install B; skipped");
+        corpus::skipped(
+            "the sulfur_cube presets of client install B",
+            "sulfur_cube is not in both packs",
+        );
         return;
     };
     let presets = |entity: &Entity| -> Vec<String> {

@@ -103,15 +103,19 @@ fn baked() -> Option<Vec<Baked>> {
 /// `tops`, sorted; `None` (with a message) when the variable is unset or a directory is missing,
 /// so the test is skipped.
 fn game_files(tops: &[&str], suffix: &str) -> Option<Vec<PathBuf>> {
+    use bedrock_addon_test_support::corpus;
     let Some(root) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is unset");
+        corpus::skipped("the game's MCB files", corpus::not_set(corpus::CORPUS));
         return None;
     };
     let mut files = Vec::new();
     for top in tops {
         let dir = PathBuf::from(&root).join(top);
         if !dir.is_dir() {
-            eprintln!("skipped: {} is missing", dir.display());
+            corpus::skipped(
+                "the game's MCB files",
+                format_args!("{} is missing", dir.display()),
+            );
             return None;
         }
         let mut stack = vec![dir];

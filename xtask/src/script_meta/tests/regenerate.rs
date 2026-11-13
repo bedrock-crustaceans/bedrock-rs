@@ -4,6 +4,8 @@
 
 use std::path::{Path, PathBuf};
 
+use bedrock_addon_test_support::corpus;
+
 use super::step::{self, Check, Level};
 
 /// The committed file the step writes to `out` (a path from the workspace root).
@@ -15,14 +17,17 @@ fn committed(out: &str) -> String {
 /// The metadata checkout, or `None` (with a message) without one.
 fn samples_dir() -> Option<PathBuf> {
     let Ok(corpus) = std::env::var("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped("the metadata checkout", corpus::not_set(corpus::CORPUS));
         return None;
     };
     let dir = PathBuf::from(corpus).join("bedrock-samples");
     if dir.is_dir() {
         Some(dir)
     } else {
-        eprintln!("skipped: {} is missing", dir.display());
+        corpus::skipped(
+            "the metadata checkout",
+            format_args!("{} is missing", dir.display()),
+        );
         None
     }
 }

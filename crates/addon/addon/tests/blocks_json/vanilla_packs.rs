@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 
 use bedrock_addon::families::blocks_json::ClientBlock;
 use bedrock_addon::json::Value;
+use bedrock_addon_test_support::corpus;
 
 use super::common::{Loaded, base, load};
 
@@ -23,7 +24,10 @@ fn corpus() -> Option<PathBuf> {
         .filter(|value| !value.is_empty())
         .map(PathBuf::from);
     if root.is_none() {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the vanilla blocks.json files",
+            corpus::not_set(corpus::CORPUS),
+        );
     }
     root
 }

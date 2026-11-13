@@ -18,6 +18,7 @@ use bedrock_addon_family_entity::component::upgrade;
 use bedrock_addon_family_entity::component::{EntityComponent, ExperienceReward, PushableByEntity};
 
 use super::read;
+use bedrock_addon_test_support::corpus;
 
 /// A format version as three numbers.
 type Version = (u16, u16, u16);
@@ -148,7 +149,10 @@ const FIRST_TYPED: &[(&str, Version)] = &[
 fn corpus() -> Option<PathBuf> {
     let root = std::env::var_os("BEDROCK_ADDON_CORPUS").map(PathBuf::from);
     if root.is_none() {
-        eprintln!("BEDROCK_ADDON_CORPUS is unset: the vanilla component sweep is skipped");
+        corpus::skipped(
+            "the vanilla component sweep",
+            corpus::not_set(corpus::CORPUS),
+        );
     }
     root
 }

@@ -51,7 +51,7 @@ fn no_game_tree_ships_atomic_client_entities() {
                 atomic_directories(&root, 4, &mut found);
                 searched.push(name);
             }
-            None => eprintln!("skipped: {}", game_files::missing(name)),
+            None => game_files::skipped(name),
         }
     }
     eprintln!(

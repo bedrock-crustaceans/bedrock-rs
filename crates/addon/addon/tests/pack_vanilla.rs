@@ -18,6 +18,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::json::Value;
 use bedrock_addon::load::Experiment;
 use bedrock_addon::pack::{PackType, VANILLA_EXPERIMENTAL_PACKS};
+use bedrock_addon_test_support::corpus;
 use uuid::Uuid;
 
 #[test]
@@ -145,14 +146,17 @@ fn scan(entries: fs::ReadDir, pack_type: PackType, found: &mut HashMap<(Uuid, Pa
 #[test]
 fn every_row_names_a_shipped_experimental_pack() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS").map(PathBuf::from) else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the experimental pack rows",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let shipped = shipped(&corpus);
     if shipped.is_empty() {
-        eprintln!(
-            "skipped: no gdk-dev or gdk-retail packs under {}",
-            corpus.display()
+        corpus::skipped(
+            "the experimental pack rows",
+            format_args!("no gdk-dev or gdk-retail packs under {}", corpus.display()),
         );
         return;
     }
@@ -160,7 +164,7 @@ fn every_row_names_a_shipped_experimental_pack() {
     // given, else left out with a message.
     let install = std::env::var_os("BEDROCK_ADDON_VANILLA_1_26_60").is_some();
     if !install {
-        eprintln!("skipped: the Drop 4 rows need BEDROCK_ADDON_VANILLA_1_26_60");
+        corpus::skipped("the Drop 4 rows", corpus::not_set(corpus::VANILLA_1_26_60));
     }
     let missing: Vec<_> = VANILLA_EXPERIMENTAL_PACKS
         .iter()

@@ -25,6 +25,7 @@ use bedrock_addon::id::AttachableId;
 use bedrock_addon::load::{AppData, LoadOptions, StackOptions};
 use bedrock_addon::pack::{OpenOptions, PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options, read_app_data};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::base_game_world;
@@ -268,7 +269,10 @@ fn client_install_b_resource_packs_load() {
 fn client_install_a_resource_packs_load() {
     let client = skip!(game_files::CLIENT_INSTALL_A);
     if !client.join("resource_packs").is_dir() {
-        eprintln!("skipped: client install A has no resource_packs");
+        corpus::skipped(
+            "client install A resource_packs",
+            "it has no resource_packs",
+        );
         return;
     }
     assert_layers_load(
@@ -301,11 +305,11 @@ fn the_app_data_attachables_load() {
         ("server install definitions", game_files::SERVER_INSTALL),
     ] {
         let Some(root) = game_files::source(name) else {
-            eprintln!("skipped: {}", game_files::missing(name));
+            game_files::skipped(name);
             continue;
         };
         if !root.join("definitions").join("attachables").is_dir() {
-            eprintln!("skipped: {source} has no definitions/attachables");
+            corpus::skipped(source, "no definitions/attachables");
             continue;
         }
         let tally = assert_app_data_loads(source, &root);
@@ -395,7 +399,7 @@ fn the_client_install_b_layers_its_packs_over_the_app_data() {
 fn the_client_install_a_layers_its_packs_over_the_app_data() {
     let client = skip!(game_files::CLIENT_INSTALL_A);
     if !client.join("resource_packs").is_dir() {
-        eprintln!("skipped: client install A has no resource_packs");
+        corpus::skipped("client install A install", "it has no resource_packs");
         return;
     }
     assert_install_layers("client install A install", &client);

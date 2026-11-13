@@ -11,6 +11,7 @@ use bedrock_addon_family_item::component::{ItemComponent, MaxStackSize, StartUsi
 use bedrock_addon_shared_shapes::CreativeCategory;
 
 use super::common::*;
+use bedrock_addon_test_support::corpus;
 
 /// A corpus entry, if available.
 fn corpus(entry: &str) -> Option<PathBuf> {
@@ -78,7 +79,7 @@ fn normalised(item: &Item) -> (String, Vec<String>) {
 #[test]
 fn the_full_chain_matches_the_retail_reserialisation() {
     let (Some(dev), Some(retail)) = (corpus("gdk-dev"), corpus("gdk-retail")) else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: o01 skipped");
+        corpus::skipped("row o01", corpus::not_set(corpus::CORPUS));
         return;
     };
     let pairs = pairs();
@@ -130,7 +131,7 @@ fn the_full_chain_matches_the_retail_reserialisation() {
 #[test]
 fn the_new_1_26_30_items_load_and_upgrade_to_1_26_50() {
     let Some(retail) = corpus("gdk-retail") else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: o02 skipped");
+        corpus::skipped("row o02", corpus::not_set(corpus::CORPUS));
         return;
     };
     for name in ["red_shrub", "shelf_mushroom"] {

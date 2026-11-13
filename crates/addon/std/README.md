@@ -147,7 +147,7 @@ The four examples of [`bedrock_addon`](../addon#examples) (`in_memory_pack`, `en
 
 ## Tests
 
-`cargo nextest run -p bedrock_addon_std` runs the tests that need nothing outside the repository: they write their packs into a temporary directory. The groups below that read the game's own files skip without their variable, print a `skipped:` line and pass; such a pass says nothing about what the test checks.
+`cargo nextest run -p bedrock_addon_std` runs the tests that need nothing outside the repository: they write their packs into a temporary directory. The groups below that read the game's own files skip without their variable, print a `SKIPPED (not a pass):` line and pass; such a pass says nothing about what the test checks.
 
 | Tests (`--test <name>`) | What they hold | Variable |
 | --- | --- | --- |

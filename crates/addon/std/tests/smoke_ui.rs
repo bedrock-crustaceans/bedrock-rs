@@ -20,6 +20,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{OpenOptions, PackOrigin, PackStack, Resource, StackSet};
 use bedrock_addon_std::{Driver, Options};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 
@@ -286,7 +287,7 @@ fn client_install_a_ui_loads_without_errors() {
         ],
     );
     if dirs.is_empty() {
-        eprintln!("client install A: no resource pack with ui/; skipped");
+        corpus::skipped("the ui/ of client install A", "no resource pack has ui/");
         return;
     }
     let tally = check("client install A", &dirs, 5_000);

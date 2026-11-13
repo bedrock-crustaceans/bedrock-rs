@@ -122,7 +122,7 @@ fn smoke(source: &str, dir: &Path, origin: PackOrigin, warnings: &[(&str, usize)
 #[test]
 fn sample_packs_item_atlas_loads_without_errors() {
     let Some(samples) = game_files::source(game_files::SAMPLE_PACKS) else {
-        eprintln!("{}", game_files::missing(game_files::SAMPLE_PACKS));
+        game_files::skipped(game_files::SAMPLE_PACKS);
         return;
     };
     smoke(
@@ -138,7 +138,7 @@ fn sample_packs_item_atlas_loads_without_errors() {
 #[test]
 fn client_install_b_item_atlas_loads_without_errors() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_B) else {
-        eprintln!("{}", game_files::missing(game_files::CLIENT_INSTALL_B));
+        game_files::skipped(game_files::CLIENT_INSTALL_B);
         return;
     };
     smoke(
@@ -154,7 +154,7 @@ fn client_install_b_item_atlas_loads_without_errors() {
 #[test]
 fn client_install_a_item_atlas_loads_without_errors() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_A) else {
-        eprintln!("{}", game_files::missing(game_files::CLIENT_INSTALL_A));
+        game_files::skipped(game_files::CLIENT_INSTALL_A);
         return;
     };
     smoke(

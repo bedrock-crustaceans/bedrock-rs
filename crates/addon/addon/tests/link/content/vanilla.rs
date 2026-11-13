@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::Pack;
+use bedrock_addon_test_support::corpus;
 
 use super::super::common::{behavior_pack_of, stacks_of};
 use super::said_of;
@@ -51,7 +52,10 @@ fn pack_of(n: u128, root: &Path) -> Option<Pack> {
 #[test]
 fn the_vanilla_tables_recipes_trades_and_items_name_only_what_the_game_has() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the vanilla tables, recipes, trades and items",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let corpus = PathBuf::from(corpus);

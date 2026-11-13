@@ -1,5 +1,6 @@
 //! The helpers the tests of the `bedrock_addon` crates share: findings as lines, the outcome of
-//! a document read, test JSON and fixture reads.
+//! a document read, test JSON, fixture reads and the line a test prints when the game's files
+//! it needs are absent.
 //!
 //! The crate is for tests alone: a crate names it in `[dev-dependencies]` and nowhere else.
 //! It is never a normal dependency, so no library item of another crate can name it.
@@ -17,6 +18,7 @@
     reason = "a reader's error is a test's to unwrap or assert on, not a caller's to handle"
 )]
 
+pub mod corpus;
 pub mod diagnostics;
 pub mod document;
 pub mod fixture;

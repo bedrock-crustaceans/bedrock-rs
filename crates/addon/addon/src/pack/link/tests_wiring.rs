@@ -1750,9 +1750,10 @@ fn n_lang_keys_among_the_n_keys_of_an_unlisted_lang_file_cost_n() {
 #[cfg(all(feature = "lang", feature = "languages"))]
 #[test]
 fn the_languages_of_the_game_are_the_vanilla_resource_packs_list() {
+    use bedrock_addon_test_support::corpus;
     let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())
     else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped("the languages of the game", corpus::not_set(corpus::CORPUS));
         return;
     };
     let game_files = std::path::Path::new(&game_files);

@@ -300,7 +300,7 @@ fn a_missing_server_properties_holds_no_line() {
 #[test]
 fn smoke_the_server_install_reads_without_a_finding() {
     let Some(server) = game_files::source("bds-1.26.36.1") else {
-        eprintln!("{}", game_files::missing("bds-1.26.36.1"));
+        game_files::skipped("bds-1.26.36.1");
         return;
     };
     let files = read_script_config_files(server.join("config")).unwrap();

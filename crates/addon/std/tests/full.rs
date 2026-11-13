@@ -35,7 +35,7 @@
 //!
 //! Run each with `BEDROCK_ADDON_CORPUS=<folder> cargo nextest run -p bedrock_addon_std --test
 //! <binary> -- --show-output`; without the variable every test that needs the game's files
-//! prints `skipped:` and passes, which is no pass of the smoke. The pinned numbers are the
+//! prints `SKIPPED (not a pass):` and passes, which is no pass of the smoke. The pinned numbers are the
 //! files of `full/pins/`; `full/support.rs` says how they are taken again.
 
 #[macro_use]

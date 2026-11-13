@@ -4,7 +4,7 @@
 //! `BEDROCK_ADDON_VANILLA_1_26_60` names the install root: the folder holding
 //! `behavior_packs/`, `resource_packs/`, `definitions/` and `test/`, every pack with its
 //! `manifest.json` and its `__brarchive` folders as shipped. Without the variable every test
-//! prints `skipped:` and passes, which is no pass of the gate. A root whose packs carry no
+//! prints `SKIPPED (not a pass):` and passes, which is no pass of the gate. A root whose packs carry no
 //! manifest (a tree of expanded brarchives) is no install: the test fails and says so.
 //!
 //! - [`every_vanilla_pack_loads_and_links_with_no_error_and_no_warning`]: every pack of both
@@ -46,6 +46,7 @@ use bedrock_addon::load::{LoadOptions, RECOMMENDED_JOB_STACK, Residency, StackOp
 use bedrock_addon::manifest::CapabilityRegistry;
 use bedrock_addon::pack::{PackIdVersion, PackOrigin, PackStack, PackType, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options, read_app_data};
+use bedrock_addon_test_support::corpus;
 
 use common::world::base_game_world;
 
@@ -58,7 +59,7 @@ const DUMP: &str = "BEDROCK_ADDON_VANILLA_1_26_60_DUMP";
 /// The install root, or `None` after printing why the test is skipped.
 fn install_root() -> Option<PathBuf> {
     let Some(root) = std::env::var_os(VARIABLE).filter(|value| !value.is_empty()) else {
-        eprintln!("skipped: {VARIABLE} is not set; the vanilla gate did not run");
+        corpus::skipped("the vanilla gate", corpus::not_set(VARIABLE));
         return None;
     };
     let root = PathBuf::from(root);
@@ -752,7 +753,10 @@ fn the_install_s_test_packs_are_read_and_reported() {
     };
     let test = root.join("test");
     if !test.is_dir() {
-        eprintln!("skipped: {} has no test/ folder", root.display());
+        corpus::skipped(
+            "the install's test packs",
+            format_args!("{} has no test/ folder", root.display()),
+        );
         return;
     }
     let at = root.clone();

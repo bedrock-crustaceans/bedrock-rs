@@ -5,6 +5,7 @@ use bedrock_addon::document::JsonDocument as _;
 use bedrock_addon::families::fog::history::{self, FogHistory, v1_16_100};
 use bedrock_addon::families::fog::{ColorNorm, DistanceType, FogColor, FogSettings, Keyframed};
 use bedrock_addon::storage::PackPath;
+use bedrock_addon_test_support::corpus;
 
 use super::common::{
     clean, count, expect, expect_at, find, fixture, lines, loaded, rejected, round_trip,
@@ -108,7 +109,10 @@ fn identity_of_a_vanilla_1_16_100_file(name: &str, text: &str) {
 #[test]
 fn u01_identity_of_every_vanilla_1_16_100_file_of_the_corpus() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("BEDROCK_ADDON_CORPUS is not set: skipping the vanilla fog files of row u01");
+        corpus::skipped(
+            "the vanilla fog files of row u01",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let corpus = std::path::PathBuf::from(corpus);

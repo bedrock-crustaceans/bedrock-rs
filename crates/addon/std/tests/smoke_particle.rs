@@ -377,10 +377,7 @@ fn client_install_b_particles_load_without_errors() {
 #[test]
 fn client_install_a_particles_load_without_errors() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_A) else {
-        eprintln!(
-            "skipped: {}",
-            game_files::missing(game_files::CLIENT_INSTALL_A)
-        );
+        game_files::skipped(game_files::CLIENT_INSTALL_A);
         return;
     };
     let mut driver = base_game_driver();

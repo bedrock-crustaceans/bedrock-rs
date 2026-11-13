@@ -134,7 +134,7 @@ fn smoke(source: &str, dir: &Path, origin: PackOrigin, warnings: &[(&str, usize)
 #[test]
 fn sample_packs_ships_no_texture_list() {
     let Some(samples) = game_files::source(game_files::SAMPLE_PACKS) else {
-        eprintln!("{}", game_files::missing(game_files::SAMPLE_PACKS));
+        game_files::skipped(game_files::SAMPLE_PACKS);
         return;
     };
     // The tree holds `textures/texture_list.json`, a name no client reads.
@@ -150,7 +150,7 @@ fn sample_packs_ships_no_texture_list() {
 #[test]
 fn client_install_b_texture_lists_load_without_errors() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_B) else {
-        eprintln!("{}", game_files::missing(game_files::CLIENT_INSTALL_B));
+        game_files::skipped(game_files::CLIENT_INSTALL_B);
         return;
     };
     smoke(
@@ -166,7 +166,7 @@ fn client_install_b_texture_lists_load_without_errors() {
 #[test]
 fn client_install_a_texture_lists_load_without_errors() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_A) else {
-        eprintln!("{}", game_files::missing(game_files::CLIENT_INSTALL_A));
+        game_files::skipped(game_files::CLIENT_INSTALL_A);
         return;
     };
     smoke(

@@ -16,3 +16,8 @@ toml = { version = "1.1", default-features = false, features = ["std", "parse", 
 # `script-meta` parses the game's metadata files with the strict model of the script family.
 bedrock_addon_core = { path = "../crates/addon/core" }
 bedrock_addon_family_script = { path = "../crates/addon/families/script" }
+
+[dev-dependencies]
+# The one line of a skipped corpus test (`corpus::skipped`); it builds core with no feature
+# beyond the ones above.
+bedrock_addon_test_support = { path = "../crates/addon/test_support" }

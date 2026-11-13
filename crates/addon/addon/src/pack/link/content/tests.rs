@@ -243,9 +243,13 @@ fn every_tag_of_the_vanilla_recipes_is_a_tag_of_the_game() {
     use std::path::{Path, PathBuf};
 
     use bedrock_addon_core::json::Value;
+    use bedrock_addon_test_support::corpus;
 
     let Some(files_root) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the recipe tags of the game's files",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     fn tags(value: &Value, out: &mut BTreeSet<String>) {

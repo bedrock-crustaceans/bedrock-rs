@@ -179,7 +179,7 @@ fn every_vanilla_behavior_tree_file_parses_and_round_trips() {
         game_files::CLIENT_INSTALL_A,
     ] {
         let Some(root) = game_files::source(source) else {
-            eprintln!("skipped: {}", game_files::missing(source));
+            game_files::skipped(source);
             continue;
         };
         for pack in pack_roots(&root.join("behavior_packs")) {

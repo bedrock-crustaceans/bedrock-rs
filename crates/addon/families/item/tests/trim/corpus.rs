@@ -5,12 +5,22 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use bedrock_addon_family_item::trim::TrimData;
+use bedrock_addon_test_support::corpus;
 
-/// The sample packs in the corpus (never committed).
-fn samples() -> Option<PathBuf> {
-    let root = std::env::var_os("BEDROCK_ADDON_CORPUS")?;
+/// The sample packs in the corpus (never committed), or `None` after printing the skip line of
+/// `check`: the variable is not set, or the corpus has no sample packs.
+fn samples(check: &str) -> Option<PathBuf> {
+    let Some(root) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
+        corpus::skipped(check, corpus::not_set(corpus::CORPUS));
+        return None;
+    };
     let samples = PathBuf::from(root).join("bedrock-samples");
-    samples.is_dir().then_some(samples)
+    if samples.is_dir() {
+        Some(samples)
+    } else {
+        corpus::skipped(check, format_args!("{} is missing", samples.display()));
+        None
+    }
 }
 
 fn pattern_ids() -> BTreeSet<String> {
@@ -41,8 +51,7 @@ fn lang_ids(lang: &str, prefix: &str) -> BTreeSet<String> {
 /// `trim_material.<id>.name` per material, and no other.
 #[test]
 fn the_vanilla_texts_name_exactly_the_tables_patterns_and_materials() {
-    let Some(samples) = samples() else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: the trim text check is skipped");
+    let Some(samples) = samples("the trim text check") else {
         return;
     };
     let lang = std::fs::read_to_string(samples.join("resource_pack/texts/en_US.lang")).unwrap();
@@ -57,8 +66,7 @@ fn the_vanilla_texts_name_exactly_the_tables_patterns_and_materials() {
 /// `_darker` ones and `trim_palette`.
 #[test]
 fn the_vanilla_textures_cover_exactly_the_tables_patterns_and_materials() {
-    let Some(samples) = samples() else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: the trim texture check is skipped");
+    let Some(samples) = samples("the trim texture check") else {
         return;
     };
     let trims = samples.join("resource_pack/textures/trims");
@@ -88,8 +96,7 @@ fn the_vanilla_textures_cover_exactly_the_tables_patterns_and_materials() {
 /// One duplication recipe per template item (`bolt` has a second, waxed one).
 #[test]
 fn the_vanilla_recipes_duplicate_exactly_the_tables_template_items() {
-    let Some(samples) = samples() else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: the trim recipe check is skipped");
+    let Some(samples) = samples("the trim recipe check") else {
         return;
     };
     let templates: BTreeSet<String> = std::fs::read_dir(samples.join("behavior_pack/recipes"))
@@ -125,8 +132,7 @@ fn string_members<'a>(text: &'a str, key: &str) -> Vec<&'a str> {
 /// patterns and materials (`copper` with `flow` or `bolt`).
 #[test]
 fn the_vanilla_loot_tables_name_registered_patterns_and_materials() {
-    let Some(samples) = samples() else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: the trim loot check is skipped");
+    let Some(samples) = samples("the trim loot check") else {
         return;
     };
     let vanilla = TrimData::vanilla();

@@ -10,6 +10,7 @@ use bedrock_addon_family_item::history::ItemHistory;
 use bedrock_addon_family_item::{Item, ItemFormat};
 
 use super::common::*;
+use bedrock_addon_test_support::corpus;
 
 /// The struct a document is parsed by, as written.
 fn written_as(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> ItemHistory {
@@ -38,7 +39,7 @@ fn vanilla_legacy_items_reach_latest_unconverted() {
         "glow_berries",
     ];
     let Some(texts) = names.iter().map(|n| sample(n)).collect::<Option<Vec<_>>>() else {
-        eprintln!("BEDROCK_ADDON_CORPUS unset: i00 skipped");
+        corpus::skipped("row i00", corpus::not_set(corpus::CORPUS));
         return;
     };
     for (name, text) in names.iter().zip(&texts) {

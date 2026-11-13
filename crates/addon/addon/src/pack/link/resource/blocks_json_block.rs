@@ -479,12 +479,17 @@ mod tests {
     fn the_legacy_block_names_are_exactly_what_the_vanilla_files_need() {
         use std::collections::BTreeSet;
 
+        use bedrock_addon_test_support::corpus;
+
         use crate::pack::link::tests::support::{vanilla_behavior_text, written_in};
         use crate::vanilla::names::LEGACY_BLOCK_NAMES;
 
         let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())
         else {
-            eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+            corpus::skipped(
+                "the legacy block names of the game's files",
+                corpus::not_set(corpus::CORPUS),
+            );
             return;
         };
         let game_files = std::path::Path::new(&game_files);

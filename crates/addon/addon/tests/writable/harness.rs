@@ -12,6 +12,7 @@ use bedrock_addon::load::LoadContext;
 use bedrock_addon::pack::PackType;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::{FormatVersion, FormatVersionInput};
+use bedrock_addon_test_support::corpus;
 
 use document_types::{beta, client, ddui, pack, poi};
 
@@ -1182,6 +1183,10 @@ fn files_below(at: &Path, out: &mut Vec<PathBuf>) {
 fn corpus(family: &str) -> Vec<(String, String)> {
     let Some(root) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|root| !root.is_empty())
     else {
+        corpus::skipped(
+            format_args!("the corpus sample of {family}"),
+            corpus::not_set(corpus::CORPUS),
+        );
         return Vec::new();
     };
     let root = PathBuf::from(root);

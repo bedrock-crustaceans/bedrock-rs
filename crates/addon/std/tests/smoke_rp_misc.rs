@@ -522,7 +522,7 @@ fn check_client(source: &str, root: &Path, want: &Expected) {
 #[test]
 fn client_install_b_loads_without_errors() {
     let Some(root) = game_files::source("gdk-retail") else {
-        eprintln!("{}", game_files::missing("client install B"));
+        game_files::skipped("gdk-retail");
         return;
     };
     check_client("client install B", &root, &INSTALL_B);
@@ -531,7 +531,7 @@ fn client_install_b_loads_without_errors() {
 #[test]
 fn client_install_a_loads_without_errors() {
     let Some(root) = game_files::source("gdk-dev") else {
-        eprintln!("{}", game_files::missing("client install A"));
+        game_files::skipped("gdk-dev");
         return;
     };
     check_client("client install A", &root, &INSTALL_A);
@@ -540,7 +540,7 @@ fn client_install_a_loads_without_errors() {
 #[test]
 fn sample_packs_ui_side_files_load_without_errors() {
     let Some(root) = game_files::source("bedrock-samples") else {
-        eprintln!("{}", game_files::missing("sample packs"));
+        game_files::skipped("bedrock-samples");
         return;
     };
     let dir = root.join("resource_pack");

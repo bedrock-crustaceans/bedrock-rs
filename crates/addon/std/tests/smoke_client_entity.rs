@@ -22,6 +22,7 @@ use bedrock_addon::families::client_entity::ClientEntity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{OpenOptions, PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::base_game_world;
@@ -234,7 +235,10 @@ fn client_install_a_resource_packs_load() {
     let client = skip!(game_files::CLIENT_INSTALL_A);
     let dirs = entity_packs(&client.join("resource_packs"));
     if dirs.is_empty() {
-        eprintln!("skipped: client install A has no resource pack with an entity/ folder");
+        corpus::skipped(
+            "client install A resource_packs",
+            "no resource pack has an entity/ folder",
+        );
         return;
     }
     assert_packs_load("client install A resource_packs", &dirs);
@@ -251,7 +255,7 @@ fn the_client_install_b_resolves_one_definition_per_identifier() {
 fn the_client_install_a_resolves_one_definition_per_identifier() {
     let client = skip!(game_files::CLIENT_INSTALL_A);
     if !client.join("resource_packs").is_dir() {
-        eprintln!("skipped: client install A has no resource_packs");
+        corpus::skipped("client install A install", "it has no resource_packs");
         return;
     }
     assert_install_loads("client install A install", &client.join("resource_packs"));

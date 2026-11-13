@@ -22,6 +22,7 @@ use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, PackRepository};
 use bedrock_addon_std::{Driver, Options};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::base_game_world;
@@ -218,7 +219,7 @@ fn report(source: &str, outcome: &Outcome) {
     );
     for (index, folder) in FOLDERS.iter().enumerate() {
         if outcome.files[index] == 0 {
-            eprintln!("  skipped: no pack of {source} has {folder}/");
+            corpus::skipped(format_args!("{folder}/ of {source}"), "no pack has it");
         }
     }
     for line in tally(&outcome.warnings) {

@@ -36,14 +36,19 @@ pub(super) fn fixture(relative: &str) -> Vec<u8> {
 /// so the test is skipped.
 pub(super) fn game_files(tops: &[&str], suffix: &str) -> Option<Vec<PathBuf>> {
     let Some(root) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is unset");
+        // The line of `bedrock_addon_test_support::corpus`, spelled here: this crate's sources
+        // name core alone.
+        eprintln!("SKIPPED (not a pass): the game's files: BEDROCK_ADDON_CORPUS is not set");
         return None;
     };
     let mut files = Vec::new();
     for top in tops {
         let dir = PathBuf::from(&root).join(top);
         if !dir.is_dir() {
-            eprintln!("skipped: {} is missing", dir.display());
+            eprintln!(
+                "SKIPPED (not a pass): the game's files: {} is missing",
+                dir.display()
+            );
             return None;
         }
         let mut stack = vec![dir];

@@ -865,9 +865,13 @@ fn every_item_name_of_the_vanilla_loot_tables_is_an_item() {
     use std::path::Path;
 
     use bedrock_addon_core::json::{self, Value};
+    use bedrock_addon_test_support::corpus;
 
     let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the loot tables of the game's files",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     fn tables(dir: &Path, below_loot: bool, out: &mut Vec<std::path::PathBuf>) {
@@ -945,9 +949,13 @@ fn every_item_name_of_the_vanilla_loot_tables_is_an_item() {
 #[cfg(feature = "item")]
 #[test]
 fn every_legacy_item_name_is_one_a_vanilla_file_writes() {
+    use bedrock_addon_test_support::corpus;
     let Some(game_files) = std::env::var_os("BEDROCK_ADDON_CORPUS").filter(|v| !v.is_empty())
     else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the legacy item names of the game's files",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let text = super::support::vanilla_behavior_text(

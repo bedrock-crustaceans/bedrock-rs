@@ -8,6 +8,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::ConvertMode;
 
 use super::types::goals;
+use bedrock_addon_test_support::corpus;
 
 /// The format version `text` names, as three numbers (missing parts 0).
 fn version(text: &str) -> (u16, u16, u16) {
@@ -60,7 +61,7 @@ fn goal_entries(payload: &Value) -> Vec<(String, Value)> {
 #[test]
 fn every_vanilla_goal_reads_cleanly_and_round_trips() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS").map(PathBuf::from) else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped("the vanilla goals", corpus::not_set(corpus::CORPUS));
         return;
     };
     let mut files = Vec::new();

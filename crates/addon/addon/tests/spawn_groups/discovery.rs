@@ -11,6 +11,7 @@ use bedrock_addon::id::SpawnGroupId;
 use bedrock_addon::load::{AppData, LoadOptions};
 use bedrock_addon::pack::{Behavior, OpenOptions, Pack, PackOrigin, PackStack};
 use bedrock_addon::storage::PackPath;
+use bedrock_addon_test_support::corpus;
 
 /// A group document for `id` with one condition of herd size `size`.
 fn group(id: &str, version: &str, size: u32) -> Vec<u8> {
@@ -273,7 +274,7 @@ fn sg01_vanilla_raid_group_1_inline() {
 /// when `BEDROCK_ADDON_CORPUS` is not set.
 fn vanilla_groups() -> Option<PackStack<Behavior>> {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS").map(PathBuf::from) else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped("the vanilla spawn groups", corpus::not_set(corpus::CORPUS));
         return None;
     };
     let dir = corpus.join("gdk-retail/definitions/spawn_groups");

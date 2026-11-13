@@ -945,6 +945,8 @@ fn js_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 #[test]
 #[allow(clippy::disallowed_methods, clippy::disallowed_types)]
 fn the_lexer_finds_the_static_imports_the_parser_finds() {
+    use bedrock_addon_test_support::corpus;
+
     use super::bound::STACK_BUDGET;
     use super::syntax::requested_modules;
     let mut files = Vec::new();
@@ -955,6 +957,8 @@ fn the_lexer_finds_the_static_imports_the_parser_finds() {
     assert!(in_fixtures >= 60, "{in_fixtures} fixture scripts");
     if let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") {
         js_files(std::path::Path::new(&corpus), &mut files);
+    } else {
+        corpus::skipped("the game's script files", corpus::not_set(corpus::CORPUS));
     }
     files.sort();
     // The test gives the parser a stack no file overflows, so that the files

@@ -37,6 +37,7 @@ use bedrock_addon::families::sounds_json::SoundBindings;
 use bedrock_addon::load::{BuiltIns, Collection, CollectionSet, LoadOptions, StackOptions};
 use bedrock_addon::pack::{PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{DirSource, Driver, Options};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::base_game_world;
@@ -388,10 +389,7 @@ fn client_install_b_sounds_load_and_every_name_resolves() {
 #[test]
 fn client_install_a_sounds_load_and_the_dangling_names_are_reported() {
     let Some(client) = game_files::source(game_files::CLIENT_INSTALL_A) else {
-        eprintln!(
-            "skipped: {}",
-            game_files::missing(game_files::CLIENT_INSTALL_A)
-        );
+        game_files::skipped(game_files::CLIENT_INSTALL_A);
         return;
     };
     let packs = client.join("resource_packs");
@@ -581,7 +579,7 @@ fn every_event_key_of_vanillas_sounds_json_files_is_a_known_level_sound_event() 
         files.push(samples.join("resource_pack/sounds.json"));
     }
     if files.is_empty() {
-        eprintln!("skipped: no game tree with a sounds.json");
+        corpus::skipped("the sounds.json keys", "no game tree has a sounds.json");
         return;
     }
     let mut keys = BTreeSet::new();

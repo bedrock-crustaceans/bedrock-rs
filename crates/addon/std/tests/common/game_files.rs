@@ -1,8 +1,8 @@
 //! The game's own files, which are not in the repository: `$BEDROCK_ADDON_CORPUS` holds one
 //! entry per kind of install, each a directory or a symlink to one. A test that needs an entry
-//! takes it with `skip!`, which returns from the test (printing which entry is missing) when
-//! the variable is unset or the entry absent, so the suite passes on a machine without the
-//! files. The MCB helpers below count baked binary documents apart from errors.
+//! takes it with `skip!`, which returns from the test (printing `SKIPPED (not a pass):` and
+//! which entry is missing) when the variable is unset or the entry absent, so the suite passes
+//! on a machine without the files. The MCB helpers below count baked binary documents apart from errors.
 //!
 //! ```ignore
 //! #[macro_use]
@@ -27,6 +27,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
 use bedrock_addon::pack::Pack;
 use bedrock_addon::storage::PackPath;
+use bedrock_addon_test_support::corpus;
 
 /// The environment variable naming the folder that holds the game's files.
 pub const VARIABLE: &str = "BEDROCK_ADDON_CORPUS";
@@ -70,11 +71,13 @@ pub fn source(name: &str) -> Option<PathBuf> {
     path.exists().then_some(path)
 }
 
-/// Why `name` is not available, for the skip message.
-pub fn missing(name: &str) -> String {
+/// Prints the skip line of a test that needs the entry `name` and did not find it: the
+/// variable is not set, or the entry is missing under the root folder.
+pub fn skipped(name: &str) {
+    let what = format!("entry `{name}`");
     match root() {
-        None => format!("{VARIABLE} is not set; entry `{name}` unavailable"),
-        Some(root) => format!("entry `{name}` missing under {}", root.display()),
+        None => corpus::skipped(what, corpus::not_set(VARIABLE)),
+        Some(root) => corpus::skipped(what, format_args!("missing under {}", root.display())),
     }
 }
 
@@ -236,14 +239,14 @@ pub fn assert_warnings<K: AsRef<str> + Ord>(
     assert_eq!(found, expected, "{source}: warnings by code");
 }
 
-/// `skip!(name)`: the entry's path, or an early `return` from the test after printing
-/// which entry is missing.
+/// `skip!(name)`: the entry's path, or an early `return` from the test after printing the
+/// skip line of the missing entry.
 macro_rules! skip {
     ($name:expr) => {
         match crate::common::game_files::source($name) {
             Some(path) => path,
             None => {
-                eprintln!("skipped: {}", crate::common::game_files::missing($name));
+                crate::common::game_files::skipped($name);
                 return;
             }
         }

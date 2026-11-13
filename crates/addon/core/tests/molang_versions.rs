@@ -13,15 +13,22 @@ use bedrock_addon_core::molang::{
     ExperimentMask, MolangContext, MolangVersion, MolangVersionSource, RawVersion,
 };
 use bedrock_addon_core::version::{FormatVersionInput, MinEngineVersion, SemVersion};
+use bedrock_addon_test_support::corpus;
 
 fn reference_pairs() -> Option<Value> {
     let Some(dir) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("BEDROCK_ADDON_CORPUS is not set; skipping");
+        corpus::skipped(
+            "the Molang reference pairs",
+            corpus::not_set(corpus::CORPUS),
+        );
         return None;
     };
     let path = std::path::PathBuf::from(dir).join("corpus_pairs.json");
     let Ok(text) = std::fs::read_to_string(&path) else {
-        eprintln!("{} is missing; skipping", path.display());
+        corpus::skipped(
+            "the Molang reference pairs",
+            format_args!("{} is missing", path.display()),
+        );
         return None;
     };
     Some(facet_json::from_str::<Value>(&text).expect("corpus_pairs.json is JSON"))

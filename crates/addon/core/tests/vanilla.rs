@@ -5,6 +5,7 @@
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use bedrock_addon_core::vanilla::{self, ActorType};
+use bedrock_addon_test_support::corpus;
 
 /// The generator itself, compiled into this test so the regeneration check runs it in-process.
 #[allow(
@@ -134,7 +135,7 @@ mod actor_type {
     #[test]
     fn the_generator_reproduces_the_committed_file() {
         let Ok(root) = std::env::var("BEDROCK_ADDON_CORPUS") else {
-            eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+            corpus::skipped("the actor type generator", corpus::not_set(corpus::CORPUS));
             return;
         };
         let samples = std::path::Path::new(&root).join("bedrock-samples");
@@ -224,14 +225,17 @@ mod tables {
     #[test]
     fn every_block_the_game_registers_is_in_the_block_list() {
         let Ok(root) = std::env::var("BEDROCK_ADDON_CORPUS") else {
-            eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+            corpus::skipped("the block snapshot", corpus::not_set(corpus::CORPUS));
             return;
         };
         let snapshot = std::path::Path::new(&root)
             .join("gdk-dev/test/assets/BlockSnapshotServerTests")
             .join("AllBlocks_AccumulatesSnow_DataMatchesSnapshot.json");
         let Ok(text) = std::fs::read_to_string(&snapshot) else {
-            eprintln!("skipped: {} is missing", snapshot.display());
+            corpus::skipped(
+                "the block snapshot",
+                format_args!("{} is missing", snapshot.display()),
+            );
             return;
         };
         // One member per block: `   "minecraft:acacia_button" : [ false ],`.

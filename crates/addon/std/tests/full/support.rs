@@ -1013,14 +1013,14 @@ pub fn assert_pinned(name: &str, found: &Counts, needs_a_sentence: fn(&str) -> b
 // ---- the checks of a tree -------------------------------------------------------------------
 
 /// The tree's folder, or `None` after printing which entry of the game's files is missing: the test that
-/// asked returns, which is a skip and no pass. The `skipped:` line goes to standard error,
-/// which the test harness shows for a passing test only with `--show-output` (or
+/// asked returns, which is a skip and no pass. The `SKIPPED (not a pass):` line goes to standard
+/// error, which the test harness shows for a passing test only with `--show-output` (or
 /// `--nocapture`), as with the other smokes: a run without the game's files is told apart from a
 /// pass by those lines, never by the result line.
 pub fn root_or_skip(tree: &Tree) -> Option<PathBuf> {
     let root = tree.root();
     if root.is_none() {
-        eprintln!("skipped: {}", game_files::missing(tree.entry));
+        game_files::skipped(tree.entry);
     }
     root
 }

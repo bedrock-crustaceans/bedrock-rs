@@ -9,6 +9,7 @@ use bedrock_addon::families::animation::{
 };
 use bedrock_addon::id::AnimationRef;
 use bedrock_addon::molang::Molang;
+use bedrock_addon_test_support::corpus;
 
 use super::common::{
     animation, clean, expect, expect_prefix, find, fixture, lines, loaded, rejected, round_trip,
@@ -736,7 +737,10 @@ fn c10_case_folding_and_duplicates_in_one_pack() {
 #[test]
 fn c11_vanilla_corpus_loads_without_errors() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("BEDROCK_ADDON_CORPUS is not set: skipping the vanilla corpus row");
+        corpus::skipped(
+            "the vanilla corpus row c11",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let dir = std::path::PathBuf::from(corpus).join("bedrock-samples/resource_pack/animations");

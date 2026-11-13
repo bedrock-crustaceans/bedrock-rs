@@ -11,6 +11,7 @@ use bedrock_addon_family_server_config::{
 };
 
 use crate::common::{check_properties, seen};
+use bedrock_addon_test_support::corpus;
 
 fn parse(text: &str) -> ServerProperties {
     ServerProperties::parse(text.as_bytes())
@@ -761,7 +762,10 @@ fn a_finding_of_a_script_key_is_on_its_line() {
 #[test]
 fn sp14_shipped_file_parses_without_a_finding() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the shipped server.properties",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let path = std::path::Path::new(&corpus).join("bds-1.26.36.1/server.properties");
@@ -833,7 +837,10 @@ fn r4_the_keys_the_shipped_file_only_names_in_comments_are_known() {
 #[test]
 fn sp14_every_key_of_the_shipped_file_is_known() {
     let Some(corpus) = std::env::var_os("BEDROCK_ADDON_CORPUS") else {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set");
+        corpus::skipped(
+            "the keys of the shipped server.properties",
+            corpus::not_set(corpus::CORPUS),
+        );
         return;
     };
     let path = std::path::Path::new(&corpus).join("bds-1.26.36.1/server.properties");

@@ -438,7 +438,7 @@ fn in_an_editor_world_the_editor_packs_get_the_editor_module() {
         ),
     ] {
         let Some(root) = game_files::source(source) else {
-            eprintln!("skipped: {}", game_files::missing(source));
+            game_files::skipped(source);
             continue;
         };
         let outcome = discover_all(&root, &catalog, &EDITOR_WORLD);

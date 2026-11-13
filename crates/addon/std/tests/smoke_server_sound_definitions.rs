@@ -13,6 +13,8 @@ mod common;
 
 use std::path::{Path, PathBuf};
 
+use bedrock_addon_test_support::corpus;
+
 use common::game_files;
 
 /// The behaviour-pack folders below `dir` that have the family's file.
@@ -31,7 +33,10 @@ fn packs_with_the_file(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn no_game_tree_ships_server_sound_definitions() {
     if game_files::root().is_none() {
-        eprintln!("skipped: BEDROCK_ADDON_CORPUS is not set; the family has fixtures only");
+        corpus::skipped(
+            "the game trees' server sound definitions",
+            corpus::not_set(game_files::VARIABLE),
+        );
         return;
     }
     let mut checked = 0;
@@ -41,7 +46,7 @@ fn no_game_tree_ships_server_sound_definitions() {
         (game_files::SERVER_INSTALL, "behavior_packs"),
     ] {
         let Some(root) = game_files::source(name) else {
-            eprintln!("skipped: {}", game_files::missing(name));
+            game_files::skipped(name);
             continue;
         };
         let found = packs_with_the_file(&root.join(packs));

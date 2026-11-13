@@ -27,6 +27,7 @@ use bedrock_addon::load::{LoadContext, LoadOptions, StackOptions};
 use bedrock_addon::pack::PackOrigin;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon_std::{DirSource, Driver, Options, Strategy};
+use bedrock_addon_test_support::corpus;
 
 use common::game_files;
 use common::world::world_list;
@@ -317,14 +318,17 @@ fn client_camera_entity_documents_parse_without_errors() {
     let mut checked = 0;
     for name in [game_files::CLIENT_INSTALL_A, game_files::CLIENT_INSTALL_B] {
         let Some(client) = game_files::source(name) else {
-            eprintln!("skipped: {}", game_files::missing(name));
+            game_files::skipped(name);
             continue;
         };
         let packs = client.join("resource_packs");
         let mut loose = Vec::new();
         json_files(&packs.join("vanilla").join("cameras"), false, &mut loose);
         if loose.is_empty() {
-            eprintln!("skipped: {name} has no loose resource_packs/vanilla/cameras/*.json");
+            corpus::skipped(
+                format_args!("the cameras of {name}"),
+                "no loose resource_packs/vanilla/cameras/*.json",
+            );
             continue;
         }
         assert_eq!(
@@ -335,6 +339,9 @@ fn client_camera_entity_documents_parse_without_errors() {
         checked += 1;
     }
     if checked == 0 {
-        eprintln!("skipped: no client install with loose camera entity documents");
+        corpus::skipped(
+            "the camera entity documents",
+            "no client install has them as loose files",
+        );
     }
 }

@@ -22,6 +22,7 @@ use bedrock_addon::json::Value;
 use bedrock_addon::pack::{Pack, PackIdVersion, PackType};
 use bedrock_addon::storage::PackPath;
 use bedrock_addon_std::{Options, load_dir};
+use bedrock_addon_test_support::corpus;
 use bytes::Bytes;
 
 use common::game_files;
@@ -141,7 +142,10 @@ fn counts(entries: &[(&str, usize)]) -> BTreeMap<String, usize> {
 fn builtin_pack_loads(entry: &str, data: &Path) {
     let root = data.join(PERSONA);
     if !root.is_dir() {
-        eprintln!("skipped: {} has no {PERSONA}", data.display());
+        corpus::skipped(
+            format_args!("the built-in persona pack of {entry}"),
+            format_args!("{} has no {PERSONA}", data.display()),
+        );
         return;
     }
     let on_disk: usize = walkdir(&root)
@@ -363,7 +367,7 @@ fn sample_packs_and_the_server_ship_no_persona_pack() {
         (game_files::SERVER_INSTALL, "resource_packs/persona"),
     ] {
         let Some(root) = game_files::source(entry) else {
-            eprintln!("skipped: {}", game_files::missing(entry));
+            game_files::skipped(entry);
             continue;
         };
         assert!(!root.join(folder).exists(), "{entry} has {folder}");
@@ -466,7 +470,7 @@ const PERSONA_GEOMETRY: [(&str, (usize, usize)); 8] = [
 fn the_persona_geometry_of_both_installs_loads_through_the_keyed_door() {
     for entry in [game_files::CLIENT_INSTALL_B, game_files::CLIENT_INSTALL_A] {
         let Some(data) = game_files::source(entry) else {
-            eprintln!("skipped: {}", game_files::missing(entry));
+            game_files::skipped(entry);
             continue;
         };
         let found = persona_geometry_loads(&data);
