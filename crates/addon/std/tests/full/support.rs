@@ -1014,9 +1014,9 @@ pub fn assert_pinned(name: &str, found: &Counts, needs_a_sentence: fn(&str) -> b
 
 /// The tree's folder, or `None` after printing which entry of the game's files is missing: the test that
 /// asked returns, which is a skip and no pass. The `SKIPPED (not a pass):` line goes to standard
-/// error, which the test harness shows for a passing test only with `--show-output` (or
-/// `--nocapture`), as with the other smokes: a run without the game's files is told apart from a
-/// pass by those lines, never by the result line.
+/// error, which nextest shows at the end of the run for the corpus binaries
+/// (`.config/nextest.toml`), as with the other smokes: a run without the game's files is told
+/// apart from a pass by those lines, never by the result line.
 pub fn root_or_skip(tree: &Tree) -> Option<PathBuf> {
     let root = tree.root();
     if root.is_none() {

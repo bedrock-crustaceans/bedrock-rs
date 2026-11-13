@@ -15,3 +15,90 @@ slow-timeout = { period = "60s", terminate-after = 5 }
 fail-fast = false
 failure-output = "immediate-final"
 final-status-level = "slow"
+
+# The corpus gates: a test that needs the game's files (`BEDROCK_ADDON_CORPUS`,
+# `BEDROCK_ADDON_VANILLA_1_26_60`) and finds none returns early and passes after printing
+# `SKIPPED (not a pass): <what>: <reason>` (`bedrock_addon_test_support::corpus`). The tests
+# that hold such a gate show what they printed at the end of the run, so those lines are seen:
+# std's corpus binaries and the writable probes whole (nearly every test in them is gated),
+# and elsewhere each gated test by name. A new corpus-gated test joins the list; to find one
+# that is missing, run without the variables and `--success-output final`, and compare the
+# tests that print the line with this filter. Every profile inherits these overrides.
+[[profile.default.overrides]]
+filter = '''
+    (package(=bedrock_addon_std) & binary(/^(full|smoke_|vanilla_gate)/))
+    | binary_id(/^bedrock_addon::writable(_[234])?$/)
+    | (binary_id(=bedrock_addon) & (
+          test(=pack::link::content::tests::every_tag_of_the_vanilla_recipes_is_a_tag_of_the_game)
+        | test(=pack::link::resource::blocks_json_block::tests::the_legacy_block_names_are_exactly_what_the_vanilla_files_need)
+        | test(=pack::link::tests::lookups::every_item_name_of_the_vanilla_loot_tables_is_an_item)
+        | test(=pack::link::tests::lookups::every_legacy_item_name_is_one_a_vanilla_file_writes)
+        | test(=pack::link::tests::wiring::the_languages_of_the_game_are_the_vanilla_resource_packs_list)
+        | test(=storage::tests::mcb::vanilla::readers::every_vanilla_document_reads_as_its_twin_does)
+    ))
+    | (binary_id(=bedrock_addon::animation) & (
+          test(=resource::c11_vanilla_corpus_loads_without_errors)
+    ))
+    | (binary_id(=bedrock_addon::blocks_json) & (
+          test(=vanilla_packs::the_split_of_the_chemistry_pack_s_legacy_file_draws_what_its_slices_draw)
+        | test(=vanilla_packs::the_split_of_vanilla_s_legacy_file_draws_what_vanilla_s_flattened_file_draws)
+    ))
+    | (binary_id(=bedrock_addon::fog) & (
+          test(=upgrades::u01_identity_of_every_vanilla_1_16_100_file_of_the_corpus)
+    ))
+    | (binary_id(=bedrock_addon::link) & (
+          test(=content::vanilla::the_vanilla_tables_recipes_trades_and_items_name_only_what_the_game_has)
+    ))
+    | (binary_id(=bedrock_addon::pack_vanilla) & (
+          test(=every_row_names_a_shipped_experimental_pack)
+    ))
+    | (binary_id(=bedrock_addon::spawn_groups) & (
+          test(=discovery::sg01_vanilla_raid_groups)
+        | test(=discovery::sg02_raid_wave_ids)
+    ))
+    | (binary_id(=bedrock_addon_core::molang_versions) & (
+          test(=every_molang_string_gets_vanillas_version)
+    ))
+    | (binary_id(=bedrock_addon_core::vanilla) & (
+          test(=actor_type::the_generator_reproduces_the_committed_file)
+        | test(=tables::every_block_the_game_registers_is_in_the_block_list)
+    ))
+    | (binary_id(=bedrock_addon_family_entity::entity) & (
+          test(=component::corpus::retail_sulfur_cube_presets_upgrade_to_the_retail_1_26_40_copy)
+        | test(=component::corpus::vanilla_entity_files_read_this_modules_components_without_an_error)
+        | test(=goal::corpus::every_vanilla_goal_reads_cleanly_and_round_trips)
+    ))
+    | (binary_id(=bedrock_addon_family_item::item) & (
+          test(=oracle::the_full_chain_matches_the_retail_reserialisation)
+        | test(=oracle::the_new_1_26_30_items_load_and_upgrade_to_1_26_50)
+        | test(=routing::vanilla_legacy_items_reach_latest_unconverted)
+    ))
+    | (binary_id(=bedrock_addon_family_item::trim) & (
+          test(=corpus::the_vanilla_loot_tables_name_registered_patterns_and_materials)
+        | test(=corpus::the_vanilla_recipes_duplicate_exactly_the_tables_template_items)
+        | test(=corpus::the_vanilla_texts_name_exactly_the_tables_patterns_and_materials)
+        | test(=corpus::the_vanilla_textures_cover_exactly_the_tables_patterns_and_materials)
+    ))
+    | (binary_id(=bedrock_addon_family_script) & (
+          test(=bundle::tests::the_lexer_finds_the_static_imports_the_parser_finds)
+    ))
+    | (binary_id(=bedrock_addon_family_server_config::script_config) & (
+          test(=properties::sp14_every_key_of_the_shipped_file_is_known)
+        | test(=properties::sp14_shipped_file_parses_without_a_finding)
+    ))
+    | (binary_id(=bedrock_addon_std::pack_settings) & (
+          test(=smoke_saved_settings_of_the_game_files_load)
+    ))
+    | (binary_id(=bedrock_addon_std::script_config) & (
+          test(=smoke_the_server_install_reads_without_a_finding)
+    ))
+    | (binary_id(=bedrock_addon_storage) & (
+          test(=tests::brarchive::every_vanilla_archive_round_trips)
+        | test(=tests::mcb::vanilla::every_vanilla_document_decodes_to_what_its_twin_has)
+    ))
+    | (binary_id(=xtask::bin/xtask) & (
+          test(=script_meta::tests::regenerate::the_generator_reproduces_the_committed_files)
+        | test(=script_meta::tests::regenerate::the_samples_tag_has_no_warning)
+    ))
+'''
+success-output = "final"

@@ -135,7 +135,9 @@ game's content log would print; write the document back and require it to read t
 The tests that load whole trees of the game's packs (`full*` in `std/tests`) and the vanilla
 gate (`vanilla_gate`) need files that are not in the repository: they read
 `BEDROCK_ADDON_CORPUS` and `BEDROCK_ADDON_VANILLA_1_26_60` and skip without them, which is not a
-pass; report which ran. `bedrock_addon` is sans-IO by convention: no file, thread or clock access outside
+pass; report which ran. A skipped test prints `SKIPPED (not a pass): <what>: <reason>`, which
+nextest shows at the end of the run for the corpus-gated binaries (`.config/nextest.toml`);
+count them with `cargo nextest run ... 2>&1 | rg -c 'SKIPPED \(not a pass\)'`. `bedrock_addon` is sans-IO by convention: no file, thread or clock access outside
 `std`. The workspace `clippy.toml` keeps every facet-json call behind `core`'s `json` door. The tables
 under `core/src/vanilla/generated/`, `vanilla/src/generated/`, `families/script/src/meta/generated/` and the entity
 schema tables are generator output (`cargo xtask script-meta`, `actor-types`,
