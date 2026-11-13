@@ -1020,38 +1020,6 @@ impl OnHit {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// `Default` is the value read from an empty object, whose members all take their defaults.
-    fn default_matches_empty_object<T>()
-    where
-        T: Default + PartialEq + std::fmt::Debug + for<'a> Facet<'a>,
-    {
-        let parsed = bedrock_addon_core::json::from_str::<T>("{}").expect("an empty object parses");
-        assert_eq!(T::default(), parsed, "{}", std::any::type_name::<T>());
-    }
-
-    #[test]
-    fn on_hit_subcomponents_default_to_the_empty_object() {
-        default_matches_empty_object::<ArrowEffect>();
-        default_matches_empty_object::<CatchFire>();
-        default_matches_empty_object::<DefinitionEvent>();
-        default_matches_empty_object::<FreezeOnHit>();
-        default_matches_empty_object::<GrantXp>();
-        default_matches_empty_object::<HurtOwner>();
-        default_matches_empty_object::<ImpactDamage>();
-        default_matches_empty_object::<MobEffectInstance>();
-        default_matches_empty_object::<ParticleOnHit>();
-        default_matches_empty_object::<SpawnAoeCloud>();
-        default_matches_empty_object::<SpawnChance>();
-        default_matches_empty_object::<StickInGround>();
-        default_matches_empty_object::<ThrownPotionEffect>();
-        default_matches_empty_object::<Xyz>();
-    }
-}
-
 bedrock_addon_core::impl_schema_leaf!(ProjectileOffset);
 bedrock_addon_core::impl_no_molang!(ProjectileOffset);
 bedrock_addon_core::impl_schema_leaf!(EffectDuration);

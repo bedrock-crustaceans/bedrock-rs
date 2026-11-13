@@ -214,8 +214,11 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   lower-casing of `lowercase`, then the walk into every field;
 ///   `trigger_members`); `impl MolangFields` (a Molang field under the walk's default spec or
 ///   its `schema::molang`, every other field nested, under its `schema::molang` as the nested
-///   walk's default spec if it has one); `impl Default` when no field is required;
-///   a getter `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
+///   walk's default spec if it has one); `impl Default` when no field is required, with a
+///   `#[cfg(test)]` test beside it that the default is the value `{}` reads (but for a
+///   transparent newtype) and reads back unchanged from what the writer makes of it, so a
+///   `Schema` struct is a module-level item; a getter `fn x(&self) -> T` per `Option` field
+///   with a `schema::fallback`;
 /// - on a unit-only enum: `ALL` (none with `schema::order = "game"`, where the enum states
 ///   its own in the game's order and a compile-time check holds it to every variant once),
 ///   `NAMES` and `EXPECTED` (in declaration order either way), `name`, `from_name`,

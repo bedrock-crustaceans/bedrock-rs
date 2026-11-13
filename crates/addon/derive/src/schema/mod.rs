@@ -262,8 +262,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         let rule = unknown_option(Some(word));
         quote!(const UNKNOWN: ::core::option::Option<#core::schema::UnknownRule> = #rule;)
     });
-    let default =
-        (!infos.iter().any(FieldInfo::required)).then(|| default_impl(ident, fields, &infos));
+    let default = (!infos.iter().any(FieldInfo::required)).then(|| {
+        let test = default_test(ident, !container.transparent);
+        let default = default_impl(ident, fields, &infos);
+        quote!(#default #test)
+    });
     let getters = getters(ident, &infos);
 
     quote! {
@@ -771,6 +774,29 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
 
 /// `impl Default`: an `Option` field `None`, a plain field its facet `default`, a `skip`
 /// field its type's `Default`.
+/// The test beside the emitted `Default`: it is the value `{}` reads (unless the struct is a
+/// transparent newtype, which no object spells) and it reads back unchanged from what the
+/// writer makes of it. A module of its own per struct, so that the test's path names the type.
+fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
+    let core = core();
+    let module = format_ident!("__schema_{}", ident);
+    quote! {
+        #[cfg(test)]
+        #[doc(hidden)]
+        #[allow(non_snake_case)]
+        mod #module {
+            #[test]
+            fn default_is_the_empty_object_and_round_trips() {
+                if let ::core::result::Result::Err(fault) =
+                    #core::schema::default_round_trip::<super::#ident>(#empty_object)
+                {
+                    ::core::panic!("{}: {fault:?}", ::core::any::type_name::<super::#ident>());
+                }
+            }
+        }
+    }
+}
+
 fn default_impl(ident: &Ident, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
     let value = |member: &Member| -> TokenStream {
         let info = infos.iter().find(|info| info.member == *member);

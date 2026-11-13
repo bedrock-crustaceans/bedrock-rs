@@ -13,6 +13,7 @@
 
 mod component;
 mod cx;
+mod default;
 mod goal;
 mod grading;
 mod molang_leaves;
@@ -35,6 +36,9 @@ pub use component::{
     shorthand_shape,
 };
 pub use cx::{SchemaCx, Verdict};
+// hidden: emitted by the schema derives
+#[doc(hidden)]
+pub use default::{DefaultFault, default_round_trip};
 // hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use goal::int_fallback;
