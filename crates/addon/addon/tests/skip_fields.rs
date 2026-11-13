@@ -5,8 +5,33 @@
 
 use std::path::{Path, PathBuf};
 
-/// The source roots the convention holds for, as paths below the workspace's `crates/`.
-const ROOTS: &[&str] = &["addon/src", "core/src", "manifest/src", "storage/src"];
+/// The source roots the convention holds for, as paths below the workspace's `crates/addon/`.
+/// A `*` stands for every directory at its place: `families/*/src` is the `src` of each family.
+const ROOTS: &[&str] = &[
+    "addon/src",
+    "core/src",
+    "manifest/src",
+    "storage/src",
+    "families/*/src",
+    "shared/*/src",
+    "test_support/src",
+];
+
+/// The directories `pattern` names below `base`, sorted; a `*` component matches each
+/// directory at its place that holds the rest of the path.
+fn expand(base: &Path, pattern: &str) -> Vec<PathBuf> {
+    let Some((head, rest)) = pattern.split_once("/*/") else {
+        return vec![base.join(pattern)];
+    };
+    let mut dirs: Vec<PathBuf> = std::fs::read_dir(base.join(head))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.join(rest).is_dir())
+        .map(|path| path.join(rest))
+        .collect();
+    dirs.sort();
+    dirs
+}
 
 /// Skipped fields exempt from the convention, as `(file below its root, field line trimmed,
 /// reason)`. The scan reads whole files, so `#[cfg(test)]` code is exempted here by path.
@@ -104,16 +129,18 @@ fn every_skipped_field_is_renamed_behind_a_nul() {
     let mut seen = 0;
     let mut offenders = Vec::new();
     for root in ROOTS {
-        let src = crates.join(root);
-        let mut files = Vec::new();
-        rust_files(&src, &mut files);
-        files.sort();
-        for file in &files {
-            let text = std::fs::read_to_string(file).unwrap();
-            let relative = file.strip_prefix(&src).unwrap().to_string_lossy();
-            let (found, bad) = scan(&relative, &text);
-            seen += found;
-            offenders.extend(bad.into_iter().map(|o| format!("{root}/{o}")));
+        for src in expand(&crates, root) {
+            let mut files = Vec::new();
+            rust_files(&src, &mut files);
+            files.sort();
+            for file in &files {
+                let text = std::fs::read_to_string(file).unwrap();
+                let relative = file.strip_prefix(&src).unwrap().to_string_lossy();
+                let (found, bad) = scan(&relative, &text);
+                seen += found;
+                let src = src.strip_prefix(&crates).unwrap().display();
+                offenders.extend(bad.into_iter().map(|o| format!("{src}/{o}")));
+            }
         }
     }
     assert!(seen > 0, "no skipped field found: the scan is broken");
