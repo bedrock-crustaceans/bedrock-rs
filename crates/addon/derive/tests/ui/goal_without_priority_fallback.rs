@@ -36,13 +36,13 @@ impl Family for Toy {
     }
 }
 
-// A `priority` with no `schema::fallback`: nothing to answer for an absent one.
+#[derive(Debug, PartialEq)] // A `priority` with no `schema::fallback`: nothing to answer for an absent one.
 #[derive(facet::Facet, Schema)]
 struct Float {
     priority: Option<i32>,
 }
 
-// Not a `Schema` struct at all.
+#[derive(Debug, PartialEq, facet::Facet)] // Not a `Schema` struct at all.
 struct Drift {
     priority: Option<i32>,
 }

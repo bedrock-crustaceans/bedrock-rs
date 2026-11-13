@@ -109,7 +109,7 @@ use syn::{DeriveInput, parse_macro_input};
 /// | `molang` | (flag) | not in `ComponentMeta`: the type implements `MolangFields`, and the enum's walk forwards to it | the variant holds no Molang |
 /// | `typed` | `"1.26.30"` | not in `ComponentMeta`: `SCHEMA_ROWS` `typed`, `typed_since(key)`, and a goal's `GoalMeta::TYPED` | `None` |
 /// | `shorthand` | `scalar` | `SCHEMA_ROWS` `shorthand`: a bare scalar stands for the component's one value | `None` |
-/// | `goal` | (flag) | `SCHEMA_ROWS` `goal`; emits `impl GoalMeta for <Type>` (`TYPED` from `typed`, `priority()` from the goal's `schema::fallback`) and its `VERSIONED` entry; needs `typed` and the enum's `versioned` | not a goal |
+/// | `goal` | (flag) | `SCHEMA_ROWS` `goal`; emits `impl GoalMeta for <Type>` (`TYPED` from `typed`, `priority()` from the goal's `schema::fallback`), its `VERSIONED` entry and its `visit_goals` line (the key, `typed` and the type, to a `schema::GoalVisitor`); needs `typed` and the enum's `versioned` | not a goal |
 /// | `triggers` | `["member", …]` | `SCHEMA_ROWS` `triggers`: trigger members the payload does not list (an untyped row's) | `[]` |
 ///
 /// `molang`, `goal` and `shorthand` are a typed variant's keys only: on a `dynamic` row (JSON,

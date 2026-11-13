@@ -1,6 +1,6 @@
 //! What the schema keys of `#[derive(Components)]` add to a family's component enum: the
-//! second table (`SCHEMA_ROWS`, `schema_row`, `typed_since`), `GoalMeta` and the `VERSIONED`
-//! table for the goal rows, and on request the write dispatch, `triggers()` and a test holding
+//! second table (`SCHEMA_ROWS`, `schema_row`, `typed_since`), `GoalMeta`, the `VERSIONED`
+//! table and `visit_goals` for the goal rows, and on request the write dispatch, `triggers()` and a test holding
 //! `typed` to the generated game table.
 
 use proc_macro2::TokenStream;
@@ -104,11 +104,29 @@ pub(crate) fn emit(enum_ident: &Ident, attrs: &EnumAttrs, variants: &Variants) -
             .collect();
         entries.sort_by(|a, b| a.0.cmp(&b.0));
         let entries = entries.into_iter().map(|(_, tokens)| tokens);
+        // A goal row states `typed` (the derive refuses one without), as for `GoalMeta`.
+        let mut visits: Vec<(String, TokenStream)> = goals
+            .clone()
+            .filter_map(|(t, row)| {
+                let ty = t.ty;
+                let name = &row.name;
+                let typed = version(row.typed?);
+                Some((row.name.value(), quote!(visitor.goal::<#ty>(#name, #typed);)))
+            })
+            .collect();
+        visits.sort_by(|a, b| a.0.cmp(&b.0));
+        let visits = visits.into_iter().map(|(_, tokens)| tokens);
         quote! {
             /// `(key, parse by version)` of every goal row, sorted by key.
             #[doc(hidden)]
             pub const VERSIONED: &'static [(&'static str, ::bedrock_addon_core::schema::VersionedParseFn<Self>)] =
                 &[#(#entries),*];
+
+            /// Hands `visitor` every goal row's key, typed version and type, sorted by key.
+            #[doc(hidden)]
+            pub fn visit_goals(visitor: &mut impl ::bedrock_addon_core::schema::GoalVisitor<Self>) {
+                #(#visits)*
+            }
         }
     });
     let write = write_dispatch(attrs, &typed, variants);

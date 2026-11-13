@@ -1,7 +1,8 @@
-//! What a goal row of `#[derive(Components)]` emits for its goal type: [`GoalMeta`], and the
-//! goal parse table's function type.
+//! What a goal row of `#[derive(Components)]` emits for its goal type: [`GoalMeta`], the
+//! goal parse table's function type, and the visitor its `visit_goals` hands each goal type to.
 
 use crate::diagnostic::Diagnostics;
+use crate::document::Component;
 use crate::json::JsonSlice;
 use crate::load::LoadContext;
 use crate::version::FormatVersion;
@@ -22,6 +23,19 @@ pub trait GoalMeta {
 /// `versioned = path`).
 pub type VersionedParseFn<C> =
     fn(JsonSlice<'_>, FormatVersion, &LoadContext, &mut Diagnostics) -> Option<C>;
+
+/// What a family's `visit_goals` (emitted by `#[derive(Components)]` for its `goal` rows)
+/// hands each goal to: its key, the format version from which the game reads it typed, and
+/// its type, `C` the family's component enum. A test that needs each goal as a type (a round
+/// trip through the goal's own writer) collects them with it.
+// hidden: emitted by the schema derives
+#[doc(hidden)]
+pub trait GoalVisitor<C> {
+    /// One goal: the key `key`, typed from `typed`, read as `T`.
+    fn goal<T>(&mut self, key: &'static str, typed: FormatVersion)
+    where
+        T: Component<Set = C> + for<'a> facet::Facet<'a> + PartialEq + core::fmt::Debug;
+}
 
 /// The `schema::fallback` integer of the field `name` among `fields`: what a goal row's
 /// `GoalMeta::priority` answers for an absent `priority`. A `const fn`, so a goal struct whose

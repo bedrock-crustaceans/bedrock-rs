@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::ConvertMode;
 
-use super::types::GOALS;
+use super::types::goals;
 
 /// The format version `text` names, as three numbers (missing parts 0).
 fn version(text: &str) -> (u16, u16, u16) {
@@ -73,6 +73,7 @@ fn every_vanilla_goal_reads_cleanly_and_round_trips() {
     let mut read = 0;
     let mut problems = Vec::new();
     let mut unknown = Vec::new();
+    let goals = goals();
     for file in &files {
         let text = std::fs::read_to_string(file).expect("the file reads");
         let text = text.trim_start_matches('\u{feff}');
@@ -90,7 +91,7 @@ fn every_vanilla_goal_reads_cleanly_and_round_trips() {
             continue;
         };
         for (key, value) in goal_entries(payload) {
-            let Some((_, typed, round_trip)) = GOALS.iter().find(|(k, _, _)| *k == key) else {
+            let Some((_, typed, round_trip)) = goals.iter().find(|(k, _, _)| *k == key) else {
                 continue;
             };
             let mode = if doc_version >= *typed {

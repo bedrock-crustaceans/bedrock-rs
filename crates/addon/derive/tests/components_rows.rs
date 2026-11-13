@@ -6,10 +6,10 @@
 use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::CustomComponent;
+use bedrock_addon_core::document::{Component, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::{self, ComponentRow, GoalMeta, Schema, Shorthand};
+use bedrock_addon_core::schema::{self, ComponentRow, GoalMeta, GoalVisitor, Schema, Shorthand};
 use bedrock_addon_core::shared::EventTrigger;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
@@ -191,6 +191,30 @@ fn a_goal_row_gives_the_goal_its_typed_version_and_priority_and_a_versioned_pars
     assert_eq!(GoalMeta::priority(&set), 4);
     let keys: Vec<&str> = ToyComponent::VERSIONED.iter().map(|(k, _)| *k).collect();
     assert_eq!(keys, ["minecraft:behavior.float"]);
+}
+
+#[test]
+fn visit_goals_hands_each_goal_row_its_type_and_typed_version() {
+    /// Each goal as `(key, typed, type name)`.
+    struct Collect(Vec<(&'static str, FormatVersion, &'static str)>);
+    impl GoalVisitor<ToyComponent> for Collect {
+        fn goal<T>(&mut self, key: &'static str, typed: FormatVersion)
+        where
+            T: Component<Set = ToyComponent> + for<'a> Facet<'a> + PartialEq + std::fmt::Debug,
+        {
+            self.0.push((key, typed, std::any::type_name::<T>()));
+        }
+    }
+    let mut goals = Collect(Vec::new());
+    ToyComponent::visit_goals(&mut goals);
+    assert_eq!(
+        goals.0,
+        [(
+            "minecraft:behavior.float",
+            FormatVersion::new(1, 26, 60),
+            std::any::type_name::<Float>(),
+        )]
+    );
 }
 
 #[test]

@@ -42,6 +42,9 @@ pub use default::{DefaultFault, default_round_trip};
 // hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use goal::int_fallback;
+// hidden: emitted by the schema derives
+#[doc(hidden)]
+pub use goal::GoalVisitor;
 pub use goal::{GoalMeta, VersionedParseFn};
 pub use grading::{Grading, grade};
 pub use rows::{Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, UnknownRule};

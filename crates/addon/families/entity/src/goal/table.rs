@@ -2,13 +2,21 @@
 
 use super::check::{VersionedParseFn, parse_versioned};
 
-/// The goals still listed by hand, each `key => Type`: [`VERSIONED`], and (for the test that
-/// holds each goal's `Goal::TYPED` to its row) `TYPED`, from the one list.
+/// The goals still listed by hand, each `key => Type`: [`VERSIONED`], `visit` (each goal as a
+/// type, for `goal::visit_goals`), and (for the test that holds each goal's `Goal::TYPED` to
+/// its row) `TYPED`, from the one list.
 macro_rules! goals {
     ($($key:literal => $goal:ident,)*) => {
         /// `(key, parse)` for every goal, Brain memory goal and memory sensor.
         pub(crate) const VERSIONED: &[(&str, VersionedParseFn)] =
             &[$(($key, parse_versioned::<super::$goal>)),*];
+
+        /// Hands `visitor` each goal of [`VERSIONED`]: its key, `Goal::TYPED` and type.
+        pub(crate) fn visit(
+            visitor: &mut impl bedrock_addon_core::schema::GoalVisitor<crate::component::EntityComponent>,
+        ) {
+            $(visitor.goal::<super::$goal>($key, <super::$goal as super::check::Goal>::TYPED);)*
+        }
 
         /// `(key, Goal::TYPED)` of each goal of [`VERSIONED`].
         #[cfg(test)]

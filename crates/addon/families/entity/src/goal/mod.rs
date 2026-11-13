@@ -78,10 +78,58 @@ pub(crate) fn versioned(key: &str) -> Option<VersionedParseFn> {
     })
 }
 
+/// Hands `visitor` every goal, Brain memory goal and memory sensor `versioned` knows, each once:
+/// its key, the format version from which it is read typed, and its type. The goal rows' own
+/// (`goal` on the row) and the goals still listed by hand; for a test that needs each goal as a
+/// type.
+// hidden: a test-side walk over the goals; API not yet reviewed
+#[doc(hidden)]
+pub fn visit_goals(
+    visitor: &mut impl bedrock_addon_core::schema::GoalVisitor<crate::component::EntityComponent>,
+) {
+    crate::component::EntityComponent::visit_goals(visitor);
+    table::visit(visitor);
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{table, versioned};
+    use super::{table, versioned, visit_goals};
     use crate::component::EntityComponent;
+    use bedrock_addon_core::document::Component;
+    use bedrock_addon_core::schema::GoalVisitor;
+    use bedrock_addon_core::version::FormatVersion;
+
+    /// The keys a visit is handed, in order.
+    struct Keys(Vec<&'static str>);
+
+    impl GoalVisitor<EntityComponent> for Keys {
+        fn goal<T>(&mut self, key: &'static str, _: FormatVersion)
+        where
+            T: Component<Set = EntityComponent>
+                + for<'a> facet::Facet<'a>
+                + PartialEq
+                + std::fmt::Debug,
+        {
+            self.0.push(key);
+        }
+    }
+
+    /// `visit_goals` hands every key `versioned` finds in its two tables, each once.
+    #[test]
+    fn visit_goals_hands_every_goal_once() {
+        let mut visited = Keys(Vec::new());
+        visit_goals(&mut visited);
+        let mut visited = visited.0;
+        visited.sort_unstable();
+        let mut listed: Vec<&str> = EntityComponent::VERSIONED
+            .iter()
+            .chain(table::VERSIONED)
+            .map(|(key, _)| *key)
+            .collect();
+        listed.sort_unstable();
+        listed.dedup();
+        assert_eq!(visited, listed, "each goal once");
+    }
 
     /// The keys `versioned` knows: every goal row, the Brain memory goals and sensors, and the
     /// suffixed generic memory goal; not a component or a dynamic goal key.
