@@ -19,3 +19,4 @@ nbtx = { workspace = true }
 
 [dev-dependencies]
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }
+bedrock_addon_test_support = { path = "../../test_support" }

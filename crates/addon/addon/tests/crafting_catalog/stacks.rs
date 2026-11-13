@@ -155,7 +155,7 @@ pub fn stack_of(packs: &[Spec], options: LoadOptions) -> PackStack<Behavior> {
 /// `pack<N>_vanilla.json` a vanilla slice, `pack<N>_vanilla.nofile` a vanilla slice without a
 /// catalogue; the pack of `merge/items.json` goes on top.
 pub fn fixture_packs(name: &str) -> Vec<Spec> {
-    let dir = format!("{FIXTURES}/merge/{name}");
+    let dir = format!("{}/merge/{name}", fixtures().display());
     let mut files: Vec<String> = std::fs::read_dir(&dir)
         .unwrap_or_else(|error| panic!("{dir}: {error}"))
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())

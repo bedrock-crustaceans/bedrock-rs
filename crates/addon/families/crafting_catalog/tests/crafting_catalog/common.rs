@@ -15,24 +15,18 @@ use bedrock_addon_family_crafting_catalog::{
 pub use bedrock_addon_test_support::errors;
 
 /// The fixture folder of this family. The file is included by the family crate's tests and by
-/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is picked
-/// by the package that compiles it.
-pub const FIXTURES: &str = if env!("CARGO_PKG_NAME").len() == "bedrock_addon".len() {
-    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/item/catalog")
-} else {
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../addon/tests/fixtures/item/catalog"
-    )
-};
+/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is found
+/// below the fixture root of the package that compiles it.
+pub fn fixtures() -> std::path::PathBuf {
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR")).join("item/catalog")
+}
 
 /// The one path a catalogue is read from.
 pub const PATH: &str = "item_catalog/crafting_item_catalog.json";
 
 /// The text of the fixture file `path` (relative to the family's fixture folder).
 pub fn fixture(path: &str) -> String {
-    std::fs::read_to_string(format!("{FIXTURES}/{path}"))
-        .unwrap_or_else(|error| panic!("{path}: {error}"))
+    std::fs::read_to_string(fixtures().join(path)).unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
 /// Loads `json` as a pack's catalogue file.

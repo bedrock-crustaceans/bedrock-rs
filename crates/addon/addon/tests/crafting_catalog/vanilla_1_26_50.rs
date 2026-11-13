@@ -76,8 +76,11 @@ fn the_mcb_originals_load_on_a_vanilla_stack_without_a_finding() {
         ("vanilla_1.26.50", FormatVersion::new(1, 26, 50)),
         ("experimental_y_2026_drop_4", FormatVersion::new(1, 26, 40)),
     ] {
-        let bytes =
-            std::fs::read(format!("{FIXTURES}/mcb/{name}_crafting_item_catalog.mcb")).unwrap();
+        let bytes = std::fs::read(format!(
+            "{}/mcb/{name}_crafting_item_catalog.mcb",
+            fixtures().display()
+        ))
+        .unwrap();
         assert_eq!(&bytes[..4], b"\x7fMCB", "{name}");
         // The pack's name seeds its UUID: a short one (the vanilla slice keeps the vanilla UUID).
         // The drop 4 pack adds to vanilla's catalogue: it is stacked on the 1.26.50 one, as in
@@ -85,7 +88,8 @@ fn the_mcb_originals_load_on_a_vanilla_stack_without_a_finding() {
         let mut packs = Vec::new();
         if name == "experimental_y_2026_drop_4" {
             let base = std::fs::read(format!(
-                "{FIXTURES}/mcb/vanilla_1.26.50_crafting_item_catalog.mcb"
+                "{}/mcb/vanilla_1.26.50_crafting_item_catalog.mcb",
+                fixtures().display()
             ))
             .unwrap();
             packs.push(vanilla("vanilla").file(PATH, base));

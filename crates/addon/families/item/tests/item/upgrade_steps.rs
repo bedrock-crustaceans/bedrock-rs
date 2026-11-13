@@ -8,7 +8,7 @@ use bedrock_addon_family_item::history;
 use facet_value::VObject;
 
 use super::common::allowlisted;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// The JSON at `path` (`/`-separated) of `value`.
 fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {

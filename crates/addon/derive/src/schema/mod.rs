@@ -772,8 +772,6 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
     }
 }
 
-/// `impl Default`: an `Option` field `None`, a plain field its facet `default`, a `skip`
-/// field its type's `Default`.
 /// The test beside the emitted `Default`: it is the value `{}` reads (unless the struct is a
 /// transparent newtype, which no object spells) and it reads back unchanged from what the
 /// writer makes of it. A module of its own per struct, so that the test's path names the type.
@@ -783,7 +781,7 @@ fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
     quote! {
         #[cfg(test)]
         #[doc(hidden)]
-        #[allow(non_snake_case)]
+        #[allow(non_snake_case, reason = "the module is named after the type it tests")]
         mod #module {
             #[test]
             fn default_is_the_empty_object_and_round_trips() {
@@ -797,6 +795,8 @@ fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
     }
 }
 
+/// `impl Default`: an `Option` field `None`, a plain field its facet `default`, a `skip`
+/// field its type's `Default`.
 fn default_impl(ident: &Ident, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
     let value = |member: &Member| -> TokenStream {
         let info = infos.iter().find(|info| info.member == *member);

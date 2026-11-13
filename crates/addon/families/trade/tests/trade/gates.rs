@@ -8,7 +8,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_trade::{ItemList, Quantity, TradeItem, TradeTable};
 
 use super::common::{doc, found_at, loads, trade};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// A one-trade table whose `wants` entry is `entry` (JSON).
 fn table_with(version: Option<&str>, entry: &str) -> String {

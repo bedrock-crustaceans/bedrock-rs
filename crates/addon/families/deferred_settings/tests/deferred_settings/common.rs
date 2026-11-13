@@ -1,6 +1,9 @@
 //! Helpers of the deferred-settings tests.
 
-#![allow(dead_code, reason = "each test file uses part of the helpers")]
+#![allow(
+    dead_code,
+    reason = "bedrock_addon's tests/deferred_settings.rs includes this file too: the family's tests leave origin and located unused, bedrock_addon's stack tests the loaders, the finding views, the fixture reads and round_trip"
+)]
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
@@ -8,27 +11,19 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
-pub use bedrock_addon_test_support::json;
+pub use bedrock_addon_test_support::json::strict as json;
 
 /// The fixture folder of this family. The file is included by the family crate's tests and by
-/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is picked
-/// by the package that compiles it.
-pub const FIXTURES: &str = if env!("CARGO_PKG_NAME").len() == "bedrock_addon".len() {
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/render/render_configs"
-    )
-} else {
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../addon/tests/fixtures/render/render_configs"
-    )
-};
+/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is found
+/// below the fixture root of the package that compiles it.
+pub fn fixtures() -> std::path::PathBuf {
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("render/render_configs")
+}
 
 /// The text of the fixture file `path` (relative to the family's fixture folder).
 pub fn fixture(path: &str) -> String {
-    std::fs::read_to_string(format!("{FIXTURES}/{path}"))
-        .unwrap_or_else(|error| panic!("{path}: {error}"))
+    std::fs::read_to_string(fixtures().join(path)).unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
 pub const LIGHTING: &str = "minecraft:lighting_settings";

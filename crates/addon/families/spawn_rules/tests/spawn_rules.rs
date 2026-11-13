@@ -1,8 +1,6 @@
 //! The spawn-rules family (`bedrock_addon::families::spawn_rules`, both shapes): the routing
 //! gates, the chains, round trips and Molang.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 #[path = "spawn_rules/chain.rs"]
 mod chain;
 #[path = "spawn_rules/common.rs"]

@@ -4,7 +4,7 @@
 use bedrock_addon_family_behavior_tree::Node;
 
 use super::common::*;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// One parameter of a leaf or decorator: the node type, the field of `Node` (as the dump
 /// names it), the literal member with a value of its type, the literal's default, the key

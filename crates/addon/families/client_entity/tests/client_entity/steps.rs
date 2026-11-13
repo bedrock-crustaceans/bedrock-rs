@@ -18,7 +18,7 @@ use bedrock_addon_family_client_entity::history::{
 };
 
 use super::common::*;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 const FAMILY: &str = "client_entity";
 

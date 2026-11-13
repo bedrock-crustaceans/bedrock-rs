@@ -12,7 +12,7 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_sounds_json::SoundBindings;
 
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 fn path(text: &str) -> PackPath {
     PackPath::new(text).unwrap()

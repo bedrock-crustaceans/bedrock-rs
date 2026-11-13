@@ -12,7 +12,7 @@ use bedrock_addon_family_geometry::history::{
 use bedrock_addon_family_geometry::{CubeUv, GeometryFile, Locator};
 
 use crate::common::{clean, count, engine, expect, expect_at, first, load, loaded, rp};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// The checks every step of the chain runs under: a resource pack at the newest engine.
 fn checks() -> Checks<'static> {

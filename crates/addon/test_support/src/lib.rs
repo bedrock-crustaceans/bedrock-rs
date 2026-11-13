@@ -3,8 +3,8 @@
 //! - [`corpus`]: the line a test prints when the game's files it needs are absent.
 //! - [`diagnostics`]: findings as lines and by code.
 //! - [`document`]: the outcome of a document read, loaded or refused, and its round trip.
-//! - [`fixture`]: fixture reads below the caller's own manifest directory.
-//! - [`json`](mod@json): test JSON, read through the door.
+//! - [`fixture`]: the `tests/fixtures` folder a package's tests read, from its manifest directory.
+//! - [`json`](mod@json): test JSON, read through the door, with comments or strictly.
 //! - [`package`]: what a package's test files include from outside the package.
 //! - [`value`]: a shared-type value read from JSON text, written back and compared.
 //! - [`write_back`]: a document written back as the JSON value it was read from.
@@ -38,5 +38,5 @@ pub mod written_pins;
 
 pub use diagnostics::{clean, errors, line, lines, with_code};
 pub use document::{loaded, rejected, round_trip};
-pub use json::json;
+pub use json::{json, strict};
 pub use write_back::as_authored;

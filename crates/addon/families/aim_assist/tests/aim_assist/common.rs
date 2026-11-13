@@ -1,6 +1,9 @@
 //! Helpers of the aim-assist tests.
 
-#![allow(dead_code, reason = "each test file uses part of the helpers")]
+#![allow(
+    dead_code,
+    reason = "bedrock_addon's tests/aim_assist.rs includes this file too, and its stack tests leave fixtures, fixture, preset and categories unused"
+)]
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
@@ -11,21 +14,9 @@ use bedrock_addon_family_aim_assist::{AimAssistCategories, AimAssistPreset};
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::{loaded as loads, rejected as rejects};
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture folder of this family.
 pub fn fixtures() -> std::path::PathBuf {
-    fixtures_root().join("camera/aim_assist")
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR")).join("camera/aim_assist")
 }
 
 /// The text of the fixture file `path` (relative to the family's fixture folder).

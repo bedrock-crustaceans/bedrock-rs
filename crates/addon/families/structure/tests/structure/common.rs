@@ -8,21 +8,9 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_structure::Structure;
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture directory.
 pub fn dir() -> String {
-    fixtures_root()
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
         .join("structure/structure")
         .to_string_lossy()
         .into_owned()

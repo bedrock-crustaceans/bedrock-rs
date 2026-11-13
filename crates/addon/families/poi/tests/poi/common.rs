@@ -18,21 +18,11 @@ use bedrock_addon_core::pack_identity::PackType;
 use bedrock_addon_core::version::MinEngineVersion;
 use uuid::Uuid;
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture directory `tests/fixtures/poi/poi/<name>`.
 pub fn fixture_dir(name: &str) -> PathBuf {
-    fixtures_root().join("poi/poi").join(name)
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("poi/poi")
+        .join(name)
 }
 
 /// A fixture file's text.

@@ -5,7 +5,7 @@ use bedrock_addon_core::document::{
     Component, ComponentMap, ComponentRef, ComponentSet, CustomComponent,
 };
 use bedrock_addon_core::json::Value;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 #[derive(Clone, Debug, PartialEq)]
 struct Friction(f32);

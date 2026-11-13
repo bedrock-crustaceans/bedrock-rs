@@ -1,8 +1,6 @@
 //! The stack helpers of the behavior-tree tests: packs from memory or from a fixture, the
 //! stacks of them, and the check of a fixture's stack against its golden files.
 
-#![allow(dead_code, reason = "each test module uses part of the helpers")]
-
 use std::path::PathBuf;
 
 use bedrock_addon::load::LoadOptions;

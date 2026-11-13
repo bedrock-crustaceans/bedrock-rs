@@ -138,21 +138,11 @@ pub fn texts(diagnostics: &Diagnostics, severity: Severity) -> Vec<String> {
         .collect()
 }
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture directory `tests/fixtures/biome/biome/<rest>`.
 pub fn fixture_dir(rest: &str) -> PathBuf {
-    fixtures_root().join("biome/biome").join(rest)
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("biome/biome")
+        .join(rest)
 }
 
 /// A fixture file's text.

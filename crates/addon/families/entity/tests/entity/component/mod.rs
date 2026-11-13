@@ -10,7 +10,7 @@ use bedrock_addon_core::versioning::ConvertMode;
 use bedrock_addon_family_entity::component::EntityComponent;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
-pub use bedrock_addon_test_support::json;
+pub use bedrock_addon_test_support::json::strict as json;
 
 mod corpus;
 mod health;

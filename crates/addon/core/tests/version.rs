@@ -15,7 +15,7 @@ use bedrock_addon_core::version::{
     BaseGameVersion, ENGINE_VERSION, FormatVersion, FormatVersionInput, MinEngineVersion,
     SemVersion, VersionRange,
 };
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 fn sem(text: &str) -> SemVersion {
     SemVersion::parse(text).unwrap_or_else(|| panic!("{text:?} parses"))

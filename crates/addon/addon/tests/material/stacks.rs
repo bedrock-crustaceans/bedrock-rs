@@ -1,8 +1,6 @@
 //! The in-line resource stacks of the material tests (the lowest pack first: `pack_0` is the
 //! lowest priority).
 
-#![allow(dead_code, reason = "each test file uses part of the helpers")]
-
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackStack, Resource};
 use bedrock_addon::storage::PackPath;

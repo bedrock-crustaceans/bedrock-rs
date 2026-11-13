@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use super::common::{fixture, names};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// The vanilla unit tests' pack.
 const PACK: Uuid = Uuid::from_u128(0xd334_9771_6782_4420_875a_fcd6_179a_8915);

@@ -11,21 +11,11 @@ use bedrock_addon_family_dimension::Dimension;
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::with_code;
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The text of the fixture file `path` (relative to the family's fixture folder).
 pub fn fixture(path: &str) -> String {
-    let file = fixtures_root().join("worldgen/dimension").join(path);
+    let file = bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("worldgen/dimension")
+        .join(path);
     std::fs::read_to_string(&file).unwrap_or_else(|error| panic!("{}: {error}", file.display()))
 }
 

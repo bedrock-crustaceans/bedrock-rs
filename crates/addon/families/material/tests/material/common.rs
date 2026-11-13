@@ -5,7 +5,6 @@
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 
 use std::fmt::Write as _;
-use std::path::PathBuf;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::document::{Content, Document, Rejected};
@@ -13,21 +12,11 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_material::{MaterialFile, MaterialGroup, MaterialList, Materials};
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The bytes of the fixture file `name` (`tests/fixtures/render/materials/<name>`).
 pub fn fixture(name: &str) -> Vec<u8> {
-    let path = fixtures_root().join("render/materials").join(name);
+    let path = bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("render/materials")
+        .join(name);
     std::fs::read(&path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
 }
 

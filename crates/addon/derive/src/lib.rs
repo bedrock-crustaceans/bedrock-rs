@@ -216,9 +216,10 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   its `schema::molang`, every other field nested, under its `schema::molang` as the nested
 ///   walk's default spec if it has one); `impl Default` when no field is required, with a
 ///   `#[cfg(test)]` test beside it that the default is the value `{}` reads (but for a
-///   transparent newtype) and reads back unchanged from what the writer makes of it, so a
-///   `Schema` struct is a module-level item; a getter `fn x(&self) -> T` per `Option` field
-///   with a `schema::fallback`;
+///   transparent newtype) and reads back unchanged from what the writer makes of it (the
+///   test's module reaches the struct through `super::`, so a struct declared inside a
+///   function body does not compile in a test build: declare it at module level); a getter
+///   `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
 /// - on a unit-only enum: `ALL` (none with `schema::order = "game"`, where the enum states
 ///   its own in the game's order and a compile-time check holds it to every variant once),
 ///   `NAMES` and `EXPECTED` (in declaration order either way), `name`, `from_name`,

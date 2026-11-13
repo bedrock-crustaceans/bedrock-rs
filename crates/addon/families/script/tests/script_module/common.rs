@@ -32,20 +32,9 @@ pub const BDS_ALLOWED_MODULES: [&str; 6] = [
 /// The engine the probes ran on.
 pub const BDS_ENGINE: FormatVersion = FormatVersion::new(1, 26, 36);
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 pub fn fixtures() -> PathBuf {
-    fixtures_root().join("script/script_module")
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("script/script_module")
 }
 
 // ---- the TOML subset ----

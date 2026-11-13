@@ -1,8 +1,6 @@
 //! The packs of the biome stack tests: a behaviour-pack manifest and a pack opened from its
 //! files.
 
-#![allow(dead_code, reason = "each test module uses part of the helpers")]
-
 use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin};
 use bedrock_addon::storage::PackPath;
 use uuid::Uuid;

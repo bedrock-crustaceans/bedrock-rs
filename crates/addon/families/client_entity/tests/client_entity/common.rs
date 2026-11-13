@@ -142,21 +142,11 @@ pub fn silent(d: &Diagnostics) {
     assert!(d.is_empty(), "{}", lines(d).join("\n"));
 }
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture directory of `family` (`client_entity`, `atomic_client_entity`).
 pub fn fixtures(family: &str) -> PathBuf {
-    fixtures_root().join("entity").join(family)
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("entity")
+        .join(family)
 }
 
 /// A fixture file's text.

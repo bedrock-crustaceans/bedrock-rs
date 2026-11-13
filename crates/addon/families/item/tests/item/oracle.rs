@@ -13,11 +13,20 @@ use bedrock_addon_shared_shapes::CreativeCategory;
 use super::common::*;
 use bedrock_addon_test_support::corpus;
 
-/// A corpus entry, if available.
-fn corpus(entry: &str) -> Option<PathBuf> {
-    let root = std::env::var_os("BEDROCK_ADDON_CORPUS")?;
+/// The corpus entry `entry`, or `None` after printing the skip line of `check`: the variable
+/// is not set, or the corpus has no such entry.
+fn corpus(check: &str, entry: &str) -> Option<PathBuf> {
+    let Some(root) = std::env::var_os(corpus::CORPUS) else {
+        corpus::skipped(check, corpus::not_set(corpus::CORPUS));
+        return None;
+    };
     let path = Path::new(&root).join(entry);
-    path.exists().then_some(path)
+    if path.exists() {
+        Some(path)
+    } else {
+        corpus::skipped(check, format_args!("{} is missing", path.display()));
+        None
+    }
 }
 
 /// The 22 pairs: pack folder and item file.
@@ -78,8 +87,10 @@ fn normalised(item: &Item) -> (String, Vec<String>) {
 
 #[test]
 fn the_full_chain_matches_the_retail_reserialisation() {
-    let (Some(dev), Some(retail)) = (corpus("gdk-dev"), corpus("gdk-retail")) else {
-        corpus::skipped("row o01", corpus::not_set(corpus::CORPUS));
+    let Some(dev) = corpus("row o01", "gdk-dev") else {
+        return;
+    };
+    let Some(retail) = corpus("row o01", "gdk-retail") else {
         return;
     };
     let pairs = pairs();
@@ -130,8 +141,7 @@ fn the_full_chain_matches_the_retail_reserialisation() {
 
 #[test]
 fn the_new_1_26_30_items_load_and_upgrade_to_1_26_50() {
-    let Some(retail) = corpus("gdk-retail") else {
-        corpus::skipped("row o02", corpus::not_set(corpus::CORPUS));
+    let Some(retail) = corpus("row o02", "gdk-retail") else {
         return;
     };
     for name in ["red_shrub", "shelf_mushroom"] {

@@ -9,7 +9,7 @@ use bedrock_addon_core::document::Content;
 use bedrock_addon_core::json::Value;
 
 use super::common::{allow_listed, document, loads};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 const BLOCK: &str = "minecraft:block";
 

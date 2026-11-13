@@ -19,13 +19,7 @@ pub use bedrock_addon_test_support::clean;
 /// `bedrock_addon`'s, which owns the `tests/fixtures` folder, so the folder is looked for in the
 /// package that compiles it first.
 pub fn fixtures() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own.join("recipe/recipe")
-    } else {
-        manifest.join("../../addon/tests/fixtures/recipe/recipe")
-    }
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR")).join("recipe/recipe")
 }
 
 /// The bytes of fixture `name`.

@@ -9,21 +9,10 @@ use std::path::{Path, PathBuf};
 use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, ReferenceHint};
 use bedrock_addon_family_script::{ImportKind, Resolution, ScriptBundle};
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> std::path::PathBuf {
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture folder of the family.
 pub fn fixtures() -> PathBuf {
-    fixtures_root().join("script/script_bundle")
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("script/script_bundle")
 }
 
 /// Every file below `dir`, as `(path relative to dir, bytes)`, sorted.

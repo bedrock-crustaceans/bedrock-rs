@@ -14,7 +14,7 @@ use bedrock_addon::storage::PackPath;
 use uuid::Uuid;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
-pub use bedrock_addon_test_support::json;
+pub use bedrock_addon_test_support::json::strict as json;
 
 /// The sound definitions path.
 pub const DEFINITIONS: &str = "sounds/sound_definitions.json";

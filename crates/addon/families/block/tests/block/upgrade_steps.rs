@@ -4,7 +4,7 @@
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::versioning::testing::{Checks, Run, step_output};
 use bedrock_addon_family_block::history::v1_18_0;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 use facet_value::VNumber;
 
 /// The value at a `/`-separated path.

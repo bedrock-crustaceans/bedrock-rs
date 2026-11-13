@@ -1,8 +1,6 @@
 //! The pack helpers of the client-biome tests: resource packs opened from memory and the
 //! stacks of a world that lists them.
 
-#![allow(dead_code, reason = "each test module uses part of the helpers")]
-
 use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin};
 use bedrock_addon::storage::PackPath;
 use uuid::Uuid;

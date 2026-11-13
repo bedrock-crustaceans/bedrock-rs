@@ -538,7 +538,7 @@ cargo run -p bedrock_addon_std --example ruby_pack
 
 ## Tests
 
-`cargo nextest run -p bedrock_addon --all-features` runs the unit tests and the test binaries under `tests/`, most of them one family's. The binaries that check the crate as a whole:
+`cargo nextest run -p bedrock_addon --all-features` runs the unit tests and the test binaries under `tests/`, most of them one family's. A family's document tests live in the family's own crate, under `crates/addon/families/<name>/tests/` (`cargo nextest run -p bedrock_addon_family_<name>`). The binaries that check the crate as a whole:
 
 | Binary (`--test <name>`) | What it holds |
 | --- | --- |
@@ -548,7 +548,8 @@ cargo run -p bedrock_addon_std --example ruby_pack
 | `writable`, `writable_2`, `writable_3`, `writable_4` | every document that loads is writable, and no value is rewritten or dropped without a finding. One probe in four binaries, since a test binary runs under a limit of CPU seconds: `writable_2`, `writable_3` and `writable_4` share out the twelve document types with the most texts, and a test of `writable` holds the four lists against each other |
 | `writable_legacy` and the `writable_legacy_*` binaries | the same for documents of older formats: no upgrade step and no legacy reader loses an author's value in silence |
 | `determinism` | a load gives the same result for every order in which the caller completes requests and jobs |
-| `module_independence` | no content module imports another (a family imports only the core vocabulary, the derive and the shared crates; the three biome families also support's `biome_json`) |
+| `module_independence` | no content module imports another (a family imports only the core vocabulary, the derive and the shared crates; the three biome families also support's `biome_json`); a family or shared crate takes `bedrock_addon_test_support` as a dev-dependency only, and names it in its tests alone |
+| `package_includes` | no test file of the package includes a file outside it, but the family test helpers its `KNOWN_OUTSIDE` list names (the scan is `bedrock_addon_test_support::package`) |
 
 The tests that read the game's own files run only with `BEDROCK_ADDON_CORPUS` set to a folder holding them, and skip without it; nothing of the game is in the repository.
 

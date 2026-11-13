@@ -8,7 +8,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_geometry::{Bone, Cube, Geometry, GeometryFile, TextureMesh};
 
 use crate::common::{base_game, clean, load, load_at, loaded, round_trip};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// Every member of the newest schema, once.
 const FULL: &str = r#"{

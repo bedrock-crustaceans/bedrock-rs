@@ -29,21 +29,10 @@ use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_family_behavior_tree::{BehaviorTree, Node, Param};
 use facet_value::{VArray, VObject};
 
-/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
-/// included by `bedrock_addon`'s own test root, which owns the folder.
-fn fixtures_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let own = manifest.join("tests/fixtures");
-    if own.is_dir() {
-        own
-    } else {
-        manifest.join("../../addon/tests/fixtures")
-    }
-}
-
 /// The fixture directory of the family.
 pub fn fixtures() -> PathBuf {
-    fixtures_root().join("behavior_tree/behavior_tree")
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("behavior_tree/behavior_tree")
 }
 
 /// The text of fixture file `path` (relative to the family's fixture directory).

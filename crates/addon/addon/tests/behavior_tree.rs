@@ -1,6 +1,6 @@
-//! The behavior-tree family (`behavior_trees/`, `minecraft:behavior_tree`): every row of
-//! The fixtures, the validation rules, the node catalogue of
-//! The schema, the stack rules, write-back and the deviations.
+//! The behavior-tree family (`behavior_trees/`, `minecraft:behavior_tree`) on a stack: every row
+//! of its fixtures, which file's tree a name gets and the walk, write-back, and the link pass.
+//! The tests that read one document are the family crate's (`families/behavior_tree/tests`).
 
 #![cfg(feature = "behavior_tree")]
 

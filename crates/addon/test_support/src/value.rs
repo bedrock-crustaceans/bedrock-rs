@@ -3,10 +3,8 @@
 
 #![allow(
     clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
+    reason = "reads with facet-json's own jsonc entry points, as the shapes tests' copy it came from did: the door's would also respell integers beyond 64 bits and refuse bad escapes, deep nesting and trailing text, so it is another reader"
 )]
-#![allow(dead_code)] // each test file uses part of the helpers
 
 use bedrock_addon_core::json::{Indent, Value, WriteStyle, write_json};
 use facet::Facet;

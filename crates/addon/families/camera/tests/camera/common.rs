@@ -14,22 +14,15 @@ use bedrock_addon_family_camera::{CameraEntity, CameraList, CameraPreset, Camera
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::{loaded as loads, rejected as rejects};
 
-/// The fixture folder of this family.
-// Picked by the package that compiles this file: the family crate, or `bedrock_addon`, whose
-// tests include it and whose manifest folder sits at another depth.
-pub const FIXTURES: &str = if env!("CARGO_PKG_NAME").len() == "bedrock_addon".len() {
-    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/camera/camera")
-} else {
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../addon/tests/fixtures/camera/camera"
-    )
-};
+/// The fixture folder of this family, below the fixture root of the package that compiles this
+/// file: the family crate, or `bedrock_addon`, whose tests include it.
+pub fn fixtures() -> std::path::PathBuf {
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR")).join("camera/camera")
+}
 
 /// The text of the fixture file `path` (relative to the family's fixture folder).
 pub fn fixture(path: &str) -> String {
-    std::fs::read_to_string(format!("{FIXTURES}/{path}"))
-        .unwrap_or_else(|error| panic!("{path}: {error}"))
+    std::fs::read_to_string(fixtures().join(path)).unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
 /// Loads `json` as a file of `T` at `path`.

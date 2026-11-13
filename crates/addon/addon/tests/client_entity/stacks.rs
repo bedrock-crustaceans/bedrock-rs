@@ -1,8 +1,6 @@
 //! The in-memory resource stacks of the client entity tests: packs at a `min_engine_version`,
 //! loaded through the repository and stack loaders.
 
-#![allow(dead_code, reason = "each test file uses part of the helpers")]
-
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::StackSet;
 use uuid::Uuid;

@@ -20,13 +20,24 @@ fn written_as(json: &str, cx: &bedrock_addon_core::load::LoadContext) -> ItemHis
     }
 }
 
-/// The sample pack's `behavior_pack/items/<name>.json`, from the corpus (never committed).
-fn sample(name: &str) -> Option<String> {
-    let root = std::env::var_os("BEDROCK_ADDON_CORPUS")?;
+/// The sample pack's `behavior_pack/items/<name>.json`, from the corpus (never committed), or
+/// `None` after printing the skip line of `check`: the variable is not set, or the file cannot
+/// be read.
+fn sample(check: &str, name: &str) -> Option<String> {
+    let Some(root) = std::env::var_os(corpus::CORPUS) else {
+        corpus::skipped(check, corpus::not_set(corpus::CORPUS));
+        return None;
+    };
     let path = std::path::Path::new(&root)
         .join("bedrock-samples/behavior_pack/items")
         .join(format!("{name}.json"));
-    std::fs::read_to_string(path).ok()
+    match std::fs::read_to_string(&path) {
+        Ok(text) => Some(text),
+        Err(error) => {
+            corpus::skipped(check, format_args!("{}: {error}", path.display()));
+            None
+        }
+    }
 }
 
 #[test]
@@ -38,8 +49,11 @@ fn vanilla_legacy_items_reach_latest_unconverted() {
         "chorus_fruit",
         "glow_berries",
     ];
-    let Some(texts) = names.iter().map(|n| sample(n)).collect::<Option<Vec<_>>>() else {
-        corpus::skipped("row i00", corpus::not_set(corpus::CORPUS));
+    let Some(texts) = names
+        .iter()
+        .map(|n| sample("row i00", n))
+        .collect::<Option<Vec<_>>>()
+    else {
         return;
     };
     for (name, text) in names.iter().zip(&texts) {

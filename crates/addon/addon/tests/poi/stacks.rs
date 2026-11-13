@@ -1,8 +1,6 @@
 //! The pack helpers of the POI tests: packs opened from memory or from a fixture's tree, and
 //! the behaviour stacks built from them.
 
-#![allow(dead_code, reason = "each test module uses part of the helpers")]
-
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::load::LoadOptions;

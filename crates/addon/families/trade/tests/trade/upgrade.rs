@@ -5,7 +5,7 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, Run, StepOutput, step_output};
 use bedrock_addon_family_trade::history::v0;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// The JSON at `path` (`/`-separated; a number indexes an array) of `value`.
 fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {

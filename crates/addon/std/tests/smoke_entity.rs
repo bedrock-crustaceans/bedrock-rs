@@ -25,7 +25,7 @@ use bedrock_addon::load::{LoadOptions, StackOptions};
 use bedrock_addon::pack::{Behavior, OpenOptions, PackOrigin, PackStack, StackSet};
 use bedrock_addon_std::{Driver, Options};
 use bedrock_addon_test_support::corpus;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 use common::game_files;
 

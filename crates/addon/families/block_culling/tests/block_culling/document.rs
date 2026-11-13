@@ -10,7 +10,7 @@ use bedrock_addon_family_block_culling::{
 };
 
 use super::common::{BONE1_EAST, fixture, floor, latest, loads};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 fn id(text: &str) -> CullingRulesId {
     CullingRulesId::new(text).unwrap()

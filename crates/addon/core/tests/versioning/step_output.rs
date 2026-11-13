@@ -9,7 +9,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::{Checks, FailureKind, Run, step_output};
 
 use crate::toy::{v1_0_0, v1_1_0};
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 /// A payload of the 1.1.0 struct.
 fn second_base() -> Value {

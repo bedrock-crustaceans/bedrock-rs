@@ -18,7 +18,7 @@ use bedrock_addon_family_attachable::history::{
 };
 
 use super::common::*;
-use bedrock_addon_test_support::json;
+use bedrock_addon_test_support::json::strict as json;
 
 const FAMILY: &str = "attachable";
 
