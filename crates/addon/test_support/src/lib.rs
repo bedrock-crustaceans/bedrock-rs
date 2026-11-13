@@ -23,7 +23,10 @@ pub mod fixture;
 pub mod json;
 pub mod package;
 pub mod value;
+pub mod write_back;
+pub mod written_pins;
 
 pub use diagnostics::{clean, errors, line, lines, with_code};
 pub use document::{loaded, rejected, round_trip};
 pub use json::json;
+pub use write_back::as_authored;

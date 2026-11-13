@@ -9,8 +9,5 @@ mod common;
 #[path = "ui_texture_info/rows.rs"]
 mod rows;
 
-#[path = "ui_texture_info/content.rs"]
-mod content;
-
 #[path = "common/in_files.rs"]
 mod in_files;

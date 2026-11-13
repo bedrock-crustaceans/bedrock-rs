@@ -8,6 +8,3 @@ mod common;
 
 #[path = "splashes/rows.rs"]
 mod rows;
-
-#[path = "splashes/as_authored.rs"]
-mod as_authored;

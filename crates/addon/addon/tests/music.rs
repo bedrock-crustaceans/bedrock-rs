@@ -13,7 +13,3 @@ mod definitions;
 mod sound_definitions;
 #[path = "music/write_back.rs"]
 mod write_back;
-#[path = "music/written.rs"]
-mod written;
-#[path = "common/written_pins.rs"]
-mod written_pins;

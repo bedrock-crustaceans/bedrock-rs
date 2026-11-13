@@ -9,8 +9,5 @@ mod common;
 #[path = "font/rows.rs"]
 mod rows;
 
-#[path = "font/as_authored.rs"]
-mod as_authored;
-
 #[path = "font/link.rs"]
 mod link;

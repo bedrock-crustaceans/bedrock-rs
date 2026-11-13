@@ -6,13 +6,13 @@
     reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
 )]
 
-use bedrock_addon::document::{Content, Placed};
-use bedrock_addon::families::sounds_json::SoundBindings;
-use bedrock_addon::json::Value;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::document::{Content, Placed};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_family_sounds_json::SoundBindings;
 
-use super::common::json;
+use bedrock_addon_test_support::json;
 
 fn path(text: &str) -> PackPath {
     PackPath::new(text).unwrap()

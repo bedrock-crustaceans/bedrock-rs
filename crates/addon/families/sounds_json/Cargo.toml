@@ -18,3 +18,8 @@ molang = ["bedrock_addon_core/molang"]
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
 indexmap = { workspace = true }
+
+[dev-dependencies]
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../../test_support" }
+facet-json = { workspace = true }

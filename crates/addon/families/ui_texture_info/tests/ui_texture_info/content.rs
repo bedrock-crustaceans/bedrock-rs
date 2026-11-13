@@ -1,13 +1,13 @@
 //! The side-file kind on its own: `Content::parse`, the round trip (the JSON as written, read
 //! back equal and rewritten identically) and what a write gives for a value built by hand.
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::ui_texture_info::{Nineslice, SliceSize, UiTextureInfo};
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_family_ui_texture_info::{Nineslice, SliceSize, UiTextureInfo};
 
-use super::common::json;
+use bedrock_addon_test_support::json;
 
 fn parse<T: Content>(path: &str, text: &str) -> Result<Document<T>, Rejected> {
     T::parse(
@@ -34,20 +34,21 @@ fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
 
 /// A file of the vanilla side files kept beside the JSON UI fixtures.
 fn vanilla(name: &str) -> String {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/ui/ui");
+    let root =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../addon/tests/fixtures/ui/ui");
     std::fs::read_to_string(root.join("vanilla").join(name)).unwrap()
 }
 
 /// `text` as the writer lays JSON out: what a write-back that changes nothing gives.
 fn json_text(text: &str) -> String {
-    bedrock_addon::json::to_json(&json(text)).unwrap()
+    bedrock_addon_core::json::to_json(&json(text)).unwrap()
 }
 
 /// The determinism fragment's slice loads.
 #[test]
 fn the_determinism_slice_loads() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/ui/ui/determinism/resource_pack/textures/ui/determinism_slice.json");
+        .join("../../addon/tests/fixtures/ui/ui/determinism/resource_pack/textures/ui/determinism_slice.json");
     let text = std::fs::read_to_string(path).unwrap();
     assert!(parse::<UiTextureInfo>("textures/ui/d.json", &text).is_ok());
 }

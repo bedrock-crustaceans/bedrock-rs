@@ -4,23 +4,22 @@
 //! again after an edit of the typed value. The written texts are pinned in a file beside the
 //! family's tests; `BEDROCK_ADDON_SOUND_PIN=write` writes the file instead of comparing.
 
-#![allow(dead_code, reason = "each family uses part of the helpers")]
-
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use bedrock_addon::document::{Content, Document};
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::document::{Content, Document};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
 
-/// The crate's test directory.
-fn tests() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests")
+/// The test directory of the crate at `manifest_dir`.
+fn tests(manifest_dir: &str) -> PathBuf {
+    PathBuf::from(manifest_dir).join("tests")
 }
 
-/// Every fixture file whose path ends in `suffix`, by its path below `tests/fixtures`, sorted.
-pub fn fixtures(suffix: &str) -> Vec<(String, String)> {
-    let root = tests().join("fixtures");
+/// Every fixture file whose path ends in `suffix`, by its path below
+/// `<manifest_dir>/tests/fixtures`, sorted.
+pub fn fixtures(manifest_dir: &str, suffix: &str) -> Vec<(String, String)> {
+    let root = tests(manifest_dir).join("fixtures");
     let mut found = Vec::new();
     let mut dirs = vec![root.clone()];
     while let Some(dir) = dirs.pop() {
@@ -95,11 +94,11 @@ pub fn render(cases: &[(String, String)]) -> String {
     out
 }
 
-/// Requires `out` to be the pin file `pins` (below `tests/`), or writes it under
+/// Requires `out` to be the pin file `pins` (below `<manifest_dir>/tests/`), or writes it under
 /// `BEDROCK_ADDON_SOUND_PIN=write`.
 #[track_caller]
-pub fn assert_as_pinned(pins: &str, out: &str) {
-    let path: &Path = &tests().join(pins);
+pub fn assert_as_pinned(manifest_dir: &str, pins: &str, out: &str) {
+    let path: &Path = &tests(manifest_dir).join(pins);
     if std::env::var("BEDROCK_ADDON_SOUND_PIN").as_deref() == Ok("write") {
         std::fs::write(path, out).expect("the pin file is written");
         return;

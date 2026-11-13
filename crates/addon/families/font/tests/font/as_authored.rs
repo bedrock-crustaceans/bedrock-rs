@@ -3,12 +3,12 @@
 //! probes: wrong-typed members, containers of another kind, skipped and empty entries, roots of
 //! another kind.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::font::{EmoticonList, FontMetadata};
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_family_font::{EmoticonList, FontMetadata};
 
-use super::common::{as_authored, json};
+use bedrock_addon_test_support::{as_authored, json};
 
 #[test]
 fn font_lists_are_written_as_authored() {

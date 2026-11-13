@@ -1,11 +1,13 @@
 //! The write-back of `sounds/music_definitions.json`, pinned in `music/written.pins`: what
 //! `to_json` writes for every fixture of the file and for probes of each member, and after
-//! edits of the typed value (`common/written_pins.rs`).
+//! edits of the typed value (`bedrock_addon_test_support::written_pins`).
 
-use bedrock_addon::families::music::{MusicDefinition, MusicDefinitions};
-use bedrock_addon::id::MusicDefinitionId;
+use bedrock_addon_core::id::MusicDefinitionId;
+use bedrock_addon_family_music::{MusicDefinition, MusicDefinitions};
 
-use super::written_pins::{assert_as_pinned, edited, fixtures, render, written};
+use bedrock_addon_test_support::written_pins::{
+    assert_as_pinned, edited, fixtures, render, written,
+};
 
 const PATH: &str = "sounds/music_definitions.json";
 
@@ -33,7 +35,7 @@ const PROBES: &[&str] = &[
 #[test]
 fn music_is_written_as_pinned() {
     let mut cases: Vec<(String, String)> = Vec::new();
-    for (name, text) in fixtures(PATH) {
+    for (name, text) in fixtures(concat!(env!("CARGO_MANIFEST_DIR"), "/../../addon"), PATH) {
         cases.push((name, written::<MusicDefinitions>(PATH, &text)));
     }
     for probe in PROBES {
@@ -63,5 +65,9 @@ fn music_is_written_as_pinned() {
             music.definitions.shift_remove(&game);
         }),
     ));
-    assert_as_pinned("music/written.pins", &render(&cases));
+    assert_as_pinned(
+        env!("CARGO_MANIFEST_DIR"),
+        "music/written.pins",
+        &render(&cases),
+    );
 }

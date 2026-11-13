@@ -5,14 +5,14 @@
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
-use bedrock_addon::document::Content;
-use bedrock_addon::load::LoadContext;
 use bedrock_addon::load::{AppData, LoadOptions};
 use bedrock_addon::pack::{
     OpenOptions, Pack, PackOrigin, PackRepository, PackStack, Resource, StackSet, WorldPacks,
 };
 use bedrock_addon::storage::PackPath;
 
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::as_authored;
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::json;
 
@@ -146,20 +146,4 @@ pub fn in_vain(
         .filter(|d| d.code.id() == "core/ignored_file")
         .cloned()
         .collect()
-}
-
-/// Every text loads and is written back as the same JSON value.
-pub fn as_authored<T: Content>(texts: &[&str]) {
-    for text in texts {
-        let path = PackPath::from_static("x.json");
-        let document = T::parse(&path, text.as_bytes(), &LoadContext::detached())
-            .unwrap_or_else(|rejected| panic!("{text}: {:?}", rejected.diagnostics));
-        let written = document
-            .to_json()
-            .unwrap_or_else(|e| panic!("{text}: {e:?}"));
-        assert_eq!(json(&written), json(text), "{} wrote {written}", T::NAME);
-        // What is written is stable, and loads to the same document.
-        let again = T::parse(&path, written.as_bytes(), &LoadContext::detached()).unwrap();
-        assert_eq!(again.to_json().unwrap(), written, "{text}");
-    }
 }

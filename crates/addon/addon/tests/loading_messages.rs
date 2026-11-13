@@ -9,9 +9,6 @@ mod common;
 #[path = "loading_messages/rows.rs"]
 mod rows;
 
-#[path = "loading_messages/as_authored.rs"]
-mod as_authored;
-
 #[cfg(all(feature = "lang", feature = "languages"))]
 #[path = "loading_messages/link.rs"]
 mod link;

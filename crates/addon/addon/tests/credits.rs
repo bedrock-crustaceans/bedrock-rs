@@ -7,6 +7,3 @@ mod common;
 
 #[path = "credits/rows.rs"]
 mod rows;
-
-#[path = "credits/as_authored.rs"]
-mod as_authored;

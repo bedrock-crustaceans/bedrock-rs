@@ -3,9 +3,9 @@
 //! probes: wrong-typed members, containers of another kind, skipped and empty entries, roots of
 //! another kind.
 
-use bedrock_addon::families::credits::Credits;
+use bedrock_addon_family_credits::Credits;
 
-use super::common::as_authored;
+use bedrock_addon_test_support::as_authored;
 
 #[test]
 fn credits_are_written_as_authored() {

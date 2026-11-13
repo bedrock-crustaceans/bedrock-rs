@@ -1,10 +1,12 @@
 //! The write-back of `sounds.json`, pinned in `sounds_json/written.pins`: what `to_json`
 //! writes for every fixture of the file and for probes of each table, and after edits of the
-//! typed value (`common/written_pins.rs`).
+//! typed value (`bedrock_addon_test_support::written_pins`).
 
-use bedrock_addon::families::sounds_json::SoundBindings;
+use bedrock_addon_family_sounds_json::SoundBindings;
 
-use super::written_pins::{assert_as_pinned, edited, fixtures, render, written};
+use bedrock_addon_test_support::written_pins::{
+    assert_as_pinned, edited, fixtures, render, written,
+};
 
 const PATH: &str = "sounds.json";
 
@@ -28,7 +30,10 @@ const PROBES: &[&str] = &[
 #[test]
 fn sounds_json_is_written_as_pinned() {
     let mut cases: Vec<(String, String)> = Vec::new();
-    for (name, text) in fixtures(&format!("/{PATH}")) {
+    for (name, text) in fixtures(
+        concat!(env!("CARGO_MANIFEST_DIR"), "/../../addon"),
+        &format!("/{PATH}"),
+    ) {
         cases.push((name, written::<SoundBindings>(PATH, &text)));
     }
     for probe in PROBES {
@@ -43,5 +48,9 @@ fn sounds_json_is_written_as_pinned() {
             stone.sounds.events.get_mut("break").expect("break").sound = "dig.edited".to_owned();
         }),
     ));
-    assert_as_pinned("sounds_json/written.pins", &render(&cases));
+    assert_as_pinned(
+        env!("CARGO_MANIFEST_DIR"),
+        "sounds_json/written.pins",
+        &render(&cases),
+    );
 }

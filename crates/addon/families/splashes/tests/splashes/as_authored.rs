@@ -3,9 +3,9 @@
 //! probes: wrong-typed members, containers of another kind, skipped and empty entries, roots of
 //! another kind.
 
-use bedrock_addon::families::splashes::Splashes;
+use bedrock_addon_family_splashes::Splashes;
 
-use super::common::as_authored;
+use bedrock_addon_test_support::as_authored;
 
 #[test]
 fn splashes_are_written_as_authored() {

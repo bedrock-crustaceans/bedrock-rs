@@ -3,9 +3,9 @@
 //! probes: wrong-typed members, containers of another kind, skipped and empty entries, roots of
 //! another kind.
 
-use bedrock_addon::families::loading_messages::LoadingMessages;
+use bedrock_addon_family_loading_messages::LoadingMessages;
 
-use super::common::as_authored;
+use bedrock_addon_test_support::as_authored;
 
 #[test]
 fn loading_messages_are_written_as_authored() {

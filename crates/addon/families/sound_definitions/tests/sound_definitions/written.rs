@@ -1,12 +1,14 @@
 //! The write-back of `sounds/sound_definitions.json`, pinned in
 //! `sound_definitions/written.pins`: what `to_json` writes for every fixture of the file and
 //! for probes of each member and version, and after edits of the typed value
-//! (`common/written_pins.rs`).
+//! (`bedrock_addon_test_support::written_pins`).
 
-use bedrock_addon::families::sound_definitions::{SoundDefinition, SoundDefinitions};
-use bedrock_addon::id::SoundEventName;
+use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_family_sound_definitions::{SoundDefinition, SoundDefinitions};
 
-use super::written_pins::{assert_as_pinned, edited, fixtures, render, written};
+use bedrock_addon_test_support::written_pins::{
+    assert_as_pinned, edited, fixtures, render, written,
+};
 
 const PATH: &str = "sounds/sound_definitions.json";
 
@@ -44,7 +46,7 @@ fn pig() -> SoundEventName {
 #[test]
 fn sound_definitions_are_written_as_pinned() {
     let mut cases: Vec<(String, String)> = Vec::new();
-    for (name, text) in fixtures(PATH) {
+    for (name, text) in fixtures(concat!(env!("CARGO_MANIFEST_DIR"), "/../../addon"), PATH) {
         cases.push((name, written::<SoundDefinitions>(PATH, &text)));
     }
     for probe in PROBES {
@@ -74,5 +76,9 @@ fn sound_definitions_are_written_as_pinned() {
             sounds.sound_definitions.shift_remove(&pig());
         }),
     ));
-    assert_as_pinned("sound_definitions/written.pins", &render(&cases));
+    assert_as_pinned(
+        env!("CARGO_MANIFEST_DIR"),
+        "sound_definitions/written.pins",
+        &render(&cases),
+    );
 }
