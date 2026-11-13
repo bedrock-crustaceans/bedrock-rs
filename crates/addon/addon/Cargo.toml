@@ -274,6 +274,8 @@ bedrock_addon_core = { path = "../core", features = ["test-cost"] }
 brarchive = { workspace = true }
 zip = { workspace = true }
 aes = { workspace = true }
+# The skeleton bench (`benches/skeleton.rs`).
+criterion = { workspace = true }
 
 [[example]]
 name = "in_memory_pack"
@@ -290,3 +292,8 @@ required-features = ["client_entity", "entity", "geometry", "texture_file", "tex
 [[example]]
 name = "diagnostics_gate"
 required-features = ["block", "entity", "loot"]
+
+[[bench]]
+name = "skeleton"
+harness = false
+required-features = ["fog", "loot", "splashes", "lang"]

@@ -143,7 +143,9 @@ schema tables are generator output (`cargo xtask script-meta`, `actor-types`,
 between the marker comments of `crates/addon/addon/Cargo.toml` (`cargo xtask addon-features`,
 whose check test fails when they are stale). The test that
 regenerates them reads a checkout of Mojang's `bedrock-samples` repository at a release tag from
-`$BEDROCK_ADDON_CORPUS/bedrock-samples`.
+`$BEDROCK_ADDON_CORPUS/bedrock-samples`. `addon/benches/skeleton.rs` is the Criterion bench of the
+four loader kinds (registry, files, merged, hand-written); run it before and after a change to
+`core/src/load` with the command in its header and put the numbers in the commit body.
 
 ## Facts no config confesses
 
