@@ -9,7 +9,8 @@ use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 
-use crate::common::{Files, flat, pack_name, stack, wrapped};
+use crate::common::{flat, pack_name, wrapped};
+use crate::stacks::{Files, stack};
 
 const COMMON: &str = "materials/common.json";
 const A: &str = "materials/a.material";

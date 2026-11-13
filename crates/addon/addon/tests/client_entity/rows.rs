@@ -8,6 +8,7 @@ use bedrock_addon::version::{ENGINE_VERSION, FormatVersion};
 use bedrock_addon::visual::{Color, ControllerUse, HasVisuals, HeldItemScale};
 
 use super::common::*;
+use super::stacks::*;
 
 /// Requires no finding of `kind`.
 #[track_caller]

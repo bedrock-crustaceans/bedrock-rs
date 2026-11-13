@@ -26,4 +26,6 @@ indexmap = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+bedrock_addon_test_support = { path = "../../test_support" }
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }
+uuid = { workspace = true }

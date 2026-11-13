@@ -7,13 +7,13 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::load::{LoadContext, LoadOptions};
-use bedrock_addon::pack::{PackType, StackSet};
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::MinEngineVersion;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::{LoadContext, LoadOptions};
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::MinEngineVersion;
+use bedrock_addon_family_attachable::Attachable;
 use uuid::Uuid;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
@@ -32,10 +32,11 @@ pub fn rp(a: u16, b: u16, c: u16) -> LoadContext {
         Some(MinEngineVersion::new(a, b, c)),
         false,
     );
-    cx.molang_version = bedrock_addon::molang::pack_molang_version(cx.min_engine_version.as_ref());
+    cx.molang_version =
+        bedrock_addon_core::molang::pack_molang_version(cx.min_engine_version.as_ref());
     #[cfg(feature = "molang")]
     {
-        cx.molang = Some(Arc::new(bedrock_addon::molang::MolangCheck::new()));
+        cx.molang = Some(Arc::new(bedrock_addon_core::molang::MolangCheck::new()));
     }
     let _ = Arc::<()>::new;
     cx
@@ -141,100 +142,21 @@ pub fn silent(d: &Diagnostics) {
     assert!(d.is_empty(), "{}", lines(d).join("\n"));
 }
 
-/// One resource pack of an in-memory stack: its manifest `min_engine_version` and its files.
-pub struct TestPack<'a> {
-    pub min_engine_version: (u16, u16, u16),
-    pub files: &'a [(&'a str, &'a str)],
-}
-
-/// A pack at `min_engine_version` 1.21.0.
-pub fn pack<'a>(files: &'a [(&'a str, &'a str)]) -> TestPack<'a> {
-    TestPack {
-        min_engine_version: (1, 21, 0),
-        files,
+/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
+/// included by `bedrock_addon`'s own test root, which owns the folder.
+fn fixtures_root() -> PathBuf {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let own = manifest.join("tests/fixtures");
+    if own.is_dir() {
+        own
+    } else {
+        manifest.join("../../addon/tests/fixtures")
     }
-}
-
-/// A stack set whose resource stack is `packs`, highest priority first.
-pub fn stack(packs: &[TestPack<'_>]) -> StackSet {
-    stack_with(packs, LoadOptions::default())
-}
-
-/// [`stack`] over the app-data files `app_data` (paths below the app's own directory).
-pub fn stack_over(packs: &[TestPack<'_>], app_data: &[(&str, &str)]) -> StackSet {
-    let files = app_data
-        .iter()
-        .map(|(path, text)| (PackPath::new(path).unwrap(), text.as_bytes().to_vec()));
-    stack_with(
-        packs,
-        LoadOptions {
-            app_data: Some(bedrock_addon::load::AppData::from_files(files)),
-            ..LoadOptions::default()
-        },
-    )
-}
-
-/// [`stack`] loaded with `options`.
-pub fn stack_with(packs: &[TestPack<'_>], options: LoadOptions) -> StackSet {
-    stacks(&[], packs, options)
-}
-
-/// A stack set whose behaviour stack is `behavior` and whose resource stack is `resource`,
-/// each highest priority first.
-pub fn stacks(
-    behavior: &[TestPack<'_>],
-    resource: &[TestPack<'_>],
-    options: LoadOptions,
-) -> StackSet {
-    use crate::responder::{Order, Responder};
-    use bedrock_addon::load::{RepositoryLoader, RootId, Source, StackLoader, StackOptions};
-    use bedrock_addon::pack::{OpenOptions, PackOrigin, WorldPacks};
-
-    let mut responder = Responder::new(Order::Issue);
-    let mut lists = Vec::new();
-    for (side, module, packs, first) in [
-        ("b", "data", behavior, 100_u128),
-        ("p", "resources", resource, 0),
-    ] {
-        let mut list = Vec::new();
-        for (index, pack) in packs.iter().enumerate() {
-            let n = first + index as u128 + 1;
-            let (a, b, c) = pack.min_engine_version;
-            let manifest = format!(
-                r#"{{"format_version": 2, "header": {{"name": "pack {n}", "description": "", "uuid": "{}", "version": [1, 0, 0], "min_engine_version": [{a}, {b}, {c}]}}, "modules": [{{"type": "{module}", "uuid": "{}", "version": [1, 0, 0]}}]}}"#,
-                Uuid::from_u128(n),
-                Uuid::from_u128(n | 0xffff_0000_0000_0000_0000),
-            );
-            responder.file(1, &format!("{side}{n}/manifest.json"), manifest);
-            for (path, text) in pack.files {
-                responder.file(1, &format!("{side}{n}/{path}"), (*text).to_string());
-            }
-            list.push(format!(
-                r#"{{"pack_id": "{}", "version": [1, 0, 0]}}"#,
-                Uuid::from_u128(n)
-            ));
-        }
-        lists.push(format!("[{}]", list.join(", ")));
-    }
-    let mut repository = RepositoryLoader::new(
-        vec![Source::Directory {
-            root: RootId(1),
-            origin: PackOrigin::World,
-        }],
-        OpenOptions::default(),
-    );
-    let repository = responder.drive(&mut repository);
-    let world = WorldPacks::parse(Some(lists[0].as_bytes()), Some(lists[1].as_bytes())).unwrap();
-    let set = repository.stacks(&world, options);
-    let mut loader = StackLoader::new(set, StackOptions::default());
-    responder.drive(&mut loader)
 }
 
 /// The fixture directory of `family` (`attachable`).
 pub fn fixtures(family: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/item")
-        .join(family)
+    fixtures_root().join("item").join(family)
 }
 
 /// A fixture file's text.

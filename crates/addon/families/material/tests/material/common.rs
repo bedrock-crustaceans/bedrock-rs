@@ -7,18 +7,27 @@
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::material::{MaterialFile, MaterialGroup, MaterialList, Materials};
-use bedrock_addon::load::{LoadContext, LoadOptions};
-use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackStack, Resource};
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_family_material::{MaterialFile, MaterialGroup, MaterialList, Materials};
+
+/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
+/// included by `bedrock_addon`'s own test root, which owns the folder.
+fn fixtures_root() -> PathBuf {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let own = manifest.join("tests/fixtures");
+    if own.is_dir() {
+        own
+    } else {
+        manifest.join("../../addon/tests/fixtures")
+    }
+}
 
 /// The bytes of the fixture file `name` (`tests/fixtures/render/materials/<name>`).
 pub fn fixture(name: &str) -> Vec<u8> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/render/materials")
-        .join(name);
+    let path = fixtures_root().join("render/materials").join(name);
     std::fs::read(&path).unwrap_or_else(|error| panic!("{}: {error}", path.display()))
 }
 
@@ -100,57 +109,6 @@ pub fn of_code(diagnostics: &Diagnostics, code: &str) -> Vec<Rendered> {
     rendered(diagnostics.iter().filter(|f| f.code.id() == code))
 }
 
-/// A format-2 resource manifest with UUID `n`.
-fn manifest(n: u128) -> String {
-    format!(
-        r#"{{
-  "format_version": 2,
-  "header": {{ "name": "pack {n}", "description": "", "uuid": "{}",
-              "version": [1, 0, 0], "min_engine_version": [1, 21, 0] }},
-  "modules": [{{ "type": "resources", "uuid": "{}", "version": [1, 0, 0] }}]
-}}"#,
-        uuid::Uuid::from_u128(n),
-        uuid::Uuid::from_u128(n | 0xffff_0000_0000_0000_0000),
-    )
-}
-
-/// A resource pack of `files` (path, bytes) with UUID `n`.
-fn pack_of(n: u128, files: &[(&str, &[u8])]) -> Pack {
-    let mut all = vec![(
-        PackPath::new("manifest.json").unwrap(),
-        manifest(n).into_bytes(),
-    )];
-    for (path, bytes) in files {
-        all.push((PackPath::new(path).expect("a pack path"), bytes.to_vec()));
-    }
-    let options = OpenOptions {
-        origin: PackOrigin::User,
-        ..OpenOptions::default()
-    };
-    Pack::from_files(all, &options).unwrap_or_else(|error| panic!("pack {n}: {error}"))
-}
-
-/// One pack of a test stack: its files as (path, text).
-pub type Files<'a> = &'a [(&'a str, &'a str)];
-
-/// A resource stack of in-line packs, the **lowest** first: `packs[0]` is
-/// `pack_0`. The stack index of `packs[i]` is `packs.len() - 1 - i`.
-pub fn stack(packs: &[Files<'_>]) -> PackStack<Resource> {
-    let opened: Vec<Pack> = packs
-        .iter()
-        .enumerate()
-        .rev()
-        .map(|(n, files)| {
-            let files: Vec<(&str, &[u8])> = files
-                .iter()
-                .map(|(path, text)| (*path, text.as_bytes()))
-                .collect();
-            pack_of(n as u128 + 1, &files)
-        })
-        .collect();
-    PackStack::<Resource>::of(opened, LoadOptions::default()).expect("resource packs")
-}
-
 /// The findings of the whole group.
 pub fn all(materials: &Materials) -> Vec<Rendered> {
     rendered(materials.diagnostics())
@@ -180,7 +138,7 @@ pub fn best_of_three(run: impl Fn() -> std::time::Duration) -> std::time::Durati
 /// The JSON value of `text` in a form that compares member for member: object members sorted
 /// by key, numbers by their value.
 pub fn canonical(text: &str) -> String {
-    fn walk(value: &bedrock_addon::json::Value, out: &mut String) {
+    fn walk(value: &bedrock_addon_core::json::Value, out: &mut String) {
         if let Some(object) = value.as_object() {
             let mut members: Vec<_> = object.iter().collect();
             members.sort_by(|a, b| a.0.as_str().cmp(b.0.as_str()));
@@ -208,7 +166,8 @@ pub fn canonical(text: &str) -> String {
             out.push_str("null");
         }
     }
-    let value = bedrock_addon::json::from_str::<bedrock_addon::json::Value>(text).expect("JSON");
+    let value =
+        bedrock_addon_core::json::from_str::<bedrock_addon_core::json::Value>(text).expect("JSON");
     let mut out = String::new();
     walk(&value, &mut out);
     out
@@ -255,7 +214,7 @@ pub fn rewrites(input: &str, written: &str) -> Result<Rewrites, String> {
 /// [`rewrites`] with the place of each dropped element or member in the input, as a finding
 /// spells a path (`x/defines/1`).
 pub fn rewrites_at(input: &str, written: &str) -> Result<(Rewrites, Vec<String>), String> {
-    use bedrock_addon::json::{Value, from_str, from_str_jsonc, last_wins};
+    use bedrock_addon_core::json::{Value, from_str, from_str_jsonc, last_wins};
 
     /// The counts with the places of the drops.
     #[derive(Default)]

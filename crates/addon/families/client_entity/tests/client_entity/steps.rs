@@ -1,20 +1,20 @@
 //! The two `Upgrade` impls of `families::client_entity::history`, the chain's shape, and
 //! `s01`–`s02d`.
 
-use bedrock_addon::diagnostic::{Diagnostics, Disposition, Kind, Severity};
-use bedrock_addon::document::JsonDocument as _;
-use bedrock_addon::families::client_entity::ClientEntity;
-use bedrock_addon::families::client_entity::history::{
-    self, ClientEntityFamily, ClientEntityHistory, v1_8_0, v1_10_0,
-};
-use bedrock_addon::json::Value;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::vanilla::ActorType;
-use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
-use bedrock_addon::versioning::testing::{Checks, Run, StepOutput, step_output};
-use bedrock_addon::versioning::{
+use bedrock_addon_core::diagnostic::{Diagnostics, Disposition, Kind, Severity};
+use bedrock_addon_core::document::JsonDocument as _;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::testing::{Checks, Run, StepOutput, step_output};
+use bedrock_addon_core::versioning::{
     RangeModel, Selection, Upgrade, UpgradeCx, VersionChain, VersionStruct, check_chain, select,
+};
+use bedrock_addon_family_client_entity::ClientEntity;
+use bedrock_addon_family_client_entity::history::{
+    self, ClientEntityFamily, ClientEntityHistory, v1_8_0, v1_10_0,
 };
 
 use super::common::*;
@@ -225,7 +225,7 @@ fn the_1_10_step_lower_cases_the_named_scripts_below_1_18_20() {
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_0() {
-    use bedrock_addon::versioning::Family;
+    use bedrock_addon_core::versioning::Family;
 
     const HAS_BETA: bool = <ClientEntityHistory as VersionChain<ClientEntityFamily>>::HAS_BETA;
 

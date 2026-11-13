@@ -3,20 +3,11 @@
 
 #![cfg(feature = "client_entity")]
 
-#[path = "client_entity/common.rs"]
+#[path = "../../families/client_entity/tests/client_entity/common.rs"]
 mod common;
-
-#[path = "client_entity/drifts.rs"]
-mod drifts;
 
 #[path = "common/responder.rs"]
 mod responder;
-
-#[path = "../../families/client_entity/tests/client_entity/generate.rs"]
-mod generate;
-
-#[path = "client_entity/generated.rs"]
-mod generated;
 
 #[path = "client_entity/link.rs"]
 mod link;
@@ -33,8 +24,5 @@ mod rows;
 #[path = "client_entity/stack.rs"]
 mod stack;
 
-#[path = "client_entity/steps.rs"]
-mod steps;
-
-#[path = "client_entity/located.rs"]
-mod located;
+#[path = "client_entity/stacks.rs"]
+mod stacks;

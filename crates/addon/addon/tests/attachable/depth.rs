@@ -7,6 +7,7 @@ use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::json::MAX_JSON_DEPTH;
 
 use super::common::*;
+use super::stacks::*;
 
 /// `demo:ghost` at 1.26.0 with `member` holding `levels` nested arrays around `inner`.
 fn nested(member: &str, levels: usize, inner: &str) -> String {

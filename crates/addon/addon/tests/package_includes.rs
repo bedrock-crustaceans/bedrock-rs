@@ -14,9 +14,10 @@ use bedrock_addon_test_support::package::{includes_outside_the_package, rust_fil
 /// component list.
 const KNOWN_OUTSIDE: &[&str] = &[
     "tests/atomic_client_entity.rs: ../../families/client_entity/tests/client_entity/generate.rs",
-    "tests/attachable.rs: ../../families/attachable/tests/attachable/generate.rs",
+    "tests/attachable.rs: ../../families/attachable/tests/attachable/common.rs",
+    "tests/biome.rs: ../../families/biome/tests/biome/common.rs",
     "tests/block_culling.rs: ../../families/block_culling/tests/block_culling/common.rs",
-    "tests/client_entity.rs: ../../families/client_entity/tests/client_entity/generate.rs",
+    "tests/client_entity.rs: ../../families/client_entity/tests/client_entity/common.rs",
     "tests/crafting_catalog.rs: ../../families/crafting_catalog/tests/crafting_catalog/common.rs",
     "tests/deferred_settings.rs: ../../families/deferred_settings/tests/deferred_settings/compare.rs",
     "tests/dimension.rs: ../../families/dimension/tests/dimension/common.rs",
@@ -24,6 +25,7 @@ const KNOWN_OUTSIDE: &[&str] = &[
     "tests/feature_rules.rs: ../../families/feature_rules/tests/feature_rules/common.rs",
     "tests/item.rs: ../../families/item/tests/item/common.rs",
     "tests/loot.rs: ../../families/loot/tests/loot/common.rs",
+    "tests/material.rs: ../../families/material/tests/material/common.rs",
     "tests/server_sound_definitions.rs: ../../families/server_sound_definitions/tests/server_sound_definitions/common.rs",
     "tests/structure.rs: ../../families/structure/tests/structure/common.rs",
 ];

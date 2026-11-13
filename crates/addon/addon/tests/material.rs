@@ -4,7 +4,7 @@
 
 #![cfg(feature = "material")]
 
-#[path = "material/common.rs"]
+#[path = "../../families/material/tests/material/common.rs"]
 mod common;
 
 #[path = "material/forms.rs"]
@@ -13,25 +13,17 @@ mod forms;
 mod generated;
 #[path = "material/link.rs"]
 mod link;
-#[path = "material/lists.rs"]
-mod lists;
-#[path = "material/located.rs"]
-mod located;
 #[path = "material/requests.rs"]
 mod requests;
 #[path = "material/resolve.rs"]
 mod resolve;
 #[path = "common/responder.rs"]
 mod responder;
-#[path = "material/rules.rs"]
-mod rules;
 #[path = "material/scale.rs"]
 mod scale;
 #[path = "material/spans.rs"]
 mod spans;
 #[path = "material/stack.rs"]
 mod stack;
-#[path = "material/wrapper_version.rs"]
-mod wrapper_version;
-#[path = "material/write.rs"]
-mod write;
+#[path = "material/stacks.rs"]
+mod stacks;

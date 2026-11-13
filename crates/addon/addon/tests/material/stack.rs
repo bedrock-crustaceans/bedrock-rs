@@ -10,7 +10,8 @@ use bedrock_addon::id::MaterialId;
 use bedrock_addon::pack::{PackStack, Resource};
 use bedrock_addon::storage::PackPath;
 
-use crate::common::{Files, Rendered, all, finding, fixture_text, flat, names, pack_name, stack};
+use crate::common::{Rendered, all, finding, fixture_text, flat, names, pack_name};
+use crate::stacks::{Files, stack};
 
 const COMMON: &str = "materials/common.json";
 const FANCY: &str = "materials/fancy.json";
@@ -814,7 +815,7 @@ fn v18_is_reported_by_each_later_file_and_not_within_one_file_deviation() {
     );
     // Two keys of one name in one file are V2's, once.
     let twice = wrapped(r#""p": {}, "q": {}, "x:p": {}, "x:q": {}"#);
-    let stack = crate::common::stack(&[&[(COMMON, &list(&[A])), (A, &twice)]]);
+    let stack = crate::stacks::stack(&[&[(COMMON, &list(&[A])), (A, &twice)]]);
     let codes: Vec<_> = all(stack.materials())
         .into_iter()
         .map(|f| (f.0, f.2))

@@ -6,14 +6,11 @@
 #[path = "biome/chain.rs"]
 mod chain;
 
-#[path = "biome/common.rs"]
+#[path = "../../families/biome/tests/biome/common.rs"]
 mod common;
 
 #[path = "biome/engine.rs"]
 mod engine;
-
-#[path = "biome/molang.rs"]
-mod molang;
 
 #[path = "biome/rows.rs"]
 mod rows;
@@ -24,5 +21,5 @@ mod rules;
 #[path = "biome/stack.rs"]
 mod stack;
 
-#[path = "biome/located.rs"]
-mod located;
+#[path = "biome/stacks.rs"]
+mod stacks;

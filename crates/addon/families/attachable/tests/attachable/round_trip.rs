@@ -1,10 +1,10 @@
 //! Round trips (of the newest shape, and of older documents once upgraded) and
 //! what write-back keeps and never invents.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::attachable::{Attachable, Description};
-use bedrock_addon::id::AttachableId;
-use bedrock_addon::version::FormatVersion;
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::id::AttachableId;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_family_attachable::{Attachable, Description};
 
 use super::common::*;
 use bedrock_addon_test_support::json;
@@ -114,7 +114,7 @@ fn a_member_named_extra_is_an_undeclared_member_like_any_other() {
     expect(
         &d,
         "core/child_not_valid",
-        bedrock_addon::diagnostic::Severity::Error,
+        bedrock_addon_core::diagnostic::Severity::Error,
         "child 'extra' not valid here.",
     );
 }
@@ -136,7 +136,7 @@ fn of_a_member_written_twice_the_last_stands() {
         find(
             &d,
             "visual/unknown_version",
-            bedrock_addon::diagnostic::Severity::Error
+            bedrock_addon_core::diagnostic::Severity::Error
         )
         .is_some()
     );

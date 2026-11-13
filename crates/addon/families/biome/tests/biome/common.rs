@@ -4,13 +4,13 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::biome::{Beta, Biome};
-use bedrock_addon::load::{LoadContext, LoadOptions};
-use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin, PackType};
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::MinEngineVersion;
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::{LoadContext, LoadOptions};
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::MinEngineVersion;
+use bedrock_addon_family_biome::{Beta, Biome};
 use uuid::Uuid;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
@@ -54,7 +54,7 @@ pub fn beta_apis() -> LoadContext {
 #[cfg(feature = "molang")]
 pub fn checked(mut cx: LoadContext) -> LoadContext {
     cx.molang = Some(std::sync::Arc::new(
-        bedrock_addon::molang::MolangCheck::new(),
+        bedrock_addon_core::molang::MolangCheck::new(),
     ));
     cx
 }
@@ -138,11 +138,21 @@ pub fn texts(diagnostics: &Diagnostics, severity: Severity) -> Vec<String> {
         .collect()
 }
 
+/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
+/// included by `bedrock_addon`'s own test root, which owns the folder.
+fn fixtures_root() -> PathBuf {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let own = manifest.join("tests/fixtures");
+    if own.is_dir() {
+        own
+    } else {
+        manifest.join("../../addon/tests/fixtures")
+    }
+}
+
 /// The fixture directory `tests/fixtures/biome/biome/<rest>`.
 pub fn fixture_dir(rest: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/biome/biome")
-        .join(rest)
+    fixtures_root().join("biome/biome").join(rest)
 }
 
 /// A fixture file's text.
@@ -165,25 +175,4 @@ pub fn fixtures(rest: &str) -> Vec<(String, String)> {
             (name, std::fs::read_to_string(&path).unwrap())
         })
         .collect()
-}
-
-/// A format-2 behaviour-pack manifest.
-pub fn manifest(uuid: u128, name: &str) -> String {
-    format!(
-        r#"{{"format_version": 2, "header": {{"name": "{name}", "uuid": "{}", "version": [1, 0, 0], "min_engine_version": [1, 26, 30]}}, "modules": [{{"type": "data", "uuid": "{}", "version": [1, 0, 0]}}]}}"#,
-        Uuid::from_u128(uuid),
-        Uuid::from_u128(uuid + 1000),
-    )
-}
-
-/// A pack from its files, of `origin`.
-pub fn pack(files: Vec<(&str, Vec<u8>)>, origin: PackOrigin) -> Pack {
-    let files = files
-        .into_iter()
-        .map(|(path, bytes)| (PackPath::new(path).expect("a pack path"), bytes));
-    let options = OpenOptions {
-        origin,
-        ..OpenOptions::default()
-    };
-    Pack::from_files(files, &options).expect("the pack opens")
 }

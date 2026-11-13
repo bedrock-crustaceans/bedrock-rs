@@ -10,6 +10,7 @@ use bedrock_addon::pack::StackSet;
 use bedrock_addon::visual::{Color, HasVisuals};
 
 use super::common::*;
+use super::stacks::*;
 
 fn ghost_of(set: &StackSet) -> Option<&Document<ClientEntity>> {
     entities(set).get(&EntityId::parse("demo:ghost"))

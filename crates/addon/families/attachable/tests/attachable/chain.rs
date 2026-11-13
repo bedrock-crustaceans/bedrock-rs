@@ -1,13 +1,13 @@
 //! Fixture `a10`: what the 1.8 step does to an attachable, which is
 //! not what it does to a client entity.
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::JsonDocument as _;
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::families::attachable::history::{self, AttachableHistory};
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::FormatVersion;
-use bedrock_addon::versioning::VersionStruct;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::document::JsonDocument as _;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::VersionStruct;
+use bedrock_addon_family_attachable::Attachable;
+use bedrock_addon_family_attachable::history::{self, AttachableHistory};
 
 use super::common::*;
 use bedrock_addon_test_support::json;
@@ -88,17 +88,17 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
     };
     // As written, it is the before-document.
     assert_eq!(old.write().unwrap(), json(&before));
-    let mut diagnostics = bedrock_addon::diagnostic::Diagnostics::default();
-    let mut upgrade = bedrock_addon::versioning::UpgradeCx {
+    let mut diagnostics = bedrock_addon_core::diagnostic::Diagnostics::default();
+    let mut upgrade = bedrock_addon_core::versioning::UpgradeCx {
         load: &cx(),
         original_version: FormatVersion::new(1, 8, 0),
         identifier: "example:wand",
-        actor_type: bedrock_addon::vanilla::ActorType::Mob,
+        actor_type: bedrock_addon_core::vanilla::ActorType::Mob,
         skip_section_a: false,
-        reading: bedrock_addon::versioning::Reading::OWN,
+        reading: bedrock_addon_core::versioning::Reading::OWN,
         diagnostics: &mut diagnostics,
     };
-    let stepped = bedrock_addon::versioning::Upgrade::upgrade(old, &mut upgrade);
+    let stepped = bedrock_addon_core::versioning::Upgrade::upgrade(old, &mut upgrade);
     // Vanilla stamps "1.10"; a version is written in full (as the client entity step does).
     assert_eq!(stepped.write().unwrap(), json(&after));
     silent(&diagnostics);
@@ -119,7 +119,7 @@ fn a10_without_the_list_the_step_only_stamps_the_version() {
 /// object, and the upgrade's steps see it as they see a member of a parse.
 #[test]
 fn upgrade_keeps_the_unknown_members_of_the_document_as_written() {
-    use bedrock_addon::diagnostic::JsonPath;
+    use bedrock_addon_core::diagnostic::JsonPath;
     let before = fixture(FAMILY, "a10_wand.before.json");
     let path = PackPath::from_static(PATH);
     let mut written = loaded(Attachable::parse_as_written(
@@ -131,7 +131,7 @@ fn upgrade_keeps_the_unknown_members_of_the_document_as_written() {
     written.unknown_mut().put(
         &description,
         "zz_description",
-        bedrock_addon::json::Value::from(1i64),
+        bedrock_addon_core::json::Value::from(1i64),
     );
     let expected = written.unknown().clone();
     let upgraded = loaded(history::upgrade(written, &cx()));

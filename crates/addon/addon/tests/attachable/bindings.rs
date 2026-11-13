@@ -10,6 +10,7 @@ use bedrock_addon::pack::StackSet;
 use bedrock_addon::storage::PackPath;
 
 use super::common::*;
+use super::stacks::*;
 
 const FAMILY: &str = "attachable";
 const ITEM_AT: &str = "minecraft:attachable/description/item";

@@ -8,6 +8,7 @@ use bedrock_addon::json::{EncodeError, Value, WriteStyle};
 use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
+use super::stacks::*;
 use bedrock_addon_test_support::json;
 
 const FAMILY: &str = "client_entity";

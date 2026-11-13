@@ -11,10 +11,10 @@
     reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
 )]
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::json::Value;
-use bedrock_addon::molang::Molang;
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::molang::Molang;
+use bedrock_addon_family_attachable::Attachable;
 
 use super::common::*;
 
@@ -211,7 +211,10 @@ fn an_item_condition_beyond_f32_is_read_as_the_largest_finite_float_deviation() 
 
 fn attachable_of(
     text: &str,
-) -> Result<bedrock_addon::document::Document<Attachable>, bedrock_addon::document::Rejected> {
+) -> Result<
+    bedrock_addon_core::document::Document<Attachable>,
+    bedrock_addon_core::document::Rejected,
+> {
     attachable(text, &cx())
 }
 
@@ -538,7 +541,7 @@ fn reads_as(
     text: &str,
     wide: &str,
     plain: &str,
-) -> Option<bedrock_addon::document::Document<Attachable>> {
+) -> Option<bedrock_addon_core::document::Document<Attachable>> {
     assert!(text.contains("{n}"), "{text}");
     let of_wide = attachable(&text.replace("{n}", wide), &cx());
     let of_plain = attachable(&text.replace("{n}", plain), &cx());

@@ -7,14 +7,11 @@
 #[path = "attachable/bindings.rs"]
 mod bindings;
 
-#[path = "attachable/common.rs"]
+#[path = "../../families/attachable/tests/attachable/common.rs"]
 mod common;
 
 #[path = "common/responder.rs"]
 mod responder;
-
-#[path = "attachable/chain.rs"]
-mod chain;
 
 #[path = "attachable/conditions.rs"]
 mod conditions;
@@ -22,32 +19,11 @@ mod conditions;
 #[path = "attachable/depth.rs"]
 mod depth;
 
-#[path = "attachable/drifts.rs"]
-mod drifts;
-
-#[path = "../../families/attachable/tests/attachable/generate.rs"]
-mod generate;
-
-#[path = "attachable/generated.rs"]
-mod generated;
-
 #[path = "attachable/link.rs"]
 mod link;
 
 #[path = "attachable/molang.rs"]
 mod molang;
-
-#[path = "attachable/nulls.rs"]
-mod nulls;
-
-#[path = "attachable/numbers.rs"]
-mod numbers;
-
-#[path = "attachable/round_trip.rs"]
-mod round_trip;
-
-#[path = "attachable/rows.rs"]
-mod rows;
 
 #[path = "attachable/shared.rs"]
 mod shared;
@@ -55,11 +31,8 @@ mod shared;
 #[path = "attachable/stack.rs"]
 mod stack;
 
-#[path = "attachable/upgrade_steps.rs"]
-mod upgrade_steps;
+#[path = "attachable/stacks.rs"]
+mod stacks;
 
 #[path = "attachable/write_back.rs"]
 mod write_back;
-
-#[path = "attachable/located.rs"]
-mod located;

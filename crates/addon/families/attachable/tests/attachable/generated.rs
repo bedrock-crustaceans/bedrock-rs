@@ -7,13 +7,13 @@
 //! and the two things the 1.10 step does to script text among them, so the older shapes are
 //! compared too).
 
-use bedrock_addon::document::{Document, JsonDocument as _};
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::families::attachable::history::AttachableHistory;
-use bedrock_addon::json::EncodeError;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::versioning::VersionStruct;
+use bedrock_addon_core::document::{Document, JsonDocument as _};
+use bedrock_addon_core::json::EncodeError;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::versioning::VersionStruct;
+use bedrock_addon_family_attachable::Attachable;
+use bedrock_addon_family_attachable::history::AttachableHistory;
 
 use super::common::*;
 use super::generate::{Canon, J, Rng, WIDE_FOR_A_STRING, as_f32_written, string_map};
@@ -795,7 +795,7 @@ fn check(source: &str, cx: &LoadContext, counts: &mut Counts) {
             AttachableHistory::V1_10_0(attachable) => attachable.write(),
             AttachableHistory::V1_26_0(attachable) => attachable.write(),
         };
-        let text = bedrock_addon::json::to_json(&value.unwrap()).unwrap();
+        let text = bedrock_addon_core::json::to_json(&value.unwrap()).unwrap();
         let again =
             Attachable::parse_as_written(&path, text.as_bytes(), cx).unwrap_or_else(|rejected| {
                 panic!(

@@ -11,6 +11,7 @@ use bedrock_addon::visual::{AnimateEntry, ControllerUse, HeldItemScale, Scripts}
 use indexmap::IndexMap;
 
 use super::common::*;
+use super::stacks::*;
 
 /// `demo:wand`, changed by `change`.
 fn built(change: impl FnOnce(&mut Description)) -> Attachable {

@@ -4,14 +4,14 @@
 //! with `NotRepresentable` and a path. A 1.26.0 document is also written as it was read: its
 //! text equals the source's, but for the recorded differences, each applied by name below.
 
-use bedrock_addon::diagnostic::{Disposition, Kind, Severity};
-use bedrock_addon::document::JsonDocument as _;
-use bedrock_addon::families::client_entity::ClientEntity;
-use bedrock_addon::families::client_entity::history::ClientEntityHistory;
-use bedrock_addon::json::EncodeError;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::versioning::VersionStruct;
+use bedrock_addon_core::diagnostic::{Disposition, Kind, Severity};
+use bedrock_addon_core::document::JsonDocument as _;
+use bedrock_addon_core::json::EncodeError;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::versioning::VersionStruct;
+use bedrock_addon_family_client_entity::ClientEntity;
+use bedrock_addon_family_client_entity::history::ClientEntityHistory;
 
 use super::common::*;
 use super::generate::{Canon, J, Rng, as_f32_written, string_map};
@@ -469,7 +469,7 @@ fn reload(
     written: &str,
     cx: &LoadContext,
     source: &str,
-) -> bedrock_addon::document::Document<ClientEntity> {
+) -> bedrock_addon_core::document::Document<ClientEntity> {
     match entity(written, cx) {
         Ok(document) => document,
         Err(rejected) => panic!(
@@ -483,7 +483,7 @@ fn reload(
 /// applied by name.
 fn expected(
     source: &str,
-    document: &bedrock_addon::document::Document<ClientEntity>,
+    document: &bedrock_addon_core::document::Document<ClientEntity>,
     counts: &mut Counts,
 ) -> Canon {
     let mut expected = Canon::of_text(source);
@@ -597,7 +597,7 @@ fn check(source: &str, shape: Shape, cx: &LoadContext, counts: &mut Counts) {
             ClientEntityHistory::V1_10_0(entity) => entity.write(),
             ClientEntityHistory::V1_26_0(entity) => entity.write(),
         };
-        let text = bedrock_addon::json::to_json(&value.unwrap()).unwrap();
+        let text = bedrock_addon_core::json::to_json(&value.unwrap()).unwrap();
         let again =
             ClientEntity::parse_as_written(&path, text.as_bytes(), cx).unwrap_or_else(|rejected| {
                 panic!(

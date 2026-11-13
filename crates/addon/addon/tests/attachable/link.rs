@@ -12,6 +12,7 @@ use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::StackSet;
 
 use super::common::*;
+use super::stacks::*;
 
 const WAND: &str = "attachables/wand.json";
 

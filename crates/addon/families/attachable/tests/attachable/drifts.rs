@@ -2,7 +2,7 @@
 //! between the two copies of one schema). Each test pins today's attachable side; which side
 //! is the game's is not decided here.
 
-use bedrock_addon::diagnostic::Kind;
+use bedrock_addon_core::diagnostic::Kind;
 
 use super::common::*;
 

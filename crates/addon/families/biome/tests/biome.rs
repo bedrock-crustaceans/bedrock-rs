@@ -8,3 +8,12 @@ mod steps;
 
 #[path = "biome/scalars.rs"]
 mod scalars;
+
+#[path = "biome/common.rs"]
+mod common;
+
+#[path = "biome/molang.rs"]
+mod molang;
+
+#[path = "biome/located.rs"]
+mod located;

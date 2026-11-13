@@ -16,6 +16,7 @@ use bedrock_addon::pack::{
 use bedrock_addon::storage::PackPath;
 
 use super::common::*;
+use super::stacks::*;
 
 const GHOST: &str = "entity/ghost.entity.json";
 

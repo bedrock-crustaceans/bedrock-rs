@@ -9,7 +9,8 @@ use bedrock_addon::id::BiomeId;
 use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, PackOrigin, PackStack};
 
-use super::common::{biome, document, manifest, pack};
+use super::common::{biome, document};
+use super::stacks::{manifest, pack};
 
 /// A behaviour pack of `origin` with the biome files `files`.
 fn biome_pack(

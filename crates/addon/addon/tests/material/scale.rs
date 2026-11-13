@@ -4,7 +4,8 @@
 
 use bedrock_addon::families::material::MaterialGroupKind;
 
-use crate::common::{all, stack};
+use crate::common::all;
+use crate::stacks::stack;
 
 const LINKS: usize = 20_000;
 

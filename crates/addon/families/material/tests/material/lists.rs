@@ -1,8 +1,8 @@
 //! The list files read on their own.
 
-use bedrock_addon::diagnostic::Severity::{Error, Info};
-use bedrock_addon::document::Placed;
-use bedrock_addon::families::material::{ListEntry, MaterialList, MaterialListKind};
+use bedrock_addon_core::diagnostic::Severity::{Error, Info};
+use bedrock_addon_core::document::Placed;
+use bedrock_addon_family_material::{ListEntry, MaterialList, MaterialListKind};
 
 use crate::common::{finding, fixture_text, parse_list, rendered};
 

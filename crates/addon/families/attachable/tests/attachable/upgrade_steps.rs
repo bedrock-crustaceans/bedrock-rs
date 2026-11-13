@@ -1,20 +1,20 @@
 //! What the upgrade steps of the attachable chain do: the 1.8 step's refusals, the 1.10 step's
 //! conversion and lower-casing, the chain's shape, and documents read as written and upgraded.
 
-use bedrock_addon::diagnostic::{Diagnostics, Severity};
-use bedrock_addon::document::JsonDocument as _;
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::families::attachable::history::{
-    self, AttachableFamily, AttachableHistory, v1_8_0, v1_10_0,
-};
-use bedrock_addon::json::Value;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::vanilla::ActorType;
-use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
-use bedrock_addon::versioning::testing::{Checks, Run, StepOutput, step_output};
-use bedrock_addon::versioning::{
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_core::document::JsonDocument as _;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::vanilla::ActorType;
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::testing::{Checks, Run, StepOutput, step_output};
+use bedrock_addon_core::versioning::{
     RangeModel, Selection, Upgrade, UpgradeCx, VersionChain, VersionStruct, check_chain, select,
+};
+use bedrock_addon_family_attachable::Attachable;
+use bedrock_addon_family_attachable::history::{
+    self, AttachableFamily, AttachableHistory, v1_8_0, v1_10_0,
 };
 
 use super::common::*;
@@ -230,7 +230,7 @@ fn the_1_8_step_stamps_the_version_and_reports_nothing_without_a_controller_list
 
 #[test]
 fn the_chain_is_contiguous_and_ends_at_1_26_0() {
-    use bedrock_addon::versioning::Family;
+    use bedrock_addon_core::versioning::Family;
 
     const HAS_BETA: bool = <AttachableHistory as VersionChain<AttachableFamily>>::HAS_BETA;
 

@@ -2,9 +2,9 @@
 //! pass and the glue text with the `molang` feature, `MolangNotChecked` without it. Rows
 //! `b21`–`b26`.
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::families::biome::component::SurfaceMaterialAdjustments;
-use bedrock_addon::molang::{Molang, RawVersion};
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::molang::{Molang, RawVersion};
+use bedrock_addon_family_biome::component::SurfaceMaterialAdjustments;
 
 use super::common::{biome, context, errors, rejected, with};
 
@@ -20,7 +20,7 @@ fn height_range(range: &str) -> String {
 }
 
 /// The height range of the first adjustment.
-fn range_of(document: &bedrock_addon::families::biome::Biome) -> [Molang; 2] {
+fn range_of(document: &bedrock_addon_family_biome::Biome) -> [Molang; 2] {
     document
         .components
         .get::<SurfaceMaterialAdjustments>()
@@ -33,11 +33,11 @@ fn range_of(document: &bedrock_addon::families::biome::Biome) -> [Molang; 2] {
 fn version(value: &Molang) -> Option<RawVersion> {
     value
         .source()
-        .and_then(bedrock_addon::molang::MolangSource::raw_version)
+        .and_then(bedrock_addon_core::molang::MolangSource::raw_version)
 }
 
 /// The forms of `b21`, as read: the variants and the version 1 of every expression.
-fn b21_forms_read(cx: &bedrock_addon::load::LoadContext) {
+fn b21_forms_read(cx: &bedrock_addon_core::load::LoadContext) {
     let cases = [
         (r#"[0, "v.sea_level"]"#, ["Const", "Expr"]),
         ("[false, 64]", ["Bool", "Const"]),
@@ -96,7 +96,7 @@ fn b21_height_range_forms_unchecked() {
     b21_forms_read(&context());
     let document = super::common::loads(&height_range(r#"["1 +", 64]"#), &context());
     let unchecked = with(document.diagnostics(), |c| {
-        c.args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)
+        c.args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_NOT_CHECKED)
             .is_some_and(|a| a[0] == "1")
     });
     assert_eq!(unchecked.len(), 1, "{:#?}", document.diagnostics());
@@ -116,8 +116,8 @@ fn constant_height_range_bounds_are_checked_without_compiling() {
 
 #[cfg(feature = "molang")]
 mod compiled {
-    use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
-    use bedrock_addon::molang::DiagCode;
+    use bedrock_addon_core::diagnostic::{DiagnosticDetail, Diagnostics, Severity};
+    use bedrock_addon_core::molang::DiagCode;
 
     use super::super::common::{checked, context, errors, loads, rejected, with};
     use super::{b21_forms_read, height_range};
@@ -196,7 +196,7 @@ mod compiled {
     /// biome loads; the same text in a version-13 field is `StringMisuse`.
     #[test]
     fn b26_height_range_version_1_rules() {
-        use bedrock_addon::molang::{
+        use bedrock_addon_core::molang::{
             CompileOptions, MolangSource, MolangVersion, QueryAdmission, QuerySetMask,
             compile_source,
         };
@@ -221,7 +221,7 @@ mod compiled {
             compile_source(&MolangSource::string(text, version), &options)
                 .diagnostics()
                 .iter()
-                .map(bedrock_addon::molang::MolangDiagnostic::code)
+                .map(bedrock_addon_core::molang::MolangDiagnostic::code)
                 .collect()
         };
         assert!(!codes(MolangVersion::V1).contains(&DiagCode::StringMisuse));

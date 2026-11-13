@@ -11,6 +11,7 @@ use bedrock_addon::pack::StackSet;
 use bedrock_addon::visual::{Color, HasVisuals};
 
 use super::common::*;
+use super::stacks::*;
 
 fn ghost_of(set: &StackSet) -> Option<&Document<Attachable>> {
     attachables(set).get(&AttachableId::parse("demo:ghost"))

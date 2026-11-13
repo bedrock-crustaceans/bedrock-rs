@@ -1,6 +1,6 @@
 //! The one version the format knows, the wrapper's.
 
-use bedrock_addon::families::material::{MaterialFileForm, MaterialKey};
+use bedrock_addon_family_material::{MaterialFileForm, MaterialKey};
 
 use crate::common::{file, found};
 

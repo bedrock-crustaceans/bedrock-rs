@@ -1,9 +1,9 @@
 //! Every finding of a material file or list read on its own, loaded or rejected, is in the
 //! file's pack and file.
 
-use bedrock_addon::diagnostic::Diagnostic;
-use bedrock_addon::pack::PackRef;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::Diagnostic;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackRef;
 
 use crate::common::{parse, parse_list, wrapped};
 

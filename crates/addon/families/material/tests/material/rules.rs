@@ -1,7 +1,7 @@
 //! The rules of one material's members, on files read on their own.
 
-use bedrock_addon::diagnostic::Severity::{self, Error, Info};
-use bedrock_addon::families::material::{
+use bedrock_addon_core::diagnostic::Severity::{self, Error, Info};
+use bedrock_addon_family_material::{
     BLEND_TARGETS, COMPARISON_FUNCS, MSAA_SUPPORTS, MaterialDef, MaterialKey, PRIMITIVE_MODES,
     RENDER_STATES, SHADER_STAGES, STENCIL_OPS, StencilFace, StencilRefOverride, TEXTURE_FILTERS,
     TEXTURE_FORMATS, TEXTURE_WRAPS, VERTEX_FIELDS,

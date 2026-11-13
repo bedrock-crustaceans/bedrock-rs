@@ -3,7 +3,7 @@
 //! child): no type option takes it, so the file fails. A typed reader would take a `null`
 //! for an absent member and write the document back without it.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::Severity;
 
 use super::common::*;
 

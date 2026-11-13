@@ -681,7 +681,7 @@ fn group_stack(
         group_file(0, &files[0], funcs, wrapped[0]),
         group_file(1, &files[1], funcs, wrapped[1]),
     );
-    crate::common::stack(&[&[
+    crate::stacks::stack(&[&[
         ("materials/common.json", listing),
         ("materials/a.material", &a),
         ("materials/b.material", &b),

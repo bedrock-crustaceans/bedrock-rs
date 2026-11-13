@@ -6,14 +6,14 @@
     reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
 )]
 
-use bedrock_addon::document::{Content, UnknownMembers};
-use bedrock_addon::families::material::{
+use bedrock_addon_core::document::{Content, UnknownMembers};
+use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
+use bedrock_addon_core::version::SemVersion;
+use bedrock_addon_family_material::{
     KeyRules, ListEntry, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey,
     MaterialList, MaterialListKind, SamplerState, StencilFace, StencilRefOverride, Variant,
     VertexField,
 };
-use bedrock_addon::json::{EncodeError, Unrepresentable, Value};
-use bedrock_addon::version::SemVersion;
 use indexmap::IndexMap;
 
 use crate::common::{
@@ -35,7 +35,7 @@ fn round_trip_at(path: &str, text: &str) -> String {
     });
     assert_eq!(*first, *second, "{written}");
     // The same findings; the writer's member order may put them in another order.
-    let sorted = |document: &bedrock_addon::document::Document<MaterialFile>| {
+    let sorted = |document: &bedrock_addon_core::document::Document<MaterialFile>| {
         let mut findings: Vec<String> = rendered(document.diagnostics().iter())
             .into_iter()
             .map(|finding| format!("{finding:?}"))

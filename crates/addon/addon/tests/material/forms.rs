@@ -395,7 +395,7 @@ fn content_after_the_root_value_is_reported_and_the_file_loads() {
     let list = crate::common::parse_list("materials/common.json", "[] x").expect("loads");
     assert_eq!(rendered(list.diagnostics().iter()), [trailing("")]);
     // And each copy of a stack, in its own pack.
-    let stack = crate::common::stack(&[
+    let stack = crate::stacks::stack(&[
         &[
             (
                 "materials/common.json",

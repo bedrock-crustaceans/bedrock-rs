@@ -8,3 +8,6 @@ mod catalogue;
 
 #[path = "ddui/chains.rs"]
 mod chains;
+
+#[path = "ddui/located.rs"]
+mod located;

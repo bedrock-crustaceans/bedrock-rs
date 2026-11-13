@@ -4,7 +4,8 @@
 use bedrock_addon::families::material::{KeyRules, MaterialGroupKind, ResolvedMaterial};
 use bedrock_addon::pack::{PackStack, Resource};
 
-use crate::common::{Files, fixture_text, flat, stack, wrapped};
+use crate::common::{fixture_text, flat, wrapped};
+use crate::stacks::{Files, stack};
 
 const COMMON: &str = "materials/common.json";
 const FANCY: &str = "materials/fancy.json";

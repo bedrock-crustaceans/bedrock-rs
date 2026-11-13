@@ -1,19 +1,19 @@
 //! Every finding of a file read alone carries the file's pack and path, at a member or at a
 //! text that is no JSON.
 
-use bedrock_addon::diagnostic::Diagnostic;
-use bedrock_addon::document::Content;
-use bedrock_addon::families::attachable::Attachable;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::pack::PackRef;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::Diagnostic;
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackRef;
+use bedrock_addon_family_ddui::UiRoot;
 
-const PATH: &str = "attachables/a.json";
+const PATH: &str = "ddui/root/test.json";
 
 /// Whether `text` loaded, and its findings.
 fn read(text: &str) -> (bool, Vec<Diagnostic>) {
     let path = PackPath::from_static(PATH);
-    match Attachable::parse(&path, text.as_bytes(), &LoadContext::detached()) {
+    match UiRoot::parse(&path, text.as_bytes(), &LoadContext::detached()) {
         Ok(document) => (true, document.diagnostics().iter().cloned().collect()),
         Err(rejected) => (false, rejected.diagnostics.iter().cloned().collect()),
     }
@@ -36,16 +36,16 @@ fn assert_located(findings: &[Diagnostic]) {
 }
 
 #[test]
-fn attachable_unknown_member_findings_carry_the_file_and_pack() {
+fn ddui_unknown_member_findings_carry_the_file_and_pack() {
     // Loaded or refused, as the family grades an unknown member.
     let (_, findings) = read(
-        r#"{"format_version": "1.10.0", "minecraft:attachable": {"description": {"identifier": "demo:a", "extra": 1}}}"#,
+        r#"{"format_version": "1.21.130", "minecraft:ui_root": {"description": {"identifier": "demo:a"}}, "extra": 1}"#,
     );
     assert_located(&findings);
 }
 
 #[test]
-fn attachable_rejection_findings_carry_the_file_and_pack() {
+fn ddui_rejection_findings_carry_the_file_and_pack() {
     let (loaded, findings) = read("{");
     assert!(!loaded);
     assert_located(&findings);

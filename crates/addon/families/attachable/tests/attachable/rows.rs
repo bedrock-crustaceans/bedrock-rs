@@ -12,13 +12,13 @@
     reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
 )]
 
-use bedrock_addon::diagnostic::{Diagnostics, Disposition, JsonPathSegment, Kind, Severity};
-use bedrock_addon::document::{Content, Placed};
-use bedrock_addon::families::attachable::{Attachable, Condition, ItemBinding};
-use bedrock_addon::id::AttachableId;
-use bedrock_addon::molang::{Molang, pack_molang_version};
-use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, MinEngineVersion};
-use bedrock_addon::visual::HeldItemScale;
+use bedrock_addon_core::diagnostic::{Diagnostics, Disposition, JsonPathSegment, Kind, Severity};
+use bedrock_addon_core::document::{Content, Placed};
+use bedrock_addon_core::id::AttachableId;
+use bedrock_addon_core::molang::{Molang, pack_molang_version};
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, MinEngineVersion};
+use bedrock_addon_family_attachable::{Attachable, Condition, ItemBinding};
+use bedrock_addon_shared_visual::HeldItemScale;
 
 use super::common::*;
 
@@ -129,7 +129,8 @@ fn a04_1_26_0_latest() {
     assert!(condition.is_always());
     // Written back, it is the document that was read.
     let written = round_trip(&document, |text| attachable(text, &cx()));
-    let json = |text: &str| -> bedrock_addon::json::Value { facet_json::from_str(text).unwrap() };
+    let json =
+        |text: &str| -> bedrock_addon_core::json::Value { facet_json::from_str(text).unwrap() };
     assert_eq!(json(&written), json(&text));
 }
 
@@ -199,7 +200,7 @@ fn a06_below_floor() {
 fn a07_major_zero() {
     let text = ghost("0.9.0", "");
     let outcome = Attachable::parse(
-        &bedrock_addon::storage::PackPath::from_static("attachables/a07.json"),
+        &bedrock_addon_core::pack_identity::PackPath::from_static("attachables/a07.json"),
         text.as_bytes(),
         &cx(),
     );

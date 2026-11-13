@@ -285,11 +285,11 @@ fn linked(text: &str) -> bedrock_addon::diagnostic::Diagnostics {
     let files = vec![
         (
             "manifest.json",
-            super::common::manifest(1, "bp").into_bytes(),
+            super::stacks::manifest(1, "bp").into_bytes(),
         ),
         ("biomes/x.json", text.as_bytes().to_vec()),
     ];
-    let pack = super::common::pack(files, PackOrigin::World);
+    let pack = super::stacks::pack(files, PackOrigin::World);
     let set = StackSet {
         behavior: PackStack::of([pack], LoadOptions::default()).expect("a stack"),
         resource: PackStack::of([], LoadOptions::default()).expect("a stack"),
