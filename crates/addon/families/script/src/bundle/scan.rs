@@ -388,7 +388,7 @@ fn run(
         if kept > 0 {
             // One note for the bundle: `ScriptContent::parsed` says which files.
             findings.push(
-                Code::from(core_codes::SCRIPT_SYNTAX_NOT_CHECKED.with([kept.to_string()])),
+                core_codes::SCRIPT_SYNTAX_NOT_CHECKED.with([kept.to_string()]),
                 Severity::Info,
                 None,
                 None,
