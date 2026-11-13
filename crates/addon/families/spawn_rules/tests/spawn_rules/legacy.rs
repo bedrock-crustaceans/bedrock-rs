@@ -1,9 +1,9 @@
 //! The standard (1.8.0-shaped) spawn rules: the fixture rows `s01`, `s05`–`s09o`.
 
-use bedrock_addon::diagnostic::{Code, Disposition, Kind, Severity};
-use bedrock_addon::families::spawn_rules::{Difficulty, OneOrMany, PopulationControl};
-use bedrock_addon::id::EntityId;
-use bedrock_addon::shared::BlockDescriptor;
+use bedrock_addon_core::diagnostic::{Code, Disposition, Kind, Severity};
+use bedrock_addon_core::id::EntityId;
+use bedrock_addon_family_spawn_rules::{Difficulty, OneOrMany, PopulationControl};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::common::{
     closes_with, condition, context, document, fixture, has_text, legacy, load, loads, names,
@@ -714,9 +714,9 @@ fn s09o_block_descriptor_kept() {
     );
     assert_eq!(
         r.spawns_on_blocks,
-        vec![BlockDescriptor::block(bedrock_addon::id::BlockId::parse(
-            "minecraft:grass_block"
-        ))]
+        vec![BlockDescriptor::block(
+            bedrock_addon_core::id::BlockId::parse("minecraft:grass_block")
+        )]
     );
     assert!(c.spawns_on_block_filter.is_some());
     let (_, r, d) = condition(r#""minecraft:spawns_on_block_filter": []"#);

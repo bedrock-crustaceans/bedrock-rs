@@ -3,19 +3,11 @@
 
 #![cfg(all(feature = "spawn_rules", feature = "spawn_groups"))]
 
-#[path = "spawn_rules/chain.rs"]
-mod chain;
-#[path = "spawn_rules/common.rs"]
+#[path = "../../families/spawn_rules/tests/spawn_rules/common.rs"]
 mod common;
 #[path = "spawn_rules/engine.rs"]
 mod engine;
-#[path = "spawn_rules/legacy.rs"]
-mod legacy;
-#[path = "spawn_rules/molang.rs"]
-mod molang;
-#[path = "spawn_rules/routing.rs"]
-mod routing;
-#[path = "spawn_rules/simplified.rs"]
-mod simplified;
+#[path = "spawn_rules/groups.rs"]
+mod groups;
 #[path = "spawn_rules/stack.rs"]
 mod stack;

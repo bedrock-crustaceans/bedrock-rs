@@ -19,14 +19,17 @@ const KNOWN_OUTSIDE: &[&str] = &[
     "tests/block_culling.rs: ../../families/block_culling/tests/block_culling/common.rs",
     "tests/client_entity.rs: ../../families/client_entity/tests/client_entity/common.rs",
     "tests/crafting_catalog.rs: ../../families/crafting_catalog/tests/crafting_catalog/common.rs",
-    "tests/deferred_settings.rs: ../../families/deferred_settings/tests/deferred_settings/compare.rs",
+    "tests/deferred_settings.rs: ../../families/deferred_settings/tests/deferred_settings/common.rs",
     "tests/dimension.rs: ../../families/dimension/tests/dimension/common.rs",
     "tests/feature.rs: ../../families/feature/tests/feature/common.rs",
     "tests/feature_rules.rs: ../../families/feature_rules/tests/feature_rules/common.rs",
     "tests/item.rs: ../../families/item/tests/item/common.rs",
     "tests/loot.rs: ../../families/loot/tests/loot/common.rs",
     "tests/material.rs: ../../families/material/tests/material/common.rs",
+    "tests/recipe.rs: ../../families/recipe/tests/recipe/common.rs",
     "tests/server_sound_definitions.rs: ../../families/server_sound_definitions/tests/server_sound_definitions/common.rs",
+    "tests/spawn_groups.rs: ../../families/spawn_rules/tests/spawn_rules/common.rs",
+    "tests/spawn_rules.rs: ../../families/spawn_rules/tests/spawn_rules/common.rs",
     "tests/structure.rs: ../../families/structure/tests/structure/common.rs",
 ];
 

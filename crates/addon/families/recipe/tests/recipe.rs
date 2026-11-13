@@ -5,3 +5,24 @@
 
 #[path = "recipe/texts.rs"]
 mod texts;
+
+#[path = "recipe/common.rs"]
+mod common;
+
+#[path = "recipe/rows.rs"]
+mod rows;
+
+#[path = "recipe/ingredients.rs"]
+mod ingredients;
+
+#[path = "recipe/molang.rs"]
+mod molang;
+
+#[path = "recipe/rules.rs"]
+mod rules;
+
+#[path = "recipe/round_trip.rs"]
+mod round_trip;
+
+#[path = "recipe/located.rs"]
+mod located;

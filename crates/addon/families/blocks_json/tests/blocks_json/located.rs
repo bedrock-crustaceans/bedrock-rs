@@ -1,12 +1,12 @@
 //! Every finding of a `blocks.json` read on its own, loaded or rejected, is in the file's pack
 //! and file.
 
-use bedrock_addon::diagnostic::Diagnostic;
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::blocks_json::BlocksJson;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::pack::PackRef;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::Diagnostic;
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackRef;
+use bedrock_addon_family_blocks_json::BlocksJson;
 
 fn parse(text: &str) -> Result<Document<BlocksJson>, Rejected> {
     BlocksJson::parse(

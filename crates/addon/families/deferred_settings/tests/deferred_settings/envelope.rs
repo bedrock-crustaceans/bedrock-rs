@@ -1,13 +1,13 @@
 //! The envelope and version rules every payload shares: fixtures.md "Shared" rows c01–c09,
 //! c16–c19, c21 and the below-floor rows (l10, w07, k04); validation.md E1–E7.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_family_deferred_settings::{
     AtmosphereSettings, ColorGradingSettings, CubemapSettings, LightingSettings,
     LocalLightSettings, PbrFallbackSettings, ShadowSettings, WaterSettings,
 };
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
 
@@ -507,7 +507,7 @@ fn an_empty_file_and_a_non_object_root_are_rejected() {
         [("core/document_json", "")]
     );
     let d = ShadowSettings::parse(
-        &bedrock_addon::storage::PackPath::from_static("shadows/global.json"),
+        &bedrock_addon_core::pack_identity::PackPath::from_static("shadows/global.json"),
         &[0xff, 0xfe, 0x00],
         &LoadContext::detached(),
     )

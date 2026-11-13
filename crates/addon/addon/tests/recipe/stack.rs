@@ -7,6 +7,7 @@ use bedrock_addon::load::LoadOptions;
 use bedrock_addon::pack::{Behavior, Pack, PackOrigin, PackStack};
 
 use super::common::*;
+use super::stacks::*;
 
 const MEV: [u16; 3] = [1, 21, 0];
 

@@ -8,7 +8,8 @@ use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Difficulty, MobSpawnRules};
 use bedrock_addon::id::EntityId;
 
-use crate::common::{closes_with, context, has_text, load_group, names, paths, round_trip, with};
+use crate::common::{closes_with, context, has_text, names, paths, round_trip, with};
+use crate::groups::load_group;
 
 /// Vanilla's unit-test template with one condition `{ body }`.
 fn template(body: &str) -> String {

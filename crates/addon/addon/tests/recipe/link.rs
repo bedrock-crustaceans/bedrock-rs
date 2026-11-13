@@ -9,6 +9,7 @@ use bedrock_addon::pack::{PackOrigin, PackRepository, PackSelection, WorldPacks}
 use bedrock_addon::version::{BaseGameVersion, SemVersion};
 
 use super::common::*;
+use super::stacks::*;
 
 // The four rows are told by the link pass; the next item and each `linked(…)` below.
 /// The link findings of a world of base-game version `world` whose one behaviour pack has the

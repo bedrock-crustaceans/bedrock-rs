@@ -1,15 +1,15 @@
 //! The routing between the two spawn-rules shapes and the deliberate deviations of the loader:
 //! the experiment, the version gates and the findings vanilla does not make.
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::families::spawn_rules::SpawnRules;
-use bedrock_addon::version::ENGINE_VERSION;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::version::ENGINE_VERSION;
+use bedrock_addon_family_spawn_rules::SpawnRules;
 
 use super::common::{
     condition, context, document, experiment, legacy, load, loads, names, rejected, standard,
 };
 
-fn is_standard(text: &str, cx: &bedrock_addon::load::LoadContext) -> bool {
+fn is_standard(text: &str, cx: &bedrock_addon_core::load::LoadContext) -> bool {
     matches!(loads(text, cx).value(), SpawnRules::Standard(_))
 }
 

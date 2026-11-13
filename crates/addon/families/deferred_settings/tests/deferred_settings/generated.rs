@@ -16,13 +16,13 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::document::{Content, Document};
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::document::{Content, Document};
+use bedrock_addon_core::json::EncodeError;
+use bedrock_addon_family_deferred_settings::{
     AtmosphereSettings, ColorGradingSettings, CubemapSettings, LightingSettings,
     LocalLightSettings, PbrFallbackSettings, ShadowSettings, WaterSettings,
 };
-use bedrock_addon::json::EncodeError;
 
 use super::common::*;
 use super::compare::{Change, Difference, Json, Number, Step, differences, shown};
@@ -1411,7 +1411,7 @@ fn compare<T: Content>(
     tally: &mut Tally,
 ) -> Vec<(String, String)> {
     // What every loader reads: of a member written twice, the last.
-    let cleaned = bedrock_addon::json::last_wins(text);
+    let cleaned = bedrock_addon_core::json::last_wins(text);
     let mut input = Json::of_text(&cleaned);
     let output = Json::of_text(written);
     let version = match input.get("format_version") {

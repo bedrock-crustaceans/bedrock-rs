@@ -3,9 +3,9 @@
 //! `format_version`, mapped; only the tag queries resolve; a rejection is a warning and the
 //! descriptor stays.
 
-use bedrock_addon::diagnostic::Severity;
-use bedrock_addon::molang::{MolangVersion, RawVersion};
-use bedrock_addon::shared::BlockDescriptor;
+use bedrock_addon_core::diagnostic::Severity;
+use bedrock_addon_core::molang::{MolangVersion, RawVersion};
+use bedrock_addon_shared_shapes::BlockDescriptor;
 
 use super::common::{context, document, loads, standard};
 
@@ -20,7 +20,7 @@ fn tagged(version: &str, tags: &str) -> String {
 }
 
 /// The version the descriptor's expression carries after loading.
-fn version_of(text: &str, cx: &bedrock_addon::load::LoadContext) -> Option<RawVersion> {
+fn version_of(text: &str, cx: &bedrock_addon_core::load::LoadContext) -> Option<RawVersion> {
     let document = loads(text, cx);
     let condition = &standard(&document).conditions.as_ref().unwrap()[0];
     let list = condition.spawns_on_block_filter.as_ref().unwrap();
@@ -55,7 +55,7 @@ fn s04_without_the_molang_feature_the_tags_are_not_checked() {
         .iter()
         .filter(|d| {
             d.code
-                .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)
+                .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_NOT_CHECKED)
                 .is_some_and(|a| a[0] == "1")
         })
         .collect();
@@ -67,9 +67,9 @@ fn s04_without_the_molang_feature_the_tags_are_not_checked() {
 mod compiled {
     use std::sync::Arc;
 
-    use bedrock_addon::diagnostic::{DiagnosticDetail, Diagnostics};
-    use bedrock_addon::load::LoadContext;
-    use bedrock_addon::molang::{DiagCode, MolangCheck};
+    use bedrock_addon_core::diagnostic::{DiagnosticDetail, Diagnostics};
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::molang::{DiagCode, MolangCheck};
 
     use super::*;
 

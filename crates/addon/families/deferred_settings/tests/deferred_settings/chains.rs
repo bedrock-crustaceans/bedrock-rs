@@ -1,15 +1,15 @@
 //! The payloads with older structs: lighting (l01–l08, l11–l13, L1–L5), water (w01–w05, W1–W4),
 //! atmosphere (a01–a04, a07, A1–A3) and colour grading (g01–g07, G1–G4, G6).
 
-use bedrock_addon::document::{Content, JsonDocument};
-use bedrock_addon::families::deferred_settings::history;
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::{Content, JsonDocument};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_family_deferred_settings::history;
+use bedrock_addon_family_deferred_settings::{
     AtmosphereSettings, ColorGradingSettings, DEFAULT_CAUSTICS_TEXTURE, Keyframe, Keyframes,
     LightingSettings, Rgb8, Rgba8, TemperatureType, ToneMappingOperator, Vec3, WaterSettings,
 };
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
 use super::single::out_of_range;
@@ -42,7 +42,7 @@ fn version(major: u16, minor: u16, patch: u16) -> FormatVersion {
 #[track_caller]
 fn upgrades<T: Content + std::fmt::Debug + PartialEq>(
     name: &str,
-) -> bedrock_addon::document::Document<T> {
+) -> bedrock_addon_core::document::Document<T> {
     let before = loads::<T>(&fixture(&format!("{name}.before.json")));
     let after = loads::<T>(&fixture(&format!("{name}.after.json")));
     assert!(before.version().upgraded, "{name}");
@@ -779,7 +779,7 @@ fn w02_the_vanilla_water_file_loads_and_resolves_the_games_values() {
     assert_eq!(
         found(
             older.diagnostics(),
-            bedrock_addon::diagnostic::Severity::Info
+            bedrock_addon_core::diagnostic::Severity::Info
         ),
         [finding(
             "core/dropped_field",

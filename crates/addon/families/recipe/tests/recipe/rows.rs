@@ -2,12 +2,12 @@
 //! rows are in `stack.rs`, item-id and `data` rows in `ingredients.rs` and `molang.rs`, rows that
 //! need the item registry in `link.rs`.
 
-use bedrock_addon::diagnostic::{Severity, codes};
-use bedrock_addon::families::recipe::{
+use bedrock_addon_core::diagnostic::{Severity, codes};
+use bedrock_addon_core::version::{FormatVersion, MinEngineVersion};
+use bedrock_addon_family_recipe::{
     Ingredient, Output, PotionMix, Recipe, Unlock, UnlockContext, input_count_allowed,
     unlock_required,
 };
-use bedrock_addon::version::{FormatVersion, MinEngineVersion};
 
 use super::common::*;
 
@@ -143,7 +143,7 @@ fn shaped_format_version_99_loads_with_an_info() {
         .iter()
         .filter(|d| {
             d.code
-                .args_of(&bedrock_addon::diagnostic::codes::FORMAT_VERSION_ABOVE_ENGINE)
+                .args_of(&bedrock_addon_core::diagnostic::codes::FORMAT_VERSION_ABOVE_ENGINE)
                 .is_some_and(|args| args[0] == "99.0.0")
         })
         .collect();

@@ -2,13 +2,13 @@
 //! re-read strictly and rewritten identically; members are written only where the author wrote
 //! them.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::recipe::{
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::id::RecipeId;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_family_recipe::{
     Description, Ingredient, IngredientObject, Output, Recipe, Shaped, Tags, Unlock,
 };
-use bedrock_addon::id::RecipeId;
-use bedrock_addon::json::Value;
-use bedrock_addon::version::FormatVersion;
 
 use super::common::*;
 
@@ -46,8 +46,8 @@ fn every_loading_fixture_round_trips_value_for_value() {
 fn a_vanilla_file_is_written_back_with_its_members() {
     // a copy of retail 1.26.45 `vanilla_1.26.30/recipes/sulfur.json`
     let written = round_trip("sulfur.json", &fixture("shaped_1_26_30_sulfur.json"));
-    let value: Value = bedrock_addon::json::from_str(&written).unwrap();
-    let original: Value = bedrock_addon::json::from_str(
+    let value: Value = bedrock_addon_core::json::from_str(&written).unwrap();
+    let original: Value = bedrock_addon_core::json::from_str(
         &String::from_utf8(fixture("shaped_1_26_30_sulfur.json")).unwrap(),
     )
     .unwrap();
@@ -112,7 +112,7 @@ fn a_malformed_unlock_is_written_back_as_the_author_wrote_it() {
         let requirement = document.unlock_requirement(false).unwrap();
         assert_eq!(
             requirement.context,
-            bedrock_addon::families::recipe::UnlockContext::None
+            bedrock_addon_family_recipe::UnlockContext::None
         );
         assert!(requirement.ingredients.is_empty());
     }
@@ -147,7 +147,7 @@ fn a_recipe_built_by_hand_is_written_and_read_back() {
     silent(document.diagnostics());
     assert_eq!(document.value(), &recipe);
     assert_eq!(
-        bedrock_addon::document::Placed::default_path(&recipe).as_str(),
+        bedrock_addon_core::document::Placed::default_path(&recipe).as_str(),
         "recipes/demo_ruby_block.json"
     );
 }

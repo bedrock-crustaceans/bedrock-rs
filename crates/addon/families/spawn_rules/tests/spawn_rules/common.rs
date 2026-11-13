@@ -5,16 +5,15 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::spawn_groups::SpawnGroup;
-use bedrock_addon::families::spawn_rules::{
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::{Experiment, Experiments, LoadContext, LoadOptions};
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::version::MinEngineVersion;
+use bedrock_addon_family_spawn_rules::{
     Condition, MobSpawnRules, SimplifiedSpawnRules, SpawnRules, StandardSpawnRules,
 };
-use bedrock_addon::load::{Experiment, Experiments, LoadContext, LoadOptions};
-use bedrock_addon::pack::PackType;
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::MinEngineVersion;
 use uuid::Uuid;
 
 /// A behaviour-pack context at engine 1.26.20, no experiments.
@@ -31,7 +30,8 @@ pub fn with_options(options: &LoadOptions) -> LoadContext {
         Some(MinEngineVersion::new(1, 26, 20)),
         false,
     );
-    cx.molang_version = bedrock_addon::molang::pack_molang_version(cx.min_engine_version.as_ref());
+    cx.molang_version =
+        bedrock_addon_core::molang::pack_molang_version(cx.min_engine_version.as_ref());
     cx
 }
 
@@ -181,21 +181,21 @@ pub fn round_trip<T: Content + PartialEq + std::fmt::Debug>(
     text
 }
 
-/// Loads `text` as the spawn group `definitions/spawn_groups/x.json`.
-pub fn load_group(text: &str) -> Result<Document<SpawnGroup>, Rejected> {
-    SpawnGroup::parse(
-        &PackPath::from_static("definitions/spawn_groups/x.json"),
-        text.as_bytes(),
-        &context(),
-    )
+/// The `tests/fixtures` folder of `bedrock_addon`: this file is compiled by the family crate and
+/// included by `bedrock_addon`'s own test roots, which own the folder.
+fn fixtures_root() -> PathBuf {
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let own = manifest.join("tests/fixtures");
+    if own.is_dir() {
+        own
+    } else {
+        manifest.join("../../addon/tests/fixtures")
+    }
 }
 
 /// The fixture directory `tests/fixtures/spawn/<family>/<rest>`.
 pub fn fixture_path(family: &str, rest: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures/spawn")
-        .join(family)
-        .join(rest)
+    fixtures_root().join("spawn").join(family).join(rest)
 }
 
 /// A fixture file's text.

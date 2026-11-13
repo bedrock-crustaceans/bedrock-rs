@@ -1,21 +1,29 @@
 //! Helpers of the deferred-settings tests.
 
-use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::load::{LoadContext, LoadOptions};
-use bedrock_addon::pack::{PackStack, Resource};
-use bedrock_addon::storage::PackPath;
+#![allow(dead_code, reason = "each test file uses part of the helpers")]
 
-use super::pack_common::rp;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::json;
 
-/// The fixture folder of this family.
-pub const FIXTURES: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/fixtures/render/render_configs"
-);
+/// The fixture folder of this family. The file is included by the family crate's tests and by
+/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is picked
+/// by the package that compiles it.
+pub const FIXTURES: &str = if env!("CARGO_PKG_NAME").len() == "bedrock_addon".len() {
+    concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/render/render_configs"
+    )
+} else {
+    concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../addon/tests/fixtures/render/render_configs"
+    )
+};
 
 /// The text of the fixture file `path` (relative to the family's fixture folder).
 pub fn fixture(path: &str) -> String {
@@ -150,27 +158,6 @@ pub fn round_trip<T: Content + std::fmt::Debug + PartialEq>(value: &T) -> String
     written
 }
 
-/// A text that lives as long as the test binary (the pack helper takes `'static` files).
-pub fn leak(text: String) -> &'static str {
-    Box::leak(text.into_boxed_str())
-}
-
-/// A resource stack of packs, top first; each pack is its `(path, text)` files.
-pub fn stack(packs: &[&[(&str, String)]]) -> PackStack<Resource> {
-    let packs: Vec<_> = packs
-        .iter()
-        .enumerate()
-        .map(|(index, files)| {
-            let mut spec = rp(index as u128 + 1);
-            for (path, text) in *files {
-                spec = spec.file(leak((*path).to_owned()), leak(text.clone()).as_bytes());
-            }
-            spec.open()
-        })
-        .collect();
-    PackStack::<Resource>::of(packs, LoadOptions::default()).unwrap()
-}
-
 /// `(pack index, path)` of a document's origin.
 pub fn origin<T>(document: &Document<T>) -> (Option<usize>, &str) {
     (
@@ -192,7 +179,7 @@ pub fn located<'a>(
                 f.location
                     .pack
                     .as_ref()
-                    .and_then(bedrock_addon::pack::PackRef::index),
+                    .and_then(bedrock_addon_core::pack_identity::PackRef::index),
                 f.location
                     .path
                     .as_ref()

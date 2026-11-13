@@ -1,19 +1,19 @@
 //! Write-back and the placement of each root type: a value
 //! built in code is written as text this loader reads back, or refused with the member's path.
 
-use bedrock_addon::document::{Content, Placed, UnknownMembers};
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::{Content, Placed, UnknownMembers};
+use bedrock_addon_core::id::{
+    AtmosphereSettingsId, BlockId, ColorGradingSettingsId, CubemapSettingsId, LightingSettingsId,
+    WaterSettingsId,
+};
+use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_family_deferred_settings::{
     AmbientLight, AtmosphereSettings, Caustics, ColorGrading, ColorGradingSettings,
     CubemapLighting, CubemapSettings, DirectionalLights, Emissive, Flash, Keyframe, Keyframes,
     LightType, LightingSettings, LocalLight, LocalLightSettings, Mer, Midtones, OrbitalLight,
     OrbitalLights, PbrFallback, PbrFallbackSettings, PbrValue, Rgb8, ShadowSettings, ShadowStyle,
     Sky, Temperature, Vec3, WaterSettings, Waves,
 };
-use bedrock_addon::id::{
-    AtmosphereSettingsId, BlockId, ColorGradingSettingsId, CubemapSettingsId, LightingSettingsId,
-    WaterSettingsId,
-};
-use bedrock_addon::json::{EncodeError, Value};
 
 use super::common::*;
 

@@ -20,3 +20,7 @@ bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
+
+[dev-dependencies]
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../../test_support" }

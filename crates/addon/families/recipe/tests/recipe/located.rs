@@ -1,12 +1,12 @@
 //! Every finding of a file read alone carries the file's pack and path, at a member or at a
 //! text that is no JSON.
 
-use bedrock_addon::diagnostic::Diagnostic;
-use bedrock_addon::document::Content;
-use bedrock_addon::families::recipe::Recipe;
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::pack::PackRef;
-use bedrock_addon::storage::PackPath;
+use bedrock_addon_core::diagnostic::Diagnostic;
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::pack_identity::PackRef;
+use bedrock_addon_family_recipe::Recipe;
 
 const PATH: &str = "recipes/a.json";
 

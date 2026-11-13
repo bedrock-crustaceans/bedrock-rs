@@ -2,8 +2,8 @@
 //! the bound itself loads, the next `f32` beyond
 //! it is refused with the range finding, and the finding's text names both bounds.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::Content;
+use bedrock_addon_family_deferred_settings::{
     AtmosphereSettings, ColorGradingSettings, CubemapSettings, LightingSettings, ShadowSettings,
     WaterSettings,
 };
@@ -653,7 +653,7 @@ fn cases(row: &Row, version: &str, value: &str, inside: &str) -> Vec<Case> {
 /// The game's range text for a value outside `[min, max]` (`rangeMessage`: the bounds as
 /// cereal's `toString` writes them, no value).
 fn range_text(min: f32, max: f32) -> String {
-    let number = bedrock_addon::diagnostic::cereal::number;
+    let number = bedrock_addon_core::diagnostic::cereal::number;
     format!(
         "the input is outside of the accepted range [{}, {}]",
         number(f64::from(min)),
@@ -717,10 +717,7 @@ fn every_ranged_member_takes_its_bounds_and_refuses_the_next_float_beyond_them()
 /// integer pairs `const NAME: (u8, u8) = …` / `(u16, u16)`; and how often the file builds a
 /// range at all.
 fn declared(file: &str) -> (Vec<String>, usize) {
-    let path = format!(
-        "{}/../families/deferred_settings/src/{file}",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let path = format!("{}/src/{file}", env!("CARGO_MANIFEST_DIR"));
     let source = std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{path}: {error}"));
     let mut names = Vec::new();
     for line in source.lines() {

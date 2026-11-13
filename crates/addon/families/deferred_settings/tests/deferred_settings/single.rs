@@ -1,12 +1,12 @@
 //! The payloads with one struct: shadows (h01–h03, H1, H2), PBR fallback (p01–p06, P1–P2a),
 //! cubemap (k01, k02, K1, K3) and local lights (t01, t06, t07, T1, T2, L5a).
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::Content;
+use bedrock_addon_core::id::BlockId;
+use bedrock_addon_family_deferred_settings::{
     CubemapSettings, Keyframe, Keyframes, LightType, LocalLightSettings, Mer, Mers,
     PbrFallbackSettings, PbrValue, Rgb8, ShadowSettings, ShadowStyle,
 };
-use bedrock_addon::id::BlockId;
 
 use super::common::*;
 
@@ -570,7 +570,7 @@ fn an_identifier_without_a_namespace_loads_with_an_info_deviation() {
 /// four with the shared one.
 #[test]
 fn an_identifier_without_a_namespace_is_an_info_in_every_payload_deviation() {
-    use bedrock_addon::families::deferred_settings::{
+    use bedrock_addon_family_deferred_settings::{
         AtmosphereSettings, ColorGradingSettings, LightingSettings, WaterSettings,
     };
     fn infos_of<T: Content + std::fmt::Debug>(

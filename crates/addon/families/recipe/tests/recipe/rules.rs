@@ -1,9 +1,9 @@
 //! The validation rules (F.3.6) that no fixture row covers, each with its
 //! code and severity.
 
-use bedrock_addon::diagnostic::{Severity, codes};
-use bedrock_addon::families::recipe::{Recipe, UnlockContext};
-use bedrock_addon::load::LoadContext;
+use bedrock_addon_core::diagnostic::{Severity, codes};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_family_recipe::{Recipe, UnlockContext};
 
 use super::common::*;
 
@@ -30,11 +30,12 @@ fn payload(kind: &str, members: &str) -> Vec<u8> {
 fn parse(
     bytes: &[u8],
     cx: &LoadContext,
-) -> Result<bedrock_addon::document::Document<Recipe>, bedrock_addon::document::Rejected> {
+) -> Result<bedrock_addon_core::document::Document<Recipe>, bedrock_addon_core::document::Rejected>
+{
     parse_bytes("r.json", bytes, cx)
 }
 
-fn rejects(bytes: &[u8], cx: &LoadContext) -> bedrock_addon::diagnostic::Diagnostics {
+fn rejects(bytes: &[u8], cx: &LoadContext) -> bedrock_addon_core::diagnostic::Diagnostics {
     match parse(bytes, cx) {
         Ok(document) => panic!("loaded: {:#?}", document.diagnostics()),
         Err(rejected) => rejected.diagnostics,

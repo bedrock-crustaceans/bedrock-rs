@@ -3,10 +3,10 @@
 
 #![allow(dead_code, reason = "some helpers serve only the `molang` build")]
 
-use bedrock_addon::diagnostic::{Severity, codes};
-use bedrock_addon::families::recipe::{Ingredient, IngredientObject};
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::molang::{Molang, MolangList};
+use bedrock_addon_core::diagnostic::{Severity, codes};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::molang::{Molang, MolangList};
+use bedrock_addon_family_recipe::{Ingredient, IngredientObject};
 
 use super::common::*;
 
@@ -16,7 +16,7 @@ pub fn with_check(cx: LoadContext) -> LoadContext {
     {
         let mut cx = cx;
         cx.molang = Some(std::sync::Arc::new(
-            bedrock_addon::molang::MolangCheck::new(),
+            bedrock_addon_core::molang::MolangCheck::new(),
         ));
         cx
     }
@@ -39,7 +39,7 @@ fn object(ingredient: &Ingredient) -> &IngredientObject {
 }
 
 fn not_checked(
-    document: &bedrock_addon::document::Document<bedrock_addon::families::recipe::Recipe>,
+    document: &bedrock_addon_core::document::Document<bedrock_addon_family_recipe::Recipe>,
 ) -> u32 {
     document
         .diagnostics()
@@ -48,7 +48,7 @@ fn not_checked(
             // The family's count and core's are both the definition.
             let fields: u32 = d
                 .code
-                .args_of(&bedrock_addon::diagnostic::codes::MOLANG_NOT_CHECKED)?[0]
+                .args_of(&bedrock_addon_core::diagnostic::codes::MOLANG_NOT_CHECKED)?[0]
                 .parse()
                 .unwrap();
             assert_eq!(d.severity, Severity::Info);
@@ -58,8 +58,8 @@ fn not_checked(
 }
 
 fn invalid_molang(
-    document: &bedrock_addon::document::Document<bedrock_addon::families::recipe::Recipe>,
-) -> Vec<&bedrock_addon::diagnostic::Diagnostic> {
+    document: &bedrock_addon_core::document::Document<bedrock_addon_family_recipe::Recipe>,
+) -> Vec<&bedrock_addon_core::diagnostic::Diagnostic> {
     document
         .diagnostics()
         .iter()
@@ -109,14 +109,14 @@ fn data_molang_unparsable_is_a_kept_error_and_reads_as_zero() {
     // The parser's line is level 3 and the recipe loads: a kept error.
     assert_eq!(found[0].severity, Severity::Error);
     assert!(found[0].kept);
-    let Some(bedrock_addon::diagnostic::DiagnosticDetail::Molang(detail)) =
+    let Some(bedrock_addon_core::diagnostic::DiagnosticDetail::Molang(detail)) =
         found[0].detail.as_deref()
     else {
         panic!("{:#?}", found[0]);
     };
     assert_eq!(
         detail.code(),
-        bedrock_addon::molang::DiagCode::StatementForm
+        bedrock_addon_core::molang::DiagCode::StatementForm
     );
     assert_eq!(
         detail.message(),
@@ -176,8 +176,8 @@ fn data_molang_version_compiles_in_an_old_pack_and_not_in_a_new_one() {
     );
     assert!(found.iter().any(|d| matches!(
         d.detail.as_deref(),
-        Some(bedrock_addon::diagnostic::DiagnosticDetail::Molang(m))
-            if m.code() == bedrock_addon::molang::DiagCode::StringMisuse
+        Some(bedrock_addon_core::diagnostic::DiagnosticDetail::Molang(m))
+            if m.code() == bedrock_addon_core::molang::DiagCode::StringMisuse
     )));
     assert_eq!(shaped(&new).key["#"].aux(), 0);
 }
@@ -196,8 +196,8 @@ fn data_molang_empty_is_a_rejected_expression_reported_as_an_information() {
     );
     assert!(found.iter().any(|d| matches!(
         d.detail.as_deref(),
-        Some(bedrock_addon::diagnostic::DiagnosticDetail::Molang(m))
-            if m.code() == bedrock_addon::molang::DiagCode::Syntax
+        Some(bedrock_addon_core::diagnostic::DiagnosticDetail::Molang(m))
+            if m.code() == bedrock_addon_core::molang::DiagCode::Syntax
     )));
     assert_eq!(shaped(&document).key["#"].aux(), 0);
 }
@@ -207,9 +207,9 @@ fn data_molang_empty_is_a_rejected_expression_reported_as_an_information() {
 #[cfg(feature = "molang")]
 #[test]
 fn a_hand_built_data_expression_equals_its_reparse() {
-    use bedrock_addon::document::Content;
-    use bedrock_addon::families::recipe::{Description, Output, Recipe, Shaped, Tags};
-    use bedrock_addon::molang::MolangSource;
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::molang::MolangSource;
+    use bedrock_addon_family_recipe::{Description, Output, Recipe, Shaped, Tags};
 
     let cx = cx_molang();
     let source = MolangSource::string("1 + 1", cx.molang_version.0);
@@ -219,9 +219,9 @@ fn a_hand_built_data_expression_equals_its_reparse() {
         ..IngredientObject::default()
     });
     let recipe = Recipe::Shaped(Shaped {
-        format_version: Some(bedrock_addon::version::FormatVersion::new(1, 12, 0)),
+        format_version: Some(bedrock_addon_core::version::FormatVersion::new(1, 12, 0)),
         description: Description {
-            identifier: bedrock_addon::id::RecipeId::new("demo:wool").unwrap(),
+            identifier: bedrock_addon_core::id::RecipeId::new("demo:wool").unwrap(),
         },
         tags: Some(Tags::One("crafting_table".to_owned())),
         pattern: vec!["#".to_owned()],

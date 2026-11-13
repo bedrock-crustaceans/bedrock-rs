@@ -2,8 +2,8 @@
 //! `f32`, and the
 //! three-number form of colour grading.
 
-use bedrock_addon::document::Content;
-use bedrock_addon::families::deferred_settings::{
+use bedrock_addon_core::document::Content;
+use bedrock_addon_family_deferred_settings::{
     ColorGradingSettings, CubemapSettings, Keyframe, Keyframes, LightingSettings, Vec3,
 };
 
@@ -510,7 +510,7 @@ fn three_numbers_in_no_form_are_a_type_error() {
 /// reader here.
 #[test]
 fn a4_a5_a6_l4_the_keyframe_rules_hold_for_atmosphere_and_lighting_floats_and_colours() {
-    use bedrock_addon::families::deferred_settings::AtmosphereSettings;
+    use bedrock_addon_family_deferred_settings::AtmosphereSettings;
     fn rules<T: Content + std::fmt::Debug>(file: impl Fn(&str) -> String, at: &str, good: &str) {
         // A4 / L4: a key that is no number.
         assert_eq!(

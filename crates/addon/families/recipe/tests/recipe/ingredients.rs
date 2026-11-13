@@ -1,6 +1,6 @@
 //! The item-id rows of the fixtures (the game's item parser) and the `data` / inline-aux rows.
 
-use bedrock_addon::diagnostic::Severity;
+use bedrock_addon_core::diagnostic::Severity;
 
 use super::common::*;
 
@@ -28,7 +28,7 @@ fn ingredient_item_id_aux_300_is_logged_and_parsing_continues() {
     );
     // The game's item parser logs it at level 3 and goes on: a kept error.
     assert!(finding.kept);
-    assert!(finding.is(&bedrock_addon::families::recipe::codes::INVALID_AUX));
+    assert!(finding.is(&bedrock_addon_family_recipe::codes::INVALID_AUX));
     assert_eq!(args(finding), ["minecraft:wool:300"]);
     let name = shaped(&document).key["#"].item_name().unwrap();
     assert_eq!((name.id().as_str(), name.aux), ("minecraft:wool", None));
@@ -90,7 +90,7 @@ fn ingredient_data_float_number_is_truncated_without_the_compile_check() {
 /// item text to the reader, and the game's item parser logs its third token as an aux value.
 struct NoPotions;
 
-impl bedrock_addon::load::BuiltIns for NoPotions {
+impl bedrock_addon_core::load::BuiltIns for NoPotions {
     fn contains(&self, _kind: &'static str, _id: &str) -> bool {
         false
     }

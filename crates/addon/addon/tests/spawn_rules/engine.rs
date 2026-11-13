@@ -20,9 +20,8 @@ use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Condition, SpawnRules};
 use bedrock_addon::json::Value;
 
-use super::common::{
-    context, experiment, fixture, load_group, loads, rejected, round_trip, standard,
-};
+use super::common::{context, experiment, fixture, loads, rejected, round_trip, standard};
+use super::groups::load_group;
 
 /// An engine input by file name.
 fn engine(name: &str) -> String {

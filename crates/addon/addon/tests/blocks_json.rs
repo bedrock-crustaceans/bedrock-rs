@@ -13,8 +13,6 @@ mod keys;
 #[cfg(any(feature = "block", feature = "sounds_json"))]
 #[path = "blocks_json/link.rs"]
 mod link;
-#[path = "blocks_json/located.rs"]
-mod located;
 #[path = "pack/common.rs"]
 mod pack_common;
 #[path = "blocks_json/round_trip.rs"]

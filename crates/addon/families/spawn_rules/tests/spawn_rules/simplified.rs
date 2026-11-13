@@ -7,9 +7,9 @@
     reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
 )]
 
-use bedrock_addon::diagnostic::{Code, Severity};
-use bedrock_addon::families::spawn_rules::{Placement, SpawnRules};
-use bedrock_addon::version::ENGINE_VERSION;
+use bedrock_addon_core::diagnostic::{Code, Severity};
+use bedrock_addon_core::version::ENGINE_VERSION;
+use bedrock_addon_family_spawn_rules::{Placement, SpawnRules};
 
 use super::common::{
     closes_with, context, document, experiment, fixture, has_text, legacy, load, loads, names,
@@ -466,7 +466,7 @@ fn s22_vanilla_upgrade_table() {
     // The vanilla upgrade-table data file, for the comparison (not a load test):
     // ten names placed in water, one in lava, nine without restrictions, fifty on the ground,
     // and the water / lava override.
-    let table: bedrock_addon::json::Value =
+    let table: bedrock_addon_core::json::Value =
         facet_json::from_str(&fixture("spawn", "s22_vanilla_upgrade_table.json")).unwrap();
     let table = table.as_object().unwrap();
     let count = |key: &str| {

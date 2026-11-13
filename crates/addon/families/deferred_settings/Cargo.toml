@@ -23,3 +23,5 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../../test_support" }

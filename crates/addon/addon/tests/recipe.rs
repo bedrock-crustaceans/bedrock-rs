@@ -3,32 +3,17 @@
 
 #![cfg(feature = "recipe")]
 
-#[path = "recipe/common.rs"]
+#[path = "../../families/recipe/tests/recipe/common.rs"]
 mod common;
-
-#[path = "recipe/rows.rs"]
-mod rows;
-
-#[path = "recipe/ingredients.rs"]
-mod ingredients;
 
 #[path = "recipe/stack.rs"]
 mod stack;
 
-#[path = "recipe/molang.rs"]
-mod molang;
-
-#[path = "recipe/rules.rs"]
-mod rules;
-
-#[path = "recipe/round_trip.rs"]
-mod round_trip;
+#[path = "recipe/stacks.rs"]
+mod stacks;
 
 #[path = "recipe/link.rs"]
 mod link;
 
 #[path = "recipe/wide_data.rs"]
 mod wide_data;
-
-#[path = "recipe/located.rs"]
-mod located;

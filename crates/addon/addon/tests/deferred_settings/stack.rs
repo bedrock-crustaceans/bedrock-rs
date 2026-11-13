@@ -14,6 +14,7 @@ use bedrock_addon::storage::PackPath;
 
 use super::common::*;
 use super::pack_common::{bp, rp};
+use super::stacks::*;
 
 fn lighting(identifier: &str, desaturation: f32) -> String {
     doc(

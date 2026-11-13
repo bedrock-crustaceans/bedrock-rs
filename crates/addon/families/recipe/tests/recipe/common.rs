@@ -4,23 +4,28 @@
 
 use std::path::PathBuf;
 
-use bedrock_addon::diagnostic::{CodeMeta, Diagnostic, Diagnostics, Severity};
-use bedrock_addon::document::{Content, Document, Rejected};
-use bedrock_addon::families::recipe::{Recipe, Shaped};
-use bedrock_addon::load::LoadContext;
-use bedrock_addon::molang::pack_molang_version;
-use bedrock_addon::pack::{OpenOptions, Pack, PackOrigin};
-use bedrock_addon::storage::PackPath;
-use bedrock_addon::version::{BaseGameVersion, MinEngineVersion, SemVersion};
-use bytes::Bytes;
-use uuid::Uuid;
+use bedrock_addon_core::diagnostic::{CodeMeta, Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::molang::pack_molang_version;
+use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::version::{BaseGameVersion, MinEngineVersion, SemVersion};
+use bedrock_addon_family_recipe::{Recipe, Shaped};
 
 #[allow(unused_imports, reason = "each test file uses part of the helpers")]
 pub use bedrock_addon_test_support::clean;
 
-/// The fixture directory of the family.
+/// The fixture directory of the family. The file is included by the family crate's tests and by
+/// `bedrock_addon`'s, which owns the `tests/fixtures` folder, so the folder is looked for in the
+/// package that compiles it first.
 pub fn fixtures() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/recipe/recipe")
+    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let own = manifest.join("tests/fixtures");
+    if own.is_dir() {
+        own.join("recipe/recipe")
+    } else {
+        manifest.join("../../addon/tests/fixtures/recipe/recipe")
+    }
 }
 
 /// The bytes of fixture `name`.
@@ -100,7 +105,7 @@ pub fn shaped(document: &Document<Recipe>) -> &Shaped {
 /// The recipe family's definition a finding was raised on, if it was.
 fn recipe_def(diagnostic: &Diagnostic) -> Option<&'static CodeMeta> {
     let code = &diagnostic.code;
-    bedrock_addon::families::recipe::codes::ALL
+    bedrock_addon_family_recipe::codes::ALL
         .iter()
         .find(|meta| meta.id() == code.id())
         .copied()
@@ -208,31 +213,6 @@ pub fn silent(diagnostics: &Diagnostics) {
     );
 }
 
-/// A behaviour pack `n` with `min_engine_version` `mev`, opened from memory with `origin`, holding
-/// `files` (pack-relative paths).
-pub fn pack(n: u128, mev: [u16; 3], origin: PackOrigin, files: Vec<(String, Vec<u8>)>) -> Pack {
-    let uuid = Uuid::from_u128(n);
-    let module = Uuid::from_u128(n ^ (0xabcd_u128 << 64));
-    let [a, b, c] = mev;
-    let manifest = format!(
-        r#"{{"format_version": 2, "header": {{"name": "bp {n}", "description": "", "uuid": "{uuid}", "version": [1, 0, 0], "min_engine_version": [{a}, {b}, {c}]}}, "modules": [{{"type": "data", "uuid": "{module}", "version": [1, 0, 0]}}]}}"#
-    );
-    let mut all: Vec<(PackPath, Bytes)> = vec![(
-        PackPath::from_static("manifest.json"),
-        Bytes::from(manifest),
-    )];
-    all.extend(
-        files
-            .into_iter()
-            .map(|(path, bytes)| (PackPath::new(&path).unwrap(), Bytes::from(bytes))),
-    );
-    let options = OpenOptions {
-        origin,
-        ..OpenOptions::default()
-    };
-    Pack::from_files(all, &options).expect("the pack opens")
-}
-
 /// Every file below fixture directory `dir`, as pack-relative paths.
 pub fn files_below(dir: &str) -> Vec<(String, Vec<u8>)> {
     fn walk(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<(String, Vec<u8>)>) {
@@ -262,8 +242,8 @@ pub fn kept<'d>(
     document: &'d Document<Recipe>,
     at: &[&str],
     key: &str,
-) -> Option<&'d bedrock_addon::json::Value> {
+) -> Option<&'d bedrock_addon_core::json::Value> {
     document
         .unknown()
-        .get(&bedrock_addon::diagnostic::JsonPath::of_keys(at), key)
+        .get(&bedrock_addon_core::diagnostic::JsonPath::of_keys(at), key)
 }

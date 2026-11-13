@@ -20,3 +20,9 @@ molang = ["bedrock_addon_shared_spawn/molang"]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_spawn = { path = "../../shared/spawn" }
 facet = { workspace = true }
+
+[dev-dependencies]
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
+facet-json = { workspace = true }
+facet-value = { workspace = true }
+uuid = { workspace = true }

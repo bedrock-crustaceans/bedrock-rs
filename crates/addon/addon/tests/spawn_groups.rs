@@ -3,8 +3,11 @@
 
 #![cfg(all(feature = "spawn_rules", feature = "spawn_groups"))]
 
-#[path = "spawn_rules/common.rs"]
+#[path = "../../families/spawn_rules/tests/spawn_rules/common.rs"]
 mod common;
+
+#[path = "spawn_rules/groups.rs"]
+mod groups;
 
 #[path = "spawn_groups/discovery.rs"]
 mod discovery;

@@ -1,12 +1,12 @@
 //! The two single-struct chains: contiguity, the range models' selection, floors and ceilings, no
 //! beta; and the history enums' own-version write.
 
-use bedrock_addon::families::spawn_rules::{
-    SimplifiedFamily, SimplifiedHistory, SpawnFamily, SpawnHistory,
-};
-use bedrock_addon::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
-use bedrock_addon::versioning::{
+use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput};
+use bedrock_addon_core::versioning::{
     Family, RangeModel, Selection, Single, VersionChain, check_chain, select,
+};
+use bedrock_addon_family_spawn_rules::{
+    SimplifiedFamily, SimplifiedHistory, SpawnFamily, SpawnHistory,
 };
 
 use super::common::{context, document, experiment, legacy, loads, rejected, standard};

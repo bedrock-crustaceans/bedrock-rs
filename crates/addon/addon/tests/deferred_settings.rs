@@ -6,32 +6,11 @@
 #[path = "pack/common.rs"]
 mod pack_common;
 
-#[path = "deferred_settings/common.rs"]
+#[path = "../../families/deferred_settings/tests/deferred_settings/common.rs"]
 mod common;
-
-#[path = "deferred_settings/envelope.rs"]
-mod envelope;
-
-#[path = "deferred_settings/single.rs"]
-mod single;
-
-#[path = "deferred_settings/keyframes.rs"]
-mod keyframes;
-
-#[path = "deferred_settings/chains.rs"]
-mod chains;
 
 #[path = "deferred_settings/stack.rs"]
 mod stack;
 
-#[path = "deferred_settings/write.rs"]
-mod write;
-
-#[path = "deferred_settings/ranges.rs"]
-mod ranges;
-
-#[path = "../../families/deferred_settings/tests/deferred_settings/compare.rs"]
-mod compare;
-
-#[path = "deferred_settings/generated.rs"]
-mod generated;
+#[path = "deferred_settings/stacks.rs"]
+mod stacks;
