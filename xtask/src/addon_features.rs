@@ -17,6 +17,7 @@
 //! (if needed) its feature line moved into the hand block and the command again; to remove a
 //! family, delete its generated lines by hand, then the crate, then run the command.
 
+use crate::markers::{self, MissingMarker};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::Path;
@@ -222,17 +223,8 @@ fn array(out: &mut String, key: &str, entries: &[String]) {
 
 /// `text` with the lines between the `begin` and `end` marker lines replaced by `body`.
 fn splice(text: &str, begin: &str, end: &str, body: &str) -> io::Result<String> {
-    let missing = |marker: &str| error(format!("{MANIFEST}: no marker line `{marker}`"));
-    let start = text
-        .find(&format!("{begin}\n"))
-        .ok_or_else(|| missing(begin))?
-        + begin.len()
-        + 1;
-    let stop = start
-        + text[start..]
-            .find(&format!("{end}\n"))
-            .ok_or_else(|| missing(end))?;
-    Ok(format!("{}{body}{}", &text[..start], &text[stop..]))
+    markers::splice(text, begin, end, body)
+        .map_err(|MissingMarker(marker)| error(format!("{MANIFEST}: no marker line `{marker}`")))
 }
 
 /// The `[features]` of a parsed manifest, each with its entries.

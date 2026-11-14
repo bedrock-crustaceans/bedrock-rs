@@ -3,6 +3,7 @@ mod addon_features;
 pub mod codegen;
 mod entity_schemas;
 mod goal_numeric;
+mod markers;
 mod script_meta;
 
 use proc_macro2::TokenStream;
