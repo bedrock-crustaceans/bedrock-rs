@@ -1,0 +1,11 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 90, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct StructureBlockUpdatePacket<V: ProtoVersion> {
+    pub block_position: V::NetworkBlockPosition,
+    pub structure_data: V::StructureEditorData,
+    pub trigger: bool,
+    pub is_waterlogged: bool,
+}

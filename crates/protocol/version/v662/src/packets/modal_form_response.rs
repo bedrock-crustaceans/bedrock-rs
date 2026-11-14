@@ -1,0 +1,11 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 101, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ModalFormResponsePacket<V: ProtoVersion> {
+    #[endianness(var)]
+    pub form_id: u32,
+    pub json_response: Option<String>,
+    pub form_cancel_reason: Option<V::ModalFormCancelReason>,
+}

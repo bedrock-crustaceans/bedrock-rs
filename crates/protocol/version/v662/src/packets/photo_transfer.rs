@@ -1,0 +1,15 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 99, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct PhotoTransferPacket<V: ProtoVersion> {
+    pub photo_name: String,
+    pub photo_data: Vec<u8>,
+    pub book_id: String,
+    pub photo_type: V::PhotoType,
+    pub source_type: V::PhotoType,
+    #[endianness(le)]
+    pub owner_id: i64,
+    pub new_photo_name: String,
+}

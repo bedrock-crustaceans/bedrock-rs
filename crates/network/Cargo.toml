@@ -14,7 +14,7 @@ nethernet-tokio = ["tokio", "nethernet", "dep:nethernet-tokio", "dep:bytes"]
 v2193 = ["bedrock_protocol/v2193"]
 
 [dependencies]
-bedrock_protocol = { path = "../protocol" }
+bedrock_protocol = { path = "../protocol/protocol" }
 bedrock_protocol_core = { path = "../protocol/core" }
 bedrock_auth = { path = "../auth" }
 

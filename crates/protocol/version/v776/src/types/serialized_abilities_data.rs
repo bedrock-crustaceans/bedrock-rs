@@ -1,0 +1,41 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::ProtoCodec;
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct SerializedAbilitiesData<V: ProtoVersion> {
+    #[endianness(le)]
+    pub target_player_raw_id: i64,
+    // TODO: use enum with #[as(u8)] after proto refactor
+    pub player_permissions: u8,
+    pub command_permissions: V::CommandPermissionLevel,
+    #[vec_repr(u8)]
+    pub layers: Vec<SerializedLayer>,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(u16)]
+#[enum_endianness(le)]
+#[repr(u16)]
+pub enum SerializedAbilitiesLayer {
+    CustomCache = 0,
+    Base = 1,
+    Spectator = 2,
+    Commands = 3,
+    Editor = 4,
+    LoadingScreen = 5,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct SerializedLayer {
+    pub serialized_layer: SerializedAbilitiesLayer,
+    #[endianness(le)]
+    pub abilities_set: u32,
+    #[endianness(le)]
+    pub ability_values: u32,
+    #[endianness(le)]
+    pub fly_speed: f32,
+    #[endianness(le)]
+    pub vertical_fly_speed: f32,
+    #[endianness(le)]
+    pub walk_speed: f32,
+}

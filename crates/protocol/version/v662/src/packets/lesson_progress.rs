@@ -1,0 +1,11 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 183, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LessonProgressPacket<V: ProtoVersion> {
+    pub lesson_action: V::LessonAction,
+    #[endianness(var)]
+    pub score: i32,
+    pub activity_id: String,
+}

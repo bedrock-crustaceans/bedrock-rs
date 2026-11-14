@@ -7,7 +7,8 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-proc-macro2 = "1.0.106"
+# `span-locations`: a definition error is reported with the line and column of its span.
+proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
 quote = "1.0.45"
 syn = { version = "3.0.6", features = ["full"] }
 prettyplease = "0.3.0"
@@ -21,3 +22,5 @@ bedrock_addon_family_script = { path = "../crates/addon/families/script" }
 # The one line of a skipped corpus test (`corpus::skipped`); it builds core with no feature
 # beyond the ones above.
 bedrock_addon_test_support = { path = "../crates/addon/test_support" }
+# The tree the protocol generator's edge reads and writes, in a test.
+tempfile.workspace = true
