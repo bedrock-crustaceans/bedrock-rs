@@ -2,14 +2,18 @@
 version: 2
 
 updates:
-  # Every manifest of the workspace. Most versions live in the root's `[workspace.dependencies]`;
-  # the rest are a member's own. `Cargo.lock` is not committed, so a pull request comes only when
-  # a release falls outside a requirement, and it raises the requirement.
+  # Every hand-written manifest of the workspace. Most versions live in the root's
+  # `[workspace.dependencies]`; the rest are a member's own. Of `crates/protocol/version/*` only
+  # `traits` is listed: the manifests of the version crates are generator output and name only
+  # workspace and path dependencies. `Cargo.lock` is not committed, so a pull request comes only
+  # when a release falls outside a requirement, and it raises the requirement.
   - package-ecosystem: cargo
     directories:
       - "/"
       - "/bedrock"
       - "/crates/*"
+      - "/crates/protocol/*"
+      - "/crates/protocol/version/traits"
       - "/crates/addon/*"
       - "/crates/addon/families/*"
       - "/crates/addon/shared/*"

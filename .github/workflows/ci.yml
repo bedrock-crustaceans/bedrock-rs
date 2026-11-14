@@ -52,7 +52,8 @@ jobs:
 
   # The workspace is tested in groups, one job per group and OS. Each job builds only its group's
   # test binaries, which keeps every job inside the runner's disk and runs the groups in parallel.
-  # Every workspace member is in exactly one group; a new crate has to join one here.
+  # Every workspace member is in exactly one group; a new crate has to join one here, unless a
+  # group's glob already takes it in (a protocol version, an add-on crate).
   test:
     name: Test ${{ matrix.group.name }} (${{ matrix.os }})
     strategy:
@@ -62,9 +63,8 @@ jobs:
         group:
           - name: protocol & network
             key: protocol-network
-            packages: >-
-              -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
-              -p bedrock_network
+            # The glob is the facade, core, the traits and every version crate.
+            packages: -p 'bedrock_protocol*' -p bedrock_macros -p bedrock_network
           - name: addon
             key: addon
             packages: -p 'bedrock_addon*' -p xtask
@@ -94,6 +94,12 @@ jobs:
       - name: Tests
         shell: bash
         run: cargo nextest run --profile ci ${{ matrix.group.packages }}
+      # Selected as a package, a version crate builds with its `version` feature, which no
+      # dependent turns on; this builds each the way the facade does, without its packet enum.
+      - name: Version crates as their dependents build them
+        if: matrix.group.key == 'protocol-network'
+        shell: bash
+        run: cargo check -p bedrock_protocol --no-default-features
       # nextest does not run doctests.
       - name: Doctests
         shell: bash
