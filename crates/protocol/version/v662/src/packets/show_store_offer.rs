@@ -1,0 +1,9 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 91, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ShowStoreOfferPacket<V: ProtoVersion> {
+    pub product_id: String,
+    pub redirect_type: V::ShowStoreOfferRedirectType,
+}

@@ -1,0 +1,15 @@
+use std::collections::HashMap;
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 81, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct UpdateEquipPacket<V: ProtoVersion> {
+    pub container_id: V::ContainerID,
+    pub container_type: V::ContainerType,
+    #[endianness(var)]
+    pub size: i32,
+    pub target_actor_id: V::ActorUniqueID,
+    #[nbt]
+    pub data_tags: HashMap<String, nbtx::Value>,
+}

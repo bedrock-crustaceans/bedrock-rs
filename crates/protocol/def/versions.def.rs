@@ -3,7 +3,7 @@ versions![
         raknet_version: 10,
         packets: [
             + RequestNetworkSettingsPacket: RequestNetworkSettingsPacket,
-        ] in crate::version::unknown::packets,
+        ] in unknown::packets,
     } as Unknown,
     (662, "r/20_u7", "1.20.70"): {
         raknet_version: 11,
@@ -204,7 +204,7 @@ versions![
             + UpdateSubChunkBlocksPacket: UpdateSubChunkBlocksPacket^,
             + UpdateTradePacket: UpdateTradePacket^,
             % RequestNetworkSettingsPacket: RequestNetworkSettingsPacket,
-        ] in crate::version::v662::packets,
+        ] in v662::packets,
         types: [
             + ActorLink: ActorLink^,
             + ActorRuntimeID: ActorRuntimeID,
@@ -270,7 +270,7 @@ versions![
             + SubChunkPosOffset: SubChunkPosOffset,
             + SyncedPlayerMovementSettings: SyncedPlayerMovementSettings^,
             + WebSocketPacketData: WebSocketPacketData,
-        ] in crate::version::v662::types,
+        ] in v662::types,
         enums: [
             + AbilitiesIndex: AbilitiesIndex,
             + ActorBlockSyncMessageID: ActorBlockSyncMessageID,
@@ -370,7 +370,7 @@ versions![
             + TextPacketType: TextPacketType,
             + TextProcessingEventOrigin: TextProcessingEventOrigin,
             + UIProfile: UIProfile,
-        ] in crate::version::v662::enums,
+        ] in v662::enums,
     },
     (671, "r/20_u8", "1.20.80"): {
         packets: [
@@ -380,17 +380,17 @@ versions![
             % ResourcePackStackPacket: ResourcePackStackPacket^,
             % UpdatePlayerGameTypePacket: UpdatePlayerGameTypePacket^,
             - FilterTextPacket,
-        ] in crate::version::v671::packets,
+        ] in v671::packets,
         types: [
             % LevelSettings: LevelSettings^,
             % ShapedRecipe: ShapedRecipe^,
-        ] in crate::version::v671::types,
+        ] in v671::types,
         enums: [
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
             % ParticleType: ParticleType,
             % PredictionType: PredictionType,
-        ] in crate::version::v671::enums,
+        ] in v671::enums,
     },
     (685, "r/21_u0", "1.21.0"): {
         packets: [
@@ -400,25 +400,25 @@ versions![
             % LegacyTelemetryEventPacket: LegacyTelemetryEventPacket^,
             % TextPacket: TextPacket^,
             - TickSyncPacket,
-        ] in crate::version::v685::packets,
+        ] in v685::packets,
         types: [
             + RecipeUnlockingRequirement: RecipeUnlockingRequirement^,
             % LevelSettings: LevelSettings^,
             % ShapedRecipe: ShapedRecipe^,
             % ShapelessRecipe: ShapelessRecipe^,
-        ] in crate::version::v685::types,
+        ] in v685::types,
         enums: [
             + CodeBuilderCodeStatus: CodeBuilderCodeStatus,
             % ActorDataIDs: ActorDataIDs,
             % LevelEvent: LevelEvent,
             % LevelSoundEventType: LevelSoundEventType,
             % ParticleType: ParticleType,
-        ] in crate::version::v685::enums,
+        ] in v685::enums,
     },
     (686, "r/21_u0", "1.21.2"): {
         packets: [
             + ClientBoundCloseFormPacket: ClientBoundCloseFormPacket,
-        ] in crate::version::v686::packets,
+        ] in v686::packets,
     },
     (712, "r/21_u2", "1.21.20"): {
         packets: [
@@ -436,7 +436,7 @@ versions![
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
             % SetTitlePacket: SetTitlePacket,
             % StopSoundPacket: StopSoundPacket,
-        ] in crate::version::v712::packets,
+        ] in v712::packets,
         types: [
             + FullContainerName: FullContainerName^,
             % ActorLink: ActorLink^,
@@ -445,13 +445,13 @@ versions![
             % ItemStackResponseContainerInfo: ItemStackResponseContainerInfo^,
             % ItemUseTransactionData: ItemUseTransactionData^,
             % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
-        ] in crate::version::v712::types,
+        ] in v712::types,
         enums: [
             % ContainerEnumName: ContainerEnumName,
             % ItemStackRequestActionType: ItemStackRequestActionType^,
             % LevelSoundEventType: LevelSoundEventType,
             % PredictionType: PredictionType,
-        ] in crate::version::v712::enums,
+        ] in v712::enums,
     },
     (729, "r/21_u3", "1.21.30"): {
         packets: [
@@ -463,15 +463,15 @@ versions![
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
             % TransferPlayerPacket: TransferPlayerPacket,
             % UpdateAttributesPacket: UpdateAttributesPacket^,
-        ] in crate::version::v729::packets,
+        ] in v729::packets,
         types: [
             % CameraPreset: CameraPreset,
             % FullContainerName: FullContainerName^,
-        ] in crate::version::v729::types,
+        ] in v729::types,
         enums: [
             + AimAssistAction: AimAssistAction,
             % LevelSoundEventType: LevelSoundEventType,
-        ] in crate::version::v729::enums,
+        ] in v729::enums,
     },
     (748, "r/21_u4", "1.21.40"): {
         packets: [
@@ -483,15 +483,15 @@ versions![
             % MobEffectPacket: MobEffectPacket^,
             % PlayerAuthInputPacket: PlayerAuthInputPacket^,
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
-        ] in crate::version::v748::packets,
+        ] in v748::packets,
         types: [
             % CameraPreset: CameraPreset,
             % ShulkerBoxRecipe: ShulkerBoxRecipe^,
-        ] in crate::version::v748::types,
+        ] in v748::types,
         enums: [
             + AuthoritativeMovementMode: AuthoritativeMovementMode,
             + MovementEffectType: MovementEffectType,
-        ] in crate::version::v748::enums,
+        ] in v748::enums,
     },
     (766, "r/21_u5", "1.21.50"): {
         packets: [
@@ -499,7 +499,7 @@ versions![
             % CameraAimAssistPacket: CameraAimAssistPacket^,
             % PlayerAuthInputPacket: PlayerAuthInputPacket^,
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
-        ] in crate::version::v766::packets,
+        ] in v766::packets,
         types: [
             + CameraAimAssistCategories: CameraAimAssistCategories^,
             + CameraAimAssistCategory: CameraAimAssistCategory^,
@@ -509,12 +509,12 @@ versions![
             + CameraAimAssistPriority: CameraAimAssistPriority,
             % CameraPreset: CameraPreset^,
             % ItemStackResponseSlotInfo: ItemStackResponseSlotInfo,
-        ] in crate::version::v766::types,
+        ] in v766::types,
         enums: [
             % LevelEvent: LevelEvent,
             % LevelSoundEventType: LevelSoundEventType,
             % ParticleType: ParticleType,
-        ] in crate::version::v766::enums,
+        ] in v766::enums,
     },
     (776, "r/21_u6", "1.21.60"): {
         packets: [
@@ -525,13 +525,13 @@ versions![
             % CreativeContentPacket: CreativeContentPacket^,
             % ItemComponentPacket: ItemComponentPacket^,
             % StartGamePacket: StartGamePacket^,
-        ] in crate::version::v776::packets,
+        ] in v776::packets,
         types: [
             % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
             % CameraPreset: CameraPreset^,
             % SerializedAbilitiesData: SerializedAbilitiesData^,
             % StructureEditorData: StructureEditorData^,
-        ] in crate::version::v776::types,
+        ] in v776::types,
         enums: [
             + CameraAimAssistOperation: CameraAimAssistOperation,
             + ItemVersion: ItemVersion,
@@ -539,7 +539,7 @@ versions![
             % ActorDataIDs: ActorDataIDs,
             % ActorFlags: ActorFlags,
             % BossEventUpdateType: BossEventUpdateType^,
-        ] in crate::version::v776::enums,
+        ] in v776::enums,
     },
     (786, "r/21_u7", "1.21.70"): {
         packets: [
@@ -550,12 +550,12 @@ versions![
             % MovementPredictionSyncPacket: MovementPredictionSyncPacket^,
             - LevelSoundEventV1Packet,
             - LevelSoundEventV2Packet,
-        ] in crate::version::v786::packets,
+        ] in v786::packets,
         enums: [
             % ActorFlags: ActorFlags,
             % HudElement: HudElement,
             % HudVisibility: HudVisibility,
-        ] in crate::version::v786::enums,
+        ] in v786::enums,
     },
     (800, "r/21_u8", "1.21.80"): {
         packets: [
@@ -567,7 +567,7 @@ versions![
             - CompressedBiomeDefinitionListPacket,
             - PlayerInputPacket,
             - PassengerJumpPacket,
-        ] in crate::version::v800::packets,
+        ] in v800::packets,
         types: [
             + BiomeCappedSurfaceData: BiomeCappedSurfaceData,
             + BiomeClimateData: BiomeClimateData,
@@ -589,13 +589,13 @@ versions![
             + BiomeWeightedTemperatureData: BiomeWeightedTemperatureData,
             + Color: Color,
             % CameraPreset: CameraPreset^,
-        ] in crate::version::v800::types,
+        ] in v800::types,
         enums: [
             + ControlScheme: ControlScheme,
             % ActorDataIDs: ActorDataIDs,
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
-        ] in crate::version::v800::enums,
+        ] in v800::enums,
     },
     (818, "r/21_u9", "1.21.90"): {
         packets: [
@@ -604,23 +604,23 @@ versions![
             % ResourcePacksInfoPacket: ResourcePacksInfoPacket,
             % SubChunkPacket: SubChunkPacket^,
             - SetMovementAuthorityPacket,
-        ] in crate::version::v818::packets,
+        ] in v818::packets,
         types: [
             + DebugShape: DebugShape^,
             % CameraPreset: CameraPreset^,
             % LevelSettings: LevelSettings^,
             % SyncedPlayerMovementSettings: SyncedPlayerMovementSettings,
-        ] in crate::version::v818::types,
+        ] in v818::types,
         enums: [
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
             - ServerAuthMovementMode,
-        ] in crate::version::v818::enums,
+        ] in v818::enums,
     },
     (819, "r/21_u9", "1.21.93"): {
         enums: [
             % LevelSoundEventType: LevelSoundEventType,
-        ] in crate::version::v819::enums,
+        ] in v819::enums,
     },
     (827, "r/21_u10", "1.21.100"): {
         packets: [
@@ -628,32 +628,32 @@ versions![
             % CameraInstructionPacket: CameraInstructionPacket^,
             % CorrectPlayerMovePredictionPacket: CorrectPlayerMovePredictionPacket^,
             % StartGamePacket: StartGamePacket^,
-        ] in crate::version::v827::packets,
+        ] in v827::packets,
         types: [
             % BiomeDefinition: BiomeDefinition^,
-        ] in crate::version::v827::types,
+        ] in v827::types,
         enums: [
             % LevelSoundEventType: LevelSoundEventType,
             % PredictionType: PredictionType,
-        ] in crate::version::v827::enums,
+        ] in v827::enums,
     },
     (844, "r/21_u11", "1.21.111"): {
         packets: [
             + ServerBoundPackSettingChangePacket: ServerBoundPackSettingChangePacket,
             % PlayerArmorDamagePacket: PlayerArmorDamagePacket,
-        ] in crate::version::v844::packets,
+        ] in v844::packets,
         types: [
             % BiomeClimateData: BiomeClimateData,
             % BiomeDefinition: BiomeDefinition^,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % GameRulesChangedPacketData: GameRulesChangedPacketData,
             % LevelSettings: LevelSettings^,
-        ] in crate::version::v844::types,
+        ] in v844::types,
         enums: [
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
             % ParticleType: ParticleType,
-        ] in crate::version::v844::enums,
+        ] in v844::enums,
     },
     (859, "r/21_u12", "1.21.120"): {
         packets: [
@@ -661,17 +661,17 @@ versions![
             % AnimatePacket: AnimatePacket^,
             % CameraInstructionPacket: CameraInstructionPacket^,
             % ShowStoreOfferPacket: ShowStoreOfferPacket^,
-        ] in crate::version::v859::packets,
+        ] in v859::packets,
         types: [
             + BiomeReplacementData: BiomeReplacementData,
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % DebugShape: DebugShape^,
-        ] in crate::version::v859::types,
+        ] in v859::types,
         enums: [
             + CameraSplineType: CameraSplineType,
             % ActorEvent: ActorEvent,
             % ActorFlags: ActorFlags,
-        ] in crate::version::v859::enums,
+        ] in v859::enums,
     },
     (898, "r/21_u13", "1.21.130"): {
         packets: [
@@ -687,19 +687,19 @@ versions![
             % ResourcePackStackPacket: ResourcePackStackPacket^,
             % StartGamePacket: StartGamePacket^,
             % TextPacket: TextPacket^,
-        ] in crate::version::v898::packets,
+        ] in v898::packets,
         types: [
             % CameraAimAssistCategory: CameraAimAssistCategory^,
             % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
             % CommandOriginData: CommandOriginData^,
-        ] in crate::version::v898::types,
+        ] in v898::types,
         enums: [
             % ActorEvent: ActorEvent,
             % CommandOriginType: CommandOriginType,
             % CommandOutputType: CommandOutputType,
             % LevelSoundEventType: LevelSoundEventType,
             % TextPacketType: TextPacketType,
-        ] in crate::version::v898::enums,
+        ] in v898::enums,
     },
     (924, "r/26_u0", "1.26.0"): {
         packets: [
@@ -717,7 +717,7 @@ versions![
             % ServerBoundDataStorePacket: ServerBoundDataStorePacket,
             % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
             % StartGamePacket: StartGamePacket^,
-        ] in crate::version::v924::packets,
+        ] in v924::packets,
         types: [
             + CameraSplineInstruction: CameraSplineInstruction^,
             + GatheringsConfig: GatheringsConfig,
@@ -726,14 +726,14 @@ versions![
             % CameraAimAssistPresetDefinition: CameraAimAssistPresetDefinition^,
             % DebugShape: DebugShape^,
             % LevelSettings: LevelSettings^,
-        ] in crate::version::v924::types,
+        ] in v924::types,
         enums: [
             + CameraSplineEaseType: CameraSplineEaseType,
             % ActorDataIDs: ActorDataIDs,
             % BookEditAction: BookEditAction,
             % LevelSoundEventType: LevelSoundEventType,
             % TextPacketType: TextPacketType,
-        ] in crate::version::v924::enums,
+        ] in v924::enums,
     },
     (944, "r/26_u1", "1.26.10"): {
         packets: [
@@ -750,18 +750,18 @@ versions![
             % UpdateClientInputLocksPacket: UpdateClientInputLocksPacket,
             % VoxelShapesPacket: VoxelShapesPacket,
             - ClientBoundDataDrivenUICloseAllScreensPacket
-        ] in crate::version::v944::packets,
+        ] in v944::packets,
         types: [
             % CameraSplineInstruction: CameraSplineInstruction^,
             % ItemUseTransactionData: ItemUseTransactionData^,
             % NetworkBlockPosition: NetworkBlockPosition,
             % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
-        ] in crate::version::v944::types,
+        ] in v944::types,
         enums: [
             % ContainerEnumName: ContainerEnumName,
             % LevelSoundEventType: LevelSoundEventType,
             % ParticleType: ParticleType,
-        ] in crate::version::v944::enums,
+        ] in v944::enums,
     },
     (975, "r/26_u2", "1.26.20"): {
         packets: [
@@ -779,7 +779,7 @@ versions![
             % PlaySoundPacket: PlaySoundPacket^,
             % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
             % UpdateClientOptionsPacket: UpdateClientOptionsPacket,
-        ] in crate::version::v975::packets,
+        ] in v975::packets,
         types: [
             + BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
             + BiomeSurfaceBuilderData: BiomeSurfaceBuilderData^,
@@ -787,12 +787,12 @@ versions![
             % BiomeDefinitionChunkGenData: BiomeDefinitionChunkGenData^,
             % DebugShape: DebugShape^,
             % DimensionDefinitionGroup: DimensionDefinitionGroup,
-        ] in crate::version::v975::types,
+        ] in v975::types,
         enums: [
             % ActorEvent: ActorEvent,
             % ActorFlags: ActorFlags,
             % LevelSoundEventType: LevelSoundEventType,
-        ] in crate::version::v975::enums,
+        ] in v975::enums,
     },
     (1001, "r/26_u3", "1.26.30"): {
         packets: [
@@ -811,7 +811,7 @@ versions![
             % ServerPresenceInfoPacket: ServerPresenceInfoPacket,
             % StartGamePacket: StartGamePacket^,
             % SubChunkRequestPacket: SubChunkRequestPacket^,
-        ] in crate::version::v1001::packets,
+        ] in v1001::packets,
         types: [
             % BiomeNoiseGradientSurfaceData: BiomeNoiseGradientSurfaceData,
             % DebugShape: DebugShape^,
@@ -822,12 +822,12 @@ versions![
             % ItemUseTransactionData: ItemUseTransactionData^,
             % LevelSettings: LevelSettings^,
             % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
-        ] in crate::version::v1001::types,
+        ] in v1001::types,
         enums: [
             % ConnectionFailReason: ConnectionFailReason,
             % LevelSoundEventType: LevelSoundEventType,
             % MovementEffectType: MovementEffectType,
-        ] in crate::version::v1001::enums,
+        ] in v1001::enums,
     },
     (2168, "r/26_u4", "1.26.40"): {
         packets: [
@@ -853,7 +853,7 @@ versions![
             % StartGamePacket: StartGamePacket^,
             % SubChunkPacket: SubChunkPacket^,
             % TransferPlayerPacket: TransferPlayerPacket^,
-        ] in crate::version::v2168::packets,
+        ] in v2168::packets,
         types: [
             + CraftingRecipeIngredient: CraftingRecipeIngredient,
             + ItemStackRequestNetworkItemInstanceDescriptor: ItemStackRequestNetworkItemInstanceDescriptor^,
@@ -884,7 +884,7 @@ versions![
             % SmithingTrimRecipe: SmithingTrimRecipe^,
             % StructureEditorData: StructureEditorData^,
             % SubChunkPos: SubChunkPos,
-        ] in crate::version::v2168::types,
+        ] in v2168::types,
         enums: [
             + ArmSizeType: ArmSizeType,
             + PersonaPieceType: PersonaPieceType,
@@ -902,17 +902,17 @@ versions![
             % ParticleType: ParticleType,
             % PlayerPositionMode: PlayerPositionMode,
             % StructureRedstoneSaveMode: StructureRedstoneSaveMode,
-        ] in crate::version::v2168::enums,
+        ] in v2168::enums,
     },
     (2168, "r/26_u4_hotfix4", "1.26.44"): {
         packets: [
             % SetScorePacket: SetScorePacket^,
-        ] in crate::version::v2168hotfix4::packets,
+        ] in v2168hotfix4::packets,
     } as V2168Hotfix4,
     (2169, "r/26_u4_hotfix5", "1.26.45"): {
         packets: [
             % SetScorePacket: SetScorePacket^,
-        ] in crate::version::v2168::packets,
+        ] in v2168::packets,
     },
     (2193, "r/26_u5", "1.26.50"): {
         packets: [
@@ -927,7 +927,7 @@ versions![
             % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
             % ServerBoundPackSettingChangePacket: ServerBoundPackSettingChangePacket,
             % SubChunkPacket: SubChunkPacket^,
-        ] in crate::version::v2193::packets,
+        ] in v2193::packets,
         types: [
             % CameraPreset: CameraPreset^,
             % DebugShape: DebugShape^,
@@ -938,11 +938,11 @@ versions![
             % ItemUseTransactionData: ItemUseTransactionData^,
             % MoveActorDeltaData: MoveActorDeltaData^,
             % PackedItemUseLegacyInventoryTransaction: PackedItemUseLegacyInventoryTransaction^,
-        ] in crate::version::v2193::types,
+        ] in v2193::types,
         enums: [
             % ConnectionFailReason: ConnectionFailReason,
             % PersonaPieceType: PersonaPieceType,
-        ] in crate::version::v2193::enums,
+        ] in v2193::enums,
     },
     (2225, "r/26_u6", "1.26.60"): {
         packets: [
@@ -962,7 +962,7 @@ versions![
             % LevelChunkPacket: LevelChunkPacket^,
             % PlayerListPacket: PlayerListPacket^,
             % ServerBoundDiagnosticsPacket: ServerBoundDiagnosticsPacket,
-        ] in crate::version::v2225::packets,
+        ] in v2225::packets,
         types: [
             + PassengerOfBlockArguments: PassengerOfBlockArguments^,
             + SignedAudioContent: SignedAudioContent,
@@ -973,7 +973,7 @@ versions![
             % LevelSettings: LevelSettings^,
             % SerializedSkin: SerializedSkin^,
             % SoundData: SoundData,
-        ] in crate::version::v2225::types,
+        ] in v2225::types,
         enums: [
             % ConnectionFailReason: ConnectionFailReason,
             % ContainerEnumName: ContainerEnumName,
@@ -981,6 +981,6 @@ versions![
             % ItemStackRequestActionType: ItemStackRequestActionType^,
             % LevelSoundEventType: LevelSoundEventType,
             % PersonaPieceType: PersonaPieceType,
-        ] in crate::version::v2225::enums,
+        ] in v2225::enums,
     }
 ];

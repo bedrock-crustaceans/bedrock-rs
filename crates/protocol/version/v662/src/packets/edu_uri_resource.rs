@@ -1,0 +1,8 @@
+use bedrock_protocol_version::ProtoVersion;
+use bedrock_macros::{packet, ProtoCodec};
+
+#[packet(id = 170, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct EduUriResourcePacket<V: ProtoVersion> {
+    pub edu_shared_uri_resource: V::EduSharedUriResource,
+}
