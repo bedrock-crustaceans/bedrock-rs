@@ -7,8 +7,8 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-bedrock_protocol_core = { path = "../protocol_core" }
-bedrock_macros = { path = "../macros" }
+bedrock_protocol_core = { path = "core" }
+bedrock_macros = { path = "macros" }
 
 nbtx.workspace = true
 byteorder.workspace = true

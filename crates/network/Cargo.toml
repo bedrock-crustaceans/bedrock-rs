@@ -15,7 +15,7 @@ v2193 = ["bedrock_protocol/v2193"]
 
 [dependencies]
 bedrock_protocol = { path = "../protocol" }
-bedrock_protocol_core = { path = "../protocol_core" }
+bedrock_protocol_core = { path = "../protocol/core" }
 bedrock_auth = { path = "../auth" }
 
 tokio = { workspace = true, optional = true }
