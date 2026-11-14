@@ -9,10 +9,10 @@ workspace = true
 [dependencies]
 bedrock_auth = { path = "../crates/auth", optional = true }
 bedrock_shared = { path = "../crates/shared" }
-bedrock_macros = { path = "../crates/macros", optional = true }
+bedrock_macros = { path = "../crates/protocol/macros", optional = true }
 bedrock_form = { path = "../crates/form", optional = true }
 bedrock_protocol = { path = "../crates/protocol", optional = true }
-bedrock_protocol_core = { path = "../crates/protocol_core", optional = true }
+bedrock_protocol_core = { path = "../crates/protocol/core", optional = true }
 bedrock_network = { path = "../crates/network", optional = true, default-features = false }
 bedrock_level = { path = "../crates/level", optional = true }
 bedrock_addon = { path = "../crates/addon/addon", optional = true }
