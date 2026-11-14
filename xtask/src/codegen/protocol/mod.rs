@@ -1,5 +1,5 @@
-//! `cargo xtask protocol`: generates the version crates under `crates/protocol/version/`, the
-//! traits they implement and the facade over them from `crates/protocol/def/versions.def.rs`.
+//! `cargo xtask protocol`: generates the version crates under `crates/network/versions/`, the
+//! traits they implement and the facade over them from `crates/network/versions/versions.def.rs`.
 //!
 //! [`render`] is the whole generator as a pure function: the text of the definition and a view
 //! of what is hand-written in the tree ([`Tree`]) go in, the files to write ([`Output`]) come
@@ -39,23 +39,22 @@ mod kw {
 }
 
 /// The directory every path of this module is relative to, from the workspace root.
-pub const ROOT: &str = "crates/protocol";
+pub const ROOT: &str = "crates/network";
 /// The definition file.
-pub const DEFINITION: &str = "def/versions.def.rs";
+pub const DEFINITION: &str = "versions/versions.def.rs";
 /// The directory of the version crates, one per module ident, beside the traits crate.
-pub const VERSIONS: &str = "version";
+pub const VERSIONS: &str = "versions";
 /// The facade's manifest: hand-written but for two blocks between marker lines.
 pub const FACADE_MANIFEST: &str = "protocol/Cargo.toml";
 /// The facade's re-exports.
 const FACADE_GENERATED: &str = "protocol/src/generated.rs";
 /// The four `ProtoVersion*` traits.
-const TRAITS_GENERATED: &str = "version/traits/src/generated.rs";
+const TRAITS_GENERATED: &str = "versions/traits/src/generated.rs";
 /// The directory of the traits crate, the one directory beside the version crates.
 const TRAITS_DIRECTORY: &str = "traits";
-/// The module idents no version can have: the version's directory would be the traits crate's,
-/// or its crate would have the name of the traits crate (`bedrock_protocol_version`) or of
-/// `bedrock_protocol_core`.
-const RESERVED_MODULES: [&str; 3] = [TRAITS_DIRECTORY, "version", "core"];
+/// The module ident no version can have: the version's directory would be the traits crate's,
+/// and its crate would have its name (`bedrock_network_version_traits`).
+const RESERVED_MODULE: &str = TRAITS_DIRECTORY;
 
 /// The `.rs` files under the `src/` of one version crate: the path below `src/`, with `/`
 /// between its parts, to the text of the file.
@@ -280,14 +279,14 @@ fn module_idents(entries: &[DefineVersionsEntry]) -> syn::Result<Vec<Ident>> {
     let mut modules = Vec::with_capacity(entries.len());
     for entry in entries {
         let module = entry.enum_ident().to_string().to_lowercase();
-        if RESERVED_MODULES.contains(&module.as_str()) {
+        if module == RESERVED_MODULE {
             // Only an `as` can spell one: the default is `V<number>`.
             let span = entry.ident.as_ref().map_or(entry.span, Ident::span);
             return Err(syn::Error::new(
                 span,
                 format!(
-                    "a version cannot be `{module}`: `version/traits` is the traits crate, and \
-                     `bedrock_protocol_version` and `bedrock_protocol_core` are crates already"
+                    "a version cannot be `{module}`: `versions/traits` is the traits crate, \
+                     `bedrock_network_version_traits`"
                 ),
             ));
         }

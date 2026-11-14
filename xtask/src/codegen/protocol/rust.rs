@@ -18,7 +18,7 @@ fn unparse(tokens: TokenStream) -> syn::Result<String> {
 fn assoc_type_decls(names: &BTreeSet<Ident>) -> Vec<TokenStream> {
     names
         .iter()
-        .map(|p| quote!(type #p: bedrock_protocol_core::ProtoCodec + Clone + std::fmt::Debug + Send + Sync + 'static;))
+        .map(|p| quote!(type #p: bedrock_network_core::ProtoCodec + Clone + std::fmt::Debug + Send + Sync + 'static;))
         .collect()
 }
 
@@ -79,11 +79,11 @@ fn packets_trait_tokens(
     let packet_serialize = previous_packets.keys().map(|name| {
         quote! {
             #struct_ident::#name(pk) => {
-                match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::serialize(pk.as_ref(), stream) {
+                match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::ProtoCodec>::serialize(pk.as_ref(), stream) {
                     Ok(()) => {},
-                    Err(err) => return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                    Err(err) => return Err(bedrock_network_core::error::PacketCodecError::InvalidPacket {
                         packet_name: stringify!(#name),
-                        packet_id: <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID,
+                        packet_id: <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::Packet>::ID,
                         error: err
                     }),
                 }
@@ -93,12 +93,12 @@ fn packets_trait_tokens(
 
     let packet_deserialize = previous_packets.keys().map(|name| {
         quote! {
-            <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID => {
-                match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::deserialize(stream) {
+            <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::Packet>::ID => {
+                match <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::ProtoCodec>::deserialize(stream) {
                     Ok(pk) => #struct_ident::#name(Box::new(pk)),
-                    Err(err) => return Err(bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                    Err(err) => return Err(bedrock_network_core::error::PacketCodecError::InvalidPacket {
                         packet_name: stringify!(#name),
-                        packet_id: <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID,
+                        packet_id: <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::Packet>::ID,
                         error: err
                     }),
                 }
@@ -108,26 +108,26 @@ fn packets_trait_tokens(
 
     let packet_id = previous_packets.keys().map(|name| {
         quote! {
-            #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::Packet>::ID,
+            #struct_ident::#name(_) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::Packet>::ID,
         }
     });
 
     let packet_size_hint = previous_packets.keys().map(|name| {
-        quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_protocol_core::ProtoCodec>::size_hint(pk.as_ref()), }
+        quote! { #struct_ident::#name(pk) => <<#struct_ident as ProtoVersionPackets>::#name as bedrock_network_core::ProtoCodec>::size_hint(pk.as_ref()), }
     });
 
     quote! {
-        impl bedrock_protocol_core::Packets for #struct_ident {
+        impl bedrock_network_core::Packets for #struct_ident {
             #[inline]
-            fn serialize<W: std::io::Write>(&self, header: &bedrock_protocol_core::PacketHeader, stream: &mut W) -> Result<(), bedrock_protocol_core::error::PacketCodecError> {
-                <bedrock_protocol_core::PacketHeader as bedrock_protocol_core::ProtoCodec>::serialize(header, stream)
-                    .map_err(bedrock_protocol_core::error::PacketCodecError::InvalidHeader)?;
+            fn serialize<W: std::io::Write>(&self, header: &bedrock_network_core::PacketHeader, stream: &mut W) -> Result<(), bedrock_network_core::error::PacketCodecError> {
+                <bedrock_network_core::PacketHeader as bedrock_network_core::ProtoCodec>::serialize(header, stream)
+                    .map_err(bedrock_network_core::error::PacketCodecError::InvalidHeader)?;
 
                 match self {
                     #(#packet_serialize)*
                     #struct_ident::Unknown(pk) => {
                         stream.write_all(pk.buf.as_ref())
-                        .map_err(|e| bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                        .map_err(|e| bedrock_network_core::error::PacketCodecError::InvalidPacket {
                             packet_name: "Unknown",
                             packet_id: header.packet_id,
                             error: e.into()
@@ -139,21 +139,21 @@ fn packets_trait_tokens(
             }
 
             #[inline]
-            fn deserialize<R: std::io::Read>(stream: &mut R) -> Result<(Self, bedrock_protocol_core::PacketHeader), bedrock_protocol_core::error::PacketCodecError> {
-                let header = <bedrock_protocol_core::PacketHeader as bedrock_protocol_core::ProtoCodec>::deserialize(stream)
-                    .map_err(bedrock_protocol_core::error::PacketCodecError::InvalidHeader)?;
+            fn deserialize<R: std::io::Read>(stream: &mut R) -> Result<(Self, bedrock_network_core::PacketHeader), bedrock_network_core::error::PacketCodecError> {
+                let header = <bedrock_network_core::PacketHeader as bedrock_network_core::ProtoCodec>::deserialize(stream)
+                    .map_err(bedrock_network_core::error::PacketCodecError::InvalidHeader)?;
 
                 let packet = match header.packet_id {
                     #(#packet_deserialize)*
                     unknown => {
                         let mut buf = Vec::new();
                         stream.read_to_end(&mut buf)
-                            .map_err(|e| bedrock_protocol_core::error::PacketCodecError::InvalidPacket {
+                            .map_err(|e| bedrock_network_core::error::PacketCodecError::InvalidPacket {
                                 packet_name: "Unknown",
                                 packet_id: header.packet_id,
                                 error: e.into(),
                             })?;
-                        #struct_ident::Unknown(Box::new(bedrock_protocol_core::UnknownPacket {
+                        #struct_ident::Unknown(Box::new(bedrock_network_core::UnknownPacket {
                             id: unknown,
                             buf: buf.into_boxed_slice()
                         }))
@@ -163,8 +163,8 @@ fn packets_trait_tokens(
             }
 
             #[inline]
-            fn size_hint(&self, header: &bedrock_protocol_core::PacketHeader) -> usize {
-                <bedrock_protocol_core::PacketHeader as bedrock_protocol_core::ProtoCodec>::size_hint(header) + match self {
+            fn size_hint(&self, header: &bedrock_network_core::PacketHeader) -> usize {
+                <bedrock_network_core::PacketHeader as bedrock_network_core::ProtoCodec>::size_hint(header) + match self {
                     #(#packet_size_hint)*
                     #struct_ident::Unknown(pk) => pk.buf.len(),
                 }
@@ -193,8 +193,8 @@ fn dyn_impl_tokens(struct_ident: &Ident, previous_packets: &BTreeMap<Ident, Item
 
     quote! {
         #[cfg(feature = "packet-dyn")]
-        impl AsRef<dyn bedrock_protocol_core::PacketDyn> for #struct_ident {
-            fn as_ref(&self) -> &dyn bedrock_protocol_core::PacketDyn {
+        impl AsRef<dyn bedrock_network_core::PacketDyn> for #struct_ident {
+            fn as_ref(&self) -> &dyn bedrock_network_core::PacketDyn {
                 match self {
                     #(#packet_dyn_as_ref)*
                     #struct_ident::Unknown(pk) => pk.as_ref(),
@@ -203,8 +203,8 @@ fn dyn_impl_tokens(struct_ident: &Ident, previous_packets: &BTreeMap<Ident, Item
         }
 
         #[cfg(feature = "packet-dyn")]
-        impl From<#struct_ident> for Box<dyn bedrock_protocol_core::PacketDyn> {
-            fn from(val: #struct_ident) -> Box<dyn bedrock_protocol_core::PacketDyn> {
+        impl From<#struct_ident> for Box<dyn bedrock_network_core::PacketDyn> {
+            fn from(val: #struct_ident) -> Box<dyn bedrock_network_core::PacketDyn> {
                 match val {
                     #(#packet_dyn_into)*
                     #struct_ident::Unknown(pk) => pk,
@@ -249,15 +249,15 @@ pub fn version(definition: &Definition, version: &Version) -> syn::Result<String
     unparse(quote! {
         #![allow(unused, clippy::too_many_lines)]
 
-        use bedrock_protocol_version::ProtoVersion;
-        use bedrock_protocol_version::ProtoVersionPackets;
-        use bedrock_protocol_version::ProtoVersionTypes;
-        use bedrock_protocol_version::ProtoVersionEnums;
+        use bedrock_network_version_traits::ProtoVersion;
+        use bedrock_network_version_traits::ProtoVersionPackets;
+        use bedrock_network_version_traits::ProtoVersionTypes;
+        use bedrock_network_version_traits::ProtoVersionEnums;
 
         #[derive(Clone, std::fmt::Debug)]
         pub enum #struct_ident {
             #(#packet_variants)*
-            Unknown(Box<bedrock_protocol_core::UnknownPacket>),
+            Unknown(Box<bedrock_network_core::UnknownPacket>),
         }
 
         #packets_trait
@@ -305,7 +305,7 @@ pub fn facade(definition: &Definition) -> syn::Result<String> {
     });
 
     unparse(quote! {
-        pub use bedrock_protocol_version::*;
+        pub use bedrock_network_version_traits::*;
 
         #(#versions)*
     })

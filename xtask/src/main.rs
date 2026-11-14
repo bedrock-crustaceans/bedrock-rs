@@ -46,7 +46,7 @@ fn workspace_root() -> io::Result<&'static Path> {
 const EDITION: &str = "2024";
 
 /// Regenerates the protocol's version crates, the traits and the facade from
-/// `crates/protocol/def/versions.def.rs`.
+/// `crates/network/versions/versions.def.rs`.
 fn protocol() -> io::Result<()> {
     write_protocol(&workspace_root()?.join(protocol::ROOT), rustfmt).map(drop)
 }
@@ -94,7 +94,7 @@ fn format_with(program: &OsStr, text: &str) -> io::Result<String> {
     String::from_utf8(output.stdout).map_err(io::Error::other)
 }
 
-/// Writes what the protocol generator renders for the tree under `dir` (`crates/protocol`), says
+/// Writes what the protocol generator renders for the tree under `dir` (`crates/network`), says
 /// which files it wrote, and returns their paths below `dir`. A Rust file is written as `format` returns it, so
 /// what is on disk is final and a later `cargo fmt` leaves it alone. A file that is already what
 /// would be written is not touched, and so nothing is rebuilt for it.
@@ -157,7 +157,7 @@ fn is_rust(path: &str) -> bool {
 }
 
 /// What the protocol generator renders from the definition and the tree under `dir`
-/// (`crates/protocol`).
+/// (`crates/network`).
 fn render_protocol(dir: &Path) -> io::Result<protocol::Rendering> {
     let definition = fs::read_to_string(dir.join(protocol::DEFINITION))?;
     let tree = read_protocol_tree(dir)?;
@@ -278,7 +278,7 @@ mod tests {
         }
     }
 
-    /// A `crates/protocol` with a definition of one version and nothing generated yet.
+    /// A `crates/network` with a definition of one version and nothing generated yet.
     fn new_protocol_dir() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
         let file = |path: &str, text: &str| {
@@ -347,9 +347,9 @@ mod tests {
             assert_eq!(text.starts_with("// formatted\n"), is_rust, "{path}");
         }
         // The starting `lib.rs` of a new crate is formatted like the generated files.
-        assert!(written.contains(&"version/v1/src/lib.rs".to_owned()));
-        assert!(written.contains(&"version/v1/src/generated.rs".to_owned()));
-        assert!(written.contains(&"version/v1/Cargo.toml".to_owned()));
+        assert!(written.contains(&"versions/v1/src/lib.rs".to_owned()));
+        assert!(written.contains(&"versions/v1/src/generated.rs".to_owned()));
+        assert!(written.contains(&"versions/v1/Cargo.toml".to_owned()));
 
         // What is on disk is compared with the formatted text: nothing is written again.
         assert!(write_protocol(dir.path(), marked).unwrap().is_empty());
@@ -365,7 +365,7 @@ mod tests {
         // The error says which file the formatter was given.
         let message = error.to_string();
         assert!(
-            message.contains("version/traits/src/generated.rs"),
+            message.contains("versions/traits/src/generated.rs"),
             "{message}"
         );
         assert!(message.contains("no formatter"), "{message}");
@@ -388,7 +388,7 @@ mod tests {
         let v1 = dir.path().join(protocol::VERSIONS).join("v1");
 
         let written = write_protocol(dir.path(), unformatted).unwrap();
-        assert!(written.contains(&"version/v1/src/lib.rs".to_owned()));
+        assert!(written.contains(&"versions/v1/src/lib.rs".to_owned()));
         assert!(v1.join("Cargo.toml").is_file());
         assert!(v1.join("src/generated.rs").is_file());
         let lib = fs::read_to_string(v1.join("src/lib.rs")).unwrap();
@@ -402,7 +402,7 @@ mod tests {
         // The manifest follows the sources; the `lib.rs` is not written again.
         assert_eq!(
             write_protocol(dir.path(), unformatted).unwrap(),
-            ["version/v1/Cargo.toml"]
+            ["versions/v1/Cargo.toml"]
         );
         let manifest = fs::read_to_string(v1.join("Cargo.toml")).unwrap();
         assert!(manifest.contains("uuid.workspace = true"), "{manifest}");
@@ -442,14 +442,14 @@ mod tests {
             let error = write_protocol(dir.path(), unformatted).unwrap_err();
             let message = error.to_string();
             assert!(
-                message.starts_with("crates/protocol/version/v0: "),
+                message.starts_with("crates/network/versions/v0: "),
                 "{message}"
             );
             // The files are written all the same: the directory can only be deleted once no
             // generated manifest names it.
             assert!(versions.join("v1/Cargo.toml").is_file(), "{left_behind}");
             let facade = fs::read_to_string(dir.path().join(protocol::FACADE_MANIFEST)).unwrap();
-            assert!(facade.contains("bedrock_protocol_v1 ="), "{facade}");
+            assert!(facade.contains("bedrock_network_version_v1 ="), "{facade}");
 
             // It is reported until it is gone, and nothing is left to write by then.
             assert!(write_protocol(dir.path(), unformatted).is_err());

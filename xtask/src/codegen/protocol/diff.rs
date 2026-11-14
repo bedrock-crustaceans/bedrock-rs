@@ -7,7 +7,7 @@ use syn::{Path, Token, bracketed};
 
 /// The package name of the version crate whose module ident is `module`.
 pub fn crate_name(module: &impl std::fmt::Display) -> String {
-    format!("bedrock_protocol_{module}")
+    format!("bedrock_network_version_{module}")
 }
 
 /// Where the type of one packet, type or enum lives. It is kept as structure, not as a finished
@@ -26,7 +26,7 @@ pub struct Item {
 
 impl Item {
     /// The path of the type as the crate of the version `current` writes it: `crate::…` in the
-    /// owner, `bedrock_protocol_<owner>::…` anywhere else, with `<Self>` when it is generic.
+    /// owner, `bedrock_network_version_<owner>::…` anywhere else, with `<Self>` when it is generic.
     pub fn path_in(&self, current: &Ident) -> TokenStream {
         let Self {
             owner,

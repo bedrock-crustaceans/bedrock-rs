@@ -1,0 +1,10 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 49, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct InventoryContentPacket<V: ProtoVersion> {
+    #[endianness(var)]
+    pub inventory_id: u32,
+    pub slots: Vec<V::NetworkItemStackDescriptor>,
+}

@@ -1,0 +1,12 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 43, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct SetSpawnPositionPacket<V: ProtoVersion> {
+    pub spawn_position_type: V::SpawnPositionType,
+    pub block_position: V::NetworkBlockPosition,
+    #[endianness(var)]
+    pub dimension_type: i32,
+    pub spawn_block_pos: V::NetworkBlockPosition,
+}

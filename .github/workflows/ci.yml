@@ -63,8 +63,8 @@ jobs:
         group:
           - name: protocol & network
             key: protocol-network
-            # The glob is the facade, core, the traits and every version crate.
-            packages: -p 'bedrock_protocol*' -p bedrock_macros -p bedrock_network
+            # The glob is every crate under `crates/network/`, the version crates among them.
+            packages: -p 'bedrock_network*'
           - name: addon
             key: addon
             packages: -p 'bedrock_addon*' -p xtask
@@ -99,7 +99,7 @@ jobs:
       - name: Version crates as their dependents build them
         if: matrix.group.key == 'protocol-network'
         shell: bash
-        run: cargo check -p bedrock_protocol --no-default-features
+        run: cargo check -p bedrock_network_protocol --no-default-features
       # nextest does not run doctests.
       - name: Doctests
         shell: bash

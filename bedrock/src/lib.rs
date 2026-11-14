@@ -16,11 +16,11 @@ pub mod auth {
 
 #[cfg(feature = "protocol")]
 pub mod protocol {
-    pub use ::bedrock_protocol::*;
-    pub use ::bedrock_protocol_core::*;
+    pub use ::bedrock_network_core::*;
+    pub use ::bedrock_network_protocol::*;
 
     pub mod error {
-        pub use ::bedrock_protocol_core::error::*;
+        pub use ::bedrock_network_core::error::*;
     }
 }
 
