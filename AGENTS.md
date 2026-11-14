@@ -73,22 +73,46 @@ mod tests {
 }
 ```
 
+That test goes at the bottom of `crates/protocol/version/v2193/src/packets/record_started.rs`:
+`crate::V2193` is the crate's own packet enum, generated behind its default `version` feature. A
+test that needs another version's enum, or a crate the packet does not use, goes in
+`crates/protocol/protocol/tests/`: a version crate's manifest has no dev-dependencies.
+
 The same shape serves JSON (`facet_json::from_str` then `to_string` in `form`) and LevelDB
 values (`from_disk` then `to_disk` in `level`).
 
 ## Per crate
 
-**`protocol_core` and `macros`**: the `ProtoCodec` traits, primitive codecs in
-`protocol_core/src/types/`, and the derive. Red test: a tiny struct using the new piece,
-asserting exact bytes both ways. A change here rebuilds every packet; check `bedrock_protocol`
-after.
+**`protocol/core` and `protocol/macros`** (`bedrock_protocol_core`, `bedrock_macros`): the
+`ProtoCodec` traits, primitive codecs in `core/src/types/`, and the derive. Red test: a tiny
+struct using the new piece, asserting exact bytes both ways. A change here rebuilds every version
+crate; check `bedrock_protocol` after.
 
-**`protocol`**: one hand-written file per packet, type or enum, in the newest `version/v<N>/`
-that changed it; `def/versions.def.rs` says which. Oracle: bytes a real client sent. Get them
-from a bug report, a proxy, or the example server, where `Connection::recv_raw` hands you a batch
-before decoding. Versions are diffs: `+` added, `%` replaced, `-` removed, `^` generic over `V`;
-unlisted items carry forward. After editing `def/` or `version/`, `cargo xtask && cargo fmt --all`.
-The default feature is the newest version alone, so also check with `--all-features`.
+**`protocol`**: under `crates/protocol/`, one crate per protocol version, `version/<mod>/`
+(`bedrock_protocol_<mod>`), beside `version/traits` (`bedrock_protocol_version`, the
+`ProtoVersion*` traits) and `protocol/` (`bedrock_protocol`, the facade: re-exports, one feature
+per version, the integration tests). A packet, type or enum is one hand-written file under
+`src/{packets,types,enums}/` of the newest version crate that changed it; `def/versions.def.rs`
+says which. Oracle: bytes a real client sent. Get them from a bug report, a proxy, or the example
+server, where `Connection::recv_raw` hands you a batch before decoding. Versions are diffs: `+`
+added, `%` replaced, `-` removed, `^` generic over `V`; unlisted items carry forward. A list ends
+`] in v662::packets,`: the module name of the crate that owns its items, then the path inside it.
+An older version's item is `bedrock_protocol_v662::packets::Foo`; its `V662` enum is not there,
+because a dependent builds a version crate without its `version` feature. A version crate names
+only older version crates, and itself as `crate::`; the generator rejects anything else. Its
+manifest is generated from the def file and from the crate names its sources use
+(`bedrock_protocol_<mod>`, `bedrock_macros`, `uuid::`), so a new one compiles only after
+`cargo xtask`. After editing `def/` or a version crate, `cargo xtask`: it formats what it writes
+and touches only the files that changed. A new version, in this order: the def entry;
+`cargo xtask`, which creates the crate with a `src/lib.rs` to start from (a hand-made directory
+under `version/` without a `Cargo.toml` stops every cargo command); the modules that `lib.rs`
+declares; `cargo xtask` again; the `protocol-<mod>` feature in `bedrock/Cargo.toml`; then, the
+facade's default feature being the new version now, whatever named the old newest without a
+feature gate (tests in `protocol/protocol/tests/` and `network`, the examples). The external
+crates a version crate can use are `EXTERNAL` in `xtask/src/codegen/protocol/manifest.rs`. An
+edit to one version rebuilds it and what depends on it (the later versions that use it, the
+facade), nothing older; `cargo check -p bedrock_protocol_v2225` checks one. The facade's default
+feature is the newest version alone, so also check with `--all-features`.
 
 **`network`**: `codec.rs` (batching), `compression.rs` and `encryption.rs` are pure functions
 over `Vec<u8>` and need no socket; test them there. `encode_packets` and `decode_packets` take
@@ -163,7 +187,9 @@ four loader kinds (registry, files, merged, hand-written); run it before and aft
   mismatch in `network` may be upstream drift, not your change: `cargo update -p raknet-tokio`
   first, then diagnose. `level`'s `rusty-leveldb` is also a git dependency but pinned by `rev`
   in `crates/level/Cargo.toml`.
-- `crates/protocol/src/generated/` is output; regenerate, never edit.
+- Under `crates/protocol/`, `cargo xtask` writes every `src/generated.rs` (each version crate,
+  `version/traits`, the facade), the whole `Cargo.toml` of each version crate, and the two marker
+  blocks of `protocol/Cargo.toml`. Regenerate, never edit.
 - Feature-gated code compiles only with the feature on: `auth-ureq`, `auth-reqwest`,
   `protocol`'s per-version features, and every crate behind the `bedrock` facade. A change that builds under a crate's
   default features has not been built the way CI builds it (`--all-features`).
