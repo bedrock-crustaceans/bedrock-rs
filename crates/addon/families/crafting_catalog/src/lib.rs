@@ -21,8 +21,10 @@ mod write;
 mod tests;
 
 use bedrock_addon_core::id::ItemId;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_shared_shapes::CreativeCategory;
+use facet::Facet;
 
 // The checkers the link pass calls (`pack::link::content`).
 #[allow(unused_imports, reason = "the link pass reads them")]
@@ -67,7 +69,7 @@ pub(crate) const PATH: &str = "item_catalog/crafting_item_catalog.json";
 /// [{"category_name": "construction", "groups": [{"group_identifier": {"name": "ns:group",
 /// "icon": "ns:item"}, "items": ["ns:item", {"name": "ns:other:1"}]}]}]}}`. Every
 /// `format_version` from 1.21.60 to the engine version reads the same members.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "crafting_item_catalog")]
 #[doc(alias = "minecraft:crafting_items_catalog")]
 pub struct CraftingCatalog {
@@ -77,7 +79,7 @@ pub struct CraftingCatalog {
 }
 
 /// The groups one entry of `categories` adds to a creative category.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Category {
     /// The category the groups go to (JSON `category_name`, required).
     pub category_name: CategoryName,
@@ -87,7 +89,9 @@ pub struct Category {
 
 /// One of the four creative categories a catalogue can add to; a pack cannot add, rename or
 /// reorder them. The JSON names are lower-case and compared with case.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Facet)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum CategoryName {
     /// `"construction"`.
@@ -143,7 +147,7 @@ impl CategoryName {
 
 /// A group of items in a category: collapsible under a name and an icon when it has a
 /// `group_identifier`, else a run of loose items.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Group {
     /// The group's name and icon (JSON `group_identifier`); without it the items are added
     /// as loose items.
@@ -153,11 +157,12 @@ pub struct Group {
 }
 
 /// The name and icon of a collapsible group.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct GroupIdentifier {
     /// The group's name (JSON `name`, required): `namespace:name`, which is also the
     /// localisation key the creative menu shows it by. A group of the same name in the same
     /// category, in this or a lower pack, is the same group; names compare byte for byte.
+    #[facet(schema::read_with = read::group_name)]
     pub name: String,
     /// The item or block that represents the group (JSON `icon`). A group keeps the icon of
     /// its first definition.
@@ -169,7 +174,7 @@ pub struct GroupIdentifier {
 /// JSON: `"ns:item"`, `"ns:item:1"` (with an aux value) or `{"name": "ns:item"}`. Both forms
 /// read to the same value; it is written as the string.
 /// Two items are equal when their names are written the same, the aux value included.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Facet)]
 pub struct CatalogItem {
     /// The item (JSON `name`, or the string itself): `namespace:name`, optionally followed
     /// by `:aux`. The namespace is required.

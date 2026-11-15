@@ -4,6 +4,8 @@
 use bedrock_addon_core::id::{BlockId, PoiTagId, PoiTypeId};
 use bedrock_addon_core::schema::{self, Schema};
 
+use crate::read;
+
 /// A point-of-interest type (`minecraft:poi_block`, in `poi/blocks/`): the blocks whose placed
 /// instances are points of this type, how many entities may claim one and from how far it is
 /// usable.
@@ -19,17 +21,19 @@ pub struct PoiType {
     pub description: PoiDescription,
     /// How many entities can reserve a point of this type, 0 to 255 (JSON `tickets`, default
     /// `0`: [`PoiType::tickets`]).
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::read_with = read::byte)]
     pub tickets: Option<u8>,
     /// The distance a point of this type is usable from, 0 to 255 (JSON `usable_distance`,
     /// default `1`: [`PoiType::usable_distance`]).
-    #[facet(schema::fallback = 1)]
+    #[facet(schema::fallback = 1, schema::read_with = read::byte)]
     pub usable_distance: Option<u8>,
     /// The block types whose placed blocks are points of this type, every permutation of each
     /// (JSON `blocks`, each `namespace:name`).
+    #[facet(schema::read_with = read::names)]
     pub blocks: Vec<BlockId>,
     /// The tags the type carries (JSON `tags`, default none: [`PoiType::tags`]). A type is
     /// also a member of every broader tag of each.
+    #[facet(schema::read_with = read::names)]
     pub tags: Option<Vec<PoiTagId>>,
 }
 
@@ -38,6 +42,7 @@ pub struct PoiType {
 pub struct PoiDescription {
     /// The type's identifier, `namespace:name` of letters, digits and `_` (JSON
     /// `identifier`).
+    #[facet(schema::read_with = read::name)]
     pub identifier: PoiTypeId,
 }
 
@@ -56,9 +61,11 @@ pub struct PoiTag {
     pub description: PoiTagDescription,
     /// The narrower tags, which inherit this tag's meaning (JSON `children`, default none:
     /// [`PoiTag::children`]).
+    #[facet(schema::read_with = read::names)]
     pub children: Option<Vec<PoiTagId>>,
     /// The broader tags this tag belongs to (JSON `parents`, default none:
     /// [`PoiTag::parents`]).
+    #[facet(schema::read_with = read::names)]
     pub parents: Option<Vec<PoiTagId>>,
 }
 
@@ -66,6 +73,7 @@ pub struct PoiTag {
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct PoiTagDescription {
     /// The tag's identifier, `namespace:name` of letters, digits and `_` (JSON `identifier`).
+    #[facet(schema::read_with = read::name)]
     pub identifier: PoiTagId,
 }
 

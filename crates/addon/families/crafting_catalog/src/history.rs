@@ -31,8 +31,10 @@ bedrock_addon_core::version_chain! {
         /// Format 1.26.50 up to the engine, the strict slice.
         V1_26_50(CraftingCatalog),
     }
-    molang = none;
 }
+
+// The newest struct's walk is its derive's; the older one holds it.
+bedrock_addon_core::impl_no_molang!(CatalogV1_21_60);
 
 impl CatalogHistory {
     /// Runs the rest of the load on a document [`CraftingCatalog::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the

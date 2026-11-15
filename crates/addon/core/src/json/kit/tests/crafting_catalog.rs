@@ -1,6 +1,7 @@
-//! The crafting catalogue's reader in the kit's terms: `families/crafting_catalog/src/read.rs`
-//! (`Reader::catalog`, `category`, `category_name`, `group`, `group_identifier`, `item`,
-//! `list`, `constrained`, with its `object`, `array`, `string`, `unknown` and `required`).
+//! The crafting catalogue's hand reader in the kit's terms, as `families/crafting_catalog/src/read.rs`
+//! had it before the catalogue took the derived read (`Reader::catalog`, `category`,
+//! `category_name`, `group`, `group_identifier`, `item`, `list`, `constrained`, with its
+//! `object`, `array`, `string`, `unknown` and `required`).
 //!
 //! Two of its findings are worded otherwise than the kit's, and stay the family's through
 //! [`Read::push`]: a value of another JSON type is a `MalformedInput` naming both types, and a

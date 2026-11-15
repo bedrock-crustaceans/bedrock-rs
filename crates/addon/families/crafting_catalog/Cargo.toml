@@ -16,11 +16,12 @@ rustdoc-args = ["--cfg", "docsrs"]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
 facet = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
-indexmap = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../../test_support" }
+# The tests read their expected-diagnostics fixtures and build maps by hand.
+facet-json = { workspace = true }
+indexmap = { workspace = true }

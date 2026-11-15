@@ -1,26 +1,24 @@
-//! Reading the POI documents: each struct typed from its slice of the text.
+//! Reading the POI documents: each struct read member by member by core's reader
+//! (`versioning::read_payload_with`, every failure told), the family's own rules on its fields
+//! (`schema::read_with`): a name is `^\w+:\w+$`, a byte an integer token from 0 to 255.
 //!
 //! Every finding here is a parse finding: an error fails the file, as a parse error of the
 //! game's loader does.
 
-use facet::Facet;
-
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Code, Diagnostic, Diagnostics, Disposition, JsonPath, Kind, Severity,
-};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, parse_at, unknown_members};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics};
+use bedrock_addon_core::id::{Id, Kind};
+use bedrock_addon_core::json::kit::{Node, Order, Read};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_core::versioning::{
+    ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
+};
 
 /// The version of both documents' only struct: 1.26.40.
 pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
-
-/// The member `key` of an object.
-fn member<'v>(object: &'v Value, key: &str) -> Option<&'v Value> {
-    object.as_object()?.get(key)
-}
 
 /// Whether `text` is a POI name, `^\w+:\w+$`: a namespace and a name, each one or more of
 /// `A-Z`, `a-z`, `0-9` and `_`, around one `:`.
@@ -35,112 +33,57 @@ pub(crate) fn is_poi_name(text: &str) -> bool {
         .is_some_and(|(namespace, name)| word(namespace) && word(name))
 }
 
-/// Checks the name `value` at `at`: anything but a string is `InvalidType` (and `false`: the
-/// typed parse cannot read the member), a string that is no POI name `InvalidValue`.
-fn name(value: &Value, at: JsonPath, d: &mut Diagnostics) -> bool {
-    match value.as_string() {
-        None => {
-            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
-            false
-        }
-        Some(text) => {
-            if !is_poi_name(text.as_str()) {
-                d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(at));
-            }
-            true
+/// A POI name (`schema::read_with` of an identifier): a string, kept as written (anything else
+/// is `InvalidType`); one that is no POI name is `InvalidValue`. Either fails the member.
+pub(crate) fn name<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Id<K>> {
+    let id = Id::<K>::from_json(node, read)?;
+    if is_poi_name(id.as_str()) {
+        return Some(id);
+    }
+    read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+    None
+}
+
+/// A list of POI names (`schema::read_with` of `blocks`, `tags`, `children` and `parents`): an
+/// array (anything else is `InvalidType`), each element a [`name`]; an element that fails fails
+/// the list.
+pub(crate) fn names<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Id<K>>> {
+    if read.stopped() {
+        return None;
+    }
+    let elements = read.array(node)?;
+    let mut out = Vec::with_capacity(elements.len());
+    let mut read_all = true;
+    for element in elements.iter() {
+        match name(&element, read) {
+            Some(id) => out.push(id),
+            None => read_all = false,
         }
     }
+    read_all.then_some(out)
 }
 
-/// Checks `description.identifier` of the payload `object`, when it is there; a missing one is
-/// the typed parse's to report.
-fn identifier(object: &Value, at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let Some(value) = member(object, "description").and_then(|d| member(d, "identifier")) else {
-        return true;
-    };
-    name(value, at.child("description").child("identifier"), d)
-}
-
-/// Checks the list of names `key` of the payload `object`, when it is there: an array, each
-/// element a POI name.
-fn names(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let Some(value) = member(object, key) else {
-        return true;
-    };
-    let at = at.child(key);
-    let Some(list) = value.as_array() else {
-        d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
-        return false;
-    };
-    let mut typed = true;
-    for (i, entry) in list.iter().enumerate() {
-        typed &= name(entry, at.index(i), d);
+/// A byte (`schema::read_with` of `tickets` and `usable_distance`): an integer token from 0 to
+/// 255. Any other token (a real, an integral one included, a string, `null`) is `InvalidType`,
+/// an integer outside `0..=255` `InvalidValue`: the game's strict reader, with the range told
+/// apart.
+pub(crate) fn byte(node: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+    if read.stopped() {
+        return None;
     }
-    typed
-}
-
-/// Checks the byte member `key` of the payload `object`, when it is there: anything but an
-/// integer token is `InvalidType`, an integer outside `0..=255` `InvalidValue`. `false` when the
-/// member was reported.
-fn byte(object: &Value, key: &str, at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let Some(value) = member(object, key) else {
-        return true;
-    };
-    let integer = value
+    let integer = node
+        .value()
         .as_number()
         .filter(|number| number.is_integer())
-        .map(|number| number.to_u64().is_some_and(|n| u8::try_from(n).is_ok()));
-    let code = match integer {
-        Some(true) => return true,
-        Some(false) => Code::from(&core_codes::INVALID_VALUE),
-        None => Code::from(&core_codes::INVALID_TYPE),
-    };
-    d.push(Diagnostic::error(code).at(at.child(key)));
-    false
-}
-
-/// Parses `T` from `payload`, strictly: `check` judges the JSON first (the member types facet
-/// would coerce or cannot report, a `null` included (every member's check takes a `null` for
-/// the wrong type), and the value constraints; it returns `false` when the typed parse cannot
-/// read a member it reported); a member no field takes is an `UnrecognizedField` graded by the
-/// slice's mask (`Family::reading`: an error), and a failed typed parse is an error at the
-/// failing member. `None` when anything but an unknown member was an error: the value of a
-/// document whose only errors are its unknown members is built (the pipeline drops it for
-/// them).
-fn parse_strict<'a, T: Facet<'a>>(
-    payload: JsonSlice<'a>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-    check: impl FnOnce(&Value, &JsonPath, &mut Diagnostics) -> bool,
-) -> Option<T> {
-    let errors = |d: &Diagnostics| {
-        d.iter()
-            .filter(|f| {
-                f.severity >= Severity::Error && f.kind() != Kind::UnknownMember(Disposition::Kept)
-            })
-            .count()
-    };
-    let before = errors(d);
-    if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) {
-        let typed = check(&json, &cx.at, d);
-        for (path, _) in unknown_members(T::SHAPE, &json) {
-            // The game's parser reports an unknown member, which this slice's strict mask makes
-            // an error that refuses the file.
-            d.push(
-                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                    .at(cx.at.join(&path))
-                    .severity(cx.load.grade(Class::Unknown)),
-            );
+        .map(|number| number.to_u64().and_then(|n| u8::try_from(n).ok()));
+    match integer {
+        Some(Some(byte)) => Some(byte),
+        Some(None) => {
+            read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+            None
         }
-        if !typed {
-            return None;
-        }
-    }
-    let failed = errors(d) > before;
-    match parse_at::<T>(payload) {
-        Ok(value) => (!failed).then_some(value),
-        Err(failure) => {
-            d.push(failure.into_diagnostic(&cx.at, |code, _| code));
+        None => {
+            read.wrong_type(node);
             None
         }
     }
@@ -150,16 +93,12 @@ impl Versioned for PoiType {
     const VERSION: FormatVersion = V1_26_40;
 }
 
+/// Read under the slice's reading (`Family::reading`: the strict mask, so an unknown member is
+/// an error that refuses the file, its value still built for the pipeline to drop), telling
+/// every failure: the game's reader checks every member.
 impl VersionStruct for PoiType {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_strict(payload, cx, d, |json, at, d| {
-            let identifier = identifier(json, at, d);
-            let tickets = byte(json, "tickets", at, d);
-            let distance = byte(json, "usable_distance", at, d);
-            let blocks = names(json, "blocks", at, d);
-            let tags = names(json, "tags", at, d);
-            identifier && tickets && distance && blocks && tags
-        })
+        read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -171,14 +110,10 @@ impl Versioned for PoiTag {
     const VERSION: FormatVersion = V1_26_40;
 }
 
+/// Read as [`PoiType`] is.
 impl VersionStruct for PoiTag {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_strict(payload, cx, d, |json, at, d| {
-            let identifier = identifier(json, at, d);
-            let children = names(json, "children", at, d);
-            let parents = names(json, "parents", at, d);
-            identifier && children && parents
-        })
+        read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
