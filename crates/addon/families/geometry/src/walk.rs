@@ -62,10 +62,7 @@ pub(crate) fn read<'d>(cx: &'d ParseCx<'_>, findings: &'d mut Diagnostics) -> Re
         .profile(profile.with_lossy(Lossy::Told))
         .texts(texts)
         .load(cx.load)
-        .versions(bedrock_addon_core::json::kit::Versions {
-            format: Some(format),
-            engine: None,
-        });
+        .format(Some(format));
     if lenient {
         read.unknown_severity(Severity::Info)
     } else {
@@ -111,7 +108,7 @@ pub(crate) fn has_geometry_name(text: &str) -> bool {
 
 /// The document's format, which the read knows.
 fn format(read: &Read<'_>) -> FormatVersion {
-    read.known_versions().format.unwrap_or(known::V0_0_0)
+    read.known_format().unwrap_or(known::V0_0_0)
 }
 
 /// An int node: a number without a fraction that fits an `i32`.

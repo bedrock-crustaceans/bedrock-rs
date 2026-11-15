@@ -66,10 +66,9 @@ use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BelowFloor, BeyondWidth, ComponentSection, ComponentTable, DocumentRead,
-    Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, Parsed,
-    Reading, Scalars, StructIndex, ValidateCx, VersionStruct, finish, parse_as_written,
-    write_envelope,
+    BETA_VERSION, BelowFloor, ComponentSection, ComponentTable, DocumentRead, Envelope,
+    EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, Parsed, Reading,
+    StructIndex, ValidateCx, VersionStruct, finish, parse_as_written, write_envelope,
 };
 use bedrock_addon_shared_shapes::BlockSpecifier;
 
@@ -124,11 +123,7 @@ const EXPERIMENTAL_FORMATS: FormatVersion = FormatVersion::new(1, 13, 0);
 /// takes its own JSON type alone, and a number beyond its float is a type error). The
 /// components read by it too, also outside a versioned load.
 pub(crate) fn reading() -> Reading {
-    BiomeFamily::ENVELOPE
-        .input
-        .profile()
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error)
+    BiomeFamily::ENVELOPE.input.profile().strict()
 }
 
 impl Family for BiomeFamily {

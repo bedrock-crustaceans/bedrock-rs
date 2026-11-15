@@ -23,10 +23,11 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom,
 };
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading};
 
@@ -194,7 +195,7 @@ impl Reader {
     fn unknown(&mut self, key: &str, value: &Value, extra: &mut UnknownMembers) {
         self.at.push(key);
         let node = self.node(value);
-        self.read().unknown_member(&node, Disposition::Keep);
+        self.read().unknown_member(&node, UnknownRule::Keep);
         self.at.pop();
         extra.insert(key.to_owned(), value.clone());
     }

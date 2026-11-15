@@ -5,7 +5,7 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
-use bedrock_addon_core::schema::{self, FromJson, Schema, from_value};
+use bedrock_addon_core::schema::{FromJson, Schema, from_value};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::VArray;
@@ -525,7 +525,6 @@ pub type EntityTypes = crate::EntityTypesOf<MobDescriptor>;
 /// written back. No capture has the member inside a descriptor (`zombie_nautilus.json` has it
 /// as a `nearest_attackable_target` member, `17`). `tests/entity/descriptors.rs` pins both.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only flee when outnumbered; default `false`.
     pub check_if_outnumbered: Option<bool>,

@@ -32,8 +32,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BetaPermission, BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, NoStable, Reading, Scalars, StructIndex, load, write_envelope,
+    BETA_VERSION, BetaPermission, Envelope, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, NoStable, Reading, StructIndex, load, write_envelope,
 };
 use bedrock_addon_shared_visual::{ControllerUse, HasVisuals, Visuals};
 use facet::Facet;
@@ -389,11 +389,7 @@ impl Family for AtomicFamily {
     /// alone, and a number beyond its float is a type error (the floats with a minimum are
     /// clamped in the text before the read).
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        AtomicFamily::ENVELOPE
-            .input
-            .profile()
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error)
+        AtomicFamily::ENVELOPE.input.profile().strict()
     }
 }
 

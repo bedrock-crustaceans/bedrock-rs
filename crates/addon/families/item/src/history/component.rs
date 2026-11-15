@@ -4,8 +4,9 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::document::CustomComponent;
-use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::shared::{EventTrigger, IntRange};
 use bedrock_addon_derive::Components;
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
@@ -385,7 +386,7 @@ impl CustomComponentEntry {
             .map_or_else(empty, |data| data.value().clone());
         for (key, member) in members.iter() {
             if !["name", "data"].contains(&key) {
-                read.unknown_member(&member, Disposition::Report);
+                read.unknown_member(&member, UnknownRule::NotKept);
             }
         }
         Some(Self { name, data })

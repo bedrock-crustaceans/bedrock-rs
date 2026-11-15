@@ -66,7 +66,7 @@ fn required<'v>(read: &mut Read<'_>, members: &Members<'v>, key: &str) -> Option
 
 /// `Reader::unknown`: the kit's, nothing kept.
 fn unknown(read: &mut Read<'_>, members: &Members<'_>, known: &[&str]) {
-    read.unknown(members, known, Disposition::Keep);
+    read.unknown(members, known, UnknownRule::Keep);
 }
 
 /// `is_namespaced`: a `:` with a character on each side, and no line terminator.
@@ -184,7 +184,7 @@ fn crafting_catalog_s_reader_reads_as_the_kit() {
             JsonSlice::new(text),
         );
         // The raw reader warns; the strict slice makes the warnings errors.
-        let mut read = Read::new(Reading::DOCUMENT.with_unknown(UnknownMask::Warn), found);
+        let mut read = Read::new(Reading::DOCUMENT.with_unknown(Severity::Warning), found);
         catalog(&mut read, &payload).is_some()
     });
 }

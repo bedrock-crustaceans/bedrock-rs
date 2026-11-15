@@ -12,9 +12,10 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::DialogueSceneTag;
-use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
+use bedrock_addon_core::json::kit::{Elements, Members, Node, Read};
 use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_core::versioning::Reading;
 
@@ -155,7 +156,7 @@ fn unknown(
     let Some(members) = members(read, node) else {
         return;
     };
-    for (key, value) in read.unknown(&members, known, Disposition::Keep) {
+    for (key, value) in read.unknown(&members, known, UnknownRule::Keep) {
         unknown.put(keep_at, key, value.clone());
     }
 }

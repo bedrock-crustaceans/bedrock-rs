@@ -10,7 +10,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{Profile, Texts, Versions};
+use bedrock_addon_core::json::kit::{Profile, Texts};
 use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
 
@@ -44,14 +44,14 @@ pub(crate) fn required_child(at: JsonPath) -> Diagnostic {
     Diagnostic::of(core_codes::REQUIRED_CHILD.with([key])).at(at)
 }
 
-/// The older client's words for what the kit finds: a missing member by name, an unknown one
-/// as "not valid here", and an enum name that is none of its values as an invalid value (or the
-/// text of the member's setter where it says `schema::invalid`).
+/// The schema tree's words for what the kit finds: a missing member by name, an unknown one
+/// as "not valid here"; an enum name that is none of its values as an invalid value (or the
+/// text of the member's setter where it says `schema::invalid`), and a wrong type in the code's
+/// own words.
 const TEXTS: Texts = Texts {
-    missing_named: Some(&core_codes::REQUIRED_CHILD),
-    unknown_named: Some(&core_codes::CHILD_NOT_VALID),
     invalid_enum: Some(&core_codes::INVALID_VALUE),
-    ..Texts::CODES
+    accepts: None,
+    ..Texts::TREE
 };
 
 /// Reads `T` from `payload` as the client's schema validator reads it: member by member, and a
@@ -66,17 +66,9 @@ pub(crate) fn strict<T: FromJson>(
     d: &mut Diagnostics,
 ) -> Option<T> {
     read_payload_with(payload, cx, d, |read| {
-        // The engine gate is the derived check's (`Family::validate`): it judges the upgraded
-        // value, which every format reaches, and the game's own engine, which the read does not
-        // know. The read of the newest struct would tell the same member a second time.
-        let versions = Versions {
-            engine: None,
-            ..read.known_versions()
-        };
         read.profile(Profile::FIRST_THEN_PASSES)
             .texts(TEXTS)
             .unknown_severity(Severity::Error)
-            .versions(versions)
     })
 }
 

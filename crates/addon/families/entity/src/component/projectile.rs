@@ -26,7 +26,6 @@ use super::parse::{ComponentCheck, Typed};
 )]
 #[doc(alias = "minecraft:projectile")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Projectile {
     /// `anchor`: where on the shooter the projectile starts; default `origin`.
     #[facet(default = ProjectileAnchor::Origin)]
@@ -185,7 +184,6 @@ impl Default for ProjectileOffset {
 
 /// The object form of a [`ProjectileOffset`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Xyz {
     /// `x`: default 0.
     #[facet(default = 0.0_f32)]
@@ -200,7 +198,6 @@ pub struct Xyz {
 
 /// `on_hit` of a [`Projectile`]: the subcomponents that run when it hits.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OnHit {
     /// `arrow_effect`: the arrow's potion effects apply.
     pub arrow_effect: Option<ArrowEffect>,
@@ -243,12 +240,10 @@ pub struct OnHit {
 /// An `on_hit` subcomponent without members (`douse_fire`, `ignite`, `remove_on_hit`,
 /// `teleport_owner`, `wind_burst_on_hit`): present means on.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OnHitFlag {}
 
 /// `on_hit.arrow_effect`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ArrowEffect {
     /// `apply_effect_to_blocking_targets`: the effects apply to a blocking target; default
     /// `true`.
@@ -258,7 +253,6 @@ pub struct ArrowEffect {
 
 /// `on_hit.catch_fire`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CatchFire {
     /// `fire_affected_by_griefing`: the fire follows the `mobGriefing` rule; default `false`.
     #[facet(default = false)]
@@ -274,7 +268,6 @@ pub struct CatchFire {
     reason = "the game's flags, one member each"
 )]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DefinitionEvent {
     /// `affect_projectile`: the event fires on the projectile; default `false`.
     #[facet(default = false)]
@@ -298,7 +291,6 @@ pub struct DefinitionEvent {
 
 /// `on_hit.freeze_on_hit`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FreezeOnHit {
     /// `shape`: the frozen area's shape; default `cube`.
     #[facet(default = FreezeShape::Cube)]
@@ -327,7 +319,6 @@ pub enum FreezeShape {
 
 /// `on_hit.grant_xp`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GrantXp {
     /// `maxXP`: the most experience; default 0.
     #[facet(rename = "maxXP", default = 0_i32)]
@@ -339,7 +330,6 @@ pub struct GrantXp {
 
 /// `on_hit.hurt_owner`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct HurtOwner {
     /// `ignite`: the shooter is set on fire; default `false`.
     #[facet(default = false)]
@@ -358,7 +348,6 @@ pub struct HurtOwner {
     reason = "the game's flags, one member each"
 )]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ImpactDamage {
     /// `apply_knockback_to_blocking_targets`: a blocking target is knocked back too; default
     /// `false`.
@@ -426,7 +415,6 @@ pub enum DifficultyRandomization {
 
 /// `on_hit.mob_effect`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MobEffect {
     /// `effects`: the effects.
     #[facet(default)]
@@ -435,7 +423,6 @@ pub struct MobEffect {
 
 /// One effect of [`MobEffect`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MobEffectInstance {
     /// `amplifier`: the effect level; default 1.
     #[facet(default = 1_i32)]
@@ -465,7 +452,6 @@ pub enum EffectDuration {
 
 /// `on_hit.particle_on_hit`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ParticleOnHit {
     /// `num_particles`: how many particles; default 1.
     #[facet(default = 1_i32)]
@@ -486,7 +472,6 @@ pub struct ParticleOnHit {
 
 /// `on_hit.spawn_aoe_cloud`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpawnAoeCloud {
     /// `affect_owner`: the cloud affects the shooter; default `true`.
     #[facet(default = true)]
@@ -513,7 +498,6 @@ pub struct SpawnAoeCloud {
 
 /// `on_hit.spawn_chance`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpawnChance {
     /// `first_spawn_chance`: the chance of the first spawn, 0 to 1; default 0.
     #[facet(default = 0.0_f32, schema::min = 0.0, schema::max = 1.0)]
@@ -540,7 +524,6 @@ pub struct SpawnChance {
 
 /// `on_hit.stick_in_ground`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StickInGround {
     /// `shake_time`: seconds the projectile shakes; default 0.
     #[facet(default = 0.0_f32)]
@@ -549,7 +532,6 @@ pub struct StickInGround {
 
 /// `on_hit.thrown_potion_effect`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ThrownPotionEffect {
     /// `effect`: the potion id; −1 (the default) is none.
     #[facet(default = -1_i32)]

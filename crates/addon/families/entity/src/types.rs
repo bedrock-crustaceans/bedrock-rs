@@ -336,7 +336,6 @@ pub struct Event {
 
 /// `brain`: the Brain Prototype's memories.
 #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Brain {
     /// `memories`: the entity's memories, unique by name.
     pub memories: Vec<Memory>,
@@ -346,7 +345,6 @@ pub struct Brain {
 
 /// One entry of [`Brain::memories`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Memory {
     /// `name`: the memory's identifier.
     pub name: String,
@@ -411,7 +409,6 @@ impl MemoryType {
 
 /// `brain.internal_memory_access_mappings`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InternalMemoryAccess {
     /// `beehive_has_nectar`: the `bool` memory the engine sets while the bee carries nectar.
     pub beehive_has_nectar: Option<String>,

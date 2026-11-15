@@ -15,6 +15,7 @@ use super::{CameraEntity, CameraList, CameraPreset, CameraSpline};
 use super::{V1_19_50, V1_26_50, codes};
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::id::syntax::{is_word_byte, namespaced_by};
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -38,14 +39,7 @@ fn violation(line: &'static CodeDef<0>, at: JsonPath, d: &mut Diagnostics) {
 /// Whether `text` is `^\w+:\w+$`: a namespace and a name, each one or more of `A-Z`, `a-z`,
 /// `0-9` and `_`, around one `:`.
 fn namespace_name(text: &str) -> bool {
-    let word = |part: &str| {
-        !part.is_empty()
-            && part
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
-    };
-    text.split_once(':')
-        .is_some_and(|(namespace, name)| word(namespace) && word(name))
+    namespaced_by(text, is_word_byte)
 }
 
 /// Tells `line` at `node`, a constraint the value breaks: the game's bind tells every violated

@@ -28,8 +28,7 @@ pub enum Verdict {
 /// The context a derived `Schema::check` reports to: the JSON path it walks, the slice's rule
 /// for a member that fails, and the findings.
 ///
-/// A failed member is graded by [`grade`]: `Refuse`, `DropOwner` and `DropElement` record an
-/// `Error` and mark the owner failed (the value stays, [`Verdict::Keep`]); `DefaultAndTell`
+/// A failed member is graded by [`grade`]: `Refuse` records an `Error` and mark the owner failed (the value stays, [`Verdict::Keep`]); `DefaultAndTell`
 /// records an `Info` and resets the member ([`Verdict::Reset`]).
 ///
 /// A field's bounds are one range ([`range`](Self::range)), and a value outside it is one
@@ -137,14 +136,6 @@ impl<'d> SchemaCx<'d> {
             original_version,
         });
         this
-    }
-
-    /// The context with its findings told in `phase`: [`Phase::Parse`] until said otherwise;
-    /// a family that checks after the parse says [`Phase::Validate`].
-    #[must_use]
-    pub fn with_phase(mut self, phase: Phase) -> Self {
-        self.phase = phase;
-        self
     }
 
     /// The context with the leaf types that carry findings of their own (a block descriptor
@@ -336,19 +327,6 @@ impl<'d> SchemaCx<'d> {
             return Verdict::Keep;
         }
         self.broken(code, resettable)
-    }
-
-    /// The key `key` of the map at the current path breaks the field's key rule
-    /// (`schema::key_with`): `code` at the member of that name, graded as a broken bound is, or
-    /// logged and kept where the rule is `kept`.
-    pub fn key(&mut self, key: &str, code: Code, kept: bool) {
-        if kept {
-            self.kept(key, code);
-            return;
-        }
-        self.enter(key);
-        self.broken(code, false);
-        self.leave();
     }
 
     /// A number a rule holds is outside `[min, max]` (a side left `None` is no limit): the

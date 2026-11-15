@@ -15,6 +15,7 @@ mod tests;
 
 use indexmap::IndexMap;
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -29,8 +30,8 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, BeyondWidth, DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, Reading, Scalars, Single, StructIndex, UnknownMask, ValidateCx, parse_document,
+    BelowFloor, DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Reading, Single, StructIndex, ValidateCx, parse_document,
 };
 
 /// The reading of the one slice, which every reader of a rule's members takes: an unknown member
@@ -38,9 +39,8 @@ use bedrock_addon_core::versioning::{
 /// cereal reader's (a member takes only a token of its own type, a number beyond its float's
 /// width is a type error). Every struct of a rule keeps its unknown members for write-back.
 pub(crate) const READING: Reading = Reading::DOCUMENT
-    .with_unknown(UnknownMask::Warn)
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error)
+    .with_unknown(Severity::Warning)
+    .strict()
     .with_keeps_unknown(true);
 
 pub use bedrock_addon_shared_scatter::{

@@ -115,7 +115,7 @@ impl Family for PresetFamily {
     }
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile())
+        Self::ENVELOPE.input.profile().strict()
     }
 }
 
@@ -149,7 +149,7 @@ impl Family for CategoriesFamily {
     }
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile())
+        Self::ENVELOPE.input.profile().strict()
     }
 }
 

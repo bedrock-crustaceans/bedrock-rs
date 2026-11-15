@@ -14,7 +14,7 @@
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
@@ -28,7 +28,6 @@ use super::push::{
 /// `minecraft:apply_knockback_rules` from 1.8.0 to 1.26.20.
 #[doc(alias = "minecraft:apply_knockback_rules")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ApplyKnockbackRulesV1_8_0 {
     /// `presets`: the presets, in order.
     #[facet(default)]
@@ -38,7 +37,6 @@ pub struct ApplyKnockbackRulesV1_8_0 {
 /// One preset of [`ApplyKnockbackRulesV1_8_0`].
 // The shape follows the game's 1.21.80 `minecraft_apply_knockback_rules_instance.json`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct KnockbackPresetV1_8_0 {
     /// `filter`: which targets the preset applies to; absent means all.
     pub filter: Option<Filter>,
@@ -111,7 +109,6 @@ impl From<ApplyKnockbackRulesV1_8_0> for ApplyKnockbackRules {
 /// `minecraft:pushable_by_entity` in 1.26.20: other entities push this one; no members.
 #[doc(alias = "minecraft:pushable_by_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PushableByEntityV1_26_20 {}
 
 impl PushableByEntityV1_26_20 {
@@ -142,7 +139,6 @@ impl From<PushableByEntityV1_26_20> for PushableByEntityV1_26_30 {
 /// `minecraft:pushable_by_entity` in 1.26.30.
 #[doc(alias = "minecraft:pushable_by_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PushableByEntityV1_26_30 {
     /// `presets`: the presets, in order.
     #[facet(default)]
@@ -152,7 +148,6 @@ pub struct PushableByEntityV1_26_30 {
 /// One preset of [`PushableByEntityV1_26_30`]: [`PushPreset`] without
 /// `require_collision_overlap`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PushPresetV1_26_30 {
     /// `filters`: absent means all.
     pub filters: Option<Filter>,

@@ -104,9 +104,10 @@ fn an_extent_is_printed_with_six_significant_digits() {
 
 #[test]
 fn the_family_reads_a_minecraft_document_input_under_the_strict_mask() {
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
-    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex, UnknownMask};
+    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex};
     // The game reads a shape through the document-input reader, and the one slice is registered
     // with the strict error mask.
     let slice = StructIndex::Stable(0);
@@ -117,6 +118,6 @@ fn the_family_reads_a_minecraft_document_input_under_the_strict_mask() {
     );
     assert_eq!(
         VoxelShapeFamily::reading(slice, DocumentSource::Json).unknown,
-        UnknownMask::Error
+        Severity::Error
     );
 }

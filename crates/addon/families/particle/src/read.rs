@@ -26,16 +26,15 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
 use bedrock_addon_core::id::ParticleId;
-use bedrock_addon_core::json::kit::{self, Disposition, Read};
+use bedrock_addon_core::json::kit::{self, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::molang::{
     JsonScalar, Molang, MolangFailure, MolangFieldMut, MolangFieldSpec, MolangFields, MolangSource,
     MolangVisitor, RawVersion, ReadField, ReaderKind, Step, json_scalar,
 };
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{
-    MemberFailure, ParseCx, Reading, UnknownMask, VersionStruct, Versioned,
-};
+use bedrock_addon_core::versioning::{MemberFailure, ParseCx, Reading, VersionStruct, Versioned};
 
 /// Which loader reads the document.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -54,7 +53,7 @@ impl Era {
             Era::Legacy => Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
             // The strict document; an unknown member is told at the grade the slice's
             // reading gives it (an error under the strict mask), set by the reader.
-            Era::Cereal => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            Era::Cereal => Reading::DOCUMENT.with_unknown(Severity::Warning),
         }
     }
 }
@@ -374,7 +373,7 @@ impl<'v> Members<'v> {
                 if !known(key) {
                     // Told at the era's unknown severity (`Reader::kit`), kept nowhere.
                     let node = kit::Node::new(value, r.path.child(key));
-                    r.kit().unknown_member(&node, Disposition::Keep);
+                    r.kit().unknown_member(&node, UnknownRule::Keep);
                 }
             }
         }

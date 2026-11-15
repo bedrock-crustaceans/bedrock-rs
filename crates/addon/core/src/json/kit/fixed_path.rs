@@ -213,8 +213,8 @@ mod tests {
     use super::*;
     use crate::diagnostic::codes as core_codes;
     use crate::diagnostic::{Code, Diagnostic, Location, Phase};
-    use crate::json::kit::Disposition;
     use crate::json::kit::Node;
+    use crate::schema::UnknownRule;
 
     fn json(text: &str) -> Value {
         crate::json::from_str_jsonc::<Value>(text).unwrap()
@@ -229,7 +229,7 @@ mod tests {
         let mut found = Diagnostics::default();
         let mut read = reader(&mut found);
         let members = read.object(&Node::new(&json, at())).unwrap();
-        let kept = read.unknown(&members, &["a"], Disposition::Keep);
+        let kept = read.unknown(&members, &["a"], UnknownRule::Keep);
         let a = members.get("a").unwrap();
         assert_eq!(read.string(&a), None);
         let missing = read.required(&members, "c");

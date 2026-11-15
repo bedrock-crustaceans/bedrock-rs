@@ -124,9 +124,3 @@ pub(crate) fn is_plain_value(ty: &Type) -> bool {
 pub(crate) fn is_event_trigger(ty: &Type) -> bool {
     name(innermost(ty)).is_some_and(|name| name == "EventTrigger")
 }
-
-/// Whether the field is a `String` or an `Option<String>`.
-pub(crate) fn is_string(ty: &Type) -> bool {
-    let ty = option_inner(ty).unwrap_or(ty);
-    name(ty).is_some_and(|name| name == "String")
-}

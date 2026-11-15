@@ -13,8 +13,8 @@ use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::schema::{Schema, SchemaCx, TreeWording};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BeyondWidth, Choices, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents,
-    Reading, Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
+    Choices, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
+    StructIndex, ValidateCx, VersionChain, VersionStruct,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -31,8 +31,7 @@ pub(crate) const V1_13_0: FormatVersion = FormatVersion::new(1, 13, 0);
 /// choice members are converted whole (a number beyond `f32` clamped and told).
 pub(crate) const READING: Reading = InputKind::JsonCpp
     .profile()
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error)
+    .strict()
     .with_choices(Choices::Whole);
 
 /// The wording of a broken bound: the older schema tree's, with the feature's own line for each

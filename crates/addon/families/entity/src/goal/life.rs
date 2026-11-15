@@ -16,7 +16,6 @@ use super::molang::{push_trigger, visit_blocks, visit_conditions};
 // `behavior.breed`: typed from 1.21.90.
 #[doc(alias = "minecraft:behavior.breed")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Breed {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -36,7 +35,7 @@ impl Goal for Breed {
 // `behavior.celebrate`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.celebrate")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct Celebrate {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -97,7 +96,7 @@ impl Celebrate {
 // `behavior.celebrate_survive`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.celebrate_survive")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct CelebrateSurvive {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -150,7 +149,6 @@ impl CelebrateSurvive {
 // `behavior.croak`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.croak")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Croak {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -182,7 +180,7 @@ impl Goal for Croak {
 // `behavior.dig`: typed from 1.21.120.
 #[doc(alias = "minecraft:behavior.dig")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct Dig {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -239,7 +237,7 @@ impl Dig {
 // `behavior.emerge`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.emerge")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct Emerge {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -284,7 +282,6 @@ impl Emerge {
 // `behavior.fertilize_farm_block`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.fertilize_farm_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FertilizeFarmBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -322,7 +319,6 @@ impl Goal for FertilizeFarmBlock {
 // `behavior.harvest_farm_block`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.harvest_farm_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct HarvestFarmBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -363,7 +359,7 @@ impl Goal for HarvestFarmBlock {
 // `behavior.hold_ground`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.hold_ground")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct HoldGround {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -415,7 +411,6 @@ impl HoldGround {
 // `behavior.inspect_bookshelf`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.inspect_bookshelf")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InspectBookshelf {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -447,7 +442,6 @@ impl Goal for InspectBookshelf {
 // `behavior.investigate_suspicious_location`: typed from 1.21.130.
 #[doc(alias = "minecraft:behavior.investigate_suspicious_location")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InvestigateSuspiciousLocation {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -470,7 +464,6 @@ impl Goal for InvestigateSuspiciousLocation {
 // `behavior.lay_down`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.lay_down")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LayDown {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -495,7 +488,7 @@ impl Goal for LayDown {
 // `behavior.lay_egg`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.lay_egg")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct LayEgg {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -589,7 +582,6 @@ impl LayEgg {
 // `behavior.make_love`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.make_love")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MakeLove {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -608,7 +600,6 @@ impl Goal for MakeLove {
 // `behavior.mingle`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.mingle")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Mingle {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -643,7 +634,6 @@ impl Goal for Mingle {
 // `behavior.nap`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.nap")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Nap {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -682,7 +672,6 @@ impl Goal for Nap {
 // `behavior.pet_sleep_with_owner`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.pet_sleep_with_owner")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PetSleepWithOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -711,7 +700,6 @@ impl Goal for PetSleepWithOwner {
 // `behavior.play`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.play")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Play {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -770,7 +758,6 @@ impl Goal for Play {
 // `behavior.play_dead`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.play_dead")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlayDead {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -814,7 +801,6 @@ impl Goal for PlayDead {
 // `behavior.raid_garden`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.raid_garden")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RaidGarden {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -863,7 +849,7 @@ impl Goal for RaidGarden {
 // `behavior.random_search_and_dig`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.random_search_and_dig")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct RandomSearchAndDig {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -983,7 +969,6 @@ impl RandomSearchAndDig {
 // `behavior.random_sitting`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.random_sitting")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomSitting {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1012,7 +997,6 @@ impl Goal for RandomSitting {
 // `behavior.receive_love`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.receive_love")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ReceiveLove {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1029,7 +1013,6 @@ impl Goal for ReceiveLove {
 // `behavior.roar`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.roar")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Roar {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1049,7 +1032,6 @@ impl Goal for Roar {
 // `behavior.roll`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.roll")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Roll {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1069,7 +1051,6 @@ impl Goal for Roll {
 // `behavior.run_around_like_crazy`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.run_around_like_crazy")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RunAroundLikeCrazy {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1089,7 +1070,6 @@ impl Goal for RunAroundLikeCrazy {
 // `behavior.scared`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.scared")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Scared {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1109,7 +1089,6 @@ impl Goal for Scared {
 // `behavior.silverfish_merge_with_stone`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.silverfish_merge_with_stone")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SilverfishMergeWithStone {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1126,7 +1105,6 @@ impl Goal for SilverfishMergeWithStone {
 // `behavior.silverfish_wake_up_friends`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.silverfish_wake_up_friends")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SilverfishWakeUpFriends {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1143,7 +1121,6 @@ impl Goal for SilverfishWakeUpFriends {
 // `behavior.skeleton_horse_trap`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.skeleton_horse_trap")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SkeletonHorseTrap {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1168,7 +1145,6 @@ impl Goal for SkeletonHorseTrap {
 // `behavior.sleep`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.sleep")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Sleep {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1209,7 +1185,6 @@ impl Goal for Sleep {
 // `behavior.sneeze`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.sneeze")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Sneeze {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1259,7 +1234,6 @@ impl Goal for Sneeze {
 // `behavior.sniff`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.sniff")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Sniff {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1296,7 +1270,6 @@ impl Goal for Sniff {
 // `behavior.stay_near_noteblock`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.stay_near_noteblock")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StayNearNoteblock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1325,7 +1298,6 @@ impl Goal for StayNearNoteblock {
 // `behavior.stay_while_sitting`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.stay_while_sitting")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StayWhileSitting {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1342,7 +1314,6 @@ impl Goal for StayWhileSitting {
 // `behavior.stomp_turtle_egg`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.stomp_turtle_egg")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StompTurtleEgg {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1377,7 +1348,7 @@ impl Goal for StompTurtleEgg {
 // `behavior.timer_flag_1`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.timer_flag_1")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct TimerFlag1 {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1428,7 +1399,7 @@ impl TimerFlag1 {
 // `behavior.timer_flag_2`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.timer_flag_2")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct TimerFlag2 {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1479,7 +1450,7 @@ impl TimerFlag2 {
 // `behavior.timer_flag_3`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.timer_flag_3")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct TimerFlag3 {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1530,7 +1501,7 @@ impl TimerFlag3 {
 // `behavior.work`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.work")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct Work {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1595,7 +1566,7 @@ impl Work {
 // `behavior.work_composter`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.work_composter")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct WorkComposter {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]

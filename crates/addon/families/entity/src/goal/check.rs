@@ -6,23 +6,24 @@ use bedrock_addon_core::diagnostic::{
     Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Told,
 };
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit::{Node, Passes, Profile, Read, Recovery, Texts};
-use bedrock_addon_core::json::parse::{Options, Parsed, parse_slice};
+use bedrock_addon_core::json::kit::Recovery;
+use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{
     JsonSlice, StrictIntType, Value, remove_null_members, tell_null_members,
 };
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx, read_document};
+use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx};
 use bedrock_addon_core::shared::{EventTrigger, Filter, Range, RangeEnd, RangeForm};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{ConvertMode, MemberFailure, RangeMembers};
+use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
 use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
 use facet::Facet;
 use facet_value::VObject;
 
 use super::common::{EntityTypes, SoundEvent, check_entity_types};
 use crate::component::EntityComponent;
+use crate::component::parse::read_converted;
 
 /// Vanilla's message for a deprecated member: `member "<name>" is deprecated`.
 macro_rules! deprecated_text {
@@ -189,7 +190,17 @@ fn read<T: Goal>(
         }
     };
     let mut found = Diagnostics::default();
-    let read = read_value::<T>(&parsed, version.is_some(), grade, &mut found);
+    // The lenient conversion reads the goal as its steps left it, which is no text of the file.
+    let strict = version.is_some();
+    let read = read_converted::<T>(
+        &parsed,
+        strict,
+        strict,
+        Recovery::Value,
+        grade,
+        None,
+        &mut found,
+    );
     let Some(mut value) = read else {
         // A strict read's first failure is all it tells.
         d.append(found);
@@ -245,49 +256,6 @@ fn read<T: Goal>(
     }
     Some(value)
 }
-
-/// Reads `T` from `parsed`: strictly, the first failure an error that drops it, as the typed
-/// door read it; in the lenient conversion every value that does not read taking its default.
-/// The entity's scalar and null rules at every slice ([`READING`](crate::READING)), the goal's
-/// unknown members at `grade`.
-fn read_value<T: Goal>(
-    parsed: &Parsed<'_>,
-    strict: bool,
-    grade: Severity,
-    d: &mut Diagnostics,
-) -> Option<T> {
-    let (failure, profile) = if strict {
-        (MemberFailure::Refuse, Profile::FIRST_FAILURE)
-    } else {
-        (
-            MemberFailure::DefaultAndTell,
-            Profile::EVERY_FAILURE
-                .with_passes(Passes::AfterRead)
-                .with_recovery(Recovery::Value),
-        )
-    };
-    let reading = crate::READING
-        .with_on_member_failure(failure)
-        .with_range_members(RangeMembers::Unrecognized);
-    let mut read = Read::new(reading, d)
-        .unknown_severity(grade)
-        .profile(profile)
-        .texts(LENIENT);
-    // The lenient conversion reads the goal as its steps left it, which is no text of the file.
-    let node = if strict {
-        Node::parsed(parsed, JsonPath::new())
-    } else {
-        Node::new(&parsed.value, JsonPath::new())
-    };
-    read_document::<T>(&node, &mut read)
-}
-
-/// The words of the lenient conversion: a value it gives up is the crate's own
-/// `InvalidValue` (the game writes no content-log line for it).
-const LENIENT: Texts = Texts {
-    defaulted: Some(&core_codes::INVALID_VALUE),
-    ..Texts::CODES
-};
 
 /// The goal as the lenient conversion reads it: an object, its members written `null` absent,
 /// its version-gated members not read, its older shape converted ([`Goal::lenient_shape`]),

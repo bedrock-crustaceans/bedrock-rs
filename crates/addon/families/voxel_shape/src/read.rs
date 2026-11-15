@@ -5,8 +5,9 @@
 use super::{VoxelShape, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, cereal};
-use bedrock_addon_core::json::kit::{Disposition, Node, Read, Texts};
+use bedrock_addon_core::json::kit::{Node, Read, Texts};
 use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
 
 /// An unknown member is cereal's line, as the game logs it.
@@ -111,7 +112,7 @@ pub(crate) fn corner(node: &Node<'_>, read: &mut Read<'_>) -> Option<[f32; 3]> {
         read.push(error(member, Code::from(&core_codes::INVALID_TYPE)));
     }
     for member in &unbound {
-        read.unknown_member(member, Disposition::Keep);
+        read.unknown_member(member, UnknownRule::Keep);
     }
     // With a finding above the value is not used: an error told rejects the document.
     Some(at_axis)

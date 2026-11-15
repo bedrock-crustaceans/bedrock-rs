@@ -5,7 +5,7 @@
 
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::shared::EventTrigger;
 use bedrock_addon_core::versioning::ConvertMode;
 use facet::Facet;
@@ -18,7 +18,6 @@ use super::upgrade::one_or_many;
 /// condition passes runs.
 #[doc(alias = "minecraft:interact")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Interact {
     /// `interactions`: the interactions, in order.
     #[facet(default)]
@@ -31,7 +30,6 @@ pub struct Interact {
     reason = "the game's flags, one member each"
 )]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Interaction {
     /// `add_items`: items from a loot table added to the entity's inventory.
     pub add_items: Option<LootTable>,
@@ -102,7 +100,6 @@ pub struct Interaction {
 /// `add_items` of an [`Interaction`]: a loot table.
 // facet fills a member the text leaves out from the struct's `Default`: `table` reads as empty.
 #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LootTable {
     /// `table`: the loot table path; required.
     pub table: String,
@@ -110,7 +107,6 @@ pub struct LootTable {
 
 /// `spawn_items` of an [`Interaction`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpawnItems {
     /// `table`: the loot table path; default none (empty).
     #[facet(default = String::new())]
@@ -122,7 +118,6 @@ pub struct SpawnItems {
 
 /// `repair_entity_item` of an [`Interaction`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RepairEntityItem {
     /// `amount`: the durability restored; default 1.
     #[facet(default = 1_i32)]
@@ -133,7 +128,6 @@ pub struct RepairEntityItem {
 
 /// `particle_on_start` of an [`Interaction`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InteractParticle {
     /// `copper_event`: the copper effect shown; default `none`.
     #[facet(default = CopperEvent::None)]

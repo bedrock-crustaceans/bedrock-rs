@@ -12,7 +12,6 @@ use super::common::ControlFlag;
 // `behavior.dragonchargeplayer`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.dragonchargeplayer")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonChargePlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -49,7 +48,6 @@ impl Goal for DragonChargePlayer {
 // `behavior.dragondeath`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.dragondeath")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonDeath {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -66,7 +64,6 @@ impl Goal for DragonDeath {
 // `behavior.dragonflaming`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.dragonflaming")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonFlaming {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -104,7 +101,6 @@ impl Goal for DragonFlaming {
 // `behavior.dragonholdingpattern`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.dragonholdingpattern")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonHoldingPattern {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -121,7 +117,6 @@ impl Goal for DragonHoldingPattern {
 // `behavior.dragonlanding`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.dragonlanding")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonLanding {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -138,7 +133,6 @@ impl Goal for DragonLanding {
 // `behavior.dragonscanning`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.dragonscanning")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonScanning {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -155,7 +149,6 @@ impl Goal for DragonScanning {
 // `behavior.dragonstrafeplayer`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.dragonstrafeplayer")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonStrafePlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -201,7 +194,6 @@ impl Goal for DragonStrafePlayer {
 // `behavior.dragontakeoff`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.dragontakeoff")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DragonTakeoff {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]

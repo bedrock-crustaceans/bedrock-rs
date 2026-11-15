@@ -20,10 +20,10 @@ use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value, strip_b
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::schema::{self, FromJson, Schema, read_document};
+use bedrock_addon_core::schema::{FromJson, Schema, read_document};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    ConvertMode, Family, Loaded, NullHandling, ParseCx, Reading, UnknownMask, load,
+    ConvertMode, Family, Loaded, NullHandling, ParseCx, Reading, load,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -49,7 +49,6 @@ pub(crate) const BRAIN_SINCE: FormatVersion = known::V1_21_130;
 
 /// What the newest struct is read from: the parts each read on by their own readers.
 #[derive(Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct Shell {
     description: Option<Value>,
     components: Option<IndexMap<String, Value>>,
@@ -67,14 +66,12 @@ struct Shell {
 
 /// `__deprecated`.
 #[derive(Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct DeprecatedShell {
     aliases: Option<IndexMap<String, Value>>,
 }
 
 /// What `description` is read from.
 #[derive(Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct DescriptionShell {
     identifier: EntityId,
     runtime_identifier: Option<EntityId>,
@@ -93,7 +90,6 @@ struct DescriptionShell {
 
 /// What a property is read from.
 #[derive(Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct PropertyShell {
     #[facet(rename = "type")]
     kind: String,
@@ -105,7 +101,6 @@ struct PropertyShell {
 
 /// What `scripts` is read from.
 #[derive(Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct ScriptsShell {
     animate: Option<Vec<Value>>,
 }
@@ -156,7 +151,7 @@ impl<'c, 'd> Reader<'c, 'd> {
     fn silent_load(&self) -> &LoadContext {
         self.silent.get_or_init(|| {
             let mut load = self.load.clone();
-            load.reading = load.reading.with_unknown(UnknownMask::Warn);
+            load.reading = load.reading.with_unknown(Severity::Warning);
             load
         })
     }
@@ -208,7 +203,7 @@ impl<'c, 'd> Reader<'c, 'd> {
     pub(crate) fn read<T: FromJson>(&mut self, node: &Node<'_>) -> Option<T> {
         let mut found = Diagnostics::default();
         let value = {
-            let mut read = Read::new(crate::READING, &mut found)
+            let mut read = Read::new(crate::TYPED_READING, &mut found)
                 .null(NullHandling::Own)
                 .unknown_severity(self.unknown())
                 .profile(Profile::FIRST_FAILURE);

@@ -229,7 +229,21 @@ pub fn split_namespace(text: &str) -> Option<(&str, &str)> {
 /// the first `:` (`demo:a:b` has one; `:a`, `a:` and `stone` do not). No character is checked:
 /// a family whose rule has an alphabet keeps its own.
 pub fn has_namespace(text: &str) -> bool {
-    split_namespace(text).is_some_and(|(namespace, name)| !namespace.is_empty() && !name.is_empty())
+    namespaced_by(text, |_| true)
+}
+
+/// Whether `text` is a non-empty namespace, `:`, and a non-empty name, each of bytes `part`
+/// takes, the namespace ending at the first `:`: a game rule's `^C+:C+$` for a class `C` that
+/// has no `:` (camera's and the POI's `^\w+:\w+$` is [`is_word_byte`]).
+pub fn namespaced_by(text: &str, part: impl Fn(u8) -> bool) -> bool {
+    let all = |text: &str| !text.is_empty() && text.bytes().all(&part);
+    split_namespace(text).is_some_and(|(namespace, name)| all(namespace) && all(name))
+}
+
+/// Whether `byte` is of the regex class `\w`: an ASCII letter, a digit or `_`.
+#[must_use]
+pub const fn is_word_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
 /// `(namespace, path)` of a namespaced text, its suffix removed; the namespace ends at the

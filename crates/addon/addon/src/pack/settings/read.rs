@@ -13,10 +13,11 @@ use uuid::Uuid;
 use crate::diagnostic::{
     Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, code_for_deserialize_error_kind,
 };
-use crate::json::kit::{Disposition, Node, Read};
+use crate::json::kit::{Node, Read};
 use crate::json::{EncodeError, JsonSlice, Value};
 use crate::version::FormatVersion;
 use crate::versioning::{ParseCx, Reading, VersionStruct, Versioned};
+use bedrock_addon_core::schema::UnknownRule;
 
 use super::{SavedSettings, SettingValue, Settings, write};
 
@@ -92,7 +93,7 @@ impl Reader<'_> {
         let members = self.read.object(payload)?;
         // Told, never kept: the file then fails.
         self.read
-            .unknown(&members, &DOCUMENT_MEMBERS, Disposition::Keep);
+            .unknown(&members, &DOCUMENT_MEMBERS, UnknownRule::Keep);
         let settings = self.read.required(&members, "settings")?;
         // An array is expected here: "expected an array".
         let entries = self.read.array(&settings)?;
@@ -111,7 +112,7 @@ impl Reader<'_> {
     fn entry(&mut self, node: &Node<'_>) -> Option<Settings> {
         let members = self.read.object(node)?;
         self.read
-            .unknown(&members, &SETTINGS_MEMBERS, Disposition::Keep);
+            .unknown(&members, &SETTINGS_MEMBERS, UnknownRule::Keep);
         let pack_id = self.read.required(&members, "pack_id");
         let values = self.read.required(&members, "values");
         let pack_id = self.pack_id(&pack_id?);

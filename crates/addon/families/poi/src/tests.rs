@@ -381,9 +381,10 @@ fn a_value_the_writer_refuses_is_an_error_of_validate_not_silence() {
 #[test]
 fn both_documents_read_a_minecraft_document_input_under_the_strict_mask() {
     use super::history::{PoiTagFamily, PoiTypeFamily};
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
-    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex, UnknownMask};
+    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex};
     // Both loaders read a document input, and the one slice of each is read strictly.
     let slice = StructIndex::Stable(0);
     assert_eq!(PoiTypeFamily::ENVELOPE.input, InputKind::Document);
@@ -398,11 +399,11 @@ fn both_documents_read_a_minecraft_document_input_under_the_strict_mask() {
     );
     assert_eq!(
         PoiTypeFamily::reading(slice, DocumentSource::Json).unknown,
-        UnknownMask::Error
+        Severity::Error
     );
     assert_eq!(
         PoiTagFamily::reading(slice, DocumentSource::Json).unknown,
-        UnknownMask::Error
+        Severity::Error
     );
 }
 

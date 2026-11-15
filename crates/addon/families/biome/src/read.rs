@@ -11,7 +11,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::JsonSlice;
-use bedrock_addon_core::json::kit::{Node, Read, Versions};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
@@ -72,13 +72,8 @@ pub(crate) fn read_as<T: FromJson>(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    let whole: Option<Whole<T>> = read_payload_with(slice, cx, d, |read| {
-        let engine = read.known_versions().engine;
-        read.versions(Versions {
-            format: Some(version),
-            engine,
-        })
-    });
+    let whole: Option<Whole<T>> =
+        read_payload_with(slice, cx, d, |read| read.format(Some(version)));
     whole.map(|whole| whole.0)
 }
 
@@ -90,7 +85,7 @@ pub(crate) fn read_as<T: FromJson>(
 /// makes it an error that refuses the document, as vanilla does for an unknown member in every
 /// format version.
 fn components(node: &Node<'_>, read: &mut Read<'_>) -> Option<Components> {
-    let version = read.known_versions().format?;
+    let version = read.known_format()?;
     let table = BiomeComponent::TABLE;
     let severity = read.reading().grade(Class::Unknown);
     read_component_map_by::<BiomeFamily>(
@@ -134,10 +129,7 @@ mod tests {
         let map = {
             let mut read = Read::new(load.reading, &mut d)
                 .load(&load)
-                .versions(Versions {
-                    format: Some(V1_26_30),
-                    engine: None,
-                });
+                .format(Some(V1_26_30));
             components(&Node::parsed(&parsed, at), &mut read).expect("an object")
         };
         let kept: Vec<String> = map

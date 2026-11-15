@@ -8,11 +8,11 @@
 use super::{ColorNorm, FogColor, FogSettings, Keyframed, same_zero};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::parse::{Options, parse_slice};
-use bedrock_addon_core::json::{BeyondWidth, JsonSlice};
 use bedrock_addon_core::schema::{FromJson, read_document};
-use bedrock_addon_core::versioning::{Reading, Scalars};
+use bedrock_addon_core::versioning::Reading;
 use bedrock_addon_shared_shapes::Keyframe;
 use bedrock_addon_shared_shapes::color::is_hex;
 
@@ -27,9 +27,7 @@ pub(crate) fn read_settings(
     let mut found = Diagnostics::default();
     // The cereal pass: a wrong type or a broken constraint is an error that fails the file;
     // an unknown member is kept and told as information (the game says nothing).
-    let reading = Reading::DOCUMENT
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error);
+    let reading = Reading::DOCUMENT.strict();
     let mut read = Read::new(reading, &mut found)
         .unknown_severity(Severity::Info)
         .profile(Profile::TREE);

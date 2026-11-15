@@ -298,26 +298,6 @@ fn a_string_enum_names_its_values_through_rename_all() {
     assert_eq!(shape, EquipmentSlot::NAMES, "facet's names");
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
-#[facet(schema::expected = "a control flag name", schema::case_insensitive)]
-#[repr(u8)]
-pub enum ControlFlag {
-    #[facet(rename = "move")]
-    Move,
-    #[facet(rename = "look")]
-    Look,
-}
-
-#[test]
-fn expected_and_case_insensitive_shape_the_name_lookup_and_its_error() {
-    assert_eq!(ControlFlag::from_name("MOVE"), Some(ControlFlag::Move));
-    assert_eq!(ControlFlag::EXPECTED, "a control flag name");
-    assert_eq!(
-        ControlFlag::parse_name("jump").unwrap_err().to_string(),
-        "expected a control flag name, found `jump`"
-    );
-}
-
 #[test]
 fn a_transparent_newtype_checks_at_its_owners_path() {
     assert_eq!(Friction::default(), Friction(0.4));
@@ -362,7 +342,6 @@ fn the_json_names_are_facets_and_the_stored_keys_are_rows() {
     let rows: Vec<&str> = Renamed::FIELDS.iter().map(|r| r.json).collect();
     assert_eq!(rows, shape_names(Renamed::SHAPE));
     assert_eq!(rows, ["hudRange", "Other", "type"]);
-    assert_eq!(Renamed::UNKNOWN, Some(UnknownRule::Report));
     assert_eq!(
         Renamed::FIELDS[1].since_format,
         Some(FormatVersion::new(1, 21, 60))
@@ -417,27 +396,6 @@ fn a_cross_field_bound_compares_with_the_other_member_and_falls_back_to_it() {
             ("top".to_owned(), Severity::Info)
         ]
     );
-}
-
-#[derive(Clone, Debug, PartialEq, Facet, Schema)]
-pub struct Named {
-    #[facet(schema::lowercase)]
-    pub id: String,
-    #[facet(schema::lowercase)]
-    pub alias: Option<String>,
-}
-
-#[test]
-fn lowercase_lower_cases_ascii_in_silence_as_the_game_does() {
-    let mut named = Named {
-        id: "Zombie".to_owned(),
-        alias: Some("ÉCLAIR".to_owned()),
-    };
-    let (out, failed) = check(&mut named, MemberFailure::Refuse);
-    assert!(!failed);
-    assert!(out.is_empty(), "no finding: {out:?}");
-    assert_eq!(named.id, "zombie");
-    assert_eq!(named.alias.as_deref(), Some("Éclair"), "ASCII letters only");
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -1033,54 +991,6 @@ fn params(explosion_resistance: f32, count: Option<i32>, x: i32) -> Explosion {
             on_spawn: None,
         }),
     }
-}
-
-#[test]
-fn an_untagged_enum_states_its_rows_per_variant() {
-    assert!(
-        Explosion::FIELDS.is_empty(),
-        "no one object: the rows are per variant"
-    );
-    let variants: Vec<(&str, Vec<&str>)> = Explosion::VARIANT_FIELDS
-        .iter()
-        .map(|(variant, rows)| (*variant, rows.iter().map(|row| row.json).collect()))
-        .collect();
-    assert_eq!(
-        variants,
-        [
-            ("Enabled", vec![""]),
-            ("Resistance", vec![""]),
-            (
-                "Params",
-                vec!["explosion_resistance", "on_boom", "cond", "count", "inner"]
-            ),
-            ("Off", vec![]),
-        ]
-    );
-    let resistance = Explosion::VARIANT_FIELDS[1].1[0];
-    assert_eq!(
-        resistance,
-        FieldRow {
-            bounds: &[Bound {
-                op: BoundOp::Min,
-                limit: Limit::Num(0.0)
-            }],
-            ..FieldRow::plain("0", "", "f32", FieldKind::Required)
-        }
-    );
-    let count = Explosion::VARIANT_FIELDS[2].1[3];
-    assert_eq!(count.fallback, Some(Lit::Int(1)));
-    // The names are facet's own.
-    let Type::User(UserType::Enum(en)) = Explosion::SHAPE.ty else {
-        panic!("an enum");
-    };
-    let facet_params: Vec<&str> = en.variants[2]
-        .data
-        .fields
-        .iter()
-        .map(facet::Field::effective_name)
-        .collect();
-    assert_eq!(facet_params, variants[2].1);
 }
 
 #[test]
@@ -2349,11 +2259,6 @@ fn negative() -> bedrock_addon_core::diagnostic::Code {
     codes::INVALID_VALUE_WORDED.with(["negative"])
 }
 
-fn refuse_dots(key: &str) -> Option<bedrock_addon_core::diagnostic::Code> {
-    key.contains('.')
-        .then(|| bedrock_addon_core::diagnostic::Code::from(&codes::INVALID_VALUE))
-}
-
 /// A priority: 0 to 100, a value below 0 told as its own line and the game keeping a value of 1
 /// or more.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -2365,10 +2270,6 @@ pub struct Priorities {
     /// Below 1, told as a kept error.
     #[facet(schema::below = 1.0, schema::high_code = negative(), schema::kept)]
     pub ratio: Option<f32>,
-    #[facet(schema::key_with = refuse_dots)]
-    pub names: Option<IndexMap<String, u8>>,
-    #[facet(schema::key_with = refuse_dots, schema::kept)]
-    pub tags: Option<IndexMap<String, u8>>,
 }
 
 fn priorities() -> Priorities {
@@ -2376,8 +2277,6 @@ fn priorities() -> Priorities {
         each: None,
         default: None,
         ratio: None,
-        names: None,
-        tags: None,
     }
 }
 
@@ -2470,104 +2369,6 @@ mod bound_rules {
         value.check(&mut cx);
         assert!(!cx.failed());
         assert!(out.iter().all(|d| d.severity == Severity::Error));
-    }
-
-    #[test]
-    fn a_key_the_rule_refuses_is_one_finding_at_the_member_of_that_name() {
-        let mut value = Priorities {
-            names: Some(IndexMap::from([
-                ("ok".to_owned(), 1),
-                ("a.b".to_owned(), 2),
-                ("c.d".to_owned(), 3),
-            ])),
-            tags: Some(IndexMap::from([("x.y".to_owned(), 1)])),
-            ..priorities()
-        };
-        assert_eq!(
-            told(&mut value, MemberFailure::Refuse),
-            [
-                "Error core/invalid_value names/a.b",
-                "Error core/invalid_value names/c.d",
-                "Error kept core/invalid_value tags/x.y",
-            ]
-        );
-    }
-}
-
-// ---- a list element left out, told as a code of the list's own --------------------------------
-
-fn section_skipped() -> bedrock_addon_core::diagnostic::Code {
-    bedrock_addon_core::diagnostic::Code::from(&codes::INVALID_VALUE)
-}
-
-#[derive(Clone, Debug, PartialEq, Facet, Schema)]
-pub struct Section {
-    name: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Facet, Schema)]
-pub struct Credits {
-    #[facet(schema::elements = "drop", schema::skip_code = section_skipped())]
-    skipped: Vec<Section>,
-    #[facet(schema::elements = "drop")]
-    dropped: Vec<Section>,
-}
-
-mod skip_code {
-    use super::{Credits, Section};
-    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    use bedrock_addon_core::json::kit::{Node, Profile, Read};
-    use bedrock_addon_core::json::{Value, from_str_jsonc};
-    use bedrock_addon_core::schema::FromJson;
-    use bedrock_addon_core::versioning::{MemberFailure, Reading};
-
-    fn read(text: &str, failure: MemberFailure) -> (Option<Credits>, Vec<String>) {
-        let json: Value = from_str_jsonc(text).unwrap();
-        let mut found = Diagnostics::default();
-        let value = {
-            let reading = Reading::DOCUMENT.with_on_member_failure(failure);
-            let mut read = Read::new(reading, &mut found).profile(Profile::EVERY_FAILURE);
-            Credits::from_json(&Node::new(&json, JsonPath::new()), &mut read)
-        };
-        let told = found
-            .iter()
-            .map(|d| format!("{:?} {} {}", d.severity, d.location.json_path, d.code.id()))
-            .collect();
-        (value, told)
-    }
-
-    const TEXT: &str = r#"{"skipped": [{"name": "a"}, 5, {"name": [1]}, {"name": "b"}],
-        "dropped": [{"name": "a"}, 5, {"name": "b"}]}"#;
-
-    fn names(sections: &[Section]) -> Vec<&str> {
-        sections
-            .iter()
-            .map(|section| section.name.as_str())
-            .collect()
-    }
-
-    #[test]
-    fn an_element_that_fails_is_left_out_and_told_as_the_lists_code_alone() {
-        let (value, told) = read(TEXT, MemberFailure::Refuse);
-        let value = value.expect("a list that skips fails nothing");
-        assert_eq!(names(&value.skipped), ["a", "b"]);
-        assert_eq!(names(&value.dropped), ["a", "b"]);
-        assert_eq!(
-            told,
-            [
-                "Error skipped/1 core/invalid_value",
-                "Error skipped/2 core/invalid_value",
-                // The list that only drops tells the element's own finding.
-                "Error dropped/1 core/invalid_type",
-            ]
-        );
-    }
-
-    #[test]
-    fn the_code_is_graded_as_a_failed_member_is() {
-        let (value, told) = read(TEXT, MemberFailure::DefaultAndTell);
-        assert!(value.is_some());
-        assert_eq!(told[0], "Info skipped/1 core/invalid_value");
     }
 }
 

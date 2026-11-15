@@ -412,7 +412,7 @@ fn read_shaped<T: Typed>(
             return None;
         }
         // Not an object (the typed read, strict): the reader names the problem.
-        return read_value::<T>(&parsed, true, mode, cx, d).and(None);
+        return read_component::<T>(&parsed, true, mode, cx, d).and(None);
     };
     // The game reads an entity through JsonCpp: a member written as `null` is absent and
     // keeps its default, at every version (a `null` is an absent member).
@@ -440,44 +440,62 @@ fn read_shaped<T: Typed>(
     // What the fix-ups or the conversion rewrote is no text of the file: read without one.
     let as_written = !(older || changed || lenient || shorthand_read);
     parsed.value = value;
-    let mut value = read_value::<T>(&parsed, as_written, mode, cx, d)?;
+    let mut value = read_component::<T>(&parsed, as_written, mode, cx, d)?;
     let mut check = ComponentCheck::new(mode, cx, d);
     value.check(&mut check);
     (!check.failed).then_some(value)
 }
 
-/// Reads `T` from `parsed` (the component as the fix-ups left it, its text when `as_written`,
-/// so every finding carries its span): strictly, the first failure
-/// an error that drops it, as the typed door read; in the lenient conversion every member that
-/// does not read takes its default and is told. Its unknown members are kept and told, at the
-/// grade of the slice the document is read under.
-fn read_value<T: Typed>(
+/// Reads the component `T` from `parsed` (as the fix-ups left it, its text when `as_written`,
+/// so every finding carries its span) by [`read_converted`], in the load `cx`, its unknown
+/// members at the grade of the slice the document is read under.
+fn read_component<T: Typed>(
     parsed: &Parsed<'_>,
     as_written: bool,
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    let (failure, profile) = match mode {
-        ConvertMode::Strict => (MemberFailure::Refuse, Profile::FIRST_FAILURE),
-        // What does not read takes its default, told as the crate's own information.
-        ConvertMode::Lenient => (
+    let strict = matches!(mode, ConvertMode::Strict);
+    let grade = cx.grade(Class::Unknown);
+    read_converted(parsed, as_written, strict, T::RECOVERY, grade, Some(cx), d)
+}
+
+/// Reads `T` from `parsed`, from its text when `as_written`: strictly, the first failure an
+/// error that drops it, as the typed door read; in the lenient conversion every value that does
+/// not read takes its default and is told (`recovery`: what a failed value gives up), as the
+/// crate's own information. The entity's scalar and null rules at every slice, whatever the
+/// context says, its structs keeping their unknown members ([`TYPED_READING`](crate::TYPED_READING));
+/// the unknown members at `grade`; the rows read in the load `cx` where there is one.
+pub(crate) fn read_converted<T: FromJson>(
+    parsed: &Parsed<'_>,
+    as_written: bool,
+    strict: bool,
+    recovery: Recovery,
+    grade: Severity,
+    cx: Option<&LoadContext>,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    let (failure, profile) = if strict {
+        (MemberFailure::Refuse, Profile::FIRST_FAILURE)
+    } else {
+        (
             MemberFailure::DefaultAndTell,
             Profile::EVERY_FAILURE
                 .with_passes(Passes::AfterRead)
-                .with_recovery(T::RECOVERY),
-        ),
+                .with_recovery(recovery),
+        )
     };
-    // The entity's scalar and null rules at every slice, whatever the context says
-    // ([`READING`](crate::READING)); its unknown members at the slice's grade.
-    let reading = crate::READING
+    let reading = crate::TYPED_READING
         .with_on_member_failure(failure)
         .with_range_members(RangeMembers::Unrecognized);
     let mut read = Read::new(reading, d)
-        .unknown_severity(cx.grade(Class::Unknown))
+        .unknown_severity(grade)
         .profile(profile)
-        .texts(LENIENT_TEXTS)
-        .load(cx);
+        .texts(LENIENT_TEXTS);
+    if let Some(cx) = cx {
+        read = read.load(cx);
+    }
     let node = if as_written {
         Node::parsed(parsed, JsonPath::new())
     } else {

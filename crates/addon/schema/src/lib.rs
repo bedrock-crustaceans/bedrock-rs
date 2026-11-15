@@ -6,6 +6,12 @@
 //! are stored in the `Shape`, for the JSON door while it reads the text; the others are
 //! compile-time only, read from the tokens by `#[derive(Schema)]`.
 //!
+//! The hand-written hooks form one grid, a field's or a struct's, at the read or at the check:
+//! `read_with` (a field's read, `fn(&Node, &mut Read) -> Option<T>`; `schema::read_later` for a
+//! member the struct's `after_read` reads), `check_with` (a field's check), `after_read` (a
+//! struct's rule at the read, with the object as written) and `rule` (a struct's rule at the
+//! check, on the typed value); `molang_with` is the Molang walk's, on a field or a struct.
+//!
 //! The one path users name is `bedrock_addon_core::schema`, which re-exports this crate with
 //! the `Schema` trait beside it. The crate is a leaf of its own because facet's grammar macro
 //! exports its dispatcher with `#[macro_export]`, at a crate root, and the namespace `schema::`
@@ -29,12 +35,11 @@ facet::define_attr_grammar! {
         /// told and kept by the struct's rule (refused under a strict mask).
         SinceFormat(&'static str),
         /// `since_engine = "1.20.0"` (stored): the engine version from which the member is
-        /// read: written in a pack whose `min_engine_version` is below it, the member is read
-        /// and told as a `FieldSinceEngine` information. The derived check of a validating
-        /// context (`SchemaCx::validating`) judges the same key on the value as the pipeline
-        /// holds it, after the upgrade, and adds the game's own engine: below `since` the member
-        /// is `core/child_not_valid`, an error. A family that checks that way reads with
-        /// `Versions::engine` unset, so a member is told once.
+        /// read, judged by the derived check of a validating context (`SchemaCx::validating`)
+        /// on the value as the pipeline holds it, after the upgrade: below `since` on the game's
+        /// own engine the member is `core/child_not_valid`, an error; in a pack whose
+        /// `min_engine_version` is below it, a `FieldSinceEngine` information. The read reads
+        /// the member whatever the engine.
         SinceEngine(&'static str),
         /// `unknown = "keep"` (stored, on a field or a container): what an unknown member
         /// is where this struct differs from the slice's rule: `keep`, `report`, `reject`,
@@ -72,21 +77,13 @@ facet::define_attr_grammar! {
         /// `high_code = CODE` (compile-time, a field with a high bound, `max` or `below`): as
         /// `low_code`, for a value past it.
         HighCode(arbitrary),
-        /// `kept` (marker, a field with bounds or a `key_with` rule): the game logs the line and
-        /// keeps the value: the finding is a kept error, and nothing fails or resets.
+        /// `kept` (marker, a field with bounds): the game logs the line and keeps the value: the
+        /// finding is a kept error, and nothing fails or resets.
         Kept,
-        /// `key_with = path` (compile-time, a map field): the rule of the map's keys,
-        /// `fn(&str) -> Option<Code>`; each key it refuses is one finding at the member of that
-        /// name, graded as a broken bound is (`kept` says the game keeps it). It judges the keys of
-        /// a map that is read: the entry stays, and the finding is the check's. `keys` decides
-        /// at the read which names are members at all (below).
-        KeyWith(arbitrary),
         /// `keys = KEYS` (compile-time, a map field keyed by `String`): the rule its members'
         /// names are read by, a `schema::Keys` by its path: a name its pattern does not take is
         /// an unknown member of the map (told, not kept), and a map that must have one tells a
-        /// missing member when none is read; read in the profile's order and name rule. A name it
-        /// refuses is no entry (an unknown member told at the read), where `key_with` keeps the
-        /// entry and tells in the check, under a code of its own.
+        /// missing member when none is read; read in the profile's order and name rule.
         Keys(arbitrary),
         /// `multiple_of = n` (compile-time): the value is a multiple of the positive number
         /// `n`, checked after the field's range as `value % n == 0.0` in `f64`: exact for an
@@ -172,14 +169,6 @@ facet::define_attr_grammar! {
         /// is kept as written. Without it a `null` is the reading's null rule's, whatever reads
         /// the member: a `read_with` fn never sees one.
         ReadsNull,
-        /// `elements = "drop"` or `"fail"` (compile-time, a list field): what a failed element
-        /// does, whatever the reading: left out, the rest kept; or the list fails.
-        Elements(arbitrary),
-        /// `skip_code = CODE` (compile-time, a list field that says `elements = "drop"`): an
-        /// expression of type `Code`, made for each element that fails to read, told at the
-        /// element in place of its own findings (graded as a failed member is, failing nothing):
-        /// the game skips what it cannot read and says one line of the list's own.
-        SkipCode(arbitrary),
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
         /// (with the struct's unknown members), its failure told (or not) and failing nothing.
@@ -187,20 +176,9 @@ facet::define_attr_grammar! {
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,
-        /// `lowercase` (marker): a string the game lower-cases (ASCII letters) as it reads it,
-        /// telling nothing; the check does the same.
-        Lowercase,
-        /// `expected = "a control flag name"` (compile-time, a string enum): what the enum
-        /// takes, in words, for the error of a name it does not know.
-        Expected(arbitrary),
-        /// `case_insensitive` (marker, a string enum): a name is read in any case.
-        CaseInsensitive,
         /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
         /// the game's order, and the derive emits none; it checks at compile time that `ALL`
         /// names every variant once. `NAMES` and `EXPECTED` stay in declaration order.
         Order(arbitrary),
-        /// `otherwise` (marker, the newtype variant of an untagged enum): the arm a value takes
-        /// when the arm the read chooses fails (whose findings stand) or none takes it.
-        Otherwise,
     }
 }

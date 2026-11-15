@@ -18,8 +18,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::Id;
 use bedrock_addon_core::id::syntax::has_namespace;
-use bedrock_addon_core::json::kit::{Disposition, Elements, Members, Node, Read};
+use bedrock_addon_core::json::kit::{Elements, Members, Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::Reading;
 use bedrock_addon_shared_shapes::color::hex_bytes;
@@ -203,7 +204,7 @@ impl Reader<'_> {
             if name == key {
                 value = self.string_member(&member, accept, refused);
             } else {
-                self.read().unknown_member(&member, Disposition::Keep);
+                self.read().unknown_member(&member, UnknownRule::Keep);
             }
         }
         if required {
@@ -237,7 +238,7 @@ impl Reader<'_> {
                     markup = None;
                 }
             } else {
-                self.read().unknown_member(&member, Disposition::Keep);
+                self.read().unknown_member(&member, UnknownRule::Keep);
             }
         }
         self.read().required(&members, "markup");
@@ -355,7 +356,7 @@ impl Reader<'_> {
                     attribs = self.attribs(&member);
                 }
                 ("children", Some(below)) => children = self.controls(&member, below),
-                _ => self.read().unknown_member(&member, Disposition::Keep),
+                _ => self.read().unknown_member(&member, UnknownRule::Keep),
             }
         }
         if rule.attribs == Binding::Required {
@@ -403,7 +404,7 @@ impl Reader<'_> {
     /// The members of the object `node`, each key `known` does not name an unknown member.
     fn bound<'v>(&mut self, node: &Node<'v>, known: &[&str]) -> Option<Members<'v>> {
         let members = self.object(node)?;
-        self.read().unknown(&members, known, Disposition::Keep);
+        self.read().unknown(&members, known, UnknownRule::Keep);
         Some(members)
     }
 
@@ -726,7 +727,7 @@ pub(crate) fn root(
                     );
                 }
                 "layout" => layout = reader.layout(&member, ChildSet::RootControl),
-                _ => reader.read().unknown_member(&member, Disposition::Keep),
+                _ => reader.read().unknown_member(&member, UnknownRule::Keep),
             }
         }
         for key in DOCUMENT_MEMBERS {
@@ -774,7 +775,7 @@ pub(crate) fn composition(
                     );
                 }
                 "layout" => layout = reader.layout(&member, ChildSet::PanelContent),
-                _ => reader.read().unknown_member(&member, Disposition::Keep),
+                _ => reader.read().unknown_member(&member, UnknownRule::Keep),
             }
         }
         for key in DOCUMENT_MEMBERS {

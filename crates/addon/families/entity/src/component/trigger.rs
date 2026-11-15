@@ -18,7 +18,7 @@ macro_rules! triggers {
         $(#[$doc])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep", schema::trigger)]
+        #[facet(schema::trigger)]
         pub struct $name {
             /// `event`: the event to fire, looked up in the definition of `target`; default
             /// none (empty).
@@ -79,7 +79,6 @@ triggers! {
 /// an equipment slot.
 #[doc(alias = "minecraft:on_equipment_changed")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OnEquipmentChanged {
     /// `slots`: one entry per watched slot.
     #[facet(default)]
@@ -88,7 +87,6 @@ pub struct OnEquipmentChanged {
 
 /// One watched slot of [`OnEquipmentChanged`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SlotEvents {
     /// `slot`: the slot; default `slot.weapon.mainhand`.
     #[facet(default = EquipmentSlot::WeaponMainhand)]

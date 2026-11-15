@@ -2,9 +2,9 @@
 //! [`Family::reading`](super::Family::reading). The part a family fixes once, because it runs
 //! before a struct is selected, is in `Family::ENVELOPE` ([`Envelope`](super::Envelope)).
 //!
-//! A [`MemberFailure`] is acted on by the scalar pre-pass (`DefaultAndTell` defaults a refused
-//! scalar's member and tells it, [`Reading::scalar_rules`]; every other failure fails the read
-//! there) and by a derived `Schema::check` (`schema::SchemaCx`).
+//! A [`MemberFailure`] grades a member that fails to read (`json::kit::Read`, through
+//! `schema::grade`) or to check (a derived `Schema::check`, `schema::SchemaCx`); the old typed
+//! door's scalar pre-pass honours it too ([`Reading::scalar_rules`]).
 
 use super::{Family, StructIndex};
 use crate::diagnostic::{Class, Severity};
@@ -57,26 +57,6 @@ impl NullHandling {
     }
 }
 
-/// What an unknown member (code `0x4`) or component (code `0x400`) of the payload is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum UnknownMask {
-    /// An error: the document is rejected.
-    Error,
-    /// A warning: the document is kept.
-    Warn,
-}
-
-impl UnknownMask {
-    /// The severity of an unknown member or component under this mask.
-    pub const fn severity(self) -> Severity {
-        match self {
-            Self::Error => Severity::Error,
-            Self::Warn => Severity::Warning,
-        }
-    }
-}
-
 /// How a member that is one of several JSON forms (a leaf of a shared type: `scatter_chance`,
 /// a scatter coordinate) is read ([`Reading::choices`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -115,12 +95,8 @@ pub enum RangeMembers {
 pub enum MemberFailure {
     /// One error, and the document is rejected. Every slice the framework reads today.
     Refuse,
-    /// The object holding the member is dropped, the rest of the document kept.
-    DropOwner,
     /// The member takes its default and the reader tells.
     DefaultAndTell,
-    /// The failing array element is dropped, the rest of the array kept.
-    DropElement,
 }
 
 /// How one slice of a family reads its payload: the axes that vary between slices, each on
@@ -137,8 +113,9 @@ pub struct Reading {
     pub scalars: Scalars,
     /// What a number beyond the width of its float member does.
     pub beyond_width: BeyondWidth,
-    /// What an unknown member or component of the payload is.
-    pub unknown: UnknownMask,
+    /// The severity of an unknown member or component of the payload (the game's mask, code
+    /// `0x4` and `0x400`): an error rejects the document, a warning keeps it.
+    pub unknown: Severity,
     /// Whether the unknown members of the slice's structs are kept in the document's table
     /// and written back, where a struct does not say otherwise (`schema::unknown`, or the
     /// `extra: Extra` mark). `false` in every profile: only a struct that says so keeps them.
@@ -168,7 +145,7 @@ impl Reading {
         null: NullHandling::Rejected,
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
-        unknown: UnknownMask::Error,
+        unknown: Severity::Error,
         keeps_unknown: false,
         components_fatal: true,
         on_member_failure: MemberFailure::Refuse,
@@ -181,7 +158,7 @@ impl Reading {
         null: NullHandling::Absent,
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
-        unknown: UnknownMask::Warn,
+        unknown: Severity::Warning,
         keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
@@ -194,7 +171,7 @@ impl Reading {
         null: NullHandling::Own,
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
-        unknown: UnknownMask::Warn,
+        unknown: Severity::Warning,
         keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
@@ -210,7 +187,7 @@ impl Reading {
         .with_null(NullHandling::AsValue)
         .with_scalars(Scalars::Strict)
         .with_beyond_width(BeyondWidth::Finite)
-        .with_unknown(UnknownMask::Error);
+        .with_unknown(Severity::Error);
 
     /// The reading with `null` read as `null`.
     #[must_use]
@@ -233,9 +210,17 @@ impl Reading {
         }
     }
 
-    /// The reading with unknown members `unknown`.
+    /// The reading of vanilla's strict readers: a member takes only a token of its own type (an
+    /// integer member no real) and a number beyond its float's width is a type error.
     #[must_use]
-    pub const fn with_unknown(self, unknown: UnknownMask) -> Self {
+    pub const fn strict(self) -> Self {
+        self.with_scalars(Scalars::Strict)
+            .with_beyond_width(BeyondWidth::Error)
+    }
+
+    /// The reading with unknown members told at `unknown`.
+    #[must_use]
+    pub const fn with_unknown(self, unknown: Severity) -> Self {
         Self { unknown, ..self }
     }
 
@@ -302,12 +287,12 @@ impl Reading {
     }
 
     /// The severity a finding of `class` has under this reading: an unknown member or
-    /// component ([`Class::Unknown`]) follows the slice's [`unknown`](Self::unknown) mask, and
+    /// component ([`Class::Unknown`]) is the slice's [`unknown`](Self::unknown), and
     /// every other class is its [`default_severity`](Class::default_severity). (Not
     /// `schema::grading::grade`, which says what a member that fails to read does.)
     pub const fn grade(self, class: Class) -> Severity {
         match class {
-            Class::Unknown => self.unknown.severity(),
+            Class::Unknown => self.unknown,
             _ => class.default_severity(),
         }
     }
@@ -316,12 +301,6 @@ impl Reading {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn the_unknown_mask_gives_the_severity_of_an_unknown_member() {
-        assert_eq!(UnknownMask::Error.severity(), Severity::Error);
-        assert_eq!(UnknownMask::Warn.severity(), Severity::Warning);
-    }
 
     #[test]
     fn a_profile_reads_its_choice_members_by_member_and_a_slice_may_say_whole() {
@@ -361,7 +340,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            graded(Reading::DOCUMENT.with_unknown(UnknownMask::Warn)),
+            graded(Reading::DOCUMENT.with_unknown(Severity::Warning)),
             [
                 Severity::Error,
                 Severity::Error,
@@ -372,7 +351,7 @@ mod tests {
         );
         assert_eq!(graded(Reading::OWN), graded(Reading::NULL_ABSENT));
         assert_eq!(
-            graded(Reading::OWN.with_unknown(UnknownMask::Error)),
+            graded(Reading::OWN.with_unknown(Severity::Error)),
             graded(Reading::DOCUMENT)
         );
     }

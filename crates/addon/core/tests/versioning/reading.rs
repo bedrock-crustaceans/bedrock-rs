@@ -10,7 +10,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::testing::slice_reading;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, Envelope, Family, InputKind, Loaded, NullHandling, Reading,
-    Scalars, StructIndex, UnknownMask, ValidateCx, VersionInput,
+    Scalars, StructIndex, ValidateCx, VersionInput,
 };
 
 use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Phase, Severity};
@@ -96,7 +96,7 @@ reading_toy!(EntityLike, entity_like, {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
             StructIndex::Stable(i) if i < 1 => Reading::NULL_ABSENT,
-            _ => Reading::NULL_ABSENT.with_unknown(UnknownMask::Error),
+            _ => Reading::NULL_ABSENT.with_unknown(Severity::Error),
         }
     }
 });
@@ -109,7 +109,7 @@ reading_toy!(UnstrictFirst, unstrict_first, {
     };
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(Severity::Warning),
             _ => Reading::DOCUMENT,
         }
     }
@@ -132,8 +132,8 @@ fn json<F: Family>(index: StructIndex) -> Reading {
 
 #[test]
 fn reading_names_each_toy_by_its_profile() {
-    let warn = UnknownMask::Warn;
-    let error = UnknownMask::Error;
+    let warn = Severity::Warning;
+    let error = Severity::Error;
     // `FirstRun`: the family's own reader.
     assert_eq!(json::<Toy>(StructIndex::Stable(0)), Reading::OWN);
     assert_eq!(
@@ -241,7 +241,7 @@ reading_toy!(DocumentByText, document_by_text, {
 reading_toy!(GradedByTheSlice, graded_by_the_slice, {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => Reading::OWN.with_unknown(UnknownMask::Error),
+            StructIndex::Stable(0) => Reading::OWN.with_unknown(Severity::Error),
             _ => Reading::OWN,
         }
     }

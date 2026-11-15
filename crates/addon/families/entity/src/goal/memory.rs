@@ -30,7 +30,7 @@ use super::molang::{push_triggers, visit_conditions};
 // `conditional_filters`, `chance_to_start`, `retry_attempt_cooldown`, `duration`).
 #[doc(alias = "minecraft:memory_behavior.move_to_position")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MemoryMoveToPosition {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -100,7 +100,6 @@ impl MemoryMoveToPosition {
 // definition adds `on_complete` and makes the shared `duration` optional.
 #[doc(alias = "minecraft:memory_behavior.wait")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MemoryWait {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -141,7 +140,6 @@ impl Goal for MemoryWait {
 // `look_time`; it takes the shared memory-goal members instead.
 #[doc(alias = "minecraft:memory_behavior.look_at_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MemoryLookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -194,7 +192,6 @@ impl Goal for MemoryLookAtEntity {
 // current definition also has `min_range` and the shared memory-goal members.
 #[doc(alias = "minecraft:memory_behavior.follow_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MemoryFollowTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -234,7 +231,6 @@ impl Goal for MemoryFollowTarget {
 /// What a sensor does when its condition changes: fire `event` and write memories.
 // A response names the event to fire and the memory setters that write the memories.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SensorResponse {
     /// `event`: the event to fire on the entity.
     pub event: Option<String>,
@@ -244,7 +240,6 @@ pub struct SensorResponse {
 
 /// One memory a [`SensorResponse`] writes.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MemorySetter {
     /// `memory`: the memory's name.
     pub memory: Option<String>,
@@ -261,7 +256,6 @@ macro_rules! sensor {
         $(#[$meta])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// `sensor_entries`: the sensor's entries, each searched on its own. Required.
             pub sensor_entries: Option<Vec<$entry>>,
@@ -316,7 +310,6 @@ sensor! {
 
 /// One entry of `memory_sensor.find_nearest_block`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindNearestBlockEntry {
     /// `conditional_filters`: the entry searches only when these pass.
     pub conditional_filters: Option<Filter>,
@@ -345,7 +338,6 @@ impl FindNearestBlockEntry {
 
 /// One entry of `memory_sensor.find_nearest_entity`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindNearestEntityEntry {
     /// `name`: the entry's name.
     pub name: Option<String>,
@@ -371,7 +363,6 @@ impl FindNearestEntityEntry {
 
 /// One entry of `memory_sensor.find_nearest_poi`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindNearestPoiEntry {
     /// `name`: the entry's name.
     pub name: Option<String>,
@@ -396,7 +387,6 @@ impl FindNearestPoiEntry {
 
 /// One entry of `memory_sensor.game_event`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GameEventEntry {
     /// `source_entity_filters`: the entities whose events count.
     pub source_entity_filters: Option<Filter>,
@@ -417,7 +407,6 @@ impl GameEventEntry {
 
 /// One entry of `memory_sensor.in_range_of_entity`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InRangeOfEntityEntry {
     /// `conditional_filters`: the entry checks only when these pass.
     pub conditional_filters: Option<Filter>,
@@ -449,7 +438,7 @@ impl InRangeOfEntityEntry {
 // Typed from 1.26.50, on top of the base members every generic goal has.
 #[doc(alias = "minecraft:memory_behavior.jump_to_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MemoryJumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::min = 0)]
@@ -498,7 +487,7 @@ impl MemoryJumpToBlock {
 // Typed from 1.26.50.
 #[doc(alias = "minecraft:memory_behavior.prepare_ram_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MemoryPrepareRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::min = 0)]
@@ -547,7 +536,7 @@ impl MemoryPrepareRamAttack {
 // Typed from 1.26.50. The two sound members default to the sound event `undefined`.
 #[doc(alias = "minecraft:memory_behavior.ram_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MemoryRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::min = 0)]
@@ -614,7 +603,6 @@ sensor! {
 
 /// One entry of `memory_sensor.find_ram_charge_position`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindRamChargePositionEntry {
     /// `charge_position_memory`: the `block_pos` memory the charge position goes to.
     pub charge_position_memory: Option<String>,

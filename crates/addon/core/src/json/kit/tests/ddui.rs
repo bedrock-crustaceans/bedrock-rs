@@ -35,7 +35,7 @@ fn error(read: &mut Read<'_>, node: &Node<'_>, code: Code) {
 /// `Reader::bound`: the members, each key outside `known` an unknown member.
 fn bound<'v>(read: &mut Read<'_>, node: &Node<'v>, known: &[&str]) -> Option<Members<'v>> {
     let members = read.object(node)?;
-    read.unknown(&members, known, Disposition::Keep);
+    read.unknown(&members, known, UnknownRule::Keep);
     Some(members)
 }
 
@@ -58,7 +58,7 @@ fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
                 accepted
             });
         } else {
-            read.unknown_member(&member, Disposition::Keep);
+            read.unknown_member(&member, UnknownRule::Keep);
         }
     }
     // Absent: told after the walk, spanning the object.

@@ -29,7 +29,7 @@ use bedrock_addon_core::document::VersionInfo;
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::json::Prepared;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{self, Disposition, Node, Read};
+use bedrock_addon_core::json::kit::{self, Node, Read};
 use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, WideInt};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
@@ -37,6 +37,7 @@ use bedrock_addon_core::molang::{
     json_scalar, read_finite,
 };
 use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, SemVersion};
 use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
@@ -210,7 +211,7 @@ impl<'c> Reader<'c> {
                 continue;
             }
             if !members.quiet.contains(key) {
-                self.lenient().unknown_member(&node, Disposition::Keep);
+                self.lenient().unknown_member(&node, UnknownRule::Keep);
             }
             self.diagnostics
                 .unknown_mut()

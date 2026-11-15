@@ -14,6 +14,7 @@ mod write;
 #[cfg(test)]
 mod tests;
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
 use bedrock_addon_core::document::{
@@ -26,8 +27,8 @@ use bedrock_addon_core::load::{self, CollectionLoader, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
-    NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx,
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Reading, StructIndex, ValidateCx,
 };
 use history::{DimensionFamily, DimensionHistory};
 use indexmap::IndexMap;
@@ -53,10 +54,7 @@ pub(crate) const V1_26_50: FormatVersion = bedrock_addon_core::version::known::V
 
 /// The game reads every slice leniently: an unknown member is a warning, not an error. A
 /// scalar member takes its own JSON type alone.
-pub(crate) const JSON_READING: Reading = Reading::DOCUMENT
-    .with_unknown(UnknownMask::Warn)
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+pub(crate) const JSON_READING: Reading = Reading::DOCUMENT.with_unknown(Severity::Warning).strict();
 
 impl Family for DimensionFamily {
     const NAME: &'static str = "dimension";

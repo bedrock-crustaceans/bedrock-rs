@@ -333,9 +333,10 @@ fn processor_blocks_and_loot_tables_are_reported_once_per_member() {
 #[test]
 fn the_four_json_families_read_a_document_input_under_the_unstrict_mask() {
     use super::history::{PoolFamily, ProcessorListFamily, StructureFamily, StructureSetFamily};
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
-    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex, UnknownMask};
+    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex};
     // The game registers each of the four slices as not strict: unknown members are
     // warnings.
     let slice = StructIndex::Stable(0);
@@ -364,7 +365,7 @@ fn the_four_json_families_read_a_document_input_under_the_unstrict_mask() {
     for (input, rule, mask) in declared {
         assert_eq!(input, InputKind::Document);
         assert_eq!(rule, Some(NullRule::Rejected));
-        assert_eq!(mask, UnknownMask::Warn);
+        assert_eq!(mask, Severity::Warning);
     }
 }
 

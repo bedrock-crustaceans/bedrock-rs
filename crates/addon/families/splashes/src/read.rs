@@ -8,7 +8,8 @@ use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
 use bedrock_addon_core::json::kit::fixed_path::{Authored, iterated, raw_member, reader, to_text};
-use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read};
+use bedrock_addon_core::json::kit::{Members, Node, Read};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::schema::read_document;
 
 /// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
@@ -154,7 +155,7 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
         if let Some(splashes) = entry_members.get("splashes") {
             check_texts(read, &splashes);
         }
-        read.unknown(&entry_members, &ENTRY_KEYS, Disposition::Keep);
+        read.unknown(&entry_members, &ENTRY_KEYS, UnknownRule::Keep);
         let Some(requires) = members(read, &requires) else {
             continue;
         };
@@ -167,7 +168,7 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
                 read.push(invalid().at(requires.node().path().child(category)));
             }
         }
-        read.unknown(&requires, &REQUIRES_KEYS, Disposition::Keep);
+        read.unknown(&requires, &REQUIRES_KEYS, UnknownRule::Keep);
     }
 }
 

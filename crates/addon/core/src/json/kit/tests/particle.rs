@@ -23,7 +23,7 @@ enum Era {
 /// A read under `era`.
 fn reader(era: Era, found: &mut Diagnostics) -> Read<'_> {
     match era {
-        Era::Cereal => Read::new(Reading::DOCUMENT.with_unknown(UnknownMask::Warn), found),
+        Era::Cereal => Read::new(Reading::DOCUMENT.with_unknown(Severity::Warning), found),
         Era::Legacy => Read::new(
             Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
             found,
@@ -87,7 +87,7 @@ fn render_parameters(era: Era, read: &mut Read<'_>, node: &Node<'_>) -> Option<(
     let members = object(era, read, node)?;
     let material = req(era, read, &members, "material", string);
     let texture = req(era, read, &members, "texture", string);
-    read.unknown(&members, &["material", "texture"], Disposition::Keep);
+    read.unknown(&members, &["material", "texture"], UnknownRule::Keep);
     if texture.chars().count() > 256 {
         read.push(
             Diagnostic::of(&core_codes::INVALID_VALUE).at(members.node().path().child("texture")),
@@ -114,7 +114,7 @@ fn description(
     read.unknown(
         &members,
         &["identifier", "basic_render_parameters"],
-        Disposition::Keep,
+        UnknownRule::Keep,
     );
     Some((identifier, parameters))
 }

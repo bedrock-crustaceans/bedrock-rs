@@ -440,7 +440,7 @@ pub enum Class {
     /// An unknown member or component, graded where it is raised by the reading of the slice
     /// that reads it ([`Reading::grade`](crate::versioning::Reading::grade), through
     /// `LoadContext::grade`, `UpgradeCx::grade` or `ValidateCx::grade`): an error under a
-    /// strict [`UnknownMask`](crate::versioning::UnknownMask), and the document is refused; a
+    /// strict [`Reading::unknown`](crate::versioning::Reading::unknown), and the document is refused; a
     /// warning under an unstrict one. Nothing raises its severity after the read: a site that
     /// tells one at another severity says so where it raises it.
     Unknown,
@@ -542,8 +542,6 @@ pub enum Kind {
 
 /// What became of a member or component the schema does not declare: the payload of
 /// [`Kind::UnknownMember`].
-///
-/// The reader's policy, [`kit::Disposition`](crate::json::kit::Disposition), converts into it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Disposition {
@@ -558,19 +556,6 @@ pub enum Disposition {
     /// Read and ignored, as the game ignores it (`IgnoredMember`, an ignored property,
     /// literal, setting, legacy entry or filter).
     Ignored,
-}
-
-impl From<crate::json::kit::Disposition> for Disposition {
-    fn from(disposition: crate::json::kit::Disposition) -> Self {
-        use crate::json::kit::Disposition as Policy;
-        match disposition {
-            // An unrecognized component is told as the code's own kind, a kept one.
-            Policy::Keep | Policy::Component => Self::Kept,
-            Policy::Report => Self::NotKept,
-            Policy::Reject => Self::Dropped,
-            Policy::Ignore => Self::Ignored,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -775,15 +760,6 @@ mod tests {
                 meta.id()
             );
         }
-    }
-
-    #[test]
-    fn the_readers_policy_converts_into_the_disposition() {
-        use crate::json::kit::Disposition as Policy;
-        assert_eq!(Disposition::from(Policy::Keep), Disposition::Kept);
-        assert_eq!(Disposition::from(Policy::Report), Disposition::NotKept);
-        assert_eq!(Disposition::from(Policy::Reject), Disposition::Dropped);
-        assert_eq!(Disposition::from(Policy::Ignore), Disposition::Ignored);
     }
 
     #[test]

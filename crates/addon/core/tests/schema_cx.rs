@@ -113,9 +113,17 @@ fn a_member_with_nothing_to_reset_to_fails_its_owner_at_the_rules_severity() {
 #[test]
 fn a_rule_tells_an_error_that_fails_the_owner_and_a_kept_one_that_does_not() {
     use bedrock_addon_core::diagnostic::Phase;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::version::FormatVersion;
+    let load = LoadContext::detached();
     let mut out = Diagnostics::default();
-    let mut cx =
-        SchemaCx::new(Reading::DOCUMENT, at(&["tree"]), &mut out).with_phase(Phase::Validate);
+    let mut cx = SchemaCx::validating(
+        Reading::DOCUMENT,
+        at(&["tree"]),
+        &load,
+        FormatVersion::new(1, 0, 0),
+        &mut out,
+    );
     cx.kept("offset", Code::from(&codes::INVALID_VALUE));
     assert!(!cx.failed());
     cx.error("", Code::from(&codes::INVALID_TYPE));

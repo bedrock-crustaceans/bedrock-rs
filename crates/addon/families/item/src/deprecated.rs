@@ -3,10 +3,11 @@
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{Disposition, Node, Profile, Read};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::schema::{self, FromJson, Schema, read_document, read_value};
 use bedrock_addon_core::shared::EventTrigger;
-use bedrock_addon_core::versioning::{BeyondWidth, MemberFailure, NullHandling, Reading, Scalars};
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading};
 use facet::Facet;
 use facet_value::VObject;
 
@@ -64,8 +65,7 @@ pub struct ItemDeprecatedData {
 /// the wrong shape, a value no type holds is kept as written.
 const SIDE_CAR: Reading = Reading::OWN
     .with_null(NullHandling::Rejected)
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error)
+    .strict()
     .with_on_member_failure(MemberFailure::DefaultAndTell);
 
 /// A trigger slot `{"<inner>": trigger}`: another member beside the trigger has no place in the
@@ -82,7 +82,7 @@ fn slot(inner: &str, node: &Node<'_>, read: &mut Read<'_>) -> Option<EventTrigge
     };
     for (key, member) in members.iter() {
         if key != inner {
-            read.unknown_member(&member, Disposition::Report);
+            read.unknown_member(&member, UnknownRule::NotKept);
         }
     }
     Some(trigger)

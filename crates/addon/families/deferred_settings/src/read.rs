@@ -10,10 +10,10 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::kit::{
-    Disposition, Expected, MemberOrder, Members, Node, Profile, Read, Texts, UnknownAt, WrongKind,
+    Expected, MemberOrder, Members, Node, Profile, Read, Texts, UnknownAt, WrongKind,
 };
 use bedrock_addon_core::json::{JsonSlice, Value};
-use bedrock_addon_core::schema::FromJson;
+use bedrock_addon_core::schema::{FromJson, UnknownRule};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{NullHandling, ParseCx, Scalars, read_payload_with};
 use bedrock_addon_shared_shapes::color::hex_bytes;
@@ -250,7 +250,7 @@ pub(crate) fn unknown(
 ) -> UnknownMembers {
     let mut kept = UnknownMembers::default();
     for (key, member) in members.iter().filter(|(key, _)| !known.contains(key)) {
-        read.unknown_member(&member, Disposition::Keep);
+        read.unknown_member(&member, UnknownRule::Keep);
         if let Some(value) = Value::from_json(&member, read) {
             kept.insert(key.to_owned(), value);
         }

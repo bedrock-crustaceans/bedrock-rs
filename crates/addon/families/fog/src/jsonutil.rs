@@ -13,7 +13,7 @@ use crate::history::v1_21_90::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::json::kit::{Lossy, MemberOrder, Node, Profile, Read, Texts, Versions};
+use bedrock_addon_core::json::kit::{Lossy, MemberOrder, Node, Profile, Read, Texts};
 use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{JsonSlice, Winner};
 use bedrock_addon_core::schema::{self, FromJson, Schema, read_document as read_value};
@@ -67,10 +67,7 @@ pub(crate) fn read_document(
     let mut read = Read::new(Reading::TREE, &mut found)
         .profile(PROFILE)
         .texts(Texts::TREE)
-        .versions(Versions {
-            format: Some(version),
-            engine: None,
-        });
+        .format(Some(version));
     let read_it = read_value::<Document>(&Node::parsed(&text, at.clone()), &mut read);
     drop(read);
     let failed = found.has_errors();

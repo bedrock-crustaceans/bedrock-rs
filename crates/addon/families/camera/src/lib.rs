@@ -47,6 +47,7 @@ fn closing_line(diagnostics: &mut Diagnostics, line: &'static CodeDef<0>) {
 
 use std::convert::Infallible;
 
+use bedrock_addon_core::diagnostic::Severity;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, Kind,
@@ -67,8 +68,7 @@ use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx, Versioned,
-    parse_document,
+    NoComponents, Reading, Scalars, StructIndex, ValidateCx, Versioned, parse_document,
 };
 use history::{
     EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,
@@ -232,7 +232,7 @@ impl Family for PresetFamily {
     /// member drops the preset under both: the game scans the log of the parse for the
     /// unknown-member error, so the mask is `Error` in both.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
-        let strict = file::strict(Reading::DOCUMENT);
+        let strict = Reading::DOCUMENT.strict();
         match index {
             StructIndex::Stable(0) => strict.with_scalars(Scalars::NonStrict),
             _ => strict,
@@ -324,7 +324,11 @@ impl Family for ListFamily {
 
     /// An unknown member fails the list, as the game reads it: an error.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile()).with_unknown(UnknownMask::Error)
+        Self::ENVELOPE
+            .input
+            .profile()
+            .strict()
+            .with_unknown(Severity::Error)
     }
 }
 
@@ -359,7 +363,7 @@ impl Family for SplineFamily {
     }
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile())
+        Self::ENVELOPE.input.profile().strict()
     }
 }
 
@@ -381,7 +385,7 @@ impl Family for EntityFamily {
     };
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile())
+        Self::ENVELOPE.input.profile().strict()
     }
 }
 

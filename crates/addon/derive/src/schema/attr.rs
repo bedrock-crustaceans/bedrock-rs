@@ -189,7 +189,6 @@ pub(crate) struct FieldAttrs {
     pub min_len: Option<(usize, Span)>,
     pub max_len: Option<(usize, Span)>,
     pub foreign_event: Option<Span>,
-    pub lowercase: Option<Span>,
     /// `schema::required`: an `Option` field the document must write.
     pub required: Option<Span>,
     /// The read's codes: `schema::wrong_type`, `schema::missing`, `schema::invalid`,
@@ -206,21 +205,14 @@ pub(crate) struct FieldAttrs {
     pub high_code: Option<(Expr, Span)>,
     /// `schema::kept`: the game logs a value outside the field's bounds and keeps it.
     pub kept: Option<Span>,
-    /// `schema::key_with = path`: the rule of a map's keys, `fn(&str) -> Option<Code>`.
-    pub key_with: Option<(Expr, Span)>,
     /// `schema::keys = KEYS`: the rule a map's member names are read by, a `schema::Keys`.
     pub keys: Option<(Expr, Span)>,
     /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
     pub iterated: Option<Span>,
     /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
     pub reads_null: Option<Span>,
-    /// `schema::elements`: `true` for `"drop"`, `false` for `"fail"`.
-    pub elements: Option<(bool, Span)>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
-    /// `schema::skip_code`: what a list element left out is told as, in place of its own
-    /// findings, an expression of type `Code`.
-    pub skip_code: Option<(Expr, Span)>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -232,8 +224,6 @@ pub(crate) struct ContainerAttrs {
     pub rename_all: Option<RenameRule>,
     pub transparent: bool,
     pub unknown: Option<String>,
-    pub expected: Option<LitStr>,
-    pub case_insensitive: bool,
     /// `schema::order = "game"`: the enum keeps its own `ALL`.
     pub order_game: bool,
     /// `schema::string_only`: the enum reads a string and nothing else.
@@ -272,7 +262,6 @@ const FIELD_KEYS: &[&str] = &[
     "min_len",
     "max_len",
     "foreign_event",
-    "lowercase",
     "required",
     "wrong_type",
     "missing",
@@ -280,17 +269,14 @@ const FIELD_KEYS: &[&str] = &[
     "finite",
     "iterated",
     "reads_null",
-    "elements",
     "or_kept",
     "low_code",
     "high_code",
     "kept",
-    "key_with",
-    "skip_code",
     "negative",
     "keys",
 ];
-const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order", "string_only"];
+const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
 const STRUCT_KEYS: &[&str] = &["rule", "after_read", "quiet", "trigger"];
 
@@ -367,11 +353,6 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             Place::Field if enum_key => {
                 format!("`schema::{key}` is a string enum's key: put it on the enum")
             }
-            _ if key == "otherwise" && place != Place::UntaggedVariant => {
-                "`schema::otherwise` marks the newtype variant of an untagged enum that a value \
-                 takes when no other arm reads it"
-                    .to_owned()
-            }
             Place::Variant if field_key || enum_key || key == "unknown" => {
                 format!(
                     "a variant of a string enum takes no `schema::` key, `schema::{key}` included"
@@ -431,7 +412,7 @@ fn unknown_word(entry: &Entry) -> Result<String> {
             lit.span(),
             format!(
                 "`{word}` is not an unknown-member rule: expected `keep`, `report`, `reject`, \
-                 `ignore` or `component`"
+                 `ignore`, `component` or `silent`"
             ),
         ))
     }
@@ -595,7 +576,7 @@ impl FieldAttrs {
                     }
                     "fallback" | "molang" | "molang_with" | "read_with" | "check_with"
                     | "wrong_type" | "missing" | "invalid" | "low_code" | "high_code"
-                    | "key_with" | "skip_code" | "negative" | "keys" => {
+                    | "negative" | "keys" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -607,8 +588,6 @@ impl FieldAttrs {
                             "negative" => &mut out.negative,
                             "low_code" => &mut out.low_code,
                             "high_code" => &mut out.high_code,
-                            "key_with" => &mut out.key_with,
-                            "skip_code" => &mut out.skip_code,
                             "check_with" => &mut out.check_with,
                             "keys" => &mut out.keys,
                             _ => &mut out.read_with,
@@ -629,16 +608,11 @@ impl FieldAttrs {
                         once(&mut out.multiple_of, (step, span), &key, span, errors);
                     }
                     "foreign_event" => once(&mut out.foreign_event, span, &key, span, errors),
-                    "lowercase" => once(&mut out.lowercase, span, &key, span, errors),
                     "required" => once(&mut out.required, span, &key, span, errors),
                     "kept" => once(&mut out.kept, span, &key, span, errors),
                     "finite" => once(&mut out.finite, span, &key, span, errors),
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
                     "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
-                    "elements" => {
-                        let drop = either_word(entry, &key, "drop", "fail")?;
-                        once(&mut out.elements, (drop, span), &key, span, errors);
-                    }
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
@@ -713,19 +687,15 @@ impl FieldAttrs {
             .or(self.finite)
             .or(self.iterated)
             .or(self.reads_null)
-            .or_else(|| self.elements.map(|(_, s)| s))
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.low_code.as_ref().map(|(_, s)| *s))
             .or_else(|| self.high_code.as_ref().map(|(_, s)| *s))
-            .or_else(|| self.key_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.keys.as_ref().map(|(_, s)| *s))
-            .or_else(|| self.skip_code.as_ref().map(|(_, s)| *s))
             .or(self.kept)
             .or_else(|| self.min_len.as_ref().map(|(_, s)| *s))
             .or_else(|| self.max_len.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
-            .or(self.lowercase)
             .or(self.required)
             .or(self.stored)
     }
@@ -834,15 +804,6 @@ impl ContainerAttrs {
                             errors,
                         );
                     })
-                }
-                Some("expected") if place == Place::Enum => {
-                    string_value(entry, "expected").map(|lit| {
-                        once(&mut out.expected, lit, "expected", entry.span, errors);
-                    })
-                }
-                Some("case_insensitive") if place == Place::Enum => {
-                    out.case_insensitive = true;
-                    Ok(())
                 }
                 Some("string_only") if place == Place::Enum => {
                     out.string_only = true;
@@ -993,13 +954,6 @@ pub(crate) fn tagged_variant(
         }
     }
     (rename, rename_all, unknown)
-}
-
-/// Whether a variant of an untagged enum says `schema::otherwise`.
-pub(crate) fn variant_otherwise(attrs: &[Attribute]) -> bool {
-    entries(attrs)
-        .iter()
-        .any(|entry| entry.schema_key().as_deref() == Some("otherwise"))
 }
 
 /// The checked `schema::unknown` of a variant of an untagged enum with data (a struct

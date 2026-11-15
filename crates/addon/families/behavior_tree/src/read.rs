@@ -13,8 +13,9 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::Unknown;
 use bedrock_addon_core::id::BehaviorTreeId;
-use bedrock_addon_core::json::kit::{self, Disposition, Read};
+use bedrock_addon_core::json::kit::{self, Read};
 use bedrock_addon_core::json::{PrepareError, Prepared, Value};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
 /// The only member of the document root vanilla reads.
@@ -460,7 +461,7 @@ impl<'d> Reader<'d> {
         let at = body.members.node().path();
         for (key, value) in self
             .read
-            .unknown(&body.members, &body.read, Disposition::Keep)
+            .unknown(&body.members, &body.read, UnknownRule::Keep)
         {
             self.unknown.put(at, key, value.clone());
         }

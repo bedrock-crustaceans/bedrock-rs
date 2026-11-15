@@ -6,8 +6,9 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::Object;
+use bedrock_addon_core::json::kit::Node;
 use bedrock_addon_core::json::kit::fixed_path::{as_int, as_real, raw_member, reader};
-use bedrock_addon_core::json::kit::{Disposition, Node};
+use bedrock_addon_core::schema::UnknownRule;
 
 /// What a member turned out to be.
 #[derive(Debug)]
@@ -127,7 +128,7 @@ impl<'v> Fields<'v> {
             .then(|| read.object(&node))
             .flatten()
         {
-            let unknown = read.unknown(&members, &self.known, Disposition::Keep);
+            let unknown = read.unknown(&members, &self.known, UnknownRule::Keep);
             self.extra.extend(
                 unknown
                     .into_iter()

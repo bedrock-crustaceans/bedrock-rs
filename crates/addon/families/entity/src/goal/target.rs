@@ -18,7 +18,7 @@ use super::molang::{push_trigger, push_triggers, visit_conditions, visit_items};
 // `behavior.avoid_block`: typed from 1.21.120.
 #[doc(alias = "minecraft:behavior.avoid_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct AvoidBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -94,7 +94,7 @@ impl AvoidBlock {
 // `behavior.avoid_mob_type`: typed from 1.21.120.
 #[doc(alias = "minecraft:behavior.avoid_mob_type")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct AvoidMobType {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -183,7 +183,7 @@ impl AvoidMobType {
 // `behavior.defend_trusted_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.defend_trusted_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct DefendTrustedTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -299,7 +299,6 @@ impl DefendTrustedTarget {
 // `behavior.defend_village_target`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.defend_village_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DefendVillageTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -348,7 +347,6 @@ impl Goal for DefendVillageTarget {
 // `behavior.hurt_by_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.hurt_by_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct HurtByTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -404,7 +402,6 @@ impl Goal for HurtByTarget {
 // `behavior.nearest_attackable_target`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.nearest_attackable_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NearestAttackableTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -473,7 +470,6 @@ impl Goal for NearestAttackableTarget {
 // `behavior.nearest_prioritized_attackable_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.nearest_prioritized_attackable_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NearestPrioritizedAttackableTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -556,7 +552,6 @@ impl Goal for NearestPrioritizedAttackableTarget {
 // `behavior.owner_hurt_by_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.owner_hurt_by_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OwnerHurtByTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -611,7 +606,6 @@ impl Goal for OwnerHurtByTarget {
 // `behavior.owner_hurt_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.owner_hurt_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OwnerHurtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -664,7 +658,6 @@ impl Goal for OwnerHurtTarget {
 // `behavior.target_when_pushed`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.target_when_pushed")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TargetWhenPushed {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -693,7 +686,6 @@ impl Goal for TargetWhenPushed {
 // `behavior.wither_target_highest_damage`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.wither_target_highest_damage")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct WitherTargetHighestDamage {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]

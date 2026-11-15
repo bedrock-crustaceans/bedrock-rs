@@ -15,8 +15,8 @@ use bedrock_addon_core::load::{DocumentSource, LoadContext};
 use bedrock_addon_core::schema;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    ComponentTable, Family, LoadOutcome, Loaded, ParseCx, Reading, StructIndex, UnknownMask,
-    VersionStruct, Versioned, load, parse_payload, write_payload,
+    ComponentTable, Family, LoadOutcome, Loaded, ParseCx, Reading, StructIndex, VersionStruct,
+    Versioned, load, parse_payload, write_payload,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -157,7 +157,7 @@ keep_toy!(ReadingReports, reading_reports, Reading::OWN);
 keep_toy!(
     StrictReports,
     strict_reports,
-    Reading::OWN.with_unknown(UnknownMask::Error)
+    Reading::OWN.with_unknown(Severity::Error)
 );
 
 /// One unknown member `u` in every object of the payload, and `zz` in the payload itself.
@@ -353,7 +353,7 @@ fn pin_the_door_tells_a_reported_member_as_it_tells_a_kept_one() {
 #[test]
 fn the_door_tells_every_unknown_member_at_the_reading_s_grade() {
     let mut load = LoadContext::detached();
-    load.reading = load.reading.with_unknown(UnknownMask::Error);
+    load.reading = load.reading.with_unknown(Severity::Error);
     let cx = ParseCx {
         load: &load,
         written: FormatVersionInput {

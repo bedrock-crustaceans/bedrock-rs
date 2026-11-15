@@ -105,7 +105,6 @@ fn compiles(source: &MolangSource, at: &JsonPath, cx: &mut ComponentCheck<'_>) -
 /// each a Molang expression or a number.
 #[doc(alias = "minecraft:experience_reward")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ExperienceReward {
     /// `on_bred`: the experience when bred; absent drops none.
     #[facet(schema::molang = EXPRESSION)]
@@ -198,7 +197,6 @@ impl Typed for ExperienceReward {
 /// `minecraft:anger_level`: the entity's anger towards nuisances (the warden).
 #[doc(alias = "minecraft:anger_level")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AngerLevel {
     /// `anger_decrement_interval`: seconds between anger decreases; default 1.
     #[facet(default = 1.0_f32)]
@@ -231,7 +229,6 @@ pub struct AngerLevel {
 
 /// One sound of [`AngerLevel::on_increase_sounds`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AngerSound {
     /// `condition`: when the sound plays, a Molang expression; required.
     #[facet(schema::molang = EXPRESSION)]
@@ -282,7 +279,6 @@ impl Typed for AngerLevel {
 // `rotate_rider_by` is Molang.
 #[doc(alias = "minecraft:rideable")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Rideable {
     /// `seat_count`: how many entities ride it at once; default 1.
     #[facet(default = 1_i32)]
@@ -342,7 +338,6 @@ pub enum DismountMode {
 
 /// One seat of a [`Rideable`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Seat {
     /// `position`: the seat relative to the entity; default 0, 0, 0.
     #[facet(default = Vec3::new(0.0, 0.0, 0.0))]

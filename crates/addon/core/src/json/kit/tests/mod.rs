@@ -8,9 +8,10 @@ mod pack_settings;
 mod particle;
 
 use super::*;
+use crate::diagnostic::Severity;
 use crate::diagnostic::codes as core_codes;
 use crate::json::{IsIntRule, WideInt};
-use crate::versioning::{MemberFailure, UnknownMask};
+use crate::versioning::MemberFailure;
 
 /// A finding as the oracle captures were written: severity, path, code, span, kept. The code
 /// is the legacy code's `Debug`, as the captures hold it.
@@ -99,8 +100,6 @@ fn a_failed_read_is_an_error_that_fails_the_owner_unless_the_member_takes_its_de
     for (failure, severity) in [
         (MemberFailure::Refuse, "Error"),
         (MemberFailure::DefaultAndTell, "Info"),
-        (MemberFailure::DropOwner, "Error"),
-        (MemberFailure::DropElement, "Error"),
     ] {
         let mut found = Diagnostics::default();
         let mut read = Read::new(
@@ -127,22 +126,19 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
     let json = value(r#"{"known": 1, "x": 2, "y": [3]}"#);
     let root = Node::new(&json, JsonPath::new());
     for (disposition, code) in [
-        (Disposition::Keep, "core/unrecognized_field"),
-        (Disposition::Report, "core/member_not_kept"),
-        (Disposition::Reject, "core/dropped_field"),
-        (Disposition::Ignore, "core/ignored_member"),
-        (Disposition::Component, "core/unrecognized_component"),
+        (UnknownRule::Keep, "core/unrecognized_field"),
+        (UnknownRule::NotKept, "core/member_not_kept"),
+        (UnknownRule::Reject, "core/dropped_field"),
+        (UnknownRule::Ignore, "core/ignored_member"),
+        (UnknownRule::Component, "core/unrecognized_component"),
     ] {
-        for (mask, severity) in [
-            (UnknownMask::Error, "Error"),
-            (UnknownMask::Warn, "Warning"),
-        ] {
+        for (mask, severity) in [(Severity::Error, "Error"), (Severity::Warning, "Warning")] {
             let mut found = Diagnostics::default();
             let mut read = Read::new(Reading::DOCUMENT.with_unknown(mask), &mut found);
             let members = read.object(&root).expect("an object");
             let kept = read.unknown(&members, &["known"], disposition);
             let names: Vec<&str> = kept.iter().map(|(key, _)| *key).collect();
-            let expected: &[&str] = if disposition == Disposition::Keep {
+            let expected: &[&str] = if disposition == UnknownRule::Keep {
                 &["x", "y"]
             } else {
                 &[]
@@ -161,7 +157,7 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::OWN, &mut found).unknown_severity(Severity::Info);
     let members = read.object(&root).expect("an object");
-    read.unknown(&members, &["known", "y"], Disposition::Keep);
+    read.unknown(&members, &["known", "y"], UnknownRule::Keep);
     assert_eq!(
         rendered(&found),
         ["Info|x|core/unrecognized_field|None|false"]
@@ -174,7 +170,6 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
     let root = Node::new(&json, JsonPath::new());
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found).texts(Texts {
-        wrong_type: Some("not a string"),
         missing: Some(crate::diagnostic::cereal::MISSING_REQUIRED_FIELD_TEXT),
         unknown: Some(crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT),
         unknown_code: None,
@@ -182,15 +177,12 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
         ..Texts::CODES
     });
     let members = read.object(&root).expect("an object");
-    read.unknown(&members, &["a"], Disposition::Keep);
-    let a = read.required(&members, "a").expect("written");
-    read.string(&a);
+    read.unknown(&members, &["a"], UnknownRule::Keep);
     read.required(&members, "b");
     assert_eq!(
         rendered(&found),
         [
             r#"Error|z|core/unrecognized_field_worded ["this member was found in the input, but is not present in the Schema"]|None|false"#,
-            r#"Error|a|core/invalid_type_worded ["not a string"]|None|false"#,
             r#"Error|b|core/missing_required_field_worded ["missing required field"]|None|false"#,
         ]
     );
@@ -260,7 +252,7 @@ fn an_unknown_member_is_told_under_the_code_the_texts_name() {
         ..Texts::CODES
     });
     let members = read.object(&root).expect("an object");
-    read.unknown(&members, &["a"], Disposition::Keep);
+    read.unknown(&members, &["a"], UnknownRule::Keep);
     // Only the member the struct keeps or reports is cereal's line; a rejected one is its own.
     read.unknown_by_rule(
         &members.get("a").expect("written"),
@@ -609,7 +601,7 @@ fn members_are_walked_in_file_order_and_got_without_a_word() {
     assert!(read.opt(&members, "a").is_none());
     assert!(members.contains("a") && !members.contains("z"));
     assert_eq!((members.len(), members.is_empty()), (3, false));
-    read.unknown_member(&members.get("c").expect("written"), Disposition::Report);
+    read.unknown_member(&members.get("c").expect("written"), UnknownRule::NotKept);
     assert_eq!(
         rendered(&found),
         ["Warning|r/c|core/member_not_kept|None|false"]

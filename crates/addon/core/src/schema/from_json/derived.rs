@@ -221,49 +221,60 @@ impl<'v> Object<'v> {
     }
 }
 
-/// The declared name a member written as `key` is read as when the profile ignores the case of
-/// names ([`Names::IgnoreAsciiCase`]): `key` itself is no declared name, another spelling of one is.
-fn respelled_as<'n>(
-    spelling: Names,
-    names: &[&'n str],
-    knows: &impl Fn(&str) -> bool,
-    key: &str,
-) -> Option<&'n str> {
-    if spelling != Names::IgnoreAsciiCase || knows(key) {
-        return None;
+/// What a struct declares of its members, for its read: its JSON names in declaration order
+/// (aliases included), the ones it reads from a format version on (`schema::since_format`),
+/// whether a key is one of its members or of a struct it flattens (`knows`), and its tag.
+#[derive(Clone, Copy, Debug)]
+pub struct Declared<'a, K> {
+    /// The JSON names, in declaration order.
+    pub names: &'a [&'a str],
+    /// The names read from a format version on, with it.
+    pub gates: &'a [(&'a str, FormatVersion)],
+    /// Whether a key names a member of the struct (or of one it flattens).
+    pub knows: K,
+    /// The tag member of an internally tagged enum's variant.
+    pub tag: Option<&'static str>,
+}
+
+impl<'a, K: Fn(&str) -> bool> Declared<'a, K> {
+    /// Whether the member `name` is read from a later format version than the document's: no
+    /// member of the struct in that document.
+    fn later(&self, read: &Read<'_>, name: &str) -> bool {
+        read.known_format().is_some_and(|format| {
+            self.gates
+                .iter()
+                .any(|(gated, since)| *gated == name && format < *since)
+        })
     }
-    names
-        .iter()
-        .copied()
-        .find(|name| name.eq_ignore_ascii_case(key))
+
+    /// The declared name a member written as `key` is read as when the profile ignores the case
+    /// of names ([`Names::IgnoreAsciiCase`]): `key` itself is no declared name, another spelling
+    /// of one is.
+    fn respelled_as(&self, spelling: Names, key: &str) -> Option<&'a str> {
+        if spelling != Names::IgnoreAsciiCase || (self.knows)(key) {
+            return None;
+        }
+        self.names
+            .iter()
+            .copied()
+            .find(|name| name.eq_ignore_ascii_case(key))
+    }
+
+    /// Whether `key` is no member of the struct: one it does not know (or knows from a later
+    /// format version than the document's) and is not its tag. A spelling of a declared name in
+    /// another case is that member where the profile ignores the case.
+    fn is_unknown(&self, read: &Read<'_>, key: &str) -> bool {
+        let respelled = self.respelled_as(read.telling().names, key);
+        let name = respelled.unwrap_or(key);
+        (!((self.knows)(key) || respelled.is_some()) || self.later(read, name))
+            && Some(key) != self.tag
+    }
 }
 
 /// The unknown member `node` as it is kept: as written, its numbers no double holds clamped and
 /// told where the read says so ([`Read::clamp_kept`]).
 fn kept(node: &Node<'_>, read: &mut Read<'_>) -> crate::json::Value {
     <crate::json::Value as FromJson>::from_json(node, read).unwrap_or_else(|| node.value().clone())
-}
-
-/// Whether `key` is no member of a struct: one it does not know (or knows from a later format
-/// version than the document's, `schema::since_format`) and is not its tag. A spelling of a
-/// declared name in another case is that member where the profile ignores the case.
-fn is_unknown(
-    read: &Read<'_>,
-    tag: Option<&'static str>,
-    gates: &[(&str, FormatVersion)],
-    names: &[&str],
-    knows: &impl Fn(&str) -> bool,
-    key: &str,
-) -> bool {
-    let respelled = respelled_as(read.telling().names, names, knows, key);
-    let name = respelled.unwrap_or(key);
-    let format = read.known_versions().format;
-    let later = format.is_some_and(|format| {
-        gates
-            .iter()
-            .any(|(gated, since)| *gated == name && format < *since)
-    });
-    (!(knows(key) || respelled.is_some()) || later) && Some(key) != tag
 }
 
 /// Where the profile tells a struct's unknown members: before its members (`.0`), among them in
@@ -282,43 +293,32 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
 /// member is `None` where a read in declaration order asks for one the object lacks),
 /// `unknown_member` tells and keeps one no field takes (when `unknown`: a flattened struct's
 /// are its owner's to tell). In [`MemberOrder::File`] each member is read where the file has
-/// it; in [`MemberOrder::Declaration`] the struct's `names` (its JSON names, in declaration
-/// order) are looked up one by one. The unknown members are told, each in file order, before
+/// it; in [`MemberOrder::Declaration`] the struct's names ([`Declared`]) are looked up one by
+/// one. The unknown members are told, each in file order, before
 /// ([`UnknownAt::First`]) or among ([`UnknownAt::WhereMet`], file order) the members; the ones
 /// told after them are [`read_unknown_last`]'s, so that the struct can keep what it could not
 /// read first. Nothing more is read once the read has stopped.
 ///
-/// A member of `gates` read from a later format version than the document's
-/// (`schema::since_format`) is no member of the struct in that document: an unknown one.
-#[allow(clippy::too_many_arguments)] // the derive's one call per struct
-pub fn read_members(
+/// A member read from a later format version than the document's (`schema::since_format`) is
+/// no member of the struct in that document: an unknown one.
+pub fn read_members<K: Fn(&str) -> bool>(
     object: &Object<'_>,
     read: &mut Read<'_>,
     unknown: bool,
-    tag: Option<&'static str>,
-    names: &[&str],
-    gates: &[(&str, FormatVersion)],
-    knows: impl Fn(&str) -> bool,
+    declared: &Declared<'_, K>,
     mut field: impl FnMut(&str, Option<&Node<'_>>, &mut Read<'_>) -> bool,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
     let profile = read.telling();
     let in_file_order = profile.members != MemberOrder::Declaration;
     let (first, among) = unknown_placement(read);
-    let later = |read: &Read<'_>, key: &str| {
-        read.known_versions().format.is_some_and(|format| {
-            gates
-                .iter()
-                .any(|(name, since)| *name == key && format < *since)
-        })
-    };
     let members = read.ordered(&object.members);
     if unknown && first {
         for (key, member) in &members {
             if read.stopped() {
                 return;
             }
-            if is_unknown(read, tag, gates, names, &knows, key) {
+            if declared.is_unknown(read, key) {
                 unknown_member(key, member, read);
             }
         }
@@ -332,28 +332,31 @@ pub fn read_members(
                 return;
             }
             let key = *key;
-            let respelled = respelled_as(profile.names, names, &knows, key);
+            let respelled = declared.respelled_as(profile.names, key);
             let name = respelled.unwrap_or(key);
             if respelled.is_some() {
                 read.respelled(member);
             }
             if profile.names == Names::IgnoreAsciiCase
-                && (knows(key) || respelled.is_some())
-                && !later(read, name)
+                && ((declared.knows)(key) || respelled.is_some())
+                && !declared.later(read, name)
             {
                 one_spelling(&mut spelled, name, member, read);
             }
-            let read_it = !later(read, name) && field(name, Some(member), read);
+            let read_it = !declared.later(read, name) && field(name, Some(member), read);
             if !read_it && unknown && among {
                 unknown_member(key, member, read);
             }
         }
     } else {
-        for name in names {
+        for name in declared.names {
             if read.stopped() {
                 return;
             }
-            let member = object.members.get(name).filter(|_| !later(read, name));
+            let member = object
+                .members
+                .get(name)
+                .filter(|_| !declared.later(read, name));
             field(name, member.as_ref(), read);
         }
     }
@@ -361,15 +364,11 @@ pub fn read_members(
 
 /// The unknown members of `object` a profile tells after the members ([`UnknownAt::Last`], or
 /// in declaration order), each in file order: what [`read_members`] leaves to the struct.
-#[allow(clippy::too_many_arguments)] // the derive's one call per struct
-pub fn read_unknown_last(
+pub fn read_unknown_last<K: Fn(&str) -> bool>(
     object: &Object<'_>,
     read: &mut Read<'_>,
     unknown: bool,
-    tag: Option<&'static str>,
-    names: &[&str],
-    gates: &[(&str, FormatVersion)],
-    knows: impl Fn(&str) -> bool,
+    declared: &Declared<'_, K>,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
     let (first, among) = unknown_placement(read);
@@ -380,7 +379,7 @@ pub fn read_unknown_last(
         if read.stopped() {
             return;
         }
-        if is_unknown(read, tag, gates, names, &knows, key) {
+        if declared.is_unknown(read, key) {
             unknown_member(key, member, read);
         }
     }
@@ -692,21 +691,11 @@ impl<T> Slot<T> {
     ) where
         T: FromJson,
     {
-        if !node.value().is_null() || read.reading().null == NullHandling::AsValue {
-            return self.read(node, read, unknown);
-        }
-        self.depth = node.path().len();
-        let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
-        let mark = read.mark();
-        self.state = if super::impls::null::<T>(node, read) {
-            State::Null
-        } else {
-            State::Failed
+        let kind = Kind {
+            expected: T::EXPECTED,
+            holds_null: T::HOLDS_NULL,
         };
-        self.left_out = matches!(self.state, State::Failed) && read.left_out_since(mark);
-        if let Some(saved) = ruled {
-            read.restore_member_rules(saved);
-        }
+        self.read_option_with(node, read, unknown, kind, T::from_json);
     }
 }
 
@@ -804,50 +793,10 @@ impl<T> KindOfNone for &Probe<T> {
     }
 }
 
-/// Tells that the member `node`, read from the engine version `since` on
-/// (`schema::since_engine`), is written in a pack of an older engine ([`Read::versions`]).
-pub fn since_engine(read: &mut Read<'_>, node: &Node<'_>, since: FormatVersion) {
-    read.since_engine(node, since);
-}
-
-/// The read of a list field that states how it reads (`schema::iterated`, `schema::elements`):
-/// iterated as jsoncpp iterates a value when `iterated` ([`read_iterated`](super::read_iterated)),
-/// a failed element doing `failure`. With `skip` (`schema::skip_code`) an element that fails to
-/// read is read as an attempt and, when it fails, given up whole: its own findings are not told,
-/// the one `skip` makes is, at the element, graded as a failed member is and failing nothing
-/// (pair it with [`ElementFailure::Drop`](super::ElementFailure::Drop)).
-pub fn list<E: FromJson>(
-    node: &Node<'_>,
-    read: &mut Read<'_>,
-    iterated: bool,
-    failure: super::ElementFailure,
-    skip: Option<fn() -> Code>,
-) -> Option<Vec<E>> {
-    let element = move |element: &Node<'_>, read: &mut Read<'_>| match skip {
-        None => E::from_json(element, read),
-        Some(code) => skipping(element, read, code),
-    };
-    if iterated {
-        super::read_iterated(node, read, failure, element)
-    } else {
-        super::read_list(node, read, failure, element)
-    }
-}
-
-/// The element `node` as `E`, or, when it fails to read, the one finding `code` makes in place
-/// of its own ([`Read::skipped`]).
-fn skipping<E: FromJson>(node: &Node<'_>, read: &mut Read<'_>, code: fn() -> Code) -> Option<E> {
-    if read.stopped() {
-        return None;
-    }
-    let mut attempt = read.fork();
-    let value = E::from_json(node, &mut attempt);
-    if value.is_some() {
-        read.commit(attempt);
-    } else {
-        read.skipped(node, code());
-    }
-    value
+/// The read of a list field jsoncpp iterates (`schema::iterated`,
+/// [`read_iterated`](super::read_iterated)), a failed element as the reading says.
+pub fn iterated<E: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<E>> {
+    super::read_iterated(node, read, super::ElementFailure::ByReading, E::from_json)
 }
 
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.
@@ -914,15 +863,13 @@ pub enum Arm {
 /// The arm of the untagged enum `T` that reads `node`, as the door chooses it
 /// (`json::walk`'s mirror of facet's untagged read, under the reading's scalar profile): an
 /// object by its keys, an array the first list arm, a scalar the first arm that takes it. A
-/// scalar no arm takes, or a value of a kind no arm reads, is a wrong type at the enum; with
-/// `quiet` (an enum with a `schema::otherwise` arm, which takes it) nothing is told. An enum
+/// scalar no arm takes, or a value of a kind no arm reads, is a wrong type at the enum. An enum
 /// with `schema::invalid` (`invalid`) tells a negative whole number no arm takes (an unsigned
 /// arm refuses it) under that code, as a value the enum refuses; a number beyond an arm's width
 /// is a wrong type still.
 pub fn untagged_arm<T: Facet<'static>>(
     node: &Node<'_>,
     read: &mut Read<'_>,
-    quiet: bool,
     invalid: Option<&'static CodeDef<0>>,
 ) -> Option<Arm> {
     if read.stopped() {
@@ -940,13 +887,11 @@ pub fn untagged_arm<T: Facet<'static>>(
             ScalarArm::Arm { index, .. } => Some(Arm::Variant(index)),
             // A scalar the profile refuses for every arm: as a refused scalar member is.
             ScalarArm::Refused => {
-                if !quiet {
-                    match invalid {
-                        Some(code) if matches!(token, Token::Int(_)) => {
-                            read.refuse_variant(node, code);
-                        }
-                        _ => read.refused_scalar(node, Expected::Number),
+                match invalid {
+                    Some(code) if matches!(token, Token::Int(_)) => {
+                        read.refuse_variant(node, code);
                     }
+                    _ => read.refused_scalar(node, Expected::Number),
                 }
                 return None;
             }
@@ -954,7 +899,7 @@ pub fn untagged_arm<T: Facet<'static>>(
         },
         None => object_arm(variants, value).map(Arm::Variant),
     };
-    if arm.is_none() && !quiet {
+    if arm.is_none() {
         read.wrong_type(node);
     }
     arm
@@ -996,13 +941,7 @@ pub fn tagged<'v>(
 /// Tells that the tag of an internally tagged enum names no variant, as the door tells it: a
 /// wrong type at the enum's object; under the enum's `schema::invalid` (`invalid`), that code, at
 /// the member the object belongs to.
-pub fn unknown_tag(
-    object: Object<'_>,
-    read: &mut Read<'_>,
-    tag: &'static str,
-    invalid: Option<&'static CodeDef<0>>,
-) {
-    let _ = tag;
+pub fn unknown_tag(object: Object<'_>, read: &mut Read<'_>, invalid: Option<&'static CodeDef<0>>) {
     match invalid {
         Some(code) => read.refuse_variant(object.node(), code),
         None => read.wrong_type(object.node()),

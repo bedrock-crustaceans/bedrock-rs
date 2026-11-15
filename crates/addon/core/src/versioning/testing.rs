@@ -16,7 +16,7 @@
 use std::fmt;
 
 use super::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
-use crate::diagnostic::{Diagnostics, JsonPath};
+use crate::diagnostic::{Diagnostics, JsonPath, Severity};
 use crate::json::{JsonSlice, Value};
 use crate::load::LoadContext;
 use crate::vanilla::ActorType;
@@ -210,12 +210,17 @@ pub fn reading_table<F: super::Family>() -> String {
     let reading = |index: StructIndex| {
         let one = |source: DocumentSource| {
             let r = slice_reading::<F>(index, source);
+            // The game's two masks, as the tables have always named them.
+            let unknown = match r.unknown {
+                Severity::Warning => "Warn".to_owned(),
+                severity => format!("{severity:?}"),
+            };
             format!(
-                "{:?}/{:?}/{:?}/{:?}/{}/{}/{:?}",
+                "{:?}/{:?}/{:?}/{}/{}/{}/{:?}",
                 r.null,
                 r.scalars,
                 r.beyond_width,
-                r.unknown,
+                unknown,
                 if r.keeps_unknown { "keeps" } else { "reports" },
                 if r.components_fatal {
                     "fatal"

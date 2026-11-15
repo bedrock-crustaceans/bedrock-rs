@@ -22,7 +22,6 @@ use super::value::{EffectSeconds, EquipmentSlot, SecondsOrText, one_element};
 /// `minecraft:boss`: the boss bar shown to players near the entity.
 #[doc(alias = "minecraft:boss")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Boss {
     /// `name`: the name shown above the health bar; default empty.
     #[facet(default = String::new())]
@@ -41,7 +40,6 @@ impl Typed for Boss {}
 /// protection slot shields it.
 #[doc(alias = "minecraft:burns_in_daylight")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BurnsInDaylight {
     /// `protection_slot`: the slot whose item protects the entity; default `slot.armor.head`.
     #[facet(default = EquipmentSlot::ArmorHead)]
@@ -53,7 +51,6 @@ impl Typed for BurnsInDaylight {}
 /// `minecraft:damage_over_time`: the entity takes damage at a fixed interval.
 #[doc(alias = "minecraft:damage_over_time")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DamageOverTime {
     /// `damage_per_hurt`: the damage of each hurt; default 1.
     #[facet(default = 1_i32)]
@@ -82,7 +79,6 @@ impl Typed for DamageOverTime {
 /// `minecraft:exhaustion_values`: how much exhaustion each player action adds.
 #[doc(alias = "minecraft:exhaustion_values")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ExhaustionValues {
     /// `attack`: per attack; default 0.1.
     #[facet(default = 0.1_f32)]
@@ -127,7 +123,6 @@ impl Typed for ExhaustionValues {
 /// `minecraft:insomnia`: counts the days since the entity last rested, for phantom spawning.
 #[doc(alias = "minecraft:insomnia")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Insomnia {
     /// `days_until_insomnia`: the days without rest before insomnia sets in; default 3.
     #[facet(default = 3.0_f32)]
@@ -157,7 +152,6 @@ impl Typed for Insomnia {
 /// `minecraft:cannot_be_attacked`, those its filters pass (all of them without filters).
 #[doc(alias = "minecraft:ignore_cannot_be_attacked")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct IgnoreCannotBeAttacked {
     /// `filters`: which protected entities may be attacked; absent means all.
     pub filters: Option<Filter>,
@@ -176,7 +170,6 @@ impl Typed for IgnoreCannotBeAttacked {
 // `effect_amplifier` defaults to 0.
 #[doc(alias = "minecraft:attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Attack {
     /// `damage`: the range of the damage dealt; a negative value heals. Default 0 to 0.
     #[facet(default = FloatRange::default())]
@@ -207,7 +200,6 @@ impl Typed for Attack {
 /// component is added.
 #[doc(alias = "minecraft:spell_effects")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpellEffects {
     /// `add_effects`: the effects added.
     #[facet(default)]
@@ -220,7 +212,6 @@ pub struct SpellEffects {
 /// One effect of [`SpellEffects`]; the
 /// defaults are the typed reader's and the legacy parser's alike.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpellEffect {
     /// `effect`: the effect's name; default none.
     #[facet(default = String::new())]
@@ -262,7 +253,6 @@ impl Typed for SpellEffects {
 // `strength` defaults to 1 and `max` to 5.
 #[doc(alias = "minecraft:strength")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Strength {
     /// `value`: the initial strength; default 1.
     #[facet(default = 1_i32)]
@@ -278,7 +268,6 @@ impl Typed for Strength {}
 // `healable` and its nested feed item and effect.
 #[doc(alias = "minecraft:healable")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Healable {
     /// `items`: the items that heal it.
     #[facet(default)]
@@ -292,7 +281,6 @@ pub struct Healable {
 
 /// One item of [`Healable`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct HealItem {
     /// `item`: the item; absent is no item.
     #[facet(schema::molang_with = descriptor_tags)]
@@ -310,7 +298,6 @@ pub struct HealItem {
 
 /// One effect of a [`HealItem`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct HealEffect {
     /// `name`: the effect's name; default none.
     #[facet(default = String::new())]

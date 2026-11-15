@@ -2,7 +2,7 @@ use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 
 #[derive(Facet, Schema)]
-#[facet(tag = "type", schema::expected = "a shape", schema::unknown = "keep")]
+#[facet(tag = "type", schema::string_only, schema::unknown = "keep")]
 #[repr(u8)]
 enum Internal {
     Count(u8),

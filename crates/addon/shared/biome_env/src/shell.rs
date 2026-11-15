@@ -21,12 +21,11 @@ use facet_value::VObject;
 use crate::EnvironmentAttributes;
 use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, builders};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, ComponentSet};
-use bedrock_addon_core::json::kit::{Node, Profile, Read, Versions};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{FromJson, read_document};
-use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ConvertMode, Reading, write_payload};
 
 /// A component row of either biome family: `T` read from `slice` under the slice's reading, its
@@ -77,18 +76,11 @@ where
         d.push(finding);
         return None;
     }
-    let engine = cx
-        .min_engine_version
-        .as_ref()
-        .map(|engine| engine.version.format_version());
     let mut read = Read::new(cx.reading, d)
         .unknown_severity(cx.grade(Class::Unknown))
         .profile(Profile::FIRST_THEN_PASSES)
         .load(cx)
-        .versions(Versions {
-            format: cx.document_format,
-            engine: Some(engine.unwrap_or(FormatVersion::new(0, 0, 0))),
-        });
+        .format(cx.document_format);
     read_document::<T>(&node, &mut read).map(Into::into)
 }
 

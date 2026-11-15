@@ -18,7 +18,6 @@ use super::convert;
 // `behavior.beg`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.beg")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Beg {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -50,7 +49,6 @@ impl Goal for Beg {
 // `behavior.look_at_entity`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -94,7 +92,6 @@ impl Goal for LookAtEntity {
 // `behavior.look_at_player`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_player")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LookAtPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -135,7 +132,6 @@ impl Goal for LookAtPlayer {
 // `behavior.look_at_target`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LookAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -176,7 +172,6 @@ impl Goal for LookAtTarget {
 // `behavior.look_at_trading_player`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.look_at_trading_player")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LookAtTradingPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -217,7 +212,6 @@ impl Goal for LookAtTradingPlayer {
 // `behavior.random_look_around`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_look_around")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomLookAround {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -253,7 +247,6 @@ impl Goal for RandomLookAround {
 // `behavior.random_look_around_and_sit`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_look_around_and_sit")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomLookAroundAndSit {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -303,7 +296,6 @@ impl Goal for RandomLookAroundAndSit {
 // `behavior.trade_interest`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.trade_interest")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TradeInterest {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]

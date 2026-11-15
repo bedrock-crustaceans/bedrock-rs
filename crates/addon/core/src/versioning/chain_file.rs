@@ -12,19 +12,8 @@ use crate::load::LoadContext;
 use crate::schema::{FromJson, Schema, SchemaCx};
 use crate::version::FormatVersionInput;
 use crate::versioning::{
-    BeyondWidth, Family, Identity, Loaded, ParseCx, Parsed, Reading, Scalars, beta_refused, finish,
-    read_payload_with,
+    Family, Identity, Loaded, ParseCx, Parsed, Scalars, beta_refused, finish, read_payload_with,
 };
-
-/// `reading` with the scalars of vanilla's strict cereal readers, which read every document of
-/// these families: a member takes only a token of its own type (an integer member no real), and
-/// a number beyond its float's width is a type error. [`read`] reads by it.
-#[must_use]
-pub const fn strict(reading: Reading) -> Reading {
-    reading
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error)
-}
 
 /// A value of another JSON type than a member takes, as the strict cereal loaders word it: an
 /// object where a struct or a map is bound, an array where a list is, the plain type error for
@@ -154,6 +143,7 @@ mod tests {
     use crate::load::LoadContext;
     use crate::schema;
     use crate::version::{FormatVersion, FormatVersionInput};
+    use crate::versioning::Reading;
 
     #[test]
     fn the_closing_line_is_a_rejection_with_its_text() {
@@ -186,7 +176,7 @@ mod tests {
     /// `severity path text`.
     fn probe(text: &str) -> (Option<Probe>, Vec<String>) {
         let mut load = LoadContext::detached();
-        load.reading = strict(Reading::DOCUMENT);
+        load.reading = Reading::DOCUMENT.strict();
         let cx = ParseCx {
             load: &load,
             written: FormatVersionInput {

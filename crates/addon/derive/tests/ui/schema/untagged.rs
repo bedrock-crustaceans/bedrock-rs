@@ -2,7 +2,7 @@ use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 
 #[derive(Facet, Schema)]
-#[facet(untagged, schema::expected = "a value", schema::unknown = "keep")]
+#[facet(untagged, schema::string_only, schema::unknown = "keep")]
 #[repr(u8)]
 enum Arms {
     Pair(i32, i32),

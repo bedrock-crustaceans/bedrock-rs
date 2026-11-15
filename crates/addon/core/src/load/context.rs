@@ -97,7 +97,7 @@ pub struct LoadContext {
     pub strict_components: bool,
     /// The format version the document being read is written at, for a part read apart from
     /// its document (a component, `versioning::read_component`): set by
-    /// `versioning::read_component_map` from the read's versions, so a member of a component
+    /// `versioning::read_component_map_by` from the read's versions, so a member of a component
     /// `schema::since_format` a later version is an unknown one; `None` outside it.
     pub document_format: Option<FormatVersion>,
     /// What the document's bytes were before the loader read them: JSON text, or a
@@ -299,7 +299,7 @@ pub struct BiomeRenderIdentifiers {
 mod tests {
     use super::*;
     use crate::diagnostic::{Class, Severity};
-    use crate::versioning::{Reading, UnknownMask};
+    use crate::versioning::Reading;
 
     #[test]
     fn outside_a_slice_an_unknown_member_is_a_warning() {
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn the_context_grades_by_the_reading_it_carries() {
         let mut cx = LoadContext::detached();
-        cx.reading = Reading::OWN.with_unknown(UnknownMask::Error);
+        cx.reading = Reading::OWN.with_unknown(Severity::Error);
         assert_eq!(cx.grade(Class::Unknown), Severity::Error);
         assert_eq!(cx.grade(Class::Lint), Severity::Info);
         assert_eq!(cx.grade(Class::Warning), Severity::Warning);

@@ -14,7 +14,8 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, ComponentSet};
 use bedrock_addon_core::id::BiomeId;
-use bedrock_addon_core::json::kit::{Node, Pass, Read, Versions};
+use bedrock_addon_core::id::syntax::namespaced_by;
+use bedrock_addon_core::json::kit::{Node, Pass, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, FromJson, Schema};
@@ -162,13 +163,8 @@ pub(crate) fn read_as<T: FromJson>(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    let whole: Option<Whole<T>> = read_payload_with(slice, cx, d, |read| {
-        let engine = read.known_versions().engine;
-        read.versions(Versions {
-            format: Some(version),
-            engine,
-        })
-    });
+    let whole: Option<Whole<T>> =
+        read_payload_with(slice, cx, d, |read| read.format(Some(version)));
     whole.map(|whole| whole.0)
 }
 
@@ -214,10 +210,7 @@ fn name_byte(byte: u8) -> bool {
 
 /// `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`, the identifier's regex from 1.21.90.
 fn namespaced(identifier: &str) -> bool {
-    let part = |text: &str| !text.is_empty() && text.bytes().all(name_byte);
-    identifier
-        .split_once(':')
-        .is_some_and(|(namespace, name)| part(namespace) && part(name))
+    namespaced_by(identifier, name_byte)
 }
 
 /// `^[a-z0-9._%+-:]+$`, the identifier's regex below 1.21.90. In the class, `+-:` is the range
@@ -233,7 +226,7 @@ fn bare_or_namespaced(identifier: &str) -> bool {
 /// of the struct of the read's version.
 pub(crate) fn identifier(node: &Node<'_>, read: &mut Read<'_>) -> Option<BiomeId> {
     let identifier = BiomeId::from_json(node, read)?;
-    let version = read.known_versions().format?;
+    let version = read.known_format()?;
     let text = identifier.as_str();
     let code = if version < NAMESPACED {
         (!bare_or_namespaced(text)).then_some(Code::from(&codes::IDENTIFIER_UPPER))
@@ -257,7 +250,7 @@ pub(crate) fn identifier(node: &Node<'_>, read: &mut Read<'_>) -> Option<BiomeId
 /// reading: the family's strict mask makes it an error that refuses the document, as vanilla
 /// does for an unknown member.
 fn components(node: &Node<'_>, read: &mut Read<'_>) -> Option<Components> {
-    let version = read.known_versions().format?;
+    let version = read.known_format()?;
     let table = ClientBiomeComponent::TABLE;
     let members = read.object(node)?;
     let mut cx = read
@@ -384,10 +377,7 @@ mod tests {
         let map = {
             let mut read = Read::new(load.reading, &mut d)
                 .load(&load)
-                .versions(Versions {
-                    format: Some(MODERN),
-                    engine: None,
-                });
+                .format(Some(MODERN));
             components(&Node::parsed(&parsed, at), &mut read).expect("an object")
         };
         let kept: Vec<String> = map

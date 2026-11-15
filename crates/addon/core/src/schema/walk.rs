@@ -6,24 +6,19 @@ use std::collections::{BTreeMap, HashMap};
 use indexmap::IndexMap;
 
 use super::cx::SchemaCx;
-use super::rows::{FieldRow, UnknownRule};
+use super::rows::FieldRow;
 
 /// A typed document struct (or string enum) whose per-field facts are stated as attributes:
 /// implemented by `#[derive(Schema)]`, never by hand.
 ///
-/// `FIELDS` is the row table, to be tested against the generated game tables; `check` applies
-/// the bounds under the slice's rule, lower-cases the `lowercase` members (in silence, as the
-/// game does) and walks into every field;
-/// `trigger_members` lists the members that hold a trigger of this entity.
+/// `FIELDS` is the row table; `check` applies the bounds under the slice's rule and walks into
+/// every field; `trigger_members` lists the members that hold a trigger of this entity.
 pub trait Schema {
     /// The fields in declaration order, `skip` fields left out (empty for a string enum).
     const FIELDS: &'static [FieldRow];
 
-    /// The container's `schema::unknown`.
-    const UNKNOWN: Option<UnknownRule> = None;
-
-    /// The bounds of every field, at the members' paths below `cx`'s, and the ASCII
-    /// lower-casing of each `lowercase` one, then the same for what each field holds.
+    /// The bounds of every field, at the members' paths below `cx`'s, then the same for what
+    /// each field holds.
     fn check(&mut self, cx: &mut SchemaCx<'_>);
 
     /// Appends the trigger members below `prefix` (keys joined by `.`, `[]` after a list, `*`
@@ -152,7 +147,6 @@ impl<T: crate::shared::RangeEnd> SchemaFields for crate::shared::Range<T> {
 /// not through an impl of its own.
 impl<T: Schema> Schema for Box<T> {
     const FIELDS: &'static [FieldRow] = T::FIELDS;
-    const UNKNOWN: Option<UnknownRule> = T::UNKNOWN;
 
     fn check(&mut self, cx: &mut SchemaCx<'_>) {
         T::check(self, cx);
@@ -366,7 +360,7 @@ impl<T: crate::shared::RangeEnd + Number> Bounded for crate::shared::Range<T> {
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("expected {expected}, found `{found}`")]
 pub struct UnknownName {
-    /// What the enum takes, in words (`schema::expected`, or its names listed).
+    /// What the enum takes, in words (its names listed).
     pub expected: &'static str,
     /// The name read.
     pub found: String,

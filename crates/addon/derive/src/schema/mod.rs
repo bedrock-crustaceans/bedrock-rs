@@ -3,8 +3,7 @@
 //! getter per `Option` field with a `schema::fallback`; for a unit-only enum, `ALL`, `NAMES`,
 //! `EXPECTED`, `name`, `from_name`, `parse_name`, `Display`, an empty `impl Schema` and an
 //! empty Molang walk; for an untagged or tagged enum with data, `impl Schema` and `impl
-//! MolangFields` over the active variant and `VARIANT_FIELDS`. For each, `impl FromJson`, the
-//! read (`read`).
+//! MolangFields` over the active variant. For each, `impl FromJson`, the read (`read`).
 
 mod attr;
 mod read;
@@ -426,10 +425,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
             quote!(out.push(::std::borrow::ToOwned::to_owned(prefix));),
         );
     }
-    let unknown = container.unknown.as_ref().map(|word| {
-        let rule = unknown_option(Some(word));
-        quote!(const UNKNOWN: ::core::option::Option<#core::schema::UnknownRule> = #rule;)
-    });
+
     // The empty object's test names the type: a generic one has no type to name.
     let default = (!infos.iter().any(FieldInfo::required)).then(|| {
         // A `schema::required` option is told missing by `{}` and by the written default: the
@@ -447,7 +443,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         #[automatically_derived]
         #schema_impl {
             const FIELDS: &'static [#core::schema::FieldRow] = &[#(#rows),*];
-            #unknown
+
 
             #[allow(unused_variables)]
             fn check(&mut self, cx: &mut #core::schema::SchemaCx<'_>) {
@@ -514,21 +510,12 @@ fn validate_bound_rules(info: &FieldInfo, errors: &mut Vec<Error>) {
         }
     }
     if let Some(span) = attrs.kept
-        && !(low || high || attrs.key_with.is_some())
+        && !(low || high)
     {
         errors.push(Error::new(
             span,
-            "`schema::kept` says the game keeps a value that breaks a bound (or a key that \
-             breaks `schema::key_with`): the field states neither",
-        ));
-    }
-    if let Some((_, span)) = &attrs.key_with
-        && !info.is_map()
-    {
-        errors.push(Error::new(
-            *span,
-            "`schema::key_with` is the rule of a map's keys: an `IndexMap`, `HashMap` or \
-             `BTreeMap` field (or an `Option` of one)",
+            "`schema::kept` says the game keeps a value that breaks a bound: the field states \
+             none",
         ));
     }
 }
@@ -565,14 +552,6 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
             span,
             "`schema::required` is for an `Option` field the document must write: a plain field \
              is required already",
-        ));
-    }
-    if let Some(span) = attrs.lowercase
-        && !ty::is_string(info.ty)
-    {
-        errors.push(Error::new(
-            span,
-            "`schema::lowercase` applies to a `String` field or an `Option<String>`",
         ));
     }
     if let Some(span) = attrs.foreign_event
@@ -697,9 +676,7 @@ fn field_row(info: &FieldInfo) -> TokenStream {
         let v = unknown_option(attrs.unknown.as_ref());
         parts.push(quote!(unknown: #v));
     }
-    if attrs.lowercase.is_some() {
-        parts.push(quote!(lowercase: true));
-    }
+
     if attrs.foreign_event.is_some() {
         parts.push(quote!(foreign_event: true));
     }
@@ -1131,39 +1108,9 @@ fn field_len(info: &FieldInfo) -> Option<TokenStream> {
     })
 }
 
-/// A map field's key rule (`schema::key_with`): each key the rule refuses is one finding at the
-/// member of that name, graded as a broken bound is (kept where the field says `schema::kept`).
-fn field_keys(info: &FieldInfo) -> TokenStream {
-    let Some((rule, _)) = &info.attrs.key_with else {
-        return TokenStream::new();
-    };
-    let access = &info.access;
-    let kept = info.attrs.kept.is_some();
-    let map = if info.option.is_some() {
-        quote!(#access.as_ref())
-    } else {
-        quote!(::core::option::Option::Some(&#access))
-    };
-    quote! {
-        if let ::core::option::Option::Some(__map) = #map {
-            let __refused: ::std::vec::Vec<(::std::string::String, _)> = __map
-                .keys()
-                .filter_map(|__key| {
-                    let __name = ::std::string::ToString::to_string(__key);
-                    (#rule)(&__name).map(|__code| (__name, __code))
-                })
-                .collect();
-            for (__name, __code) in __refused {
-                cx.key(&__name, __code, #kept);
-            }
-        }
-    }
-}
-
 /// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
-/// its bounds (unless one names another field), its length bounds, `lowercase` (the ASCII
-/// lower-casing the game applies in silence), then the walk into it, or the field's
-/// `check_with`.
+/// its bounds (unless one names another field), its length bounds, then the walk into it, or
+/// the field's `check_with`.
 fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
     let core = core();
     let access = &info.access;
@@ -1186,19 +1133,6 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
             }
         }
     });
-    // The game lower-cases the member as it reads it and tells nothing.
-    let lowercase = info.attrs.lowercase.map(|_| {
-        if info.option.is_some() {
-            quote! {
-                if let ::core::option::Option::Some(__value) = &mut #access {
-                    __value.make_ascii_lowercase();
-                }
-            }
-        } else {
-            quote!(#access.make_ascii_lowercase();)
-        }
-    });
-    let keys = field_keys(info);
     let walk = match &info.attrs.check_with {
         Some((with, _)) if info.option.is_some() => quote! {
             if let ::core::option::Option::Some(__value) = &mut #access {
@@ -1208,10 +1142,7 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
         Some((with, _)) => quote!((#with)(&mut #access, cx);),
         None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
     };
-    at_field(
-        info,
-        quote!(#since_engine #bounds #len #keys #lowercase #walk),
-    )
+    at_field(info, quote!(#since_engine #bounds #len #walk))
 }
 
 /// A field's cross-field bounds, which run after every field's own check, so they compare with
@@ -1458,25 +1389,18 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         .order_game
         .then(|| game_order_check(ident, &variants));
     let names: Vec<&String> = variants.iter().map(|(_, n)| n).collect();
-    let expected = container.expected.as_ref().map_or_else(
-        || {
-            let list = names
-                .iter()
-                .map(|n| n.as_str())
-                .collect::<Vec<_>>()
-                .join(", ");
-            format!("one of: {list}")
-        },
-        syn::LitStr::value,
+    let expected = format!(
+        "one of: {}",
+        names
+            .iter()
+            .map(|n| n.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
     );
     let name_arms = variants.iter().map(|(v, n)| quote!(Self::#v => #n,));
-    let from_name = from_name_body(&variants, container.case_insensitive);
-    let case = if container.case_insensitive {
-        ", in any case"
-    } else {
-        ""
-    };
-    let from_doc = format!("The value spelt `name`{case}.");
+    let from_arms = variants
+        .iter()
+        .map(|(v, n)| quote!(#n => ::core::option::Option::Some(Self::#v),));
     let from_json = read::unit_enum_read(ident, container.string_only);
     quote! {
         #from_json
@@ -1497,9 +1421,9 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
                 }
             }
 
-            #[doc = #from_doc]
+            /// The value spelt `name`.
             pub fn from_name(name: &str) -> ::core::option::Option<Self> {
-                #from_name
+                match name { #(#from_arms)* _ => ::core::option::Option::None }
             }
 
             /// The value spelt `name`, or the error naming what the enum takes.
@@ -1533,22 +1457,6 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         impl #core::molang::MolangFields for #ident {
             fn visit_molang(&mut self, _: &mut #core::molang::MolangVisitor<'_>) {}
         }
-    }
-}
-
-/// The body of a string enum's `from_name`: the variant spelt `name`, in any case where the
-/// enum says `case_insensitive`.
-fn from_name_body(variants: &[(&Ident, String)], case_insensitive: bool) -> TokenStream {
-    if case_insensitive {
-        let tests = variants.iter().map(|(v, n)| {
-            quote!(if name.eq_ignore_ascii_case(#n) { return ::core::option::Option::Some(Self::#v); })
-        });
-        quote!(#(#tests)* ::core::option::Option::None)
-    } else {
-        let arms = variants
-            .iter()
-            .map(|(v, n)| quote!(#n => ::core::option::Option::Some(Self::#v),));
-        quote!(match name { #(#arms)* _ => ::core::option::Option::None })
     }
 }
 
@@ -1599,34 +1507,11 @@ fn binding(index: usize) -> Ident {
 }
 
 /// An untagged enum with data: `impl Schema` (no `FIELDS` of its own; `check` and the Molang
-/// walk of the active variant's fields at the owner's path, every variant's trigger members)
-/// and `VARIANT_FIELDS`, the rows per variant. A newtype variant's value is the enum's (no
-/// step); a struct variant's members are the object's. No `Default`: no variant is the
-/// default one.
+/// walk of the active variant's fields at the owner's path, every variant's trigger members).
+/// A newtype variant's value is the enum's (no step); a struct variant's members are the
+/// object's. No `Default`: no variant is the default one.
 fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) -> TokenStream {
     let container = ContainerAttrs::read(&input.attrs, Place::Untagged, errors);
-    // `schema::otherwise`: one newtype variant, the arm a value takes when no other reads it.
-    let mut otherwise = data
-        .variants
-        .iter()
-        .filter(|variant| attr::variant_otherwise(&variant.attrs));
-    if let Some(first) = otherwise.next() {
-        let newtype =
-            matches!(&first.fields, Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1);
-        if !newtype {
-            errors.push(Error::new_spanned(
-                &first.ident,
-                "`schema::otherwise` marks a newtype variant: the value it takes is read as its \
-                 one field",
-            ));
-        }
-    }
-    if let Some(second) = otherwise.next() {
-        errors.push(Error::new_spanned(
-            &second.ident,
-            "one variant of an untagged enum is the arm a value takes otherwise",
-        ));
-    }
     let variants = untagged_variants(data, errors);
     let target = Target {
         ident: &input.ident,
@@ -1647,7 +1532,6 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
                 ),
                 fields: &info.fields,
                 unknown: attr::variant_unknown(&variant.attrs),
-                otherwise: attr::variant_otherwise(&variant.attrs),
             })
         })
         .collect();
@@ -1657,8 +1541,8 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
 
 /// A tagged enum with data: internally (`tag = ".."`, the variant named by that member, its
 /// members beside it) or externally (`{"name": payload}`, a unit variant its name). `impl
-/// Schema`, `impl MolangFields` and `VARIANT_FIELDS` as an untagged enum's (an externally
-/// tagged variant's fields one key down), and its read.
+/// Schema` and `impl MolangFields` as an untagged enum's (an externally tagged variant's
+/// fields one key down), and its read.
 fn derive_tagged(
     input: &DeriveInput,
     data: &DataEnum,
@@ -1749,7 +1633,6 @@ fn derive_tagged(
                 name: json_names[at].clone(),
                 fields: &variants[at].fields,
                 unknown: unknowns[at].clone(),
-                otherwise: false,
             })
         })
         .collect();
@@ -1831,11 +1714,6 @@ fn untagged_impls(
 ) -> TokenStream {
     let core = core();
     let step = |index: usize| steps.and_then(|steps| steps.get(index));
-    let variant_rows = variants.iter().map(|variant| {
-        let name = variant.ident.to_string();
-        let rows = variant.fields.iter().map(field_row);
-        quote!((#name, &[#(#rows),*]))
-    });
     let check_arms = variants.iter().enumerate().map(|(index, variant)| {
         let pattern = &variant.pattern;
         let checks = variant
@@ -1886,11 +1764,10 @@ fn untagged_impls(
         .collect();
 
     let (schema_impl, molang_impl) = target.walk_impls();
-    let inherent = target.inherent();
     quote! {
         #[automatically_derived]
         #schema_impl {
-            /// An untagged enum is no one object: its rows are per variant (`VARIANT_FIELDS`).
+            /// An untagged enum is no one object: it has no rows of its own.
             const FIELDS: &'static [#core::schema::FieldRow] = &[];
 
             #[allow(unused_variables)]
@@ -1925,14 +1802,6 @@ fn untagged_impls(
                     #(#molang_arms)*
                 }
             }
-        }
-
-        #[automatically_derived]
-        #inherent {
-            /// The rows of each variant's fields, by variant, in declaration order: a newtype's
-            /// one row has no JSON key (its value is the enum's), a unit's none.
-            pub const VARIANT_FIELDS: &'static [(&'static str, &'static [#core::schema::FieldRow])] =
-                &[#(#variant_rows),*];
         }
     }
 }

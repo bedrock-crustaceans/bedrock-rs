@@ -24,7 +24,6 @@ use super::molang::{push_trigger, push_triggers, visit_conditions, visit_items};
 // `behavior.break_door`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.break_door")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BreakDoor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -41,7 +40,6 @@ impl Goal for BreakDoor {
 // `behavior.circle_around_anchor`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.circle_around_anchor")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CircleAroundAnchor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -95,7 +93,6 @@ impl Goal for CircleAroundAnchor {
 // `behavior.controlled_by_player`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.controlled_by_player")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ControlledByPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -121,7 +118,6 @@ impl Goal for ControlledByPlayer {
 // `behavior.door_interact`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.door_interact")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DoorInteract {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -138,7 +134,6 @@ impl Goal for DoorInteract {
 // `behavior.explore_outskirts`: typed from 1.21.130.
 #[doc(alias = "minecraft:behavior.explore_outskirts")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ExploreOutskirts {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -204,7 +199,6 @@ impl Goal for ExploreOutskirts {
 // `behavior.find_cover`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.find_cover")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindCover {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -227,7 +221,6 @@ impl Goal for FindCover {
 // `behavior.find_mount`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.find_mount")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindMount {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -262,7 +255,6 @@ impl Goal for FindMount {
 // `behavior.find_underwater_treasure`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.find_underwater_treasure")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FindUnderwaterTreasure {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -290,7 +282,6 @@ impl Goal for FindUnderwaterTreasure {
 // `behavior.flee_sun`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.flee_sun")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FleeSun {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -316,7 +307,6 @@ impl Goal for FleeSun {
 // `behavior.float`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.float")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Float {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -371,7 +361,6 @@ impl Goal for Float {
 // `behavior.float_wander`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.float_wander")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FloatWander {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -432,7 +421,6 @@ impl Goal for FloatWander {
 // `behavior.follow_caravan`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.follow_caravan")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FollowCaravan {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -462,7 +450,6 @@ impl Goal for FollowCaravan {
 // `behavior.follow_mob`: typed from 1.26.50.
 #[doc(alias = "minecraft:behavior.follow_mob")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FollowMob {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -526,7 +513,6 @@ fn never_written(_: &Option<bool>) -> bool {
 // `behavior.follow_owner`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.follow_owner")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FollowOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -564,7 +550,6 @@ impl Goal for FollowOwner {
 // `behavior.follow_parent`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.follow_parent")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FollowParent {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -584,7 +569,6 @@ impl Goal for FollowParent {
 // `behavior.follow_target_leader`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.follow_target_leader")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FollowTargetLeader {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -641,7 +625,7 @@ impl Goal for FollowTargetLeader {
 // `behavior.go_home`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.go_home")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct GoHome {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -696,7 +680,6 @@ impl GoHome {
 // `behavior.hide`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.hide")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Hide {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -731,7 +714,6 @@ impl Goal for Hide {
 // `behavior.hover`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.hover")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Hover {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -748,7 +730,6 @@ impl Goal for Hover {
 // `behavior.jump_to_block`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.jump_to_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct JumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -802,7 +783,6 @@ impl Goal for JumpToBlock {
 // `behavior.mount_pathing`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.mount_pathing")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MountPathing {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -828,7 +808,6 @@ impl Goal for MountPathing {
 // `behavior.move_around_target`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_around_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -874,7 +853,6 @@ impl Goal for MoveAroundTarget {
 // `behavior.move_indoors`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_indoors")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveIndoors {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -898,7 +876,6 @@ impl Goal for MoveIndoors {
 // `speed_multiplier` / `search_count` are deprecated on the base and re-bound by this goal.
 #[doc(alias = "minecraft:behavior.move_outdoors")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveOutdoors {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -941,7 +918,6 @@ impl Goal for MoveOutdoors {
 // `behavior.move_through_village`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_through_village")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveThroughVillage {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -964,7 +940,7 @@ impl Goal for MoveThroughVillage {
 // `behavior.move_to_block`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.move_to_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MoveToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1062,7 +1038,6 @@ impl MoveToBlock {
 // `behavior.move_to_land`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.move_to_land")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToLand {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1096,7 +1071,6 @@ impl Goal for MoveToLand {
 // `behavior.move_to_lava`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.move_to_lava")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToLava {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1134,7 +1108,6 @@ impl Goal for MoveToLava {
 // `behavior.move_to_liquid`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.move_to_liquid")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToLiquid {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1177,7 +1150,6 @@ impl Goal for MoveToLiquid {
 // `behavior.move_to_poi`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_to_poi")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToPoi {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1206,7 +1178,6 @@ impl Goal for MoveToPoi {
 // `behavior.move_to_random_block`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_to_random_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToRandomBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1232,7 +1203,6 @@ impl Goal for MoveToRandomBlock {
 // `behavior.move_to_village`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_to_village")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToVillage {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1263,7 +1233,6 @@ impl Goal for MoveToVillage {
 // `behavior.move_to_water`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.move_to_water")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveToWater {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1301,7 +1270,6 @@ impl Goal for MoveToWater {
 // `behavior.move_towards_dwelling_restriction`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.move_towards_dwelling_restriction")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveTowardsDwellingRestriction {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1321,7 +1289,6 @@ impl Goal for MoveTowardsDwellingRestriction {
 // `behavior.move_towards_home_restriction`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.move_towards_home_restriction")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveTowardsHomeRestriction {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1341,7 +1308,6 @@ impl Goal for MoveTowardsHomeRestriction {
 // `behavior.move_towards_target`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.move_towards_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MoveTowardsTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1366,7 +1332,6 @@ impl Goal for MoveTowardsTarget {
 // `behavior.ocelot_sit_on_block`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.ocelot_sit_on_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OcelotSitOnBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1392,7 +1357,6 @@ impl Goal for OcelotSitOnBlock {
 // `behavior.open_door`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.open_door")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OpenDoor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1412,7 +1376,6 @@ impl Goal for OpenDoor {
 // `behavior.player_ride_tamed`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.player_ride_tamed")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlayerRideTamed {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1429,7 +1392,6 @@ impl Goal for PlayerRideTamed {
 // `behavior.random_breach`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_breach")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomBreach {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1463,7 +1425,6 @@ impl Goal for RandomBreach {
 // `behavior.random_fly`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_fly")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomFly {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1495,7 +1456,6 @@ impl Goal for RandomFly {
 // `behavior.random_hover`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.random_hover")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomHover {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1535,7 +1495,6 @@ impl Goal for RandomHover {
 // `behavior.random_stroll`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.random_stroll")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomStroll {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1564,7 +1523,6 @@ impl Goal for RandomStroll {
 // `behavior.random_swim`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.random_swim")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomSwim {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1596,7 +1554,6 @@ impl Goal for RandomSwim {
 // `behavior.restrict_open_door`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.restrict_open_door")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RestrictOpenDoor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1613,7 +1570,6 @@ impl Goal for RestrictOpenDoor {
 // `behavior.restrict_sun`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.restrict_sun")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RestrictSun {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1630,7 +1586,6 @@ impl Goal for RestrictSun {
 // `behavior.rise_to_liquid_level`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.rise_to_liquid_level")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RiseToLiquidLevel {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1656,7 +1611,6 @@ impl Goal for RiseToLiquidLevel {
 // `behavior.slime_float`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.slime_float")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SlimeFloat {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1679,7 +1633,6 @@ impl Goal for SlimeFloat {
 // `behavior.slime_keep_on_jumping`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.slime_keep_on_jumping")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SlimeKeepOnJumping {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1699,7 +1652,6 @@ impl Goal for SlimeKeepOnJumping {
 // `behavior.slime_random_direction`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.slime_random_direction")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SlimeRandomDirection {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1725,7 +1677,6 @@ impl Goal for SlimeRandomDirection {
 // `behavior.squid_dive`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.squid_dive")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SquidDive {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1742,7 +1693,6 @@ impl Goal for SquidDive {
 // `behavior.squid_flee`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.squid_flee")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SquidFlee {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1759,7 +1709,6 @@ impl Goal for SquidFlee {
 // `behavior.squid_idle`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.squid_idle")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SquidIdle {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1776,7 +1725,6 @@ impl Goal for SquidIdle {
 // `behavior.squid_move_away_from_ground`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.squid_move_away_from_ground")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SquidMoveAwayFromGround {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1793,7 +1741,6 @@ impl Goal for SquidMoveAwayFromGround {
 // `behavior.squid_out_of_water`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.squid_out_of_water")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SquidOutOfWater {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1810,7 +1757,6 @@ impl Goal for SquidOutOfWater {
 // `behavior.stroll_towards_village`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.stroll_towards_village")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StrollTowardsVillage {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1842,7 +1788,6 @@ impl Goal for StrollTowardsVillage {
 // `behavior.swim_idle`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.swim_idle")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwimIdle {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1865,7 +1810,6 @@ impl Goal for SwimIdle {
 // `behavior.swim_up_for_breath`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.swim_up_for_breath")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwimUpForBreath {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1903,7 +1847,6 @@ impl Goal for SwimUpForBreath {
 // `behavior.swim_wander`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.swim_wander")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwimWander {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1932,7 +1875,6 @@ impl Goal for SwimWander {
 // `behavior.swim_with_entity`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.swim_with_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwimWithEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1985,7 +1927,6 @@ impl Goal for SwimWithEntity {
 // `behavior.teleport_to_owner`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.teleport_to_owner")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TeleportToOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -2014,7 +1955,6 @@ impl Goal for TeleportToOwner {
 // `behavior.wither_random_attack_pos_goal`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.wither_random_attack_pos_goal")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct WitherRandomAttackPosGoal {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -2057,7 +1997,6 @@ pub(crate) const ALL_IS_NOT_THE_ONLY_SOURCE: &str = "\"all\" is not the only dam
 /// `minecraft:behavior.panic`: allows a mob to panic when receiving damage, making it run around and away from the damage source that made it enter this state.
 #[doc(alias = "minecraft:behavior.panic")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Panic {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -2156,7 +2095,7 @@ macro_rules! tempt_base {
         $(#[$meta])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+        #[facet(schema::molang_with = Self::legacy_molang)]
         pub struct $name {
             /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
             #[facet(schema::fallback = 0, schema::min = 0)]

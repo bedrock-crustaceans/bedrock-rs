@@ -18,7 +18,6 @@ use super::parse::{ComponentCheck, Typed};
 /// `minecraft:admire_item`: the entity admires a held item for a while, ignoring targets.
 #[doc(alias = "minecraft:admire_item")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AdmireItem {
     /// `cooldown_after_being_attacked`: seconds after being attacked during which it does not
     /// admire; default 10.
@@ -35,7 +34,6 @@ impl Typed for AdmireItem {}
 /// item.
 #[doc(alias = "minecraft:barter")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Barter {
     /// `barter_table`: the loot table path; default none (empty).
     #[facet(default = String::new())]
@@ -52,7 +50,6 @@ impl Typed for Barter {}
 /// unless `new_screen`).
 #[doc(alias = "minecraft:trade_table")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TradeTable {
     /// `convert_trades_economy`: the trades convert to the economy trade table; default `false`.
     #[facet(default = false)]
@@ -76,7 +73,6 @@ impl Typed for TradeTable {}
 /// `minecraft:tamemount`: the entity can be tamed by riding it and feeding it.
 #[doc(alias = "minecraft:tamemount")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Tamemount {
     /// `attempt_temper_mod`: temper added on each failed taming attempt; default 5.
     #[facet(default = 5_i32)]
@@ -105,7 +101,6 @@ pub struct Tamemount {
 
 /// One item of [`Tamemount::feed_items`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FeedItem {
     /// `item`: the item; absent matches nothing.
     #[facet(schema::molang_with = descriptor_tags)]
@@ -117,7 +112,6 @@ pub struct FeedItem {
 
 /// One item of [`Tamemount::auto_reject_items`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RejectItem {
     /// `item`: the item; absent matches nothing.
     #[facet(schema::molang_with = descriptor_tags)]
@@ -184,7 +178,6 @@ impl Typed for Tamemount {
 // false, false, false and 0.
 #[doc(alias = "minecraft:inventory")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Inventory {
     /// `container_type`: the kind of container (`horse`, `minecart_chest`, `chest_boat`,
     /// `minecart_hopper`, `inventory`, `container`, `hopper`, …); default `none`.
@@ -213,7 +206,6 @@ impl Typed for Inventory {}
 // `shareables`: amounts default to −1, priority to 0 and the flags to false.
 #[doc(alias = "minecraft:shareables")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Shareables {
     /// `singular_pickup`: it picks up no more of an item it already holds; default `false`.
     #[facet(default = false)]
@@ -242,7 +234,6 @@ pub struct Shareables {
     reason = "the game's flags, one member each"
 )]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ShareableItem {
     /// `item`: the item or item tag; absent is no item.
     #[facet(schema::molang_with = descriptor_tags)]
@@ -307,7 +298,6 @@ impl Typed for Shareables {
 )]
 #[doc(alias = "minecraft:economy_trade_table")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EconomyTradeTable {
     /// `display_name`: the localization key of the trade screen's name; default none.
     #[facet(default = String::new())]

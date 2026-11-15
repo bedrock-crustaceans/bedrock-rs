@@ -27,7 +27,6 @@ use super::molang::{push_trigger, push_triggers, visit_conditions};
 // `behavior.aquatic_charge_attack`: typed from 1.21.120, redeclared 1.26.0.
 #[doc(alias = "minecraft:behavior.aquatic_charge_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AquaticChargeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -91,7 +90,6 @@ impl Goal for AquaticChargeAttack {
 // `behavior.charge_attack`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.charge_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ChargeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -130,7 +128,7 @@ impl Goal for ChargeAttack {
 // `behavior.delayed_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.delayed_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct DelayedAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -253,7 +251,6 @@ impl DelayedAttack {
 // `behavior.eat_mob`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.eat_mob")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EatMob {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -293,7 +290,6 @@ impl Goal for EatMob {
 // `behavior.fire_at_target`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.fire_at_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FireAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -373,7 +369,6 @@ impl Goal for FireAtTarget {
 // `behavior.guardian_attack`: typed from 1.26.0.
 #[doc(alias = "minecraft:behavior.guardian_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GuardianAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -411,7 +406,6 @@ impl Goal for GuardianAttack {
 // `behavior.jump_around_target`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.jump_around_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct JumpAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -484,7 +478,7 @@ impl Goal for JumpAroundTarget {
 // `behavior.knockback_roar`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.knockback_roar")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct KnockbackRoar {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -553,7 +547,6 @@ impl KnockbackRoar {
 // `behavior.leap_at_target`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.leap_at_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LeapAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -579,7 +572,7 @@ impl Goal for LeapAtTarget {
 // `behavior.melee_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.melee_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MeleeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -689,7 +682,7 @@ impl MeleeAttack {
 // `behavior.melee_box_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.melee_box_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct MeleeBoxAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -799,7 +792,6 @@ impl MeleeBoxAttack {
 // `behavior.ocelotattack`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.ocelotattack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Ocelotattack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -846,7 +838,7 @@ impl Goal for Ocelotattack {
 // `behavior.ram_attack`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.ram_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct RamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -918,7 +910,6 @@ impl RamAttack {
 // `behavior.ranged_attack`: typed from 1.26.40, redeclared 1.26.50.
 #[doc(alias = "minecraft:behavior.ranged_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RangedAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1027,7 +1018,6 @@ impl Goal for RangedAttack {
 // `behavior.slime_attack`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.slime_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SlimeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1059,7 +1049,6 @@ impl Goal for SlimeAttack {
 // `behavior.sonic_boom`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.sonic_boom")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SonicBoom {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1120,7 +1109,6 @@ impl Goal for SonicBoom {
 // `behavior.stalk_and_pounce_on_target`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.stalk_and_pounce_on_target")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StalkAndPounceOnTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1173,7 +1161,7 @@ impl Goal for StalkAndPounceOnTarget {
 // `behavior.stomp_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.stomp_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct StompAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1289,7 +1277,6 @@ impl StompAttack {
 // `behavior.summon_entity`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.summon_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SummonEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1317,7 +1304,6 @@ impl Goal for SummonEntity {
 // `behavior.swell`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.swell")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Swell {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1340,7 +1326,6 @@ impl Goal for Swell {
 // `behavior.swoop_attack`: typed from 1.21.110.
 #[doc(alias = "minecraft:behavior.swoop_attack")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwoopAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1371,7 +1356,7 @@ impl Goal for SwoopAttack {
 // `behavior.use_kinetic_weapon`: typed from 1.21.120, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.use_kinetic_weapon")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct UseKineticWeapon {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1502,7 +1487,6 @@ impl UseKineticWeapon {
 
 /// One stage of a [`SummonChoice`]: what it summons, how many and where.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SummonStage {
     /// `base_delay`: amount of time in seconds to wait before this step starts. Default 0.
     #[facet(schema::fallback = 0.0)]
@@ -1551,7 +1535,6 @@ impl SummonStage {
 
 /// One spell `summon_entity` may cast: when it is chosen and the stages it runs.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SummonChoice {
     /// `cast_duration`: time in seconds the spell casting will take. Default -1.
     #[facet(schema::fallback = -1.0)]
@@ -1619,7 +1602,6 @@ pub(crate) const ACTIVATION_RANGE_SWAPPED: &str =
 // legacy goal parser, which `lenient_shape` mirrors.
 #[doc(alias = "minecraft:behavior.send_event")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SendEvent {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1743,7 +1725,6 @@ fn f32_value(value: f32) -> Value {
 
 /// One entry of `send_event.event_choices`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SendEventChoice {
     /// `cast_duration`: time in seconds for the entire event sending process. Default 0.
     #[facet(schema::fallback = 0.0)]
@@ -1788,7 +1769,6 @@ impl SendEventChoice {
 
 /// One step of a `send_event` choice's `sequence`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SendEventStage {
     /// `base_delay`: amount of time in seconds before starting this step. Default 0.
     #[facet(schema::fallback = 0.0)]

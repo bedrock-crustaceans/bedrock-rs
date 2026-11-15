@@ -9,7 +9,6 @@ use indexmap::IndexMap;
 use super::payload::{failure_finding, join, span_of, tell_unknown};
 use super::{
     ComponentTable, ContextArea, ConvertMode, ExperimentalField, Family, FieldGate, FieldMeta,
-    UnknownMask,
 };
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
@@ -200,24 +199,14 @@ fn parsed_or_told<'t>(
 }
 
 /// The read of a component or a bare value of the context: its reading, the typed door's
-/// profile, the unknown severity of the slice, the document's format and the pack's engine.
+/// profile, the unknown severity of the slice and the document's format.
 fn door_read<'d>(cx: &'d LoadContext, d: &'d mut Diagnostics) -> crate::json::kit::Read<'d> {
-    use crate::json::kit::{Profile, Read, Versions};
-    let versions = Versions {
-        format: cx.document_format,
-        engine: Some(
-            cx.min_engine_version
-                .as_ref()
-                .map_or(FormatVersion::new(0, 0, 0), |engine| {
-                    engine.version.format_version()
-                }),
-        ),
-    };
+    use crate::json::kit::{Profile, Read};
     Read::new(cx.reading, d)
         .unknown_severity(cx.grade(Class::Unknown))
         .profile(Profile::FIRST_FAILURE)
         .load(cx)
-        .versions(versions)
+        .format(cx.document_format)
 }
 
 /// The finding of a component whose JSON is of another kind than its type's root, told as the
@@ -486,28 +475,6 @@ pub fn parse_component_map<'a, F: Family>(
     map
 }
 
-/// Reads a `components` object at `node` into family `F`'s component map, in file order, on
-/// the new reader: what [`parse_component_map`] does with the raw slices of the typed door,
-/// from the node's members (each read by its row's `parse`, which is
-/// [`read_component`] for a converted component, from the member's text), its findings told
-/// to `read` below the node's path, the unknown members the rows keep in its table. A
-/// component that fails is dropped alone; a key `is_custom` takes is a custom component; any
-/// other is an unrecognized component, kept for write-back. The rows read in the read's load
-/// ([`Read::load`](crate::json::kit::Read::load)), or in a detached one under the read's
-/// reading where it has none. `None` (a wrong type told) when the node is no object.
-///
-/// A family whose document holds its components as a map reads that field with a function of
-/// its own that names its family: `schema::read_with = components`, where `components` is
-/// `read_component_map::<EntityFamily>(node, read, ConvertMode::Strict, is_custom)`.
-pub fn read_component_map<F: Family>(
-    node: &crate::json::kit::Node<'_>,
-    read: &mut crate::json::kit::Read<'_>,
-    mode: ConvertMode,
-    is_custom: fn(&str) -> bool,
-) -> Option<ComponentMap<F::Component>> {
-    read_component_map_by::<F>(node, read, mode, is_custom, |_| KeyGate::Read)
-}
-
 /// What a family says of a key of its `components` object before the rows read it
 /// ([`read_component_map_by`]).
 #[derive(Debug)]
@@ -524,9 +491,22 @@ pub enum KeyGate {
     Drop(Diagnostic),
 }
 
-/// [`read_component_map`] where the family judges each key first with `gate`: the refused ones
-/// are told before any row reads, the ones with no row in the slice after the last row, the
-/// dropped ones where the file has them.
+/// Reads a `components` object at `node` into family `F`'s component map, in file order, on
+/// the new reader: what [`parse_component_map`] does with the raw slices of the typed door,
+/// from the node's members (each read by its row's `parse`, which is
+/// [`read_component`] for a converted component, from the member's text), its findings told
+/// to `read` below the node's path, the unknown members the rows keep in its table. A
+/// component that fails is dropped alone; a key `is_custom` takes is a custom component; any
+/// other is an unrecognized component, kept for write-back. The rows read in the read's load
+/// ([`Read::load`](crate::json::kit::Read::load)), or in a detached one under the read's
+/// reading where it has none. `None` (a wrong type told) when the node is no object.
+///
+/// The family judges each key first with `gate` ([`KeyGate`]): the refused ones are told before
+/// any row reads, the ones with no row in the slice after the last row, the dropped ones where
+/// the file has them; `|_| KeyGate::Read` reads every key by its row. A family whose document
+/// holds its components as a map reads that field with a function of its own that names its
+/// family: `schema::read_with = components`, where `components` is
+/// `read_component_map_by::<EntityFamily>(node, read, ConvertMode::Strict, is_custom, gate)`.
 pub fn read_component_map_by<F: Family>(
     node: &crate::json::kit::Node<'_>,
     read: &mut crate::json::kit::Read<'_>,
@@ -549,7 +529,7 @@ pub fn read_component_map_by<F: Family>(
     };
     // A member `schema::since_format` a later version than the document's is no member of its
     // component: the rows read knowing the document's format.
-    let format = read.known_versions().format;
+    let format = read.known_format();
     let versioned;
     let cx = if format.is_some() && cx.document_format != format {
         let mut cx = cx.clone();
@@ -750,7 +730,7 @@ pub fn validate_components<F: Family>(
     let gate_severity = Severity::Error;
     // A deprecated or out-of-area component is reported like a component missing from the
     // schema: level 2 under the unstrict mask, an error under the strict one.
-    let unknown_severity = unknown_mask::<F>(original_version, cx.source).severity();
+    let unknown_severity = unknown_severity::<F>(original_version, cx.source);
     let mut passed = true;
     let mut dropped: Vec<String> = Vec::new();
     for entry in map.iter() {
@@ -1003,12 +983,12 @@ fn finding(code: Code, severity: Severity, path: JsonPath) -> Diagnostic {
     )
 }
 
-/// The unknown mask of the struct that reads a document written at `version` from `source`:
-/// the mask the unknown-component findings of the validate phase follow.
-fn unknown_mask<F: Family>(
+/// The unknown severity of the struct that reads a document written at `version` from
+/// `source`: what the unknown-component findings of the validate phase follow.
+fn unknown_severity<F: Family>(
     version: FormatVersion,
     source: crate::load::DocumentSource,
-) -> UnknownMask {
+) -> Severity {
     let input = crate::version::FormatVersionInput {
         version: Some(version),
         beta_literal: false,
@@ -1018,6 +998,6 @@ fn unknown_mask<F: Family>(
         super::range::Selection::Struct(i) => {
             super::reading::slice_reading::<F>(super::StructIndex::Stable(i), source).unknown
         }
-        _ => UnknownMask::Warn,
+        _ => Severity::Warning,
     }
 }

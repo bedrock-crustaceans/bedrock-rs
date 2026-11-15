@@ -3,7 +3,7 @@
 //! older shapes are in `older.rs`.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 
@@ -13,7 +13,6 @@ use super::parse::{ComponentCheck, Typed};
 /// preset whose filter passes applies.
 #[doc(alias = "minecraft:apply_knockback_rules")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ApplyKnockbackRules {
     /// `presets`: the presets, in order; at least one.
     #[facet(default)]
@@ -44,7 +43,6 @@ impl Typed for ApplyKnockbackRules {
 
 /// One preset of [`ApplyKnockbackRules`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct KnockbackPreset {
     /// `filter`: which targets the preset applies to; absent means all.
     pub filter: Option<Filter>,
@@ -147,7 +145,6 @@ pub enum KnockbackMode {
 /// the built-in push behaviour applies.
 #[doc(alias = "minecraft:pushable_by_entity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PushableByEntity {
     /// `presets`: the presets, in order; the first whose filters pass applies.
     #[facet(default)]
@@ -177,7 +174,6 @@ impl Typed for PushableByEntity {
 
 /// One preset of [`PushableByEntity`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PushPreset {
     /// `filters`: which pushing entities the preset applies to; absent means all.
     pub filters: Option<Filter>,

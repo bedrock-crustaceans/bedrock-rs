@@ -13,7 +13,7 @@ use bedrock_addon_core::diagnostic::{
     Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
-use bedrock_addon_core::json::kit::{Node, Read as KitRead, Versions};
+use bedrock_addon_core::json::kit::{Node, Read as KitRead};
 use bedrock_addon_core::json::{Value, strip_bom};
 use bedrock_addon_core::schema::{FromJson, read_document};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
@@ -269,10 +269,7 @@ pub(super) fn read_layers(
     let set = {
         let mut read = KitRead::new(Reading::OWN, d)
             .unknown_severity(Severity::Error)
-            .versions(Versions {
-                format: Some(schema.version()),
-                engine: None,
-            });
+            .format(Some(schema.version()));
         read_document::<TextureSet>(&Node::new(layers, at.clone()), &mut read)
     };
     set.filter(|_| !d.iter().skip(before).any(Diagnostic::rejects))

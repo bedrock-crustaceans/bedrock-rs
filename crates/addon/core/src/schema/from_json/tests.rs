@@ -297,7 +297,7 @@ fn a_float_beyond_its_width_reads_the_infinity_and_is_told() {
 }
 
 #[test]
-fn a_list_fails_with_an_element_or_drops_it_by_the_reading() {
+fn a_list_fails_with_an_element() {
     let (list, told) = as_read::<Vec<u8>>(r#"[1, "x", 3, true]"#);
     assert_eq!(list, None);
     assert_eq!(
@@ -307,9 +307,6 @@ fn a_list_fails_with_an_element_or_drops_it_by_the_reading() {
             "Error root/3 core/invalid_type"
         ]
     );
-    let reading = Reading::DOCUMENT.with_on_member_failure(MemberFailure::DropElement);
-    let (list, _) = read_as::<Vec<u8>>(r#"[1, "x", 3]"#, reading, Profile::EVERY_FAILURE);
-    assert_eq!(list, Some(vec![1, 3]));
 }
 
 #[test]
@@ -868,20 +865,15 @@ fn a_struct_in_a_fixed_array_keeps_no_unknown_member() {
 fn a_list_that_drops_an_element_leaves_the_read_unfailed() {
     let json: Value = from_str_jsonc(r#"[1, "x", 3]"#).unwrap();
     let mut found = Diagnostics::default();
-    let reading = Reading::DOCUMENT.with_on_member_failure(MemberFailure::DropElement);
-    let mut read = Read::new(reading, &mut found);
-    let list = Vec::<u8>::from_json(&Node::new(&json, JsonPath::new()), &mut read);
-    assert_eq!(list, Some(vec![1, 3]));
-    assert!(!read.failed());
-    let mut read = Read::new(reading, &mut found);
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
     let list = super::read_list(
         &Node::new(&json, JsonPath::new()),
         &mut read,
-        super::ElementFailure::FailList,
+        super::ElementFailure::Drop,
         u8::from_json,
     );
-    assert_eq!(list, None);
-    assert!(read.failed());
+    assert_eq!(list, Some(vec![1, 3]));
+    assert!(!read.failed());
 }
 
 /// A committed attempt brings the moves of the lists it shortened: a finding told later at an
@@ -892,10 +884,15 @@ fn a_committed_fork_keeps_its_moves_and_a_stopped_read_forks_stopped() {
     let json: Value = from_str_jsonc(r#"[1, "x", 3]"#).unwrap();
     let node = Node::new(&json, JsonPath::of_keys(["list"]));
     let mut found = Diagnostics::default();
-    let reading = Reading::DOCUMENT.with_on_member_failure(MemberFailure::DropElement);
-    let mut read = Read::new(reading, &mut found);
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
     let mut attempt = read.fork();
-    assert_eq!(Vec::<u8>::from_json(&node, &mut attempt), Some(vec![1, 3]));
+    let list = super::read_list(
+        &node,
+        &mut attempt,
+        super::ElementFailure::Drop,
+        u8::from_json,
+    );
+    assert_eq!(list, Some(vec![1, 3]));
     read.commit(attempt);
     // The element held at 1 is the file's 2.
     let held = JsonPath::of_keys(["list"]).index(1);
@@ -1001,34 +998,25 @@ fn lenient() -> Reading {
 struct Listed {
     #[facet(schema::iterated)]
     names: Option<Vec<String>>,
-    #[facet(schema::elements = "drop")]
-    counts: Option<Vec<u8>>,
     #[facet(alias = "colour")]
     color: Option<String>,
 }
 
 /// A list jsoncpp iterates reads whatever its member is: an array's elements, an object's
-/// values in key order, nothing for another value, the member told as no array; a list whose
-/// elements drop leaves a failed one out; an alias is a second name.
+/// values in key order, nothing for another value, the member told as no array; an alias is a
+/// second name.
 #[test]
 fn a_list_reads_as_its_keys_say() {
     let read = |text: &str| read_as::<Listed>(text, lenient(), Profile::EVERY_FAILURE);
-    let (value, told) = read(r#"{"names": {"b": "y", "a": "x"}, "counts": [1, "x", 3]}"#);
+    let (value, told) = read(r#"{"names": {"b": "y", "a": "x"}}"#);
     assert_eq!(
         value,
         Some(Listed {
             names: Some(vec!["x".to_owned(), "y".to_owned()]),
-            counts: Some(vec![1, 3]),
             color: None,
         })
     );
-    assert_eq!(
-        told,
-        [
-            "Info root/names core/invalid_type",
-            "Info root/counts/1 core/invalid_type"
-        ]
-    );
+    assert_eq!(told, ["Info root/names core/invalid_type"]);
     for text in [r#"{"names": 3}"#, r#"{"names": null}"#] {
         let (value, told) = read(text);
         assert_eq!(value.and_then(|v| v.names), Some(Vec::new()), "{text}");
@@ -1145,40 +1133,6 @@ fn a_reads_null_field_reads_a_null_as_a_value() {
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(untagged)]
-#[repr(u8)]
-enum Message {
-    Text(String),
-    Conditional {
-        message: String,
-        condition: Option<String>,
-    },
-    #[facet(schema::otherwise)]
-    Other(Value),
-}
-
-/// An untagged enum's `otherwise` arm takes a value the chosen arm fails on, whose findings
-/// stand, and a value no arm takes, without a word.
-#[test]
-fn an_untagged_enum_falls_back_to_its_otherwise_arm_keeping_what_was_told() {
-    let read = |text: &str| read_as::<Message>(text, lenient(), Profile::EVERY_FAILURE);
-    let (value, told) = read(r#"{"condition": "c"}"#);
-    assert!(matches!(value, Some(Message::Other(_))), "{value:?}");
-    assert_eq!(told, ["Info root/message core/missing_required_field"]);
-    let (value, told) = read("[1]");
-    assert!(matches!(value, Some(Message::Other(_))), "{value:?}");
-    assert!(told.is_empty(), "{told:?}");
-    let (value, _) = read(r#"{"message": "m"}"#);
-    assert_eq!(
-        value,
-        Some(Message::Conditional {
-            message: "m".to_owned(),
-            condition: None
-        })
-    );
-}
-
-#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Kept {
     #[facet(schema::or_kept = "told")]
     size: Option<u8>,
@@ -1213,24 +1167,18 @@ fn a_field_that_keeps_what_it_cannot_read_fails_nothing() {
 struct Versioned {
     #[facet(schema::since_format = "1.21.0")]
     late: Option<u8>,
-    #[facet(schema::since_engine = "1.21.0")]
-    new: Option<u8>,
 }
 
-/// A member read from a later format than the document's is unknown there; one read from a
-/// later engine than the pack's is read and told.
+/// A member read from a later format than the document's is unknown there.
 #[test]
-fn a_member_read_from_a_version_on_is_judged_by_the_document_s_versions() {
-    use crate::json::kit::Versions;
+fn a_member_read_from_a_version_on_is_judged_by_the_document_s_format() {
     use crate::version::FormatVersion;
-    let text = r#"{"late": 1, "new": 2}"#;
+    let text = r#"{"late": 1}"#;
     let json: Value = from_str_jsonc(text).unwrap();
-    let read = |format: (u16, u16), engine: (u16, u16)| {
+    let read = |format: (u16, u16)| {
         let mut found = Diagnostics::default();
-        let mut read = Read::new(Reading::DOCUMENT, &mut found).versions(Versions {
-            format: Some(FormatVersion::new(1, format.0, format.1)),
-            engine: Some(FormatVersion::new(1, engine.0, engine.1)),
-        });
+        let mut read = Read::new(Reading::DOCUMENT, &mut found)
+            .format(Some(FormatVersion::new(1, format.0, format.1)));
         let value = Versioned::from_json(&Node::new(&json, JsonPath::new()), &mut read);
         let told: Vec<String> = found
             .iter()
@@ -1238,24 +1186,12 @@ fn a_member_read_from_a_version_on_is_judged_by_the_document_s_versions() {
             .collect();
         (value, told)
     };
-    let (value, told) = read((20, 0), (21, 0));
-    assert_eq!(
-        value,
-        Some(Versioned {
-            late: None,
-            new: Some(2)
-        })
-    );
+    let (value, told) = read((20, 0));
+    assert_eq!(value, Some(Versioned { late: None }));
     assert_eq!(told, ["Error late core/unrecognized_field"]);
-    let (value, told) = read((21, 0), (20, 40));
-    assert_eq!(
-        value,
-        Some(Versioned {
-            late: Some(1),
-            new: Some(2)
-        })
-    );
-    assert_eq!(told, ["Info new core/field_since_engine"]);
+    let (value, told) = read((21, 0));
+    assert_eq!(value, Some(Versioned { late: Some(1) }));
+    assert!(told.is_empty(), "{told:?}");
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]

@@ -138,17 +138,12 @@ pub(super) fn knows(infos: &[FieldInfo]) -> TokenStream {
 /// is no `Option`.
 pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     let attrs = &info.attrs;
-    let list_key = attrs
-        .iterated
-        .or(attrs.elements.map(|(_, span)| span))
-        .or(attrs.skip_code.as_ref().map(|(_, span)| *span));
     let held = info.option.unwrap_or(info.ty);
-    if let Some(span) = list_key {
+    if let Some(span) = attrs.iterated {
         if ty::name(held).is_none_or(|name| name != "Vec") {
             errors.push(Error::new(
                 span,
-                "`schema::iterated` and `schema::elements` read a list: a `Vec` field (or an \
-                 `Option` of one)",
+                "`schema::iterated` reads a list: a `Vec` field (or an `Option` of one)",
             ));
         } else if attrs.read_with.is_some() {
             errors.push(Error::new(
@@ -159,15 +154,6 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
         }
     }
     validate_keys(info, errors);
-    if let Some((_, span)) = &attrs.skip_code
-        && !matches!(attrs.elements, Some((true, _)))
-    {
-        errors.push(Error::new(
-            *span,
-            "`schema::skip_code` is what an element left out is told as: the list says \
-             `schema::elements = \"drop\"`",
-        ));
-    }
     if let Some(span) = attrs.reads_null
         && (info.option.is_none() || attrs.flatten)
     {
@@ -276,11 +262,6 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let value = format_ident!("__v{index}");
     let held = info.option.unwrap_or(info.ty);
     let read_call = member_read(info, &slot);
-    // A member written for a later engine than the pack's is read and told.
-    let since_engine = info.attrs.since_engine.map(|version| {
-        let version = format_version(version);
-        quote!(#reader::since_engine(__read, __member, #version);)
-    });
     let json = &info.json;
     let names = info
         .attrs
@@ -331,7 +312,6 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                         return true;
                     };
                     #read_call
-                    #since_engine
                     true
                 }
             }
@@ -344,7 +324,6 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                     };
                     if !__object.absent(__member, __read) {
                         #read_call
-                        #since_engine
                     }
                     true
                 }
@@ -362,7 +341,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
 }
 
 /// The call that reads the member of field `info` into its slot: the field's `read_with`, the
-/// read of a list it states (`schema::iterated`, `schema::elements`), or its type's; a value it
+/// read of a list it iterates (`schema::iterated`), or its type's; a value it
 /// cannot read kept as written where it says `schema::or_kept`.
 fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
     let reader = paths().reader;
@@ -386,33 +365,16 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
             (&#reader::Probe::<#held>::NEW).kind()
         }}
     };
-    // The field's own read: its `read_with`, a list it states the read of, or none (its type's).
+    // The field's own read: its `read_with`, a list it iterates, or none (its type's).
     let iterated = info.attrs.iterated.is_some();
-    let list = (iterated || info.attrs.elements.is_some())
-        .then(|| ty::elements(held))
-        .flatten()
+    let list = info
+        .attrs
+        .iterated
+        .and_then(|_| ty::elements(held))
         .map(|element| {
-            let failure = match info.attrs.elements {
-                Some((true, _)) => quote!(Drop),
-                Some((false, _)) => quote!(FailList),
-                None => quote!(ByReading),
-            };
-            let skip = info.attrs.skip_code.as_ref().map_or_else(
-                || quote!(::core::option::Option::None),
-                |(code, _)| {
-                    let core = core();
-                    quote!(::core::option::Option::Some(|| -> #core::diagnostic::Code { #code }))
-                },
-            );
             quote! {
                 |__node: &#node<'_>, __read: &mut #read<'_>| {
-                    #reader::list::<#element>(
-                        __node,
-                        __read,
-                        #iterated,
-                        ::bedrock_addon_core::schema::ElementFailure::#failure,
-                        #skip,
-                    )
+                    #reader::iterated::<#element>(__node, __read)
                 }
             }
         });
@@ -615,14 +577,17 @@ fn fields_body(
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
         #(#slots)*
+        let __declared = #reader::Declared {
+            names: &[#(#names),*],
+            gates: &[#(#gates),*],
+            knows: #knows,
+            tag: __tag,
+        };
         #reader::read_members(
             __object,
             __read,
             __unknown,
-            __tag,
-            &[#(#names),*],
-            &[#(#gates),*],
-            #knows,
+            &__declared,
             |__key: &str, __member: ::core::option::Option<&#node<'_>>, __read: &mut #read<'_>| -> bool {
                 match __key {
                     #(#arms)*
@@ -635,16 +600,7 @@ fn fields_body(
         );
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
-        #reader::read_unknown_last(
-            __object,
-            __read,
-            __unknown,
-            __tag,
-            &[#(#names),*],
-            &[#(#gates),*],
-            #knows,
-            #unknown_member,
-        );
+        #reader::read_unknown_last(__object, __read, __unknown, &__declared, #unknown_member);
         // Under the game's schema tree an error raised while the members were read fails the
         // struct, and its missing members are then not told.
         let mut __ok = __object.settle(__read);
@@ -855,8 +811,6 @@ pub(super) struct ReadVariant<'a> {
     pub fields: &'a [FieldInfo<'a>],
     /// A struct variant's `schema::unknown`.
     pub unknown: Option<String>,
-    /// The arm of an untagged enum a value takes otherwise (`schema::otherwise`).
-    pub otherwise: bool,
 }
 
 /// What a variant's payload is.
@@ -993,33 +947,12 @@ pub(super) fn untagged_read(
         };
         quote!(::core::option::Option::Some(#reader::Arm::Variant(#index)) => #value,)
     });
-    // The arm a value takes when the chosen one fails or none is chosen: its findings stand.
-    let otherwise = variants.iter().enumerate().find_map(|(index, v)| {
-        let Payload::Newtype(ty, with) = payload(v) else {
-            return None;
-        };
-        v.otherwise
-            .then(|| (index, &v.variant.ident, newtype_value(ty, with, &at)))
-    });
-    let quiet = otherwise.is_some();
-    let tail = otherwise.map_or_else(
-        || quote!(__value),
-        |(index, name, value)| {
-            quote! {
-                if __value.is_none() && __arm != ::core::option::Option::Some(#reader::Arm::Variant(#index)) {
-                    return #value.map(Self::#name);
-                }
-                __value
-            }
-        },
-    );
     quote! {
         #[automatically_derived]
         #header {
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                let __arm = #reader::untagged_arm::<Self>(__node, __read, #quiet, #invalid);
-                let __value = match __arm {
+                match #reader::untagged_arm::<Self>(__node, __read, #invalid) {
                     ::core::option::Option::Some(#reader::Arm::Unit) => match #reader::unit_arm(__node, &[#(#unit_names),*]) {
                         #(#unit_arms)*
                         _ => {
@@ -1034,8 +967,7 @@ pub(super) fn untagged_read(
                         __read.wrong_type(__node);
                         ::core::option::Option::None
                     }
-                };
-                #tail
+                }
             }
         }
     }
@@ -1092,7 +1024,7 @@ pub(super) fn tagged_read(
                 let __value = match __name.as_str() {
                     #(#arms)*
                     _ => {
-                        #reader::unknown_tag(__object, __read, #tag, #invalid);
+                        #reader::unknown_tag(__object, __read, #invalid);
                         return ::core::option::Option::None;
                     }
                 };

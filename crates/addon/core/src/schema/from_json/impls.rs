@@ -9,7 +9,7 @@ use super::FromJson;
 use crate::json::Declared;
 use crate::json::Value;
 use crate::json::kit::{Expected, Node, Read, Scalar};
-use crate::versioning::{MemberFailure, NullHandling};
+use crate::versioning::NullHandling;
 
 macro_rules! integers {
     ($($ty:ty => $bits:literal, $signed:literal;)+) => {
@@ -188,17 +188,13 @@ pub(super) fn null_of(
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum ElementFailure {
-    /// As the read says: the element is left out under [`Failures::Every`] when the reading
-    /// drops a failed element or its owner (`DropElement`, `DropOwner`); otherwise the list
-    /// fails.
-    ///
-    /// [`Failures::Every`]: crate::json::kit::Failures::Every
+    /// As the read says: the element is left out where a `DefaultAndTell` read recovers a
+    /// value ([`Recovery`](crate::json::kit::Recovery)); otherwise the list fails (every
+    /// element is still read and told).
     ByReading,
-    /// The element is left out and the rest kept, whatever the reading (`schema::elements =
-    /// "drop"`): a game reader that skips an element it cannot read.
+    /// The element is left out and the rest kept, whatever the reading: a game reader that
+    /// skips an element it cannot read.
     Drop,
-    /// The list fails (every element is still read and told).
-    FailList,
 }
 
 impl ElementFailure {
@@ -206,15 +202,7 @@ impl ElementFailure {
     fn drops(self, read: &Read<'_>, node: &Node<'_>) -> bool {
         match self {
             Self::Drop => true,
-            Self::FailList => false,
-            Self::ByReading => {
-                (!read.telling().first_alone()
-                    && matches!(
-                        read.reading().on_member_failure,
-                        MemberFailure::DropElement | MemberFailure::DropOwner
-                    ))
-                    || read.defaults_drop(node, true)
-            }
+            Self::ByReading => read.defaults_drop(node, true),
         }
     }
 }
@@ -270,12 +258,28 @@ pub fn read_list<T>(
         return None;
     }
     let elements = read.array(node)?;
-    let mut out = Vec::with_capacity(elements.len());
-    // The indices of the elements kept, once one is left out.
+    let drops = failure.drops(read, node);
+    let (out, kept) = read_elements(elements.iter(), read, drops, &mut element)?;
+    if let Some(kept) = kept {
+        read.findings_mut().left_out(node.path(), &kept);
+    }
+    Some(out)
+}
+
+/// Each of `nodes` read by `element`, into a list: a failed one is told and the read goes on;
+/// one left out (`drops`, or failed without an error under a tree) fails nothing (the read is as
+/// failed as it was before the element). `None` when one failed or the read stopped; with the
+/// list, the indices of the elements kept once one is left out.
+fn read_elements<'v, T>(
+    nodes: impl Iterator<Item = Node<'v>>,
+    read: &mut Read<'_>,
+    drops: bool,
+    element: &mut impl FnMut(&Node<'_>, &mut Read<'_>) -> Option<T>,
+) -> Option<(Vec<T>, Option<Vec<usize>>)> {
+    let mut out = Vec::new();
     let mut kept: Option<Vec<usize>> = None;
     let mut failed = false;
-    let drops = failure.drops(read, node);
-    for (index, at) in elements.iter().enumerate() {
+    for (index, at) in nodes.enumerate() {
         if read.stopped() {
             return None;
         }
@@ -295,13 +299,7 @@ pub fn read_list<T>(
             None => failed = true,
         }
     }
-    if failed {
-        return None;
-    }
-    if let Some(kept) = kept {
-        read.findings_mut().left_out(node.path(), &kept);
-    }
-    Some(out)
+    (!failed).then_some((out, kept))
 }
 
 /// The elements of `node` as jsoncpp iterates a value (`schema::iterated`): an array's elements,
@@ -332,24 +330,13 @@ pub fn read_iterated<T>(
     let mut values: Vec<(&str, Node<'_>)> = members.iter().collect();
     values.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     let drops = failure.drops(read, node);
-    let mut out = Vec::with_capacity(values.len());
-    let mut failed = false;
-    for (_, at) in values {
-        if read.stopped() {
-            return None;
-        }
-        let was_failed = read.failed();
-        match element(&at, read) {
-            Some(value) => out.push(value),
-            None if drops => read.set_failed(was_failed),
-            None => failed = true,
-        }
-    }
-    (!failed).then_some(out)
+    // The values are named by their keys: nothing to renumber.
+    let nodes = values.into_iter().map(|(_, at)| at);
+    read_elements(nodes, read, drops, &mut element).map(|(out, _)| out)
 }
 
 /// An array, each element read as `T` ([`read_each`]): a failed element fails the list (every
-/// element is still read and told), or under `DropElement` and `DropOwner` is left out.
+/// element is still read and told), or is left out where the read recovers a value.
 impl<T: FromJson> FromJson for Vec<T> {
     const EXPECTED: Option<Expected> = Some(Expected::Array);
 

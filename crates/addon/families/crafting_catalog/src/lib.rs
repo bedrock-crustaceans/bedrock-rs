@@ -54,8 +54,8 @@ use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     DocumentRead, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, ParseCx,
-    Parsed, Reading, Selection, StructIndex, UnknownMask, VersionStruct, Versioned, finish,
-    parse_as_written, select,
+    Parsed, Reading, Selection, StructIndex, VersionStruct, Versioned, finish, parse_as_written,
+    select,
 };
 
 /// The path of the one file a behaviour pack's catalogue is read from.
@@ -227,7 +227,7 @@ impl Family for CatalogFamily {
     /// and an error that skips the file from 1.26.50 on, where it reads it strictly.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
-            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(Severity::Warning),
             _ => Reading::DOCUMENT,
         }
     }

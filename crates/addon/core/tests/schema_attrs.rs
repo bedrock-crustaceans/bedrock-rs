@@ -16,7 +16,7 @@ struct Toy {
     #[facet(schema::fallback = 1, schema::above = lower)]
     upper: Option<i32>,
     lower: i32,
-    #[facet(schema::lowercase, schema::unknown = "keep")]
+    #[facet(schema::unknown = "keep")]
     name: String,
     #[facet(schema::molang = SPEC, schema::molang_with = walk)]
     cond: Option<String>,
@@ -69,7 +69,6 @@ fn compile_time_keys_and_markers_are_present_but_carry_no_value() {
         ("radius", "below"),
         ("upper", "fallback"),
         ("upper", "above"),
-        ("name", "lowercase"),
         ("cond", "molang"),
         ("cond", "molang_with"),
         ("on_spawn", "foreign_event"),

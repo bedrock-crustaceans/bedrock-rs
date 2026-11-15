@@ -39,9 +39,10 @@ fn the_enum_discriminants_are_vanilla_s_values() {
 
 #[test]
 fn the_family_reads_a_minecraft_document_input_under_the_unstrict_mask() {
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
-    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex, UnknownMask};
+    use bedrock_addon_core::versioning::{Family, InputKind, StructIndex};
     // The game reads the rule as JSON input with `null` members rejected, and registers the one
     // slice with the unstrict error mask, so an unknown member only warns.
     assert_eq!(FeatureRuleFamily::ENVELOPE.input, InputKind::Document);
@@ -52,6 +53,6 @@ fn the_family_reads_a_minecraft_document_input_under_the_unstrict_mask() {
     );
     assert_eq!(
         FeatureRuleFamily::reading(slice, DocumentSource::Json).unknown,
-        UnknownMask::Warn
+        Severity::Warning
     );
 }

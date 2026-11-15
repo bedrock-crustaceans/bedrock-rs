@@ -62,10 +62,10 @@ use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, BeyondWidth, ComponentSection, ComponentTable, DocumentRead, Envelope,
-    EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, ParseCx, Parsed,
-    Reading, Scalars, StructIndex, UnknownMask, ValidateCx, VersionChain, VersionStruct, Versioned,
-    finish, member_version, parse_as_written, write_envelope,
+    BETA_VERSION, ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family,
+    Identity, InputKind, Loaded, MissingVersion, OpenBeta, ParseCx, Parsed, Reading, StructIndex,
+    ValidateCx, VersionChain, VersionStruct, Versioned, finish, member_version, parse_as_written,
+    write_envelope,
 };
 
 use component::EntityComponent;
@@ -80,9 +80,12 @@ pub(crate) use versions::STRICT_SLICES;
 /// absent (rule N1), and a scalar is read strictly (the cereal readers' rule: a number beyond
 /// its float's width is refused). The typed reads of the components and goals, which run
 /// outside the door, read by the same rules.
-pub(crate) const READING: Reading = Reading::NULL_ABSENT
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+pub(crate) const READING: Reading = Reading::NULL_ABSENT.strict();
+
+/// What the typed reads of the entity's own structs read by (a definition's members, its
+/// components and goals): [`READING`], every struct keeping its unknown members for write-back.
+/// The slices' reading keeps none: the one struct read under it, the payload's shell, says so.
+pub(crate) const TYPED_READING: Reading = READING.with_keeps_unknown(true);
 
 impl Family for Entity {
     const NAME: &'static str = "entity";
@@ -123,9 +126,9 @@ impl Family for Entity {
             StructIndex::Beta => true,
         };
         READING.with_unknown(if strict {
-            UnknownMask::Error
+            Severity::Error
         } else {
-            UnknownMask::Warn
+            Severity::Warning
         })
     }
 

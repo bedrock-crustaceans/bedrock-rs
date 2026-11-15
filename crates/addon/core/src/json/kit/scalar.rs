@@ -111,7 +111,8 @@ impl Read<'_> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::schema::UnknownRule;
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {

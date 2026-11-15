@@ -12,8 +12,8 @@ use bedrock_addon_core::molang::MolangFields;
 use bedrock_addon_core::schema::{FromJson, SchemaFields, derive_support};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_core::versioning::{
-    BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, MissingVersion, NullHandling, ParseCx,
-    Reading, Scalars, VersionChain, VersionStruct, write_payload,
+    Envelope, EnvelopeCheck, Family, InputKind, MissingVersion, NullHandling, ParseCx, Reading,
+    VersionChain, VersionStruct, write_payload,
 };
 use facet::Facet;
 
@@ -126,10 +126,7 @@ pub trait Visual: Sized + 'static {
 /// default, [`InputKind::FirstRun`]), its scalars read as vanilla's strict schema types them (a
 /// member takes its own JSON type alone, and a number beyond its float is a type error; the
 /// floats are clamped in the text before the read).
-pub const READING: Reading = InputKind::FirstRun
-    .profile()
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+pub const READING: Reading = InputKind::FirstRun.profile().strict();
 
 /// The envelope of both families' files. Vanilla's root schema declares `format_version`,
 /// `minecraft:client_entity` and `minecraft:attachable`; a third member is "child '%s' not

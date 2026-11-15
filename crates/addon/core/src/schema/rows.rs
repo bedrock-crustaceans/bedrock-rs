@@ -79,24 +79,29 @@ pub struct Bound {
     pub limit: Limit,
 }
 
-/// What an unknown member of the struct (or below a field) is where it differs from the
-/// slice's rule: `schema::unknown = "keep" | "report" | "reject" | "ignore"`, the four
-/// dispositions of today's codes.
+/// What an unknown member is, and the code it is told under: the word of a struct (or of a
+/// field, for the object it holds) where it differs from the slice's rule, `schema::unknown =
+/// "keep" | "report" | "reject" | "ignore" | "component" | "silent"`, and the rule a hand reader
+/// tells a member by ([`Read::unknown`](crate::json::kit::Read::unknown),
+/// [`unknown_member`](crate::json::kit::Read::unknown_member)), at the read's unknown severity.
 ///
 /// The JSON door (`versioning::parse_payload`, `parse_component`) reads the word from the
 /// struct's `Shape` (or a variant's, for its fields) and from the field that holds the
 /// object, which comes first. A struct keeps its unknown members when it is marked with
 /// `extra: Extra`, says `keep`, or says nothing under a reading that keeps them
 /// (`Reading::keeps_unknown`). The door tells a kept member and one of a struct that says
-/// `report` (or nothing) as `UnrecognizedField`, the game's line for an unknown member; a hand
-/// reader's [`Disposition`](crate::json::kit::Disposition) tells `Report` as `MemberNotKept`.
+/// `report` (or nothing) as `UnrecognizedField`, the game's line for an unknown member.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum UnknownRule {
-    /// Kept in the document's unknown table and written back (`UnrecognizedField`).
+    /// Kept in the document's unknown table and written back (`UnrecognizedField`); a hand
+    /// reader's [`Read::unknown`](crate::json::kit::Read::unknown) hands it back to be kept.
     Keep,
-    /// Reported and not kept (`UnrecognizedField` at the door, `MemberNotKept` in the kit).
+    /// Told as an unknown field and not kept (`UnrecognizedField`).
     Report,
+    /// Told as read and not kept: nothing reads it and a written document lacks it
+    /// (`MemberNotKept`). No word says it; a hand reader tells a member so.
+    NotKept,
     /// Kept and written back, and told nothing: the game does not log it and the document keeps
     /// it (the derived read only; the door tells it as `Keep`).
     Silent,
@@ -157,8 +162,7 @@ pub struct FieldRow {
     pub since_engine: Option<FormatVersion>,
     /// `schema::unknown`.
     pub unknown: Option<UnknownRule>,
-    /// `schema::lowercase`.
-    pub lowercase: bool,
+
     /// `schema::foreign_event`.
     pub foreign_event: bool,
     /// facet's `flatten`: the field's members are members of this struct's object.
@@ -188,7 +192,6 @@ impl FieldRow {
             since_format: None,
             since_engine: None,
             unknown: None,
-            lowercase: false,
             foreign_event: false,
             flatten: false,
         }

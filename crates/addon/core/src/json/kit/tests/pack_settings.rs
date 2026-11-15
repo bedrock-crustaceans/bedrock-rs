@@ -22,7 +22,7 @@ fn information(read: &mut Read<'_>, node: &Node<'_>) {
 /// `Reader::document`: `{"settings": [...]}`.
 fn document(read: &mut Read<'_>, payload: &Node<'_>) -> Option<Vec<String>> {
     let members = read.object(payload)?;
-    read.unknown(&members, &["settings"], Disposition::Keep);
+    read.unknown(&members, &["settings"], UnknownRule::Keep);
     let settings = read.required(&members, "settings")?;
     let entries = read.array(&settings)?;
     let mut entries_read = Vec::with_capacity(entries.len());
@@ -42,7 +42,7 @@ fn entry(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
     read.unknown(
         &members,
         &["pack_id", "last_used", "values"],
-        Disposition::Keep,
+        UnknownRule::Keep,
     );
     let pack_id = read.required(&members, "pack_id");
     let values = read.required(&members, "values");

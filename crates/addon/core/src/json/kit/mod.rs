@@ -29,7 +29,7 @@
 //! | [`Reading::null`] | [`NullHandling::Absent`] (and `AbsentSilently`, which tells nothing): [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
 //! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`). In the hand reads [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
 //! | [`Reading::beyond_width`] | in [`scalar`](Read::scalar): a number beyond its float reads as the infinity it is, told so the load clamps it and reads again ([`BeyondWidth::ClampAndTell`](crate::json::BeyondWidth::ClampAndTell)), or is a wrong type ([`BeyondWidth::Error`](crate::json::BeyondWidth::Error)) |
-//! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`](crate::versioning::UnknownMask::Error) an error, [`UnknownMask::Warn`](crate::versioning::UnknownMask::Warn) a warning |
+//! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown) |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
 //!
 //! A finding the kit does not word as a family's game does is the family's to tell, with
@@ -40,7 +40,8 @@
 //!
 //! ```
 //! use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-//! use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+//! use bedrock_addon_core::json::kit::{Node, Read};
+//! use bedrock_addon_core::schema::UnknownRule;
 //! use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
 //! use bedrock_addon_core::versioning::Reading;
 //!
@@ -51,7 +52,7 @@
 //! let mut read = Read::new(Reading::DOCUMENT, &mut found);
 //!
 //! let members = read.object(&payload).unwrap();
-//! read.unknown(&members, &["name", "size"], Disposition::Keep);
+//! read.unknown(&members, &["name", "size"], UnknownRule::Keep);
 //! let name = read.required(&members, "name").and_then(|node| read.string(&node));
 //! let size = read.opt(&members, "size").and_then(|node| read.number(&node));
 //! assert_eq!((name, size), (Some("ruby"), None));
@@ -81,6 +82,7 @@ use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
     Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
 };
+use crate::schema::UnknownRule;
 use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 
 // hidden: API not yet reviewed
@@ -164,7 +166,7 @@ impl<'v> Node<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -188,7 +190,7 @@ impl<'v> Node<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -219,7 +221,7 @@ impl<'v> Node<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::parse::{Options, parse};
     /// # use bedrock_addon_core::versioning::Reading;
     /// let text = r#"{"size": "big"}"#;
@@ -301,7 +303,7 @@ impl<'v> Members<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -324,7 +326,7 @@ impl<'v> Members<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -445,7 +447,7 @@ impl<'v> Elements<'v> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -483,35 +485,16 @@ impl<'v> Elements<'v> {
     }
 }
 
-/// What an unknown member is, and the code it is told under. The four are the four the game's
-/// readers have, and [`Read::unknown`] tells each at the reading's unknown severity.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Disposition {
-    /// The member is kept beside the typed value and written back
-    /// ([`codes::UNRECOGNIZED_FIELD`](core_codes::UNRECOGNIZED_FIELD)); [`Read::unknown`] hands
-    /// it back to be kept.
-    Keep,
-    /// The member is told and not kept: nothing reads it and a written document lacks it
-    /// ([`codes::MEMBER_NOT_KEPT`](core_codes::MEMBER_NOT_KEPT)).
-    Report,
-    /// The member is dropped by a rule ([`codes::DROPPED_FIELD`](core_codes::DROPPED_FIELD)).
-    Reject,
-    /// The member is ignored, as the game ignores it
-    /// ([`codes::IGNORED_MEMBER`](core_codes::IGNORED_MEMBER)).
-    Ignore,
-    /// The member names no component of its object, which the game tells as such
-    /// ([`codes::UNRECOGNIZED_COMPONENT`](core_codes::UNRECOGNIZED_COMPONENT)); not kept.
-    Component,
-}
-
-impl Disposition {
-    /// The code of an unknown member told under this disposition: the disposition's own line,
-    /// or the family's text given whole.
+impl UnknownRule {
+    /// The code of an unknown member told under this rule: the rule's own line, or the
+    /// family's text given whole. A member told as an unknown field (`Keep`, `Report`) takes the
+    /// family's code for one ([`Texts::unknown_named`], [`Texts::unknown_code`]).
     fn code(self, texts: Texts, key: &str) -> Code {
-        if let (Self::Keep, Some(code)) = (self, texts.unknown_named) {
+        let unrecognized = matches!(self, Self::Keep | Self::Report | Self::Silent);
+        if let (true, Some(code)) = (unrecognized, texts.unknown_named) {
             return code.with([key.to_owned()]);
         }
-        if let (Self::Keep, Some(code)) = (self, texts.unknown_code) {
+        if let (true, Some(code)) = (unrecognized, texts.unknown_code) {
             return code.into();
         }
         // A text's `{}` is the member's key.
@@ -520,11 +503,11 @@ impl Disposition {
             text.map_or_else(|| plain.into(), |text| worded.with([text]))
         };
         match self {
-            Self::Keep => told(
+            Self::Keep | Self::Report | Self::Silent => told(
                 &core_codes::UNRECOGNIZED_FIELD,
                 &core_codes::UNRECOGNIZED_FIELD_WORDED,
             ),
-            Self::Report => told(
+            Self::NotKept => told(
                 &core_codes::MEMBER_NOT_KEPT,
                 &core_codes::MEMBER_NOT_KEPT_WORDED,
             ),
@@ -607,45 +590,38 @@ impl std::hash::Hash for WrongAt {
 /// How a wrong type is worded, in the order the read asks: the member's own `schema::wrong_type`,
 /// [`wrong_kind`](Self::wrong_kind) (what was expected, by a function), [`wrong_at`](Self::wrong_at)
 /// (where it is told, by a function), [`accepts`](Self::accepts) (what the value's type takes,
-/// in a template), [`wrong_type`](Self::wrong_type) (one text), the code's own wording.
+/// in a template), the code's own wording.
 ///
-/// The families whose wording differs today (an operation not listed reads `None`):
-/// `wrong_type` font and `json_ui` (a text per member), attachable and `client_entity`
-/// ("unknown child schema option type.  Allowed types: …", formatted per member, so through
-/// [`Read::push`]), `crafting_catalog` (a `MalformedInput` naming both types, through
-/// [`Read::push`]); `missing` particle's legacy era, loot, font and `json_ui` (a text per
-/// member); `unknown` script ([`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]). `block_culling` words its
-/// `missing` and `unknown` findings with the member's path as a breadcrumb before the game's
-/// text ([`cereal::missing_required_field`], [`cereal::member_not_in_schema`]), a text per
-/// path, so it tells them through [`Read::push`], not here.
-///
-/// [`cereal::missing_required_field`]: crate::diagnostic::cereal::missing_required_field
-/// [`cereal::member_not_in_schema`]: crate::diagnostic::cereal::member_not_in_schema
-/// [`cereal::MEMBER_NOT_IN_SCHEMA_TEXT`]: crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT
+/// The game's JSON schema node tree words three findings its own way ([`TREE`](Self::TREE):
+/// the animation, render controller, geometry and fog loaders, the feature validator, which
+/// words an enum name it does not know as an invalid value, and the older client's
+/// attachable and client entity descriptions, which word a wrong type by its place). The
+/// camera and aim-assist files word a missing and an unknown member in cereal's lines
+/// (`versioning::chain_file`), `voxel_shape` an unknown member, `crafting_catalog` and
+/// `deferred_settings` a wrong type by what was expected, and entity's lenient conversions
+/// every value they give up ([`defaulted`](Self::defaulted)).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Texts {
-    /// The text of a value of the wrong JSON type
-    /// ([`codes::INVALID_TYPE`](core_codes::INVALID_TYPE)).
-    pub wrong_type: Option<&'static str>,
     /// The text of a missing required member
     /// ([`codes::MISSING_REQUIRED_FIELD`](core_codes::MISSING_REQUIRED_FIELD)).
     pub missing: Option<&'static str>,
-    /// The text of an unknown member, whatever its [`Disposition`]; a `{}` in it is the
+    /// The text of an unknown member, whatever its [`UnknownRule`]; a `{}` in it is the
     /// member's key.
     pub unknown: Option<&'static str>,
-    /// The code an unknown member told as an `UnrecognizedField` ([`Disposition::Keep`], which
-    /// is what `schema::unknown` words other than `reject` and `ignore` tell) is told under, in
+    /// The code an unknown member told as an `UnrecognizedField` ([`UnknownRule::Keep`] and
+    /// [`UnknownRule::Report`], which `schema::unknown` words other than `reject`, `ignore` and
+    /// `component` tell) is told under, in
     /// place of [`UNRECOGNIZED_FIELD`](core_codes::UNRECOGNIZED_FIELD) and [`unknown`](Self::unknown):
     /// a family whose game prints cereal's line for it
     /// ([`MEMBER_NOT_IN_SCHEMA`](core_codes::MEMBER_NOT_IN_SCHEMA)) names that once.
     pub unknown_code: Option<&'static CodeDef<0>>,
     /// The code of a wrong type where the read knows what it expected ([`Read::object`],
     /// [`Read::array`], the scalar reads), from what it expected and what it found, in place
-    /// of [`wrong_type`](Self::wrong_type): `crafting_catalog` words it as vanilla's
+    /// of [`INVALID_TYPE`](core_codes::INVALID_TYPE): `crafting_catalog` words it as vanilla's
     /// `MalformedInput` naming both.
     pub wrong_kind: Option<WrongKind>,
     /// The code of every wrong type, made from where it is told, in place of
-    /// [`wrong_type`](Self::wrong_type) and [`wrong_kind`](Self::wrong_kind): a family whose
+    /// [`INVALID_TYPE`](core_codes::INVALID_TYPE) and [`wrong_kind`](Self::wrong_kind): a family whose
     /// game words a wrong type by the member it is of (the older client's "unknown child schema
     /// option type.  Allowed types: …"), whichever type the member's reader expected.
     pub wrong_at: Option<WrongAt>,
@@ -653,7 +629,7 @@ pub struct Texts {
     /// not found"`), in place of [`missing`](Self::missing): the client's older schema tree words
     /// it with the name.
     pub missing_named: Option<&'static CodeDef<1>>,
-    /// The code an unknown member told as an `UnrecognizedField` ([`Disposition::Keep`]) is told
+    /// The code an unknown member told as an `UnrecognizedField` ([`UnknownRule::Keep`]) is told
     /// under, made from the member's key (`"child '%s' not valid here."`), in place of
     /// [`unknown_code`](Self::unknown_code) and [`unknown`](Self::unknown). Its severity is the
     /// read's ([`Read::unknown_severity`]), which the family sets to an error where its game
@@ -672,7 +648,7 @@ pub struct Texts {
     pub defaulted: Option<&'static CodeDef<0>>,
     /// The code of a wrong type made from what the value's type accepts, in the schema's words
     /// (`"object"`, `"bool, string"`: [`Read::wrong_accepting`], and [`Read::wrong_kind`] from
-    /// the [`Expected`] kind's word), in place of [`wrong_type`](Self::wrong_type): the game's
+    /// the [`Expected`] kind's word), in place of [`INVALID_TYPE`](core_codes::INVALID_TYPE): the game's
     /// schema node tree's `"unknown child schema option type.  Allowed types: %s"`. That is the
     /// line [`wrong_at`](Self::wrong_at) words by place, which comes first where both are set: a
     /// family whose types know what they accept says `accepts`, one that knows it by the member
@@ -683,7 +659,6 @@ pub struct Texts {
 impl Texts {
     /// Every finding in its code's own wording.
     pub const CODES: Self = Self {
-        wrong_type: None,
         missing: None,
         unknown: None,
         unknown_code: None,
@@ -815,8 +790,7 @@ pub enum Failures {
     First,
     /// Every failure, each graded by the reading's
     /// [`on_member_failure`](Reading::on_member_failure): the read goes on past a failed member
-    /// and tells the next one; under `DropElement` and `DropOwner` a failed element leaves its
-    /// list.
+    /// and tells the next one.
     Every,
     /// The first failure alone, as under [`First`](Self::First) (an error whatever the reading
     /// says, a failed list element fails the list), but the read goes on past it: every later
@@ -1030,17 +1004,6 @@ pub enum Pass {
     Misread,
 }
 
-/// What a read knows of the document's versions ([`Read::versions`]): the members a struct
-/// reads from a format version on (`schema::since_format`) and from an engine version on
-/// (`schema::since_engine`) are judged by them; a read that knows neither reads every member.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct Versions {
-    /// The format version the document is written at.
-    pub format: Option<crate::version::FormatVersion>,
-    /// The `min_engine_version` of the pack the document is in.
-    pub engine: Option<crate::version::FormatVersion>,
-}
-
 /// Where a read's findings go: the caller's list, or the read's own (a [fork](Read::fork)).
 #[derive(Debug)]
 enum Sink<'d> {
@@ -1089,9 +1052,9 @@ pub struct Read<'d> {
     /// The phase every finding of the read is told in, where it is not the default
     /// ([`phase`](Self::phase)).
     phase: Option<Phase>,
-    /// The format version the document is written at, and the pack's `min_engine_version`,
-    /// for the members a struct reads from a version on ([`versions`](Self::versions)).
-    versions: Versions,
+    /// The format version the document is written at, for the members a struct reads from a
+    /// version on ([`format`](Self::format)).
+    format: Option<crate::version::FormatVersion>,
     failed: bool,
     profile: Profile,
     /// The read met its first failure under [`Failures::First`].
@@ -1147,7 +1110,7 @@ impl<'d> Read<'d> {
             findings: Sink::Borrowed(findings),
             rewrite_note: None,
             phase: None,
-            versions: Versions::default(),
+            format: None,
             failed: false,
             profile: Profile::EVERY_FAILURE,
             stopped: false,
@@ -1172,7 +1135,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1223,7 +1186,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1253,7 +1216,7 @@ impl<'d> Read<'d> {
             findings: Sink::Owned(Diagnostics::default()),
             rewrite_note: self.rewrite_note,
             phase: self.phase,
-            versions: self.versions,
+            format: self.format,
             failed: false,
             profile: self.profile,
             // A fork of a read that has stopped reads nothing either.
@@ -1553,7 +1516,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1576,24 +1539,22 @@ impl<'d> Read<'d> {
         self
     }
 
-    /// The read of a document written at the format `versions.format` in a pack of
-    /// `versions.engine`: a member a struct reads from a later format on
-    /// (`schema::since_format`) is an unknown member, one from a later engine on
-    /// (`schema::since_engine`) is read and told. `versioning::read_payload` gives the
-    /// document's.
+    /// The read of a document written at the format `format`: a member a struct reads from a
+    /// later format on (`schema::since_format`) is an unknown member; a read that knows none
+    /// reads every member. `versioning::read_payload` gives the document's.
     #[must_use]
-    pub fn versions(mut self, versions: Versions) -> Self {
-        self.versions = versions;
+    pub fn format(mut self, format: Option<crate::version::FormatVersion>) -> Self {
+        self.format = format;
         self
     }
 
-    /// What the read knows of the document's versions.
-    pub fn known_versions(&self) -> Versions {
-        self.versions
+    /// The format version the read knows the document is written at ([`format`](Self::format)).
+    pub fn known_format(&self) -> Option<crate::version::FormatVersion> {
+        self.format
     }
 
     /// The read of a document loaded in `load`, which a part read by another reader (a
-    /// component map's rows, `versioning::read_component_map`) is read in too.
+    /// component map's rows, `versioning::read_component_map_by`) is read in too.
     /// `versioning::read_payload` gives the slice's.
     #[must_use]
     pub fn load(mut self, load: &'d crate::load::LoadContext) -> Self {
@@ -1604,20 +1565,6 @@ impl<'d> Read<'d> {
     /// The load the document is read in, when the read knows it ([`load`](Self::load)).
     pub fn load_context(&self) -> Option<&'d crate::load::LoadContext> {
         self.load
-    }
-
-    /// Tells that the member `node`, which a struct reads from the engine version `since` on
-    /// (`schema::since_engine`), is written in a pack of an older `min_engine_version`: an
-    /// information (the game has no line for it), the member read as written.
-    pub(crate) fn since_engine(&mut self, node: &Node<'_>, since: crate::version::FormatVersion) {
-        if self.stopped || self.versions.engine.is_none_or(|engine| engine >= since) {
-            return;
-        }
-        let mut finding = Diagnostic::of(core_codes::FIELD_SINCE_ENGINE.with([since.to_string()]))
-            .severity(Severity::Info)
-            .at(node.path.clone());
-        finding.location.span = node.span();
-        self.push(finding);
     }
 
     /// The read with `null` for its null handling instead of the reading's: a reader the game
@@ -1642,7 +1589,8 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::schema::UnknownRule;
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1653,7 +1601,7 @@ impl<'d> Read<'d> {
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::OWN, &mut found).unknown_severity(Severity::Info);
     /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
-    /// read.unknown(&members, &[], Disposition::Keep);
+    /// read.unknown(&members, &[], UnknownRule::Keep);
     /// assert_eq!(told(&found), ["Info zz unrecognized field"]);
     /// ```
     #[must_use]
@@ -1671,7 +1619,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1723,7 +1671,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1862,7 +1810,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1899,19 +1847,6 @@ impl<'d> Read<'d> {
             at.pop();
         }
         self.fail(Code::from(code), at, node.span());
-    }
-
-    /// Tells that the element `node` could not be read and is left out, with `code` in place of
-    /// its own findings (`schema::skip_code`): graded as a failed member is, at the element, over
-    /// its value.
-    // the derived reads' protocol
-    pub(crate) fn skipped(&mut self, node: &Node<'_>, code: Code) {
-        let grading = self.member_failure();
-        let mut finding = Diagnostic::error(code)
-            .severity(grading.severity)
-            .at(node.path.clone());
-        finding.location.span = node.span();
-        self.push(finding);
     }
 
     /// Tells `finding` as a failed member, at its own path, span and code, graded as
@@ -1951,7 +1886,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -1969,13 +1904,9 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
-        if let Some(code) = self.worded_wrong_type(node) {
-            return self.fail(code, node.path.clone(), node.span());
-        }
-        let code = self.texts.wrong_type.map_or_else(
-            || Code::from(&core_codes::INVALID_TYPE),
-            |text| core_codes::INVALID_TYPE_WORDED.with([text]),
-        );
+        let code = self
+            .worded_wrong_type(node)
+            .unwrap_or_else(|| Code::from(&core_codes::INVALID_TYPE));
         self.fail(code, node.path.clone(), node.span());
     }
 
@@ -1985,7 +1916,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2049,7 +1980,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2087,7 +2018,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2128,7 +2059,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2164,7 +2095,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2267,12 +2198,14 @@ impl<'d> Read<'d> {
     }
 
     /// Tells every member of `members` that `known` does not name, in file order, under
-    /// `disposition` at the unknown severity, spanning its value. With [`Disposition::Keep`]
-    /// the members told come back, for the caller to keep; otherwise none does.
+    /// `rule` at the unknown severity, spanning its value. Where the rule keeps
+    /// ([`UnknownRule::Keep`], [`UnknownRule::Silent`]) the members come back, for the caller to
+    /// keep; otherwise none does.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::schema::UnknownRule;
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2282,7 +2215,7 @@ impl<'d> Read<'d> {
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
     /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
-    /// let kept = read.unknown(&members, &["name"], Disposition::Keep);
+    /// let kept = read.unknown(&members, &["name"], UnknownRule::Keep);
     /// let kept: Vec<&str> = kept.iter().map(|(key, _)| *key).collect();
     /// assert_eq!(kept, ["colour", "note"]);
     /// assert_eq!(told(&found), ["Error colour unrecognized field", "Error note unrecognized field"]);
@@ -2291,28 +2224,29 @@ impl<'d> Read<'d> {
         &mut self,
         members: &Members<'v>,
         known: &[&str],
-        disposition: Disposition,
+        rule: UnknownRule,
     ) -> Vec<(&'v str, &'v Value)> {
         let mut kept = Vec::new();
         for (key, node) in members.iter() {
             if known.contains(&key) {
                 continue;
             }
-            self.unknown_member(&node, disposition);
-            if disposition == Disposition::Keep {
+            self.unknown_member(&node, rule);
+            if matches!(rule, UnknownRule::Keep | UnknownRule::Silent) {
                 kept.push((key, node.value));
             }
         }
         kept
     }
 
-    /// Tells the one member `node` as unknown under `disposition`, at the unknown severity:
+    /// Tells the one member `node` as unknown under `rule`, at the unknown severity:
     /// for a reader that tells its unknown members in file order between the reads of the
     /// known ones. [`unknown`](Self::unknown) is this for every member `known` does not name.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::schema::UnknownRule;
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2328,13 +2262,16 @@ impl<'d> Read<'d> {
     ///         "identifier" => {
     ///             read.string(&node);
     ///         }
-    ///         _ => read.unknown_member(&node, Disposition::Report),
+    ///         _ => read.unknown_member(&node, UnknownRule::NotKept),
     ///     }
     /// }
     /// assert_eq!(told(&found), ["Error x member read and not kept", "Error identifier wrong JSON type"]);
     /// ```
-    pub fn unknown_member(&mut self, node: &Node<'_>, disposition: Disposition) {
-        let code = disposition.code(self.texts, node.path.last_key().unwrap_or_default());
+    pub fn unknown_member(&mut self, node: &Node<'_>, rule: UnknownRule) {
+        if rule == UnknownRule::Silent {
+            return;
+        }
+        let code = rule.code(self.texts, node.path.last_key().unwrap_or_default());
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
@@ -2349,7 +2286,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2364,16 +2301,11 @@ impl<'d> Read<'d> {
     /// read.unknown_by_rule(&members.get("b").unwrap(), UnknownRule::Ignore);
     /// assert_eq!(told(&found), ["Error a unrecognized field", "Error b member ignored"]);
     /// ```
-    pub fn unknown_by_rule(&mut self, node: &Node<'_>, rule: crate::schema::UnknownRule) {
-        use crate::schema::UnknownRule;
-        let disposition = match rule {
-            UnknownRule::Silent => return,
-            UnknownRule::Keep | UnknownRule::Report => Disposition::Keep,
-            UnknownRule::Reject => Disposition::Reject,
-            UnknownRule::Ignore => Disposition::Ignore,
-            UnknownRule::Component => Disposition::Component,
-        };
-        let code = disposition.code(self.texts, node.path.last_key().unwrap_or_default());
+    pub fn unknown_by_rule(&mut self, node: &Node<'_>, rule: UnknownRule) {
+        if rule == UnknownRule::Silent {
+            return;
+        }
+        let code = rule.code(self.texts, node.path.last_key().unwrap_or_default());
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
@@ -2389,11 +2321,11 @@ impl<'d> Read<'d> {
         match self.reading.range_members {
             RangeMembers::Silent => {}
             RangeMembers::Unrecognized => {
-                self.unknown_by_rule(node, crate::schema::UnknownRule::Report);
+                self.unknown_by_rule(node, UnknownRule::Report);
             }
             RangeMembers::NotKept => {
                 let code =
-                    Disposition::Report.code(self.texts, node.path.last_key().unwrap_or_default());
+                    UnknownRule::NotKept.code(self.texts, node.path.last_key().unwrap_or_default());
                 let mut finding = Diagnostic::of(code)
                     .severity(self.unknown_severity)
                     .at(node.path.clone());
@@ -2407,7 +2339,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2434,7 +2366,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2464,7 +2396,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {
@@ -2501,7 +2433,7 @@ impl<'d> Read<'d> {
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
     /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
     /// # use bedrock_addon_core::versioning::Reading;
     /// # fn told(d: &Diagnostics) -> Vec<String> {

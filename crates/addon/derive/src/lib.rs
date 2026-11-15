@@ -210,8 +210,8 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///
 /// - on a struct: `impl Schema` (`FIELDS`, the row table; `check`, each field's bounds as one
 ///   range graded by the slice through `SchemaCx` (cross-field ones last), then its
-///   `multiple_of` step for a value inside the range, graded alike, and the silent ASCII
-///   lower-casing of `lowercase`, then the walk into every field;
+///   `multiple_of` step for a value inside the range, graded alike, then the walk into every
+///   field;
 ///   `trigger_members`); `impl MolangFields` (a Molang field under the walk's default spec or
 ///   its `schema::molang`, every other field nested, under its `schema::molang` as the nested
 ///   walk's default spec if it has one); `impl Default` when no field is required, with a
@@ -235,8 +235,8 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// - on an untagged enum (`#[facet(untagged)]`) whose variants are units, newtypes or struct
 ///   variants: `impl Schema` (empty `FIELDS`; `check` and the Molang walk of the active
 ///   variant's fields at the enum's own path, a newtype's value as the enum's; every
-///   variant's trigger members, a shared one once), `impl MolangFields`, and
-///   `VARIANT_FIELDS`, the rows per variant, and `impl FromJson` (the arm the typed door
+///   variant's trigger members, a shared one once), `impl MolangFields`, and `impl FromJson`
+///   (the arm the typed door
 ///   chooses: an object by its keys, an array the first list arm, a scalar the first arm its
 ///   profile takes). No `Default` and no getters: no variant is the default one;
 /// - on an internally tagged enum (`#[facet(tag = "type")]`) and an externally tagged one
@@ -251,9 +251,9 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// nor another field's name (or names the field itself, or a field that does not exist, or
 /// doubles a side), a `multiple_of` that is not a positive number literal, a stored key whose
 /// value is not a string literal, a version that is not `major.minor.patch`, an `unknown` that
-/// is not `keep`, `report`, `reject`, `ignore` or `component`, a key on the wrong item (a field's key on the
+/// is not `keep`, `report`, `reject`, `ignore`, `component` or `silent`, a key on the wrong item (a field's key on the
 /// container, an enum's key on a field or a struct, `unknown` on a string enum, any key on a
-/// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
+/// variant or a `skip` field), `foreign_event` off an
 /// `EventTrigger`, `molang` on a plain value (a number, `bool` or string) or beside
 /// `molang_with`, `read_with` on a flattened field or an `UnknownMembers` one, generics, a tuple
 /// struct that is not transparent, a variant of several unnamed fields, an internally tagged

@@ -590,18 +590,19 @@ fn the_chain_is_two_structs_from_the_floor() {
     assert!(!has_beta);
     assert_eq!(<CraftingCatalog as Versioned>::VERSION, super::V1_26_50);
     {
+        use bedrock_addon_core::diagnostic::Severity;
         use bedrock_addon_core::json::NullRule;
         use bedrock_addon_core::load::DocumentSource;
-        use bedrock_addon_core::versioning::{InputKind, StructIndex, UnknownMask};
+        use bedrock_addon_core::versioning::{InputKind, StructIndex};
         type F = crate::CatalogFamily;
         assert_eq!(F::ENVELOPE.input, InputKind::Document);
         assert_eq!(
             F::reading(StructIndex::Stable(0), DocumentSource::Json).unknown,
-            UnknownMask::Warn
+            Severity::Warning
         );
         assert_eq!(
             F::reading(StructIndex::Stable(1), DocumentSource::Json).unknown,
-            UnknownMask::Error
+            Severity::Error
         );
         assert_eq!(
             F::reading(StructIndex::Stable(1), DocumentSource::Json).null_rule(),

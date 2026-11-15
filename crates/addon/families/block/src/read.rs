@@ -96,7 +96,7 @@ impl FromJson for Events {
         if read.stopped() {
             return None;
         }
-        let version = read.known_versions().format?;
+        let version = read.known_format()?;
         let mut finding = if version >= CEREAL {
             Diagnostic::deprecated_member("events", node.path().clone())
         } else if node
@@ -168,7 +168,7 @@ pub(crate) fn is_custom(key: &str) -> bool {
 
 /// Whether the read is of a cereal document (the version it reads is 1.26.20 or later).
 fn cereal_read(read: &Read<'_>) -> bool {
-    read.known_versions().format.is_some_and(|v| v >= CEREAL)
+    read.known_format().is_some_and(|v| v >= CEREAL)
 }
 
 /// The base `components`.
@@ -190,7 +190,7 @@ fn permutation_section(node: &Node<'_>, read: &mut Read<'_>) -> Option<Section> 
 /// with its non-strict schema reader, and a failed component or a missing required member still
 /// fails the load). Then the collision box and the members only the 1.26.60 document binds.
 fn section(node: &Node<'_>, read: &mut Read<'_>, permutation: bool) -> Option<Section> {
-    let version = read.known_versions().format?;
+    let version = read.known_format()?;
     let cereal = version >= CEREAL;
     let map =
         read_component_map_by::<BlockFamily>(node, read, ConvertMode::Strict, is_custom, |key| {

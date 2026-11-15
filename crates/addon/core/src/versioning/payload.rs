@@ -166,18 +166,7 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
         .unknown_severity(cx.load.grade(Class::Unknown))
         .profile(crate::json::kit::Profile::FIRST_FAILURE)
         .load(cx.load)
-        .versions(crate::json::kit::Versions {
-            format: Some(cx.original_version),
-            // A pack without one is older than every member.
-            engine: Some(
-                cx.load
-                    .min_engine_version
-                    .as_ref()
-                    .map_or(crate::version::FormatVersion::new(0, 0, 0), |engine| {
-                        engine.version.format_version()
-                    }),
-            ),
-        });
+        .format(Some(cx.original_version));
     let mut read = configure(read);
     if let Some(finding) = no_object::<T>(&node, &read) {
         read.push(finding);
@@ -244,6 +233,10 @@ pub(super) fn tell_unknown(
             ),
             UnknownRule::Keep | UnknownRule::Report => (
                 Code::from(&core_codes::UNRECOGNIZED_FIELD),
+                cx.grade(Class::Unknown),
+            ),
+            UnknownRule::NotKept => (
+                Code::from(&core_codes::MEMBER_NOT_KEPT),
                 cx.grade(Class::Unknown),
             ),
         };

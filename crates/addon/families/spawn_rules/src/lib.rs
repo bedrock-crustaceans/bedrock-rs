@@ -38,9 +38,9 @@ use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, BeyondWidth, Envelope, EnvelopeCheck, Family, InputKind, Loaded, NoComponents,
-    RangeModel, Reading, Scalars, Single, StructIndex, ValidateCx, VersionStruct, Versioned,
-    file_version, write_envelope,
+    BelowFloor, Envelope, EnvelopeCheck, Family, InputKind, Loaded, NoComponents, RangeModel,
+    Reading, Single, StructIndex, ValidateCx, VersionStruct, Versioned, file_version,
+    write_envelope,
 };
 use bedrock_addon_shared_spawn::legacy::{RULES_KEY, V1_8_0};
 use bedrock_addon_shared_spawn::load::{
@@ -217,8 +217,7 @@ impl Family for SimplifiedFamily {
 /// keeps its unknown members for write-back.
 pub(crate) const SIMPLIFIED_READING: Reading = InputKind::FirstRun
     .profile()
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error)
+    .strict()
     .with_keeps_unknown(true);
 
 /// Whether the simplified family takes a file of version `file`: the experiment is on and the

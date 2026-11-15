@@ -28,7 +28,7 @@ use super::molang::{
 // `behavior.admire_item`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.admire_item")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct AdmireItem {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -87,7 +87,6 @@ impl AdmireItem {
 // `behavior.barter`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.barter")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Barter {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -104,7 +103,6 @@ impl Goal for Barter {
 // `behavior.charge_held_item`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.charge_held_item")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ChargeHeldItem {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -135,7 +133,6 @@ impl Goal for ChargeHeldItem {
 // `behavior.drink_milk`: typed from 1.21.120.
 #[doc(alias = "minecraft:behavior.drink_milk")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DrinkMilk {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -162,7 +159,6 @@ impl Goal for DrinkMilk {
 // `behavior.drink_potion`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.drink_potion")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DrinkPotion {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -207,7 +203,7 @@ impl Goal for DrinkPotion {
 // `behavior.drop_item_for`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.drop_item_for")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct DropItemFor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -320,7 +316,7 @@ impl DropItemFor {
 // `behavior.eat_block`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.eat_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct EatBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -390,7 +386,6 @@ impl EatBlock {
 // `behavior.eat_carried_item`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.eat_carried_item")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EatCarriedItem {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -410,7 +405,6 @@ impl Goal for EatCarriedItem {
 // `behavior.equip_item`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.equip_item")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EquipItem {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -427,7 +421,7 @@ impl Goal for EquipItem {
 // `behavior.go_and_give_items_to_noteblock`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.go_and_give_items_to_noteblock")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct GoAndGiveItemsToNoteblock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -489,7 +483,7 @@ impl GoAndGiveItemsToNoteblock {
 // `behavior.go_and_give_items_to_owner`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.go_and_give_items_to_owner")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct GoAndGiveItemsToOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -548,7 +542,6 @@ impl GoAndGiveItemsToOwner {
 // `behavior.offer_flower`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.offer_flower")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OfferFlower {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -596,7 +589,7 @@ impl Goal for OfferFlower {
 // `behavior.pickup_items`: typed from 1.26.20, redeclared 1.26.30.
 #[doc(alias = "minecraft:behavior.pickup_items")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct PickupItems {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -692,7 +685,7 @@ impl PickupItems {
 // `behavior.place_block`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.place_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct PlaceBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -770,7 +763,6 @@ impl PlaceBlock {
 // `behavior.share_items`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.share_items")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ShareItems {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -803,7 +795,6 @@ impl Goal for ShareItems {
 // `behavior.snacking`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.snacking")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Snacking {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -837,7 +828,7 @@ impl Goal for Snacking {
 // `behavior.take_block`: typed from 1.26.30.
 #[doc(alias = "minecraft:behavior.take_block")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct TakeBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -900,7 +891,7 @@ impl TakeBlock {
 // `behavior.take_flower`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.take_flower")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
+#[facet(schema::molang_with = Self::legacy_molang)]
 pub struct TakeFlower {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -976,7 +967,6 @@ impl TakeFlower {
 // `behavior.trade_with_player`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.trade_with_player")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TradeWithPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1003,7 +993,6 @@ impl Goal for TradeWithPlayer {
 // `behavior.transport_items`: typed from 1.21.100.
 #[doc(alias = "minecraft:behavior.transport_items")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TransportItems {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
     #[facet(schema::fallback = 0, schema::min = 0)]
@@ -1094,7 +1083,6 @@ impl Goal for TransportItems {
 
 /// One potion `drink_potion` may drink, and when.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Potion {
     /// `chance`: the percent chance (from 0.0 to 1.0) of this potion being selected when searching for a potion to use. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -1115,7 +1103,6 @@ impl Potion {
 
 /// A block `eat_block` eats and the block it leaves behind.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EatAndReplaceBlockPair {
     /// `eat_block`: the block the entity should eat. Default `""`.
     #[facet(schema::fallback = "")]
@@ -1133,7 +1120,6 @@ impl EatAndReplaceBlockPair {
 
 /// A block `place_block` may place at random, with its weight and condition.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct WeightedBlock {
     /// `block`: block descriptor for this entry.
     #[facet(schema::molang_with = descriptor_tags)]

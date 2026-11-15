@@ -25,7 +25,6 @@ use crate::goal::Vec3;
 /// `minecraft:jump.static`: the entity jumps with a fixed power.
 #[doc(alias = "minecraft:jump.static")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct JumpStatic {
     /// `jump_power`: the initial vertical velocity; default 0.42.
     #[facet(default = 0.42_f32)]
@@ -37,7 +36,6 @@ impl Typed for JumpStatic {}
 /// `minecraft:jump.dynamic`: the entity's jump changes with its speed (the rabbit's hops).
 #[doc(alias = "minecraft:jump.dynamic")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct JumpDynamic {
     /// `fast_skip_data`: the jump while moving fast.
     #[facet(default = SkipData::default())]
@@ -62,7 +60,6 @@ impl Typed for JumpDynamic {}
 
 /// One jump of [`JumpDynamic`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SkipData {
     /// `animation_duration`: the jump animation's length in ticks; default 1.
     #[facet(default = 1_i32)]
@@ -106,7 +103,6 @@ impl SkipData {
 /// villager's paths).
 #[doc(alias = "minecraft:preferred_path")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PreferredPath {
     /// `default_block_cost`: the cost of a block no set names; default 0.
     #[facet(default = 0.0_f32)]
@@ -124,7 +120,6 @@ pub struct PreferredPath {
 
 /// One block set of [`PreferredPath`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BlockSet {
     /// `blocks`: the blocks.
     #[facet(schema::molang_with = descriptor_tags, default)]
@@ -148,7 +143,6 @@ impl Typed for PreferredPath {
 /// `minecraft:flocking`: the entity moves in a flock with others of its kind.
 #[doc(alias = "minecraft:flocking")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Flocking {
     /// `block_distance`: the distance at which blocks are avoided; default 0.
     #[facet(default = 0.0_f32)]
@@ -212,7 +206,6 @@ impl Typed for Flocking {}
 /// `flap` game events while it moves.
 #[doc(alias = "minecraft:game_event_movement_tracking")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GameEventMovementTracking {
     /// `emit_flap`: emits `flap` while flying; default `false`.
     #[facet(default = false)]
@@ -230,7 +223,6 @@ impl Typed for GameEventMovementTracking {}
 /// `minecraft:grows_crop`: the entity may grow crops it walks over (the bee).
 #[doc(alias = "minecraft:grows_crop")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GrowsCrop {
     /// `chance`: the chance per tick to grow a crop; default 0.
     #[facet(default = 0.0_f32)]
@@ -245,7 +237,6 @@ impl Typed for GrowsCrop {}
 /// `minecraft:physics`: gravity and collision.
 #[doc(alias = "minecraft:physics")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Physics {
     /// `has_collision`: the entity collides with blocks; default `true`.
     #[facet(default = true)]
@@ -264,7 +255,6 @@ impl Typed for Physics {}
 /// `minecraft:collision_box`: the size of the entity's collision box.
 #[doc(alias = "minecraft:collision_box")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CollisionBox {
     /// `height`: the box's height in blocks, within ±100 000 000; default 1.8.
     #[facet(default = 1.8_f32, schema::min = -100_000_000.0, schema::max = 100_000_000.0)]
@@ -292,7 +282,6 @@ impl Typed for CollisionBox {
 /// (powder snow, cobwebs, sweet berry bushes).
 #[doc(alias = "minecraft:block_movement_slowdown_immunity")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BlockMovementSlowdownImmunity {
     /// `blocks`: the blocks.
     #[facet(schema::molang_with = descriptor_tags, default)]
@@ -319,7 +308,6 @@ macro_rules! move_controls {
         $(#[$doc])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// `max_turn`: the most the mob turns per tick, in degrees; default 30.
             #[facet(default = MAX_TURN)]
@@ -350,7 +338,6 @@ move_controls! {
 // `movement.glide`: the defaults are 0.1 and 0.2, in the typed and the legacy reader alike.
 #[doc(alias = "minecraft:movement.glide")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MovementGlide {
     /// `max_turn`: the most the mob turns per tick, in degrees; default 30.
     #[facet(default = MAX_TURN)]
@@ -369,7 +356,6 @@ impl Typed for MovementGlide {}
 // `movement.sway`: the defaults are 0.5 and 0.05, in the typed and the legacy reader alike.
 #[doc(alias = "minecraft:movement.sway")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MovementSway {
     /// `max_turn`: the most the mob turns per tick, in degrees; default 30.
     #[facet(default = MAX_TURN)]
@@ -390,7 +376,6 @@ impl Typed for MovementSway {}
 // number, `[min, max]` or `{range_min, range_max}`.
 #[doc(alias = "minecraft:movement.jump")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MovementJump {
     /// `max_turn`: the most the mob turns per tick, in degrees; default 30.
     #[facet(default = MAX_TURN)]
@@ -490,7 +475,6 @@ pub(crate) fn legacy_range(
 // `rail_movement`: `max_speed` defaults to 0.4.
 #[doc(alias = "minecraft:rail_movement")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RailMovement {
     /// `max_speed`: the most speed on a rail; default 0.4.
     #[facet(default = 0.4_f32)]
@@ -503,7 +487,6 @@ impl Typed for RailMovement {}
 // `dash_action`: the defaults are 1, 1, 1 and false; `entity` is 0.
 #[doc(alias = "minecraft:dash_action")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DashAction {
     /// `cooldown_time`: the dash's cooldown in seconds; default 1.
     #[facet(default = 1.0_f32)]
@@ -541,7 +524,6 @@ pub enum DashDirection {
 /// `minecraft:buoyant`: the entity floats on the given liquid blocks.
 #[doc(alias = "minecraft:buoyant")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Buoyant {
     /// `base_buoyancy`: how much the entity floats; default 1.
     #[facet(default = 1.0_f32)]
@@ -602,7 +584,6 @@ pub enum BuoyancyMovement {
 // spelling.
 #[doc(alias = "minecraft:teleport")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Teleport {
     /// `random_teleports`: it teleports at random; default `true`.
     #[facet(default = true)]
@@ -657,7 +638,6 @@ impl Typed for Teleport {
 // are ignored by the legacy reader.
 #[doc(alias = "minecraft:trail")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Trail {
     /// `spawn_filter`: when the block spawns; absent means always.
     pub spawn_filter: Option<Filter>,
@@ -737,7 +717,6 @@ impl Typed for Trail {
 // (`hard`).
 #[doc(alias = "minecraft:annotation.break_door")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AnnotationBreakDoor {
     /// `break_time`: the seconds needed to break a door; default 12.
     #[facet(default = 12.0_f32)]

@@ -1,4 +1,4 @@
-//! The new reader's components (`versioning::read_component`, `read_component_map`) against
+//! The new reader's components (`versioning::read_component`, `read_component_map_by`) against
 //! the door's (`parse_component`, `parse_component_map`): one row per payload shape (a
 //! `shorthand = scalar` row of a one-member struct, of an untagged enum, of a transparent
 //! newtype, plain rows), every token of a grid, under every reading. Where the two tell the
@@ -10,7 +10,7 @@ use std::fmt::Write as _;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::ComponentMap;
-use bedrock_addon_core::json::kit::{Node, Read, Versions};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
@@ -18,7 +18,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, ConvertMode, Family, KeyGate, Loaded, MemberFailure, NoStable,
     Reading, Scalars, UpgradeCx, VersionChain, parse_component, parse_component_map,
-    read_component, read_component_map, read_component_map_by, read_slice,
+    read_component, read_component_map_by, read_slice,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
@@ -392,11 +392,12 @@ fn a_component_map_reads_as_the_door_reads_it() {
             let mut d = Diagnostics::default();
             let read = {
                 let mut read = Read::new(reading, &mut d).load(&cx);
-                read_component_map::<Shelf>(
+                read_component_map_by::<Shelf>(
                     &Node::parsed(&parsed, at.clone()),
                     &mut read,
                     ConvertMode::Strict,
                     is_custom,
+                    |_| KeyGate::Read,
                 )
             };
             let read = map_outcome(&read.unwrap_or_default(), &d);
@@ -587,15 +588,13 @@ fn a_member_since_a_format_is_unknown_in_a_component_of_an_older_document() {
         let map = {
             let mut read = Read::new(Reading::DOCUMENT, &mut d)
                 .load(&cx)
-                .versions(Versions {
-                    format,
-                    engine: None,
-                });
-            read_component_map::<Shelf>(
+                .format(format);
+            read_component_map_by::<Shelf>(
                 &Node::parsed(&parsed, at.clone()),
                 &mut read,
                 ConvertMode::Strict,
                 is_custom,
+                |_| KeyGate::Read,
             )
         };
         let told: Vec<String> = d

@@ -62,9 +62,8 @@ use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BeyondWidth, ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity,
-    InputKind, Loaded, MissingVersion, Parsed, Reading, Scalars, StructIndex, finish,
-    parse_as_written,
+    ComponentSection, ComponentTable, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded,
+    MissingVersion, Parsed, Reading, StructIndex, finish, parse_as_written,
 };
 
 /// A client biome (`minecraft:client_biome`), at the newest format version.
@@ -122,11 +121,7 @@ const LAST_LEGACY: FormatVersion = known::V1_21_120;
 /// (a member takes its own JSON type alone, and a number beyond its float is a type error).
 /// The components read by it too, also outside a versioned load.
 pub(crate) fn reading() -> Reading {
-    ClientBiomeFamily::ENVELOPE
-        .input
-        .profile()
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error)
+    ClientBiomeFamily::ENVELOPE.input.profile().strict()
 }
 
 impl Family for ClientBiomeFamily {

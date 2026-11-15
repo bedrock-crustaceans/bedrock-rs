@@ -1,14 +1,14 @@
-error: `schema::expected` is a string enum's key: a tagged enum with data names its variants by facet's `rename`
+error: `schema::string_only` is a string enum's key: a tagged enum with data names its variants by facet's `rename`
  --> tests/ui/schema/tagged.rs:5:23
   |
-5 | #[facet(tag = "type", schema::expected = "a shape", schema::unknown = "keep")]
+5 | #[facet(tag = "type", schema::string_only, schema::unknown = "keep")]
   |                       ^^^^^^
 
 error: `schema::unknown` is about the members of an object: put it on the struct variant whose members it is about
- --> tests/ui/schema/tagged.rs:5:53
+ --> tests/ui/schema/tagged.rs:5:44
   |
-5 | #[facet(tag = "type", schema::expected = "a shape", schema::unknown = "keep")]
-  |                                                     ^^^^^^
+5 | #[facet(tag = "type", schema::string_only, schema::unknown = "keep")]
+  |                                            ^^^^^^
 
 error: a newtype variant of an internally tagged enum holds a struct, whose members sit beside the tag: a plain value has no member to sit there
  --> tests/ui/schema/tagged.rs:8:10

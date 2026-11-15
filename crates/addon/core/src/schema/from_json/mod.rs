@@ -169,12 +169,10 @@ pub fn read_document<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Optio
 /// ```
 pub fn read_value<T: FromJson>(value: &crate::json::Value) -> Option<T> {
     use crate::diagnostic::{Diagnostics, JsonPath};
-    use crate::versioning::{BeyondWidth, Reading, Scalars};
+    use crate::versioning::Reading;
     crate::json::levels_of(value).ok()?;
     let mut told = Diagnostics::default();
-    let reading = Reading::OWN
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error);
+    let reading = Reading::OWN.strict();
     let mut read = Read::new(reading, &mut told).profile(crate::json::kit::Profile::FIRST_FAILURE);
     read_document(&Node::new(value, JsonPath::new()), &mut read)
 }

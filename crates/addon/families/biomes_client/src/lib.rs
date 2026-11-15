@@ -22,12 +22,13 @@ use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
 };
 use bedrock_addon_core::id::{BiomeId, FogId};
-use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read};
+use bedrock_addon_core::json::kit::{Members, Node, Read};
 use bedrock_addon_core::json::{
     EncodeError, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::version::SemVersion;
 use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
@@ -477,7 +478,7 @@ fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
         // any other root member but `biomes` is an unknown one.
         if key != BIOMES {
             let node = Node::new(value, child(&JsonPath::new(), &[key]));
-            read.unknown_member(&node, Disposition::Keep);
+            read.unknown_member(&node, UnknownRule::Keep);
         }
     }
     let Some(biomes) = file.get(BIOMES).and_then(Value::as_object) else {
@@ -500,7 +501,7 @@ fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
         };
         for (name, value) in entry.as_object().into_iter().flatten() {
             if !MEMBERS.contains(&name.as_str()) {
-                read.unknown_member(&member(&members, name, value), Disposition::Keep);
+                read.unknown_member(&member(&members, name, value), UnknownRule::Keep);
             }
         }
         let at = node.path();

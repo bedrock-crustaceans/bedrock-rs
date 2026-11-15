@@ -65,8 +65,8 @@ use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, W
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, BeyondWidth, Envelope, Family, InputKind, Loaded, NoComponents, Reading, Scalars,
-    Single, StructIndex, UnknownMask, ValidateCx,
+    BelowFloor, Envelope, Family, InputKind, Loaded, NoComponents, Reading, Single, StructIndex,
+    ValidateCx,
 };
 use history::{
     MetadataFamily, MetadataHistory, PoolFamily, ProcessorListFamily, StructureFamily,
@@ -143,10 +143,7 @@ const JSON_ENVELOPE: Envelope = Envelope {
 
 /// The game's four slices (processor list, template pool, structure, structure set) are not
 /// strict: unknown members are warnings.
-pub(crate) const JSON_READING: Reading = Reading::DOCUMENT
-    .with_unknown(UnknownMask::Warn)
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+pub(crate) const JSON_READING: Reading = Reading::DOCUMENT.with_unknown(Severity::Warning).strict();
 
 impl Family for StructureFamily {
     const NAME: &'static str = "jigsaw structure";
@@ -364,11 +361,7 @@ impl Family for MetadataFamily {
     /// The first-run profile, its scalars read strictly: a member takes its own JSON type alone,
     /// and a number beyond its type is a type error.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        MetadataFamily::ENVELOPE
-            .input
-            .profile()
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error)
+        MetadataFamily::ENVELOPE.input.profile().strict()
     }
 }
 

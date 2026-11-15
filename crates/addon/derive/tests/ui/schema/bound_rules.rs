@@ -6,10 +6,6 @@ fn low() -> Code {
     Code::from(&codes::INVALID_VALUE)
 }
 
-fn refuse(_: &str) -> Option<Code> {
-    None
-}
-
 #[derive(Facet, Schema)]
 struct NoBound {
     #[facet(schema::low_code = low())]
@@ -18,8 +14,6 @@ struct NoBound {
     b: Option<u8>,
     #[facet(schema::kept)]
     c: Option<u8>,
-    #[facet(schema::key_with = refuse)]
-    d: Option<Vec<u8>>,
 }
 
 fn main() {}

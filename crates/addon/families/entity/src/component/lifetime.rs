@@ -21,7 +21,6 @@ use super::value::one_element;
 /// `minecraft:instant_despawn`: the entity despawns at once.
 #[doc(alias = "minecraft:instant_despawn")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct InstantDespawn {
     /// `remove_child_entities`: the entity's children despawn with it; default `false`.
     #[facet(default = false)]
@@ -33,7 +32,6 @@ impl Typed for InstantDespawn {}
 /// `minecraft:tick_world`: the entity keeps the chunks around it ticking.
 #[doc(alias = "minecraft:tick_world")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TickWorld {
     /// `distance_to_players`: beyond this distance from every player the entity may despawn
     /// (unless `never_despawn`); at least 128, the default.
@@ -57,7 +55,6 @@ impl Typed for TickWorld {
 /// `minecraft:spawn_on_death`: entities spawned where the entity dies.
 #[doc(alias = "minecraft:spawn_on_death")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SpawnOnDeath {
     /// `additional_spawn_range`: a random number of extra entities in this range; default
     /// `{min: 0, max: 0}`.
@@ -95,7 +92,6 @@ impl Typed for SpawnOnDeath {
 /// `minecraft:addrider`: entities that ride this one when it spawns.
 #[doc(alias = "minecraft:addrider")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Addrider {
     /// `riders`: the riders, in seat order.
     #[facet(default)]
@@ -104,7 +100,6 @@ pub struct Addrider {
 
 /// One rider of [`Addrider`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Rider {
     /// `entity_type`: the rider's entity identifier; required.
     pub entity_type: String,
@@ -177,7 +172,6 @@ impl Typed for Addrider {
 /// `minecraft:home`: the entity remembers where it spawned and stays near it.
 #[doc(alias = "minecraft:home")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Home {
     /// `home_block_list`: the block identifiers that can be the entity's home.
     #[facet(default)]
@@ -221,7 +215,6 @@ pub enum RestrictionType {
 )]
 #[doc(alias = "minecraft:transformation")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Transformation {
     /// `into`: the definition it turns into (with an optional `<event>`); default none.
     #[facet(default = String::new())]
@@ -257,7 +250,6 @@ pub struct Transformation {
 
 /// The `add` of a [`Transformation`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TransformationAdd {
     /// `component_groups`: the component groups added.
     #[facet(default)]
@@ -266,7 +258,6 @@ pub struct TransformationAdd {
 
 /// The `delay` of a [`Transformation`]; every member defaults to 0.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TransformationDelay {
     /// `value`: seconds before it transforms; at least 0.
     #[facet(default = 0.0_f32)]
@@ -377,7 +368,6 @@ impl Typed for Transformation {
 // the legacy `{range_min, range_max}` time is the typed `{min, max}`.
 #[doc(alias = "minecraft:timer")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Timer {
     /// `looping`: the timer restarts when it fires; default `true`.
     #[facet(default = true)]
@@ -396,7 +386,6 @@ pub struct Timer {
 
 /// One of a [`Timer`]'s `random_time_choices`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TimeChoice {
     /// `value`: the seconds; default 0.
     #[facet(default = 0.0_f32)]
@@ -432,7 +421,6 @@ impl Typed for Timer {
 // `scale_by_age`: the start and end scale default to 1.
 #[doc(alias = "minecraft:scale_by_age")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ScaleByAge {
     /// `start_scale`: the scale of the newborn; default 1.
     #[facet(default = 1.0_f32)]

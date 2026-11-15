@@ -12,8 +12,8 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, BetaPermission, ComponentTable, Envelope, EnvelopeCheck, ExperimentalField,
     Family, InputKind, LoadOutcome, Loaded, MissingVersion, ParseCx, Reading, StructIndex,
-    UnknownMask, VersionStruct, Versioned, check_experimental_fields, file_version, load,
-    parse_payload, write_payload,
+    VersionStruct, Versioned, check_experimental_fields, file_version, load, parse_payload,
+    write_payload,
 };
 use facet::Facet;
 
@@ -147,7 +147,7 @@ toy_variant!(Mixed, mixed, beta = ToyBeta, {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
             StructIndex::Stable(i) if i < 2 => Reading::NULL_ABSENT,
-            _ => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
+            _ => Reading::DOCUMENT.with_unknown(Severity::Warning),
         }
     }
 });
@@ -158,7 +158,7 @@ toy_variant!(Sourced, sourced, beta = ToyBeta, {
         ..Envelope::DEFAULT
     };
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+        Reading::DOCUMENT.with_unknown(Severity::Warning)
     }
     fn beta_permission(_: JsonSlice<'_>, cx: &LoadContext) -> BetaPermission {
         match cx.source {
@@ -173,7 +173,7 @@ toy_variant!(Masked, masked, beta = ToyBeta, {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
             StructIndex::Stable(i) if i < 2 => Reading::OWN,
-            _ => Reading::OWN.with_unknown(UnknownMask::Error),
+            _ => Reading::OWN.with_unknown(Severity::Error),
         }
     }
 });
@@ -183,7 +183,7 @@ toy_variant!(Document, document, beta = ToyBeta, {
         ..Envelope::DEFAULT
     };
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        Reading::DOCUMENT.with_unknown(UnknownMask::Warn)
+        Reading::DOCUMENT.with_unknown(Severity::Warning)
     }
 });
 toy_variant!(JsonCppToy, json_cpp_toy, beta = ToyBeta, {

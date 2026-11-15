@@ -11,8 +11,9 @@ use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::UnknownRule;
 use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields};
 use bedrock_addon_core::shared::ShapeErrorKind;
 use bedrock_addon_core::version::FormatVersion;
@@ -67,12 +68,7 @@ impl ColorMap for FoliageColorMap {
     /// `dry_foliage` is a value of the enum from 1.21.70; below it, an unknown name.
     fn read_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
         let map = Self::from_json(node, read)?;
-        if map == Self::DryFoliage
-            && read
-                .known_versions()
-                .format
-                .is_some_and(|v| v < DRY_FOLIAGE_MAP)
-        {
+        if map == Self::DryFoliage && read.known_format().is_some_and(|v| v < DRY_FOLIAGE_MAP) {
             read.refuse(node, Code::from(&core_codes::INVALID_ENUM_VALUE));
             return None;
         }
@@ -98,7 +94,7 @@ impl<M: ColorMap> FromJson for ColorOrMap<M> {
             .required(&members, COLOR_MAP)
             .and_then(|node| M::read_name(&node, read));
         let mut extra = UnknownMembers::default();
-        for (key, value) in read.unknown(&members, &[COLOR_MAP], Disposition::Keep) {
+        for (key, value) in read.unknown(&members, &[COLOR_MAP], UnknownRule::Keep) {
             extra.insert(key.to_owned(), value.clone());
         }
         Some(Self::Map {

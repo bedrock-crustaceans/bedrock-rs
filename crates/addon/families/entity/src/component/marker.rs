@@ -4,7 +4,7 @@
 //! There are 49 markers: 23 first typed in 1.21.120, 11 in 1.26.20, 11 in 1.26.40 and 4 in
 //! 1.26.50. The game binds each of them without members.
 
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use facet::Facet;
 
 use super::parse::Typed;
@@ -15,7 +15,6 @@ macro_rules! markers {
         $(#[$doc])*
         #[doc(alias = $key)]
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep")]
         pub struct $name {}
 
         impl Typed for $name {}

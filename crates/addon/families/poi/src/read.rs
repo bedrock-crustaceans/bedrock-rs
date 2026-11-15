@@ -8,6 +8,7 @@
 use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostics};
+use bedrock_addon_core::id::syntax::{is_word_byte, namespaced_by};
 use bedrock_addon_core::id::{Id, Kind};
 use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -23,14 +24,7 @@ pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
 /// Whether `text` is a POI name, `^\w+:\w+$`: a namespace and a name, each one or more of
 /// `A-Z`, `a-z`, `0-9` and `_`, around one `:`.
 pub(crate) fn is_poi_name(text: &str) -> bool {
-    let word = |part: &str| {
-        !part.is_empty()
-            && part
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
-    };
-    text.split_once(':')
-        .is_some_and(|(namespace, name)| word(namespace) && word(name))
+    namespaced_by(text, is_word_byte)
 }
 
 /// A POI name (`schema::read_with` of an identifier): a string, kept as written (anything else

@@ -28,9 +28,9 @@ use bedrock_addon_core::load::{
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BelowFloor, BeyondWidth, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind, Loaded,
-    MissingVersion, NoComponents, Reading, Scalars, Single, StructIndex, ValidateCx,
-    parse_document, parse_document_as_written,
+    BelowFloor, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind, Loaded, MissingVersion,
+    NoComponents, Reading, Single, StructIndex, ValidateCx, parse_document,
+    parse_document_as_written,
 };
 
 pub use types::{
@@ -83,11 +83,7 @@ impl Family for MetadataFamily {
     /// The document-input profile, its scalars read strictly: a member takes its own JSON type
     /// alone, and a number beyond its float is a type error.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        MetadataFamily::ENVELOPE
-            .input
-            .profile()
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error)
+        MetadataFamily::ENVELOPE.input.profile().strict()
     }
 
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
@@ -250,12 +246,11 @@ pub const LOADER: CollectionLoader<Registry<SoundMetadata>, FileCopy<SoundMetada
 mod tests {
     use super::validate::{namespace_code, no_whitespace};
     use super::*;
+    use bedrock_addon_core::diagnostic::Severity;
     use bedrock_addon_core::json::NullRule;
     use bedrock_addon_core::load::DocumentSource;
     use bedrock_addon_core::version::FormatVersionInput;
-    use bedrock_addon_core::versioning::{
-        InputKind, Selection, StructIndex, UnknownMask, VersionChain, select,
-    };
+    use bedrock_addon_core::versioning::{InputKind, Selection, StructIndex, VersionChain, select};
 
     /// The `to_json` the family once wrote by hand, the chain's text as is, equals `Content`'s
     /// default, which lays that text out again: reals included.
@@ -299,7 +294,7 @@ mod tests {
         );
         assert_eq!(
             MetadataFamily::reading(StructIndex::Stable(0), DocumentSource::Json).unknown,
-            UnknownMask::Error
+            Severity::Error
         );
         assert_eq!(
             MetadataFamily::PAYLOAD_KEY,

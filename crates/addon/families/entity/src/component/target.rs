@@ -17,7 +17,6 @@ use super::parse::{ComponentCheck, Typed, drop_deprecated};
 /// most damage.
 #[doc(alias = "minecraft:wither_target_highest_damage")]
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct WitherTargetHighestDamage {
     /// `priority`: the goal priority, lower runs first; at least 0, default 0.
     #[facet(default = 0_i32, schema::min = 0)]
@@ -103,7 +102,6 @@ impl EntityTypes {
 /// the goal member. No capture has the member inside a descriptor (`zombie_nautilus.json` has
 /// it as a `nearest_attackable_target` member, `17`). `tests/entity/descriptors.rs` pins both.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MobDescriptor {
     /// `check_if_outnumbered`: only when the entity is outnumbered; default `false`.
     #[facet(default = false)]

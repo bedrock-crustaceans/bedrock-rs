@@ -6,8 +6,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::{
-    BeyondWidth, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Scalars, Value, blank_bom,
-    check_depth, parse_at,
+    JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value, blank_bom, check_depth, parse_at,
 };
 use bedrock_addon_core::schema::{FromJson, read_document};
 use bedrock_addon_core::versioning::Reading;
@@ -31,9 +30,7 @@ pub(crate) fn strict<T: FromJson>(bytes: &[u8]) -> Result<(T, Value), MetaError>
     let text = &*text;
     let value: Value = parse_at(JsonSlice::new(text))?;
     let mut told = Diagnostics::default();
-    let reading = Reading::OWN
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error);
+    let reading = Reading::OWN.strict();
     let mut read = Read::new(reading, &mut told).profile(Profile::FIRST_FAILURE);
     let typed = read_document::<T>(&Node::new(&value, JsonPath::new()), &mut read);
     let Some(typed) = typed else {
