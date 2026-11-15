@@ -7,7 +7,8 @@ pub mod lenient;
 use std::str::Utf8Error;
 use std::sync::Arc;
 
-use super::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, last_wins, strip_bom};
+use super::parse::{Fault, Options, parse};
+use super::{MAX_JSON_DEPTH, TooDeep, Value, Winner, check_depth, strip_bom};
 
 /// Why a file is no JSON for the jsoncpp readers ([`read`], and the lenient and merge
 /// readers of the texture and sound files).
@@ -33,6 +34,12 @@ pub enum ReadError {
     Syntax(Arc<facet_json::DeserializeError>),
 }
 
+impl From<Fault> for ReadError {
+    fn from(fault: Fault) -> Self {
+        facet_json::DeserializeError::from(fault).into()
+    }
+}
+
 impl From<facet_json::DeserializeError> for ReadError {
     fn from(error: facet_json::DeserializeError) -> Self {
         Self::Syntax(Arc::new(error))
@@ -52,6 +59,12 @@ pub fn number(value: &Value) -> Option<f64> {
     value.as_number().map(facet_value::VNumber::to_f64_lossy)
 }
 
+/// The value of `text` with the last of a member written twice standing, as jsoncpp's
+/// `std::map` keeps it: one pass, no rewritten copy of the text.
+pub(crate) fn parse_last_wins(text: &str) -> Result<Value, Fault> {
+    parse(text, Options::winner(Winner::Last)).map(|parsed| parsed.value)
+}
+
 /// Reads the bytes of one file as a JSON value the way the game's JSON reader does: a BOM skipped,
 /// comments accepted, the last of repeated members kept.
 ///
@@ -67,7 +80,7 @@ pub fn read(bytes: &[u8]) -> Result<Value, ReadError> {
         offset: deep.offset,
     })?;
     let text = std::str::from_utf8(bytes)?;
-    Ok(super::from_str_jsonc::<Value>(&last_wins(text))?)
+    Ok(parse_last_wins(text)?)
 }
 
 #[cfg(test)]

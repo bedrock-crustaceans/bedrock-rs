@@ -3,7 +3,7 @@
 //! the atlas and flipbook readers reproduce on the merged value.
 
 use crate::json::{
-    Coerce, Coercing, IsIntRule, MAX_JSON_DEPTH, Value, WideInt, check_depth, last_wins, strip_bom,
+    Coerce, Coercing, IsIntRule, MAX_JSON_DEPTH, Value, WideInt, check_depth, strip_bom,
 };
 
 use super::ReadError;
@@ -41,7 +41,7 @@ pub fn read_lenient(bytes: &[u8]) -> Result<Lenient, ReadError> {
         None => (text, false),
     };
     // Of a member written twice the last stands, as in jsoncpp's `std::map`.
-    let value = crate::json::from_str_jsonc::<Value>(&last_wins(root))?;
+    let value = super::parse_last_wins(root)?;
     Ok(Lenient { value, trailing })
 }
 

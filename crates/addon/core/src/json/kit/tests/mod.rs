@@ -234,6 +234,141 @@ fn findings_span_the_text_of_their_value_when_the_node_has_it() {
 }
 
 #[test]
+fn a_parsed_node_spans_the_text_of_its_value_as_a_node_with_the_text_does() {
+    let text = r#"{"list": [1, {"deep": "x"}], "flag": 0}"#;
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice { text, offset: 100 },
+        crate::json::parse::Options::default(),
+    )
+    .expect("a document");
+    let root = Node::parsed(&parsed, at(&["root"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let members = read.object(&root).expect("an object");
+    let list = read.required(&members, "list").expect("written");
+    let inner = read
+        .array(&list)
+        .expect("an array")
+        .element(1)
+        .expect("two");
+    let inner = read.object(&inner).expect("an object");
+    let deep = read.required(&inner, "deep").expect("written");
+    assert_eq!(read.bool(&deep), None);
+    read.required(&inner, "missing");
+    let flag = read.required(&members, "flag").expect("written");
+    assert_eq!(read.bool(&flag), None);
+    assert_eq!(
+        rendered(&found),
+        [
+            "Error|root/list/1/deep|core/invalid_type|Some((122, 3))|false",
+            "Error|root/list/1/missing|core/missing_required_field|Some((113, 13))|false",
+            "Error|root/flag|core/invalid_type|Some((137, 1))|false",
+        ]
+    );
+}
+
+/// Every node of `a` and `b`, which hold one document, must have the span and the text the
+/// other has, by the member and the element lookups and by the iterations.
+fn assert_same_spans(a: &Node<'_>, b: &Node<'_>, text: &str) {
+    assert_eq!(a.span(), b.span(), "span of {} in {text}", a.path());
+    assert_eq!(a.text(), b.text(), "text of {} in {text}", a.path());
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    if a.value().is_object() {
+        let (ma, mb) = (
+            read.object(a).expect("object"),
+            read.object(b).expect("object"),
+        );
+        let (ia, ib): (Vec<_>, Vec<_>) = (ma.iter().collect(), mb.iter().collect());
+        assert_eq!(ia.len(), ib.len(), "{text}");
+        for ((ka, na), (kb, nb)) in ia.iter().zip(&ib) {
+            assert_eq!(ka, kb, "{text}");
+            assert_same_spans(na, nb, text);
+            // The lookup by key agrees with the iteration.
+            let (ga, gb) = (ma.get(ka).expect("written"), mb.get(ka).expect("written"));
+            assert_same_spans(&ga, &gb, text);
+        }
+    } else if a.value().is_array() {
+        let (ea, eb) = (read.array(a).expect("array"), read.array(b).expect("array"));
+        assert_eq!(ea.len(), eb.len(), "{text}");
+        for (na, nb) in ea.iter().zip(eb.iter()) {
+            assert_same_spans(&na, &nb, text);
+        }
+    }
+}
+
+#[test]
+fn a_parsed_node_has_every_span_a_node_with_the_text_has() {
+    let many = format!(
+        "{{{}}}",
+        (0..70)
+            .map(|i| format!("\"k{i}\": [{i}, \"v\"]"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    let texts = [
+        r#"{"a": 1}"#.to_string(),
+        "  \n// a comment\n{ \"a\" : [1 , 2,\t{\"b\":null,} ] /* c */ , \"z\": \"s\\u00e9\" }  "
+            .to_string(),
+        r#"{"esc\"aped": 1, "uni\u00e9": [[], {}], "": {"": 0}}"#.to_string(),
+        // A key written twice: the last copy's text.
+        r#"{"a": 1, "b": {"x": 1}, "a": [2, 3], "b": {"y": 2}}"#.to_string(),
+        "[1, 2.5e3, -0, \"s\", true, null, [[]], {\"k\": {}}]".to_string(),
+        "5".to_string(),
+        many,
+    ];
+    for text in &texts {
+        let json = value(text);
+        let parsed = crate::json::parse::parse_slice(
+            JsonSlice { text, offset: 40 },
+            crate::json::parse::Options::default(),
+        )
+        .expect("a document");
+        assert_eq!(parsed.value, json, "{text}");
+        let by_slice = Node::with_text(&json, at(&["r"]), JsonSlice { text, offset: 40 });
+        let by_tree = Node::parsed(&parsed, at(&["r"]));
+        assert_same_spans(&by_slice, &by_tree, text);
+    }
+}
+
+#[test]
+fn the_members_of_a_wide_parsed_object_are_found_for_the_cost_of_their_keys() {
+    crate::test_cost::assert_linear_at(
+        "every member of a parsed object, by iteration and by key",
+        4_000,
+        |n| {
+            let text = format!(
+                "{{{}}}",
+                (0..n)
+                    .map(|i| format!("\"key_{i}\": {i}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            (n, text)
+        },
+        |(n, text)| {
+            let parsed = crate::json::parse::parse(text, crate::json::parse::Options::default())
+                .expect("a document");
+            let root = Node::parsed(&parsed, JsonPath::new());
+            let mut found = Diagnostics::default();
+            let mut read = Read::new(Reading::DOCUMENT, &mut found);
+            let members = read.object(&root).expect("an object");
+            let by_iteration: u32 = members
+                .iter()
+                .filter_map(|(_, node)| node.span())
+                .map(|s| s.len)
+                .sum();
+            let by_key: u32 = (0..*n)
+                .filter_map(|i| members.get(&format!("key_{i}")))
+                .filter_map(|node| node.span())
+                .map(|s| s.len)
+                .sum();
+            assert_eq!(by_iteration, by_key);
+        },
+    );
+}
+
+#[test]
 fn a_strict_reading_takes_a_scalar_of_its_own_kind_alone() {
     let json = value(r#"[true, "s", 2, 2.0, 2.5, 4294967296, null]"#);
     let root = Node::new(&json, JsonPath::new());

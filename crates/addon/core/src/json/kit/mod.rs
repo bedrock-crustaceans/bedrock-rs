@@ -67,10 +67,15 @@
 //! ]);
 //! ```
 
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::sync::OnceLock;
+
 use facet_json::RawJson;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
+use super::parse::{Parsed, SpanNode};
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Span};
@@ -93,13 +98,63 @@ pub use written::Written;
 /// A value being read: where it is in the document, and its text when the caller has it.
 ///
 /// The text is the span source: with it, a finding at the node or below it carries the byte
-/// range of the file it is about. It must be the text the value was read from (a
-/// [`JsonSlice`] at its file offset).
+/// range of the file it is about. It is either a [`JsonSlice`] the value was read from (at its
+/// file offset: [`with_text`](Self::with_text); the members' and elements' spans are then found
+/// by reading each level of that text again), or the tree of spans [`json::parse`](super::parse)
+/// made with the value ([`parsed`](Self::parsed): every span is a lookup).
 #[derive(Clone, Debug)]
 pub struct Node<'v> {
     value: &'v Value,
     path: JsonPath,
-    text: Option<JsonSlice<'v>>,
+    text: Text<'v>,
+}
+
+/// Where a node's text is.
+#[derive(Clone, Copy)]
+enum Text<'v> {
+    /// No text: no span.
+    None,
+    /// A slice of the file, taken as it is.
+    Slice(JsonSlice<'v>),
+    /// A node of a parse's span tree. The root of a read of a whole text has that text as
+    /// `whole`, white space and comments round the value included, as a slice has it.
+    Tree {
+        node: SpanNode<'v, 'v>,
+        whole: Option<JsonSlice<'v>>,
+    },
+}
+
+impl std::fmt::Debug for Text<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => f.write_str("None"),
+            Self::Slice(slice) => f.debug_tuple("Slice").field(slice).finish(),
+            Self::Tree { node, .. } => f.debug_tuple("Tree").field(&node.span()).finish(),
+        }
+    }
+}
+
+impl<'v> Text<'v> {
+    /// A node below the root: its own token.
+    fn tree(node: SpanNode<'v, 'v>) -> Self {
+        Self::Tree { node, whole: None }
+    }
+
+    fn slice(self) -> Option<JsonSlice<'v>> {
+        match self {
+            Self::None => None,
+            Self::Slice(slice) => Some(slice),
+            Self::Tree { node, whole } => Some(whole.unwrap_or_else(|| node.text())),
+        }
+    }
+
+    fn span(self) -> Option<Span> {
+        match self {
+            Self::None => None,
+            Self::Slice(slice) => Some(span_of(slice)),
+            Self::Tree { node, whole } => Some(whole.map_or_else(|| node.span(), span_of)),
+        }
+    }
 }
 
 impl<'v> Node<'v> {
@@ -123,7 +178,7 @@ impl<'v> Node<'v> {
         Self {
             value,
             path,
-            text: None,
+            text: Text::None,
         }
     }
 
@@ -152,7 +207,37 @@ impl<'v> Node<'v> {
         Self {
             value,
             path,
-            text: Some(text),
+            text: Text::Slice(text),
+        }
+    }
+
+    /// The root of a [parsed](super::parse) text, at `path`: findings at it and below it carry
+    /// spans, each a lookup in the tree the parse made beside the value (nothing reads the text
+    /// again). The root's own span is the text as given, as [`with_text`](Self::with_text)'s.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::parse::{Options, parse};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// let text = r#"{"size": "big"}"#;
+    /// let parsed = parse(text, Options::default()).unwrap();
+    /// let root = Node::parsed(&parsed, JsonPath::new());
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    /// let members = read.object(&root).unwrap();
+    /// let size = read.required(&members, "size").unwrap();
+    /// let span = size.span().unwrap();
+    /// assert_eq!(&text[span.offset as usize..][..span.len as usize], r#""big""#);
+    /// ```
+    pub fn parsed<'t: 'v>(parsed: &'v Parsed<'t>, path: JsonPath) -> Self {
+        Self {
+            value: &parsed.value,
+            path,
+            text: Text::Tree {
+                node: parsed.spans.root(),
+                whole: Some(parsed.spans.text()),
+            },
         }
     }
 
@@ -168,12 +253,12 @@ impl<'v> Node<'v> {
 
     /// The value's text, when the node has one.
     pub fn text(&self) -> Option<JsonSlice<'v>> {
-        self.text
+        self.text.slice()
     }
 
     /// The byte range of the value in the file, when the node has its text.
     pub fn span(&self) -> Option<Span> {
-        self.text.map(span_of)
+        self.text.span()
     }
 }
 
@@ -183,7 +268,9 @@ impl<'v> Node<'v> {
 pub struct Members<'v> {
     node: Node<'v>,
     object: &'v VObject,
-    texts: Option<IndexMap<String, RawJson<'v>>>,
+    texts: Level<'v, IndexMap<String, RawJson<'v>>>,
+    /// The members of a tree level that has many, by key: made by the first lookup.
+    by_key: OnceLock<HashMap<Cow<'v, str>, usize>>,
 }
 
 impl<'v> Members<'v> {
@@ -249,17 +336,62 @@ impl<'v> Members<'v> {
     /// assert_eq!(paths, ["root/b", "root/a"]);
     /// ```
     pub fn iter(&self) -> impl Iterator<Item = (&'v str, Node<'v>)> + '_ {
+        // A tree that lists as many members as the object has has no repeated key, so its
+        // members are the object's in the same order: no lookup by key per member.
+        let aligned = matches!(&self.texts, Level::Tree(tree) if tree.len() == self.object.len());
         self.object
             .iter()
-            .map(|(key, value)| (key.as_str(), self.child(key.as_str(), value)))
+            .enumerate()
+            .map(move |(index, (key, value))| {
+                let key = key.as_str();
+                let node = match &self.texts {
+                    Level::Tree(tree) if aligned => match tree.member_at(index) {
+                        Some(member) if member.key == key => {
+                            self.child_of(Text::tree(member.value), key, value)
+                        }
+                        _ => self.child(key, value),
+                    },
+                    _ => self.child(key, value),
+                };
+                (key, node)
+            })
+    }
+
+    /// The last member of the tree level written `key`: a scan for a few members, a table of
+    /// them by key (made once) for many, so that a lookup per key costs the key, not the object.
+    fn tree_member(&self, tree: &SpanNode<'v, 'v>, key: &str) -> Option<SpanNode<'v, 'v>> {
+        if tree.len() <= SCAN_MEMBERS {
+            return tree.member(key);
+        }
+        let by_key = self.by_key.get_or_init(|| {
+            // Later copies replace earlier ones: the last stands.
+            (0..tree.len())
+                .filter_map(|index| tree.member_at(index).map(|member| (member.key, index)))
+                .collect()
+        });
+        by_key
+            .get(key)
+            .and_then(|index| tree.member_at(*index))
+            .map(|member| member.value)
+    }
+
+    fn child_of(&self, text: Text<'v>, key: &str, value: &'v Value) -> Node<'v> {
+        Node {
+            value,
+            path: self.node.path.child(key),
+            text,
+        }
     }
 
     fn child(&self, key: &str, value: &'v Value) -> Node<'v> {
-        let text = self
-            .node
-            .text
-            .zip(self.texts.as_ref())
-            .and_then(|(text, texts)| texts.get(key).and_then(|raw| text.nested(raw)));
+        let text = match (&self.texts, self.node.text) {
+            (Level::Raw(texts), Text::Slice(text)) => texts
+                .get(key)
+                .and_then(|raw| text.nested(raw))
+                .map_or(Text::None, Text::Slice),
+            (Level::Tree(tree), _) => self.tree_member(tree, key).map_or(Text::None, Text::tree),
+            _ => Text::None,
+        };
         Node {
             value,
             path: self.node.path.child(key),
@@ -274,7 +406,21 @@ impl<'v> Members<'v> {
 pub struct Elements<'v> {
     node: Node<'v>,
     array: &'v VArray,
-    texts: Option<Vec<RawJson<'v>>>,
+    texts: Level<'v, Vec<RawJson<'v>>>,
+}
+
+/// The most members of an object whose lookup by key scans them.
+const SCAN_MEMBERS: usize = 16;
+
+/// Where the texts of one level's children come from.
+#[derive(Clone, Debug)]
+enum Level<'v, R> {
+    /// The level has no text.
+    None,
+    /// The level read again as raw slices (a [`Node::with_text`] slice).
+    Raw(R),
+    /// The level's node of the parse's tree.
+    Tree(SpanNode<'v, 'v>),
 }
 
 impl<'v> Elements<'v> {
@@ -314,11 +460,14 @@ impl<'v> Elements<'v> {
     /// ```
     pub fn element(&self, index: usize) -> Option<Node<'v>> {
         let value = self.array.get(index)?;
-        let text = self
-            .node
-            .text
-            .zip(self.texts.as_ref())
-            .and_then(|(text, texts)| texts.get(index).and_then(|raw| text.nested(raw)));
+        let text = match (&self.texts, self.node.text) {
+            (Level::Raw(texts), Text::Slice(text)) => texts
+                .get(index)
+                .and_then(|raw| text.nested(raw))
+                .map_or(Text::None, Text::Slice),
+            (Level::Tree(tree), _) => tree.element(index).map_or(Text::None, Text::tree),
+            _ => Text::None,
+        };
         Some(Node {
             value,
             path: self.node.path.index(index),
@@ -992,13 +1141,18 @@ impl<'d> Read<'d> {
             self.wrong_kind(node, Expected::Object);
             return None;
         };
-        let texts = node
-            .text
-            .and_then(|text| super::from_str_borrowed_jsonc(text.text).ok());
+        let texts = match node.text {
+            Text::None => Level::None,
+            Text::Slice(text) => super::from_str_borrowed_jsonc(text.text)
+                .ok()
+                .map_or(Level::None, Level::Raw),
+            Text::Tree { node, .. } => Level::Tree(node),
+        };
         Some(Members {
             node: node.clone(),
             object,
             texts,
+            by_key: OnceLock::new(),
         })
     }
 
@@ -1028,9 +1182,13 @@ impl<'d> Read<'d> {
             self.wrong_kind(node, Expected::Array);
             return None;
         };
-        let texts = node
-            .text
-            .and_then(|text| super::from_str_borrowed_jsonc(text.text).ok());
+        let texts = match node.text {
+            Text::None => Level::None,
+            Text::Slice(text) => super::from_str_borrowed_jsonc(text.text)
+                .ok()
+                .map_or(Level::None, Level::Raw),
+            Text::Tree { node, .. } => Level::Tree(node),
+        };
         Some(Elements {
             node: node.clone(),
             array,

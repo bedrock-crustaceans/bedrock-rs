@@ -55,6 +55,9 @@ mod lex;
 pub mod lossy;
 pub mod node_tree;
 mod null;
+// hidden: API not yet reviewed
+#[doc(hidden)]
+pub mod parse;
 mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers

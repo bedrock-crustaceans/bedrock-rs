@@ -150,7 +150,10 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
     d: &mut Diagnostics,
     configure: impl for<'r> FnOnce(crate::json::kit::Read<'r>) -> crate::json::kit::Read<'r>,
 ) -> Option<T> {
-    let Ok(json) = crate::json::from_str_jsonc::<Value>(payload.text) else {
+    // One pass over the text gives the value and every span the read needs.
+    let Ok(parsed) =
+        crate::json::parse::parse_slice(payload, crate::json::parse::Options::default())
+    else {
         // Not reached for a payload the envelope has read; the door's typed read words the
         // failure.
         if let Err(error) = crate::json::parse_at::<Value>(payload) {
@@ -158,7 +161,7 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
         }
         return None;
     };
-    let node = crate::json::kit::Node::with_text(&json, cx.at.clone(), payload);
+    let node = crate::json::kit::Node::parsed(&parsed, cx.at.clone());
     let read = crate::json::kit::Read::new(cx.load.reading, d)
         .unknown_severity(cx.load.grade(Class::Unknown))
         .order(crate::json::kit::Order::Door);

@@ -281,6 +281,18 @@ fn read_owned<T: Facet<'static>>(
     })
 }
 
+/// The untyped [`Value`] of `text` as `T`, which is `Value`: [`parse`](super::parse) reads it,
+/// in one pass and without the scan's copies of the text, to the value and the refusal the
+/// scan and facet's builder give it.
+fn parsed_value<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
+    let parsed = super::parse::parse(text, super::parse::Options::default())?;
+    Partial::alloc_owned::<T>()?
+        .set(parsed.value)?
+        .build()?
+        .materialize::<T>()
+        .map_err(DeserializeError::from)
+}
+
 fn checked(text: &str, comments: bool) -> Result<Checked<'_>, DeserializeError> {
     let mut marks = Marks::default();
     let scanned = scan_tokens(text.as_bytes(), comments, &mut marks)
@@ -313,7 +325,9 @@ pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
     read_owned(checked.root, checked.copy.as_deref(), false, checked.levels)
 }
 
-/// `facet_json::from_str_jsonc` behind [`scan`]: JSON with comments into an owned type.
+/// `facet_json::from_str_jsonc` behind [`scan`]: JSON with comments into an owned type. An
+/// untyped [`Value`] is read by [`parse`](super::parse) instead, in one pass and to the same
+/// value or the same refusal.
 ///
 /// Needs no stack of the caller that grows with the text: a text nested to `MAX_JSON_DEPTH`
 /// is read, and a deeper one refused with an error, on a thread with a megabyte of stack,
@@ -325,6 +339,9 @@ pub fn from_str<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
 ///
 /// Returns `DeserializeError` for text the scan refuses or that facet-json cannot read as `T`.
 pub fn from_str_jsonc<T: Facet<'static>>(text: &str) -> Result<T, DeserializeError> {
+    if is_untyped::<T>() {
+        return parsed_value(text);
+    }
     let checked = checked(text, true)?;
     read_owned(checked.root, checked.copy.as_deref(), true, checked.levels)
 }
