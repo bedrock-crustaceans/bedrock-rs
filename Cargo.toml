@@ -39,7 +39,6 @@ edition = "2024"
 
 [workspace.dependencies]
 thiserror = "2.0"
-vek = "0.17"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 byteorder = "1.5.0"

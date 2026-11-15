@@ -26,7 +26,6 @@ nbtx.workspace = true
 facet.workspace = true
 
 thiserror.workspace = true
-serde.workspace = true
 byteorder.workspace = true
 bytemuck.workspace = true
 smallvec = "1.15.1"
