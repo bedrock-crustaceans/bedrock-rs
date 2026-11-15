@@ -88,3 +88,7 @@ rayon = "1"
 oxc_parser = "0.153"
 brarchive = "0.5"
 md-5 = "0.11.0" # the manifest's stable ids for malformed UUIDs (the package is md-5, the library md5)
+
+# Backtraces keep file and line; test binaries shrink to about a third of their size.
+[profile.dev]
+debug = "line-tables-only"
