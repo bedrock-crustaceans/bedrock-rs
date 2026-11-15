@@ -38,8 +38,8 @@ facet::define_attr_grammar! {
         SinceEngine(&'static str),
         /// `unknown = "keep"` (stored, on a field or a container): what an unknown member
         /// is where this struct differs from the slice's rule: `keep`, `report`, `reject`,
-        /// `ignore`, or `component` (a name that is no component of its object, as the game
-        /// tells it).
+        /// `ignore`, `component` (a name that is no component of its object, as the game
+        /// tells it), or `silent` (kept and told nothing).
         Unknown(&'static str),
         /// `fallback = x` (compile-time, an `Option` field): the value absence stands for;
         /// the getter returns it, and it is never written into the data. A text fallback's
@@ -142,6 +142,13 @@ facet::define_attr_grammar! {
         /// value: an array's elements, an object's values in key order, nothing for any other;
         /// a member that is no array is told a wrong type and read so.
         Iterated,
+        /// `reads_null` (marker, an `Option` field): a `null` member is a value like any other,
+        /// read by the field's type (or `read_with`) as `Some`, where the reading's null rule
+        /// would make it `None`: the game's reader asks for the member and takes what is there
+        /// (jsoncpp's `asString` of a `null` is `""`). With `or_kept`, a `null` the type refuses
+        /// is kept as written. Without it a `null` is the reading's null rule's, whatever reads
+        /// the member: a `read_with` fn never sees one.
+        ReadsNull,
         /// `elements = "drop"` or `"fail"` (compile-time, a list field): what a failed element
         /// does, whatever the reading: left out, the rest kept; or the list fails.
         Elements(arbitrary),

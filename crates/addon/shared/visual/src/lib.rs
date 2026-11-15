@@ -9,13 +9,19 @@
 //! one identifier across packs: by `description.min_engine_version`, not by pack priority
 //! alone.
 
-/// The shared reader of the description schema: the families' plumbing, not the facade's API.
-#[doc(hidden)]
-pub mod cereal;
 pub mod codes;
+mod description;
+/// The two families' shared reading and writing, by what differs between them.
+pub mod family;
+/// A file of either family, from its bytes to a document: the families' plumbing.
+#[doc(hidden)]
+pub mod file;
 mod held_item_scale;
 pub mod history;
 mod merge;
+/// The reads the description's members share: the plumbing of the families, not the facade's API.
+#[doc(hidden)]
+pub mod read;
 /// The shared loader rules: the families' plumbing, not the facade's API.
 #[doc(hidden)]
 pub mod rules;
@@ -31,6 +37,7 @@ use bedrock_addon_core::id::{AnimationRef, GeometryId, MaterialId, TexturePath};
 pub use bedrock_addon_shared_shapes::{
     AnimateEntry, ControllerUse, NamedCondition, NamedConditionProxy, NotANamedCondition,
 };
+pub use description::{AttachableRoot, ClientEntityRoot, Description, NoOwn, Payload, Root};
 pub use held_item_scale::HeldItemScale;
 pub use merge::{
     EngineVersionMerge, MergeStep, ShadowReason, SharedDescription, description_min_engine_version,

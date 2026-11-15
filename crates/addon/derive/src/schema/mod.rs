@@ -300,6 +300,7 @@ fn unknown_option(word: Option<&String>) -> TokenStream {
             "report" => "Report",
             "reject" => "Reject",
             "component" => "Component",
+            "silent" => "Silent",
             _ => "Ignore",
         }
     );

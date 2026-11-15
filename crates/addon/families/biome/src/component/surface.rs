@@ -28,7 +28,7 @@ pub struct SubsurfaceBuilder {
 /// A surface builder, chosen by `type`. Every member of every builder is required unless it is
 /// an `Option`. The game numbers the builders 0 overworld, 1 swamp, 2 `frozen_ocean`, 3 capped,
 /// 4 `the_end` and 5 mesa; `noise_gradient` (7) joins them in format 1.26.30.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(tag = "type")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -59,9 +59,6 @@ pub enum Builder {
     #[facet(rename = "minecraft:noise_gradient")]
     NoiseGradient(NoiseGradientSurface),
 }
-
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(Builder);
 
 impl Builder {
     /// The JSON `type` of the builder.
@@ -265,7 +262,3 @@ pub struct AdjustmentMaterials {
     /// JSON `sea_material`.
     pub sea_material: Option<BlockSpecifier>,
 }
-
-// The builder is a data enum: its alternatives' members are checked by hand (`validate.rs`).
-bedrock_addon_core::impl_schema_leaf!(Builder);
-bedrock_addon_core::impl_no_molang!(Builder);

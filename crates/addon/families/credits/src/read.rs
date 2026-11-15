@@ -1,104 +1,103 @@
 //! `credits/credits.json`, the game's own credits, and the files of the game's data that a
 //! resource pack carries in vain.
 
-use super::{Credits, CreditsDiscipline, CreditsSection, CreditsTitle, codes};
+use super::{Credits, CreditsDiscipline, CreditsTitle, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
-use bedrock_addon_core::json::kit::Written;
-use bedrock_addon_core::json::kit::fixed_path::{Authored, raw_member, to_text};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, reader, to_text};
+use bedrock_addon_core::json::kit::{Node, Read, Written};
+use bedrock_addon_core::schema::{FromJson, read_document};
 
-fn shape(code: &'static CodeDef<0>, at: &JsonPath, diagnostics: &mut Diagnostics) {
-    diagnostics.push(Diagnostic::of(code).at(at.clone()));
+/// A finding of the crate's own, an information, at the value `at`.
+fn shape(read: &mut Read<'_>, code: &'static CodeDef<0>, at: &Node<'_>) {
+    read.push(Diagnostic::of(code).at(at.path().clone()));
 }
 
-/// The members of an object that are none of `read`.
-fn rest(value: &Value, read: [&str; 2]) -> UnknownMembers {
-    let mut extra = UnknownMembers::default();
-    if let Some(object) = value.as_object() {
-        for (name, member) in object {
-            if !read.contains(&name.as_str()) {
-                extra.insert(name.as_str().to_owned(), member.clone());
-            }
-        }
-    }
-    extra
+/// A heading or a name as the game reads it: any value as a string, a boolean as `true` /
+/// `false` and anything else empty, without a word (`schema::read_with`).
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the shape of a `read_with` function"
+)]
+pub(super) fn text(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    Some(to_text(node.value()))
 }
 
-/// The elements of the array member `name` of `parent` that are non-empty objects, each with
-/// its path; `not_array` when the member is present and no array, `empty` per other element.
-fn objects<'v>(
-    parent: &'v Value,
-    name: &str,
-    at: &JsonPath,
-    (not_array, empty): (&'static CodeDef<0>, &'static CodeDef<0>),
-    diagnostics: &mut Diagnostics,
-) -> Option<Vec<(JsonPath, &'v Value)>> {
-    let member = raw_member(parent, name)?;
-    let at = at.child(name);
-    let Some(elements) = member.as_array() else {
-        shape(not_array, &at, diagnostics);
+/// The codes of a list's two shapes the game skips: the member is no array, an element is no
+/// object with a member.
+type Skipped = (&'static CodeDef<0>, &'static CodeDef<0>);
+
+/// The elements of the list `node` that are non-empty objects, each read as `T`; the others
+/// are told (`skipped.1`) before any is read, as the game filters a list before it reads it,
+/// and a member that is no array is told (`skipped.0`) and has no element.
+fn objects<T: FromJson>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    (not_array, empty): Skipped,
+) -> Option<Vec<T>> {
+    if !node.value().is_array() {
+        shape(read, not_array, node);
         return Some(Vec::new());
-    };
-    Some(non_empty(elements.iter(), &at, empty, diagnostics))
-}
-
-fn non_empty<'v>(
-    elements: impl Iterator<Item = &'v Value>,
-    at: &JsonPath,
-    empty: &'static CodeDef<0>,
-    diagnostics: &mut Diagnostics,
-) -> Vec<(JsonPath, &'v Value)> {
+    }
+    let elements = read.array(node)?;
     let mut kept = Vec::new();
-    for (i, element) in elements.enumerate() {
-        let at = at.index(i);
-        if element.as_object().is_some_and(|object| !object.is_empty()) {
-            kept.push((at, element));
+    for element in elements.iter() {
+        if element.value().as_object().is_some_and(|o| !o.is_empty()) {
+            kept.push(element);
         } else {
-            shape(empty, &at, diagnostics);
+            shape(read, empty, &element);
         }
     }
-    kept
+    kept.iter()
+        .map(|element| T::from_json(element, read))
+        .collect()
+}
+
+/// The `disciplines` of a section (`schema::read_with`).
+pub(super) fn disciplines(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<CreditsDiscipline>> {
+    objects(
+        node,
+        read,
+        (&codes::DISCIPLINES_NOT_ARRAY, &codes::DISCIPLINE_EMPTY),
+    )
+}
+
+/// The `titles` of a discipline (`schema::read_with`).
+pub(super) fn titles(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<CreditsTitle>> {
+    objects(node, read, (&codes::TITLES_NOT_ARRAY, &codes::TITLE_EMPTY))
+}
+
+/// The `names` of a title: each element as the game reads a string; a member that is no array
+/// is told and has none (`schema::read_with`).
+pub(super) fn names(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    if !node.value().is_array() {
+        shape(read, &codes::NAMES_NOT_ARRAY, node);
+        return Some(Vec::new());
+    }
+    let elements = read.array(node)?;
+    Some(elements.iter().map(|name| to_text(name.value())).collect())
+}
+
+/// The root: an array of sections; a root that is no array has none, and is told.
+impl FromJson for Credits {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let sections = objects(node, read, (&codes::ROOT_NOT_ARRAY, &codes::SECTION_EMPTY))?;
+        Some(Self {
+            sections,
+            written: Written::default(),
+        })
+    }
 }
 
 impl Authored for Credits {
-    /// Reads the file's root with the game's own checks, each an information: a root that is no
-    /// array has no section; an element that is no object with a member is left out.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
-        let at = JsonPath::new();
-        let Some(sections) = root.as_array() else {
-            shape(&codes::ROOT_NOT_ARRAY, &at, diagnostics);
-            return Self::default();
-        };
-        let sections = non_empty(sections.iter(), &at, &codes::SECTION_EMPTY, diagnostics)
-            .into_iter()
-            .map(|(at, section)| CreditsSection {
-                section: raw_member(section, "section").map(to_text),
-                disciplines: objects(
-                    section,
-                    "disciplines",
-                    &at,
-                    (&codes::DISCIPLINES_NOT_ARRAY, &codes::DISCIPLINE_EMPTY),
-                    diagnostics,
-                )
-                .map(|disciplines| {
-                    disciplines
-                        .into_iter()
-                        .map(|(at, discipline)| read_discipline(discipline, &at, diagnostics))
-                        .collect()
-                }),
-                extra: rest(section, ["section", "disciplines"]),
-            })
-            .collect();
-        Self {
-            sections,
-            written: Written::default(),
-        }
+        let mut read = reader(diagnostics);
+        let node = Node::new(root, JsonPath::new());
+        read_document(&node, &mut read).unwrap_or_default()
     }
 
-    /// The sections as the JSON array they are written as.
     fn fields_value(&self) -> Value {
         array(self.sections.iter().map(|section| {
             let mut object = Object::default();
@@ -117,41 +116,6 @@ impl Authored for Credits {
 
     fn written_mut(&mut self) -> &mut Option<Value> {
         &mut self.written
-    }
-}
-
-fn read_discipline(
-    discipline: &Value,
-    at: &JsonPath,
-    diagnostics: &mut Diagnostics,
-) -> CreditsDiscipline {
-    CreditsDiscipline {
-        discipline: raw_member(discipline, "discipline").map(to_text),
-        titles: objects(
-            discipline,
-            "titles",
-            at,
-            (&codes::TITLES_NOT_ARRAY, &codes::TITLE_EMPTY),
-            diagnostics,
-        )
-        .map(|titles| {
-            titles
-                .into_iter()
-                .map(|(at, title)| CreditsTitle {
-                    title: raw_member(title, "title").map(to_text),
-                    names: raw_member(title, "names").map(|names| {
-                        if let Some(names) = names.as_array() {
-                            names.iter().map(to_text).collect()
-                        } else {
-                            shape(&codes::NAMES_NOT_ARRAY, &at.child("names"), diagnostics);
-                            Vec::new()
-                        }
-                    }),
-                    extra: rest(title, ["title", "names"]),
-                })
-                .collect()
-        }),
-        extra: rest(discipline, ["discipline", "titles"]),
     }
 }
 
@@ -240,6 +204,7 @@ mod tests {
 #[cfg(test)]
 mod kept_root_tests {
     use super::*;
+    use crate::CreditsSection;
     use bedrock_addon_core::json::kit::fixed_path::testing::{
         assert_kept_root_written_linearly, list,
     };

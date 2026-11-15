@@ -1,63 +1,59 @@
 //! Client entities (`ClientEntity`, `SpawnEgg`): what a client draws for an entity, from the
 //! resource packs.
 //!
-//! The reader stays hand-versioned: a walk over the JSON value with the texts vanilla's schema logs
-//! per member (`unknown child schema option type`), and only `description` a facet read. It stays
-//! so while its body is a copy of the attachable's.
+//! Read by the derived reader of core (`schema::FromJson`) with the texts vanilla's schema logs per
+//! member (`unknown child schema option type`): the description, its eras, the file around it and
+//! the rules between files are the shared `visual` crate's, which attachables read too. What is
+//! this family's is its identifier and its loader's hand-off of attachables to the other family.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod history;
 #[cfg(test)]
 mod peek_tests;
-mod read;
 #[cfg(test)]
 mod scalar_tests;
 mod validate;
-mod write;
-
-use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_shared_visual::{
-    HasVisuals, SharedDescription, VisualSlots, Visuals, description_min_engine_version,
-};
-// One enum serves client entities and attachables; the shared `visual` crate declares it.
-pub use bedrock_addon_shared_visual::AnimationKind;
-use facet::Facet;
-use std::borrow::Cow;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, ShadowReason,
-    builders,
-};
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{
-    CombineRule, Contribution, Definition, Document, EngineVersionDecision, JsonDocument,
-    JsonPlaced, NoBeta, Origin, Registry, RegistryBuilder, Rejected, default_path,
+    CombineRule, Contribution, Definition, Document, JsonDocument, JsonPlaced, NoBeta, Origin,
+    Registry, RegistryBuilder, Rejected, default_path,
 };
-use bedrock_addon_core::id::kind;
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, Unrepresentable, WriteStyle, strip_bom, write_json,
-};
-use bedrock_addon_core::json::{PrepareError, Prepared};
+use bedrock_addon_core::id::{EntityId, kind};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, strip_bom};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{
     AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
 };
-use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::version::FormatVersionInput;
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::version::known;
+use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use bedrock_addon_core::versioning::{
-    BeyondWidth, DocumentRead, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded,
-    MissingVersion, NoComponents, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionStruct,
-    finish, parse_as_written,
+    DocumentRead, Envelope, Family, Loaded, NoComponents, ParseCx, Reading, StructIndex,
+    ValidateCx, VersionStruct, Versioned,
 };
-use bedrock_addon_shared_visual::codes as visual_codes;
-use bedrock_addon_shared_visual::{MergeStep, merge_step};
+// One enum serves client entities and attachables; the shared `visual` crate declares it.
+pub use bedrock_addon_shared_visual::AnimationKind;
+use bedrock_addon_shared_visual::family::{
+    ENVELOPE, READING, Shadowed, Visual, document, parse_newest,
+};
+use bedrock_addon_shared_visual::file as shared;
+use bedrock_addon_shared_visual::history::v1_8_0::ControllerList;
+use bedrock_addon_shared_visual::history::v1_10_0::FoldedLiterals;
+use bedrock_addon_shared_visual::{
+    ClientEntityRoot, HasVisuals, NoOwn, SharedDescription, VisualSlots, Visuals,
+    description_min_engine_version,
+};
 
 use crate::history::{ClientEntityFamily, ClientEntityHistory};
-use bedrock_addon_core::versioning::Versioned;
+
+/// The payload key.
+const PAYLOAD: &str = "minecraft:client_entity";
+/// The payload key of the attachable family, which the same root schema declares.
+const ATTACHABLE: &str = "minecraft:attachable";
 
 /// A resource-pack client entity definition (`entity/**/*.json`, payload
 /// `minecraft:client_entity`): what a client draws for an entity, in the newest shape (format
@@ -101,21 +97,9 @@ pub struct ClientEntity {
 /// the values of `materials`, `geometry`, `animations` and `particle_effects` when it loads
 /// them; the accessors of [`ClientEntity`] give that reading. No member beyond these is
 /// allowed: vanilla skips a file that has one.
-#[derive(Clone, Debug, PartialEq, Facet)]
-pub struct Description {
-    /// `identifier`: the entity this definition draws. Compared in lower case.
-    pub identifier: EntityId,
-    /// `min_engine_version`: a version string or `[major, minor, patch]`. It decides which
-    /// definition of an identifier wins across packs, never which members are read; a text
-    /// that is no version counts as 0.0.0.
-    pub min_engine_version: Option<Value>,
-    /// The members client entities and attachables share, at the description's own level
-    /// (`materials` to `hide_armor`, in that order).
-    // `default`: production reads the description through `DescriptionRead`; this keeps a
-    // facet-direct read of `Description` from calling an all-absent `slots` a missing field.
-    #[facet(flatten, default)]
-    pub slots: VisualSlots,
-}
+///
+/// `description.slots` holds the members client entities share with attachables.
+pub type Description = bedrock_addon_shared_visual::Description<EntityId, NoOwn>;
 
 impl ClientEntity {
     /// The identifier as vanilla keys it: in ASCII lower case.
@@ -187,41 +171,15 @@ impl SharedDescription for ClientEntity {
 /// The directory client entity files live in.
 const DIRECTORY: &str = "entity";
 
-/// The floor: every explicit version below 1.8.0 is rejected by vanilla's own schema
-const FLOOR: FormatVersion = known::V1_8_0;
-
-/// The minimum that message names: the `v1_10` schema's.
-const SCHEMA_MINIMUM: &str = "1.10.0";
-
-/// How every slice reads its description: the profile of the envelope's input kind (the
-/// default, [`InputKind::FirstRun`]), its scalars read as vanilla's strict schema types them (a
-/// member takes its own JSON type alone, and a number beyond its float is a type error; the
-/// floats are clamped in the text before the read).
-pub(crate) const READING: Reading = InputKind::FirstRun
-    .profile()
-    .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
-
 impl Family for ClientEntityFamily {
     const NAME: &'static str = "client_entity";
-    const PAYLOAD_KEY: &'static str = read::PAYLOAD;
-    const FLOOR: FormatVersion = FLOOR;
+    const PAYLOAD_KEY: &'static str = PAYLOAD;
+    const FLOOR: FormatVersion = known::V1_8_0;
     type Latest = ClientEntity;
     type Beta = NoBeta<kind::Entity>;
     type Component = NoComponents;
     type History = ClientEntityHistory;
-    const ENVELOPE: Envelope = Envelope {
-        // Vanilla's root schema declares `format_version`, `minecraft:client_entity` and
-        // `minecraft:attachable`; a third member is "child '%s' not valid here.", not an envelope
-        // error, so each struct reads the whole document.
-        check: EnvelopeCheck::Never,
-        // The game logs this at level 2, the class the pack report shows as a warning.
-        missing: MissingVersion::Floor {
-            code: &bedrock_addon_core::diagnostic::codes::VERSION_NOT_GIVEN_LEGACY_FIELDS,
-            severity: Some(Severity::Warning),
-        },
-        ..Envelope::DEFAULT
-    };
+    const ENVELOPE: Envelope = ENVELOPE;
 
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
         READING
@@ -231,6 +189,77 @@ impl Family for ClientEntityFamily {
         if let Loaded::Stable(entity) = v {
             validate::validate(entity, cx);
         }
+    }
+}
+
+impl Visual for ClientEntityFamily {
+    type Id = EntityId;
+    type Own = NoOwn;
+    type Root<D: FromJson> = ClientEntityRoot<D>;
+    type Family = Self;
+    type Latest = ClientEntity;
+    type History = ClientEntityHistory;
+
+    const PAYLOAD: &'static str = PAYLOAD;
+    const TWIN_PAYLOAD: &'static str = ATTACHABLE;
+    // A file with both payloads loads the client entity alone and the game says nothing; the
+    // crate notes the payload that is not loaded.
+    const NOTES_TWIN: bool = true;
+    // D2: a number no double holds in `min_engine_version` is kept as it is.
+    const CLAMPS_VERSION: bool = false;
+    const CONTROLLERS: ControllerList = ControllerList::Moved;
+    // D4: a literal the lower-casing changes is told.
+    const FOLDED: FoldedLiterals = FoldedLiterals::Told;
+    const SHADOWED: Shadowed = Shadowed {
+        older: &core_codes::CLIENT_ENTITY_SHADOWED_OLDER,
+        above_stack: &core_codes::CLIENT_ENTITY_SHADOWED_ABOVE_STACK,
+        other: &core_codes::CLIENT_ENTITY_SHADOWED,
+    };
+
+    fn wording(names_only: bool) -> fn(&JsonPath) -> Code {
+        // D3: a condition below a list entry is worded by its key, as any member is.
+        if names_only {
+            bedrock_addon_shared_visual::read::wording::<false, true>
+        } else {
+            bedrock_addon_shared_visual::read::wording::<false, false>
+        }
+    }
+
+    fn latest(format_version: FormatVersion, description: Description) -> ClientEntity {
+        ClientEntity {
+            format_version,
+            description,
+        }
+    }
+
+    fn identifier(history: &ClientEntityHistory) -> &str {
+        match history {
+            ClientEntityHistory::V1_8_0(entity) => entity.description.identifier.as_str(),
+            ClientEntityHistory::V1_10_0(entity) => entity.description.identifier.as_str(),
+            ClientEntityHistory::V1_26_0(entity) => entity.description.identifier.as_str(),
+        }
+    }
+
+    fn min_engine_version(latest: &ClientEntity) -> SemVersion {
+        latest.min_engine_version()
+    }
+}
+
+impl Versioned for ClientEntity {
+    const VERSION: FormatVersion = known::V1_26_0;
+}
+
+impl VersionStruct for ClientEntity {
+    fn parse(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        // The 1.26 schema.
+        parse_newest::<ClientEntityFamily>(document, cx, d)
+    }
+
+    /// The whole document (the struct reads the whole text, `EnvelopeCheck::Never`), at the
+    /// version it is written with: its own, and never below 1.26.0, the oldest this shape is.
+    fn write(&self) -> Result<Value, EncodeError> {
+        let version = self.format_version.max(Self::VERSION);
+        document::<ClientEntityFamily, _>(version, &self.description)
     }
 }
 
@@ -245,7 +274,7 @@ impl JsonDocument for ClientEntity {
     /// single file.
     fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<ClientEntityFamily> {
         let root = root_of(bytes);
-        match parse_file(
+        match shared::parse_file::<ClientEntityFamily>(
             origin.pack.clone(),
             origin.side,
             &origin.path,
@@ -274,14 +303,7 @@ impl JsonDocument for ClientEntity {
         cx: &LoadContext,
     ) -> Result<Document<ClientEntityHistory>, Rejected> {
         let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-        let origin = origin(PackRef::app_data(), PackSide::Resource, path);
-        let text = admit(bytes, root_of(bytes).as_ref(), &origin, cx)?;
-        let parsed = parse_as_written::<ClientEntityFamily>(JsonSlice::new(&text), cx);
-        let diagnostics = place(parsed.diagnostics, &origin);
-        match parsed.value {
-            Some(value) => Ok(Document::new(value, origin, parsed.version, diagnostics)),
-            None => Err(Rejected::new(origin, diagnostics)),
-        }
+        shared::parse_written::<ClientEntityFamily>(path, bytes, root_of(bytes).as_ref(), cx)
     }
 
     /// A value built in code may hold what no file can: an empty identifier, a slot name
@@ -289,19 +311,13 @@ impl JsonDocument for ClientEntity {
     /// this loader reads it back, else refused with the path of what it would not read.
     /// Whether its Molang compiles is not asked: that depends on the pack.
     fn refuse_write(&self) -> Result<(), EncodeError> {
-        let mut text = Vec::new();
-        write_json(
-            &VersionStruct::write(self)?,
-            &mut text,
-            WriteStyle::default(),
-        )?;
-        match refused_at(&text) {
-            Some(at) => Err(EncodeError::NotRepresentable {
-                at,
-                what: Unrepresentable::Unsupported,
-            }),
-            None => Ok(()),
-        }
+        shared::refuse_write::<ClientEntityFamily>(self, |text| {
+            shared::refused_at::<ClientEntityFamily>(
+                text,
+                root_of(text).as_ref(),
+                "entity/written.entity.json",
+            )
+        })
     }
 }
 
@@ -320,173 +336,6 @@ impl Definition for ClientEntity {
     type Kind = kind::Entity;
     type File = ClientEntity;
     type Beta = NoBeta<kind::Entity>;
-}
-
-/// `history::upgrade`: rebuilds the parse stage from the document and finishes it.
-pub(crate) fn upgrade_document(
-    document: Document<ClientEntityHistory>,
-    cx: &LoadContext,
-) -> Result<Document<ClientEntity>, Rejected> {
-    let (value, origin, version, mut diagnostics) = document.into_parsed_parts();
-    // The steps start from no finding, with the unknown members to move and take.
-    let mut rows = Diagnostics::default();
-    let unknown = diagnostics.take_unknown();
-    if !unknown.is_empty() {
-        *rows.unknown_mut() = unknown;
-    }
-    let identifier = match &value {
-        ClientEntityHistory::V1_8_0(entity) => entity.description.identifier.as_str(),
-        ClientEntityHistory::V1_10_0(entity) => entity.description.identifier.as_str(),
-        ClientEntityHistory::V1_26_0(entity) => entity.description.identifier.as_str(),
-    };
-    let identity = Identity {
-        identifier: Some(identifier.to_owned()),
-        runtime_identifier: None,
-    };
-    let written = FormatVersionInput {
-        version: Some(version.effective),
-        beta_literal: false,
-        prerelease: false,
-    };
-    let parsed = Parsed::<ClientEntityFamily>::from_value(
-        Some(value),
-        version,
-        written,
-        JsonPath::new(),
-        rows,
-    )
-    .with_identity(identity);
-    let outcome = finish(parsed, cx);
-    let mut found = diagnostics;
-    found.extend_with_unknown(place(outcome.diagnostics, &origin));
-    match outcome.value {
-        Some(Loaded::Stable(entity)) => Ok(Document::new(entity, origin, outcome.version, found)),
-        _ => Err(Rejected::new(origin, found)),
-    }
-}
-
-/// Where this loader refuses `text`, the text of a written client entity, read as the engine's
-/// own content without a Molang compile; `None` when it loads.
-pub(crate) fn refused_at(text: &[u8]) -> Option<JsonPath> {
-    let cx = LoadContext::detached();
-    let path = PackPath::from_static("entity/written.entity.json");
-    let root = root_of(text);
-    let outcome = parse_file(
-        PackRef::app_data(),
-        PackSide::Resource,
-        &path,
-        text,
-        root.as_ref(),
-        &cx,
-    );
-    let rejected = outcome.1.err()?;
-    let at = rejected
-        .diagnostics
-        .iter()
-        .find(|found| found.severity == Severity::Error)
-        .map(|found| found.location.json_path.clone());
-    Some(at.unwrap_or_default())
-}
-
-/// The origin of a file of `pack`.
-fn origin(pack: PackRef, side: PackSide, path: &PackPath) -> Origin {
-    Origin::file(pack, side, path.clone())
-}
-
-/// A rejection with one finding.
-fn reject(origin: &Origin, found: Diagnostic) -> Rejected {
-    let diagnostics: Diagnostics = [found].into_iter().collect();
-    Rejected::new(origin.clone(), place(diagnostics, origin))
-}
-
-/// Gives every finding the document's pack and file, and vanilla's texts the file's path.
-fn place(mut found: Diagnostics, origin: &Origin) -> Diagnostics {
-    for finding in found.iter_mut() {
-        // The held item scale names the file, which the rule did not know.
-        if let Some([file, scale]) = finding.code.args_of(&visual_codes::HELD_ITEM_SCALE_INVALID)
-            && file == validate::FILE
-        {
-            finding.code =
-                visual_codes::HELD_ITEM_SCALE_INVALID.with([origin.path.as_str(), scale.as_str()]);
-        }
-    }
-    // In place: the list keeps where the members of the upgraded entity are in the file.
-    found.located(origin)
-}
-
-/// The file's text when vanilla's loader would go on to the schema: UTF-8 within the nesting
-/// limit, a root that is a non-empty object, and a `format_version` that is absent or within
-/// 1.8.0 and the engine version. The rejections carry the loader's own texts, in its order.
-/// `root` is [`root_of`] the same bytes.
-fn admit<'b>(
-    bytes: &'b [u8],
-    root: Option<&Value>,
-    origin: &Origin,
-    cx: &LoadContext,
-) -> Result<Cow<'b, str>, Rejected> {
-    let malformed = |message: &str| reject(origin, Diagnostic::of(builders::syntax(message)));
-    // `new` never refuses an empty text: that is the chain's to report.
-    let text = Prepared::new(bytes)
-        .map_err(|error| match error {
-            PrepareError::NotUtf8(_) => malformed("the file is not UTF-8"),
-            _ => malformed("the JSON nests too deeply"),
-        })?
-        .into_text();
-    // A text that is no JSON is the chain's to report (a parse error, or an empty document).
-    let Some(root) = root else {
-        return Ok(text);
-    };
-    // A root that is not an object, or an empty one, has nothing to parse.
-    let Some(root) = root.as_object().filter(|root| !root.is_empty()) else {
-        return Err(reject(
-            origin,
-            Diagnostic::of(&visual_codes::NOTHING_TO_PARSE).detail(DiagnosticDetail::Syntax(
-                visual_codes::NOTHING_TO_PARSE.template().to_owned(),
-            )),
-        ));
-    };
-    if let Some(version) = root.get("format_version")
-        && let Some(code) = version_gate(version, origin.path.as_str(), cx)
-    {
-        return Err(reject(
-            origin,
-            Diagnostic::error(code).at(JsonPath::of_keys(["format_version"])),
-        ));
-    }
-    Ok(text)
-}
-
-/// The version checks of the game's loader and the schema's minimum, in vanilla's order: a
-/// value that is no version (or the any-version, or the `"beta"` literal) is unknown; a
-/// version above the engine exceeds the game version; below 1.0.0 it is unknown again; from
-/// 1.0.0 up to 1.8.0 it is below the schema's minimum.
-fn version_gate(version: &Value, path: &str, cx: &LoadContext) -> Option<Code> {
-    // The text that is no version at all is the first of the checks.
-    let unknown = || visual_codes::UNKNOWN_VERSION.with([path]);
-    let literal = version.as_string().map(facet_value::VString::as_str);
-    let Some(read) =
-        SemVersion::from_json(version).filter(|read| !read.is_any() && literal != Some("beta"))
-    else {
-        return Some(unknown());
-    };
-    let written = literal.map_or_else(|| read.to_string(), str::to_owned);
-    let engine = cx.engine_version;
-    if read > SemVersion::new(engine.major, engine.minor, engine.patch) {
-        return Some(visual_codes::ACTOR_ABOVE_ENGINE.with([
-            written,
-            format!("{}.{}.{}", engine.major, engine.minor, engine.patch),
-        ]));
-    }
-    if read < SemVersion::new(1, 0, 0) {
-        return Some(unknown());
-    }
-    if read < SemVersion::new(FLOOR.major, FLOOR.minor, FLOOR.patch) {
-        return Some(bedrock_addon_core::diagnostic::cereal::version_below_min(
-            &written,
-            SCHEMA_MINIMUM,
-        ));
-    }
-    None
 }
 
 /// The file's root as JSON, for the questions asked before the chain reads the text (which
@@ -510,47 +359,14 @@ fn is_attachable(root: &Value) -> bool {
             .and_then(|root| root.get(key))
             .is_some_and(|value| value.as_object().is_some())
     };
-    !object(read::PAYLOAD) && object(read::ATTACHABLE)
+    !object(PAYLOAD) && object(ATTACHABLE)
 }
 
 /// Whether the document holds a `minecraft:client_entity` object.
 fn is_client_entity(root: &Value) -> bool {
     root.as_object()
-        .and_then(|root| root.get(read::PAYLOAD))
+        .and_then(|root| root.get(PAYLOAD))
         .is_some_and(|value| value.as_object().is_some())
-}
-
-/// Loads one client entity file: the identifier it names, in lower case (when the payload has
-/// one), and the document or its rejection.
-pub(crate) fn parse_file(
-    pack: PackRef,
-    side: PackSide,
-    path: &PackPath,
-    bytes: &[u8],
-    root: Option<&Value>,
-    cx: &LoadContext,
-) -> (Option<EntityId>, Result<Document<ClientEntity>, Rejected>) {
-    let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
-    let origin = origin(pack, side, path);
-    let text = match admit(bytes, root, &origin, cx) {
-        Ok(text) => text,
-        Err(rejected) => return (None, Err(rejected)),
-    };
-    let parsed = parse_as_written::<ClientEntityFamily>(JsonSlice::new(&text), cx);
-    let identifier = parsed
-        .identity
-        .identifier
-        .as_deref()
-        .map(|id| EntityId::parse(id.to_ascii_lowercase()));
-    let outcome = finish(parsed, cx);
-    let diagnostics = place(outcome.diagnostics, &origin);
-    let result = match outcome.value {
-        Some(Loaded::Stable(entity)) => {
-            Ok(Document::new(entity, origin, outcome.version, diagnostics))
-        }
-        _ => Err(Rejected::new(origin, diagnostics)),
-    };
-    (identifier, result)
 }
 
 // ---- the collection ----------------------------------------------------------------------
@@ -591,7 +407,7 @@ fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileOutcome {
     if !in_entity && !root.as_ref().is_some_and(is_client_entity) {
         return FileOutcome::Attachable;
     }
-    let contribution = match parse_file(
+    let contribution = match shared::parse_file::<ClientEntityFamily>(
         file.pack.clone(),
         file.side,
         &file.path,
@@ -616,36 +432,7 @@ fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEnti
     let decide = move |existing: Option<&Document<ClientEntity>>,
                        incoming: &Document<ClientEntity>,
                        d: &mut Diagnostics| {
-        let existing = existing.map(|existing| existing.min_engine_version());
-        match merge_step(
-            &full_stack,
-            &incoming.min_engine_version(),
-            existing.as_ref(),
-        ) {
-            MergeStep::Merge => EngineVersionDecision::Merge,
-            MergeStep::Ignore(reason) => {
-                let origin = incoming.origin();
-                // The reason is in the finding's text.
-                let code = match reason {
-                    ShadowReason::OlderMinEngineVersion => {
-                        &core_codes::CLIENT_ENTITY_SHADOWED_OLDER
-                    }
-                    ShadowReason::MinEngineVersionAboveStack => {
-                        &core_codes::CLIENT_ENTITY_SHADOWED_ABOVE_STACK
-                    }
-                    _ => &core_codes::CLIENT_ENTITY_SHADOWED,
-                };
-                d.push(
-                    Diagnostic::of(code)
-                        .detail(DiagnosticDetail::Shadow(reason))
-                        .phase(Phase::Validate)
-                        .in_file(origin),
-                );
-                EngineVersionDecision::Ignore
-            }
-            // `Create`, `Replace`, and any step a newer core adds.
-            _ => EngineVersionDecision::Replace,
-        }
+        shared::decide::<ClientEntityFamily>(&full_stack, existing, incoming, d)
     };
     let contributions = parsed.into_iter().filter_map(|outcome| match outcome {
         FileOutcome::Entity(contribution) => Some(*contribution),
@@ -686,23 +473,13 @@ impl ClientEntity {
     }
 }
 
-impl Description {
-    /// A description of `identifier` with every other member absent.
-    pub fn new(identifier: EntityId) -> Self {
-        Self {
-            identifier,
-            min_engine_version: None,
-            slots: VisualSlots::default(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
 
     use bedrock_addon_core::document::Content;
     use bedrock_addon_core::load::LoadOptions;
+    use bedrock_addon_core::pack_identity::PackRef;
 
     use super::*;
     use bedrock_addon_core::test_cost::{assert_linear_timed_at, timed};
@@ -732,7 +509,7 @@ mod tests {
             let path = PackPath::new(&format!("entity/e{i}.json")).expect("a pack path");
             let document = Document::new(
                 entity,
-                origin(PackRef::app_data(), PackSide::Resource, &path),
+                shared::origin(PackRef::app_data(), PackSide::Resource, &path),
                 template.version().clone(),
                 Diagnostics::default(),
             );

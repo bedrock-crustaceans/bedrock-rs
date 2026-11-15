@@ -1,7 +1,9 @@
 //! `description.held_item_scale`: a number, or Molang from engine 1.26.30.
 
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonType, ScalarShape, StrictError};
-use bedrock_addon_core::molang::{Molang, MolangSource};
+use bedrock_addon_core::molang::{Molang, MolangFields, MolangSlot, MolangSource, MolangVisitor};
+use bedrock_addon_core::schema::FromJson;
 
 /// `held_item_scale`: how much larger or smaller items held by the entity are drawn; 1.0 when
 /// absent.
@@ -82,6 +84,49 @@ impl TryFrom<&HeldItemScale> for ScalarShape {
                 expected: "number or Molang",
                 found: JsonType::Null,
             }),
+        }
+    }
+}
+
+/// A number as the `f32` it is (one beyond it the largest finite float of its sign, told), a
+/// string or a boolean as Molang; `null`, an array and an object are a wrong type.
+impl FromJson for HeldItemScale {
+    #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let value = node.value();
+        if let Some(number) = value.as_number() {
+            let x = number.to_f64_lossy() as f32;
+            if x.is_finite() {
+                return Some(Self::Number(x));
+            }
+            let beyond =
+                bedrock_addon_core::molang::beyond_f32_warning(node.path().clone(), node.span());
+            read.push(beyond);
+            return Some(Self::Number(f32::MAX.copysign(x)));
+        }
+        if let Some(text) = value.as_string() {
+            let source = MolangSource::string_without_context(text.as_str());
+            return Some(Self::Molang(Molang::Expr(source)));
+        }
+        if let Some(b) = value.as_bool() {
+            return Some(Self::Molang(Molang::Bool(b)));
+        }
+        read.wrong_type(node);
+        None
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(HeldItemScale);
+
+/// The Molang form is the member's one value, under the spec the walk's field names.
+impl MolangFields for HeldItemScale {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Molang(scale) = self {
+            let spec = *visitor.default_spec();
+            scale.visit_slot(&spec, visitor);
         }
     }
 }

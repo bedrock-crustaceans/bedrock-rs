@@ -147,7 +147,7 @@ fn keep(
 pub(super) fn keeps(has_extra: bool, rule: Option<UnknownRule>, reading_keeps: bool) -> bool {
     has_extra
         || match rule {
-            Some(UnknownRule::Keep) => true,
+            Some(UnknownRule::Keep | UnknownRule::Silent) => true,
             Some(_) => false,
             None => reading_keeps,
         }

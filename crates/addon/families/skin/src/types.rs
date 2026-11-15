@@ -7,6 +7,8 @@ use bedrock_addon_core::pack_identity::PackOrigin;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::Written;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 
 use super::BUILT_IN_GEOMETRIES;
 
@@ -21,16 +23,20 @@ use super::BUILT_IN_GEOMETRIES;
 /// Hand-written: a skin pack is on no stack, so there is no walk or `LOADER`; [`SkinPack::load`]
 /// is handed the pack's files, and its origins come from core's outside-the-stack kit
 /// (`document::unversioned`), which persona's share.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 #[doc(alias = "skins.json")]
 pub struct SkinPack {
     /// JSON `serialize_name`. The game does not read it; creator tools want it equal to
     /// `localization_name`.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub serialize_name: Option<String>,
     /// JSON `localization_name`: the pack's name key is `skinpack.<name>`.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub localization_name: Option<String>,
     /// JSON `skins`: the entries that are objects, in order (of an object `skins`, its member
     /// values in key order). `None` when the member is absent.
+    #[facet(schema::reads_null, schema::read_with = super::read::skins)]
     pub skins: Option<Vec<Skin>>,
     /// The other members, and the members above as written when the field cannot say them.
     pub extra: UnknownMembers,
@@ -42,30 +48,40 @@ pub struct SkinPack {
     /// the written file, not only those beside the edited member. `Debug` shows the root;
     /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
+    #[facet(skip, rename = "\u{0}written")]
     pub written: Written,
 }
 
 /// One skin of a skin pack.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Skin {
     /// JSON `localization_name`: the skin's name key is `skin.<pack>.<name>`.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub localization_name: Option<String>,
     /// JSON `geometry`: one of [`BUILT_IN_GEOMETRIES`] or a model of the pack's
     /// `geometry.json`.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub geometry: Option<String>,
     /// JSON `texture`: the skin image, a file at the pack's root.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub texture: Option<String>,
     /// JSON `type`: `free` or `paid` by convention; the game compares it with nothing.
+    #[facet(rename = "type", schema::reads_null, schema::or_kept = "silent")]
     pub type_: Option<String>,
     /// JSON `cape`: the cape image, a file of the pack.
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
     pub cape: Option<String>,
     /// JSON `animations`, as written: copied into the skin's resource patch.
+    #[facet(schema::reads_null)]
     pub animations: Option<Value>,
     /// JSON `enable_attachables`, as written.
+    #[facet(schema::reads_null)]
     pub enable_attachables: Option<Value>,
     /// JSON `held_item_ignores_lighting`, as written.
+    #[facet(schema::reads_null)]
     pub held_item_ignores_lighting: Option<Value>,
     /// JSON `hide_armor`, as written.
+    #[facet(schema::reads_null)]
     pub hide_armor: Option<Value>,
     /// The other members, and the string members above as written when they are no strings.
     pub extra: UnknownMembers,

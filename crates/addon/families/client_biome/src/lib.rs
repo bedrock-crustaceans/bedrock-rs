@@ -2,6 +2,14 @@
 //! `ClientBiome` is `biomes/*.json` (`minecraft:client_biome`), one biome per file, at the
 //! newest format (1.21.130); older files are upgraded when they load, and `history` has their
 //! shapes; `Beta` is the `"format_version": "beta"` document.
+//!
+//! Every document type derives its read (`#[derive(Facet, Schema)]`): the payload by
+//! `versioning::read_payload_with` in the struct's own version (the whole document below
+//! 1.21.130), each component by [`bedrock_addon_shared_biome_env::read_row`] from the row of its
+//! table, a colour by `color::colour` and a colour map by the leaf read of
+//! [`component::ColorOrMap`]. The one hand-written read of a document is the loop over the keys
+//! of `components` (`read::components`, a `schema::read_with`): which components and members a
+//! struct binds is the version's.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -82,6 +90,7 @@ pub struct Description {
     /// The biome's identifier (JSON `identifier`): `namespace:name` in lower case from format
     /// 1.21.90 (matching `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`); an older document may name a
     /// vanilla biome without its namespace, which the upgrade adds.
+    #[facet(schema::read_with = read::identifier)]
     pub identifier: BiomeId,
 }
 

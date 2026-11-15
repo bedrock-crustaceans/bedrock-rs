@@ -2,6 +2,12 @@
 //! pack type and never part of a world's stacks, so there is no stack accessor:
 //! `SkinPack::parse` reads the file, `SkinPack::load` reads it as the game loads the pack,
 //! against the pack's other files. Unversioned.
+//!
+//! The file is read by core's reader (`FromJson`) under the fixed-path read: every finding an
+//! information, a string member of another type kept as written, the unknown members kept. The
+//! two types derive their read; the crate's own rules (a path too long, a type that is neither
+//! `free` nor `paid`, the two names, the number of skins) and the list of skins, which the game
+//! iterates whatever it is, are told by the functions of `read.rs`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -102,7 +108,8 @@ fn parse_placed(
         &JsonPath::new(),
         &mut diagnostics,
     );
-    let (pack, places) = SkinPack::from_value_placed(&root, &mut diagnostics);
+    let pack = SkinPack::from_value(&root, &mut diagnostics);
+    let places = read::places(&root);
     let version = unversioned::version();
     let diagnostics = located(diagnostics, &origin);
     Ok((Document::new(pack, origin, version, diagnostics), places))

@@ -1,5 +1,5 @@
 //! Fixtures `am01`–`am06` and `a17c`: the conditions of
-//! `description.item` and `scripts.parent_setup` under the client catalogue, at the pack's
+//! `description.own.item` and `scripts.parent_setup` under the client catalogue, at the pack's
 //! Molang version. The description members shared with client entities are in `molang.rs`.
 
 use bedrock_addon::diagnostic::Severity;
@@ -20,7 +20,7 @@ fn bound(version: &str, condition: &str) -> String {
 
 /// The stored condition of `example:wand`.
 fn stored(document: &bedrock_addon::families::attachable::Attachable) -> &Molang {
-    match &document.description.item {
+    match &document.description.own.item {
         Some(ItemBinding::Conditional(members)) => &members["example:wand"],
         other => panic!("{other:?}"),
     }

@@ -19,10 +19,129 @@ use facet::Facet;
 use facet_value::VObject;
 
 use crate::EnvironmentAttributes;
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, builders};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, ComponentSet};
-use bedrock_addon_core::json::{EncodeError, Value};
-use bedrock_addon_core::versioning::write_payload;
+use bedrock_addon_core::json::kit::{Node, Profile, Read, Versions};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{FromJson, read_document};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{ConvertMode, Reading, write_payload};
+
+/// A component row of either biome family: `T` read from `slice` under the slice's reading, its
+/// first failure told and then every unknown member (a component that fails still names what
+/// it has that its struct does not, so a document of another era is told what to drop), the
+/// findings relative to the component. A component of the wrong JSON kind, `null` included, is a
+/// wrong type at the component. The `parse` of a `#[component(..)]` row.
+pub fn read_row<T, C>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<C>
+where
+    T: FromJson + Into<C>,
+{
+    row::<T, C>(slice, mode, cx, d, false)
+}
+
+/// [`read_row`] where a component that is no object is told as the game's reader of a struct
+/// tells it ([`malformed`]).
+pub fn read_row_of_struct<T, C>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<C>
+where
+    T: FromJson + Into<C>,
+{
+    row::<T, C>(slice, mode, cx, d, true)
+}
+
+fn row<T, C>(
+    slice: JsonSlice<'_>,
+    _: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+    of_struct: bool,
+) -> Option<C>
+where
+    T: FromJson + Into<C>,
+{
+    // The payload's own read has parsed the slice already.
+    let parsed = parse_slice(slice, Options::default()).ok()?;
+    let node = Node::parsed(&parsed, JsonPath::new());
+    if let Some(finding) = malformed::<T>(&node).filter(|_| of_struct) {
+        d.push(finding);
+        return None;
+    }
+    let engine = cx
+        .min_engine_version
+        .as_ref()
+        .map(|engine| engine.version.format_version());
+    let mut read = Read::new(cx.reading, d)
+        .unknown_severity(cx.grade(Class::Unknown))
+        .profile(Profile::FIRST_THEN_PASSES)
+        .load(cx)
+        .versions(Versions {
+            format: cx.document_format,
+            engine: Some(engine.unwrap_or(FormatVersion::new(0, 0, 0))),
+        });
+    read_document::<T>(&node, &mut read).map(Into::into)
+}
+
+/// The finding of a value that is no object where the struct `T` is read, as the game's reader
+/// of a struct tells it: malformed input (`unexpected token: got X, expected struct start`) for
+/// an array, a scalar, and a `null` where `T` has a required member (a struct that needs none
+/// reads `null` as its defaults, and the reading's null rule is what refuses it). `None` for an
+/// object and for those nulls.
+pub fn malformed<T: FromJson>(node: &Node<'_>) -> Option<Diagnostic> {
+    let value = node.value();
+    let got = if value.is_object() {
+        return None;
+    } else if value.is_array() {
+        "sequence start"
+    } else if value.is_null() && reads_empty::<T>() {
+        return None;
+    } else {
+        "scalar"
+    };
+    let mut finding = Diagnostic::of(builders::syntax(format!(
+        "unexpected token: got {got}, expected struct start"
+    )));
+    finding.location.json_path = node.path().clone();
+    finding.location.span = node.span();
+    Some(finding)
+}
+
+/// Whether `T` reads an empty object: it has no required member.
+fn reads_empty<T: FromJson>() -> bool {
+    let empty = Value::from(VObject::new());
+    let mut told = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN, &mut told);
+    read_document::<T>(&Node::new(&empty, JsonPath::new()), &mut read).is_some()
+}
+
+/// A payload read where the document holds it inside the root (`schema::read_with` of the
+/// root's `minecraft:biome` or `minecraft:client_biome`): [`malformed`] when it is no object.
+pub fn read_struct<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T> {
+    if let Some(finding) = malformed::<T>(node) {
+        read.refuse_with(finding);
+        return None;
+    }
+    T::from_json(node, read)
+}
+
+/// A payload that is the document's root of the read ([`read_struct`]).
+pub struct Whole<T>(pub T);
+
+impl<T: FromJson> FromJson for Whole<T> {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        read_struct(node, read).map(Self)
+    }
+}
 
 /// One component read at `path`: `read` reports relative to the component, so its findings
 /// are re-rooted below `path`; when it read, the unknown members it kept go below `path` in

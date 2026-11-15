@@ -2,12 +2,11 @@
 
 use facet::Facet;
 
-use super::{Checked, child};
+use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{MusicDefinitionId, SoundEventName};
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 
 /// The chance of an addition that names none: the game stores 1.0.
 const DEFAULT_CHANCE: f32 = 1.0;
@@ -94,9 +93,40 @@ impl AmbientSounds {
 #[facet(schema::unknown = "keep")]
 pub struct SoundAddition {
     /// JSON `asset`: the sound event, not empty.
+    #[facet(schema::read_with = asset)]
     pub asset: SoundEventName,
     /// JSON `chance`: how likely the sound is each tick, from 0 to 1.
+    #[facet(schema::read_with = chance)]
     pub chance: f32,
+}
+
+/// The game's constraint of a [`SoundAddition`] member: told with a line of the crate's own and
+/// the read goes on, so the document is refused with every one told.
+fn constraint(node: &Node<'_>, read: &mut Read<'_>) {
+    read.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(node.path().clone()));
+}
+
+/// `asset` (`schema::read_with`): a sound event that is not empty.
+fn asset(node: &Node<'_>, read: &mut Read<'_>) -> Option<SoundEventName> {
+    let asset = SoundEventName::from_json(node, read)?;
+    if asset.as_str().is_empty() {
+        constraint(node, read);
+    }
+    Some(asset)
+}
+
+/// `chance` (`schema::read_with`): a number from 0 to 1, judged as the double it is written as
+/// (a number beyond a float is out of range, not a wrong type).
+fn chance(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    let outside = node
+        .value()
+        .as_number()
+        .is_some_and(|number| !(0.0..=1.0).contains(&number.to_f64_lossy()));
+    if outside {
+        constraint(node, read);
+        return None;
+    }
+    f32::from_json(node, read)
 }
 
 impl SoundAddition {
@@ -124,41 +154,3 @@ pub struct BiomeMusic {
     #[facet(schema::fallback = false)]
     pub underwater_music: Option<bool>,
 }
-
-/// A [`SoundAddition`]'s constraints on the member `key`: `asset` is not empty and `chance`
-/// lies in `[0, 1]`. The findings carry no fixed text; the game's messages for these
-/// constraints are its generic ones.
-fn check_addition(json: &Value, key: &'static str, d: &mut Diagnostics) {
-    let Some(addition) = json
-        .as_object()
-        .and_then(|object| object.get(key))
-        .and_then(Value::as_object)
-    else {
-        return;
-    };
-    let asset = addition.get("asset").and_then(Value::as_string);
-    if asset.is_some_and(|asset| asset.as_str().is_empty()) {
-        d.push(
-            Diagnostic::of(&core_codes::INVALID_VALUE).at(child(&JsonPath::new(), &[key, "asset"])),
-        );
-    }
-    let chance = addition
-        .get("chance")
-        .and_then(Value::as_number)
-        .map(facet_value::VNumber::to_f64_lossy);
-    if chance.is_some_and(|chance| !(0.0..=1.0).contains(&chance)) {
-        d.push(
-            Diagnostic::of(&core_codes::INVALID_VALUE)
-                .at(child(&JsonPath::new(), &[key, "chance"])),
-        );
-    }
-}
-
-impl Checked for AmbientSounds {
-    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
-        check_addition(json, "addition", d);
-        check_addition(json, "underwater_addition", d);
-    }
-}
-
-impl Checked for BiomeMusic {}

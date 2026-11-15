@@ -127,6 +127,10 @@ impl FloatAttribute {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::schema::read_document;
+    use bedrock_addon_core::versioning::Reading;
 
     #[test]
     fn the_attribute_constructors_read_back() {
@@ -140,7 +144,16 @@ mod tests {
             ..Default::default()
         };
         let text = bedrock_addon_core::json::to_json(&attributes).expect("writes");
-        let read: EnvironmentAttributes = bedrock_addon_core::json::from_str(&text).expect("reads");
-        assert_eq!(read, attributes);
+        let parsed = bedrock_addon_core::json::parse::parse(
+            &text,
+            bedrock_addon_core::json::parse::Options::default(),
+        )
+        .expect("a text");
+        let mut told = Diagnostics::default();
+        let mut read = Read::new(Reading::DOCUMENT, &mut told);
+        let node = Node::parsed(&parsed, JsonPath::new());
+        let read = read_document::<EnvironmentAttributes>(&node, &mut read);
+        assert_eq!(read, Some(attributes));
+        assert!(told.is_empty(), "{told:?}");
     }
 }

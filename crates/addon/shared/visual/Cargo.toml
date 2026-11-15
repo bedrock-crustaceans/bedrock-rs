@@ -19,9 +19,10 @@ molang = ["bedrock_addon_core/molang"]   # the loader's compile of `initialize` 
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../shapes" }
 facet = { workspace = true }
-facet-json = { workspace = true }
+facet-value = { workspace = true }
 indexmap = { workspace = true }
 
 
 [dev-dependencies]
+facet-json = { workspace = true }
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

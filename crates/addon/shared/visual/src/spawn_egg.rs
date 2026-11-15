@@ -1,22 +1,24 @@
 //! `description.spawn_egg`: the spawn egg item's look, as written and as vanilla reads it.
 
+use bedrock_addon_core::schema::Schema;
+
 /// `spawn_egg`: how the entity's spawn egg looks, either a texture or two colours.
 ///
 /// Every member is kept as written; [`SpawnEgg::resolved`] gives the values vanilla reads,
 /// with its defaults. The same shape at every format version.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct SpawnEgg {
     /// `texture`: the egg's item texture name.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub texture: Option<String>,
     /// `texture_index`: which frame of that texture.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub texture_index: Option<i64>,
     /// `base_color`: `"#RRGGBB"` or `"#AARRGGBB"`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub base_color: Option<String>,
     /// `overlay_color`: the spots, same form as `base_color`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub overlay_color: Option<String>,
 }
 

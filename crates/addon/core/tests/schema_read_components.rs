@@ -709,3 +709,44 @@ fn a_key_gate_refuses_a_key_or_keeps_it_unread() {
     assert!(names[0].contains("Pair"), "{names:?}");
     assert!(names[1].contains("damage"), "{names:?}");
 }
+
+/// A key a family drops is told where the file has it, among the rows' own findings.
+#[test]
+fn a_key_gate_drops_a_key_in_the_files_order() {
+    use bedrock_addon_core::diagnostic::{Diagnostic, codes};
+    let text = r#"{"minecraft:count": {"count": 1, "zz": 1}, "minecraft:damage": 5, "minecraft:pair": {"a": 1, "yy": 1}}"#;
+    let parsed = bedrock_addon_core::json::parse::parse(
+        text,
+        bedrock_addon_core::json::parse::Options::default(),
+    )
+    .expect("a text");
+    let cx = context(Reading::DOCUMENT);
+    let mut d = Diagnostics::default();
+    let map = {
+        let mut read = Read::new(Reading::DOCUMENT, &mut d).load(&cx);
+        read_component_map_by::<Shelf>(
+            &Node::parsed(&parsed, JsonPath::of_keys(["components"])),
+            &mut read,
+            ConvertMode::Strict,
+            is_custom,
+            |key| match key {
+                "minecraft:damage" => KeyGate::Drop(Diagnostic::of(&codes::DROPPED_FIELD)),
+                _ => KeyGate::Read,
+            },
+        )
+    }
+    .expect("an object");
+    let told: Vec<String> = d
+        .iter()
+        .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "core/unrecognized_field components/minecraft:count/zz",
+            "core/dropped_field components/minecraft:damage",
+            "core/unrecognized_field components/minecraft:pair/yy",
+        ]
+    );
+    assert_eq!(map.iter().count(), 2);
+}

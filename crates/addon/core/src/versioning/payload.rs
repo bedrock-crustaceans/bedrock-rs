@@ -229,6 +229,7 @@ pub(super) fn tell_unknown(
 ) {
     for (path, rule) in unknown {
         let (code, severity) = match rule {
+            UnknownRule::Silent => continue,
             UnknownRule::Reject => (
                 Code::from(&core_codes::DROPPED_FIELD),
                 cx.grade(Class::Unknown),

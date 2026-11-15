@@ -47,5 +47,5 @@ pub fn upgrade(
     document: Document<AttachableHistory>,
     cx: &LoadContext,
 ) -> Result<Document<Attachable>, Rejected> {
-    crate::upgrade_document(document, cx)
+    bedrock_addon_shared_visual::file::upgrade_document::<AttachableFamily>(document, cx)
 }

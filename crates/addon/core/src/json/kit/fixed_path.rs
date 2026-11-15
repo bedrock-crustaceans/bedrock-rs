@@ -5,12 +5,11 @@
 //! `document::unversioned`; their findings' builders are `diagnostic::builders`, their writers'
 //! objects `json::build`.
 
-use super::{Disposition, Members, Read};
+use super::{Profile, Read, UnknownAt};
 use crate::diagnostic::{Diagnostics, JsonPath, Severity};
-use crate::document::UnknownMembers;
 use crate::json::{Coerce, Coercing, IsIntRule, Value, WideInt};
 use crate::load::{ListedFile, StackPack};
-use crate::versioning::{MemberFailure, Reading};
+use crate::versioning::{MemberFailure, Reading, Scalars};
 
 /// The member `key` of an object, a `null` included; `None` for a missing member and for
 /// anything but an object.
@@ -70,22 +69,29 @@ pub fn as_real(value: &Value) -> Option<f64> {
 
 /// The read of a fixed-path file's root: the game's reader of these files runs its checks
 /// without a content-log line, so every finding of the reader kit (a wrong type, a missing
-/// member, an unknown member) is an information, and none fails what is read.
+/// member, an unknown member) is an information, and none fails what is read. The game asks for
+/// the members of an object one by one, so a derived read takes them in the order of the
+/// fields and tells the unknown ones after them.
 pub fn reader(findings: &mut Diagnostics) -> Read<'_> {
     Read::new(
         Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
         findings,
     )
     .unknown_severity(Severity::Info)
+    .profile(Profile::DECLARED_ORDER.with_unknown(UnknownAt::Last))
 }
 
-/// Every member of `members` that is none of `known`, in file order, each told as an
-/// `UnrecognizedField` information by `read` and kept beside the fields.
-pub fn kept_unknown(read: &mut Read<'_>, members: &Members<'_>, known: &[&str]) -> UnknownMembers {
-    read.unknown(members, known, Disposition::Keep)
-        .into_iter()
-        .map(|(key, value)| (key.to_owned(), value.clone()))
-        .collect()
+/// [`reader`] where a value of another JSON type is no value of a member's type, however a
+/// number could be written as a text: a game that binds a string member from a string only.
+pub fn strict_reader(findings: &mut Diagnostics) -> Read<'_> {
+    Read::new(
+        Reading::OWN
+            .with_on_member_failure(MemberFailure::DefaultAndTell)
+            .with_scalars(Scalars::Strict),
+        findings,
+    )
+    .unknown_severity(Severity::Info)
+    .profile(Profile::DECLARED_ORDER.with_unknown(UnknownAt::Last))
 }
 
 /// A file's value that keeps its root as the author wrote it beside its fields, wherever the
@@ -108,6 +114,9 @@ pub trait Authored: Sized + PartialEq {
     /// Reads a root, and keeps it as written when the fields would not write it back.
     fn from_value(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let mut value = Self::read(root, diagnostics);
+        // A derived read fills the slot with the object it read: kept only where the fields
+        // cannot say it.
+        *value.written_mut() = None;
         let fields = value.fields_value();
         if fields != *root {
             let mut kept = root.clone();
@@ -204,6 +213,7 @@ mod tests {
     use super::*;
     use crate::diagnostic::codes as core_codes;
     use crate::diagnostic::{Code, Diagnostic, Location, Phase};
+    use crate::json::kit::Disposition;
     use crate::json::kit::Node;
 
     fn json(text: &str) -> Value {
@@ -219,13 +229,13 @@ mod tests {
         let mut found = Diagnostics::default();
         let mut read = reader(&mut found);
         let members = read.object(&Node::new(&json, at())).unwrap();
-        let kept = kept_unknown(&mut read, &members, &["a"]);
+        let kept = read.unknown(&members, &["a"], Disposition::Keep);
         let a = members.get("a").unwrap();
         assert_eq!(read.string(&a), None);
         let missing = read.required(&members, "c");
         assert!(missing.is_none());
         assert!(!read.failed());
-        assert_eq!(kept.get("b"), Some(&json.as_object().unwrap()["b"]));
+        assert_eq!(kept, [("b", &json.as_object().unwrap()["b"])]);
         let info = |code, at: JsonPath| {
             Diagnostic::new(
                 code,

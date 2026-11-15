@@ -519,10 +519,14 @@ pub enum KeyGate {
     /// The slice has no row for the key: told by the finding at the key, after the rows' own,
     /// and kept as written, an unknown component.
     Unread(Diagnostic),
+    /// The slice refuses the key: told by the finding at the key where the file has it, among
+    /// the rows' own, the component left out.
+    Drop(Diagnostic),
 }
 
 /// [`read_component_map`] where the family judges each key first with `gate`: the refused ones
-/// are told before any row reads, the ones with no row in the slice after the last row.
+/// are told before any row reads, the ones with no row in the slice after the last row, the
+/// dropped ones where the file has them.
 pub fn read_component_map_by<F: Family>(
     node: &crate::json::kit::Node<'_>,
     read: &mut crate::json::kit::Read<'_>,
@@ -567,12 +571,17 @@ pub fn read_component_map_by<F: Family>(
             finding
         };
         match gate(key) {
-            KeyGate::Read => rows.push((key, member)),
+            KeyGate::Read => rows.push((key, member, None)),
             KeyGate::Refuse(finding) => read.push(at(finding)),
             KeyGate::Unread(finding) => unread.push((key, member, at(finding))),
+            KeyGate::Drop(finding) => rows.push((key, member, Some(at(finding)))),
         }
     }
-    for (key, member) in rows {
+    for (key, member, dropped) in rows {
+        if let Some(finding) = dropped {
+            found.push(finding);
+            continue;
+        }
         // A member without a text (a node made without one) is read from its value written out.
         let written;
         let slice = if let Some(slice) = member.text() {
@@ -593,7 +602,7 @@ pub fn read_component_map_by<F: Family>(
     }
     let kept = found.take_unknown();
     for finding in found {
-        read.push(finding);
+        read.defer(crate::json::kit::Pass::Misread, finding);
     }
     for (key, member, finding) in unread {
         read.push(finding);

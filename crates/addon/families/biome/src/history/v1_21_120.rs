@@ -4,7 +4,7 @@
 use super::v1_26_0;
 use crate::Description;
 use crate::component::{BiomeComponent, Tags, VillageKind, VillageType};
-use crate::read::payload;
+use crate::read::{Payload, read_as};
 use crate::write::object;
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::ComponentMap;
@@ -29,10 +29,10 @@ impl Versioned for Biome {
 
 impl VersionStruct for Biome {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = payload(slice, Self::VERSION, cx, d)?;
+        let payload = read_as::<Payload>(slice, Self::VERSION, cx, d)?;
         Some(Self {
             description: payload.description,
-            components: payload.components,
+            components: payload.components.0,
         })
     }
 

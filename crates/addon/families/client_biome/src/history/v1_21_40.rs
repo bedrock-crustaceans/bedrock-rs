@@ -7,16 +7,15 @@ use facet::Facet;
 use super::{ClientBiomePayload, has, insert, note_component, v1_21_70};
 use crate::color::Color255Rgb;
 use crate::component::{
-    Checked, ClientBiomeComponent, DryFoliageColor, FoliageAppearance, FoliageColor,
-    FoliageColorMap, GrassAppearance, GrassColor, GrassColorMap, child, parse_typed,
+    ClientBiomeComponent, DryFoliageColor, FoliageAppearance, FoliageColor, FoliageColorMap,
+    GrassAppearance, GrassColor, GrassColorMap,
 };
-use crate::read::ComponentEra;
+use crate::read::{ComponentEra, Components};
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, write_payload};
@@ -55,17 +54,8 @@ impl ComponentSet for Component {
 }
 
 impl ComponentEra for Component {
-    #[allow(
-        clippy::option_option,
-        reason = "three outcomes: not this era's, read, failed (reported)"
-    )]
-    fn read_own(
-        key: &str,
-        slice: JsonSlice<'_>,
-        cx: &LoadContext,
-        d: &mut Diagnostics,
-    ) -> Option<Option<Self>> {
-        (key == AMBIENT_SOUNDS).then(|| parse_typed::<AmbientSounds>(slice, cx, d).map(Self::from))
+    fn from_read(components: Components) -> ComponentMap<Self> {
+        components.0
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -88,21 +78,6 @@ pub struct AmbientSounds {
     pub loop_sound: Option<SoundEventName>,
     /// JSON `mood`: the sound played in dark, enclosed places.
     pub mood: Option<SoundEventName>,
-}
-
-impl Checked for AmbientSounds {
-    /// Each sound is a name: an `{asset, chance}` addition is the 1.21.120 struct's.
-    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
-        for member in ["addition", "loop", "mood"] {
-            let sound = json.as_object().and_then(|object| object.get(member));
-            if sound.is_some_and(|sound| !sound.is_string()) {
-                d.push(
-                    Diagnostic::of(&core_codes::INVALID_TYPE)
-                        .at(child(&JsonPath::new(), &[member])),
-                );
-            }
-        }
-    }
 }
 
 /// The version below which a document gets the foliage and grass colours of the tables.

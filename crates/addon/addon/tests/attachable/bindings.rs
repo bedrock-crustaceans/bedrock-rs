@@ -231,7 +231,7 @@ fn a21_higher_mev_replaces() {
     let wand = get(&set, "example:wand").unwrap();
     // The definition is the top document alone.
     assert!(wand.description.slots.textures.is_empty());
-    assert_eq!(wand.description.item, None);
+    assert_eq!(wand.description.own.item, None);
     assert_eq!(wand.origin().pack.name(), "pack 1");
     // The bottom document's binding stays, and now selects the replacement.
     assert_eq!(
@@ -295,7 +295,7 @@ fn a22_lower_mev_ignored() {
     let set = stack(&[pack(&[(WAND, &top)]), pack(&[(WAND, &bottom)])]);
     let wand = get(&set, "example:wand").unwrap();
     assert_eq!(wand.origin().pack.name(), "pack 2");
-    assert_eq!(wand.description.item, None);
+    assert_eq!(wand.description.own.item, None);
     // The document ignored is the higher pack's, for its lower `min_engine_version`: the
     // finding says so.
     assert_eq!(

@@ -2,7 +2,7 @@
 //! Nether.
 
 use crate::component::BiomeComponent;
-use crate::read::payload;
+use crate::read::{Payload, read_as};
 use crate::write::object;
 use crate::{Biome as Latest, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
@@ -28,10 +28,10 @@ impl Versioned for Biome {
 
 impl VersionStruct for Biome {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = payload(slice, Self::VERSION, cx, d)?;
+        let payload = read_as::<Payload>(slice, Self::VERSION, cx, d)?;
         Some(Self {
             description: payload.description,
-            components: payload.components,
+            components: payload.components.0,
         })
     }
 

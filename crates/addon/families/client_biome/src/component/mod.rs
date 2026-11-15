@@ -10,8 +10,8 @@ mod identifier;
 mod sound;
 
 pub use appearance::{
-    DryFoliageColor, FoliageAppearance, FoliageColor, FoliageColorMap, GrassAppearance, GrassColor,
-    GrassColorMap, Precipitation, SkyColor, WaterAppearance,
+    ColorMap, ColorOrMap, DryFoliageColor, FoliageAppearance, FoliageColor, FoliageColorMap,
+    GrassAppearance, GrassColor, GrassColorMap, Precipitation, SkyColor, WaterAppearance,
 };
 pub use identifier::{
     AtmosphereIdentifier, ColorGradingIdentifier, CubemapIdentifier, FogAppearance,
@@ -20,17 +20,14 @@ pub use identifier::{
 pub use sound::{AmbientSounds, BiomeMusic, SoundAddition};
 
 use bedrock_addon_derive::Components;
-use facet::Facet;
 
 use super::history::ClientBiomeFamily;
-use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::json::{
-    JsonSlice, ScalarFailure, ScalarRead, Value, keep_unknown_members, parse_with_rules,
-    unknown_members,
-};
+use crate::codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_shared_biome_env::read_row;
 
 // Every component is released with the first format version whose document declares it:
 // 1.21.40 declares seven, 1.21.70 adds five (the atmosphere, colour-grading, lighting and
@@ -50,161 +47,70 @@ use bedrock_addon_core::versioning::ConvertMode;
 )]
 pub enum ClientBiomeComponent {
     /// `minecraft:ambient_sounds`.
-    #[component(name = "minecraft:ambient_sounds", released = "1.21.40", parse = parse_row::<AmbientSounds>)]
+    #[component(name = "minecraft:ambient_sounds", released = "1.21.40", parse = read_row::<AmbientSounds, ClientBiomeComponent>)]
     AmbientSounds(AmbientSounds),
     /// `minecraft:atmosphere_identifier` (format 1.21.70).
-    #[component(name = "minecraft:atmosphere_identifier", released = "1.21.70", parse = parse_row::<AtmosphereIdentifier>)]
+    #[component(name = "minecraft:atmosphere_identifier", released = "1.21.70", parse = read_row::<AtmosphereIdentifier, ClientBiomeComponent>)]
     AtmosphereIdentifier(AtmosphereIdentifier),
     /// `minecraft:biome_music`.
-    #[component(name = "minecraft:biome_music", released = "1.21.40", parse = parse_row::<BiomeMusic>)]
+    #[component(name = "minecraft:biome_music", released = "1.21.40", parse = read_row::<BiomeMusic, ClientBiomeComponent>)]
     BiomeMusic(BiomeMusic),
     /// `minecraft:color_grading_identifier` (format 1.21.70).
-    #[component(name = "minecraft:color_grading_identifier", released = "1.21.70", parse = parse_row::<ColorGradingIdentifier>)]
+    #[component(name = "minecraft:color_grading_identifier", released = "1.21.70", parse = read_row::<ColorGradingIdentifier, ClientBiomeComponent>)]
     ColorGradingIdentifier(ColorGradingIdentifier),
     /// `minecraft:cubemap_identifier` (format 1.21.130).
-    #[component(name = "minecraft:cubemap_identifier", released = "1.21.130", parse = parse_row::<CubemapIdentifier>)]
+    #[component(name = "minecraft:cubemap_identifier", released = "1.21.130", parse = read_row::<CubemapIdentifier, ClientBiomeComponent>)]
     CubemapIdentifier(CubemapIdentifier),
     /// `minecraft:dry_foliage_color` (format 1.21.70).
-    #[component(name = "minecraft:dry_foliage_color", released = "1.21.70", parse = parse_row::<DryFoliageColor>)]
+    #[component(name = "minecraft:dry_foliage_color", released = "1.21.70", parse = read_row::<DryFoliageColor, ClientBiomeComponent>)]
     DryFoliageColor(DryFoliageColor),
     /// `minecraft:fog_appearance`.
-    #[component(name = "minecraft:fog_appearance", released = "1.21.40", parse = parse_row::<FogAppearance>)]
+    #[component(name = "minecraft:fog_appearance", released = "1.21.40", parse = read_row::<FogAppearance, ClientBiomeComponent>)]
     FogAppearance(FogAppearance),
     /// `minecraft:foliage_appearance`.
-    #[component(name = "minecraft:foliage_appearance", released = "1.21.40", parse = parse_row::<FoliageAppearance>)]
+    #[component(name = "minecraft:foliage_appearance", released = "1.21.40", parse = read_row::<FoliageAppearance, ClientBiomeComponent>)]
     FoliageAppearance(FoliageAppearance),
     /// `minecraft:grass_appearance`.
-    #[component(name = "minecraft:grass_appearance", released = "1.21.40", parse = parse_row::<GrassAppearance>)]
+    #[component(name = "minecraft:grass_appearance", released = "1.21.40", parse = read_row::<GrassAppearance, ClientBiomeComponent>)]
     GrassAppearance(GrassAppearance),
     /// `minecraft:lighting_identifier` (format 1.21.70).
-    #[component(name = "minecraft:lighting_identifier", released = "1.21.70", parse = parse_row::<LightingIdentifier>)]
+    #[component(name = "minecraft:lighting_identifier", released = "1.21.70", parse = read_row::<LightingIdentifier, ClientBiomeComponent>)]
     LightingIdentifier(LightingIdentifier),
     /// `minecraft:precipitation` (format 1.21.110).
-    #[component(name = "minecraft:precipitation", released = "1.21.110", parse = parse_row::<Precipitation>)]
+    #[component(name = "minecraft:precipitation", released = "1.21.110", parse = read_row::<Precipitation, ClientBiomeComponent>)]
     Precipitation(Precipitation),
     /// `minecraft:sky_color`.
-    #[component(name = "minecraft:sky_color", released = "1.21.40", parse = parse_row::<SkyColor>)]
+    #[component(name = "minecraft:sky_color", released = "1.21.40", parse = read_row::<SkyColor, ClientBiomeComponent>)]
     SkyColor(SkyColor),
     /// `minecraft:water_appearance`.
-    #[component(name = "minecraft:water_appearance", released = "1.21.40", parse = parse_row::<WaterAppearance>)]
+    #[component(name = "minecraft:water_appearance", released = "1.21.40", parse = water_appearance)]
     WaterAppearance(WaterAppearance),
     /// `minecraft:water_identifier` (format 1.21.70).
-    #[component(name = "minecraft:water_identifier", released = "1.21.70", parse = parse_row::<WaterIdentifier>)]
+    #[component(name = "minecraft:water_identifier", released = "1.21.70", parse = read_row::<WaterIdentifier, ClientBiomeComponent>)]
     WaterIdentifier(WaterIdentifier),
 }
 
-/// The constraints vanilla's binding attaches to a component, checked on its JSON before the
-/// typed parse so that each failure carries its own code and vanilla's text.
-pub(crate) trait Checked {
-    /// Reports the component's constraint failures (paths below the component); an error
-    /// among them rejects the component. An unknown member it finds is told at `unknown`, the
-    /// slice's grade.
-    #[allow(unused_variables)]
-    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {}
-}
-
-/// One component read strictly from its slice: every slice of the client-biome loader parses
-/// with the strict mask, so a component that does not deserialise, or breaks a constraint of
-/// its binding, rejects the document. Unknown members are reported as `UnrecognizedField`,
-/// graded by the slice's reading: every client-biome format version reads with the strict mask
-/// (`Family::reading`'s default, the profile of the `InputKind::Document` envelope in `lib.rs`),
-/// so in a load they are the errors that refuse the document, as vanilla's are. Findings are
-/// relative to the component.
-pub(crate) fn parse_typed<T>(
-    slice: JsonSlice<'_>,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<T>
-where
-    T: for<'a> Facet<'a> + Checked,
-{
-    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
-    let unknown = cx.grade(Class::Unknown);
-    let unrecognized = |path: JsonPath| {
-        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-            .at(path)
-            .severity(unknown)
-    };
-    if let Some(json) = &json {
-        // A component is an object; facet's own finding for another value has no path.
-        if !json.is_object() {
-            d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
-            return None;
-        }
-        let start = d.len();
-        T::check(json, unknown, d);
-        // An unknown member does not stop the read here, the checks' other errors alone do: it
-        // refuses the document by its grade.
-        if d.iter()
-            .skip(start)
-            .any(|f| f.severity == Severity::Error && !crate::read::is_unknown_member(f))
-        {
-            return None;
-        }
-    }
-    // The scalars are read by the family's rules (`crate::reading`: strict, a number beyond its
-    // float a type error), in a versioned load and outside one alike.
-    // A `null` read as a struct is the null rule's: the row parser's `reject_nulls` tells it
-    // where the input rejects nulls, and elsewhere it reads as its defaults untold.
-    let rules = crate::reading()
-        .scalar_rules()
-        .with_tells_null_struct(false);
-    let value = match parse_with_rules::<T>(slice, None, rules) {
-        Ok(ScalarRead { value, told, .. }) => {
-            // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
-            for misread in told {
-                d.push(misread.finding(&JsonPath::new()));
-            }
-            value
-        }
-        Err(ScalarFailure::Refused(misread)) => {
-            d.push(misread.finding(&JsonPath::new()));
-            for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {
-                d.push(unrecognized(path));
-            }
-            return None;
-        }
-        Err(ScalarFailure::Read(error)) => {
-            d.push(error.into_diagnostic(&JsonPath::new(), |code, _| code));
-            // The members no field takes are reported also when the component fails, so a
-            // document of another era names what it has that the struct does not.
-            for (path, _) in json.iter().flat_map(|json| unknown_members(T::SHAPE, json)) {
-                d.push(unrecognized(path));
-            }
-            return None;
-        }
-    };
-    if let Some(json) = &json {
-        let mut kept = bedrock_addon_core::document::Unknown::new();
-        for (path, _) in keep_unknown_members(&value, json, &mut kept) {
-            d.push(unrecognized(path));
-        }
-        // Below the component; the component map puts them at its key.
-        d.unknown_mut().absorb(&JsonPath::new(), kept);
-    }
-    Some(value)
-}
-
-/// The table's row parser: [`parse_typed`] into the set.
-fn parse_row<T>(
+/// `minecraft:water_appearance`, which needs at least one member: a component with neither is
+/// vanilla's error at the component and nothing else (a rule across the two members, after the
+/// read; what the read told of a component that is empty is its unknown members, which the game
+/// does not get to).
+fn water_appearance(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
-) -> Option<ClientBiomeComponent>
-where
-    T: for<'a> Facet<'a> + Checked + Into<ClientBiomeComponent>,
-{
-    let _ = mode;
-    let value = parse_typed::<T>(slice, cx, d)?;
-    // A `null` where the component reads a value is a type error, which refuses the client
-    // biome.
-    if cx.null_rule == Some(bedrock_addon_core::json::NullRule::Rejected)
-        && bedrock_addon_core::json::reject_nulls(&value, slice, &JsonPath::new(), d)
+) -> Option<ClientBiomeComponent> {
+    let mut told = Diagnostics::default();
+    let water = read_row::<WaterAppearance, WaterAppearance>(slice, mode, cx, &mut told);
+    if water
+        .as_ref()
+        .is_some_and(|water| water.surface_color.is_none() && water.surface_opacity.is_none())
     {
+        d.push(Diagnostic::of(&codes::WATER_EMPTY));
         return None;
     }
-    Some(value.into())
+    d.extend_with_unknown(told);
+    water.map(Into::into)
 }
 
 pub(crate) use bedrock_addon_support::biome_json::child;

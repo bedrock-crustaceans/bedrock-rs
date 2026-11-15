@@ -97,7 +97,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings) {
         // The object form: the member that binds, its key as written.
         let object = written.is_some_and(|document| {
             matches!(
-                document.value().description.item,
+                document.value().description.own.item,
                 Some(ItemBinding::Conditional(_))
             )
         });

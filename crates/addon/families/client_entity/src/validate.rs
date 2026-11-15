@@ -4,16 +4,13 @@
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
 use bedrock_addon_core::versioning::ValidateCx;
 
-pub(crate) use bedrock_addon_shared_visual::rules::{FILE, visit_controllers};
-
-use super::ClientEntity;
-use super::read;
+use super::{ClientEntity, PAYLOAD};
 
 impl MolangFields for ClientEntity {
     fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter(Step::Key(read::PAYLOAD));
+        visitor.enter(Step::Key(PAYLOAD));
         visitor.enter(Step::Key("description"));
-        self.description.slots.visit_molang(visitor);
+        self.description.visit_molang(visitor);
         visitor.leave();
         visitor.leave();
     }
@@ -22,6 +19,6 @@ impl MolangFields for ClientEntity {
 /// The loader's rules on the newest shape, after the schema and the generic Molang check
 /// ([`VisualSlots::validate`](bedrock_addon_shared_visual::VisualSlots::validate)).
 pub(crate) fn validate(entity: &mut ClientEntity, cx: &mut ValidateCx<'_>) {
-    let at = cx.at.with(&[read::PAYLOAD, "description"]);
+    let at = cx.at.with(&[PAYLOAD, "description"]);
     entity.description.slots.validate(&at, cx);
 }

@@ -22,14 +22,20 @@ error: `schema::or_kept` leaves the field `None` where its value fails: an `Opti
 11 |     #[facet(schema::or_kept = "told")]
    |             ^^^^^^
 
-error: `schema::otherwise` marks a newtype variant: the value it takes is read as its one field
-  --> tests/ui/schema/shape_keys.rs:23:5
+error: `schema::reads_null` reads a `null` as a value: an `Option` field
+  --> tests/ui/schema/shape_keys.rs:15:13
    |
-23 |     Pair { a: u8 },
+15 |     #[facet(schema::reads_null)]
+   |             ^^^^^^
+
+error: `schema::otherwise` marks a newtype variant: the value it takes is read as its one field
+  --> tests/ui/schema/shape_keys.rs:25:5
+   |
+25 |     Pair { a: u8 },
    |     ^^^^
 
 error: one variant of an untagged enum is the arm a value takes otherwise
-  --> tests/ui/schema/shape_keys.rs:25:5
+  --> tests/ui/schema/shape_keys.rs:27:5
    |
-25 |     Rest(Value),
+27 |     Rest(Value),
    |     ^^^^

@@ -36,7 +36,8 @@ use super::Value;
 /// assert_eq!(loaded, built);
 /// assert!(loaded.written.is_some());
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, facet::Facet)]
+#[facet(transparent)]
 pub struct Written<T = Value>(pub Option<T>);
 
 /// Every authored text is equal to every other: the holder's fields decide.

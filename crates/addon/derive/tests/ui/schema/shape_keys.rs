@@ -12,6 +12,8 @@ struct Shapes {
     plain: u8,
     #[facet(schema::otherwise)]
     other: Option<u8>,
+    #[facet(schema::reads_null)]
+    never_null: u8,
 }
 
 #[derive(Facet, Schema)]

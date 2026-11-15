@@ -3,13 +3,23 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath, Phase};
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangSource, MolangVisitor};
-use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::UpgradeCx;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::id::{
+    AnimationRef, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
+};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::molang::{Molang, MolangFields, MolangSource, MolangVisitor, Step};
+use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::version::{FormatVersion, known};
+use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
-use crate::AnimateEntry;
-use crate::rules::{CONDITION, NAMED_SCRIPT, visit_animate};
+use crate::family::{Visual, document, read_description};
+use crate::read::{
+    Named, conditions, identifier, min_engine_version, molang_elements, name_map, slot_map,
+    variables,
+};
+use crate::rules::{CONDITION, NAMED_SCRIPT};
+use crate::{AnimateEntry, ControllerUse, Description as Newest, SpawnEgg, VisualSlots};
 
 /// The version from which vanilla stops lower-casing the named scripts: a document written
 /// below it has them lower-cased when it loads.
@@ -18,78 +28,51 @@ const NO_LOWER_CASING: FormatVersion = FormatVersion::new(1, 18, 20);
 /// `scripts` at format versions 1.10.0 up to 1.26.0: as [`crate::Scripts`], except
 /// that each `initialize` and `pre_animation` element is a Molang value of its own and
 /// `hide_held_items` does not exist.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::molang = NAMED_SCRIPT)]
 pub struct Scripts {
     /// `variables`: `variable.<name>` → `"public"`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = variables, skip_serializing_if = Option::is_none)]
     pub variables: Option<IndexMap<String, String>>,
     /// `initialize`: each element a Molang value.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = molang_elements, skip_serializing_if = Option::is_none)]
     pub initialize: Option<Vec<Molang>>,
     /// `pre_animation`: each element a Molang value.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = molang_elements, skip_serializing_if = Option::is_none)]
     pub pre_animation: Option<Vec<Molang>>,
     /// `scale`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scale: Option<Molang>,
     /// `scaleX` (the same script as `scalex`).
-    #[facet(default, rename = "scaleX", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleX", skip_serializing_if = Option::is_none)]
     pub scale_x: Option<Molang>,
     /// `scalex`; wins over `scaleX`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scalex: Option<Molang>,
     /// `scaleY` (the same script as `scaley`).
-    #[facet(default, rename = "scaleY", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleY", skip_serializing_if = Option::is_none)]
     pub scale_y: Option<Molang>,
     /// `scaley`; wins over `scaleY`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scaley: Option<Molang>,
     /// `scaleZ` (the same script as `scalez`).
-    #[facet(default, rename = "scaleZ", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleZ", skip_serializing_if = Option::is_none)]
     pub scale_z: Option<Molang>,
     /// `scalez`; wins over `scaleZ`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scalez: Option<Molang>,
     /// `parent_setup`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub parent_setup: Option<Molang>,
     /// `should_update_bones_and_effects_offscreen`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub should_update_bones_and_effects_offscreen: Option<Molang>,
     /// `should_update_effects_offscreen`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub should_update_effects_offscreen: Option<Molang>,
     /// `animate`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = conditions, skip_serializing_if = Option::is_none)]
     pub animate: Option<Vec<AnimateEntry>>,
-}
-
-/// The named scripts, the `initialize` and `pre_animation` elements and the `animate`
-/// conditions, as the 1.10 schema types them (the walk enters `scripts` first).
-impl MolangFields for Scripts {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("initialize", &NAMED_SCRIPT, &mut self.initialize);
-        visitor.field("pre_animation", &NAMED_SCRIPT, &mut self.pre_animation);
-        visitor.field("scale", &NAMED_SCRIPT, &mut self.scale);
-        visitor.field("scaleX", &NAMED_SCRIPT, &mut self.scale_x);
-        visitor.field("scalex", &NAMED_SCRIPT, &mut self.scalex);
-        visitor.field("scaleY", &NAMED_SCRIPT, &mut self.scale_y);
-        visitor.field("scaley", &NAMED_SCRIPT, &mut self.scaley);
-        visitor.field("scaleZ", &NAMED_SCRIPT, &mut self.scale_z);
-        visitor.field("scalez", &NAMED_SCRIPT, &mut self.scalez);
-        visitor.field("parent_setup", &NAMED_SCRIPT, &mut self.parent_setup);
-        visitor.field(
-            "should_update_bones_and_effects_offscreen",
-            &NAMED_SCRIPT,
-            &mut self.should_update_bones_and_effects_offscreen,
-        );
-        visitor.field(
-            "should_update_effects_offscreen",
-            &NAMED_SCRIPT,
-            &mut self.should_update_effects_offscreen,
-        );
-        visit_animate(self.animate.as_mut(), &CONDITION, visitor);
-    }
 }
 
 /// D4: whether the 1.10 → 1.26 step tells of a named script whose quoted literal the
@@ -253,5 +236,142 @@ fn folded(text: &str, fold: bool) -> String {
         text.to_ascii_lowercase()
     } else {
         text.to_owned()
+    }
+}
+
+/// `description` at format versions 1.10.0 up to 1.26.0: as the newest
+/// [`Description`](crate::Description), except that each `scripts.initialize` and
+/// `scripts.pre_animation` element is a Molang value of its own and `held_item_scale` and
+/// `scripts.hide_held_items` do not exist.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::molang = CONDITION)]
+pub struct Description<I: Named, O> {
+    /// `identifier`.
+    #[facet(schema::read_with = identifier)]
+    pub identifier: I,
+    /// `min_engine_version`.
+    #[facet(schema::read_with = min_engine_version)]
+    pub min_engine_version: Option<Value>,
+    /// `materials`.
+    #[facet(schema::read_with = slot_map)]
+    pub materials: Option<IndexMap<String, MaterialId>>,
+    /// `textures`.
+    #[facet(schema::read_with = slot_map)]
+    pub textures: Option<IndexMap<String, TexturePath>>,
+    /// `geometry`.
+    #[facet(schema::read_with = slot_map)]
+    pub geometry: Option<IndexMap<String, GeometryId>>,
+    /// `queryable_geometry`.
+    pub queryable_geometry: Option<String>,
+    /// `spawn_egg`.
+    pub spawn_egg: Option<SpawnEgg>,
+    /// `scripts`.
+    pub scripts: Option<Scripts>,
+    /// `particle_effects`.
+    #[facet(schema::read_with = name_map)]
+    pub particle_effects: Option<IndexMap<String, ParticleId>>,
+    /// `particle_emitters`: accepted and read by nothing.
+    #[facet(schema::read_with = name_map)]
+    pub particle_emitters: Option<IndexMap<String, String>>,
+    /// `animations`.
+    #[facet(schema::read_with = name_map)]
+    pub animations: Option<IndexMap<String, AnimationRef>>,
+    /// `render_controllers`: a name, or `{ name: condition }`.
+    #[facet(schema::read_with = conditions)]
+    pub render_controllers: Option<Vec<ControllerUse>>,
+    /// `sound_effects`.
+    #[facet(schema::read_with = name_map)]
+    pub sound_effects: Option<IndexMap<String, SoundEventName>>,
+    /// `enable_attachables`.
+    pub enable_attachables: Option<bool>,
+    /// `held_item_ignores_lighting`.
+    pub held_item_ignores_lighting: Option<bool>,
+    /// `hide_armor`.
+    pub hide_armor: Option<bool>,
+    /// The family's own members.
+    #[facet(flatten)]
+    pub own: O,
+}
+
+/// A document of format version 1.10.0 up to 1.26.0, of the family `V`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Described<V: Visual> {
+    /// `format_version` as written (1.10.0 for a document upgraded from 1.8.0).
+    pub format_version: FormatVersion,
+    /// `description`.
+    pub description: Description<V::Id, V::Own>,
+}
+
+impl<V: Visual> Versioned for Described<V> {
+    const VERSION: FormatVersion = known::V1_10_0;
+}
+
+impl<V: Visual> VersionStruct for Described<V> {
+    fn parse(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        // The 1.10 schema.
+        let description = read_description::<V, _>(document, cx, d, false)?;
+        Some(Self {
+            format_version: cx.original_version,
+            description,
+        })
+    }
+
+    fn write(&self) -> Result<Value, EncodeError> {
+        document::<V, _>(self.format_version, &self.description)
+    }
+}
+
+impl<V: Visual> MolangFields for Described<V> {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visitor.enter(Step::Key(V::PAYLOAD));
+        visitor.enter(Step::Key("description"));
+        self.description.visit_molang(visitor);
+        visitor.leave();
+        visitor.leave();
+    }
+}
+
+/// The 1.10 → 1.26 step. Vanilla rewrites nothing at 1.26.0; the version selects another
+/// schema. So the step is the typed conversion and the one rule the loader keys on the
+/// original version:
+/// - each `initialize` and `pre_animation` element, a Molang value of its own until now, is
+///   checked as one (a rejected element fails the document, as the 1.10 schema does) and
+///   becomes a plain string; an element that is a number or a boolean, which the loader skips,
+///   is dropped;
+/// - in a document written below 1.18.20 the text of every named script is lower-cased, as
+///   the loader does before it parses them. `animate` and `render_controllers` conditions and
+///   variable names stay as written.
+impl<V: Visual> Upgrade for Described<V> {
+    type Next = V::Latest;
+
+    fn upgrade(self, cx: &mut UpgradeCx<'_>) -> Self::Next {
+        let d = self.description;
+        let at = JsonPath::of_keys([V::PAYLOAD, "description", "scripts"]);
+        let scripts = d.scripts.map(|scripts| scripts.upgrade(V::FOLDED, &at, cx));
+        V::latest(
+            known::V1_26_0,
+            Newest {
+                identifier: d.identifier,
+                min_engine_version: d.min_engine_version,
+                slots: VisualSlots {
+                    materials: d.materials.unwrap_or_default(),
+                    textures: d.textures.unwrap_or_default(),
+                    geometry: d.geometry.unwrap_or_default(),
+                    queryable_geometry: d.queryable_geometry,
+                    spawn_egg: d.spawn_egg,
+                    scripts,
+                    particle_effects: d.particle_effects,
+                    particle_emitters: d.particle_emitters,
+                    animations: d.animations,
+                    render_controllers: d.render_controllers,
+                    sound_effects: d.sound_effects,
+                    enable_attachables: d.enable_attachables,
+                    held_item_ignores_lighting: d.held_item_ignores_lighting,
+                    held_item_scale: None,
+                    hide_armor: d.hide_armor,
+                },
+                own: d.own,
+            },
+        )
     }
 }

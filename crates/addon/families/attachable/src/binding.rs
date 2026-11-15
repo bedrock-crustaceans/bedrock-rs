@@ -1,15 +1,35 @@
 //! `description.item` ([`ItemBinding`]), what it binds ([`Condition`]), and the bindings a
 //! stack gathers ([`ItemBindingEntry`], [`ItemBindings`]).
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::document::Registry;
 use bedrock_addon_core::id::{AttachableId, ItemId};
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
+use bedrock_addon_core::json::kit::{Node, Pass, Read};
+use bedrock_addon_core::molang::{
+    Molang, MolangFields, MolangSlot, MolangSource, MolangVisitor, RawVersion,
+};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_shared_shapes::named::{first_member, ignored_members};
+use bedrock_addon_shared_visual::read::{is_condition_key, not_valid_here, required};
+use bedrock_addon_shared_visual::rules::NAMED_SCRIPT;
 use indexmap::IndexMap;
 
 use super::Attachable;
+
+/// The pattern of an object-form `item` key, as vanilla prints it.
+const ITEM_KEY: &str = "[a-zA-Z0-9_.:-]+";
+
+/// What an attachable's `description` has beside the shared members: `item`, from format
+/// version 1.10.0.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+pub struct ItemMember {
+    /// `item`: the item the attachable is drawn for, always or under a condition. Absent, the
+    /// attachable is drawn for the item whose identifier is its own.
+    #[facet(schema::molang = NAMED_SCRIPT)]
+    pub item: Option<ItemBinding>,
+}
 
 /// `description.item`: the item an attachable is drawn for.
 ///
@@ -59,6 +79,16 @@ impl ItemBinding {
                     _ => text(""),
                 };
                 Some((ItemId::parse(item.as_str()), Condition::Molang(source)))
+            }
+        }
+    }
+
+    /// The member of the object form vanilla reads, with its condition.
+    fn first_condition(&self) -> Option<(&str, &Molang)> {
+        match self {
+            Self::Item(_) => None,
+            Self::Conditional(members) => {
+                first_member(members).map(|(item, condition)| (item.as_str(), condition))
             }
         }
     }
@@ -178,47 +208,98 @@ impl<'a> ItemBindings<'a> {
     }
 }
 
-/// Every JSON shape a deserializer can offer, so the conversion rejects the ones `item` does
-/// not take (the untagged solver would otherwise coerce a number into a string).
+/// A string is the item, an object its conditions; any other value is a wrong type, and the
+/// rules of the schema are told after the read:
+/// - the string form takes any string; one outside the object form's key pattern is noted
+///   (an information of the crate's own) and kept;
+/// - every key of the object form fully matches `[a-zA-Z0-9_.:-]+`, and the object holds at
+///   least one member;
+/// - the members after the one vanilla reads are dropped, with an information of the crate's
+///   own;
+/// - a number as the condition of the member that binds reads as the empty text, which is
+///   never true: an information of the crate's own, the binding kept.
+impl FromJson for ItemBinding {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let at = node.path();
+        let after = |read: &mut Read<'_>, finding: Diagnostic| read.defer(Pass::Unknown, finding);
+        if let Some(text) = node.value().as_string() {
+            let item = text.as_str();
+            if !is_condition_key(item) {
+                let told = Diagnostic::of(&core_codes::INVALID_VALUE)
+                    .severity(Severity::Info)
+                    .at(at.clone());
+                after(read, told);
+            }
+            return Some(Self::Item(item.to_owned()));
+        }
+        if !node.value().is_object() {
+            read.wrong_type(node);
+            return None;
+        }
+        // A condition is a number, a boolean or a string; its object form is no condition here.
+        let object = read.object(node)?;
+        if let Some((_, odd)) = object.iter().find(|(_, member)| member.value().is_object()) {
+            read.wrong_type(&odd);
+            return None;
+        }
+        let members = IndexMap::<String, Molang>::from_json(node, read)?;
+        // The pattern child is required and matched in full.
+        for key in members.keys().filter(|key| !is_condition_key(key)) {
+            after(read, not_valid_here(key, at.child(key)));
+        }
+        if members.is_empty() {
+            after(read, required(ITEM_KEY, at.clone()));
+        }
+        let item = Self::Conditional(members);
+        for key in item.ignored() {
+            after(
+                read,
+                Diagnostic::of(&core_codes::DROPPED_FIELD).at(at.child(key)),
+            );
+        }
+        // `asString("")` of a number is the empty text.
+        if let Some((key, Molang::Const(_))) = item.first_condition() {
+            let told = Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(at.child(key));
+            after(read, told);
+        }
+        Some(item)
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(ItemBinding);
+
+/// The conditions of an object form, each a Molang field at its key, under the walk's default
+/// spec.
+impl MolangFields for ItemBinding {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Conditional(members) = self {
+            let spec = *visitor.default_spec();
+            members.visit_slot(&spec, visitor);
+        }
+    }
+}
+
+/// What the writer turns an item binding into: its text, or its object.
 #[derive(Debug, facet::Facet)]
 #[facet(untagged)]
 #[repr(u8)]
-#[allow(
-    dead_code,
-    reason = "the payloads of the rejected shapes are never read"
-)]
 pub(crate) enum ItemBindingProxy {
-    /// `null`.
-    Null,
     /// A string: the item.
     String(String),
-    /// A boolean.
-    Bool(bool),
-    /// A non-negative integer.
-    UInt(u64),
-    /// A negative integer.
-    Int(i64),
-    /// Any other number.
-    Number(f64),
-    /// An array.
-    Array(Vec<Value>),
     /// An object: item → condition.
     Object(IndexMap<String, Molang>),
 }
 
-/// Why a JSON value is no item binding.
-#[derive(Debug, thiserror::Error)]
-#[error("an item binding must be a string or an object of conditions")]
-pub struct NotAnItemBinding;
-
-impl TryFrom<ItemBindingProxy> for ItemBinding {
-    type Error = NotAnItemBinding;
-
-    fn try_from(proxy: ItemBindingProxy) -> Result<Self, NotAnItemBinding> {
+impl From<ItemBindingProxy> for ItemBinding {
+    fn from(proxy: ItemBindingProxy) -> Self {
         match proxy {
-            ItemBindingProxy::String(item) => Ok(Self::Item(item)),
-            ItemBindingProxy::Object(members) => Ok(Self::Conditional(members)),
-            _ => Err(NotAnItemBinding),
+            ItemBindingProxy::String(item) => Self::Item(item),
+            ItemBindingProxy::Object(members) => Self::Conditional(members),
         }
     }
 }

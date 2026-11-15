@@ -50,7 +50,7 @@ pub struct MapTints {
 }
 
 /// `minecraft:map_tints.grass`: a fixed colour or the noise-based one, chosen by `type`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(tag = "type")]
 #[repr(u8)]
 pub enum GrassTint {
@@ -66,9 +66,6 @@ pub enum GrassTint {
     #[facet(schema::unknown = "keep")]
     Noise {},
 }
-
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(GrassTint);
 
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
 /// channels, kept in the form it was written.
@@ -127,8 +124,3 @@ pub enum VillageKind {
     Taiga,
     Default,
 }
-
-// The colours are read through their proxies, which judge their own form (shapes' impls); the
-// tint is a data enum, its members checked by hand (`validate.rs`).
-bedrock_addon_core::impl_schema_leaf!(GrassTint);
-bedrock_addon_core::impl_no_molang!(GrassTint);

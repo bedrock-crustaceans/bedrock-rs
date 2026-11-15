@@ -1,5 +1,5 @@
 //! Fixtures `a01`–`a19` and `a30`: the version gate and chain of an
-//! attachable and the shapes of `description.item`. The Molang
+//! attachable and the shapes of `description.own.item`. The Molang
 //! rows `am01`–`am06` are in `molang.rs`, the stack rows `a20`–`a29` in `bindings.rs`, the
 //! rows that need the item index (`a17`, `a18`) in `link.rs`. Resource pack at
 //! `min_engine_version` 1.21.0 unless the row says otherwise.
@@ -65,7 +65,7 @@ fn a01_vanilla_1_8_0_armor() {
     assert_eq!(document.format_version, FormatVersion::new(1, 26, 0));
     assert_eq!(document.identifier().as_str(), "minecraft:diamond_helmet");
     // No `item`: the attachable is drawn for the item of its own identifier.
-    assert_eq!(document.description.item, None);
+    assert_eq!(document.description.own.item, None);
     assert_eq!(document.binding(), None);
     assert!(document.bound_items().is_empty());
     let scripts = document.description.slots.scripts.as_ref().unwrap();
@@ -296,10 +296,10 @@ fn a12_item_string_form() {
         assert_eq!(condition, Condition::Always);
         assert!(condition.is_always() && !condition.is_never());
         assert_eq!(
-            document.description.item,
+            document.description.own.item,
             Some(ItemBinding::Item("example:wand".to_owned()))
         );
-        let item = document.description.item.as_ref().unwrap();
+        let item = document.description.own.item.as_ref().unwrap();
         assert_eq!(item.ignored().count(), 0);
     }
 }
@@ -335,7 +335,7 @@ fn a13_item_multi_member_binds_the_smallest_key_deviation() {
             0
         );
         // Both members are kept as written.
-        let item = document.description.item.as_ref().unwrap();
+        let item = document.description.own.item.as_ref().unwrap();
         assert!(matches!(item, ItemBinding::Conditional(members) if members.len() == 2));
         assert_eq!(item.ignored().collect::<Vec<_>>(), ["example:b"]);
     }
@@ -618,8 +618,8 @@ fn a19_item_molang_version() {
     for (a, b, c) in [(1, 16, 0), (1, 21, 100)] {
         let document = loaded(attachable(&text, &rp(a, b, c)));
         let expected = pack_molang_version(Some(&MinEngineVersion::new(a, b, c)));
-        let Some(ItemBinding::Conditional(members)) = &document.description.item else {
-            panic!("{:?}", document.description.item);
+        let Some(ItemBinding::Conditional(members)) = &document.description.own.item else {
+            panic!("{:?}", document.description.own.item);
         };
         let Molang::Expr(source) = &members["minecraft:diamond_helmet"] else {
             panic!("{members:?}");
@@ -643,8 +643,8 @@ fn a19_every_item_member_takes_the_pack_s_version() {
     for version in WITH_ITEM {
         let document = loaded(attachable(&ghost(version, members), &rp(1, 16, 0)));
         let expected = pack_molang_version(Some(&MinEngineVersion::new(1, 16, 0)));
-        let Some(ItemBinding::Conditional(members)) = &document.description.item else {
-            panic!("{:?}", document.description.item);
+        let Some(ItemBinding::Conditional(members)) = &document.description.own.item else {
+            panic!("{:?}", document.description.own.item);
         };
         for (key, value) in members {
             let Molang::Expr(source) = value else {

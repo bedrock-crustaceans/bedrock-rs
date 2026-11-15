@@ -1,5 +1,5 @@
 error: unknown attribute `fallbak`, did you mean `fallback`?
-       available attributes: since_format, since_engine, unknown, fallback, min, max, above, below, min_len, max_len, low_code, high_code, kept, key_with, multiple_of, molang, molang_with, check_with, rule, trigger, read_with, required, wrong_type, missing, invalid, negative, finite, string_only, iterated, elements, skip_code, or_kept, foreign_event, lowercase, expected, case_insensitive, order, otherwise
+       available attributes: since_format, since_engine, unknown, fallback, min, max, above, below, min_len, max_len, low_code, high_code, kept, key_with, multiple_of, molang, molang_with, check_with, rule, trigger, read_with, required, wrong_type, missing, invalid, negative, finite, string_only, iterated, reads_null, elements, skip_code, or_kept, foreign_event, lowercase, expected, case_insensitive, order, otherwise
  --> tests/ui/schema/misspelt_key.rs:6:21
   |
 6 |     #[facet(schema::fallbak = 1)]

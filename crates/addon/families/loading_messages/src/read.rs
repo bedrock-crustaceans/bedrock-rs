@@ -6,13 +6,11 @@ use super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
-use bedrock_addon_core::json::kit::fixed_path::{
-    Authored, iterated, kept_unknown, reader, to_text,
-};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, reader, to_text};
 use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{ElementFailure, FromJson, read_document, read_iterated};
 
 /// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
 fn invalid() -> Diagnostic {
@@ -82,95 +80,74 @@ impl LoadingMessage {
     }
 }
 
-/// Reads one element of a list: a string is kept; an object needs a `message` member, and
-/// `message` and `condition` are read as strings with an empty default.
-fn read_element(read: &mut Read<'_>, node: &Node<'_>) -> LoadingMessage {
-    let element = node.value();
-    if let Some(text) = element.as_string() {
-        return LoadingMessage::Text(text.as_str().to_owned());
-    }
-    // Another kind is the crate's own finding, not a wrong type.
-    let Some(members) = element.is_object().then(|| read.object(node)).flatten() else {
-        read.push(invalid().at(node.path().clone()));
-        return LoadingMessage::Other(element.clone());
-    };
-    let Some(message) = read.required(&members, "message") else {
-        return LoadingMessage::Other(element.clone());
-    };
-    // Each read as a string with an empty default: the wrong type is told and the text read on.
-    read.string(&message);
-    let condition = members.get("condition").map(|condition| {
-        read.string(&condition);
-        to_text(condition.value())
-    });
-    if condition
-        .as_deref()
-        .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
-    {
-        // An unknown condition is false; the message is never shown.
-        read.push(invalid().at(node.path().child("condition")));
-    }
-    let message = message.value();
-    let mut extra = UnknownMembers::default();
-    if let Some(object) = element.as_object() {
-        for (name, member) in object {
-            if !ELEMENT_KEYS.contains(&name.as_str()) {
-                extra.insert(name.as_str().to_owned(), member.clone());
-            }
+/// One element of a list: a text; an object, which needs a `message` (the game skips the element
+/// without one, telling it, and reads nothing else of it) and reads `message` and `condition`
+/// as strings with an empty default; anything else, which the game skips. What the game skips
+/// is kept as written.
+impl FromJson for LoadingMessage {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
         }
+        let element = node.value();
+        if let Some(text) = element.as_string() {
+            return Some(Self::Text(text.as_str().to_owned()));
+        }
+        // Another kind is the crate's own finding, not a wrong type.
+        let members = element.is_object().then(|| read.object(node)).flatten();
+        let Some(members) = members else {
+            read.push(invalid().at(node.path().clone()));
+            return Some(Self::Other(element.clone()));
+        };
+        let Some(message) = read.required(&members, "message") else {
+            return Some(Self::Other(element.clone()));
+        };
+        // Each read as a string with an empty default: the wrong type is told and the text read on.
+        read.string(&message);
+        let condition = members.get("condition").map(|condition| {
+            read.string(&condition);
+            to_text(condition.value())
+        });
+        if condition
+            .as_deref()
+            .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
+        {
+            // An unknown condition is false; the message is never shown.
+            read.push(invalid().at(node.path().child("condition")));
+        }
+        let extra = members
+            .iter()
+            .filter(|(key, _)| !ELEMENT_KEYS.contains(key))
+            .map(|(key, member)| (key.to_owned(), member.value().clone()))
+            .collect();
+        Some(Self::Conditional(ConditionalMessage {
+            message: to_text(message.value()),
+            condition,
+            extra,
+        }))
     }
-    LoadingMessage::Conditional(ConditionalMessage {
-        message: to_text(message),
-        condition,
-        extra,
+}
+
+bedrock_addon_core::impl_schema_leaf!(LoadingMessage);
+bedrock_addon_core::impl_no_molang!(LoadingMessage);
+
+/// The store's progress texts: iterated as the game iterates a list, each element kept as
+/// written, and told when it is no string.
+pub(super) fn tooltips(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Value>> {
+    read_iterated(node, read, ElementFailure::ByReading, |element, read| {
+        if !element.value().is_string() {
+            read.push(invalid().at(element.path().clone()));
+        }
+        Some(element.value().clone())
     })
 }
 
-/// What the game iterates of a list member, and an information of the crate's own when it is no
-/// array.
-fn iterate<'v>(read: &mut Read<'_>, member: &Node<'v>) -> Vec<Node<'v>> {
-    if !member.value().is_array() {
-        read.wrong_type(member);
-    }
-    iterated(member.value(), member.path())
-        .into_iter()
-        .map(|(at, element)| Node::new(element, at))
-        .collect()
-}
-
 impl Authored for LoadingMessages {
-    /// Reads the file's root. A root that is no object has no list.
+    /// Reads the file's root. A root that is no object is told and has no list.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let mut read = reader(diagnostics);
-        // A root that is no object is told, and has no list.
-        let members = read.object(&Node::new(root, JsonPath::new()));
-        let member = |key: &str| members.as_ref().and_then(|members| members.get(key));
-        let mut messages = Self::default();
-        for list in MessageList::ALL {
-            let Some(member) = member(list.key()) else {
-                continue;
-            };
-            let elements = iterate(&mut read, &member)
-                .iter()
-                .map(|element| read_element(&mut read, element))
-                .collect();
-            *messages.slot(list) = Some(elements);
-        }
-        if let Some(member) = member(TOOLTIPS) {
-            let mut tooltips = Vec::new();
-            for element in iterate(&mut read, &member) {
-                if !element.value().is_string() {
-                    read.push(invalid().at(element.path().clone()));
-                }
-                tooltips.push(element.value().clone());
-            }
-            messages.store_progress_tooltips = Some(tooltips);
-        }
-        let mut known: Vec<&str> = MessageList::ALL.iter().map(|list| list.key()).collect();
-        known.push(TOOLTIPS);
-        if let Some(members) = &members {
-            messages.extra = kept_unknown(&mut read, members, &known);
-        }
+        let node = Node::new(root, JsonPath::new());
+        let messages: Self = read_document(&node, &mut read).unwrap_or_default();
         messages.check_lists(diagnostics);
         messages
     }
@@ -226,19 +203,6 @@ impl LoadingMessages {
             if self.list(list).is_none() {
                 diagnostics.push(Diagnostic::of(codes::LIST_MISSING.with([list.key()])));
             }
-        }
-    }
-
-    fn slot(&mut self, list: MessageList) -> &mut Option<Vec<LoadingMessage>> {
-        match list {
-            MessageList::Legacy => &mut self.loading_messages,
-            MessageList::Beginner => &mut self.beginner_loading_messages,
-            MessageList::MidGame => &mut self.mid_game_loading_messages,
-            MessageList::LateGame => &mut self.late_game_loading_messages,
-            MessageList::Realms => &mut self.realms_loading_messages,
-            MessageList::Addons => &mut self.addons_loading_messages,
-            MessageList::Creative => &mut self.creative_loading_messages,
-            MessageList::Editor => &mut self.editor_loading_messages,
         }
     }
 

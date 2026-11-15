@@ -4,9 +4,12 @@
 use bedrock_addon_core::id::{
     AnimationRef, GeometryId, MaterialId, ParticleId, SoundEventName, TexturePath,
 };
+use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 use indexmap::IndexMap;
 
+use crate::read::{conditions, name_map, slot_map};
+use crate::rules::{CONDITION, HELD_ITEM_SCALE};
 use crate::{AnimationKind, ControllerUse, HeldItemScale, Scripts, SpawnEgg, Visuals};
 
 /// The members a client entity's and an attachable's `description` share (format version
@@ -16,16 +19,17 @@ use crate::{AnimationKind, ControllerUse, HeldItemScale, Scripts, SpawnEgg, Visu
 ///
 /// Every member is kept as written. Vanilla lower-cases every slot name and the values of
 /// `materials`, `geometry`, `animations` and `particle_effects` when it loads them.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = CONDITION)]
 pub struct VisualSlots {
     /// `materials`: slot name → material.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
+    #[facet(default, schema::read_with = slot_map, skip_serializing_if = IndexMap::is_empty)]
     pub materials: IndexMap<String, MaterialId>,
     /// `textures`: slot name → texture path.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
+    #[facet(default, schema::read_with = slot_map, skip_serializing_if = IndexMap::is_empty)]
     pub textures: IndexMap<String, TexturePath>,
     /// `geometry`: slot name → geometry.
-    #[facet(default, skip_serializing_if = IndexMap::is_empty)]
+    #[facet(default, schema::read_with = slot_map, skip_serializing_if = IndexMap::is_empty)]
     pub geometry: IndexMap<String, GeometryId>,
     /// `queryable_geometry`: the geometry slot Molang's geometry queries read.
     pub queryable_geometry: Option<String>,
@@ -35,17 +39,22 @@ pub struct VisualSlots {
     /// `scripts`: the Molang the client runs for the model and the animations it plays.
     pub scripts: Option<Scripts>,
     /// `particle_effects`: short name → particle effect.
+    #[facet(schema::read_with = name_map)]
     pub particle_effects: Option<IndexMap<String, ParticleId>>,
     /// `particle_emitters`: accepted and read by nothing.
+    #[facet(schema::read_with = name_map)]
     pub particle_emitters: Option<IndexMap<String, String>>,
     /// `animations`: short name → animation (`animation.…`) or animation controller
     /// (`controller.animation.…`). A value with neither prefix is ignored. `None` is a
     /// description without the member; an empty object the author wrote is kept.
+    #[facet(schema::read_with = name_map)]
     pub animations: Option<IndexMap<String, AnimationRef>>,
     /// `render_controllers`: the render controllers that draw the model, in order.
+    #[facet(schema::read_with = conditions)]
     pub render_controllers: Option<Vec<ControllerUse>>,
     /// `sound_effects`: short name → sound event. `None` is a description without the
     /// member; an empty object the author wrote is kept.
+    #[facet(schema::read_with = name_map)]
     pub sound_effects: Option<IndexMap<String, SoundEventName>>,
     /// `enable_attachables`: draw held and worn attachables; `false` when absent.
     pub enable_attachables: Option<bool>,
@@ -53,6 +62,7 @@ pub struct VisualSlots {
     pub held_item_ignores_lighting: Option<bool>,
     /// `held_item_scale`: the scale of held items; 1.0 when absent. A number at or below 0 is
     /// not used.
+    #[facet(schema::molang = HELD_ITEM_SCALE)]
     pub held_item_scale: Option<HeldItemScale>,
     /// `hide_armor`: do not draw worn armour; `false` when absent.
     pub hide_armor: Option<bool>,

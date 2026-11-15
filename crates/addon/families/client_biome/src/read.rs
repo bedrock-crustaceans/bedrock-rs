@@ -3,26 +3,27 @@
 //! `environment_attributes`) and, below 1.21.130, the whole document around it.
 
 use facet::Facet;
-use facet_json::RawJson;
-use indexmap::IndexMap;
 
-use super::component::{ClientBiomeComponent, child};
+use super::component::ClientBiomeComponent;
+use super::history::v1_21_40::{AmbientSounds as OlderAmbientSounds, Component};
 use super::{Description, EnvironmentAttributes};
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Class, Code, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind, Phase,
 };
-use bedrock_addon_core::document::{ComponentMap, ComponentSet};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::document::{ComponentMap, ComponentRef, ComponentSet};
+use bedrock_addon_core::id::BiomeId;
+use bedrock_addon_core::json::kit::{Node, Pass, Read, Versions};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, to_json};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ConvertMode, FieldGate, ParseCx, check_fields_released, parse_payload,
+    ConvertMode, FieldGate, ParseCx, check_fields_released, read_payload_with,
 };
-use bedrock_addon_shared_biome_env::read_component;
+use bedrock_addon_shared_biome_env::{Whole, read_component, read_row, read_struct};
 
 /// The first version read from the `minecraft:client_biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
@@ -73,76 +74,102 @@ const FIELD_GATES: [(&str, &[FieldGate]); 3] = [
         ],
     ),
 ];
-/// The first struct whose foliage colour-map enum has `dry_foliage`.
-const DRY_FOLIAGE_MAP: FormatVersion = FormatVersion::new(1, 21, 70);
+/// The first struct whose component `minecraft:ambient_sounds` has the underwater members: below
+/// it the component is read in the shape its era had.
+const AMBIENT_SOUNDS_NEWEST: FormatVersion = known::V1_21_120;
+/// The key of `minecraft:ambient_sounds`.
+const AMBIENT_SOUNDS: &str = "minecraft:ambient_sounds";
 
 /// The component set of one era of the chain: the newest set, or an older one that reads a
 /// component in the shape its era had.
 pub(crate) trait ComponentEra: ComponentSet + From<ClientBiomeComponent> {
-    /// Reads the component `key` when its shape in this era is not the newest one's:
-    /// `None` when the newest set reads it, else the component or its failure (reported in
-    /// `d`, relative to the component).
-    #[allow(unused_variables)]
-    #[allow(
-        clippy::option_option,
-        reason = "three outcomes: not this era's, read, failed (reported)"
-    )]
-    fn read_own(
-        key: &str,
-        slice: JsonSlice<'_>,
-        cx: &LoadContext,
-        d: &mut Diagnostics,
-    ) -> Option<Option<Self>> {
-        None
-    }
+    /// The components of a payload read as the older set's, as this era's.
+    fn from_read(components: Components) -> ComponentMap<Self>;
 
     /// The component as JSON, in its era's shape.
     fn write(&self) -> Result<Value, EncodeError>;
 }
 
 impl ComponentEra for ClientBiomeComponent {
+    /// Every component of the newest set's eras is read in the newest shape.
+    fn from_read(components: Components) -> ComponentMap<Self> {
+        let mut map = ComponentMap::new();
+        for entry in components.0.iter() {
+            match entry {
+                ComponentRef::Typed {
+                    value: Component::Newest(component),
+                    synthesized,
+                    ..
+                } => {
+                    map.insert_typed(component.clone(), synthesized);
+                }
+                ComponentRef::Unknown { name, json } => {
+                    map.insert_unknown(name, json.clone());
+                }
+                _ => {}
+            }
+        }
+        map
+    }
+
     fn write(&self) -> Result<Value, EncodeError> {
         self.write_component()
     }
 }
 
-/// A stable payload: components as raw slices, parsed one at a time.
-#[derive(Facet)]
+/// What a payload object holds: the components are those of the struct the read is of
+/// ([`read_as`]), in the older set.
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct Shell<'a> {
-    description: Description,
-    components: IndexMap<String, RawJson<'a>>,
+pub(crate) struct Payload {
+    pub(crate) description: Description,
+    #[facet(opaque, schema::read_with = components)]
+    pub(crate) components: Components,
 }
 
-/// The beta payload.
-#[derive(Facet)]
+/// The beta payload: [`Payload`] and the environment attributes.
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct BetaShell<'a> {
-    description: Description,
-    components: IndexMap<String, RawJson<'a>>,
-    environment_attributes: Option<EnvironmentAttributes>,
+pub(crate) struct BetaPayload {
+    #[facet(flatten)]
+    pub(crate) payload: Payload,
+    pub(crate) environment_attributes: Option<EnvironmentAttributes>,
 }
 
 /// The root of a document below 1.21.130: one strict struct of two members, `format_version`
 /// and `minecraft:client_biome`, both required.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct Root<'a> {
-    format_version: String,
-    #[facet(rename = "minecraft:client_biome")]
-    client_biome: RawJson<'a>,
-}
-
-/// What a payload object holds.
-pub(crate) struct Payload<C: ComponentSet> {
-    pub(crate) description: Description,
-    pub(crate) components: ComponentMap<C>,
-}
-
-/// A document below 1.21.130: its `format_version` as written and its payload.
-pub(crate) struct Whole<C: ComponentSet> {
+pub(crate) struct Root {
     pub(crate) format_version: String,
-    pub(crate) payload: Payload<C>,
+    #[facet(rename = "minecraft:client_biome", schema::read_with = read_struct::<Payload>)]
+    pub(crate) client_biome: Payload,
+}
+
+/// The components of a payload.
+pub(crate) struct Components(pub(crate) ComponentMap<Component>);
+
+// The components are read by the family's own loop and hold no Molang walk of their own here
+// (the struct that owns them walks them), no bound and no trigger.
+bedrock_addon_core::impl_no_molang!(Components);
+bedrock_addon_core::impl_schema_leaf!(Components);
+
+/// Reads the payload `T` of the struct of `version`: its components and identifier are the
+/// ones `version` binds.
+pub(crate) fn read_as<T: FromJson>(
+    slice: JsonSlice<'_>,
+    version: FormatVersion,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    let whole: Option<Whole<T>> = read_payload_with(slice, cx, d, |read| {
+        let engine = read.known_versions().engine;
+        read.versions(Versions {
+            format: Some(version),
+            engine,
+        })
+    });
+    whole.map(|whole| whole.0)
 }
 
 /// Runs a struct's strict read; any error it raises is followed by vanilla's "Invalid Client
@@ -178,60 +205,6 @@ pub(crate) fn is_unknown_member(finding: &Diagnostic) -> bool {
     matches!(finding.kind(), Kind::UnknownMember(Disposition::Kept))
 }
 
-/// Reads a stable payload object as the struct of `version` binds it.
-pub(crate) fn payload<C: ComponentEra>(
-    slice: JsonSlice<'_>,
-    version: FormatVersion,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<Payload<C>> {
-    let shell: Shell<'_> = parse_payload(slice, cx, d)?;
-    check_identifier(&shell.description, version, &cx.at, d);
-    let at = child(&cx.at, &["components"]);
-    let components = components(&shell.components, slice, &at, version, cx.load, d);
-    Some(Payload {
-        description: shell.description,
-        components,
-    })
-}
-
-/// Reads the beta payload object: the 1.21.130 components and `environment_attributes`.
-pub(crate) fn beta_payload(
-    slice: JsonSlice<'_>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<(Payload<ClientBiomeComponent>, Option<EnvironmentAttributes>)> {
-    let shell: BetaShell<'_> = parse_payload(slice, cx, d)?;
-    check_identifier(&shell.description, BETA_VERSION, &cx.at, d);
-    let at = child(&cx.at, &["components"]);
-    let components = components(&shell.components, slice, &at, BETA_VERSION, cx.load, d);
-    let payload = Payload {
-        description: shell.description,
-        components,
-    };
-    Some((payload, shell.environment_attributes))
-}
-
-/// Reads a document below 1.21.130, root first.
-pub(crate) fn whole<C: ComponentEra>(
-    document: JsonSlice<'_>,
-    version: FormatVersion,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<Whole<C>> {
-    let root: Root<'_> = parse_payload(document, cx, d)?;
-    let slice = document.nested(&root.client_biome)?;
-    let inner = ParseCx {
-        at: child(&cx.at, &[PAYLOAD_KEY]),
-        ..cx.clone()
-    };
-    let payload = payload(slice, version, &inner, d)?;
-    Some(Whole {
-        format_version: root.format_version,
-        payload,
-    })
-}
-
 /// A character of `[a-z0-9._%+-]`.
 fn name_byte(byte: u8) -> bool {
     byte.is_ascii_lowercase()
@@ -256,55 +229,52 @@ fn bare_or_namespaced(identifier: &str) -> bool {
             .all(|b| name_byte(b) || (b'+'..=b':').contains(&b))
 }
 
-/// The identifier's regex constraint of the struct of `version`.
-fn check_identifier(
-    description: &Description,
-    version: FormatVersion,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) {
-    let identifier = description.identifier.as_str();
+/// The description's `identifier` (`schema::read_with`) under the identifier's regex constraint
+/// of the struct of the read's version.
+pub(crate) fn identifier(node: &Node<'_>, read: &mut Read<'_>) -> Option<BiomeId> {
+    let identifier = BiomeId::from_json(node, read)?;
+    let version = read.known_versions().format?;
+    let text = identifier.as_str();
     let code = if version < NAMESPACED {
-        if bare_or_namespaced(identifier) {
-            return;
-        }
-        Code::from(&codes::IDENTIFIER_UPPER)
+        (!bare_or_namespaced(text)).then_some(Code::from(&codes::IDENTIFIER_UPPER))
     } else {
-        if namespaced(identifier) {
-            return;
-        }
-        Code::from(&codes::IDENTIFIER_NAMESPACE)
+        (!namespaced(text)).then_some(Code::from(&codes::IDENTIFIER_NAMESPACE))
     };
-    d.push(Diagnostic::error(code).at(child(at, &["description", "identifier"])));
+    if let Some(code) = code {
+        read.defer(
+            Pass::Misread,
+            Diagnostic::error(code).at(node.path().clone()),
+        );
+    }
+    Some(identifier)
 }
 
-/// The `components` object of a struct of `version`, in file order. A component the struct
-/// binds is read strictly (a failure is an error). A component or member of a later struct is
-/// the error "To use … use json format version … or higher" (vanilla: the strict loader's
-/// unknown member; the document is not loaded either way). Any other key is an
-/// `UnrecognizedComponent`, graded by the slice's reading: the family's strict mask makes it an
-/// error that refuses the document, as vanilla does for an unknown member.
-fn components<C: ComponentEra>(
-    entries: &IndexMap<String, RawJson<'_>>,
-    within: JsonSlice<'_>,
-    at: &JsonPath,
-    version: FormatVersion,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> ComponentMap<C> {
+/// The `components` object of a struct of the read's version, in file order
+/// (`schema::read_with`). A component the struct binds is read strictly (a failure is an
+/// error). A component or member of a later struct is the error "To use … use json format
+/// version … or higher" (vanilla: the strict loader's unknown member; the document is not
+/// loaded either way). Any other key is an `UnrecognizedComponent`, graded by the slice's
+/// reading: the family's strict mask makes it an error that refuses the document, as vanilla
+/// does for an unknown member.
+fn components(node: &Node<'_>, read: &mut Read<'_>) -> Option<Components> {
+    let version = read.known_versions().format?;
     let table = ClientBiomeComponent::TABLE;
+    let members = read.object(node)?;
+    let mut cx = read
+        .load_context()
+        .cloned()
+        .unwrap_or_else(LoadContext::detached);
+    if read.load_context().is_none() {
+        cx.reading = read.reading();
+    }
+    cx.document_format = Some(version);
     let mut map = ComponentMap::new();
-    for (key, raw) in entries {
-        let slice = within.nested(raw).unwrap_or(JsonSlice {
-            text: raw.as_str(),
-            offset: within.offset,
-        });
-        let path = child(at, &[key]);
-        let json =
-            bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).unwrap_or(Value::NULL);
+    let mut found = Diagnostics::default();
+    for (key, member) in members.iter() {
+        let path = node.path().child(key);
         let Some(meta) = table.get(key) else {
-            map.insert_unknown(key, json);
-            d.push(
+            map.insert_unknown(key, member.value().clone());
+            found.push(
                 Diagnostic::of(&core_codes::UNRECOGNIZED_COMPONENT)
                     .at(path)
                     .severity(cx.grade(Class::Unknown)),
@@ -314,21 +284,41 @@ fn components<C: ComponentEra>(
         // Here, not on the finished map: a component the struct of `version` does not bind is
         // never read into one.
         if let Some(released) = meta.released.filter(|released| version < *released) {
-            d.push(Diagnostic::error(use_version("component", key, released)).at(path));
+            found.push(Diagnostic::error(use_version("component", key, released)).at(path));
             continue;
         }
-        if gated(key, &json, version, &path, d) {
+        if gated(key, member.value(), version, &path, &mut found) {
             continue;
         }
-        let value = read_component(&path, d, |found| match C::read_own(key, slice, cx, found) {
-            Some(own) => own,
-            None => (meta.parse)(slice, ConvertMode::Strict, cx, found).map(C::from),
+        // A member without a text (a node made without one) is read from its value written out.
+        let written;
+        let slice = if let Some(slice) = member.text() {
+            slice
+        } else {
+            written = to_json(member.value()).unwrap_or_default();
+            JsonSlice::new(&written)
+        };
+        let value = read_component(&path, &mut found, |at| {
+            if key == AMBIENT_SOUNDS && version < AMBIENT_SOUNDS_NEWEST {
+                read_row::<OlderAmbientSounds, Component>(slice, ConvertMode::Strict, &cx, at)
+            } else {
+                (meta.parse)(slice, ConvertMode::Strict, &cx, at).map(Component::from)
+            }
         });
         if let Some(value) = value {
             map.insert_typed(value, false);
         }
     }
-    map
+    let kept = found.take_unknown();
+    // Told with the passes after the payload's own members, as a struct that reads its payload
+    // first and its components next tells them.
+    for finding in found {
+        read.defer(Pass::Misread, finding);
+    }
+    read.findings_mut()
+        .unknown_mut()
+        .absorb(&JsonPath::new(), kept);
+    Some(Components(map))
 }
 
 /// The members of the component `key` that the struct of `version` does not bind yet; `true`
@@ -364,19 +354,6 @@ fn gated(
             finding
         }));
     }
-    let dry_foliage = key == "minecraft:foliage_appearance"
-        && object
-            .get("color")
-            .and_then(Value::as_object)
-            .and_then(|color| color.get("color_map"))
-            .and_then(Value::as_string)
-            .is_some_and(|name| name.as_str() == "dry_foliage");
-    if dry_foliage && version < DRY_FOLIAGE_MAP {
-        d.push(
-            Diagnostic::of(&core_codes::INVALID_ENUM_VALUE).at(child(at, &["color", "color_map"])),
-        );
-        reported = true;
-    }
     reported
 }
 
@@ -388,7 +365,7 @@ fn use_version(what: &'static str, name: &str, version: FormatVersion) -> Code {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::document::ComponentRef;
+    use bedrock_addon_core::load::LoadContext;
 
     /// An unknown component key is told and kept in the map as an unknown entry (biome drops
     /// it); the strict mask refuses the document either way, so only this read shows the
@@ -396,20 +373,25 @@ mod tests {
     #[test]
     fn an_unknown_component_key_is_kept_as_an_unknown_entry() {
         let text = r#"{"demo:nothing": {"a": 1}}"#;
-        let slice = JsonSlice::new(text);
-        let entries: IndexMap<String, RawJson<'_>> =
-            bedrock_addon_core::json::parse_at(slice).expect("an object");
-        let mut d = Diagnostics::default();
+        let parsed = bedrock_addon_core::json::parse::parse(
+            text,
+            bedrock_addon_core::json::parse::Options::default(),
+        )
+        .expect("an object");
         let at = JsonPath::of_keys(["minecraft:client_biome", "components"]);
-        let map: ComponentMap<ClientBiomeComponent> = components(
-            &entries,
-            slice,
-            &at,
-            MODERN,
-            &LoadContext::detached(),
-            &mut d,
-        );
+        let load = LoadContext::detached();
+        let mut d = Diagnostics::default();
+        let map = {
+            let mut read = Read::new(load.reading, &mut d)
+                .load(&load)
+                .versions(Versions {
+                    format: Some(MODERN),
+                    engine: None,
+                });
+            components(&Node::parsed(&parsed, at), &mut read).expect("an object")
+        };
         let kept: Vec<String> = map
+            .0
             .iter()
             .map(|entry| match entry {
                 ComponentRef::Typed { name, .. } => format!("typed {name}"),

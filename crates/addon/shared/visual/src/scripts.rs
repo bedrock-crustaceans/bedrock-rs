@@ -3,7 +3,10 @@
 use indexmap::IndexMap;
 
 use super::AnimateEntry;
+use crate::read::{conditions, variables};
+use crate::rules::NAMED_SCRIPT;
 use bedrock_addon_core::molang::{Molang, MolangSource};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// `scripts`: the Molang a client runs for the model, and the animations it plays.
 ///
@@ -15,55 +18,56 @@ use bedrock_addon_core::molang::{Molang, MolangSource};
 /// Format versions before 1.26.0 use
 /// [`history::v1_10_0::Scripts`](super::history::v1_10_0::Scripts) and
 /// [`history::v1_8_0::Scripts`](super::history::v1_8_0::Scripts).
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::molang = NAMED_SCRIPT)]
 pub struct Scripts {
     /// `variables`: `variable.<name>` → `"public"`, the variables other entities may read.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = variables, skip_serializing_if = Option::is_none)]
     pub variables: Option<IndexMap<String, String>>,
     /// `initialize`: run once when the entity is created; the strings concatenated with no
     /// separator form one expression.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub initialize: Option<Vec<String>>,
     /// `pre_animation`: run every frame before the animations; concatenated as `initialize`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub pre_animation: Option<Vec<String>>,
     /// `scale`: the model's uniform scale.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scale: Option<Molang>,
     /// `scaleX`: the model's x scale (the same script as `scalex`).
-    #[facet(default, rename = "scaleX", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleX", skip_serializing_if = Option::is_none)]
     pub scale_x: Option<Molang>,
     /// `scalex`: the model's x scale; wins over `scaleX`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scalex: Option<Molang>,
     /// `scaleY`: the model's y scale (the same script as `scaley`).
-    #[facet(default, rename = "scaleY", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleY", skip_serializing_if = Option::is_none)]
     pub scale_y: Option<Molang>,
     /// `scaley`: the model's y scale; wins over `scaleY`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scaley: Option<Molang>,
     /// `scaleZ`: the model's z scale (the same script as `scalez`).
-    #[facet(default, rename = "scaleZ", skip_serializing_if = Option::is_none)]
+    #[facet(rename = "scaleZ", skip_serializing_if = Option::is_none)]
     pub scale_z: Option<Molang>,
     /// `scalez`: the model's z scale; wins over `scaleZ`.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub scalez: Option<Molang>,
     /// `parent_setup`: run before the model is attached to its parent.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub parent_setup: Option<Molang>,
     /// `should_update_bones_and_effects_offscreen`: keep animating bones and effects off
     /// screen while non-zero.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub should_update_bones_and_effects_offscreen: Option<Molang>,
     /// `should_update_effects_offscreen`: keep effects running off screen while non-zero.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub should_update_effects_offscreen: Option<Molang>,
     /// `hide_held_items`: hide held items while non-zero, overriding `enable_attachables`.
     /// Accepted from engine 1.26.30.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(skip_serializing_if = Option::is_none)]
     pub hide_held_items: Option<Molang>,
     /// `animate`: the animations and controllers to play, by their `animations` short name.
-    #[facet(default, skip_serializing_if = Option::is_none)]
+    #[facet(schema::read_with = conditions, skip_serializing_if = Option::is_none)]
     pub animate: Option<Vec<AnimateEntry>>,
 }
 

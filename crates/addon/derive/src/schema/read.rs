@@ -154,6 +154,14 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
              `schema::elements = \"drop\"`",
         ));
     }
+    if let Some(span) = attrs.reads_null
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_null` reads a `null` as a value: an `Option` field",
+        ));
+    }
     if let Some((_, span)) = attrs.or_kept
         && (info.option.is_none() || attrs.flatten)
     {
@@ -355,17 +363,19 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
             let with = with.unwrap_or_else(|| {
                 quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json)
             });
-            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #with);)
+            let reads_null = info.attrs.reads_null.is_some();
+            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #reads_null, #with);)
         }
-        // An iterated list reads a `null` as a value that is no array.
-        (None, Some(with), true) if !iterated => {
+        // An iterated list reads a `null` as a value that is no array, a `reads_null` field as
+        // a value.
+        (None, Some(with), true) if !iterated && info.attrs.reads_null.is_none() => {
             quote!(#slot.read_option_with(__member, __read, #field_rule, #kind, #with);)
         }
         (None, Some(with), _) => quote!(#slot.read_with(__member, __read, #field_rule, #with);),
-        (None, None, true) => quote_spanned! {held.span()=>
+        (None, None, true) if info.attrs.reads_null.is_none() => quote_spanned! {held.span()=>
             ::bedrock_addon_core::schema::derive_support::Slot::<#held>::read_option(&mut #slot, __member, __read, #field_rule);
         },
-        (None, None, false) => quote_spanned! {held.span()=>
+        (None, None, _) => quote_spanned! {held.span()=>
             ::bedrock_addon_core::schema::derive_support::Slot::<#held>::read(&mut #slot, __member, __read, #field_rule);
         },
     }
@@ -493,15 +503,8 @@ fn fields_body(
         quote!(#member: #built)
     });
     let build = quote!(#construct { #(#inits),* });
-    // The members a declaration-order read asks for, in declaration order, and the ones a
-    // struct reads from a format version on.
-    let own = || infos.iter().filter(|info| taken(info) && !info.inline);
-    let names = own().flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()));
-    let gates = own().filter_map(|info| {
-        let version = format_version(info.attrs.since_format?);
-        let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
-        Some(quote!(#((#names, #version)),*))
-    });
+    let (names, gates) = member_names_and_gates(infos);
+    let unknown_member = unknown_member(&extra_arg);
     quote! {
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
@@ -522,11 +525,19 @@ fn fields_body(
                     _ => false,
                 }
             },
-            |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
-                __object.unknown(__key, __member, __read, __disposal, #extra_arg);
-            },
+            #unknown_member,
         );
+        // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
+        #reader::read_unknown_last(
+            __object,
+            __read,
+            __unknown,
+            __tag,
+            &[#(#gates),*],
+            #knows,
+            #unknown_member,
+        );
         let mut __ok = true;
         #(#flattened)*
         #(#finishes)*
@@ -535,6 +546,35 @@ fn fields_body(
         }
         ::core::option::Option::Some(#build)
     }
+}
+
+/// The tell of one unknown member, given to the read twice: for the unknown members told with the
+/// members and for the ones told after the keeps of what the members could not read.
+fn unknown_member(extra_arg: &TokenStream) -> TokenStream {
+    let p = paths();
+    let (node, read) = (&p.node, &p.read);
+    quote! {
+        |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
+            __object.unknown(__key, __member, __read, __disposal, #extra_arg);
+        }
+    }
+}
+
+/// The members a declaration-order read asks for, in declaration order, and the ones a struct
+/// reads from a format version on.
+fn member_names_and_gates<'a>(infos: &'a [FieldInfo<'_>]) -> (Vec<&'a String>, Vec<TokenStream>) {
+    let own = || infos.iter().filter(|info| taken(info) && !info.inline);
+    let names = own()
+        .flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()))
+        .collect();
+    let gates = own()
+        .filter_map(|info| {
+            let version = format_version(info.attrs.since_format?);
+            let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
+            Some(quote!(#((#names, #version)),*))
+        })
+        .collect();
+    (names, gates)
 }
 
 /// The type parameters a struct flattens: they share its object, so they are read as `Fields`.

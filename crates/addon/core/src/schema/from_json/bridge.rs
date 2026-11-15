@@ -82,6 +82,7 @@ pub fn read_via_facet<T: for<'a> Facet<'a>>(node: &Node<'_>, read: &mut Read<'_>
     let severity = read.unknown_grade();
     for (path, rule) in unknown {
         let code = match rule {
+            UnknownRule::Silent => continue,
             UnknownRule::Reject => Code::from(&core_codes::DROPPED_FIELD),
             UnknownRule::Ignore => Code::from(&core_codes::IGNORED_MEMBER),
             UnknownRule::Component => Code::from(&core_codes::UNRECOGNIZED_COMPONENT),

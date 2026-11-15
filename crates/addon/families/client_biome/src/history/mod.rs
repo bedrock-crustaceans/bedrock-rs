@@ -33,7 +33,7 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{LegacyPayload, ParseCx, UpgradeCx, ops};
 
-use crate::read::{ComponentEra, strict, whole};
+use crate::read::{ComponentEra, Root, read_as, strict};
 use crate::write::{document, object};
 
 use v1_21_40::Component as OlderComponent;
@@ -112,11 +112,11 @@ impl<S: ComponentEra> LegacyPayload for ClientBiomePayload<S> {
         cx: &ParseCx<'_>,
         d: &mut Diagnostics,
     ) -> Option<Self> {
-        let read = strict(cx, d, |d| whole::<S>(document, version, cx, d))?;
+        let read = strict(cx, d, |d| read_as::<Root>(document, version, cx, d))?;
         Some(Self {
             format_version: read.format_version,
-            description: read.payload.description,
-            components: read.payload.components,
+            description: read.client_biome.description,
+            components: S::from_read(read.client_biome.components),
         })
     }
 

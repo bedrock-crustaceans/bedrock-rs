@@ -2,7 +2,7 @@
 //! `write_envelope` puts it in its document).
 
 use super::component::write_components;
-use super::read::{V1_26_30, beta_payload, payload};
+use super::read::{BetaPayload, Payload, V1_26_30, read_as};
 use super::{Beta, Biome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::ComponentMap;
@@ -29,10 +29,10 @@ impl Versioned for Biome {
 
 impl VersionStruct for Biome {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = payload(slice, Self::VERSION, cx, d)?;
+        let payload = read_as::<Payload>(slice, Self::VERSION, cx, d)?;
         Some(Self {
             description: payload.description,
-            components: payload.components,
+            components: payload.components.0,
         })
     }
 
@@ -53,11 +53,11 @@ impl Versioned for Beta {
 
 impl VersionStruct for Beta {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let (payload, environment_attributes) = beta_payload(slice, cx, d)?;
+        let beta = read_as::<BetaPayload>(slice, BETA_VERSION, cx, d)?;
         Some(Self {
-            description: payload.description,
-            components: payload.components,
-            environment_attributes,
+            description: beta.payload.description,
+            components: beta.payload.components.0,
+            environment_attributes: beta.environment_attributes,
         })
     }
 

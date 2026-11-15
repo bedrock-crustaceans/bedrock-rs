@@ -7,17 +7,15 @@ use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::{Object, array};
-use bedrock_addon_core::json::kit::fixed_path::{
-    Authored, iterated, kept_unknown, raw_member, reader, to_text,
-};
-use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, iterated, raw_member, reader, to_text};
+use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read};
+use bedrock_addon_core::schema::read_document;
 
 /// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
 fn invalid() -> Diagnostic {
     Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info)
 }
 
-const ROOT_KEYS: [&str; 3] = ["canMerge", "splashes", "conditional"];
 const ENTRY_KEYS: [&str; 2] = ["requires", "splashes"];
 const REQUIRES_KEYS: [&str; 4] = ["platforms", "treatments", "stores", "trialMode"];
 /// The requirement lists, in the game's category order.
@@ -37,18 +35,40 @@ fn texts(list: Option<&Value>) -> Vec<String> {
 
 /// The findings of a splash list: a member that is no array (the crate's own), and every
 /// element that is no string.
-fn check_texts(read: &mut Read<'_>, list: Option<Node<'_>>) {
-    let Some(list) = list.filter(|list| !list.value().is_null()) else {
+fn check_texts(read: &mut Read<'_>, list: &Node<'_>) {
+    if list.value().is_null() {
         return;
-    };
+    }
     if !list.value().is_array() {
-        read.wrong_type(&list);
+        read.wrong_type(list);
     }
     for (at, element) in iterated(list.value(), list.path()) {
         if !element.is_string() {
             read.push(invalid().at(at));
         }
     }
+}
+
+/// `canMerge`, kept as written; the game reads it as a boolean (`schema::read_with`).
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the shape of a `read_with` function"
+)]
+pub(super) fn can_merge(node: &Node<'_>, read: &mut Read<'_>) -> Option<Value> {
+    if !node.value().is_bool() {
+        read.push(invalid().at(node.path().clone()));
+    }
+    Some(node.value().clone())
+}
+
+/// `splashes`, kept as written; the game iterates it (`schema::read_with`).
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the shape of a `read_with` function"
+)]
+pub(super) fn splash_texts(node: &Node<'_>, read: &mut Read<'_>) -> Option<Value> {
+    check_texts(read, node);
+    Some(node.value().clone())
 }
 
 /// The members of `node` when it is an object; nothing is told.
@@ -77,29 +97,20 @@ impl Authored for Splashes {
     /// Reads a copy's root. A root that is no object reads as an empty copy.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let at = JsonPath::new();
-        let mut read = reader(diagnostics);
-        let Some(members) = members(&mut read, &Node::new(root, at.clone())) else {
+        if !root.is_object() {
             // The first member lookup turns the root into `{}`.
-            read.push(invalid().at(at));
+            reader(diagnostics).push(invalid().at(at));
             return Self::default();
-        };
-        let member = |key: &str| members.get(key).map(|node| node.value().clone());
-        let splashes = Self {
-            can_merge: member("canMerge"),
-            splashes: member("splashes"),
-            conditional: member("conditional"),
-            extra: UnknownMembers::default(),
-            written: Written::default(),
-        };
-        if splashes.can_merge.as_ref().is_some_and(|v| !v.is_bool()) {
-            read.push(invalid().at(at.child("canMerge")));
         }
-        check_texts(&mut read, members.get("splashes"));
-        let extra = kept_unknown(&mut read, &members, &ROOT_KEYS);
-        if let Some(conditional) = members.get("conditional") {
-            check_conditional(&mut read, &conditional);
+        let splashes: Self =
+            read_document(&Node::new(root, at), &mut reader(diagnostics)).unwrap_or_default();
+        // The entries are kept as written in `conditional`; what the game makes of them is
+        // told after the members and the unknown ones, a rule over the value read.
+        if let Some(conditional) = raw_member(root, "conditional") {
+            let at = JsonPath::new().child("conditional");
+            check_conditional(&mut reader(diagnostics), &Node::new(conditional, at));
         }
-        Self { extra, ..splashes }
+        splashes
     }
 
     /// The copy's members as the JSON object they are written as.
@@ -140,7 +151,9 @@ fn check_conditional(read: &mut Read<'_>, conditional: &Node<'_>) {
             read.push(invalid().at(entry.path().clone()));
             continue;
         };
-        check_texts(read, entry_members.get("splashes"));
+        if let Some(splashes) = entry_members.get("splashes") {
+            check_texts(read, &splashes);
+        }
         read.unknown(&entry_members, &ENTRY_KEYS, Disposition::Keep);
         let Some(requires) = members(read, &requires) else {
             continue;

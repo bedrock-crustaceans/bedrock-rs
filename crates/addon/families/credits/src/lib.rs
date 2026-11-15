@@ -1,5 +1,11 @@
 //! The credits (`credits/credits.json`), read from the game's own data and never from a pack.
 //! One fixed-path file with its own reader in the client; it carries no `format_version`.
+//!
+//! The file is read by core's reader (`FromJson`) under the fixed-path read, every finding an
+//! information. The three levels derive their read; what each list does with what the game
+//! skips (an element that is no object with a member, a member that is no array) is the one
+//! function of the family that is hand-written (`objects`), a `schema::read_with` of
+//! the list members.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -22,6 +28,8 @@ use bedrock_addon_core::load::{
     self, AppDataPlace, CollectionLoader, FileCopy, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 use indexmap::IndexMap;
 pub use read::check_starter_seeds;
 
@@ -61,33 +69,42 @@ pub struct Credits {
 }
 
 /// One section of the credits.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 pub struct CreditsSection {
     /// JSON `section`: the heading.
+    #[facet(schema::reads_null, schema::read_with = read::text)]
     pub section: Option<String>,
     /// JSON `disciplines`.
+    #[facet(schema::reads_null, schema::read_with = read::disciplines)]
     pub disciplines: Option<Vec<CreditsDiscipline>>,
     /// The other members.
     pub extra: UnknownMembers,
 }
 
 /// One discipline of a credits section.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 pub struct CreditsDiscipline {
     /// JSON `discipline`: the heading.
+    #[facet(schema::reads_null, schema::read_with = read::text)]
     pub discipline: Option<String>,
     /// JSON `titles`.
+    #[facet(schema::reads_null, schema::read_with = read::titles)]
     pub titles: Option<Vec<CreditsTitle>>,
     /// The other members.
     pub extra: UnknownMembers,
 }
 
 /// One title of a credits discipline, with the people who hold it.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 pub struct CreditsTitle {
     /// JSON `title`.
+    #[facet(schema::reads_null, schema::read_with = read::text)]
     pub title: Option<String>,
     /// JSON `names`, each read as the game reads any value as a string.
+    #[facet(schema::reads_null, schema::read_with = read::names)]
     pub names: Option<Vec<String>>,
     /// The other members.
     pub extra: UnknownMembers,

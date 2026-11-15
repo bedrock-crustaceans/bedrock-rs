@@ -1,7 +1,5 @@
 //! The loader's rules on the newest shared description members ([`VisualSlots::validate`]),
-//! the 1.26 schema's checks of them ([`VisualSlots::check`]), the Molang field specs and the
-//! Molang walk of the members ([`VisualSlots`]'s `MolangFields`), for client entities and
-//! attachables alike.
+//! the Molang field specs of the members, for client entities and attachables alike.
 
 #[cfg(feature = "molang")]
 use bedrock_addon_core::diagnostic::Location;
@@ -9,22 +7,18 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity,
 };
-use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{
-    Molang, MolangFieldSpec, MolangFields, MolangVisitor, ReaderKind, Step,
-};
 #[cfg(feature = "molang")]
 use bedrock_addon_core::molang::{MolangFailure, MolangSource};
+use bedrock_addon_core::molang::{MolangFieldSpec, ReaderKind};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{UpgradeCx, ValidateCx};
 use indexmap::IndexMap;
 
-use crate::cereal;
-use crate::{AnimateEntry, ControllerUse, HeldItemScale, Scripts, VisualSlots, codes};
+use crate::{AnimateEntry, HeldItemScale, VisualSlots, codes};
 
 /// The engine version that first declares `scripts.hide_held_items` and reads
 /// `held_item_scale` as Molang. Before it the member is a plain float.
-const ENGINE_1_26_30: FormatVersion = known::V1_26_30;
+pub(crate) const ENGINE_1_26_30: FormatVersion = known::V1_26_30;
 
 /// A named script as the schema types it (`ExpressionNode`): a number, a boolean or a string
 /// at the pack's version. A string the parser rejects fails the schema, so the document is refused
@@ -58,86 +52,6 @@ const LOADER_SCRIPT: MolangFieldSpec = MolangFieldSpec::KEPT
 
 /// Stands for the file's path in a text until the load knows it.
 pub const FILE: &str = "\u{0}file";
-
-/// The conditional entries of `render_controllers`, each a field per member.
-pub fn visit_controllers(
-    controllers: Option<&mut Vec<ControllerUse>>,
-    visitor: &mut MolangVisitor<'_>,
-) {
-    let Some(controllers) = controllers else {
-        return;
-    };
-    visitor.enter(Step::Key("render_controllers"));
-    for (index, controller) in controllers.iter_mut().enumerate() {
-        if let ControllerUse::Conditional(members) = controller {
-            visitor.field(index, &CONDITION, members);
-        }
-    }
-    visitor.leave();
-}
-
-/// The conditional entries of `scripts.animate`, each a field per member.
-pub(crate) fn visit_animate(
-    animate: Option<&mut Vec<AnimateEntry>>,
-    spec: &MolangFieldSpec,
-    visitor: &mut MolangVisitor<'_>,
-) {
-    let Some(animate) = animate else { return };
-    visitor.enter(Step::Key("animate"));
-    for (index, entry) in animate.iter_mut().enumerate() {
-        if let AnimateEntry::Conditional(members) = entry {
-            visitor.field::<IndexMap<String, Molang>>(index, spec, members);
-        }
-    }
-    visitor.leave();
-}
-
-/// The members' Molang at the description's level (the family's walk enters the payload and
-/// `description` first): `held_item_scale` in its Molang form, the conditions of
-/// `render_controllers`, the named scripts and the `animate` conditions.
-impl MolangFields for VisualSlots {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        // The proxy that reads `held_item_scale` builds the Molang without a version; the walk
-        // gives it the pack's here.
-        if let Some(HeldItemScale::Molang(scale)) = &mut self.held_item_scale {
-            visitor.field("held_item_scale", &HELD_ITEM_SCALE, scale);
-        }
-        visit_controllers(self.render_controllers.as_mut(), visitor);
-        if let Some(scripts) = &mut self.scripts {
-            visitor.enter(Step::Key("scripts"));
-            visit_named(scripts, visitor);
-            visit_animate(scripts.animate.as_mut(), &CONDITION, visitor);
-            visitor.leave();
-        }
-    }
-}
-
-/// The named scripts the schema types as Molang.
-pub(crate) fn visit_named(scripts: &mut Scripts, visitor: &mut MolangVisitor<'_>) {
-    visitor.field("scale", &NAMED_SCRIPT, &mut scripts.scale);
-    visitor.field("scaleX", &NAMED_SCRIPT, &mut scripts.scale_x);
-    visitor.field("scalex", &NAMED_SCRIPT, &mut scripts.scalex);
-    visitor.field("scaleY", &NAMED_SCRIPT, &mut scripts.scale_y);
-    visitor.field("scaley", &NAMED_SCRIPT, &mut scripts.scaley);
-    visitor.field("scaleZ", &NAMED_SCRIPT, &mut scripts.scale_z);
-    visitor.field("scalez", &NAMED_SCRIPT, &mut scripts.scalez);
-    visitor.field("parent_setup", &NAMED_SCRIPT, &mut scripts.parent_setup);
-    visitor.field(
-        "should_update_bones_and_effects_offscreen",
-        &NAMED_SCRIPT,
-        &mut scripts.should_update_bones_and_effects_offscreen,
-    );
-    visitor.field(
-        "should_update_effects_offscreen",
-        &NAMED_SCRIPT,
-        &mut scripts.should_update_effects_offscreen,
-    );
-    visitor.field(
-        "hide_held_items",
-        &NAMED_SCRIPT,
-        &mut scripts.hide_held_items,
-    );
-}
 
 /// The compile check of one `initialize` / `pre_animation` element of a 1.8 or 1.10 document,
 /// as its schema parses it: on its own, as written. A rejection is an error and fails the
@@ -207,73 +121,6 @@ impl VisualSlots {
         loader_scripts(self, at, cx);
         animate_names(self, at, cx.diagnostics);
         empty_conditions(self, at, cx.diagnostics);
-    }
-
-    /// The 1.26 schema's checks of the members, after the typed read: every slot name to its
-    /// pattern, a written `materials`, `textures` or `geometry` holding one (`written` is the
-    /// description as written, which tells an absent map from an empty one), the conditional
-    /// entries of `render_controllers`, then `own` (the family's members the schema declares
-    /// after them), then `scripts.variables` and `scripts.animate`, and the members `engine`
-    /// does not declare before 1.26.30 (`scripts.hide_held_items`, a Molang
-    /// `held_item_scale`). `at` is the description.
-    pub fn check(
-        &self,
-        written: &Value,
-        at: &JsonPath,
-        engine: FormatVersion,
-        d: &mut Diagnostics,
-        own: impl FnOnce(&mut Diagnostics),
-    ) {
-        // An absent map and an empty one are the same value here; the JSON tells them apart.
-        let present = |name: &str| written.as_object().is_some_and(|o| o.get(name).is_some());
-        cereal::check_map(
-            Some(&self.materials),
-            "materials",
-            present("materials"),
-            at,
-            d,
-        );
-        cereal::check_map(Some(&self.textures), "textures", present("textures"), at, d);
-        cereal::check_map(Some(&self.geometry), "geometry", present("geometry"), at, d);
-        cereal::check_map(
-            self.particle_effects.as_ref(),
-            "particle_effects",
-            false,
-            at,
-            d,
-        );
-        cereal::check_map(
-            self.particle_emitters.as_ref(),
-            "particle_emitters",
-            false,
-            at,
-            d,
-        );
-        cereal::check_map(self.animations.as_ref(), "animations", false, at, d);
-        cereal::check_map(self.sound_effects.as_ref(), "sound_effects", false, at, d);
-        cereal::check_controllers(self.render_controllers.as_deref(), at, d);
-        own(d);
-        if let Some(scripts) = &self.scripts {
-            let scripts_at = at.with(&["scripts"]);
-            cereal::check_variables(scripts.variables.as_ref(), &scripts_at, d);
-            cereal::check_animate(scripts.animate.as_deref(), &scripts_at, d);
-            if scripts.hide_held_items.is_some() && engine < ENGINE_1_26_30 {
-                // Undeclared before 1.26.30: "child 'hide_held_items' not valid here.".
-                d.push(cereal::not_valid_here(
-                    "hide_held_items",
-                    scripts_at.with(&["hide_held_items"]),
-                ));
-            }
-        }
-        if matches!(self.held_item_scale, Some(HeldItemScale::Molang(_))) && engine < ENGINE_1_26_30
-        {
-            // Before engine 1.26.30 the schema declares `held_item_scale` as a float only.
-            d.push(cereal::wrong_type(
-                "float",
-                at.with(&["held_item_scale"]),
-                None,
-            ));
-        }
     }
 }
 
@@ -416,6 +263,7 @@ mod tests {
     use bedrock_addon_core::test_cost::{assert_linear_timed_at, timed};
 
     use super::*;
+    use crate::Scripts;
 
     #[test]
     fn naming_the_animations_of_animate_is_linear_in_both_lists() {

@@ -1181,7 +1181,10 @@ impl<'d> Read<'d> {
         if self.stopped || !self.profile.defers() {
             return;
         }
-        let nulls = deferred.iter().any(|(pass, _)| *pass == Pass::Null);
+        // A read that went on past its first failure tells a refused `null` and a converted
+        // scalar of a document that read alone: the door's passes ran on what read.
+        let past_failure = self.profile.failures == Failures::FirstOnly && self.failed;
+        let nulls = !past_failure && deferred.iter().any(|(pass, _)| *pass == Pass::Null);
         let mut deferred = deferred;
         // Stable: within a pass, in the order the read met them.
         deferred.sort_by_key(|(pass, _)| *pass);
@@ -1189,10 +1192,7 @@ impl<'d> Read<'d> {
             if nulls && pass != Pass::Null {
                 break;
             }
-            // A read that went on past its first failure tells a converted scalar of a
-            // document that read alone.
-            if pass == Pass::Misread && self.profile.failures == Failures::FirstOnly && self.failed
-            {
+            if past_failure && matches!(pass, Pass::Null | Pass::Misread) {
                 continue;
             }
             self.push(finding);
@@ -1708,6 +1708,18 @@ impl<'d> Read<'d> {
         self.stopped = self.profile.stops();
     }
 
+    /// The code a wrong type at `node` is told under where a rule words it: the field's own
+    /// `schema::wrong_type` (at the member itself), else the family's wording by where it is
+    /// told ([`Texts::wrong_at`]). One word for every wrong type of the member, a refused `null`
+    /// included.
+    pub(crate) fn worded_wrong_type(&self, node: &Node<'_>) -> Option<Code> {
+        if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
+            return Some(Code::from(code));
+        }
+        let WrongAt(word) = self.texts.wrong_at?;
+        Some(word(&node.path))
+    }
+
     /// Tells that `node` holds a value of a JSON type its member does not take.
     ///
     /// ```
@@ -1730,11 +1742,8 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
-        if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
-            return self.fail(Code::from(code), node.path.clone(), node.span());
-        }
-        if let Some(WrongAt(word)) = self.texts.wrong_at {
-            return self.fail(word(&node.path), node.path.clone(), node.span());
+        if let Some(code) = self.worded_wrong_type(node) {
+            return self.fail(code, node.path.clone(), node.span());
         }
         let code = self.texts.wrong_type.map_or_else(
             || Code::from(&core_codes::INVALID_TYPE),
@@ -2034,8 +2043,8 @@ impl<'d> Read<'d> {
 
     /// Tells the one member `node` as unknown by its struct's word (`schema::unknown`), as the
     /// typed door tells it: `keep` and `report` an `UnrecognizedField` (kept or not, the door's
-    /// one line), `reject` a `DroppedField`, `ignore` an `IgnoredMember`; at the unknown
-    /// severity, spanning its value, in [`Pass::Unknown`].
+    /// one line), `reject` a `DroppedField`, `ignore` an `IgnoredMember`, `silent` nothing; at
+    /// the unknown severity, spanning its value, in [`Pass::Unknown`].
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -2057,6 +2066,7 @@ impl<'d> Read<'d> {
     pub fn unknown_by_rule(&mut self, node: &Node<'_>, rule: crate::schema::UnknownRule) {
         use crate::schema::UnknownRule;
         let disposition = match rule {
+            UnknownRule::Silent => return,
             UnknownRule::Keep | UnknownRule::Report => Disposition::Keep,
             UnknownRule::Reject => Disposition::Reject,
             UnknownRule::Ignore => Disposition::Ignore,

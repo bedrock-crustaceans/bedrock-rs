@@ -1,6 +1,12 @@
 //! The splash texts of the title screen (`splashes.json`): the yellow texts, merged across the
 //! stack's resource packs. One fixed-path file with its own reader in the client; it carries no
 //! `format_version`.
+//!
+//! The members are kept as written (the game iterates and converts whatever it finds), so the
+//! document holds raw values and the read is the checks the game's reader makes of them:
+//! [`Splashes`] derives its read, its members read by `schema::read_with` functions that tell
+//! the crate's own findings, and the entries of `conditional` are walked by a rule over the
+//! value read, after the members and the unknown ones.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -21,6 +27,8 @@ use bedrock_addon_core::json::kit::fixed_path::Authored;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 use indexmap::IndexMap;
 
 /// The path of the splash texts, in every resource pack.
@@ -37,14 +45,17 @@ pub const SPLASHES_PATH: &str = "splashes.json";
 ///
 /// On a stack ([`splash_pool`], `rp.splashes()`) the merged value holds the collected pool in
 /// `splashes` and nothing else.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "splashes.json")]
 pub struct Splashes {
     /// JSON `canMerge`. Only the boolean `true` keeps the lower packs' splashes.
+    #[facet(rename = "canMerge", schema::reads_null, schema::read_with = read::can_merge)]
     pub can_merge: Option<Value>,
     /// JSON `splashes`: an array of strings.
+    #[facet(schema::reads_null, schema::read_with = read::splash_texts)]
     pub splashes: Option<Value>,
     /// JSON `conditional`: an array of [`ConditionalSplashes`] objects.
+    #[facet(schema::reads_null)]
     pub conditional: Option<Value>,
     /// The other members.
     pub extra: UnknownMembers,
@@ -55,6 +66,7 @@ pub struct Splashes {
     /// the written file, not only those beside the edited member. `Debug` shows the root;
     /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
+    #[facet(skip, rename = "\u{0}written")]
     pub written: Written,
 }
 

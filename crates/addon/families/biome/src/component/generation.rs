@@ -128,7 +128,9 @@ pub enum CategoryOrWeight {
 
 /// A temperature category of the legacy overworld generator; the game numbers the five
 /// categories 0 to 4 in the order listed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
 #[non_exhaustive]
 #[allow(missing_docs, reason = "each variant is its JSON spelling")]
 pub enum TemperatureCategory {
@@ -137,31 +139,6 @@ pub enum TemperatureCategory {
     Lukewarm,
     Cold,
     Frozen,
-}
-
-impl TemperatureCategory {
-    /// The JSON spelling.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Medium => "medium",
-            Self::Warm => "warm",
-            Self::Lukewarm => "lukewarm",
-            Self::Cold => "cold",
-            Self::Frozen => "frozen",
-        }
-    }
-
-    /// The category spelled `name`.
-    pub fn from_name(name: &str) -> Option<Self> {
-        Some(match name {
-            "medium" => Self::Medium,
-            "warm" => Self::Warm,
-            "lukewarm" => Self::Lukewarm,
-            "cold" => Self::Cold,
-            "frozen" => Self::Frozen,
-            _ => return None,
-        })
-    }
 }
 
 /// A non-negative integer weight.

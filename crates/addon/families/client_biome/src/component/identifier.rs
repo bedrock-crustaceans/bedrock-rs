@@ -3,7 +3,6 @@
 
 use facet::Facet;
 
-use super::Checked;
 use bedrock_addon_core::id::{
     AtmosphereSettingsId, ColorGradingSettingsId, CubemapSettingsId, FogId, LightingSettingsId,
     WaterSettingsId,
@@ -27,8 +26,6 @@ macro_rules! identifier_component {
                 Self { $field }
             }
         }
-
-        impl Checked for $name {}
     };
 }
 

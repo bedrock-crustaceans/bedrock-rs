@@ -97,6 +97,9 @@ pub enum UnknownRule {
     Keep,
     /// Reported and not kept (`UnrecognizedField` at the door, `MemberNotKept` in the kit).
     Report,
+    /// Kept and written back, and told nothing: the game does not log it and the document keeps
+    /// it (the derived read only; the door tells it as `Keep`).
+    Silent,
     /// Refused (`DroppedField`, at the slice's unknown severity).
     Reject,
     /// Not kept and told as the game ignoring it (`IgnoredMember`, at the slice's unknown
@@ -114,6 +117,7 @@ impl UnknownRule {
         match word {
             "keep" => Some(Self::Keep),
             "report" => Some(Self::Report),
+            "silent" => Some(Self::Silent),
             "reject" => Some(Self::Reject),
             "ignore" => Some(Self::Ignore),
             "component" => Some(Self::Component),

@@ -16,7 +16,7 @@ use bedrock_addon_core::load::LoadContext;
 
 /// The client entity family of the version-chain machinery (hidden: only the loaders name it).
 #[doc(hidden)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ClientEntityFamily;
 
 bedrock_addon_core::version_chain! {
@@ -47,5 +47,5 @@ pub fn upgrade(
     document: Document<ClientEntityHistory>,
     cx: &LoadContext,
 ) -> Result<Document<ClientEntity>, Rejected> {
-    crate::upgrade_document(document, cx)
+    bedrock_addon_shared_visual::file::upgrade_document::<ClientEntityFamily>(document, cx)
 }

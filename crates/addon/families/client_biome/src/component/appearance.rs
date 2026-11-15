@@ -5,104 +5,155 @@
 use facet::Facet;
 use facet_value::VObject;
 
-use super::{Checked, child};
 use crate::codes;
-use crate::color::{Color255Rgb, clamped_channels, is_rgb};
+use crate::color::{Color255Rgb, colour};
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::JsonType;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields};
 use bedrock_addon_core::shared::ShapeErrorKind;
+use bedrock_addon_core::version::FormatVersion;
 
 /// The member that names a colour map.
 const COLOR_MAP: &str = "color_map";
 
-/// A colour, or the name of one of the game's colour maps.
-macro_rules! color_or_map {
-    ($(#[$doc:meta])* $name:ident, $map:ident) => {
-        $(#[$doc])*
-        #[derive(Clone, Debug, PartialEq, Facet)]
-        #[facet(opaque, proxy = Value)]
-        #[repr(u8)]
-        pub enum $name {
-            /// A fixed colour: `"#RRGGBB"` or `[r, g, b]`.
-            Rgb(Color255Rgb),
-            /// `{"color_map": "<name>"}`: the colour comes from a colour map by the biome's
-            /// climate.
-            Map {
-                /// JSON `color_map`.
-                color_map: $map,
-                /// Unknown members of the object.
-                extra: UnknownMembers,
-            },
+/// The first format whose foliage colour maps have `dry_foliage`.
+const DRY_FOLIAGE_MAP: FormatVersion = FormatVersion::new(1, 21, 70);
+
+/// A colour, or the name of one of the game's colour maps: `M` says which maps.
+///
+/// JSON: a colour, `"#RRGGBB"` or `[r, g, b]`, or `{"color_map": "<name>"}` (other members are
+/// kept as unknown ones).
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(opaque, proxy = Value)]
+#[repr(u8)]
+pub enum ColorOrMap<M: ColorMap> {
+    /// A fixed colour: `"#RRGGBB"` or `[r, g, b]`.
+    Rgb(Color255Rgb),
+    /// `{"color_map": "<name>"}`: the colour comes from a colour map by the biome's climate.
+    Map {
+        /// JSON `color_map`.
+        color_map: M,
+        /// Unknown members of the object.
+        extra: UnknownMembers,
+    },
+}
+
+/// The colour of leaves: a fixed colour or a foliage colour map.
+pub type FoliageColor = ColorOrMap<FoliageColorMap>;
+
+/// The colour of grass: a fixed colour or a grass colour map.
+pub type GrassColor = ColorOrMap<GrassColorMap>;
+
+/// A colour map the game names: [`FoliageColorMap`] or [`GrassColorMap`].
+pub trait ColorMap: for<'a> Facet<'a> + FromJson + Sized {
+    /// The JSON name.
+    fn name(&self) -> &'static str;
+
+    /// Reads the map named at `node`, in the format the read is of.
+    fn read_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        Self::from_json(node, read)
+    }
+}
+
+impl ColorMap for FoliageColorMap {
+    fn name(&self) -> &'static str {
+        FoliageColorMap::name(self)
+    }
+
+    /// `dry_foliage` is a value of the enum from 1.21.70; below it, an unknown name.
+    fn read_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let map = Self::from_json(node, read)?;
+        if map == Self::DryFoliage
+            && read
+                .known_versions()
+                .format
+                .is_some_and(|v| v < DRY_FOLIAGE_MAP)
+        {
+            read.refuse(node, Code::from(&core_codes::INVALID_ENUM_VALUE));
+            return None;
         }
+        Some(map)
+    }
+}
 
-        impl TryFrom<Value> for $name {
-            type Error = ShapeErrorKind;
+impl ColorMap for GrassColorMap {
+    fn name(&self) -> &'static str {
+        GrassColorMap::name(self)
+    }
+}
 
-            fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
-                let Some(object) = value.as_object() else {
-                    return Color255Rgb::try_from(value).map(Self::Rgb);
-                };
-                let name = object
-                    .get(COLOR_MAP)
-                    .ok_or(ShapeErrorKind::MissingMember { member: COLOR_MAP })?;
-                let name = name.as_string().ok_or(ShapeErrorKind::WrongType {
-                    expected: "a colour map's name",
-                    found: JsonType::Object,
-                })?;
-                let color_map = $map::from_name(name.as_str()).ok_or(ShapeErrorKind::UnknownName)?;
-                let mut extra = UnknownMembers::default();
-                for (key, member) in object {
-                    if key.as_str() != COLOR_MAP {
-                        extra.insert(key.as_str().to_owned(), member.clone());
-                    }
+impl<M: ColorMap> FromJson for ColorOrMap<M> {
+    /// A colour is told as the game words it (`colour`); the object form needs `color_map`,
+    /// and keeps and tells every other member.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if !node.value().is_object() {
+            return colour(node, read).map(Self::Rgb);
+        }
+        let members = read.object(node)?;
+        let color_map = read
+            .required(&members, COLOR_MAP)
+            .and_then(|node| M::read_name(&node, read));
+        let mut extra = UnknownMembers::default();
+        for (key, value) in read.unknown(&members, &[COLOR_MAP], Disposition::Keep) {
+            extra.insert(key.to_owned(), value.clone());
+        }
+        Some(Self::Map {
+            color_map: color_map?,
+            extra,
+        })
+    }
+}
+
+/// The facet proxy's read, which the writer's round trip uses: the kit's read of the value.
+impl<M: ColorMap> TryFrom<Value> for ColorOrMap<M> {
+    type Error = ShapeErrorKind;
+
+    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
+        let mut told = bedrock_addon_core::diagnostic::Diagnostics::default();
+        let mut read = Read::new(crate::reading(), &mut told);
+        let node = Node::new(&value, bedrock_addon_core::diagnostic::JsonPath::new());
+        Self::from_json(&node, &mut read).ok_or(ShapeErrorKind::UnknownName)
+    }
+}
+
+impl<M: ColorMap> TryFrom<&ColorOrMap<M>> for Value {
+    type Error = ShapeErrorKind;
+
+    fn try_from(color: &ColorOrMap<M>) -> Result<Self, ShapeErrorKind> {
+        match color {
+            ColorOrMap::Rgb(rgb) => Value::try_from(rgb),
+            ColorOrMap::Map { color_map, extra } => {
+                let mut object = VObject::new();
+                object.insert(COLOR_MAP, Value::from(color_map.name()));
+                for (key, member) in extra.iter() {
+                    object.insert(key, member.clone());
                 }
-                Ok(Self::Map { color_map, extra })
+                Ok(object.into())
             }
         }
-
-        bedrock_addon_core::from_json_via_value!($name);
-
-        impl TryFrom<&$name> for Value {
-            type Error = ShapeErrorKind;
-
-            fn try_from(color: &$name) -> Result<Self, ShapeErrorKind> {
-                match color {
-                    $name::Rgb(rgb) => Value::try_from(rgb),
-                    $name::Map { color_map, extra } => {
-                        let mut object = VObject::new();
-                        object.insert(COLOR_MAP, Value::from(color_map.name()));
-                        for (key, member) in extra.iter() {
-                            object.insert(key, member.clone());
-                        }
-                        Ok(object.into())
-                    }
-                }
-            }
-        }
-    };
+    }
 }
 
-color_or_map! {
-    /// The colour of leaves: a fixed colour or a foliage colour map.
-    FoliageColor, FoliageColorMap
+/// A colour reads its own syntax: no Molang, no bound, no trigger.
+impl<M: ColorMap> MolangFields for ColorOrMap<M> {
+    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }
 
-color_or_map! {
-    /// The colour of grass: a fixed colour or a grass colour map.
-    GrassColor, GrassColorMap
-}
+impl<M: ColorMap> SchemaFields for ColorOrMap<M> {
+    fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
 
-// The colours are read through their proxies, which judge their own form.
-bedrock_addon_core::impl_schema_leaf!(FoliageColor, GrassColor);
-bedrock_addon_core::impl_no_molang!(FoliageColor, GrassColor);
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
 
 /// A foliage colour map (JSON `color_map` of `minecraft:foliage_appearance`); the game knows
 /// six, numbered 0 to 5 in the order listed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::string_only)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum FoliageColorMap {
     /// `foliage`.
@@ -119,37 +170,11 @@ pub enum FoliageColorMap {
     DryFoliage,
 }
 
-impl FoliageColorMap {
-    /// Every map with its JSON name, in vanilla's order.
-    const NAMES: [(Self, &'static str); 6] = [
-        (Self::Foliage, "foliage"),
-        (Self::Birch, "birch"),
-        (Self::Evergreen, "evergreen"),
-        (Self::MangroveSwampFoliage, "mangrove_swamp_foliage"),
-        (Self::SwampFoliage, "swamp_foliage"),
-        (Self::DryFoliage, "dry_foliage"),
-    ];
-
-    /// The JSON name.
-    pub fn name(self) -> &'static str {
-        Self::NAMES
-            .iter()
-            .find(|(map, _)| *map == self)
-            .map_or("", |(_, name)| name)
-    }
-
-    /// The map named `name`.
-    pub(crate) fn from_name(name: &str) -> Option<Self> {
-        Self::NAMES
-            .iter()
-            .find(|(_, n)| *n == name)
-            .map(|(map, _)| *map)
-    }
-}
-
 /// A grass colour map (JSON `color_map` of `minecraft:grass_appearance`); the game knows two,
 /// numbered 0 and 1 in the order listed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::string_only)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum GrassColorMap {
     /// `grass`.
@@ -158,30 +183,12 @@ pub enum GrassColorMap {
     SwampGrass,
 }
 
-impl GrassColorMap {
-    /// The JSON name.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Grass => "grass",
-            Self::SwampGrass => "swamp_grass",
-        }
-    }
-
-    /// The map named `name`.
-    pub(crate) fn from_name(name: &str) -> Option<Self> {
-        match name {
-            "grass" => Some(Self::Grass),
-            "swamp_grass" => Some(Self::SwampGrass),
-            _ => None,
-        }
-    }
-}
-
 /// `minecraft:foliage_appearance`: the colour of the biome's leaves.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct FoliageAppearance {
     /// JSON `color`; absent leaves the game's colour.
+    #[facet(schema::wrong_type = codes::COLOR)]
     pub color: Option<FoliageColor>,
 }
 
@@ -190,6 +197,7 @@ pub struct FoliageAppearance {
 #[facet(schema::unknown = "keep")]
 pub struct GrassAppearance {
     /// JSON `color`; absent leaves the game's colour.
+    #[facet(schema::wrong_type = codes::COLOR)]
     pub color: Option<GrassColor>,
     /// JSON `grass_is_shaded` (format 1.21.100); read it through
     /// [`grass_is_shaded`](Self::grass_is_shaded).
@@ -204,6 +212,7 @@ pub struct GrassAppearance {
 #[facet(schema::unknown = "keep")]
 pub struct DryFoliageColor {
     /// JSON `color`.
+    #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
     pub color: Color255Rgb,
 }
 
@@ -212,6 +221,7 @@ pub struct DryFoliageColor {
 #[facet(schema::unknown = "keep")]
 pub struct SkyColor {
     /// JSON `sky_color`.
+    #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
     pub sky_color: Color255Rgb,
 }
 
@@ -221,6 +231,7 @@ pub struct SkyColor {
 #[facet(schema::unknown = "keep")]
 pub struct WaterAppearance {
     /// JSON `surface_color`.
+    #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
     pub surface_color: Option<Color255Rgb>,
     /// JSON `surface_opacity`, from 0 to 1.
     pub surface_opacity: Option<f32>,
@@ -240,123 +251,3 @@ pub struct Precipitation {
     /// JSON `white_ash`.
     pub white_ash: Option<f32>,
 }
-
-/// The member `key` of `json` as an RGB colour: another form is vanilla's error; an array
-/// channel outside `0..=255` is clamped, with an information of the crate's own.
-fn check_rgb(json: &Value, key: &'static str, d: &mut Diagnostics) {
-    let Some(value) = json.as_object().and_then(|object| object.get(key)) else {
-        return;
-    };
-    check_rgb_value(value, &[key], d);
-}
-
-/// [`check_rgb`] for a value at `at`.
-fn check_rgb_value(value: &Value, at: &[&str], d: &mut Diagnostics) {
-    if !is_rgb(value) {
-        d.push(Diagnostic::of(&codes::COLOR).at(child(&JsonPath::new(), at)));
-        return;
-    }
-    for index in clamped_channels(value) {
-        let index = index.to_string();
-        let mut path = at.to_vec();
-        path.push(&index);
-        // The game clamps the channel without a log line; the crate tells the user with an
-        // information.
-        d.push(
-            Diagnostic::of(&core_codes::INVALID_VALUE)
-                .severity(Severity::Info)
-                .at(child(&JsonPath::new(), &path)),
-        );
-    }
-}
-
-/// The member `color` of `json`: a colour, or `{"color_map": <one of names>}`.
-fn check_color_or_map(
-    json: &Value,
-    known: fn(&str) -> bool,
-    unknown: Severity,
-    d: &mut Diagnostics,
-) {
-    let Some(value) = json.as_object().and_then(|object| object.get("color")) else {
-        return;
-    };
-    let Some(object) = value.as_object() else {
-        check_rgb_value(value, &["color"], d);
-        return;
-    };
-    match object.get(COLOR_MAP) {
-        None => d.push(
-            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
-                .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
-        ),
-        Some(name) => match name.as_string() {
-            None => d.push(
-                Diagnostic::of(&core_codes::INVALID_TYPE)
-                    .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
-            ),
-            Some(name) if !known(name.as_str()) => d.push(
-                Diagnostic::of(&core_codes::INVALID_ENUM_VALUE)
-                    .at(child(&JsonPath::new(), &["color", COLOR_MAP])),
-            ),
-            Some(_) => {}
-        },
-    }
-    for (key, _) in object {
-        if key.as_str() != COLOR_MAP {
-            d.push(
-                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                    .at(child(&JsonPath::new(), &["color", key.as_str()]))
-                    .severity(unknown),
-            );
-        }
-    }
-}
-
-impl Checked for FoliageAppearance {
-    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {
-        check_color_or_map(
-            json,
-            |name| FoliageColorMap::from_name(name).is_some(),
-            unknown,
-            d,
-        );
-    }
-}
-
-impl Checked for GrassAppearance {
-    fn check(json: &Value, unknown: Severity, d: &mut Diagnostics) {
-        check_color_or_map(
-            json,
-            |name| GrassColorMap::from_name(name).is_some(),
-            unknown,
-            d,
-        );
-    }
-}
-
-impl Checked for DryFoliageColor {
-    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
-        check_rgb(json, "color", d);
-    }
-}
-
-impl Checked for SkyColor {
-    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
-        check_rgb(json, "sky_color", d);
-    }
-}
-
-impl Checked for WaterAppearance {
-    /// The constraint of every version that at least one member is present, then the colour.
-    fn check(json: &Value, _: Severity, d: &mut Diagnostics) {
-        if let Some(object) = json.as_object()
-            && object.get("surface_color").is_none()
-            && object.get("surface_opacity").is_none()
-        {
-            d.push(Diagnostic::of(&codes::WATER_EMPTY).at(child(&JsonPath::new(), &[])));
-        }
-        check_rgb(json, "surface_color", d);
-    }
-}
-
-impl Checked for Precipitation {}

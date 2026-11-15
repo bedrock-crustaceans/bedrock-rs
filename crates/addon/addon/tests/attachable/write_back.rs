@@ -57,7 +57,7 @@ fn a_built_attachable_writes_text_that_reads_back_to_it() {
         d.slots
             .materials
             .insert("default".to_owned(), MaterialId::parse("entity_alphatest"));
-        d.item = Some(ItemBinding::Conditional(IndexMap::from([(
+        d.own.item = Some(ItemBinding::Conditional(IndexMap::from([(
             "demo:wand_item".to_owned(),
             condition("query.is_sneaking"),
         )])));
@@ -86,18 +86,18 @@ fn a_built_attachable_writes_text_that_reads_back_to_it() {
 fn an_item_the_loader_refuses_is_not_written() {
     const ITEM: &str = "minecraft:attachable/description/item";
     // Rule 16: an empty object.
-    let empty = built(|d| d.item = Some(ItemBinding::Conditional(IndexMap::new())));
+    let empty = built(|d| d.own.item = Some(ItemBinding::Conditional(IndexMap::new())));
     refused(&empty, ITEM);
     // Rule 20: a key outside the pattern.
     let key = built(|d| {
-        d.item = Some(ItemBinding::Conditional(IndexMap::from([(
+        d.own.item = Some(ItemBinding::Conditional(IndexMap::from([(
             "demo:wand item".to_owned(),
             condition("1.0"),
         )])));
     });
     refused(&key, &format!("{ITEM}/demo:wand item"));
     // The string form takes any string (a warning when it is read).
-    let odd = built(|d| d.item = Some(ItemBinding::Item("demo:wand item".to_owned())));
+    let odd = built(|d| d.own.item = Some(ItemBinding::Item("demo:wand item".to_owned())));
     let text = odd.to_json().unwrap();
     assert_eq!(
         loaded(attachable(&text, &cx()))

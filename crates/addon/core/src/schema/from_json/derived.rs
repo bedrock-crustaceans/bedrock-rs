@@ -96,14 +96,14 @@ impl<'v> Object<'v> {
         let word = self.field.or(rule);
         let keep = marked
             || match word {
-                Some(UnknownRule::Keep) => true,
+                Some(UnknownRule::Keep | UnknownRule::Silent) => true,
                 Some(_) => false,
                 None => read.reading().keeps_unknown,
             };
-        let told = if keep {
-            UnknownRule::Keep
-        } else {
-            word.unwrap_or(UnknownRule::Report)
+        let told = match word {
+            Some(UnknownRule::Silent) => UnknownRule::Silent,
+            _ if keep => UnknownRule::Keep,
+            _ => word.unwrap_or(UnknownRule::Report),
         };
         Disposal { keep, told }
     }
@@ -155,7 +155,11 @@ impl<'v> Object<'v> {
         disposal: Disposal,
         extra: Option<&mut UnknownMembers>,
     ) {
-        let told = if disposal.keep && extra.is_none() && !read.keepable() {
+        let told = if disposal.keep
+            && disposal.told != UnknownRule::Silent
+            && extra.is_none()
+            && !read.keepable()
+        {
             UnknownRule::Report
         } else {
             disposal.told
@@ -179,14 +183,44 @@ impl<'v> Object<'v> {
     }
 }
 
+/// Whether `key` is no member of a struct: one it does not know (or knows from a later format
+/// version than the document's, `schema::since_format`) and is not its tag.
+fn is_unknown(
+    read: &Read<'_>,
+    tag: Option<&'static str>,
+    gates: &[(&str, FormatVersion)],
+    knows: &impl Fn(&str) -> bool,
+    key: &str,
+) -> bool {
+    let format = read.known_versions().format;
+    let later = format.is_some_and(|format| {
+        gates
+            .iter()
+            .any(|(name, since)| *name == key && format < *since)
+    });
+    (!knows(key) || later) && Some(key) != tag
+}
+
+/// Where the profile tells a struct's unknown members: before its members (`.0`), among them in
+/// file order (`.1`), or after them (neither).
+fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
+    let profile = read.telling();
+    match profile.unknown {
+        UnknownAt::First => (true, false),
+        UnknownAt::WhereMet => (false, profile.members == MemberOrder::File),
+        UnknownAt::Last => (false, false),
+    }
+}
+
 /// Reads the members of `object` for a struct, by the read's [`Profile`](crate::json::kit::Profile):
 /// `field` reads one (`true` when it is one of the struct's, a flattened struct's or the tag),
 /// `unknown_member` tells and keeps one no field takes (when `unknown`: a flattened struct's
 /// are its owner's to tell). In [`MemberOrder::File`] each member is read where the file has
 /// it; in [`MemberOrder::Declaration`] the struct's `names` (its JSON names, in declaration
 /// order) are looked up one by one. The unknown members are told, each in file order, before
-/// ([`UnknownAt::First`]), among ([`UnknownAt::WhereMet`], file order) or after the members.
-/// Nothing more is read once the read has stopped.
+/// ([`UnknownAt::First`]) or among ([`UnknownAt::WhereMet`], file order) the members; the ones
+/// told after them are [`read_unknown_last`]'s, so that the struct can keep what it could not
+/// read first. Nothing more is read once the read has stopped.
 ///
 /// A member of `gates` read from a later format version than the document's
 /// (`schema::since_format`) is no member of the struct in that document: an unknown one.
@@ -202,43 +236,31 @@ pub fn read_members(
     mut field: impl FnMut(&str, &Node<'_>, &mut Read<'_>) -> bool,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
-    let format = read.known_versions().format;
-    let later = |key: &str| {
-        format.is_some_and(|format| {
+    let in_file_order = read.telling().members == MemberOrder::File;
+    let (first, among) = unknown_placement(read);
+    let later = |read: &Read<'_>, key: &str| {
+        read.known_versions().format.is_some_and(|format| {
             gates
                 .iter()
                 .any(|(name, since)| *name == key && format < *since)
         })
     };
-    let knows = |key: &str| knows(key) && !later(key);
-    let profile = read.telling();
-    let in_file_order = profile.members == MemberOrder::File;
-    let (first, among) = match profile.unknown {
-        UnknownAt::First => (true, false),
-        UnknownAt::WhereMet => (false, in_file_order),
-        UnknownAt::Last => (false, false),
-    };
-    let is_unknown = |key: &str| !knows(key) && Some(key) != tag;
-    let tell_unknown =
-        |read: &mut Read<'_>, unknown_member: &mut dyn FnMut(&str, &Node<'_>, &mut Read<'_>)| {
-            for (key, member) in object.members() {
-                if read.stopped() {
-                    return;
-                }
-                if is_unknown(key) {
-                    unknown_member(key, &member, read);
-                }
-            }
-        };
     if unknown && first {
-        tell_unknown(read, &mut unknown_member);
+        for (key, member) in object.members() {
+            if read.stopped() {
+                return;
+            }
+            if is_unknown(read, tag, gates, &knows, key) {
+                unknown_member(key, &member, read);
+            }
+        }
     }
     if in_file_order {
         for (key, member) in object.members() {
             if read.stopped() {
                 return;
             }
-            let read_it = !later(key) && field(key, &member, read);
+            let read_it = !later(read, key) && field(key, &member, read);
             if !read_it && unknown && among {
                 unknown_member(key, &member, read);
             }
@@ -248,13 +270,36 @@ pub fn read_members(
             if read.stopped() {
                 return;
             }
-            if let Some(member) = object.members.get(name).filter(|_| !later(name)) {
+            if let Some(member) = object.members.get(name).filter(|_| !later(read, name)) {
                 field(name, &member, read);
             }
         }
     }
-    if unknown && !first && !among {
-        tell_unknown(read, &mut unknown_member);
+}
+
+/// The unknown members of `object` a profile tells after the members ([`UnknownAt::Last`], or
+/// in declaration order), each in file order: what [`read_members`] leaves to the struct.
+#[allow(clippy::too_many_arguments)] // the derive's one call per struct
+pub fn read_unknown_last(
+    object: &Object<'_>,
+    read: &mut Read<'_>,
+    unknown: bool,
+    tag: Option<&'static str>,
+    gates: &[(&str, FormatVersion)],
+    knows: impl Fn(&str) -> bool,
+    mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
+) {
+    let (first, among) = unknown_placement(read);
+    if !unknown || first || among {
+        return;
+    }
+    for (key, member) in object.members() {
+        if read.stopped() {
+            return;
+        }
+        if is_unknown(read, tag, gates, &knows, key) {
+            unknown_member(key, &member, read);
+        }
     }
 }
 
@@ -417,7 +462,9 @@ impl<T> Slot<T> {
     /// (`schema::or_kept`): an attempt ([`Read::fork`]) that reads a `null` by the null rule
     /// (for a type of `kind`) and anything else by `with`. A value read is the field's, its
     /// findings told; a value that fails leaves the field absent and is kept as written
-    /// ([`take_kept`](Self::take_kept)), its findings told when `told`, failing nothing.
+    /// ([`take_kept`](Self::take_kept)), its findings told when `told`, failing nothing. A
+    /// field that `reads_null` has a `null` read by `with` too, and kept when it fails.
+    #[allow(clippy::too_many_arguments)] // the derive's one call per field
     pub fn read_or_kept(
         &mut self,
         node: &Node<'_>,
@@ -425,6 +472,7 @@ impl<T> Slot<T> {
         unknown: Option<UnknownRule>,
         kind: Kind,
         told: bool,
+        reads_null: bool,
         with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
     ) {
         if read.stopped() {
@@ -436,7 +484,11 @@ impl<T> Slot<T> {
             rules: self.rules,
             depth: node.path().len(),
         };
-        inner.read_option_with(node, &mut attempt, unknown, kind, with);
+        if reads_null {
+            inner.read_with(node, &mut attempt, unknown, with);
+        } else {
+            inner.read_option_with(node, &mut attempt, unknown, kind, with);
+        }
         self.state = match inner.state {
             State::Failed | State::Defaulted => {
                 if told {
@@ -496,11 +548,15 @@ impl<T> Slot<T> {
             return self.read(node, read, unknown);
         }
         self.depth = node.path().len();
+        let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
         self.state = if super::impls::null::<T>(node, read) {
             State::Null
         } else {
             State::Failed
         };
+        if let Some(saved) = ruled {
+            read.restore_member_rules(saved);
+        }
     }
 }
 
@@ -520,11 +576,15 @@ impl<T> Slot<T> {
             return self.read_with(node, read, unknown, with);
         }
         self.depth = node.path().len();
+        let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
         self.state = if super::impls::null_of(kind.expected, kind.holds_null, node, read) {
             State::Null
         } else {
             State::Failed
         };
+        if let Some(saved) = ruled {
+            read.restore_member_rules(saved);
+        }
     }
 }
 

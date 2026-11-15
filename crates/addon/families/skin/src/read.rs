@@ -1,28 +1,23 @@
-//! Reading `skins.json`.
+//! Reading `skins.json`: the types derive their read; what is the crate's own is the list of
+//! skins (the game sizes it by an array and iterates whatever is there) and the rules the
+//! game does not state, told as informations.
 
 use super::{Skin, SkinPack, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit::{Disposition, Members, Node, Read, Written};
+use bedrock_addon_core::json::kit::fixed_path::{iterated, raw_member, strict_reader};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, PrepareError, Prepared, Value, blank_bom, check_depth, last_wins,
 };
-use bedrock_addon_core::versioning::{MemberFailure, Reading};
+use bedrock_addon_core::schema::{FromJson, UnknownRule, read_document};
 
 /// The longest path the game's fixed buffers hold.
 pub(super) const MAX_PATH: usize = 1023;
 /// The most skins creator tools allow in a pack.
 const MAX_SKINS: usize = 80;
-
+/// The members of a pack that a field takes.
 const PACK_KEYS: [&str; 3] = ["serialize_name", "localization_name", "skins"];
-const STRING_KEYS: [&str; 5] = ["localization_name", "geometry", "texture", "type", "cape"];
-const PATCH_KEYS: [&str; 4] = [
-    "animations",
-    "enable_attachables",
-    "held_item_ignores_lighting",
-    "hide_armor",
-];
 
 /// A finding of the crate's own, the game being silent about it.
 fn note(at: JsonPath) -> Diagnostic {
@@ -31,181 +26,99 @@ fn note(at: JsonPath) -> Diagnostic {
         .at(at)
 }
 
-/// The members of one object: a string member as its typed reading, a member of another
-/// type kept as written, every member not read kept and reported.
-struct Fields<'v> {
-    members: Option<Members<'v>>,
-    extra: UnknownMembers,
-}
-
-impl<'v> Fields<'v> {
-    /// The members of `value` at `at`; none, and nothing told, when it is no object.
-    fn new(read: &mut Read<'_>, value: &'v Value, at: JsonPath) -> Self {
-        let node = Node::new(value, at);
-        Self {
-            members: value.is_object().then(|| read.object(&node)).flatten(),
-            extra: UnknownMembers::default(),
+/// The rules of one skin, told before it is read: its own members tell nothing but the
+/// unknown ones, which come last.
+fn skin_rules(element: &Node<'_>, read: &mut Read<'_>) {
+    let at = element.path();
+    // A path the game's buffer cannot hold reads as empty; the game's only word is a debug
+    // assert, no content-log line, so the crate reports an information.
+    for name in ["texture", "cape"] {
+        let path = raw_member(element.value(), name).and_then(Value::as_string);
+        if path.is_some_and(|path| path.as_str().len() > MAX_PATH) {
+            read.push(note(at.child(name)));
         }
     }
-
-    fn raw(&self, name: &str) -> Option<&'v Value> {
-        Some(self.members.as_ref()?.get(name)?.value())
-    }
-
-    /// The string member `name`; a member of another type goes to `extra` as written.
-    fn string(&mut self, name: &str) -> Option<String> {
-        let member = self.raw(name)?;
-        if let Some(text) = member.as_string() {
-            Some(text.as_str().to_owned())
-        } else {
-            self.extra.insert(name.to_owned(), member.clone());
-            None
-        }
-    }
-
-    /// `extra`, with every member that is none of `known` added and reported.
-    fn finish(mut self, known: &[&str], read: &mut Read<'_>) -> UnknownMembers {
-        if let Some(members) = &self.members {
-            let unknown = read.unknown(members, known, Disposition::Keep);
-            self.extra.extend(
-                unknown
-                    .into_iter()
-                    .map(|(key, value)| (key.to_owned(), value.clone())),
-            );
-        }
-        self.extra
+    // The game compares the type with nothing and logs nothing; creators mean `free` or
+    // `paid`, so the crate reports an information.
+    if let Some(kind) = raw_member(element.value(), "type")
+        && !kind
+            .as_string()
+            .is_some_and(|kind| matches!(kind.as_str(), "free" | "paid"))
+    {
+        read.push(note(at.child("type")));
     }
 }
 
-/// The read of a `skins.json`: the game reads it without a content-log line for an unknown
-/// member, so the kit tells one as an information.
-fn reader(findings: &mut Diagnostics) -> Read<'_> {
-    Read::new(
-        Reading::OWN.with_on_member_failure(MemberFailure::DefaultAndTell),
-        findings,
-    )
-    .unknown_severity(Severity::Info)
+/// The `skins` of a pack (`schema::read_with`). The game sizes the pack by an array and then
+/// iterates whatever is there: an object gives its member values in key order, a scalar
+/// nothing, and the crate reports an information. An entry that is no object is the game's
+/// content-log line and a kept error.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the shape of a `read_with` function"
+)]
+pub(super) fn skins(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Skin>> {
+    if !node.value().is_array() {
+        read.push(note(node.path().clone()));
+    }
+    let mut skins = Vec::new();
+    for (at, entry) in iterated(node.value(), node.path()) {
+        if !entry.is_object() {
+            read.push(Diagnostic::of(&codes::ENTRY_NOT_OBJECT).at(at));
+            continue;
+        }
+        let entry = Node::new(entry, at);
+        skin_rules(&entry, read);
+        skins.extend(Skin::from_json(&entry, read));
+    }
+    Some(skins)
 }
 
-impl Skin {
-    fn read(element: &Value, at: &JsonPath, read: &mut Read<'_>) -> Self {
-        let mut fields = Fields::new(read, element, at.clone());
-        let mut skin = Self {
-            localization_name: fields.string("localization_name"),
-            geometry: fields.string("geometry"),
-            texture: fields.string("texture"),
-            type_: fields.string("type"),
-            cape: fields.string("cape"),
-            animations: fields.raw("animations").cloned(),
-            enable_attachables: fields.raw("enable_attachables").cloned(),
-            held_item_ignores_lighting: fields.raw("held_item_ignores_lighting").cloned(),
-            hide_armor: fields.raw("hide_armor").cloned(),
-            extra: UnknownMembers::default(),
-        };
-        // A path the game's buffer cannot hold reads as empty; the game's only word is a debug
-        // assert, no content-log line, so the crate reports an information.
-        for (name, path) in [("texture", &skin.texture), ("cape", &skin.cape)] {
-            if path.as_ref().is_some_and(|path| path.len() > MAX_PATH) {
-                read.push(note(at.child(name)));
-            }
-        }
-        // The game compares the type with nothing and logs nothing; creators mean `free` or
-        // `paid`, so the crate reports an information.
-        if fields.raw("type").is_some() && !matches!(skin.type_.as_deref(), Some("free" | "paid")) {
-            read.push(note(at.child("type")));
-        }
-        let known: Vec<&str> = STRING_KEYS.into_iter().chain(PATCH_KEYS).collect();
-        skin.extra = fields.finish(&known, read);
-        skin
-    }
+/// The place in the file of each skin a read of `root` holds.
+pub(super) fn places(root: &Value) -> Vec<JsonPath> {
+    let at = JsonPath::new().child("skins");
+    raw_member(root, "skins")
+        .into_iter()
+        .flat_map(|skins| iterated(skins, &at))
+        .filter(|(_, entry)| entry.is_object())
+        .map(|(at, _)| at)
+        .collect()
 }
 
 impl SkinPack {
     /// Reads the root object of a `skins.json`, and keeps it as written when the fields would
     /// not write it back.
     pub(crate) fn from_value(root: &Value, diagnostics: &mut Diagnostics) -> Self {
-        Self::from_value_placed(root, diagnostics).0
-    }
-
-    /// [`from_value`](Self::from_value), with the place in the file of each skin held.
-    pub(super) fn from_value_placed(
-        root: &Value,
-        diagnostics: &mut Diagnostics,
-    ) -> (Self, Vec<JsonPath>) {
-        let (mut pack, places) = Self::read(root, diagnostics);
-        if pack.fields_value() != *root {
-            *pack.written = Some(root.clone());
-        }
-        (pack, places)
-    }
-
-    /// The game's reading of the root object, with nothing kept beside it, and the place in
-    /// the file of each skin held.
-    fn read(root: &Value, diagnostics: &mut Diagnostics) -> (Self, Vec<JsonPath>) {
-        let at = JsonPath::new();
-        let read = &mut reader(diagnostics);
-        let mut fields = Fields::new(read, root, at.clone());
-        let serialize_name = fields.string("serialize_name");
-        let localization_name = fields.string("localization_name");
-        let skins_at = at.child("skins");
-        let mut places = Vec::new();
-        let skins = fields.raw("skins").map(|member| {
-            // The game sizes the pack by an array and then iterates whatever is there: an
-            // object gives its member values in key order, a scalar nothing.
-            let mut entries: Vec<(JsonPath, &Value)> = Vec::new();
-            if let Some(elements) = member.as_array() {
-                for (i, element) in elements.iter().enumerate() {
-                    let at = skins_at.index(i);
-                    entries.push((at, element));
-                }
-            } else {
-                // The game iterates the members without a line, so the crate reports an
-                // information.
-                read.push(note(skins_at.clone()));
-                let mut members: Vec<(&str, &Value)> = member
-                    .as_object()
-                    .into_iter()
-                    .flatten()
-                    .map(|(name, value)| (name.as_str(), value))
-                    .collect();
-                members.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
-                entries.extend(
-                    members
-                        .into_iter()
-                        .map(|(name, value)| (skins_at.child(name), value)),
-                );
-            }
-            let mut skins = Vec::with_capacity(entries.len());
-            for (at, element) in entries {
-                if element.is_object() {
-                    skins.push(Skin::read(element, &at, read));
-                    places.push(at);
-                } else {
-                    // The game logs the line at the content log's error level and goes on to the
-                    // next entry: a kept error.
-                    read.push(Diagnostic::of(&codes::ENTRY_NOT_OBJECT).at(at));
-                }
-            }
-            skins
-        });
+        let mut read = strict_reader(diagnostics);
+        let node = Node::new(root, JsonPath::new());
+        let mut pack: Self = read_document(&node, &mut read).unwrap_or_default();
         // Creator tools want the two names equal; the game reads only one.
-        if serialize_name.is_none() || serialize_name != localization_name {
+        if pack.serialize_name.is_none() || pack.serialize_name != pack.localization_name {
             read.push(
-                Diagnostic::of(&core_codes::SKIN_PACK_NAME_MISMATCH).at(at.child("serialize_name")),
+                Diagnostic::of(&core_codes::SKIN_PACK_NAME_MISMATCH)
+                    .at(JsonPath::new().child("serialize_name")),
             );
         }
         // A creator rule, not the game's.
-        if skins.as_ref().is_some_and(|skins| skins.len() > MAX_SKINS) {
-            read.push(Diagnostic::of(&core_codes::SKIN_PACK_CREATOR_RULE).at(skins_at));
+        if pack
+            .skins
+            .as_ref()
+            .is_some_and(|skins| skins.len() > MAX_SKINS)
+        {
+            read.push(
+                Diagnostic::of(&core_codes::SKIN_PACK_CREATOR_RULE)
+                    .at(JsonPath::new().child("skins")),
+            );
         }
-        let pack = Self {
-            serialize_name,
-            localization_name,
-            skins,
-            extra: fields.finish(&PACK_KEYS, read),
-            written: Written::default(),
-        };
-        (pack, places)
+        // The members no field takes are kept by the read and told after the rules above.
+        for (key, member) in root.as_object().into_iter().flatten() {
+            if !PACK_KEYS.contains(&key.as_str()) {
+                let at = JsonPath::new().child(key.as_str());
+                read.unknown_by_rule(&Node::new(member, at), UnknownRule::Keep);
+            }
+        }
+        *pack.written = (pack.fields_value() != *root).then(|| root.clone());
+        pack
     }
 }
 

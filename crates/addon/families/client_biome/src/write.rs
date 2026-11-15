@@ -5,7 +5,7 @@ use facet_value::VObject;
 
 use super::component::ClientBiomeComponent;
 use super::history::ClientBiomeFamily;
-use super::read::{ComponentEra, MODERN, PAYLOAD_KEY, beta_payload, payload, strict};
+use super::read::{BetaPayload, ComponentEra, MODERN, PAYLOAD_KEY, Payload, read_as, strict};
 use super::{Beta, ClientBiome, Description};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{ComponentMap, UnknownMembers};
@@ -44,12 +44,10 @@ impl Versioned for ClientBiome {
 
 impl VersionStruct for ClientBiome {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = strict(cx, d, |d| {
-            payload::<ClientBiomeComponent>(slice, Self::VERSION, cx, d)
-        })?;
+        let payload = strict(cx, d, |d| read_as::<Payload>(slice, Self::VERSION, cx, d))?;
         Some(Self {
             description: payload.description,
-            components: payload.components,
+            components: ClientBiomeComponent::from_read(payload.components),
         })
     }
 
@@ -64,11 +62,13 @@ impl Versioned for Beta {
 
 impl VersionStruct for Beta {
     fn parse(slice: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let (payload, environment_attributes) = strict(cx, d, |d| beta_payload(slice, cx, d))?;
+        let beta = strict(cx, d, |d| {
+            read_as::<BetaPayload>(slice, BETA_VERSION, cx, d)
+        })?;
         Some(Self {
-            description: payload.description,
-            components: payload.components,
-            environment_attributes,
+            description: beta.payload.description,
+            components: ClientBiomeComponent::from_read(beta.payload.components),
+            environment_attributes: beta.environment_attributes,
         })
     }
 

@@ -210,6 +210,8 @@ pub(crate) struct FieldAttrs {
     pub key_with: Option<(Expr, Span)>,
     /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
     pub iterated: Option<Span>,
+    /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
+    pub reads_null: Option<Span>,
     /// `schema::elements`: `true` for `"drop"`, `false` for `"fail"`.
     pub elements: Option<(bool, Span)>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
@@ -271,6 +273,7 @@ const FIELD_KEYS: &[&str] = &[
     "invalid",
     "finite",
     "iterated",
+    "reads_null",
     "elements",
     "or_kept",
     "low_code",
@@ -414,7 +417,7 @@ fn string_value(entry: &Entry, key: &str) -> Result<LitStr> {
 fn unknown_word(entry: &Entry) -> Result<String> {
     let lit = string_value(entry, "unknown")?;
     let word = lit.value();
-    if ["keep", "report", "reject", "ignore", "component"].contains(&word.as_str()) {
+    if ["keep", "report", "reject", "ignore", "component", "silent"].contains(&word.as_str()) {
         Ok(word)
     } else {
         Err(Error::new(
@@ -623,6 +626,7 @@ impl FieldAttrs {
                     "kept" => once(&mut out.kept, span, &key, span, errors),
                     "finite" => once(&mut out.finite, span, &key, span, errors),
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
+                    "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
                     "elements" => {
                         let drop = either_word(entry, &key, "drop", "fail")?;
                         once(&mut out.elements, (drop, span), &key, span, errors);
@@ -700,6 +704,7 @@ impl FieldAttrs {
             })
             .or(self.finite)
             .or(self.iterated)
+            .or(self.reads_null)
             .or_else(|| self.elements.map(|(_, s)| s))
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))

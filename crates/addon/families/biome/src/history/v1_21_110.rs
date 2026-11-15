@@ -1,14 +1,11 @@
 //! Format 1.21.110: the first format vanilla loads, read from the whole document
 //! (`format_version` and `minecraft:biome`).
 
-use facet::Facet;
-use facet_json::RawJson;
-
 use super::v1_21_120;
 use crate::Description;
 use crate::codes;
-use crate::component::{BiomeComponent, child};
-use crate::read::payload;
+use crate::component::BiomeComponent;
+use crate::read::{Root, read_as};
 use crate::write::object;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticDetail, Diagnostics, Disposition, Kind,
@@ -16,12 +13,9 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
-use bedrock_addon_core::schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_core::versioning::{
-    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, parse_payload,
-};
+use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
 /// A biome of format `[1.21.110, 1.21.120)`, read with its envelope: vanilla reads
 /// `format_version` (a string) and `minecraft:biome` as members of one strict struct.
@@ -35,15 +29,6 @@ pub struct Biome {
     pub components: ComponentMap<BiomeComponent>,
 }
 
-/// The document's root.
-#[derive(Facet)]
-#[facet(schema::unknown = "keep")]
-struct Root<'a> {
-    format_version: String,
-    #[facet(rename = "minecraft:biome")]
-    biome: RawJson<'a>,
-}
-
 impl Versioned for Biome {
     const VERSION: FormatVersion = known::V1_21_110;
 }
@@ -51,7 +36,11 @@ impl Versioned for Biome {
 impl VersionStruct for Biome {
     fn parse(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let mut found = Diagnostics::default();
-        let parsed = read(document, cx, &mut found);
+        let parsed = read_as::<Root>(document, Self::VERSION, cx, &mut found).map(|root| Self {
+            format_version: root.format_version,
+            description: root.biome.description,
+            components: root.biome.components.0,
+        });
         // Any failure of the strict load is reported as vanilla's "Invalid Biome file", after
         // the finding that says where. An unknown member, which the slice's mask grades an
         // error, is not counted: the line follows the other failures alone (pinned by
@@ -82,22 +71,6 @@ impl VersionStruct for Biome {
         // The root's unknown members are the document's, written from its table.
         Ok(root.into())
     }
-}
-
-/// The document, root first.
-fn read(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Biome> {
-    let root: Root<'_> = parse_payload(document, cx, d)?;
-    let slice = document.nested(&root.biome)?;
-    let inner = ParseCx {
-        at: child(&cx.at, &["minecraft:biome"]),
-        ..cx.clone()
-    };
-    let payload = payload(slice, Biome::VERSION, &inner, d)?;
-    Some(Biome {
-        format_version: root.format_version,
-        description: payload.description,
-        components: payload.components,
-    })
 }
 
 impl MolangFields for Biome {

@@ -1,6 +1,12 @@
 //! The tips of the loading screens (`loading_messages.json`), read from the highest resource
 //! pack's copy. One fixed-path file with its own reader in the client; it carries no
 //! `format_version`.
+//!
+//! The file is read by core's reader (`FromJson`) under the fixed-path read: every finding an
+//! information, nothing failing. [`LoadingMessages`] derives the read of its lists
+//! (`schema::iterated`: the game iterates a list member whatever it is); an element is the leaf
+//! [`LoadingMessage`], whose three shapes and the crate's own findings for them are the one
+//! hand read of the family.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -20,6 +26,8 @@ use bedrock_addon_core::json::kit::fixed_path::Authored;
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 use indexmap::IndexMap;
 
 /// The path of the loading-screen tips, in every resource pack.
@@ -33,29 +41,38 @@ pub const LOADING_MESSAGES_PATH: &str = "loading_messages.json";
 /// "$marketplace_not_disabled"}`. The game reads the highest pack's copy only. A list that is
 /// not an array is read as the game iterates it: an object gives its member values in key
 /// order, anything else nothing.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "loading_messages.json")]
 pub struct LoadingMessages {
     /// JSON `loading_messages`: the older single list. When it has an element, it is the tips
     /// of every stage and the three stage lists are not read.
+    #[facet(schema::iterated)]
     pub loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `beginner_loading_messages`: the tips of a new player; its length is how many
     /// loads count as a beginner's.
+    #[facet(schema::iterated)]
     pub beginner_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `mid_game_loading_messages`.
+    #[facet(schema::iterated)]
     pub mid_game_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `late_game_loading_messages`.
+    #[facet(schema::iterated)]
     pub late_game_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `realms_loading_messages`.
+    #[facet(schema::iterated)]
     pub realms_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `addons_loading_messages`.
+    #[facet(schema::iterated)]
     pub addons_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `creative_loading_messages`.
+    #[facet(schema::iterated)]
     pub creative_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `editor_loading_messages`.
+    #[facet(schema::iterated)]
     pub editor_loading_messages: Option<Vec<LoadingMessage>>,
     /// JSON `store_progress_tooltips`: the store's progress texts, each element as written
     /// ([`tooltips`](Self::tooltips) gives the game's reading).
+    #[facet(schema::reads_null, schema::read_with = read::tooltips)]
     pub store_progress_tooltips: Option<Vec<Value>>,
     /// The other members.
     pub extra: UnknownMembers,
@@ -67,11 +84,14 @@ pub struct LoadingMessages {
     /// the written file, not only those beside the edited member. `Debug` shows the root;
     /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
+    #[facet(skip, rename = "\u{0}written")]
     pub written: Written,
 }
 
 /// One element of a loading-message list.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum LoadingMessage {
     /// A text: a localisation key, or the text itself.
     Text(String),
@@ -82,7 +102,7 @@ pub enum LoadingMessage {
 }
 
 /// A loading message with a condition.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct ConditionalMessage {
     /// JSON `message`: the text, read as the game reads any value as a string.
     pub message: String,

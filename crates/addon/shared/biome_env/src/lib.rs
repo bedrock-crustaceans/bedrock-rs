@@ -10,8 +10,8 @@
 //!   component set.
 //!
 //! Each family keeps its own `Description`, the Facet shells it reads the payload through (see
-//! [`shell`] for why they are not here), its component enum and the loop that reads
-//! `components` by its game rules.
+//! [`shell`] for why they are not here), its component enum and its game rules for the keys of
+//! `components`.
 
 pub mod environment;
 pub mod shell;
@@ -20,4 +20,7 @@ pub use environment::{
     BoolAttribute, BoolOperation, ColorAttribute, ColorOperation, EnvironmentAttributes,
     FloatAttribute, FloatOperation,
 };
-pub use shell::{beta_object, payload_object, read_component, write_components};
+pub use shell::{
+    Whole, beta_object, malformed, payload_object, read_component, read_row, read_row_of_struct,
+    read_struct, write_components,
+};

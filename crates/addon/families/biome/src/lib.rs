@@ -3,6 +3,13 @@
 //! Server biomes: `biomes/*.json` of a behaviour pack (`minecraft:biome`). `Biome` is the
 //! newest document (format 1.26.30); older files are upgraded when they load, and `history` has
 //! the older shapes; `Beta` is the `"format_version": "beta"` document.
+//!
+//! Every document type derives its read (`#[derive(Facet, Schema)]`): the payload by
+//! `versioning::read_payload_with` in the struct's own version, each component by
+//! [`bedrock_addon_shared_biome_env::read_row`] from the row of its table. The one hand-written
+//! read is the loop over the keys of `components` (`read::components`, a `schema::read_with`):
+//! which components a struct binds is the version's, and a key it does not bind is told as an
+//! unrecognized component and left out.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -24,7 +31,6 @@ use bedrock_addon_core::id::BiomeId;
 
 use component::BiomeComponent;
 
-use facet_json::RawJson;
 use indexmap::IndexMap;
 // Every block a component names, for the link pass.
 #[doc(hidden)]
@@ -62,8 +68,8 @@ use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion}
 use bedrock_addon_core::versioning::{
     BETA_VERSION, BelowFloor, BeyondWidth, ComponentSection, ComponentTable, DocumentRead,
     Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion, OpenBeta, Parsed,
-    Reading, Scalars, StructIndex, ValidateCx, VersionStruct, finish, member_version,
-    parse_as_written, write_envelope,
+    Reading, Scalars, StructIndex, ValidateCx, VersionStruct, finish, parse_as_written,
+    write_envelope,
 };
 use bedrock_addon_shared_shapes::BlockSpecifier;
 
@@ -164,8 +170,13 @@ impl Family for BiomeFamily {
     /// its only root member; it is read so the document is rejected as below the floor.
     // The game reports "no parser available for version 1.12.0" for such a file.
     fn payload_version(payload: JsonSlice<'_>) -> Option<FormatVersionInput> {
-        let only = only_member(payload)?;
-        member_version(only, "format_version")
+        let root = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok()?;
+        let members = root.as_object()?;
+        if members.len() != 1 || members.contains_key("minecraft:biome") {
+            return None;
+        }
+        let (_, only) = members.iter().next()?;
+        FormatVersionInput::from_json(only.as_object()?.get("format_version")?)
     }
 
     fn component_sections(v: &mut Biome) -> Vec<ComponentSection<'_, BiomeComponent>> {
@@ -183,20 +194,6 @@ impl Family for BiomeFamily {
             }
         }
     }
-}
-
-/// The only member of a root without `minecraft:biome`, as a slice.
-fn only_member(document: JsonSlice<'_>) -> Option<JsonSlice<'_>> {
-    let members =
-        bedrock_addon_core::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(
-            document.text,
-        )
-        .ok()?;
-    if members.len() != 1 || members.contains_key("minecraft:biome") {
-        return None;
-    }
-    let (_, raw) = members.first()?;
-    document.nested(raw)
 }
 
 impl JsonDocument for Biome {

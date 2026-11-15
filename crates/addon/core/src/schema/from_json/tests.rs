@@ -981,6 +981,16 @@ fn a_field_words_its_member_s_findings_and_reads_its_float_finite() {
     );
 }
 
+/// A member's `wrong_type` code words a `null` its type refuses as it words any other wrong
+/// type, told where the read tells its nulls (after it).
+#[test]
+fn a_null_a_member_refuses_is_told_under_its_wrong_type_code() {
+    let (_, told) = door::<Coded>(r#"{"name": "n", "count": null}"#);
+    assert_eq!(told, ["Info root/count core/dropped_field"]);
+    let (_, told) = as_read::<Coded>(r#"{"name": "n", "count": null}"#);
+    assert_eq!(told, ["Error root/count core/dropped_field"]);
+}
+
 /// The reading of the fixed-path readers (`json::kit::fixed_path::reader`): every finding an
 /// information, nothing failing.
 fn lenient() -> Reading {
@@ -1051,6 +1061,111 @@ fn a_string_read_as_jsoncpp_s_as_string_takes_any_value() {
         );
         assert_eq!(told, ["Info root/message core/invalid_type"], "{text}");
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct Quiet {
+    name: Option<String>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A struct that says `silent` keeps its unknown members and tells none.
+#[test]
+fn a_silent_struct_keeps_its_unknown_members_and_tells_nothing() {
+    let (value, told) = read_as::<Quiet>(
+        r#"{"name": "n", "k": [1]}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    let value = value.expect("read");
+    assert_eq!(value.name.as_deref(), Some("n"));
+    assert_eq!(
+        value.extra.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        ["k"]
+    );
+    assert!(told.is_empty(), "{told:?}");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Nulled {
+    #[facet(schema::reads_null)]
+    text: Option<String>,
+    #[facet(schema::reads_null)]
+    any: Option<Value>,
+    plain: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct NulledKept {
+    #[facet(schema::reads_null, schema::or_kept = "silent")]
+    size: Option<u8>,
+    #[facet(schema::or_kept = "silent")]
+    shade: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A `reads_null` field that keeps what it cannot read keeps a `null` too, as written.
+#[test]
+fn a_reads_null_field_that_keeps_what_it_cannot_read_keeps_a_null() {
+    let (value, told) = read_as::<NulledKept>(
+        r#"{"size": null, "shade": null}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    let value = value.expect("read");
+    assert_eq!((value.size, value.shade), (None, None));
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["size"]);
+    assert!(told.is_empty(), "{told:?}");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct Skinned {
+    #[facet(schema::or_kept = "silent")]
+    depth: Option<u8>,
+    #[facet(schema::or_kept = "silent")]
+    size: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A read that tells the unknown members after the members keeps the members it could not read
+/// first, in the order of the fields, as a walk that took each member in turn did.
+#[test]
+fn a_member_kept_as_written_comes_before_the_unknown_members_that_are_told_last() {
+    let profile = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (value, told) = read_as::<Skinned>(
+        r#"{"zz": 1, "size": "big", "depth": "deep", "yy": 2}"#,
+        lenient(),
+        profile,
+    );
+    let value = value.expect("read");
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["depth", "size", "zz", "yy"]);
+    assert!(told.is_empty(), "{told:?}");
+}
+
+/// A `reads_null` field takes a `null` as a value of its type: `Some`, read by the type's own
+/// read (here jsoncpp's `asString`, which tells it), where any other `Option` field reads it by
+/// the null rule as `None`.
+#[test]
+fn a_reads_null_field_reads_a_null_as_a_value() {
+    let reading = lenient().with_strings(crate::versioning::Strings::AsString);
+    let (value, told) = read_as::<Nulled>(
+        r#"{"text": null, "any": null, "plain": null}"#,
+        reading,
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(
+        value,
+        Some(Nulled {
+            text: Some(String::new()),
+            any: Some(Value::NULL),
+            plain: None,
+        })
+    );
+    assert_eq!(told, ["Info root/text core/invalid_type"]);
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -1238,6 +1353,27 @@ fn a_read_of_the_first_failure_only_goes_on_to_tell_the_nulls_and_the_unknown_me
     // Every failure tells both.
     let (_, told) = read_as::<Trio>(text, Reading::NULL_ABSENT, Profile::EVERY_FAILURE);
     assert_eq!(told.len(), 4, "{told:?}");
+}
+
+#[test]
+fn a_read_of_the_first_failure_only_tells_a_refused_null_only_of_a_read_that_stands() {
+    // The door's null pass is of a document that read: after a failure the unknown members are
+    // told and the `null` is not.
+    let text = r#"{"a": "x", "b": 1, "zz": 1, "n": null}"#;
+    let (value, told) = read_as::<Trio>(text, Reading::DOCUMENT, Profile::FIRST_THEN_PASSES);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        [
+            "Error root/a core/invalid_type",
+            "Error root/zz core/unrecognized_field"
+        ]
+    );
+    // A read that stands tells the refused `null` alone.
+    let text = r#"{"a": 1, "b": 1, "zz": 1, "n": null}"#;
+    let (value, told) = read_as::<Trio>(text, Reading::DOCUMENT, Profile::FIRST_THEN_PASSES);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/n core/invalid_type"]);
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
