@@ -16,6 +16,11 @@
 //! included), a missing required member or another `format_version` makes the piece invalid
 //! and the file is rejected. A file that loads is written back as it was read: the fields of
 //! the structs here hold what a file says, the methods beside them what the game takes it for.
+//!
+//! The structs read themselves (`#[derive(Facet, Schema)]`, one reading per file kind in `read`):
+//! a member of another JSON type is told and kept as written in `extra` (`schema::or_kept`),
+//! and what stays hand-written is the `format_version` envelope of a meta file, the leaf readers
+//! of the name sets and colours, and the rules across members (`schema::after_read`).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

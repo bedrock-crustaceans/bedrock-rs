@@ -1,9 +1,10 @@
-//! Reading the family's JSON files: the root as the game's reader takes it, then each member
-//! into the model, with a finding wherever the game would skip, default or convert in
-//! silence.
+//! Reading the family's JSON files: the root as the game's reader takes it, then the structs of
+//! the model read themselves (`#[derive(Facet, Schema)]`, every failure told), with the family's
+//! own findings where the game would skip, default or convert in silence.
 //!
 //! The model holds a member only in the JSON type the game's reader expects. A member of
-//! another type is reported (`InvalidType`) and kept as written in the struct's `extra`.
+//! another type is reported (`InvalidType`) and kept as written in the struct's `extra`
+//! (`schema::or_kept`).
 //!
 //! A meta file is read as the 1.26.40+ reader reads it: as a Minecraft document (`null` is a
 //! member of the wrong type) parsed by one strict slice, in which an unknown member is an
@@ -13,23 +14,23 @@
 //! finding is an information (the game says nothing).
 
 use super::codes;
-use super::names::{Named, Written};
+use super::names::Named;
 use super::{
-    AnimationSource, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceStoreInfo, PieceType,
-    TextureSource, TintColor, TintColorOrString, Zones,
+    ArmSize, BodySize, FaceFlag, GeometrySource, HexColor, PieceMetadata, PieceSide,
+    PieceStoreInfo, PieceType, TextureSource, TintColor, TintColorOrString, Written,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{
     JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, strip_bom,
 };
-use bedrock_addon_core::schema::UnknownRule;
+use bedrock_addon_core::schema::{FromJson, read_document};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
-use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading};
+use bedrock_addon_core::versioning::{MemberFailure, Reading};
 
 /// The payload key of a meta file written as a Minecraft document.
 pub(super) const ENVELOPE: &str = "minecraft:persona_piece_meta";
@@ -91,485 +92,196 @@ pub(super) fn read_root(bytes: &[u8], findings: &mut Vec<Diagnostic>) -> Result<
     Ok(root)
 }
 
-/// Why a member is not in the model.
-enum Unread {
-    /// Its JSON type is not the one the game's reader expects.
-    Wrong,
-    /// The same, and the reader has named the place (an element) itself.
-    Reported,
-}
-
 /// How a meta file is read: the 1.26.40+ strict slice (module documentation), in which a
-/// `null` is a member of the wrong type and every finding of the reader is an error.
-const META_READING: Reading = Reading::DOCUMENT;
+/// `null` is a member of the wrong type, a scalar must be of its own JSON type and every
+/// finding of the reader is an error.
+const META_READING: Reading = Reading::DOCUMENT.strict();
 
 /// How a store-info file is read: by the client's own JSON code, in which `null` is absent
 /// and a member of another type is taken without a line (an information).
-const STORE_INFO_READING: Reading =
-    Reading::NULL_ABSENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+const STORE_INFO_READING: Reading = Reading::NULL_ABSENT
+    .strict()
+    .with_on_member_failure(MemberFailure::DefaultAndTell);
 
-/// The reader of one file: the findings so far, how the file is read and the place being
-/// read.
-struct Reader {
-    findings: Diagnostics,
-    reading: Reading,
-    /// The severity of an unknown member, where it is not the reading's.
-    unknown_severity: Option<Severity>,
-    at: JsonPath,
+/// Tells `code` at `at`, graded `severity`.
+fn tell(read: &mut Read<'_>, at: JsonPath, code: Code, severity: Severity) {
+    read.push(Diagnostic::error(code).severity(severity).at(at));
 }
 
-impl Reader {
-    fn new(reading: Reading, unknown_severity: Option<Severity>) -> Self {
-        Self {
-            findings: Diagnostics::default(),
-            reading,
-            unknown_severity,
-            at: JsonPath::new(),
-        }
-    }
+bedrock_addon_core::impl_schema_leaf!(
+    Written<PieceType>,
+    Written<BodySize>,
+    Written<ArmSize>,
+    Written<PieceSide>,
+    HexColor,
+    FaceFlag,
+    TintColorOrString,
+);
+bedrock_addon_core::impl_no_molang!(
+    Written<PieceType>,
+    Written<BodySize>,
+    Written<ArmSize>,
+    Written<PieceSide>,
+    HexColor,
+    FaceFlag,
+    TintColorOrString,
+);
 
-    /// The kit's read, telling into the findings so far.
-    fn read(&mut self) -> Read<'_> {
-        let read = Read::new(self.reading, &mut self.findings);
-        match self.unknown_severity {
-            Some(severity) => read.unknown_severity(severity),
-            None => read,
-        }
-    }
+/// A colour string, told when it is not `#` and six or eight hex digits. The empty text is the
+/// colour a `TintColor` holds when one is left out (no colour), and is not told.
+impl FromJson for HexColor {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
 
-    /// `value` at the place being read.
-    fn node<'v>(&self, value: &'v Value) -> Node<'v> {
-        Node::new(value, self.at.clone())
-    }
-
-    /// A finding at the place being read.
-    fn report(&mut self, code: Code, severity: Severity) {
-        let finding = Diagnostic::error(code)
-            .severity(severity)
-            .at(self.at.clone());
-        self.read().push(finding);
-    }
-
-    /// A finding at the member `key` of the object being read.
-    fn report_at(&mut self, key: &str, code: Code, severity: Severity) {
-        self.at.push(key);
-        self.report(code, severity);
-        self.at.pop();
-    }
-
-    /// `value`, at the place being read, is of an unexpected JSON type: an error in a meta
-    /// file; in a store-info file the client's own JSON code takes the member without a line.
-    fn wrong_type(&mut self, value: &Value) {
-        let node = self.node(value);
-        self.read().wrong_type(&node);
-    }
-
-    /// Reads the member `key` = `value` into `slot`; a value `read` does not take is kept in
-    /// `extra` and reported, `null` only by the strict reader (the member is present
-    /// and its type refuses `null`).
-    fn take<T>(
-        &mut self,
-        key: &str,
-        value: &Value,
-        extra: &mut UnknownMembers,
-        slot: &mut Option<T>,
-        read: impl FnOnce(&mut Self, &Value) -> Result<T, Unread>,
-    ) {
-        self.at.push(key);
-        match read(self, value) {
-            Ok(read) => *slot = Some(read),
-            Err(unread) => {
-                let absent = value.is_null() && self.reading.null == NullHandling::Absent;
-                if !absent && matches!(unread, Unread::Wrong) {
-                    self.wrong_type(value);
-                }
-                extra.insert(key.to_owned(), value.clone());
-            }
-        }
-        self.at.pop();
-    }
-
-    /// A member the schema does not declare (1.26.40+), kept as written. The strict slice
-    /// makes the unknown member an error: the piece is invalid.
-    /// In a store-info file the member is ignored (information).
-    fn unknown(&mut self, key: &str, value: &Value, extra: &mut UnknownMembers) {
-        self.at.push(key);
-        let node = self.node(value);
-        self.read().unknown_member(&node, UnknownRule::Keep);
-        self.at.pop();
-        extra.insert(key.to_owned(), value.clone());
-    }
-
-    /// A string.
-    fn text(_: &mut Self, value: &Value) -> Result<String, Unread> {
-        value
-            .as_string()
-            .map(|text| text.as_str().to_owned())
-            .ok_or(Unread::Wrong)
-    }
-
-    /// A boolean.
-    fn flag(_: &mut Self, value: &Value) -> Result<bool, Unread> {
-        value.as_bool().ok_or(Unread::Wrong)
-    }
-
-    /// A whole number of 32 bits.
-    fn int(_: &mut Self, value: &Value) -> Result<i32, Unread> {
-        value
-            .as_number()
-            .filter(|number| !number.is_float())
-            .and_then(facet_value::VNumber::to_i64)
-            .and_then(|wide| i32::try_from(wide).ok())
-            .ok_or(Unread::Wrong)
-    }
-
-    /// A name of a bound enum. A text outside it is an `invalid enum value` error in both
-    /// readers, kept as written.
-    fn name<T: Named>(&mut self, value: &Value) -> Result<Written<T>, Unread> {
-        let written = Written::<T>::parse(value.as_string().ok_or(Unread::Wrong)?.as_str());
-        if matches!(written, Written::Other(_)) {
-            self.report(
-                bedrock_addon_core::diagnostic::cereal::invalid_enum_value(),
-                Severity::Error,
-            );
-        }
-        Ok(written)
-    }
-
-    /// A `missing required field` error (in both readers) for each of `keys` that the object
-    /// `object` does not have.
-    fn required(&mut self, object: &Value, keys: &[&str]) {
-        let node = self.node(object);
-        let mut read = self.read();
-        if let Some(members) = read.object(&node) {
-            for key in keys {
-                read.required(&members, key);
-            }
-        }
-    }
-
-    /// The elements of an array, each read by `read`; an element it does not take is named
-    /// and leaves the whole member unread. Such a list is in the model by none of its
-    /// entries, so what was found in the entries before the bad one is dropped: the member
-    /// has the one finding of this reader. A number past a double inside the list keeps its
-    /// own finding: that one is the root's (`read_root`), about the number the file holds
-    /// in place of the author's, and the list is written back with it.
-    fn elements<T>(
-        &mut self,
-        value: &Value,
-        mut read: impl FnMut(&mut Self, &Value) -> Option<T>,
-    ) -> Result<Vec<T>, Unread> {
-        let array = value.as_array().ok_or(Unread::Wrong)?;
-        // The entries are read apart, so that a bad one takes their findings with it.
-        let before = std::mem::take(&mut self.findings);
-        let mut elements = Vec::with_capacity(array.len());
-        for (index, element) in array.as_slice().iter().enumerate() {
-            self.at.push_index(index);
-            let read = read(self, element);
-            if read.is_none() {
-                self.findings = Diagnostics::default();
-                self.wrong_type(element);
-            }
-            self.at.pop();
-            if let Some(read) = read {
-                elements.push(read);
-            } else {
-                let entries = std::mem::replace(&mut self.findings, before);
-                self.findings.extend_with_unknown(entries);
-                return Err(Unread::Reported);
-            }
-        }
-        let entries = std::mem::replace(&mut self.findings, before);
-        self.findings.extend_with_unknown(entries);
-        Ok(elements)
-    }
-
-    /// One zone or a list of zones.
-    fn zones(&mut self, value: &Value) -> Result<Zones, Unread> {
-        if let Some(zone) = value.as_string() {
-            return Ok(Zones::One(zone.as_str().to_owned()));
-        }
-        self.elements(value, |_, element| {
-            element.as_string().map(|zone| zone.as_str().to_owned())
-        })
-        .map(Zones::Many)
-    }
-
-    /// A colour string, reported when it is not `#` and six or eight hex digits. The
-    /// empty text is the colour a `TintColor` holds when one is left out (no colour), and is
-    /// not reported.
-    fn color(&mut self, value: &Value) -> Result<HexColor, Unread> {
-        let color = HexColor(value.as_string().ok_or(Unread::Wrong)?.as_str().to_owned());
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let Some(text) = node.value().as_string() else {
+            read.wrong_type(node);
+            return None;
+        };
+        let color = Self(text.as_str().to_owned());
         if !color.as_str().is_empty() && !color.is_well_formed() {
             // The game reads what is there and logs nothing: an information of the
             // crate's own.
-            self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
+            let code = Code::from(&core_codes::INVALID_VALUE);
+            tell(read, node.path().clone(), code, Severity::Info);
         }
-        Ok(color)
+        Some(color)
     }
+}
 
-    /// The four slots, or one colour for all.
-    fn tint(&mut self, value: &Value) -> Result<TintColorOrString, Unread> {
-        let Some(members) = value.as_object() else {
-            return self.color(value).map(TintColorOrString::String);
+/// The four slots (an object), or one colour for all (a string).
+impl FromJson for TintColorOrString {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().is_object() {
+            TintColor::from_json(node, read).map(Self::Channels)
+        } else {
+            HexColor::from_json(node, read).map(Self::String)
+        }
+    }
+}
+
+/// A string, as 1.26.40 types it (the string vanilla's files write); a boolean is a member of
+/// the wrong type.
+impl FromJson for FaceFlag {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let Some(text) = node.value().as_string() else {
+            read.wrong_type(node);
+            return None;
         };
-        let mut tint = TintColor::default();
-        for (key, value) in members {
-            let extra = &mut tint.extra;
-            match key.as_str() {
-                "r_color" => self.take("r_color", value, extra, &mut tint.r_color, Self::color),
-                "g_color" => self.take("g_color", value, extra, &mut tint.g_color, Self::color),
-                "b_color" => self.take("b_color", value, extra, &mut tint.b_color, Self::color),
-                "a_color" => self.take("a_color", value, extra, &mut tint.a_color, Self::color),
-                other => self.unknown(other, value, extra),
+        Some(Self::Text(text.as_str().to_owned()))
+    }
+}
+
+/// A list of entries (`schema::read_with` of `texture_sources`, `geometry_sources` and
+/// `animation_sources`): an entry that is no object leaves the whole list unread with that one
+/// finding, and the findings of the entries read before it are dropped. The entries after it
+/// are not read.
+pub(super) fn entries<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<T>> {
+    let elements = read.array(node)?;
+    let mut attempt = read.fork();
+    let mut out = Vec::new();
+    let mut failed = false;
+    for element in elements.iter() {
+        match T::from_json(&element, &mut attempt) {
+            Some(entry) => out.push(entry),
+            // An object that fails has told why.
+            None if element.value().is_object() => failed = true,
+            None => {
+                read.wrong_type(&element);
+                return None;
             }
         }
-        Ok(TintColorOrString::Channels(tint))
     }
+    read.commit(attempt);
+    (!failed).then_some(out)
+}
 
-    /// A string, as 1.26.40 types it (the string vanilla's files write); a boolean is a
-    /// member of the wrong type.
-    fn face(_: &mut Self, value: &Value) -> Result<FaceFlag, Unread> {
-        let text = value.as_string().ok_or(Unread::Wrong)?;
-        Ok(FaceFlag::Text(text.as_str().to_owned()))
+/// A string, or `null`, which the client's own JSON code takes for absent: not read, in silence
+/// (`schema::read_with` of the store-info members, which keep the `null` as written).
+pub(super) fn text_or_absent(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    if node.value().is_null() {
+        return None;
     }
+    String::from_json(node, read)
+}
 
-    /// An entry the texture builder skips.
-    fn no_texture(&mut self) {
-        // The builder skips the entry in silence: an information of the crate's own.
-        self.report(
-            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+/// An entry the texture builder skips, in silence: an information of the crate's own.
+fn no_texture(node: &Node<'_>, read: &mut Read<'_>) {
+    let code = Code::from(&core_codes::MISSING_REQUIRED_FIELD);
+    tell(read, node.path().clone(), code, Severity::Info);
+}
+
+/// `texture` is required; an empty one is a texture the builder skips, reading nothing else of
+/// the entry (`schema::after_read` of [`TextureSource`]).
+pub(super) fn texture_rules(source: &mut TextureSource, node: &Node<'_>, read: &mut Read<'_>) {
+    if source.texture.as_deref() == Some("") {
+        no_texture(node, read);
+    }
+}
+
+/// The same skip, for an entry that gives the texture builder something: every vanilla geometry
+/// source names no texture and loses nothing by being skipped (`schema::after_read` of
+/// [`GeometrySource`]).
+pub(super) fn geometry_rules(source: &mut GeometrySource, node: &Node<'_>, read: &mut Read<'_>) {
+    let unread = written_in(&source.extra, "texture");
+    let texture = source.texture.as_deref();
+    let lost = source.tint_map.is_some() || source.animated.is_some() || source.frames.is_some();
+    if !unread && (texture == Some("") || (texture.is_none() && lost)) {
+        no_texture(node, read);
+    }
+}
+
+/// Which piece types take which `side`, and which members only an emote plays
+/// (`schema::after_read` of [`PieceMetadata`]). A type that is no arm or leg gets the game's
+/// text, an arm or leg with a side it does not take is skipped in silence.
+pub(super) fn meta_rules(meta: &mut PieceMetadata, node: &Node<'_>, read: &mut Read<'_>) {
+    let piece_type = meta.piece_type();
+    let sources = node.path().clone().child("geometry_sources");
+    for (index, source) in meta.geometry_sources.iter().flatten().enumerate() {
+        let Some(side) = &source.side else {
+            continue;
+        };
+        if piece_type.accepts_side(side.as_str()) {
+            continue;
+        }
+        let code = if piece_type.is_arm_or_leg() {
+            Code::from(&core_codes::INVALID_VALUE)
+        } else {
+            codes::SIDE_NOT_ARM_OR_LEG.with([piece_type.name(), side.as_str()])
+        };
+        // The game's text is not a content-log line (it goes to the error display only),
+        // and the other case has no text at all. Both are informations of the crate's own.
+        tell(
+            read,
+            sources.clone().index(index).child("side"),
+            code,
             Severity::Info,
         );
     }
-
-    /// One entry of `texture_sources`.
-    fn texture_source(&mut self, value: &Value) -> Option<TextureSource> {
-        let members = value.as_object()?;
-        let mut source = TextureSource::default();
-        for (key, value) in members {
-            let extra = &mut source.extra;
-            match key.as_str() {
-                "texture" => self.take("texture", value, extra, &mut source.texture, Self::text),
-                "tint_map" => self.take("tint_map", value, extra, &mut source.tint_map, Self::text),
-                "animated" => self.take("animated", value, extra, &mut source.animated, Self::flag),
-                "frames" => self.take("frames", value, extra, &mut source.frames, Self::int),
-                "use_face_uv" => {
-                    self.take(
-                        "use_face_uv",
-                        value,
-                        extra,
-                        &mut source.use_face_uv,
-                        Self::flag,
-                    );
-                }
-                other => self.unknown(other, value, extra),
-            }
-        }
-        // `texture` is required; an empty one is a texture the builder skips, reading
-        // nothing else of the entry.
-        self.required(value, &["texture"]);
-        if source.texture.as_deref() == Some("") {
-            self.no_texture();
-        }
-        Some(source)
+    // Only an emote's animations are ever played.
+    if meta.animation_sources.is_some() && piece_type != PieceType::Emote {
+        let at = node.path().clone().child("animation_sources");
+        tell(
+            read,
+            at,
+            Code::from(&core_codes::IGNORED_MEMBER),
+            Severity::Info,
+        );
     }
+}
 
-    /// One entry of `geometry_sources`.
-    fn geometry_source(&mut self, value: &Value) -> Option<GeometrySource> {
-        let members = value.as_object()?;
-        let mut source = GeometrySource::default();
-        for (key, value) in members {
-            let extra = &mut source.extra;
-            match key.as_str() {
-                "geometry" => self.take("geometry", value, extra, &mut source.geometry, Self::text),
-                "arm_size" => {
-                    self.take("arm_size", value, extra, &mut source.arm_size, Self::name);
-                }
-                "body_size" => {
-                    self.take("body_size", value, extra, &mut source.body_size, Self::name);
-                }
-                "side" => self.take("side", value, extra, &mut source.side, Self::name),
-                "zone" => self.take("zone", value, extra, &mut source.zone, Self::zones),
-                "is_face" => self.take("is_face", value, extra, &mut source.is_face, Self::face),
-                "texture" => self.take("texture", value, extra, &mut source.texture, Self::text),
-                "tint_map" => self.take("tint_map", value, extra, &mut source.tint_map, Self::text),
-                "animated" => self.take("animated", value, extra, &mut source.animated, Self::flag),
-                "frames" => self.take("frames", value, extra, &mut source.frames, Self::int),
-                // `use_face_uv` is among the unknown members: it belongs to a texture source only.
-                other => self.unknown(other, value, extra),
-            }
-        }
-        self.required(value, &["geometry"]);
-        // The same skip, for an entry that gives the texture builder something: every vanilla geometry
-        // source names no texture and loses nothing by being skipped.
-        let unread = written_in(&source.extra, "texture");
-        let texture = source.texture.as_deref();
-        let lost =
-            source.tint_map.is_some() || source.animated.is_some() || source.frames.is_some();
-        if !unread && (texture == Some("") || (texture.is_none() && lost)) {
-            self.no_texture();
-        }
-        Some(source)
-    }
-
-    /// One entry of `animation_sources`.
-    fn animation_source(&mut self, value: &Value) -> Option<AnimationSource> {
-        let members = value.as_object()?;
-        let mut source = AnimationSource::default();
-        for (key, value) in members {
-            let extra = &mut source.extra;
-            match key.as_str() {
-                "name" => self.take("name", value, extra, &mut source.name, Self::text),
-                "animationFile" => {
-                    self.take(
-                        "animationFile",
-                        value,
-                        extra,
-                        &mut source.animation_file,
-                        Self::text,
-                    );
-                }
-                other => self.unknown(other, value, extra),
-            }
-        }
-        self.required(value, &["name", "animationFile"]);
-        Some(source)
-    }
-
-    /// The members of a meta file (the root's, or the payload's).
-    #[allow(clippy::too_many_lines, reason = "one arm per member of the file")]
-    fn meta(&mut self, object: &Value, meta: &mut PieceMetadata) {
-        let Some(members) = object.as_object() else {
-            return;
-        };
-        for (key, value) in members {
-            let extra = &mut meta.extra;
-            match key.as_str() {
-                "piece_id" => self.take("piece_id", value, extra, &mut meta.piece_id, Self::text),
-                "piece_name" => {
-                    self.take("piece_name", value, extra, &mut meta.piece_name, Self::text);
-                }
-                // A name of the 25 the 1.26.40+ enum binds.
-                "piece_type" => {
-                    self.take("piece_type", value, extra, &mut meta.piece_type, Self::name);
-                }
-                "piece_sub_type" => {
-                    self.take(
-                        "piece_sub_type",
-                        value,
-                        extra,
-                        &mut meta.piece_sub_type,
-                        Self::name,
-                    );
-                }
-                "body_variant" => {
-                    self.take(
-                        "body_variant",
-                        value,
-                        extra,
-                        &mut meta.body_variant,
-                        Self::name,
-                    );
-                }
-                "clothing_map" => {
-                    self.take(
-                        "clothing_map",
-                        value,
-                        extra,
-                        &mut meta.clothing_map,
-                        Self::text,
-                    );
-                }
-                "face_clothing_map" => self.take(
-                    "face_clothing_map",
-                    value,
-                    extra,
-                    &mut meta.face_clothing_map,
-                    Self::text,
-                ),
-                "zone" => self.take("zone", value, extra, &mut meta.zone, Self::zones),
-                "texture_sources" => {
-                    self.take(
-                        "texture_sources",
-                        value,
-                        extra,
-                        &mut meta.texture_sources,
-                        |r, v| r.elements(v, Self::texture_source),
-                    );
-                }
-                "geometry_sources" => self.take(
-                    "geometry_sources",
-                    value,
-                    extra,
-                    &mut meta.geometry_sources,
-                    |r, v| r.elements(v, Self::geometry_source),
-                ),
-                "animation_sources" => self.take(
-                    "animation_sources",
-                    value,
-                    extra,
-                    &mut meta.animation_sources,
-                    |r, v| r.elements(v, Self::animation_source),
-                ),
-                "tint_color" => {
-                    self.take("tint_color", value, extra, &mut meta.tint_color, Self::tint);
-                }
-                "tint_base_color" => {
-                    self.take(
-                        "tint_base_color",
-                        value,
-                        extra,
-                        &mut meta.tint_base_color,
-                        Self::tint,
-                    );
-                }
-                "allow_tint_override" => self.take(
-                    "allow_tint_override",
-                    value,
-                    extra,
-                    &mut meta.allow_tint_override,
-                    Self::flag,
-                ),
-                other => self.unknown(other, value, extra),
-            }
-        }
-        self.required(object, &["piece_id", "piece_name", "piece_type"]);
-        self.side_rules(meta);
-        // Only an emote's animations are ever played.
-        if meta.animation_sources.is_some() && meta.piece_type() != PieceType::Emote {
-            self.report_at(
-                "animation_sources",
-                Code::from(&core_codes::IGNORED_MEMBER),
-                Severity::Info,
-            );
-        }
-    }
-
-    /// Which piece types take which `side`: a type that is no arm or leg gets the game's text, an arm or leg with a side it does not take is skipped in silence.
-    fn side_rules(&mut self, meta: &PieceMetadata) {
-        let piece_type = meta.piece_type();
-        for (index, source) in meta.geometry_sources.iter().flatten().enumerate() {
-            let Some(side) = &source.side else {
-                continue;
-            };
-            if piece_type.accepts_side(side.as_str()) {
-                continue;
-            }
-            // A type that is no arm or leg has the game's text; an arm or leg with a side it
-            // does not take is skipped in silence and has none.
-            let code = if piece_type.is_arm_or_leg() {
-                Code::from(&core_codes::INVALID_VALUE)
-            } else {
-                codes::SIDE_NOT_ARM_OR_LEG.with([piece_type.name(), side.as_str()])
-            };
-            self.at.push("geometry_sources");
-            self.at.push_index(index);
-            // The game's text is not a content-log line (it goes to the error display only),
-            // and the other case has no text at all. Both are informations of the crate's own.
-            self.report_at("side", code, Severity::Info);
-            self.at.pop();
-            self.at.pop();
+/// The object blanks what it does not set. The game reads the member as "" without a line (it
+/// has no text for `piece_store_name` or `piece_thumbnail`): an information of the crate's own
+/// (`schema::after_read` of [`PieceStoreInfo`]).
+pub(super) fn store_rules(store: &mut PieceStoreInfo, node: &Node<'_>, read: &mut Read<'_>) {
+    for (key, set) in [
+        ("piece_store_name", store.piece_store_name.is_some()),
+        ("piece_thumbnail", store.piece_thumbnail.is_some()),
+    ] {
+        if !set && !written_in(&store.extra, key) {
+            let code = Code::from(&core_codes::MISSING_REQUIRED_FIELD);
+            tell(read, node.path().clone().child(key), code, Severity::Info);
         }
     }
 }
@@ -635,34 +347,30 @@ pub(super) const META_VERSION: FormatVersion = known::V1_26_40;
 ///   and refused at any other version;
 /// - a value that is no version is malformed; `"beta"` has no slice and is refused.
 pub(super) fn read_meta(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceMetadata {
-    let mut reader = Reader::new(META_READING, None);
-    let meta = meta_file(root, &mut reader);
+    let mut told = Diagnostics::default();
+    let mut read = Read::new(META_READING, &mut told);
+    let meta = meta_file(root, &mut read);
     // The reader keeps no member in the document's table: it holds findings only.
-    findings.extend(reader.findings);
+    findings.extend(told);
     meta
 }
 
 /// [`read_meta`] with its reader.
-fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
-    let mut meta = PieceMetadata::default();
+fn meta_file(root: &Value, read: &mut Read<'_>) -> PieceMetadata {
     let Some(members) = root.as_object() else {
-        return meta;
+        return PieceMetadata::default();
     };
     let Some(version) = members.get("format_version") else {
-        reader.meta(root, &mut meta);
-        return meta;
+        return read_document(&Node::new(root, JsonPath::new()), read).unwrap_or_default();
     };
     let at_version = JsonPath::new().child("format_version");
-    let refuse = |reader: &mut Reader, code: Code, at: JsonPath| {
-        reader.read().push(Diagnostic::error(code).at(at));
+    let refuse = |read: &mut Read<'_>, code: Code, at: JsonPath| {
+        read.push(Diagnostic::error(code).at(at));
+        PieceMetadata::default()
     };
     let Some(input) = FormatVersionInput::from_json(version) else {
-        refuse(
-            reader,
-            Code::from(&core_codes::MALFORMED_FORMAT_VERSION),
-            at_version,
-        );
-        return meta;
+        let code = Code::from(&core_codes::MALFORMED_FORMAT_VERSION);
+        return refuse(read, code, at_version);
     };
     let written = version.as_string().map_or_else(
         || input.version.map(|v| v.to_string()).unwrap_or_default(),
@@ -674,11 +382,10 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
         .is_some_and(|v| v < META_VERSION || (input.prerelease && v == META_VERSION));
     if input.beta_literal || below {
         // Below the loader's minimum the envelope is not counted, and no slice takes it.
-        refuse(reader, unsupported(&written), at_version);
-        return meta;
+        return refuse(read, unsupported(&written), at_version);
     }
     if members.len() != 2 {
-        reader.read().push(
+        read.push(
             Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT)
                 .at(JsonPath::new())
                 .detail(DiagnosticDetail::Syntax(format!(
@@ -686,73 +393,33 @@ fn meta_file(root: &Value, reader: &mut Reader) -> PieceMetadata {
                     members.len()
                 ))),
         );
-        return meta;
+        return PieceMetadata::default();
     }
     let Some(payload) = members.get(ENVELOPE) else {
-        refuse(
-            reader,
+        return refuse(
+            read,
             Code::from(&core_codes::MISSING_PAYLOAD),
             JsonPath::new(),
         );
-        return meta;
     };
     if input.version != Some(META_VERSION) || input.prerelease {
-        refuse(reader, unsupported(&written), at_version);
-        return meta;
+        return refuse(read, unsupported(&written), at_version);
     }
+    let node = Node::new(payload, JsonPath::new().child(ENVELOPE));
+    let mut meta: PieceMetadata = read_document(&node, read).unwrap_or_default();
     meta.envelope = Some(version.clone());
-    reader.at.push(ENVELOPE);
-    if !payload.is_object() {
-        reader.wrong_type(payload);
-        return meta;
-    }
-    reader.meta(payload, &mut meta);
     meta
 }
 
 /// One store-info file from its root object.
 pub(super) fn read_store_info(root: &Value, findings: &mut Vec<Diagnostic>) -> PieceStoreInfo {
-    let mut store = PieceStoreInfo::default();
-    let Some(members) = root.as_object() else {
-        return store;
-    };
-    let mut reader = Reader::new(STORE_INFO_READING, Some(Severity::Info));
-    for (key, value) in members {
-        let extra = &mut store.extra;
-        match key.as_str() {
-            "piece_store_name" => reader.take(
-                "piece_store_name",
-                value,
-                extra,
-                &mut store.piece_store_name,
-                Reader::text,
-            ),
-            "piece_thumbnail" => reader.take(
-                "piece_thumbnail",
-                value,
-                extra,
-                &mut store.piece_thumbnail,
-                Reader::text,
-            ),
-            other => reader.unknown(other, value, extra),
-        }
+    if !root.is_object() {
+        return PieceStoreInfo::default();
     }
-    // The object blanks what it does not set. The game reads the member as "" without a
-    // line (it has no text for `piece_store_name` or `piece_thumbnail`): an information of
-    // the crate's own.
-    for (key, set) in [
-        ("piece_store_name", store.piece_store_name.is_some()),
-        ("piece_thumbnail", store.piece_thumbnail.is_some()),
-    ] {
-        if !set && !written_in(&store.extra, key) {
-            reader.report_at(
-                key,
-                Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-                Severity::Info,
-            );
-        }
-    }
+    let mut told = Diagnostics::default();
+    let mut read = Read::new(STORE_INFO_READING, &mut told).unknown_severity(Severity::Info);
+    let store = read_document(&Node::new(root, JsonPath::new()), &mut read);
     // The reader keeps no member in the document's table: it holds findings only.
-    findings.extend(reader.findings);
-    store
+    findings.extend(told);
+    store.unwrap_or_default()
 }

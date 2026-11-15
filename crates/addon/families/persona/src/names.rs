@@ -1,6 +1,10 @@
 //! The fixed name sets of the family: piece types, body and arm sizes and sides, each with
 //! the text a file spells it by.
 
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::schema::FromJson;
+use facet::Facet;
+
 /// A value the game reads from a fixed set of names.
 ///
 /// Implemented by the family's enums only; the trait is sealed. [`Written`] is generic over it.
@@ -20,7 +24,8 @@ mod sealed {
 /// A text outside the set is kept ([`Other`](Self::Other)) so that it is written back as it
 /// was read; what the game takes it for is on the owning struct's accessor
 /// ([`PieceMetadata::piece_type`](super::PieceMetadata::piece_type) and its like).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[repr(u8)]
 pub enum Written<T> {
     /// A name of the set.
     Known(T),
@@ -54,6 +59,27 @@ impl<T: Named> Written<T> {
     }
 }
 
+/// A name of the set, as written: a text outside it is told an `invalid enum value` error and
+/// still read (kept as the text), a value that is no text a wrong type.
+impl<T: Named> FromJson for Written<T> {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let Some(text) = node.value().as_string() else {
+            read.wrong_type(node);
+            return None;
+        };
+        let written = Self::parse(text.as_str());
+        if matches!(written, Self::Other(_)) {
+            read.error(
+                node,
+                bedrock_addon_core::diagnostic::cereal::invalid_enum_value(),
+            );
+        }
+        Some(written)
+    }
+}
+
 /// Declares one name set: the enum, its numbers and its spellings.
 macro_rules! names {
     (
@@ -61,7 +87,7 @@ macro_rules! names {
         $name:ident { $( $(#[$vmeta:meta])* $variant:ident = $value:literal => $text:literal, )+ }
     ) => {
         $(#[$meta])*
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, facet::Facet)]
         #[non_exhaustive]
         #[repr(u8)]
         pub enum $name {

@@ -1179,6 +1179,32 @@ fn a_field_that_keeps_what_it_cannot_read_fails_nothing() {
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct KeptRequired {
+    #[facet(schema::or_kept = "told", schema::required)]
+    size: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A required member that keeps what it cannot read is there: its failure is the one finding,
+/// the owner is read, and only a member the file lacks is told missing.
+#[test]
+fn a_required_field_that_keeps_what_it_cannot_read_is_not_missing() {
+    let (value, told) = read_as::<KeptRequired>(
+        r#"{"size": "big"}"#,
+        Reading::DOCUMENT,
+        Profile::EVERY_FAILURE,
+    );
+    let value = value.expect("read");
+    assert_eq!(value.size, None);
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["size"]);
+    assert_eq!(told, ["Error root/size core/invalid_type"]);
+    let (value, told) = read_as::<KeptRequired>("{}", Reading::DOCUMENT, Profile::EVERY_FAILURE);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/size core/missing_required_field"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Versioned {
     #[facet(schema::since_format = "1.21.0")]
     late: Option<u8>,

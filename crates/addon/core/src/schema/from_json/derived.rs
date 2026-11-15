@@ -540,6 +540,8 @@ impl<T> Slot<T> {
                 *ok = false;
                 None
             }
+            // A member `schema::or_kept` kept as written is there: not missing, and not read.
+            State::Kept(_) => None,
             _ if object.failed.get() => {
                 *ok = false;
                 None
@@ -591,14 +593,12 @@ impl<T> Slot<T> {
     }
 
     /// The value a `schema::or_kept` field failed to read, kept as written; the slot is then
-    /// absent.
+    /// absent, but for `required`, which finds the member there.
     pub fn take_kept(&mut self) -> Option<crate::json::Value> {
-        match std::mem::take(&mut self.state) {
-            State::Kept(value) => Some(value),
-            state => {
-                self.state = state;
-                None
-            }
+        match &mut self.state {
+            // The slot stays kept: the member is there, `required` does not tell it missing.
+            State::Kept(value) => Some(std::mem::replace(value, crate::json::Value::NULL)),
+            _ => None,
         }
     }
 

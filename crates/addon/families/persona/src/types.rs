@@ -3,14 +3,17 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackType};
+use facet::Facet;
 use uuid::Uuid;
 
+use super::read;
 use super::{
     ArmSize, BUILTIN_PACK, BodySize, PersonaPiece, PieceSide, PieceType, TESTING_PACK, Written,
 };
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Rejected, UnknownMembers};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_shared_shapes::OneOrMany;
 use bedrock_addon_shared_shapes::color::is_hex;
 
@@ -24,41 +27,57 @@ use bedrock_addon_shared_shapes::color::is_hex;
 #[doc(alias = "PieceMeta")]
 #[doc(alias = "PersonaPieceMeta")]
 #[doc(alias = "meta.json")]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = read::meta_rules)]
 #[non_exhaustive]
 pub struct PieceMetadata {
     /// The `format_version` of a file written as a `minecraft:persona_piece_meta` document,
     /// as written (a file loads only at 1.26.40); `None` for the flat file every vanilla piece
     /// is.
+    #[facet(skip, default)]
     pub envelope: Option<Value>,
     /// `piece_id`: the piece's UUID, read only in the client's built-in packs.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub piece_id: Option<String>,
     /// `piece_name`: the name the piece's translation key is built from.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub piece_name: Option<String>,
     /// `piece_type`.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub piece_type: Option<Written<PieceType>>,
     /// `piece_sub_type`.
+    #[facet(schema::or_kept = "told")]
     pub piece_sub_type: Option<Written<PieceType>>,
     /// `body_variant`: the height a body or skeleton piece is for.
+    #[facet(schema::or_kept = "told")]
     pub body_variant: Option<Written<BodySize>>,
     /// `clothing_map`: an image in the piece's folder.
+    #[facet(schema::or_kept = "told")]
     pub clothing_map: Option<String>,
     /// `face_clothing_map`: an image in the piece's folder.
+    #[facet(schema::or_kept = "told")]
     pub face_clothing_map: Option<String>,
     /// `zone`: the body zones the piece claims.
+    #[facet(schema::or_kept = "told")]
     pub zone: Option<Zones>,
     /// `texture_sources`.
+    #[facet(schema::or_kept = "told", schema::read_with = read::entries)]
     pub texture_sources: Option<Vec<TextureSource>>,
     /// `geometry_sources`.
+    #[facet(schema::or_kept = "told", schema::read_with = read::entries)]
     pub geometry_sources: Option<Vec<GeometrySource>>,
     /// `animation_sources`: an emote's animations.
+    #[facet(schema::or_kept = "told", schema::read_with = read::entries)]
     pub animation_sources: Option<Vec<AnimationSource>>,
     /// `tint_color`.
+    #[facet(schema::or_kept = "told")]
     pub tint_color: Option<TintColorOrString>,
     /// `tint_base_color`.
+    #[facet(schema::or_kept = "told")]
     pub tint_base_color: Option<TintColorOrString>,
     /// `allow_tint_override`; absent means `true`
     /// ([`allows_tint_override`](Self::allows_tint_override)).
+    #[facet(schema::or_kept = "told")]
     pub allow_tint_override: Option<bool>,
     /// Members the game does not know, and members of a JSON type it does not expect, as
     /// written: never in a model read from a file that loads.
@@ -66,21 +85,27 @@ pub struct PieceMetadata {
 }
 
 /// One entry of `texture_sources`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = read::texture_rules)]
 #[non_exhaustive]
 pub struct TextureSource {
     /// `texture`: an image in the piece's folder; required. The texture builder skips an
     /// entry whose texture is empty.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub texture: Option<String>,
     /// `tint_map`: an image in the piece's folder.
+    #[facet(schema::or_kept = "told")]
     pub tint_map: Option<String>,
     /// `animated`; absent means `false`.
+    #[facet(schema::or_kept = "told")]
     pub animated: Option<bool>,
     /// `frames`, an integer of 32 bits; absent means 1. (A model built by hand may hold
     /// another spelling in `extra`; [`PieceMetadata::textures`] gives what the 1.26.20 reader
     /// made of it.)
+    #[facet(schema::or_kept = "told")]
     pub frames: Option<i32>,
     /// `use_face_uv`; absent means `false`.
+    #[facet(schema::or_kept = "told")]
     pub use_face_uv: Option<bool>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
@@ -88,28 +113,39 @@ pub struct TextureSource {
 }
 
 /// One entry of `geometry_sources`: a model of the piece's geometry file and when it is used.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = read::geometry_rules)]
 #[non_exhaustive]
 pub struct GeometrySource {
     /// `geometry`: a root member of the piece's `<name>.geometry.json`; required.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub geometry: Option<String>,
     /// `arm_size`; vanilla's files write `""` for "either".
+    #[facet(schema::or_kept = "told")]
     pub arm_size: Option<Written<ArmSize>>,
     /// `body_size`.
+    #[facet(schema::or_kept = "told")]
     pub body_size: Option<Written<BodySize>>,
     /// `side`.
+    #[facet(schema::or_kept = "told")]
     pub side: Option<Written<PieceSide>>,
     /// `zone`: the body zones the entry claims.
+    #[facet(schema::or_kept = "told")]
     pub zone: Option<Zones>,
     /// `is_face`: a string from 1.26.40, as vanilla's files write it (`"true"`).
+    #[facet(schema::or_kept = "told")]
     pub is_face: Option<FaceFlag>,
     /// `texture`: an image in the piece's folder.
+    #[facet(schema::or_kept = "told")]
     pub texture: Option<String>,
     /// `tint_map`: an image in the piece's folder.
+    #[facet(schema::or_kept = "told")]
     pub tint_map: Option<String>,
     /// `animated`; absent means `false`.
+    #[facet(schema::or_kept = "told")]
     pub animated: Option<bool>,
     /// `frames`, an integer of 32 bits; absent means 1.
+    #[facet(schema::or_kept = "told")]
     pub frames: Option<i32>,
     /// Members the game does not know (`use_face_uv` among them), and members of an unexpected
     /// JSON type, as written: never in a model read from a file that loads.
@@ -117,12 +153,14 @@ pub struct GeometrySource {
 }
 
 /// One entry of `animation_sources`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct AnimationSource {
     /// `name`: a key of the file's `animations`; required.
+    #[facet(schema::or_kept = "told", schema::required)]
     pub name: Option<String>,
     /// `animationFile` (camel case in every build): a file in the piece's folder; required.
+    #[facet(schema::or_kept = "told", schema::required, rename = "animationFile")]
     pub animation_file: Option<String>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
@@ -135,7 +173,8 @@ pub type Zones = OneOrMany<String>;
 
 /// `is_face` as written: the string vanilla's own files use (the type from 1.26.40), or a
 /// boolean in a model built by hand (1.26.20 read one; 1.26.40+ refuses it).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[repr(u8)]
 pub enum FaceFlag {
     /// `true` or `false`.
     Bool(bool),
@@ -156,7 +195,8 @@ impl FaceFlag {
 
 /// `tint_color` / `tint_base_color` as written: the four colour slots of the piece's tint
 /// map, or one colour for all four.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum TintColorOrString {
     /// An object with a colour per slot.
     Channels(TintColor),
@@ -182,16 +222,20 @@ impl TintColorOrString {
 }
 
 /// The colour slots of a tint: the channels of the piece's tint map each select one.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct TintColor {
     /// `r_color`.
+    #[facet(schema::or_kept = "told")]
     pub r_color: Option<HexColor>,
     /// `g_color`.
+    #[facet(schema::or_kept = "told")]
     pub g_color: Option<HexColor>,
     /// `b_color`.
+    #[facet(schema::or_kept = "told")]
     pub b_color: Option<HexColor>,
     /// `a_color`.
+    #[facet(schema::or_kept = "told")]
     pub a_color: Option<HexColor>,
     /// Members the game does not know, and members of an unexpected JSON type, as written:
     /// never in a model read from a file that loads.
@@ -213,7 +257,7 @@ impl TintColor {
 ///
 /// The text is kept as written. The game checks nothing: it drops the first character and
 /// reads the rest as a base-16 number `0xAARRGGBB`, so `#RRGGBB` has alpha 0.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct HexColor(pub String);
 
 impl HexColor {
@@ -246,13 +290,16 @@ impl HexColor {
 
 /// One `<name>.store_info.json`: how the Character Creator lists the piece.
 #[doc(alias = "store_info.json")]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = read::store_rules)]
 #[non_exhaustive]
 pub struct PieceStoreInfo {
     /// `piece_store_name`: replaces `piece_name` as the name the translation key is built
     /// from.
+    #[facet(schema::or_kept = "told", schema::reads_null, schema::read_with = read::text_or_absent)]
     pub piece_store_name: Option<String>,
     /// `piece_thumbnail`: an image, from the pack root, with or without its extension.
+    #[facet(schema::or_kept = "told", schema::reads_null, schema::read_with = read::text_or_absent)]
     pub piece_thumbnail: Option<String>,
     /// Members the game does not read, and members of an unexpected JSON type, as written.
     pub extra: UnknownMembers,
