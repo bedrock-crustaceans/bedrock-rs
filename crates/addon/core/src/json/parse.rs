@@ -9,15 +9,17 @@
 //! RFC 8259 only, and nesting no deeper than [`MAX_JSON_DEPTH`]. A byte order mark is no white
 //! space here: blank it first (`blank_bom`).
 //!
-//! # What the old door did with text rewrites, and what this does
+//! # Text rewrites and what the parse does instead
 //!
-//! - A key written twice (`Options::duplicates`): the old door blanked the copies that do not
-//!   stand (`blank_repeats`) so one copy reached facet; here the copy that stands is decided
-//!   while parsing. `Winner::Last` leaves the member where its last copy stands, `First` where
-//!   its first stands, and `Keep` reads every copy as facet-value does (two objects merge member
-//!   by member, two arrays join, anything else is replaced by the later copy at the first
-//!   copy's place); `LastInPlace` puts the last copy's value, whole, at the first copy's place. The faults of the text are the same whatever the rule: a copy that does not
-//!   stand is still text of the file.
+//! - A key written twice (`Options::duplicates`): the copy that stands is decided while
+//!   parsing. (The versioned pipeline still blanks the copies that do not stand in the text,
+//!   `last_wins_except` at `versioning/pipeline.rs`, so that offsets stay, before it parses.)
+//!   `Winner::Last` leaves the member where its last copy stands, `First` where its first
+//!   stands, and `Keep` reads every copy as facet-value does (two objects merge member by
+//!   member, two arrays join, anything else is replaced by the later copy at the first copy's
+//!   place); `LastInPlace` puts the last copy's value, whole, at the first copy's place. The
+//!   faults of the text are the same whatever the rule: a copy that does not stand is still
+//!   text of the file.
 //! - An integer past 64 bits is the double it spells ([`NumberKind::WideInteger`]); a token no
 //!   double holds is an infinity ([`NumberKind::BeyondDouble`]); nothing is respelt. A reader
 //!   that must clamp a number at a member of another width finds the token with

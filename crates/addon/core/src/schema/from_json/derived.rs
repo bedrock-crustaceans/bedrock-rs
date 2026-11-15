@@ -563,6 +563,11 @@ impl<T> Slot<T> {
             None => State::Failed,
         };
         self.left_out = matches!(self.state, State::Failed) && read.left_out_since(mark);
+        if !matches!(self.state, State::Read(_)) {
+            // A value that is not read keeps none of the unknown members it held: the owner
+            // fails, or the member is reset, and the default carries none.
+            read.findings_mut().unknown_mut().forget(node.path());
+        }
     }
 
     /// A required field: the value, or the owner fails (a missing member told, unless the

@@ -39,14 +39,14 @@ No type or function is re-exported at the crate root. (One macro is there, hidde
 
 ## Dependencies and the build script
 
-The crate reads a typed value from JSON by a call per level of nesting, and gives that read the stack it needs on the thread that reads: on every target but WebAssembly it depends on [`stacker`](https://crates.io/crates/stacker) for that, called in one file (`src/json/stack.rs`). A document within the nesting limit (`json::MAX_JSON_DEPTH`, 128 levels) is therefore read on a thread with one megabyte of stack, in a debug build too. Two limits come with the dependency:
+The parse is iterative, but the typed read, the walk for null members and the writer go by a call per level of nesting, and the crate gives them the stack they need on the thread that runs them: on every target but WebAssembly it depends on [`stacker`](https://crates.io/crates/stacker) for that, called in one file (`src/json/stack.rs`). A document within the nesting limit (`json::MAX_JSON_DEPTH`, 128 levels) is therefore read on a thread with one megabyte of stack, in a debug build too. Two limits come with the dependency:
 
 - where the host cannot map the extra stack (an address-space limit such as `RLIMIT_AS`, strict overcommit, a full 32-bit address space), `stacker` panics, so a typed read or a write panics where it would have returned. The stack for a text at the limit is 65 MiB of address space; its pages are taken as they are touched;
 - on a target `stacker` has no stack switch for, the read runs on the stack there is and nothing says so.
 
-On WebAssembly the dependency is not built: a module has the one stack it was linked with, and the embedder sizes it for the typed reads (up to 11 KiB a level in an optimised build, 87 KiB in an unoptimised one).
+On WebAssembly the dependency is not built: a module has the one stack it was linked with, and the embedder sizes it for the typed reads. What a level of each walk takes is measured by the margin test in `src/json/stack.rs` and by `tests/json_stack.rs`, in the build the tests run in; run them with `--release` for the optimised sizes.
 
-`build.rs` reads the profile's `opt-level` and sets the cfg `unoptimised` for a build without optimisation, where a level of a typed read takes about eight times the stack; the crate decides by it when a read may run on the stack there is. It reads nothing else and writes no file.
+`build.rs` reads the profile's `opt-level` and sets the cfg `unoptimised` for a build without optimisation, where a level of a walk takes several times the stack; the crate decides by it when a read may run on the stack there is. It reads nothing else and writes no file.
 
 ## License
 

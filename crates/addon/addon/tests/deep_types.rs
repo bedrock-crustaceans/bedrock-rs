@@ -1,10 +1,12 @@
-//! The document types of this crate that hold themselves and are read by facet, nested to
+//! The document types of this crate that hold themselves and are read by the schema reader, nested to
 //! `MAX_JSON_DEPTH` and a level past it, on a thread with a megabyte of stack: a script
 //! type descriptor (`RawTypeDesc`, itself in a box: the most stack a level of any type here)
 //! and a block's legacy event (`DeprecatedDefinitionEvent`, itself in a list).
 //!
-//! facet reads them by a call of itself for each level: 55 KiB a level for the first in a
-//! debug build, which overflowed a megabyte at 19 levels. The reader gives the read its stack.
+//! The typed read goes by a call for each level of the type: the first of them takes the most
+//! stack a level of any type here takes in a debug build (see the margin test in
+//! `bedrock_addon_core`'s `json/stack.rs`), and it overflowed a megabyte after a few
+//! levels. The reader gives the read its stack.
 //! Its own binary: an overflow aborts the process.
 
 #![cfg(all(feature = "script", feature = "block"))]

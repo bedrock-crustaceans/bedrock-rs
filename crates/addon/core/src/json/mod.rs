@@ -49,7 +49,7 @@ mod null;
 #[doc(hidden)]
 pub mod parse;
 mod prepared;
-mod read; // the only caller of facet-json's parsers
+mod read; // the text entry points over the parser
 mod scalar;
 mod slice;
 mod stack;

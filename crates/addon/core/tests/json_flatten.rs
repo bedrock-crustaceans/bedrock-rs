@@ -78,15 +78,14 @@ fn a_flattened_structs_scalars_are_judged_under_the_strict_rule() {
 }
 
 #[test]
-fn a_flattened_structs_unknown_members_are_found_below_it() {
+fn a_flattened_structs_unknown_members_are_told_after_the_owners() {
     let (outer, told) =
         read(r#"{"identifier": "x", "inner": {"a": 1, "bogus": 2}, "flag": true, "nope": 1}"#);
     assert!(outer.is_some());
     assert_eq!(
         told,
-        // RED CELL (orchestrator to decide): the old walk told them in the order of the
-        // file, `inner/bogus` then `nope`; the reader tells the owner's own unknown member before
-        // the flattened struct, which reads its members after the owner's.
+        // A flattened struct's members are read after its owner's declared members, so its
+        // findings follow the owner's wherever the file has them: `nope` before `inner/bogus`.
         [
             "nope core/unrecognized_field",
             "inner/bogus core/unrecognized_field"

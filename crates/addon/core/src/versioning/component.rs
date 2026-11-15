@@ -789,7 +789,6 @@ fn entry_name<'a, C>(entry: &ComponentRef<'a, C>) -> &'a str {
     }
 }
 
-/// A finding of the component checks at `path`.
 /// `F`'s component table, where the pipeline reads components. A family whose component set
 /// is inhabited (not [`NoComponents`](super::NoComponents), which has size 0) and that kept
 /// the trait's empty default forgot to override [`Family::components`]: every component of

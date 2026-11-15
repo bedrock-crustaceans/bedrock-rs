@@ -2020,3 +2020,104 @@ fn an_unknown_member_kept_beyond_a_double_is_clamped_where_the_read_says() {
         ["root/more unrecognized field", "root/more/0 invalid value"]
     );
 }
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Resets {
+    #[facet(default)]
+    inner: Counted,
+    #[facet(schema::unknown = "keep")]
+    entries: Option<IndexMap<String, Counted>>,
+}
+
+/// A value that fails when its one member does, kept in a map or reset to its default.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+struct Counted {
+    n: u8,
+}
+
+/// The document `text` read as `T` under `lenient()` and `profile`: the value, and the paths and keys of
+/// the unknown members the read kept.
+fn kept_after<T: FromJson>(text: &str, profile: Profile) -> (Option<T>, Vec<String>, Diagnostics) {
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::new());
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(lenient(), &mut found).profile(profile);
+    let value = super::read_document::<T>(&node, &mut read);
+    let kept = found
+        .unknown()
+        .iter()
+        .map(|(at, key, _)| format!("{at}/{key}"))
+        .collect();
+    (value, kept, found)
+}
+
+/// A member reset to its default under `DefaultAndTell` keeps none of the unknown members its
+/// failed value held, and the default object written back carries none.
+#[test]
+fn a_member_reset_to_its_default_keeps_no_unknown_member_of_the_failed_value() {
+    let (value, kept, found) = kept_after::<Resets>(
+        r#"{"inner": {"extra": 1, "n": "x"}}"#,
+        Profile::EVERY_FAILURE,
+    );
+    let value = value.expect("read");
+    assert_eq!(value.inner, Counted::default());
+    assert_eq!(kept, Vec::<String>::new());
+    let mut out = Vec::new();
+    let style = crate::json::WriteStyle {
+        indent: crate::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    crate::json::write_json_with(&value, found.unknown(), &mut out, style).unwrap();
+    assert_eq!(String::from_utf8(out).unwrap(), r#"{"inner":{"n":0}}"#);
+}
+
+/// A map entry left out keeps none of the unknown members its failed value held.
+#[test]
+fn a_map_entry_left_out_keeps_no_unknown_member_of_the_failed_value() {
+    let (value, kept, _) = kept_after::<Resets>(
+        r#"{"entries": {"gone": {"extra": 1, "n": "x"}, "stays": {"extra": 2, "n": 1}}}"#,
+        Profile::EVERY_FAILURE.with_recovery(Recovery::Value),
+    );
+    let value = value.expect("read");
+    assert_eq!(
+        value
+            .entries
+            .map(|entries| entries.into_keys().collect::<Vec<_>>()),
+        Some(vec!["stays".to_owned()])
+    );
+    assert_eq!(kept, ["entries/stays/extra"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct KeptThenCounted {
+    #[facet(schema::or_kept = "told")]
+    size: Option<u8>,
+    count: u8,
+}
+
+/// A told `or_kept` failure is no failure of the read: it neither stops a first-failure read nor
+/// counts as the first failure, so the failure of a member after it is told as the first one.
+#[test]
+fn a_told_kept_failure_is_not_the_first_failure_of_the_read() {
+    for profile in [Profile::FIRST_FAILURE, Profile::FIRST_THEN_PASSES] {
+        let (value, told) = read_as::<KeptThenCounted>(
+            r#"{"size": "big", "count": "x"}"#,
+            Reading::DOCUMENT,
+            profile,
+        );
+        assert_eq!(value, None, "{profile:?}");
+        assert_eq!(
+            told,
+            [
+                "Error root/size core/invalid_type",
+                "Error root/count core/invalid_type"
+            ],
+            "{profile:?}"
+        );
+    }
+}

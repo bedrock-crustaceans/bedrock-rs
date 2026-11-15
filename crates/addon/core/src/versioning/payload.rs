@@ -98,17 +98,15 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
     configure: impl for<'r> FnOnce(crate::json::kit::Read<'r>) -> crate::json::kit::Read<'r>,
 ) -> Option<T> {
     // One pass over the text gives the value and every span the read needs.
-    let Ok(parsed) =
-        crate::json::parse::parse_slice(payload, crate::json::parse::Options::default())
-    else {
-        // Not reached for a payload the envelope has read.
-        if let Err(fault) =
-            crate::json::parse::parse_slice(payload, crate::json::parse::Options::default())
-        {
-            d.push(fault_finding(&fault, &cx.at, payload, Severity::Error));
-        }
-        return None;
-    };
+    let parsed =
+        match crate::json::parse::parse_slice(payload, crate::json::parse::Options::default()) {
+            Ok(parsed) => parsed,
+            Err(fault) => {
+                // Not reached for a payload the envelope has read.
+                d.push(fault_finding(&fault, &cx.at, payload, Severity::Error));
+                return None;
+            }
+        };
     let node = crate::json::kit::Node::parsed(&parsed, cx.at.clone());
     let read = crate::json::kit::Read::new(cx.load.reading, d)
         .unknown_severity(cx.load.grade(Class::Unknown))

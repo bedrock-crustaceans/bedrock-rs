@@ -461,7 +461,10 @@ fn map_entries<K: MapKey, V>(
         };
         match value {
             Some(value) => put(key, value),
-            None if read.take_defaulted() || drops || read.left_out_since(mark) => {}
+            None if read.take_defaulted() || drops || read.left_out_since(mark) => {
+                // The entry is left out: what it kept of its own goes with it.
+                read.findings_mut().unknown_mut().forget(member.path());
+            }
             None => failed = true,
         }
     }

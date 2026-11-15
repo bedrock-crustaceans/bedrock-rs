@@ -1,13 +1,16 @@
-//! The stack of a typed read.
+//! The stack of the recursive walks.
 //!
-//! facet reads a typed target by a call of itself for each level of the type, and for each
-//! level of the text where the type holds itself or an untyped member. In a debug build a
-//! level takes tens of kilobytes (with facet 0.50.0-rc.7: 13 KiB below an untyped
-//! member, 21 for a struct that holds itself in a list, 30 in a map, 55 in a box, 87 where
-//! each level is an untagged enum, a box and a struct; an optimised build takes 2 to 11), so
-//! a text within `MAX_JSON_DEPTH` took more than a megabyte, and more than the eight of a
-//! main thread where the type is unkind. A stack that overflows is no error a caller can
-//! handle: the process ends.
+//! The parse is iterative, but three walks go by a call for each level of the type, and for each
+//! level of the text where the type holds itself or an untyped member: the typed read
+//! (`T::from_json`, whose derived impls call one another down the type), the walk for null
+//! members (`null_members_of_shape`) and the writer. In a debug build a level takes tens of
+//! kilobytes, an optimised build a fraction of that, so a text within `MAX_JSON_DEPTH` could take
+//! more than a megabyte, and more than the eight of a main thread where the type is unkind. A
+//! stack that overflows is no error a caller can handle: the process ends. What a level takes is
+//! measured by the test of this file, which runs each walk in a child process on half of what
+//! [`to_stay`] asks a thread to have left, for the costliest shapes (a struct that holds itself
+//! in a list, a map or a box, an untagged enum), and `tests/json_stack.rs`, which reads documents
+//! at the depth limit on a thread with a megabyte.
 //!
 //! So the reader asks how deep the text nests, which its parse knows before the read starts,
 //! and gives the read the stack that depth can take. Two sizes, both by the depth:
@@ -33,13 +36,12 @@
 /// built by the same profile unless a package override says otherwise; an override that
 /// leaves facet unoptimised below an optimised core is the one case this misjudges, and
 /// there the stack to stay on is below what the costliest type of the crates takes at the
-/// limit (4.5 MiB asked for, against some 7 MiB: 128 levels of `RawTypeDesc` at 55 KiB a
-/// level): such a build is short on a thread that has between the two left. No profile of
+/// limit: such a build is short on a thread that has between the two left. No profile of
 /// the workspace is one.
 const UNOPTIMISED: bool = cfg!(debug_assertions) || cfg!(unoptimised);
 
-/// The stack made for one level of a text: over five times what the costliest shape
-/// takes in a debug build (87 KiB: an untagged enum, a box and a struct).
+/// The stack made for one level of a text: several times what the costliest shape of the
+/// margin test takes in a debug build (an untagged enum, a box and a struct).
 const MADE_A_LEVEL: usize = 512 * 1024;
 
 /// The stack made for a read whatever the text: the levels a type has of its own above the
@@ -48,27 +50,25 @@ const MADE_A_LEVEL: usize = 512 * 1024;
 const MADE_FOR_A_READ: usize = 1024 * 1024;
 
 /// What a thread must have left for one level of a text if the read is to stay on it.
-/// Unoptimised: 2.3 times the costliest type of the crates (55 KiB, a struct that holds
-/// itself in a box: `RawTypeDesc`), 1.5 times the costliest shape there is. Optimised: 2.9
-/// times the costliest shape (11 KiB).
+/// Twice what the costliest type of the crates takes, and more than that for the costliest
+/// shape there is, in each build (the margin test below checks each walk on half of it).
 const TO_STAY_A_LEVEL: usize = if UNOPTIMISED { 128 * 1024 } else { 32 * 1024 };
 
 /// What a thread must have left for a read whatever the text, if the read is to stay on it.
 const TO_STAY_FOR_A_READ: usize = if UNOPTIMISED { 1024 * 1024 } else { 512 * 1024 };
 
-/// The stack made for facet's walk of a text or value that nests `levels` deep.
+/// The stack made for a walk of a text or value that nests `levels` deep.
 pub(super) const fn made(levels: usize) -> usize {
     MADE_FOR_A_READ.saturating_add(levels.saturating_mul(MADE_A_LEVEL))
 }
 
-/// The stack a thread must have left for facet's walk of a text or value that nests
+/// The stack a thread must have left for a walk of a text or value that nests
 /// `levels` deep to run on it.
 pub(super) const fn to_stay(levels: usize) -> usize {
     TO_STAY_FOR_A_READ.saturating_add(levels.saturating_mul(TO_STAY_A_LEVEL))
 }
 
-/// Runs `walk`, facet's read of a typed target from a text that nests `levels` deep (or its
-/// walk of a value that deep), with the stack it may take: on the thread's own where
+/// Runs `walk`, the typed read of a text that nests `levels` deep (or a walk of a value that deep), with the stack it may take: on the thread's own where
 /// [`to_stay`] of it is left, else on one of [`made`] bytes.
 #[cfg(not(target_family = "wasm"))]
 pub(crate) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
@@ -84,7 +84,7 @@ pub(crate) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
     walk()
 }
 
-/// Whether the thread has less stack left than one more level of a walk of facet's may take
+/// Whether the thread has less stack left than one more level of a walk may take
 /// with what a leaf runs: where a walk that can start again gives up (the writer's). A
 /// thread whose stack is not known is one that has little.
 #[cfg(not(target_family = "wasm"))]

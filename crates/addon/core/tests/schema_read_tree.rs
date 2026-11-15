@@ -4,7 +4,8 @@
 //! geometry's strict and lenient ones). The findings (code, text, severity, path, span, in
 //! order), the respelled members and the value are pinned in `schema_read_tree.pins`: what the
 //! node-tree walker the read replaced (`json::node_tree`) told and read for each, the same in
-//! every line when the walker was deleted.
+//! every line when the walker was deleted. `BEDROCK_DOOR_PINS=<dir>` writes the pin file the
+//! reader makes to `<dir>/schema_read_tree.pins`; a cell with no pinned block fails.
 
 use std::fmt::Write as _;
 
@@ -223,19 +224,58 @@ fn render(outcome: &Outcome, name: &str, text: &str) -> String {
     out
 }
 
+/// The pinned blocks by header (`== <rule set> <document>`): each block's lines after it.
+fn pinned_blocks() -> Vec<(&'static str, &'static str)> {
+    let pinned: &'static str = include_str!("schema_read_tree.pins");
+    let mut starts: Vec<usize> = pinned
+        .match_indices("\n== ")
+        .map(|(at, _)| at + 1)
+        .collect();
+    starts.insert(0, 0);
+    let mut blocks = Vec::new();
+    for (index, start) in starts.iter().enumerate() {
+        let end = starts.get(index + 1).copied().unwrap_or(pinned.len());
+        let block = &pinned[*start..end];
+        let (header, body) = block.split_once('\n').unwrap_or((block, ""));
+        blocks.push((header, body));
+    }
+    blocks
+}
+
+/// Every cell is held to its pinned block, and a cell with no pinned block fails. Set
+/// `BEDROCK_DOOR_PINS=<dir>` to write the whole pin file the reader makes to
+/// `<dir>/schema_read_tree.pins` instead (copy it over `tests/schema_read_tree.pins` once each
+/// difference is one the reader makes on purpose).
 #[test]
 fn the_derived_read_of_a_tree_tells_what_the_walker_told() {
-    let mut out = String::new();
-    for config in configs() {
-        for text in DOCUMENTS {
-            out.push_str(&render(&derived(&config, text), config.name, text));
+    let cells: Vec<String> = configs()
+        .iter()
+        .flat_map(|config| {
+            DOCUMENTS
+                .iter()
+                .map(|text| render(&derived(config, text), config.name, text))
+        })
+        .collect();
+    if let Ok(dir) = std::env::var("BEDROCK_DOOR_PINS") {
+        std::fs::write(
+            std::path::Path::new(&dir).join("schema_read_tree.pins"),
+            cells.concat(),
+        )
+        .expect("the pin directory");
+        return;
+    }
+    let pinned = pinned_blocks();
+    for cell in &cells {
+        let (header, body) = cell.split_once('\n').expect("a header line");
+        let Some((_, want)) = pinned.iter().find(|(pinned, _)| *pinned == header) else {
+            panic!("no pin for {header}");
+        };
+        for (line, (got, want)) in body.lines().zip(want.lines()).enumerate() {
+            assert_eq!(got, want, "{header}, line {}", line + 1);
         }
+        assert_eq!(body.lines().count(), want.lines().count(), "{header}");
     }
-    let pinned = include_str!("schema_read_tree.pins");
-    for (line, (got, want)) in out.lines().zip(pinned.lines()).enumerate() {
-        assert_eq!(got, want, "line {}", line + 1);
-    }
-    assert_eq!(out.lines().count(), pinned.lines().count());
+    assert_eq!(cells.len(), pinned.len(), "a pinned cell no document makes");
 }
 
 #[test]
