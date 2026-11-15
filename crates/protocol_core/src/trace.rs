@@ -17,7 +17,7 @@ pub struct FieldSpan {
 pub struct FieldGuard;
 
 #[cfg(not(feature = "packet-trace"))]
-#[inline(always)]
+#[inline]
 pub fn field(_name: &'static str, _index: Option<usize>) -> FieldGuard {
     FieldGuard
 }

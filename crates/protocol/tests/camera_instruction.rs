@@ -21,7 +21,7 @@ fn empty() -> Packet {
     }
 }
 
-fn encode(packet: Packet) -> Vec<u8> {
+fn encode(packet: &Packet) -> Vec<u8> {
     let mut bytes = Vec::new();
     packet.serialize(&mut bytes).unwrap();
     bytes
@@ -29,7 +29,7 @@ fn encode(packet: Packet) -> Vec<u8> {
 
 #[test]
 fn field_of_view_writes_its_easing_as_a_string() {
-    let bytes = encode(Packet {
+    let bytes = encode(&Packet {
         field_of_view: Some(FieldOfViewInstruction {
             field_of_view: 70.0,
             ease_time: 2.0,
@@ -50,7 +50,7 @@ fn field_of_view_writes_its_easing_as_a_string() {
 
 #[test]
 fn remove_target_sits_between_target_and_field_of_view() {
-    let bytes = encode(Packet {
+    let bytes = encode(&Packet {
         remove_target: Some(true),
         ..empty()
     });
@@ -59,7 +59,7 @@ fn remove_target_sits_between_target_and_field_of_view() {
 
 #[test]
 fn attach_and_detach_follow_the_field_of_view() {
-    let bytes = encode(Packet {
+    let bytes = encode(&Packet {
         attach: Some(AttachInstruction { actor_unique_id: 9 }),
         detach: Some(true),
         ..empty()
@@ -73,7 +73,7 @@ fn attach_and_detach_follow_the_field_of_view() {
 
 #[test]
 fn the_packet_decodes_what_it_encodes() {
-    let bytes = encode(Packet {
+    let bytes = encode(&Packet {
         remove_target: Some(true),
         ..empty()
     });
