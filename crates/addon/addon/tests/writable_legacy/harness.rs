@@ -16,8 +16,8 @@ use bedrock_addon::versioning::{Upgrade, VersionStruct, Versioned};
 
 use document_types::{client, pack};
 use places::{
-    Kind, Node, Outcome, code, content_in, nodes, non_strict_readings, outcome, parse, path_of,
-    scalar, without,
+    Kind, Node, Outcome, code, content_in, is_its_reading, lookup, nodes, non_strict_readings,
+    outcome, parse, path_of, scalar, without, writes_its_reading,
 };
 
 /// What a value is replaced by, each with a second replacement of the same class (see
@@ -1569,11 +1569,12 @@ fn new_findings(base: &Base<'_>, node: &Node, replacement: &str, outcome: &Outco
     newly
 }
 
-/// Whether a leaf is the largest finite double of the negative sign.
+/// Whether a leaf is the largest finite double of the negative sign, or what an integer member
+/// reads it as (`asInt` saturates at the lowest `i32`).
 fn clamped_low(leaves: &[String]) -> bool {
     leaves
         .iter()
-        .any(|leaf| leaf == "n:-1.7976931348623157e308")
+        .any(|leaf| leaf == "n:-1.7976931348623157e308" || leaf == "n:-2147483648.0")
 }
 
 /// Whether a finding is at a member above `node`.
@@ -1883,6 +1884,9 @@ fn judge(
     // The document without the member: what a `null` there is read as, and what of `W` is
     // owed to the member.
     let removed = removed.get(read, base, node);
+    if written_as_read(read, base, node, (replacement, &ours), removed) {
+        return Ok("written as read");
+    }
     // Held where the replaced value held the same scalar (`true` for `{"value": true}`, or
     // for a `"true"` the legacy reader takes as the bool): the written text has it and the
     // document without the member does not.
@@ -1895,10 +1899,9 @@ fn judge(
     {
         return Ok("held");
     }
-    let nothing = matches!(class, Class::Null | Class::EmptyArray | Class::EmptyObject);
     // The document without the member, but for the order of its members (a step that
     // inserts an absent member puts it last).
-    if nothing
+    if matches!(class, Class::Null | Class::EmptyArray | Class::EmptyObject)
         && let Some(removed) = removed
         && same_but_order(removed, &ours)
     {
@@ -1954,6 +1957,50 @@ fn judge(
         return Ok("said");
     }
     Err(("changed", changed.detail("neither held nor carried")))
+}
+
+/// Whether a family that writes its reading ([`places::WRITES_ITS_READING`]) writes the
+/// client's reading of `replacement` at the place: the client reads these files without a
+/// word on a member of another type. A value the member does not take (a real where the
+/// client reads only an integer) reads as the member's fallback, which is what the place
+/// holds with an array there, a value no scalar member takes; a value the client reads as no
+/// value (a scalar where a list stands, an element of a list that is no object) is written as
+/// the document without the member (`removed`).
+fn written_as_read(
+    read: &dyn Fn(&str) -> Outcome,
+    base: &Base<'_>,
+    node: &Node,
+    (replacement, ours): (&str, &Read),
+    removed: Option<&Read>,
+) -> bool {
+    if !writes_its_reading(base.family) {
+        return false;
+    }
+    if removed.is_some_and(|removed| same_but_order(removed, ours)) {
+        return true;
+    }
+    let Some(held) = written_at(&ours.value, &node.path) else {
+        return false;
+    };
+    let unchanged = written_at(&base.read.value, &node.path);
+    if is_its_reading(replacement, held, unchanged) {
+        return true;
+    }
+    let fallback = "[7]";
+    replacement != fallback
+        && unchanged.and_then(scalar).is_some()
+        && read_text(read, &replaced(base, node, fallback))
+            .is_ok_and(|(other, _)| written_at(&other.value, &node.path) == Some(held))
+}
+
+/// The value of the written text at `path`, the place of the author's text: a step may wrap
+/// the author's root in a member of its own (the 1.14.0 step of the sound definitions puts a
+/// file without the envelope under `sound_definitions`).
+fn written_at<'v>(written: &'v Value, path: &[String]) -> Option<&'v Value> {
+    lookup(written, path).or_else(|| {
+        let root = written.as_object()?;
+        root.iter().find_map(|(_, wrapper)| lookup(wrapper, path))
+    })
 }
 
 /// The scalars of `value` in the order of the text, keys left out.

@@ -395,3 +395,63 @@ pub fn non_strict_readings(replacement: &str) -> Vec<f64> {
     }
     out
 }
+
+/// The families whose writer writes the typed value, each member as the client reads it, with
+/// its reason (phase 3 step 8, `feat(music)!` and `feat(sound_definitions)!`: these used to
+/// write the document as read, which held every replacement as written). The client reads
+/// these files with no message on a member of another type, so the outcome is "written as
+/// read" when no finding tells of the replacement and the written text holds the client's
+/// reading at the place: a reading of the non-strict reader
+/// (see [`non_strict_readings`]), the largest double of the replacement's sign for a number
+/// beyond a float (the float cast makes it the same infinity again), or, for a `null` or a
+/// replacement of another kind than the member, a value of the kind the unchanged document is
+/// written with there. What stood beside the place may be held in the author's spelling where
+/// the typed value does not read it (a member kept as written): see `lost_beside` in
+/// `writable/harness.rs`.
+pub const WRITES_ITS_READING: &[(&str, &str)] = &[
+    (
+        "music_definitions",
+        "the typed value, as the client reads it",
+    ),
+    (
+        "sound_definitions",
+        "the typed value, as the client reads it",
+    ),
+];
+
+/// Whether `family` writes its reading (see [`WRITES_ITS_READING`]).
+pub fn writes_its_reading(family: &str) -> bool {
+    WRITES_ITS_READING.iter().any(|(of, _)| *of == family)
+}
+
+/// Whether two values are of one JSON kind.
+pub fn same_kind(one: &Value, other: &Value) -> bool {
+    (one.is_null() && other.is_null())
+        || (one.as_bool().is_some() && other.as_bool().is_some())
+        || (one.as_number().is_some() && other.as_number().is_some())
+        || (one.as_string().is_some() && other.as_string().is_some())
+        || (one.as_array().is_some() && other.as_array().is_some())
+        || (one.as_object().is_some() && other.as_object().is_some())
+}
+
+/// Whether `held` is the client's reading of `replacement` in a member the unchanged document
+/// writes as `unchanged` (see [`WRITES_ITS_READING`]).
+pub fn is_its_reading(replacement: &str, held: &Value, unchanged: Option<&Value>) -> bool {
+    if let Some(held) = number(held) {
+        if non_strict_readings(replacement).contains(&held) {
+            return true;
+        }
+        if let Ok(real) = replacement.parse::<f64>()
+            && real.abs() > f64::from(f32::MAX)
+            && held.to_bits() == f64::MAX.copysign(real).to_bits()
+        {
+            return true;
+        }
+    }
+    let Some(replaced) = parse(replacement) else {
+        return false;
+    };
+    unchanged.is_some_and(|unchanged| {
+        (replaced.is_null() || !same_kind(&replaced, unchanged)) && same_kind(held, unchanged)
+    })
+}
