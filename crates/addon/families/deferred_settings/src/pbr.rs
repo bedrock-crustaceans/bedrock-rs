@@ -1,6 +1,16 @@
 //! `minecraft:pbr_fallback_settings`: the material values of textures without a texture set.
 
+use super::read;
+use super::value::{Rgb8, Rgba8};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::schema::{FromJson, Schema};
+use facet::Facet;
+
+/// The four-value member of a kind.
+const MERS: &str = "global_metalness_emissive_roughness_subsurface";
+/// The three-value member of a kind.
+const MER: &str = "global_metalness_emissive_roughness";
 
 /// The fallback material values of the deferred renderer (`minecraft:pbr_fallback_settings`,
 /// the one file `pbr/global.json`), at its only format version (1.21.40).
@@ -9,7 +19,7 @@ use bedrock_addon_core::document::UnknownMembers;
 /// "actors"?: {…}, "particles"?: {…}, "items"?: {…}}}`; each kind is a [`PbrFallback`]. A kind
 /// the document leaves out is not written back. The highest-priority pack whose file loads
 /// decides, whole.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:pbr_fallback_settings")]
 #[doc(alias = "pbr")]
 pub struct PbrFallbackSettings {
@@ -31,7 +41,7 @@ pub struct PbrFallbackSettings {
 /// form `{"global_metalness_emissive_roughness": [m, e, r]}`. Each value is `0`–`255`; the
 /// four-value form may be written `"#SSMMEERR"` (subsurface first), the three-value form
 /// `"#MMEERR"`. An object with both members is read by the four-value one.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct PbrFallback {
     /// The values as written; `None` when the object names neither member (see
     /// [`PbrFallback::mers`]).
@@ -41,7 +51,8 @@ pub struct PbrFallback {
 }
 
 /// The two forms of a kind's fallback values.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[repr(u8)]
 pub enum PbrValue {
     /// `global_metalness_emissive_roughness_subsurface`.
     Mers(Mers),
@@ -50,7 +61,7 @@ pub enum PbrValue {
 }
 
 /// Metalness, emissive, roughness and subsurface, each 0–255.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct Mers {
     /// How metallic the surface is.
     pub metalness: u8,
@@ -73,7 +84,7 @@ impl Mers {
 }
 
 /// Metalness, emissive and roughness, each 0–255.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct Mer {
     /// How metallic the surface is.
     pub metalness: u8,
@@ -82,6 +93,56 @@ pub struct Mer {
     /// How rough the surface is.
     pub roughness: u8,
 }
+
+/// One kind's object. The four-value member is read when present; else the three-value
+/// member; an object with neither is the four-value form with the game's values, since a
+/// three-value form without its member cannot be told from it. A value that fails ends the read
+/// of the object: the game's reader tells nothing of its unknown members then.
+impl FromJson for PbrFallback {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let members = read.object(node)?;
+        let written = |key: &str| members.get(key).filter(|member| !member.value().is_null());
+        let (value, known): (_, &[&str]) = if let Some(four) = written(MERS) {
+            // `[m, e, r, s]` is `[r, g, b, a]`; the hex form has subsurface (alpha) first.
+            let Rgba8 {
+                red,
+                green,
+                blue,
+                alpha,
+            } = Rgba8::from_json(&four, read)?;
+            let mers = Mers {
+                metalness: red,
+                emissive: green,
+                roughness: blue,
+                subsurface: alpha,
+            };
+            (Some(PbrValue::Mers(mers)), &[MERS])
+        } else {
+            let three = match written(MER) {
+                Some(three) => Some(Rgb8::from_json(&three, read)?),
+                None => None,
+            };
+            let mer = three.map(|Rgb8 { red, green, blue }| {
+                PbrValue::Mer(Mer {
+                    metalness: red,
+                    emissive: green,
+                    roughness: blue,
+                })
+            });
+            (mer, &[MERS, MER])
+        };
+        let extra = read::unknown(read, &members, known);
+        Some(Self { value, extra })
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(PbrFallback);
+bedrock_addon_core::impl_no_molang!(PbrFallback);
 
 impl PbrFallback {
     /// The values the game uses: the four written, the three written with subsurface 0, or
@@ -136,53 +197,16 @@ impl PbrFallbackSettings {
 mod codec {
     //! Reading and writing `minecraft:pbr_fallback_settings`.
 
-    use super::{Mer, Mers, PbrFallback, PbrFallbackSettings, PbrValue};
-    use crate::read::{self, Node, Read, members};
+    use super::{MER, MERS, PbrFallback, PbrFallbackSettings, PbrValue};
+    use crate::read;
     use crate::value::{Rgb8, Rgba8};
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::versioning::{ParseCx, VersionStruct};
 
-    /// The four-value member of a kind.
-    const MERS: &str = "global_metalness_emissive_roughness_subsurface";
-    /// The three-value member of a kind.
-    const MER: &str = "global_metalness_emissive_roughness";
     /// The kinds, in the order the game reads them.
     const KINDS: &[&str] = &["blocks", "actors", "particles", "items"];
-
-    /// One kind's object. The four-value member is read when present; else the three-value
-    /// member; an object with neither is the four-value form with the game's values, since a
-    /// three-value form without its member cannot be told from it.
-    fn kind(node: &Node<'_>, d: &mut Diagnostics) -> Read<PbrFallback> {
-        let mut m = members(node, d)?;
-        let mers = m.opt(MERS, d, read::rgba)?;
-        let value = match mers {
-            // `[m, e, r, s]` is `[r, g, b, a]`; the hex form has subsurface (alpha) first.
-            Some(Rgba8 {
-                red,
-                green,
-                blue,
-                alpha,
-            }) => Some(PbrValue::Mers(Mers {
-                metalness: red,
-                emissive: green,
-                roughness: blue,
-                subsurface: alpha,
-            })),
-            None => m.opt(MER, d, read::rgb)?.map(|Rgb8 { red, green, blue }| {
-                PbrValue::Mer(Mer {
-                    metalness: red,
-                    emissive: green,
-                    roughness: blue,
-                })
-            }),
-        };
-        Ok(PbrFallback {
-            value,
-            extra: m.finish(&[], d),
-        })
-    }
 
     /// One kind's object, in the form it was read in.
     fn write_kind(kind: &PbrFallback, at: &JsonPath) -> Written {
@@ -216,19 +240,7 @@ mod codec {
 
     impl VersionStruct for PbrFallbackSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let blocks = m.opt("blocks", d, kind);
-            let actors = m.opt("actors", d, kind);
-            let particles = m.opt("particles", d, kind);
-            let items = m.opt("items", d, kind);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                blocks: blocks.ok()?,
-                actors: actors.ok()?,
-                particles: particles.ok()?,
-                items: items.ok()?,
-                extra,
-            })
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

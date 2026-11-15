@@ -3,14 +3,20 @@
 
 use std::fmt;
 
+use super::read;
+
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields};
+use facet::Facet;
 
 /// A colour without alpha, each channel 0–255.
 ///
 /// JSON: `[r, g, b]` or `"#RRGGBB"`; written back as the array. An array element outside
 /// 0–255 is read as the nearest bound, as the game does.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 pub struct Rgb8 {
     /// Red.
     pub red: u8,
@@ -38,7 +44,7 @@ impl Rgb8 {
 ///
 /// JSON: `[r, g, b, a]` or `"#AARRGGBB"` (alpha is the first byte of the hex form); written
 /// back as the array.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 pub struct Rgba8 {
     /// Red.
     pub red: u8,
@@ -89,11 +95,52 @@ pub use bedrock_addon_shared_shapes::Vec3;
 /// by (JSON `{"identifier": "ns:name"}`; `identifier` is required inside it).
 ///
 /// The game checks neither a namespace nor the characters of the identifier.
+#[derive(Facet)]
+#[facet(opaque)]
 pub struct Description<K: Kind> {
     /// The settings' name (JSON `identifier`).
     pub identifier: Id<K>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
+}
+
+bedrock_addon_core::impl_schema_leaf!(Rgb8, Rgba8);
+bedrock_addon_core::impl_no_molang!(Rgb8, Rgba8);
+
+/// The identifier is required (a `null` is none); the members the game does not know are kept, and
+/// told whether the identifier reads or not.
+impl<K: Kind> FromJson for Description<K> {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let members = read.object(node)?;
+        let identifier =
+            if let Some(id) = members.get("identifier").filter(|n| !n.value().is_null()) {
+                read::identifier(&id, read)
+            } else {
+                read.missing_member(&members, "identifier");
+                None
+            };
+        let extra = read::unknown(read, &members, &["identifier"]);
+        Some(Self {
+            identifier: identifier?,
+            extra,
+        })
+    }
+}
+
+/// A description holds no bound the derive checks and no Molang.
+impl<K: Kind> SchemaFields for Description<K> {
+    fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl<K: Kind> MolangFields for Description<K> {
+    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }
 
 impl<K: Kind> Description<K> {

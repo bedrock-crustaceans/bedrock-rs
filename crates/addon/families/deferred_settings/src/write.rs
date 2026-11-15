@@ -114,15 +114,6 @@ pub(crate) fn integer_in(min: i64, max: i64, value: i64, at: &JsonPath) -> Writt
     }
 }
 
-/// The name of `value` in `table`.
-pub(crate) fn choice<T: Copy + PartialEq>(table: &[(&str, T)], value: T, at: &JsonPath) -> Written {
-    table
-        .iter()
-        .find(|(_, known)| *known == value)
-        .map(|(name, _)| Value::from(*name))
-        .ok_or_else(|| refuse(at))
-}
-
 /// An array of channel values.
 fn channels(values: &[u8]) -> Value {
     let mut array = VArray::new();

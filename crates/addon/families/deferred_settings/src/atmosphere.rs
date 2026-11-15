@@ -1,8 +1,19 @@
 //! `minecraft:atmosphere_settings`: how the sky scatters light over the day.
 
+use super::read::{self, Range};
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{AtmosphereSettingsId, kind};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
+use facet::Facet;
+
+// The bounds of each keyframe value.
+const RAYLEIGH: Range = read::range(0.0, 50.0);
+const SUN_MIE: Range = read::range(0.0, 60.0);
+const MOON_MIE: Range = read::range(0.0, 20.0);
+const SUN_GLARE: Range = read::range(0.0, 50.0);
+const STOP: Range = read::range(0.0, 1.0);
+const MIE_START: Range = read::range(0.0, 1.2);
 
 /// The atmospheric scattering of the deferred renderer (`minecraft:atmosphere_settings`, in
 /// `atmospherics/`), at the newest format version (1.26.20).
@@ -18,7 +29,7 @@ use bedrock_addon_core::id::{AtmosphereSettingsId, kind};
 ///
 /// A 1.26.20 file must have `description`; a 1.21.40 file may leave it out, and then loads
 /// without a name no biome can use ([`AtmosphereSettings::description`] is `None`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:atmosphere_settings")]
 #[doc(alias = "atmospherics")]
 pub struct AtmosphereSettings {
@@ -28,18 +39,24 @@ pub struct AtmosphereSettings {
     /// Where the horizon colour blends into the zenith colour (JSON `horizon_blend_stops`).
     pub horizon_blend_stops: Option<HorizonBlendStops>,
     /// The strength of Rayleigh scattering, each value 0–50 (JSON `rayleigh_strength`).
+    #[facet(schema::read_with = read::keyframed_in(RAYLEIGH))]
     pub rayleigh_strength: Option<Keyframes<f32>>,
     /// The strength of Mie scattering around the sun, each value 0–60 (JSON
     /// `sun_mie_strength`).
+    #[facet(schema::read_with = read::keyframed_in(SUN_MIE))]
     pub sun_mie_strength: Option<Keyframes<f32>>,
     /// The strength of Mie scattering around the moon, each value 0–20 (JSON
     /// `moon_mie_strength`).
+    #[facet(schema::read_with = read::keyframed_in(MOON_MIE))]
     pub moon_mie_strength: Option<Keyframes<f32>>,
     /// The shape of the glare around the sun, each value 0–50 (JSON `sun_glare_shape`).
+    #[facet(schema::read_with = read::keyframed_in(SUN_GLARE))]
     pub sun_glare_shape: Option<Keyframes<f32>>,
     /// The colour of the sky overhead (JSON `sky_zenith_color`).
+    #[facet(schema::read_with = read::keyframed(Rgb8::from_json))]
     pub sky_zenith_color: Option<Keyframes<Rgb8>>,
     /// The colour of the sky at the horizon (JSON `sky_horizon_color`).
+    #[facet(schema::read_with = read::keyframed(Rgb8::from_json))]
     pub sky_horizon_color: Option<Keyframes<Rgb8>>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -47,15 +64,19 @@ pub struct AtmosphereSettings {
 
 /// Where the horizon colour blends into the zenith colour (JSON `horizon_blend_stops`); every
 /// member is optional.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct HorizonBlendStops {
     /// Where the blend begins below the horizon, each value 0–1 (JSON `min`).
+    #[facet(schema::read_with = read::keyframed_in(STOP))]
     pub min: Option<Keyframes<f32>>,
     /// Where the horizon colour begins to fade, each value 0–1 (JSON `start`).
+    #[facet(schema::read_with = read::keyframed_in(STOP))]
     pub start: Option<Keyframes<f32>>,
     /// Where Mie scattering begins, each value 0–1.2 (JSON `mie_start`).
+    #[facet(schema::read_with = read::keyframed_in(MIE_START))]
     pub mie_start: Option<Keyframes<f32>>,
     /// Where the zenith colour is reached, each value 0–1 (JSON `max`).
+    #[facet(schema::read_with = read::keyframed_in(STOP))]
     pub max: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -138,90 +159,19 @@ mod codec {
     //! Reading and writing `minecraft:atmosphere_settings` at both format versions, and the
     //! step between them.
 
-    use super::{AtmosphereSettings, HorizonBlendStops};
+    use super::{
+        AtmosphereSettings, HorizonBlendStops, MIE_START, MOON_MIE, RAYLEIGH, STOP, SUN_GLARE,
+        SUN_MIE,
+    };
     use crate::history::atmosphere::v1_21_40;
-    use crate::read::{self, Members, Node, Range, Read, members};
-    use crate::value::{Keyframes, Rgb8};
+    use crate::read::{self, Range};
+    use crate::value::Keyframes;
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
 
     const KEY: &str = "minecraft:atmosphere_settings";
-
-    // The bounds of each keyframe value.
-    const RAYLEIGH: Range = read::range(0.0, 50.0);
-    const SUN_MIE: Range = read::range(0.0, 60.0);
-    const MOON_MIE: Range = read::range(0.0, 20.0);
-    const SUN_GLARE: Range = read::range(0.0, 50.0);
-    const STOP: Range = read::range(0.0, 1.0);
-    const MIE_START: Range = read::range(0.0, 1.2);
-
-    /// A keyframed number whose values lie in `range`.
-    fn ranged(
-        range: Range,
-        key: &str,
-        m: &mut Members<'_>,
-        d: &mut Diagnostics,
-    ) -> Read<Option<Keyframes<f32>>> {
-        m.opt(key, d, |n, d| {
-            read::keyframes(n, d, |n, d| read::float_in(range, n, d))
-        })
-    }
-
-    /// A keyframed colour.
-    fn colour(
-        key: &str,
-        m: &mut Members<'_>,
-        d: &mut Diagnostics,
-    ) -> Read<Option<Keyframes<Rgb8>>> {
-        m.opt(key, d, |n, d| read::keyframes(n, d, read::rgb))
-    }
-
-    fn stops(node: &Node<'_>, d: &mut Diagnostics) -> Read<HorizonBlendStops> {
-        let mut m = members(node, d)?;
-        let min = ranged(STOP, "min", &mut m, d);
-        let start = ranged(STOP, "start", &mut m, d);
-        let mie_start = ranged(MIE_START, "mie_start", &mut m, d);
-        let max = ranged(STOP, "max", &mut m, d);
-        let extra = m.finish(&[], d);
-        Ok(HorizonBlendStops {
-            min: min?,
-            start: start?,
-            mie_start: mie_start?,
-            max: max?,
-            extra,
-        })
-    }
-
-    /// The payload; `description` is required from 1.26.20.
-    fn settings(node: &Node<'_>, required: bool, d: &mut Diagnostics) -> Read<AtmosphereSettings> {
-        let mut m = members(node, d)?;
-        let description = if required {
-            m.req("description", d, read::description).map(Some)
-        } else {
-            m.opt("description", d, read::description)
-        };
-        let horizon_blend_stops = m.opt("horizon_blend_stops", d, stops);
-        let rayleigh_strength = ranged(RAYLEIGH, "rayleigh_strength", &mut m, d);
-        let sun_mie_strength = ranged(SUN_MIE, "sun_mie_strength", &mut m, d);
-        let moon_mie_strength = ranged(MOON_MIE, "moon_mie_strength", &mut m, d);
-        let sun_glare_shape = ranged(SUN_GLARE, "sun_glare_shape", &mut m, d);
-        let sky_zenith_color = colour("sky_zenith_color", &mut m, d);
-        let sky_horizon_color = colour("sky_horizon_color", &mut m, d);
-        let extra = m.finish(&[], d);
-        Ok(AtmosphereSettings {
-            description: description?,
-            horizon_blend_stops: horizon_blend_stops?,
-            rayleigh_strength: rayleigh_strength?,
-            sun_mie_strength: sun_mie_strength?,
-            moon_mie_strength: moon_mie_strength?,
-            sun_glare_shape: sun_glare_shape?,
-            sky_zenith_color: sky_zenith_color?,
-            sky_horizon_color: sky_horizon_color?,
-            extra,
-        })
-    }
 
     /// Writes a keyframed number whose values lie in `range`.
     fn write_ranged(
@@ -316,9 +266,7 @@ mod codec {
 
     impl VersionStruct for v1_21_40::AtmosphereSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            settings(&read::payload(payload, cx), false, d)
-                .ok()
-                .map(Self)
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -328,7 +276,7 @@ mod codec {
 
     impl VersionStruct for AtmosphereSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            settings(&read::payload(payload, cx), true, d).ok()
+            read::payload_requiring(payload, cx, d, &[], "description")
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

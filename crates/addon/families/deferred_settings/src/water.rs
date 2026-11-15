@@ -1,8 +1,29 @@
 //! `minecraft:water_settings`: how water is drawn.
 
+use super::read::{self, Range};
 use super::value::Description;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{WaterSettingsId, kind};
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
+
+pub(crate) const CHLOROPHYLL: Range = read::range(0.0, 10.0);
+pub(crate) const SUSPENDED_SEDIMENT: Range = read::range(0.0, 300.0);
+pub(crate) const CDOM: Range = read::range(0.0, 15.0);
+pub(crate) const FREQUENCY: Range = read::range(0.01, 3.0);
+pub(crate) const OCTAVES: (u8, u8) = (1, 30);
+pub(crate) const DEPTH: Range = read::range(0.0, 3.0);
+pub(crate) const SAMPLE_WIDTH: Range = read::range(0.01, 1.0);
+pub(crate) const SPEED: Range = read::range(0.01, 10.0);
+pub(crate) const PULL: Range = read::range(-1.0, 1.0);
+pub(crate) const MIX: Range = read::range(0.0, 1.0);
+pub(crate) const SCALING: Range = read::range(0.0, 2.0);
+pub(crate) const DIRECTION_INCREMENT: Range = read::range(0.0, 360.0);
+pub(crate) const SHAPE: Range = read::range(1.0, 10.0);
+pub(crate) const FRAME_LENGTH: Range = read::range(0.01, 5.0);
+pub(crate) const SCALE: Range = read::range(0.1, 5.0);
+pub(crate) const POWER: Range = read::range(1.0, 6.0);
+pub(crate) const CONTRIBUTION: Range = read::range(0.0, 1.0);
 
 /// The water of the deferred renderer (`minecraft:water_settings`, in `water/`), at the newest
 /// format version (1.26.20).
@@ -16,7 +37,7 @@ use bedrock_addon_core::id::{WaterSettingsId, kind};
 ///
 /// A 1.26.20 file must have `description`; an older file may leave it out, and then loads
 /// without a name no biome can use ([`WaterSettings::description`] is `None`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:water_settings")]
 #[doc(alias = "water")]
 pub struct WaterSettings {
@@ -31,20 +52,24 @@ pub struct WaterSettings {
     pub waves: Option<Waves>,
     /// How much the biome's water colour tints the water, 0–1 (JSON
     /// `biome_water_color_contribution`, from format 1.26.0).
+    #[facet(schema::read_with = read::float_in(CONTRIBUTION))]
     pub biome_water_color_contribution: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
 /// What is dissolved in the water (JSON `particle_concentrations`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct ParticleConcentrations {
     /// Chlorophyll, which tints the water green, 0–10 (JSON `chlorophyll`).
+    #[facet(schema::read_with = read::float_in(CHLOROPHYLL))]
     pub chlorophyll: Option<f32>,
     /// Suspended sediment, which makes the water murky, 0–300 (JSON `suspended_sediment`).
+    #[facet(schema::read_with = read::float_in(SUSPENDED_SEDIMENT))]
     pub suspended_sediment: Option<f32>,
     /// Coloured dissolved organic matter, which tints the water yellow-brown, 0–15 (JSON
     /// `cdom`).
+    #[facet(schema::read_with = read::float_in(CDOM))]
     pub cdom: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -59,30 +84,40 @@ super::defaults! {
 }
 
 /// The waves of the water surface (JSON `waves`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Waves {
     /// Whether the surface has waves (JSON `enabled`).
     pub enabled: Option<bool>,
     /// The frequency of the first wave, 0.01–3 (JSON `frequency`).
+    #[facet(schema::read_with = read::float_in(FREQUENCY))]
     pub frequency: Option<f32>,
     /// How many waves are summed, 1–30 (JSON `octaves`).
+    #[facet(schema::read_with = read::whole_in(OCTAVES))]
     pub octaves: Option<u8>,
     /// The height of the waves, 0–3 (JSON `depth`).
+    #[facet(schema::read_with = read::float_in(DEPTH))]
     pub depth: Option<f32>,
     /// How fast the waves move, 0.01–10 (JSON `speed`).
+    #[facet(schema::read_with = read::float_in(SPEED))]
     pub speed: Option<f32>,
     /// How strongly each wave drags the next, −1–1 (JSON `pull`).
+    #[facet(schema::read_with = read::float_in(PULL))]
     pub pull: Option<f32>,
     /// How much each wave is blended with the next, 0–1 (JSON `mix`).
+    #[facet(schema::read_with = read::float_in(MIX))]
     pub mix: Option<f32>,
     /// The frequency factor from one wave to the next, 0–2 (JSON `frequency_scaling`).
+    #[facet(schema::read_with = read::float_in(SCALING))]
     pub frequency_scaling: Option<f32>,
     /// The speed factor from one wave to the next, 0–2 (JSON `speed_scaling`).
+    #[facet(schema::read_with = read::float_in(SCALING))]
     pub speed_scaling: Option<f32>,
     /// The turn of direction from one wave to the next in degrees, 0–360 (JSON
     /// `direction_increment`, from format 1.21.80).
+    #[facet(schema::read_with = read::float_in(DIRECTION_INCREMENT))]
     pub direction_increment: Option<f32>,
     /// How sharp the wave crests are, 1–10 (JSON `shape`).
+    #[facet(schema::read_with = read::float_in(SHAPE))]
     pub shape: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -105,18 +140,21 @@ super::defaults! {
 }
 
 /// The light patterns on surfaces under water (JSON `caustics`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Caustics {
     /// Whether caustics are drawn (JSON `enabled`).
     pub enabled: Option<bool>,
     /// The seconds each frame of the caustics texture is shown, 0.01–5 (JSON `frame_length`).
+    #[facet(schema::read_with = read::float_in(FRAME_LENGTH))]
     pub frame_length: Option<f32>,
     /// The caustics texture, a pack path without its extension whose frames are stacked
     /// vertically (JSON `texture`).
     pub texture: Option<String>,
     /// The size of the pattern, 0.1–5 (JSON `scale`).
+    #[facet(schema::read_with = read::float_in(SCALE))]
     pub scale: Option<f32>,
     /// The contrast of the pattern, 1–6 (JSON `power`).
+    #[facet(schema::read_with = read::float_in(POWER))]
     pub power: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -149,9 +187,13 @@ mod codec {
     //! Reading and writing `minecraft:water_settings` at its five format versions, and the
     //! steps between them.
 
-    use super::{Caustics, ParticleConcentrations, WaterSettings, Waves};
+    use super::{
+        CDOM, CHLOROPHYLL, CONTRIBUTION, Caustics, DEPTH, DIRECTION_INCREMENT, FRAME_LENGTH,
+        FREQUENCY, MIX, OCTAVES, POWER, PULL, ParticleConcentrations, SAMPLE_WIDTH, SCALE, SCALING,
+        SHAPE, SPEED, SUSPENDED_SEDIMENT, WaterSettings, Waves,
+    };
     use crate::history::water::{self as history, v1_21_40, v1_21_80, v1_21_120, v1_26_0};
-    use crate::read::{self, Members, Node, Range, Read, members};
+    use crate::read::{self, Range};
     use crate::value::Description;
     use crate::write::{self, Object, Written};
     use crate::{V1_21_80, V1_21_120, V1_26_0};
@@ -160,28 +202,24 @@ mod codec {
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-    use bedrock_addon_core::version::FormatVersion;
     use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
 
     const KEY: &str = "minecraft:water_settings";
 
-    const CHLOROPHYLL: Range = read::range(0.0, 10.0);
-    const SUSPENDED_SEDIMENT: Range = read::range(0.0, 300.0);
-    const CDOM: Range = read::range(0.0, 15.0);
-    const FREQUENCY: Range = read::range(0.01, 3.0);
-    const OCTAVES: (u8, u8) = (1, 30);
-    const DEPTH: Range = read::range(0.0, 3.0);
-    const SAMPLE_WIDTH: Range = read::range(0.01, 1.0);
-    const SPEED: Range = read::range(0.01, 10.0);
-    const PULL: Range = read::range(-1.0, 1.0);
-    const MIX: Range = read::range(0.0, 1.0);
-    const SCALING: Range = read::range(0.0, 2.0);
-    const DIRECTION_INCREMENT: Range = read::range(0.0, 360.0);
-    const SHAPE: Range = read::range(1.0, 10.0);
-    const FRAME_LENGTH: Range = read::range(0.01, 5.0);
-    const SCALE: Range = read::range(0.1, 5.0);
-    const POWER: Range = read::range(1.0, 6.0);
-    const CONTRIBUTION: Range = read::range(0.0, 1.0);
+    // The members each struct reads as unknown, which another format version declares or has
+    // dropped.
+    const LATER_THAN_1_21_40: &[read::Hint] = &[
+        read::later("caustics", V1_21_80),
+        read::later("waves/direction_increment", V1_21_80),
+        read::later("biome_water_color_contribution", V1_26_0),
+    ];
+    const LATER_THAN_1_21_80: &[read::Hint] =
+        &[read::later("biome_water_color_contribution", V1_26_0)];
+    const LATER_THAN_1_21_120: &[read::Hint] = &[
+        read::later("biome_water_color_contribution", V1_26_0),
+        read::gone("waves/sampleWidth", V1_21_120),
+    ];
+    const NEWEST: &[read::Hint] = &[read::gone("waves/sampleWidth", V1_21_120)];
 
     /// What a format version declares beyond 1.21.40's members.
     #[derive(Clone, Copy)]
@@ -222,156 +260,6 @@ mod codec {
         description_required: true,
         ..AT_1_26_0
     };
-
-    /// Every member any version declares.
-    struct Read0 {
-        description: Option<Description<kind::WaterSettings>>,
-        particle_concentrations: Option<ParticleConcentrations>,
-        caustics: Option<Caustics>,
-        waves: Option<history::Waves>,
-        contribution: Option<f32>,
-        extra: UnknownMembers,
-    }
-
-    /// A ranged number member.
-    fn ranged(
-        range: Range,
-        key: &str,
-        m: &mut Members<'_>,
-        d: &mut Diagnostics,
-    ) -> Read<Option<f32>> {
-        m.opt(key, d, |n, d| read::float_in(range, n, d))
-    }
-
-    fn particles(node: &Node<'_>, d: &mut Diagnostics) -> Read<ParticleConcentrations> {
-        let mut m = members(node, d)?;
-        let chlorophyll = ranged(CHLOROPHYLL, "chlorophyll", &mut m, d);
-        let suspended_sediment = ranged(SUSPENDED_SEDIMENT, "suspended_sediment", &mut m, d);
-        let cdom = ranged(CDOM, "cdom", &mut m, d);
-        let extra = m.finish(&[], d);
-        Ok(ParticleConcentrations {
-            chlorophyll: chlorophyll?,
-            suspended_sediment: suspended_sediment?,
-            cdom: cdom?,
-            extra,
-        })
-    }
-
-    fn caustics(node: &Node<'_>, d: &mut Diagnostics) -> Read<Caustics> {
-        let mut m = members(node, d)?;
-        let enabled = m.opt("enabled", d, read::boolean);
-        let frame_length = ranged(FRAME_LENGTH, "frame_length", &mut m, d);
-        let texture = m.opt("texture", d, read::string);
-        let scale = ranged(SCALE, "scale", &mut m, d);
-        let power = ranged(POWER, "power", &mut m, d);
-        let extra = m.finish(&[], d);
-        Ok(Caustics {
-            enabled: enabled?,
-            frame_length: frame_length?,
-            texture: texture?,
-            scale: scale?,
-            power: power?,
-            extra,
-        })
-    }
-
-    /// `waves` with the members `shape` declares; a member of a newer struct is unknown, with
-    /// the version it needs.
-    fn waves(shape: Shape, node: &Node<'_>, d: &mut Diagnostics) -> Read<history::Waves> {
-        let mut m = members(node, d)?;
-        let enabled = m.opt("enabled", d, read::boolean);
-        let frequency = ranged(FREQUENCY, "frequency", &mut m, d);
-        let octaves = m.opt("octaves", d, |n, d| {
-            read::integer_in(i32::from(OCTAVES.0), i32::from(OCTAVES.1), n, d)
-        });
-        let depth = ranged(DEPTH, "depth", &mut m, d);
-        let sample_width = if shape.sample_width {
-            ranged(SAMPLE_WIDTH, "sampleWidth", &mut m, d)
-        } else {
-            Ok(None)
-        };
-        let speed = ranged(SPEED, "speed", &mut m, d);
-        let pull = ranged(PULL, "pull", &mut m, d);
-        let mix = ranged(MIX, "mix", &mut m, d);
-        let frequency_scaling = ranged(SCALING, "frequency_scaling", &mut m, d);
-        let speed_scaling = ranged(SCALING, "speed_scaling", &mut m, d);
-        let direction_increment = if shape.caustics {
-            ranged(DIRECTION_INCREMENT, "direction_increment", &mut m, d)
-        } else {
-            Ok(None)
-        };
-        let wave_shape = ranged(SHAPE, "shape", &mut m, d);
-        let later: &[(&str, FormatVersion)] = if shape.caustics {
-            &[]
-        } else {
-            &[("direction_increment", V1_21_80)]
-        };
-        // `sampleWidth` is a member up to 1.21.80; the step to 1.21.120 drops it.
-        let gone: &[(&str, FormatVersion)] = if shape.sample_width {
-            &[]
-        } else {
-            &[("sampleWidth", V1_21_120)]
-        };
-        let extra = m.finish_with(later, gone, d);
-        Ok(history::Waves {
-            enabled: enabled?,
-            frequency: frequency?,
-            octaves: octaves?.and_then(|octaves| u8::try_from(octaves).ok()),
-            depth: depth?,
-            sample_width: sample_width?,
-            speed: speed?,
-            pull: pull?,
-            mix: mix?,
-            frequency_scaling: frequency_scaling?,
-            speed_scaling: speed_scaling?,
-            direction_increment: direction_increment?,
-            shape: wave_shape?,
-            extra,
-        })
-    }
-
-    /// The payload as the format version of `shape` declares it.
-    fn settings(
-        shape: Shape,
-        payload: JsonSlice<'_>,
-        cx: &ParseCx<'_>,
-        d: &mut Diagnostics,
-    ) -> Option<Read0> {
-        let mut m = members(&read::payload(payload, cx), d).ok()?;
-        let description = if shape.description_required {
-            m.req("description", d, read::description).map(Some)
-        } else {
-            m.opt("description", d, read::description)
-        };
-        let particle_concentrations = m.opt("particle_concentrations", d, particles);
-        let caustics = if shape.caustics {
-            m.opt("caustics", d, caustics)
-        } else {
-            Ok(None)
-        };
-        let waves = m.opt("waves", d, |n, d| waves(shape, n, d));
-        let contribution = if shape.contribution {
-            ranged(CONTRIBUTION, "biome_water_color_contribution", &mut m, d)
-        } else {
-            Ok(None)
-        };
-        let mut later: Vec<(&str, FormatVersion)> = Vec::new();
-        if !shape.caustics {
-            later.push(("caustics", V1_21_80));
-        }
-        if !shape.contribution {
-            later.push(("biome_water_color_contribution", V1_26_0));
-        }
-        let extra = m.finish(&later, d);
-        Some(Read0 {
-            description: description.ok()?,
-            particle_concentrations: particle_concentrations.ok()?,
-            caustics: caustics.ok()?,
-            waves: waves.ok()?,
-            contribution: contribution.ok()?,
-            extra,
-        })
-    }
 
     /// The waves of 1.21.120 and later: `sample_width` is not a member there.
     fn newer(waves: history::Waves) -> Waves {
@@ -560,13 +448,7 @@ mod codec {
 
     impl VersionStruct for v1_21_40::WaterSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let read = settings(AT_1_21_40, payload, cx, d)?;
-            Some(Self {
-                description: read.description,
-                particle_concentrations: read.particle_concentrations,
-                waves: read.waves,
-                extra: read.extra,
-            })
+            read::payload_hinted(payload, cx, d, LATER_THAN_1_21_40)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -584,14 +466,7 @@ mod codec {
 
     impl VersionStruct for v1_21_80::WaterSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let read = settings(AT_1_21_80, payload, cx, d)?;
-            Some(Self {
-                description: read.description,
-                particle_concentrations: read.particle_concentrations,
-                caustics: read.caustics,
-                waves: read.waves,
-                extra: read.extra,
-            })
+            read::payload_hinted(payload, cx, d, LATER_THAN_1_21_80)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -609,14 +484,7 @@ mod codec {
 
     impl VersionStruct for v1_21_120::WaterSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let read = settings(AT_1_21_120, payload, cx, d)?;
-            Some(Self {
-                description: read.description,
-                particle_concentrations: read.particle_concentrations,
-                caustics: read.caustics,
-                waves: read.waves.map(newer),
-                extra: read.extra,
-            })
+            read::payload_hinted(payload, cx, d, LATER_THAN_1_21_120)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -630,24 +498,6 @@ mod codec {
                 &self.extra,
             )
         }
-    }
-
-    /// The newest members, read and written by `shape`.
-    fn newest(
-        shape: Shape,
-        payload: JsonSlice<'_>,
-        cx: &ParseCx<'_>,
-        d: &mut Diagnostics,
-    ) -> Option<WaterSettings> {
-        let read = settings(shape, payload, cx, d)?;
-        Some(WaterSettings {
-            description: read.description,
-            particle_concentrations: read.particle_concentrations,
-            caustics: read.caustics,
-            waves: read.waves.map(newer),
-            biome_water_color_contribution: read.contribution,
-            extra: read.extra,
-        })
     }
 
     fn write_newest(shape: Shape, value: &WaterSettings) -> Written {
@@ -664,7 +514,7 @@ mod codec {
 
     impl VersionStruct for v1_26_0::WaterSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            newest(AT_1_26_0, payload, cx, d).map(Self)
+            read::payload_hinted(payload, cx, d, NEWEST)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -674,7 +524,7 @@ mod codec {
 
     impl VersionStruct for WaterSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            newest(AT_1_26_20, payload, cx, d)
+            read::payload_requiring(payload, cx, d, NEWEST, "description")
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

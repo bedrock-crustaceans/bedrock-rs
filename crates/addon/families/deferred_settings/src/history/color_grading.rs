@@ -7,9 +7,11 @@ use crate::ColorGradingSettings;
 pub mod v1_21_40 {
     use crate::{ColorGradingDescription, Highlights, Midtones, Shadows, ToneMapping};
     use bedrock_addon_core::document::UnknownMembers;
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
 
     /// Colour-grading settings at format 1.21.40.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
     pub struct ColorGradingSettings {
         /// The settings' name (JSON `description`).
         pub description: Option<ColorGradingDescription>,
@@ -22,7 +24,7 @@ pub mod v1_21_40 {
     }
 
     /// The grading controls at format 1.21.40: without `temperature`.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
     pub struct ColorGrading {
         /// The controls of the mid tones (JSON `midtones`).
         pub midtones: Option<Midtones>,

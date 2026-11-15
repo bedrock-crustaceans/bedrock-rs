@@ -57,7 +57,9 @@ fn root_keys(text: &str) -> Option<Vec<String>> {
             return Some(keys);
         }
         let key = scan.string()?;
-        keys.push(bedrock_addon_core::json::from_str::<String>(key).ok()?);
+        let key: bedrock_addon_core::json::Value =
+            bedrock_addon_core::json::from_str_jsonc(key).ok()?;
+        keys.push(key.as_string()?.as_str().to_owned());
         scan.skip();
         scan.expect(b':')?;
         scan.value()?;

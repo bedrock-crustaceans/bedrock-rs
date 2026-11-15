@@ -1,8 +1,23 @@
 //! `minecraft:color_grading_settings`: colour grading and tone mapping.
 
+use super::read::{self, Range};
 use super::value::Vec3;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::ColorGradingSettingsId;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
+
+// The bounds of each component of the five controls.
+const CONTRAST: Range = read::range(0.0, 4.0);
+const GAIN: Range = read::range(0.0, 10.0);
+const GAMMA: Range = read::range(0.0, 4.0);
+const OFFSET: Range = read::range(-1.0, 1.0);
+const SATURATION: Range = read::range(0.0, 10.0);
+/// The game's bounds, wider than the published documentation's 1–4.
+const HIGHLIGHTS_MIN: Range = read::range(1.0, 20.0);
+/// The game's bounds, wider than the published documentation's 0.1–1.
+const SHADOWS_MAX: Range = read::range(0.0, 1.0);
+const TEMPERATURE: Range = read::range(1000.0, 15000.0);
 
 /// The colour grading of the deferred renderer (`minecraft:color_grading_settings`, in
 /// `color_grading/`), at the newest format version (1.21.90).
@@ -14,7 +29,7 @@ use bedrock_addon_core::id::ColorGradingSettingsId;
 /// settings by their identifier (`minecraft:color_grading_identifier`); the identifier of the
 /// top pack's `color_grading/color_grading.json` is the default of every other biome. A file
 /// without an identifier loads but can be named by no biome.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:color_grading_settings")]
 #[doc(alias = "color_grading")]
 pub struct ColorGradingSettings {
@@ -30,16 +45,17 @@ pub struct ColorGradingSettings {
 
 /// The `description` of colour-grading settings: unlike the other settings, its `identifier`
 /// is optional too.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct ColorGradingDescription {
     /// The settings' name (JSON `identifier`).
+    #[facet(schema::read_with = read::identifier)]
     pub identifier: Option<ColorGradingSettingsId>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
 /// The grading controls (JSON `color_grading`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct ColorGrading {
     /// The controls of the mid tones, which always apply (JSON `midtones`).
     pub midtones: Option<Midtones>,
@@ -60,18 +76,23 @@ macro_rules! tones {
         $name:ident { $($(#[$fmeta:meta])* $field:ident: $t:ty,)* }
     ) => {
         $(#[$meta])*
-        #[derive(Clone, Debug, Default, PartialEq)]
+        #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
         pub struct $name {
             $($(#[$fmeta])* pub $field: Option<$t>,)*
             /// The contrast per channel, each 0–4 (JSON `contrast`).
+            #[facet(schema::read_with = read::vec3_in(CONTRAST))]
             pub contrast: Option<Vec3>,
             /// The gain per channel, each 0–10 (JSON `gain`).
+            #[facet(schema::read_with = read::vec3_in(GAIN))]
             pub gain: Option<Vec3>,
             /// The gamma per channel, each 0–4 (JSON `gamma`).
+            #[facet(schema::read_with = read::vec3_in(GAMMA))]
             pub gamma: Option<Vec3>,
             /// The offset per channel, each −1–1 (JSON `offset`).
+            #[facet(schema::read_with = read::vec3_in(OFFSET))]
             pub offset: Option<Vec3>,
             /// The saturation per channel, each 0–10 (JSON `saturation`).
+            #[facet(schema::read_with = read::vec3_in(SATURATION))]
             pub saturation: Option<Vec3>,
             /// Members the game does not know, kept for write-back.
             pub extra: UnknownMembers,
@@ -100,6 +121,7 @@ tones! {
         /// Whether the highlight controls apply (JSON `enabled`).
         enabled: bool,
         /// The luminance from which a tone is a highlight, 1–20 (JSON `highlightsMin`).
+        #[facet(rename = "highlightsMin", schema::read_with = read::float_in(HIGHLIGHTS_MIN))]
         highlights_min: f32,
     }
 }
@@ -110,6 +132,7 @@ tones! {
         /// Whether the shadow controls apply (JSON `enabled`).
         enabled: bool,
         /// The luminance up to which a tone is a shadow, 0–1 (JSON `shadowsMax`).
+        #[facet(rename = "shadowsMax", schema::read_with = read::float_in(SHADOWS_MAX))]
         shadows_max: f32,
     }
 }
@@ -129,13 +152,15 @@ super::defaults! {
 }
 
 /// The white balance (JSON `temperature`, from format 1.21.90).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Temperature {
     /// Whether the white balance applies (JSON `enabled`).
     pub enabled: Option<bool>,
     /// The colour temperature in kelvin, 1000–15000 (JSON `temperature`).
+    #[facet(schema::read_with = read::float_in(TEMPERATURE))]
     pub temperature: Option<f32>,
     /// How the temperature is applied (JSON `type`).
+    #[facet(rename = "type")]
     pub kind: Option<TemperatureType>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -150,7 +175,9 @@ super::defaults! {
 }
 
 /// How a colour temperature is applied.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(schema::string_only, rename_all = "snake_case")]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum TemperatureType {
     /// `"white_balance"`: the scene is corrected for a light of that temperature; the default.
@@ -160,16 +187,8 @@ pub enum TemperatureType {
     ColorTemperature,
 }
 
-impl TemperatureType {
-    /// The JSON names, in the order the game lists them.
-    pub(crate) const NAMES: &'static [(&'static str, Self)] = &[
-        ("white_balance", Self::WhiteBalance),
-        ("color_temperature", Self::ColorTemperature),
-    ];
-}
-
 /// The tone mapper (JSON `tone_mapping`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct ToneMapping {
     /// The curve that maps scene luminance to the display (JSON `operator`).
     pub operator: Option<ToneMappingOperator>,
@@ -184,7 +203,9 @@ super::defaults! {
 }
 
 /// A tone-mapping curve.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(schema::string_only, rename_all = "snake_case")]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum ToneMappingOperator {
     /// `"reinhard"`; the default.
@@ -202,29 +223,18 @@ pub enum ToneMappingOperator {
     Generic,
 }
 
-impl ToneMappingOperator {
-    /// The JSON names, in the order the game lists them.
-    pub(crate) const NAMES: &'static [(&'static str, Self)] = &[
-        ("reinhard", Self::Reinhard),
-        ("reinhard_luma", Self::ReinhardLuma),
-        ("reinhard_luminance", Self::ReinhardLuminance),
-        ("hable", Self::Hable),
-        ("aces", Self::Aces),
-        ("generic", Self::Generic),
-    ];
-}
-
 mod codec {
     //! Reading and writing `minecraft:color_grading_settings` at both format versions, and
     //! the step between them.
 
     use super::{
-        ColorGrading, ColorGradingDescription, ColorGradingSettings, Highlights, Midtones, Shadows,
-        Temperature, TemperatureType, ToneMapping, ToneMappingOperator,
+        CONTRAST, ColorGrading, ColorGradingDescription, ColorGradingSettings, GAIN, GAMMA,
+        HIGHLIGHTS_MIN, Highlights, Midtones, OFFSET, SATURATION, SHADOWS_MAX, Shadows,
+        TEMPERATURE, Temperature, TemperatureType, ToneMapping,
     };
     use crate::V1_21_90;
     use crate::history::color_grading::v1_21_40;
-    use crate::read::{self, Members, Node, Range, Read, members};
+    use crate::read::{self, Range};
     use crate::value::Vec3;
     use crate::write::{self, Object, Written};
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -234,17 +244,6 @@ mod codec {
 
     const KEY: &str = "minecraft:color_grading_settings";
 
-    // The bounds of each component of the five controls.
-    const CONTRAST: Range = read::range(0.0, 4.0);
-    const GAIN: Range = read::range(0.0, 10.0);
-    const GAMMA: Range = read::range(0.0, 4.0);
-    const OFFSET: Range = read::range(-1.0, 1.0);
-    const SATURATION: Range = read::range(0.0, 10.0);
-    /// The game's bounds, wider than the published documentation's 1–4.
-    const HIGHLIGHTS_MIN: Range = read::range(1.0, 20.0);
-    /// The game's bounds, wider than the published documentation's 0.1–1.
-    const SHADOWS_MAX: Range = read::range(0.0, 1.0);
-    const TEMPERATURE: Range = read::range(1000.0, 15000.0);
     /// The game's temperature of a file that names none.
     const DEFAULT_TEMPERATURE: f32 = 6500.0;
 
@@ -257,142 +256,12 @@ mod codec {
         ("saturation", SATURATION),
     ];
 
-    /// The five controls of one tonal range: every one is read, so every failure is reported.
-    fn controls(m: &mut Members<'_>, d: &mut Diagnostics) -> Read<[Option<Vec3>; 5]> {
-        let read = CONTROLS.map(|(key, range)| m.opt(key, d, |n, d| read::vec3_in(range, n, d)));
-        let [contrast, gain, gamma, offset, saturation] = read;
-        Ok([contrast?, gain?, gamma?, offset?, saturation?])
-    }
-
     /// Writes the five controls of one tonal range.
     fn write_controls(object: &mut Object, values: [Option<&Vec3>; 5]) -> Written<()> {
         for ((key, range), value) in CONTROLS.into_iter().zip(values) {
             object.opt(key, value, |v, at| write::vec3_in(range, v, at))?;
         }
         Ok(())
-    }
-
-    fn midtones(node: &Node<'_>, d: &mut Diagnostics) -> Read<Midtones> {
-        let mut m = members(node, d)?;
-        let controls = controls(&mut m, d);
-        let extra = m.finish(&[], d);
-        let [contrast, gain, gamma, offset, saturation] = controls?;
-        Ok(Midtones {
-            contrast,
-            gain,
-            gamma,
-            offset,
-            saturation,
-            extra,
-        })
-    }
-
-    fn highlights(node: &Node<'_>, d: &mut Diagnostics) -> Read<Highlights> {
-        let mut m = members(node, d)?;
-        let enabled = m.opt("enabled", d, read::boolean);
-        let highlights_min = m.opt("highlightsMin", d, |n, d| {
-            read::float_in(HIGHLIGHTS_MIN, n, d)
-        });
-        let controls = controls(&mut m, d);
-        let extra = m.finish(&[], d);
-        let [contrast, gain, gamma, offset, saturation] = controls?;
-        Ok(Highlights {
-            enabled: enabled?,
-            highlights_min: highlights_min?,
-            contrast,
-            gain,
-            gamma,
-            offset,
-            saturation,
-            extra,
-        })
-    }
-
-    fn shadows(node: &Node<'_>, d: &mut Diagnostics) -> Read<Shadows> {
-        let mut m = members(node, d)?;
-        let enabled = m.opt("enabled", d, read::boolean);
-        let shadows_max = m.opt("shadowsMax", d, |n, d| read::float_in(SHADOWS_MAX, n, d));
-        let controls = controls(&mut m, d);
-        let extra = m.finish(&[], d);
-        let [contrast, gain, gamma, offset, saturation] = controls?;
-        Ok(Shadows {
-            enabled: enabled?,
-            shadows_max: shadows_max?,
-            contrast,
-            gain,
-            gamma,
-            offset,
-            saturation,
-            extra,
-        })
-    }
-
-    fn temperature(node: &Node<'_>, d: &mut Diagnostics) -> Read<Temperature> {
-        let mut m = members(node, d)?;
-        let enabled = m.opt("enabled", d, read::boolean);
-        let temperature = m.opt("temperature", d, |n, d| read::float_in(TEMPERATURE, n, d));
-        let kind = m.opt("type", d, |n, d| read::choice(TemperatureType::NAMES, n, d));
-        let extra = m.finish(&[], d);
-        Ok(Temperature {
-            enabled: enabled?,
-            temperature: temperature?,
-            kind: kind?,
-            extra,
-        })
-    }
-
-    fn tone_mapping(node: &Node<'_>, d: &mut Diagnostics) -> Read<ToneMapping> {
-        let mut m = members(node, d)?;
-        let operator = m.opt("operator", d, |n, d| {
-            read::choice(ToneMappingOperator::NAMES, n, d)
-        });
-        let extra = m.finish(&[], d);
-        Ok(ToneMapping {
-            operator: operator?,
-            extra,
-        })
-    }
-
-    /// `description`: unlike the other payloads', its `identifier` is optional.
-    fn description(node: &Node<'_>, d: &mut Diagnostics) -> Read<ColorGradingDescription> {
-        let mut m = members(node, d)?;
-        let identifier = m.opt("identifier", d, read::identifier);
-        let extra = m.finish(&[], d);
-        Ok(ColorGradingDescription {
-            identifier: identifier?,
-            extra,
-        })
-    }
-
-    /// `color_grading` as 1.21.40 declares it; `temperature` is a member of 1.21.90.
-    fn grading_1_21_40(node: &Node<'_>, d: &mut Diagnostics) -> Read<v1_21_40::ColorGrading> {
-        let mut m = members(node, d)?;
-        let midtones = m.opt("midtones", d, midtones);
-        let highlights = m.opt("highlights", d, highlights);
-        let shadows = m.opt("shadows", d, shadows);
-        let extra = m.finish(&[("temperature", V1_21_90)], d);
-        Ok(v1_21_40::ColorGrading {
-            midtones: midtones?,
-            highlights: highlights?,
-            shadows: shadows?,
-            extra,
-        })
-    }
-
-    fn grading(node: &Node<'_>, d: &mut Diagnostics) -> Read<ColorGrading> {
-        let mut m = members(node, d)?;
-        let midtones = m.opt("midtones", d, midtones);
-        let highlights = m.opt("highlights", d, highlights);
-        let shadows = m.opt("shadows", d, shadows);
-        let temperature = m.opt("temperature", d, temperature);
-        let extra = m.finish(&[], d);
-        Ok(ColorGrading {
-            midtones: midtones?,
-            highlights: highlights?,
-            shadows: shadows?,
-            temperature: temperature?,
-            extra,
-        })
     }
 
     fn write_midtones(value: &Midtones, at: &JsonPath) -> Written {
@@ -479,16 +348,16 @@ mod codec {
         object.opt("temperature", value.temperature.as_ref(), |v, at| {
             write::float_in(TEMPERATURE, *v, at)
         })?;
-        object.opt("type", value.kind.as_ref(), |kind, at| {
-            write::choice(TemperatureType::NAMES, *kind, at)
+        object.opt("type", value.kind.as_ref(), |kind, _| {
+            Ok(Value::from(kind.name()))
         })?;
         object.finish(&value.extra, &["enabled", "temperature", "type"])
     }
 
     fn write_tone_mapping(value: &ToneMapping, at: &JsonPath) -> Written {
         let mut object = Object::new(at);
-        object.opt("operator", value.operator.as_ref(), |operator, at| {
-            write::choice(ToneMappingOperator::NAMES, *operator, at)
+        object.opt("operator", value.operator.as_ref(), |operator, _| {
+            Ok(Value::from(operator.name()))
         })?;
         object.finish(&value.extra, &["operator"])
     }
@@ -521,22 +390,19 @@ mod codec {
         object.finish(&value.extra, &GRADING[..3])
     }
 
+    /// `temperature` is a member of 1.21.90, which 1.21.40 does not know.
+    const TEMPERATURE_LATER: &[read::Hint] = &[(
+        "color_grading/temperature",
+        &crate::codes::NEEDS_FORMAT_VERSION,
+        V1_21_90,
+    )];
+
     /// The members of the payload, the same in both structs.
     const MEMBERS: &[&str] = &["description", "color_grading", "tone_mapping"];
 
     impl VersionStruct for v1_21_40::ColorGradingSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let description = m.opt("description", d, description);
-            let color_grading = m.opt("color_grading", d, grading_1_21_40);
-            let tone_mapping = m.opt("tone_mapping", d, tone_mapping);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                description: description.ok()?,
-                color_grading: color_grading.ok()?,
-                tone_mapping: tone_mapping.ok()?,
-                extra,
-            })
+            read::payload_hinted(payload, cx, d, TEMPERATURE_LATER)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -558,17 +424,7 @@ mod codec {
 
     impl VersionStruct for ColorGradingSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let description = m.opt("description", d, description);
-            let color_grading = m.opt("color_grading", d, grading);
-            let tone_mapping = m.opt("tone_mapping", d, tone_mapping);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                description: description.ok()?,
-                color_grading: color_grading.ok()?,
-                tone_mapping: tone_mapping.ok()?,
-                extra,
-            })
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

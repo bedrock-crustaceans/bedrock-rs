@@ -1,8 +1,17 @@
 //! `minecraft:lighting_settings`: the sun, the moon, ambient and sky light.
 
+use super::read::{self, Range};
 use super::value::{Description, Keyframe, Keyframes, Rgb8};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{LightingSettingsId, kind};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
+use facet::Facet;
+
+const ILLUMINANCE: Range = read::range(0.0, 110_000.0);
+const ORBITAL_OFFSET: Range = read::range(0.0, 359.99);
+const DESATURATION: Range = read::range(0.0, 1.0);
+pub(crate) const AMBIENT: Range = read::range(0.0, 5.0);
+pub(crate) const SKY: Range = read::range(0.1, 1.0);
 
 /// The lighting of the deferred renderer (`minecraft:lighting_settings`, in `lighting/`), at
 /// the newest format version (1.26.0).
@@ -14,7 +23,7 @@ use bedrock_addon_core::id::{LightingSettingsId, kind};
 /// identifier (`minecraft:lighting_identifier`); the identifier of the top pack's
 /// `lighting/global.json` is the default of every other biome. A member the document leaves
 /// out is not written back. A file without `description` loads but can be named by no biome.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:lighting_settings")]
 #[doc(alias = "lighting")]
 pub struct LightingSettings {
@@ -34,7 +43,7 @@ pub struct LightingSettings {
 
 /// The directional lights (JSON `directional_lights`, from format 1.21.80; older formats hold
 /// the members of `orbital` here).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct DirectionalLights {
     /// The sun and the moon (JSON `orbital`).
     pub orbital: Option<OrbitalLights>,
@@ -46,7 +55,7 @@ pub struct DirectionalLights {
 
 /// The sun and the moon (JSON `orbital`). `C` is the colour form: [`Rgb8`] from format
 /// 1.21.60, [`Rgba8`](super::Rgba8) in 1.21.40.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct OrbitalLights<C = Rgb8> {
     /// The sun (JSON `sun`).
     pub sun: Option<OrbitalLight<C>>,
@@ -54,69 +63,55 @@ pub struct OrbitalLights<C = Rgb8> {
     pub moon: Option<OrbitalLight<C>>,
     /// The tilt of the sun's and moon's path in degrees, each value 0–359.99 (JSON
     /// `orbital_offset_degrees`).
+    #[facet(schema::read_with = read::keyframed_in(ORBITAL_OFFSET))]
     pub orbital_offset_degrees: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
-impl<C> Default for OrbitalLights<C> {
-    fn default() -> Self {
-        Self {
-            sun: None,
-            moon: None,
-            orbital_offset_degrees: None,
-            extra: UnknownMembers::default(),
-        }
-    }
-}
-
 /// The sun or the moon.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct OrbitalLight<C = Rgb8> {
     /// The light's strength in lux over the day, each value 0–110000 (JSON `illuminance`).
+    #[facet(schema::read_with = read::keyframed_in(ILLUMINANCE))]
     pub illuminance: Option<Keyframes<f32>>,
     /// The light's colour over the day (JSON `color`).
+    #[facet(schema::read_with = read::keyframed(C::from_json))]
     pub color: Option<Keyframes<C>>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
-impl<C> Default for OrbitalLight<C> {
-    fn default() -> Self {
-        Self {
-            illuminance: None,
-            color: None,
-            extra: UnknownMembers::default(),
-        }
-    }
-}
-
 /// The flashes of the End's sky (JSON `flash`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Flash {
     /// The flash's colour (JSON `color`).
     pub color: Option<Rgb8>,
     /// The flash's strength in lux (JSON `illuminance`; the game sets no bound).
+    #[facet(schema::finite)]
     pub illuminance: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
 /// How light-emitting surfaces are drawn (JSON `emissive`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Emissive {
     /// How much emissive colours are desaturated, 0–1 (JSON `desaturation`).
+    #[facet(schema::read_with = read::float_in(DESATURATION))]
     pub desaturation: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
 }
 
 /// The light that reaches every surface (JSON `ambient`); both members are required.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AmbientLight {
     /// The ambient colour over the day (JSON `color`).
+    #[facet(schema::read_with = read::present(read::keyframed(Rgb8::from_json)))]
     pub color: Keyframes<Rgb8>,
     /// The ambient strength over the day, each value 0–5 (JSON `illuminance`).
+    #[facet(schema::read_with = read::present(read::keyframed_in(AMBIENT)))]
     pub illuminance: Keyframes<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -134,9 +129,10 @@ impl Default for AmbientLight {
 }
 
 /// The light of the sky (JSON `sky`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Sky {
     /// The strength of the sky light over the day, each value 0.1–1 (JSON `intensity`).
+    #[facet(schema::read_with = read::keyframed_in(SKY))]
     pub intensity: Option<Keyframes<f32>>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -251,12 +247,13 @@ mod codec {
     //! Reading and writing `minecraft:lighting_settings` at its five format versions, and the
     //! steps between them.
 
+    use super::{AMBIENT, DESATURATION, ILLUMINANCE, ORBITAL_OFFSET, SKY};
     use super::{
         AmbientLight, DEFAULT_SKY_INTENSITY, DirectionalLights, Emissive, Flash, LightingSettings,
         OrbitalLight, OrbitalLights, Sky,
     };
     use crate::history::lighting::{self as history, v1_21_40, v1_21_60, v1_21_70, v1_21_80};
-    use crate::read::{self, Node, Range, Read, members};
+    use crate::read::{self, Range};
     use crate::value::{Keyframes, Rgb8, Rgba8};
     use crate::write::{self, Object, Written};
     use crate::{V1_21_70, V1_21_80};
@@ -264,170 +261,29 @@ mod codec {
     use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-    use bedrock_addon_core::version::FormatVersion;
     use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
 
     const KEY: &str = "minecraft:lighting_settings";
 
-    const ILLUMINANCE: Range = read::range(0.0, 110_000.0);
-    const ORBITAL_OFFSET: Range = read::range(0.0, 359.99);
-    const DESATURATION: Range = read::range(0.0, 1.0);
-    const AMBIENT: Range = read::range(0.0, 5.0);
-    const SKY: Range = read::range(0.1, 1.0);
-
     /// The colour form of the sun and the moon: with alpha in 1.21.40, without from 1.21.60.
     trait Colour: Copy {
-        fn read(node: &Node<'_>, d: &mut Diagnostics) -> Read<Self>;
         fn write(&self, at: &JsonPath) -> Written;
     }
 
     impl Colour for Rgb8 {
-        fn read(node: &Node<'_>, d: &mut Diagnostics) -> Read<Self> {
-            read::rgb(node, d)
-        }
-
         fn write(&self, at: &JsonPath) -> Written {
             write::rgb(self, at)
         }
     }
 
     impl Colour for Rgba8 {
-        fn read(node: &Node<'_>, d: &mut Diagnostics) -> Read<Self> {
-            read::rgba(node, d)
-        }
-
         fn write(&self, at: &JsonPath) -> Written {
             write::rgba(self, at)
         }
     }
 
-    /// A keyframed number whose values lie in `range`.
-    fn ranged(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Read<Keyframes<f32>> {
-        read::keyframes(node, d, |n, d| read::float_in(range, n, d))
-    }
-
     fn write_ranged(range: Range, value: &Keyframes<f32>, at: &JsonPath) -> Written {
         write::keyframes(value, at, |v, at| write::float_in(range, *v, at))
-    }
-
-    fn orbital_light<C: Colour>(node: &Node<'_>, d: &mut Diagnostics) -> Read<OrbitalLight<C>> {
-        let mut m = members(node, d)?;
-        let illuminance = m.opt("illuminance", d, |n, d| ranged(ILLUMINANCE, n, d));
-        let color = m.opt("color", d, |n, d| read::keyframes(n, d, C::read));
-        let extra = m.finish(&[], d);
-        Ok(OrbitalLight {
-            illuminance: illuminance?,
-            color: color?,
-            extra,
-        })
-    }
-
-    /// The sun, the moon and the orbital offset; `later` names the members of this level that
-    /// a newer struct declares (`orbital` and `flash`, while this is `directional_lights`).
-    fn orbital<C: Colour>(
-        later: &[(&'static str, FormatVersion)],
-        node: &Node<'_>,
-        d: &mut Diagnostics,
-    ) -> Read<OrbitalLights<C>> {
-        let mut m = members(node, d)?;
-        let sun = m.opt("sun", d, orbital_light::<C>);
-        let moon = m.opt("moon", d, orbital_light::<C>);
-        let orbital_offset_degrees = m.opt("orbital_offset_degrees", d, |n, d| {
-            ranged(ORBITAL_OFFSET, n, d)
-        });
-        let extra = m.finish(later, d);
-        Ok(OrbitalLights {
-            sun: sun?,
-            moon: moon?,
-            orbital_offset_degrees: orbital_offset_degrees?,
-            extra,
-        })
-    }
-
-    /// `directional_lights` before 1.21.80: the orbital lights themselves.
-    fn flat<C: Colour>(node: &Node<'_>, d: &mut Diagnostics) -> Read<OrbitalLights<C>> {
-        orbital(&[("orbital", V1_21_80), ("flash", V1_21_80)], node, d)
-    }
-
-    fn flash(node: &Node<'_>, d: &mut Diagnostics) -> Read<Flash> {
-        let mut m = members(node, d)?;
-        let color = m.opt("color", d, read::rgb);
-        // The one number the game sets no bound on.
-        let illuminance = m.opt("illuminance", d, read::float);
-        let extra = m.finish(&[], d);
-        Ok(Flash {
-            color: color?,
-            illuminance: illuminance?,
-            extra,
-        })
-    }
-
-    fn directional(node: &Node<'_>, d: &mut Diagnostics) -> Read<DirectionalLights> {
-        let mut m = members(node, d)?;
-        let orbital = m.opt("orbital", d, |n, d| orbital::<Rgb8>(&[], n, d));
-        let flash = m.opt("flash", d, flash);
-        let extra = m.finish(&[], d);
-        Ok(DirectionalLights {
-            orbital: orbital?,
-            flash: flash?,
-            extra,
-        })
-    }
-
-    fn emissive(node: &Node<'_>, d: &mut Diagnostics) -> Read<Emissive> {
-        let mut m = members(node, d)?;
-        let desaturation = m.opt("desaturation", d, |n, d| read::float_in(DESATURATION, n, d));
-        let extra = m.finish(&[], d);
-        Ok(Emissive {
-            desaturation: desaturation?,
-            extra,
-        })
-    }
-
-    /// `ambient` before 1.26.0: plain values, both required.
-    fn plain_ambient(node: &Node<'_>, d: &mut Diagnostics) -> Read<history::AmbientLight> {
-        let mut m = members(node, d)?;
-        let color = m.req("color", d, read::rgb);
-        let illuminance = m.req("illuminance", d, |n, d| read::float_in(AMBIENT, n, d));
-        let extra = m.finish(&[], d);
-        Ok(history::AmbientLight {
-            color: color?,
-            illuminance: illuminance?,
-            extra,
-        })
-    }
-
-    fn ambient(node: &Node<'_>, d: &mut Diagnostics) -> Read<AmbientLight> {
-        let mut m = members(node, d)?;
-        let color = m.req("color", d, |n, d| read::keyframes(n, d, read::rgb));
-        let illuminance = m.req("illuminance", d, |n, d| ranged(AMBIENT, n, d));
-        let extra = m.finish(&[], d);
-        Ok(AmbientLight {
-            color: color?,
-            illuminance: illuminance?,
-            extra,
-        })
-    }
-
-    /// `sky` of 1.21.70 and 1.21.80: a plain number.
-    fn plain_sky(node: &Node<'_>, d: &mut Diagnostics) -> Read<history::Sky> {
-        let mut m = members(node, d)?;
-        let intensity = m.opt("intensity", d, |n, d| read::float_in(SKY, n, d));
-        let extra = m.finish(&[], d);
-        Ok(history::Sky {
-            intensity: intensity?,
-            extra,
-        })
-    }
-
-    fn sky(node: &Node<'_>, d: &mut Diagnostics) -> Read<Sky> {
-        let mut m = members(node, d)?;
-        let intensity = m.opt("intensity", d, |n, d| ranged(SKY, n, d));
-        let extra = m.finish(&[], d);
-        Ok(Sky {
-            intensity: intensity?,
-            extra,
-        })
     }
 
     fn write_orbital_light<C: Colour>(value: &OrbitalLight<C>, at: &JsonPath) -> Written {
@@ -527,8 +383,17 @@ mod codec {
         "ambient",
         "sky",
     ];
-    /// `sky` is a member from 1.21.70.
-    const SKY_LATER: &[(&str, FormatVersion)] = &[("sky", V1_21_70)];
+    /// Before 1.21.80 `directional_lights` holds the orbital lights themselves.
+    const FLAT_LATER: &[read::Hint] = &[
+        read::later("directional_lights/orbital", V1_21_80),
+        read::later("directional_lights/flash", V1_21_80),
+    ];
+    /// Before 1.21.70 there is no `sky` either.
+    const LATER_THAN_1_21_60: &[read::Hint] = &[
+        read::later("sky", V1_21_70),
+        read::later("directional_lights/orbital", V1_21_80),
+        read::later("directional_lights/flash", V1_21_80),
+    ];
 
     /// The two structs without `sky`: 1.21.40 (`Rgba8`) and 1.21.60 (`Rgb8`).
     macro_rules! without_sky {
@@ -539,19 +404,7 @@ mod codec {
                     cx: &ParseCx<'_>,
                     d: &mut Diagnostics,
                 ) -> Option<Self> {
-                    let mut m = members(&read::payload(payload, cx), d).ok()?;
-                    let description = m.opt("description", d, read::description);
-                    let directional_lights = m.opt("directional_lights", d, flat::<$colour>);
-                    let emissive = m.opt("emissive", d, emissive);
-                    let ambient = m.opt("ambient", d, plain_ambient);
-                    let extra = m.finish(SKY_LATER, d);
-                    Some(Self {
-                        description: description.ok()?,
-                        directional_lights: directional_lights.ok()?,
-                        emissive: emissive.ok()?,
-                        ambient: ambient.ok()?,
-                        extra,
-                    })
+                    read::payload_hinted(payload, cx, d, LATER_THAN_1_21_60)
                 }
 
                 fn write(&self) -> Result<Value, EncodeError> {
@@ -575,21 +428,7 @@ mod codec {
 
     impl VersionStruct for v1_21_70::LightingSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let description = m.opt("description", d, read::description);
-            let directional_lights = m.opt("directional_lights", d, flat::<Rgb8>);
-            let emissive = m.opt("emissive", d, emissive);
-            let ambient = m.opt("ambient", d, plain_ambient);
-            let sky = m.opt("sky", d, plain_sky);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                description: description.ok()?,
-                directional_lights: directional_lights.ok()?,
-                emissive: emissive.ok()?,
-                ambient: ambient.ok()?,
-                sky: sky.ok()?,
-                extra,
-            })
+            read::payload_hinted(payload, cx, d, FLAT_LATER)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -609,21 +448,7 @@ mod codec {
 
     impl VersionStruct for v1_21_80::LightingSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let description = m.opt("description", d, read::description);
-            let directional_lights = m.opt("directional_lights", d, directional);
-            let emissive = m.opt("emissive", d, emissive);
-            let ambient = m.opt("ambient", d, plain_ambient);
-            let sky = m.opt("sky", d, plain_sky);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                description: description.ok()?,
-                directional_lights: directional_lights.ok()?,
-                emissive: emissive.ok()?,
-                ambient: ambient.ok()?,
-                sky: sky.ok()?,
-                extra,
-            })
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {
@@ -643,21 +468,7 @@ mod codec {
 
     impl VersionStruct for LightingSettings {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let mut m = members(&read::payload(payload, cx), d).ok()?;
-            let description = m.opt("description", d, read::description);
-            let directional_lights = m.opt("directional_lights", d, directional);
-            let emissive = m.opt("emissive", d, emissive);
-            let ambient = m.opt("ambient", d, ambient);
-            let sky = m.opt("sky", d, sky);
-            let extra = m.finish(&[], d);
-            Some(Self {
-                description: description.ok()?,
-                directional_lights: directional_lights.ok()?,
-                emissive: emissive.ok()?,
-                ambient: ambient.ok()?,
-                sky: sky.ok()?,
-                extra,
-            })
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

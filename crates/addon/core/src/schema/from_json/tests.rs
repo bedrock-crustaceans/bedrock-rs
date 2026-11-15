@@ -1790,3 +1790,39 @@ fn a_missing_required_member_is_told_in_its_place_in_declared_order() {
         ]
     );
 }
+
+/// A struct's own `UnknownMembers` holds an unknown member as written, unless the read clamps
+/// what it keeps: then the number no double holds is the largest finite one, told at its place
+/// after the unknown member's own finding.
+#[test]
+fn an_unknown_member_kept_beyond_a_double_is_clamped_where_the_read_says() {
+    #[derive(Debug, PartialEq, Facet, Schema)]
+    struct Holder {
+        known: Option<u8>,
+        extra: crate::document::UnknownMembers,
+    }
+    let text = r#"{"known": 1, "more": [1e999]}"#;
+    let json: Value = from_str_jsonc(text).expect("JSON");
+    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).clamp_kept();
+    let holder = Holder::from_json(&node, &mut read).expect("a value");
+    read.finish();
+    let more = holder
+        .extra
+        .get("more")
+        .and_then(Value::as_array)
+        .expect("kept");
+    assert_eq!(
+        more[0].as_number().and_then(facet_value::VNumber::to_f64),
+        Some(f64::MAX)
+    );
+    let told: Vec<String> = found
+        .iter()
+        .map(|f| format!("{} {}", f.location.json_path, f.code))
+        .collect();
+    assert_eq!(
+        told,
+        ["root/more unrecognized field", "root/more/0 invalid value"]
+    );
+}

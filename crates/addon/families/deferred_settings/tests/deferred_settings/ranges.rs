@@ -721,7 +721,11 @@ fn declared(file: &str) -> (Vec<String>, usize) {
     let source = std::fs::read_to_string(&path).unwrap_or_else(|error| panic!("{path}: {error}"));
     let mut names = Vec::new();
     for line in source.lines() {
-        let Some(rest) = line.trim_start().strip_prefix("const ") else {
+        let line = line.trim_start();
+        let Some(rest) = line
+            .strip_prefix("const ")
+            .or_else(|| line.strip_prefix("pub(crate) const "))
+        else {
             continue;
         };
         let Some((name, kind)) = rest.split_once(": ") else {

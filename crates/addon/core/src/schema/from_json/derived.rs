@@ -208,13 +208,13 @@ impl<'v> Object<'v> {
         }
         match extra {
             Some(extra) => {
-                extra.insert(key.to_owned(), node.value().clone());
+                let value = kept(node, read);
+                extra.insert(key.to_owned(), value);
             }
             None if read.keepable() => {
                 let owner = self.members.node().path().clone();
-                read.findings_mut()
-                    .unknown_mut()
-                    .put(&owner, key, node.value().clone());
+                let value = kept(node, read);
+                read.findings_mut().unknown_mut().put(&owner, key, value);
             }
             None => {}
         }
@@ -236,6 +236,12 @@ fn respelled_as<'n>(
         .iter()
         .copied()
         .find(|name| name.eq_ignore_ascii_case(key))
+}
+
+/// The unknown member `node` as it is kept: as written, its numbers no double holds clamped and
+/// told where the read says so ([`Read::clamp_kept`]).
+fn kept(node: &Node<'_>, read: &mut Read<'_>) -> crate::json::Value {
+    <crate::json::Value as FromJson>::from_json(node, read).unwrap_or_else(|| node.value().clone())
 }
 
 /// Whether `key` is no member of a struct: one it does not know (or knows from a later format

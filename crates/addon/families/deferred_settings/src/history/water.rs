@@ -7,36 +7,53 @@
 //! - 1.26.20 (the newest): the same members; `description` is required.
 
 use crate::WaterSettings;
+use crate::read;
+use crate::water::{
+    DEPTH, DIRECTION_INCREMENT, FREQUENCY, MIX, OCTAVES, PULL, SAMPLE_WIDTH, SCALING, SHAPE, SPEED,
+};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 
 /// The waves of formats 1.21.40 and 1.21.80: with `sampleWidth`, which 1.21.120 dropped.
 /// `direction_increment` is read from 1.21.80.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Waves {
     /// Whether the surface has waves (JSON `enabled`).
     pub enabled: Option<bool>,
     /// The frequency of the first wave, 0.01–3 (JSON `frequency`).
+    #[facet(schema::read_with = read::float_in(FREQUENCY))]
     pub frequency: Option<f32>,
     /// How many waves are summed, 1–30 (JSON `octaves`).
+    #[facet(schema::read_with = read::whole_in(OCTAVES))]
     pub octaves: Option<u8>,
     /// The height of the waves, 0–3 (JSON `depth`).
+    #[facet(schema::read_with = read::float_in(DEPTH))]
     pub depth: Option<f32>,
     /// The width the surface is sampled over, 0.01–1 (JSON `sampleWidth`).
+    #[facet(rename = "sampleWidth", schema::read_with = read::float_in(SAMPLE_WIDTH))]
     pub sample_width: Option<f32>,
     /// How fast the waves move, 0.01–10 (JSON `speed`).
+    #[facet(schema::read_with = read::float_in(SPEED))]
     pub speed: Option<f32>,
     /// How strongly each wave drags the next, −1–1 (JSON `pull`).
+    #[facet(schema::read_with = read::float_in(PULL))]
     pub pull: Option<f32>,
     /// How much each wave is blended with the next, 0–1 (JSON `mix`).
+    #[facet(schema::read_with = read::float_in(MIX))]
     pub mix: Option<f32>,
     /// The frequency factor from one wave to the next, 0–2 (JSON `frequency_scaling`).
+    #[facet(schema::read_with = read::float_in(SCALING))]
     pub frequency_scaling: Option<f32>,
     /// The speed factor from one wave to the next, 0–2 (JSON `speed_scaling`).
+    #[facet(schema::read_with = read::float_in(SCALING))]
     pub speed_scaling: Option<f32>,
     /// The turn of direction from one wave to the next in degrees, 0–360 (JSON
     /// `direction_increment`; always `None` in a 1.21.40 document).
+    #[facet(schema::since_format = "1.21.80", schema::read_with = read::float_in(DIRECTION_INCREMENT))]
     pub direction_increment: Option<f32>,
     /// How sharp the wave crests are, 1–10 (JSON `shape`).
+    #[facet(schema::read_with = read::float_in(SHAPE))]
     pub shape: Option<f32>,
     /// Members the game does not know, kept for write-back.
     pub extra: UnknownMembers,
@@ -48,9 +65,11 @@ pub mod v1_21_40 {
     use crate::{Description, ParticleConcentrations};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
 
     /// Water settings at format 1.21.40.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
     pub struct WaterSettings {
         /// The settings' name (JSON `description`).
         pub description: Option<Description<kind::WaterSettings>>,
@@ -69,9 +88,11 @@ pub mod v1_21_80 {
     use crate::{Caustics, Description, ParticleConcentrations};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
 
     /// Water settings at format 1.21.80: with `caustics` and `waves.direction_increment`.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
     pub struct WaterSettings {
         /// The settings' name (JSON `description`).
         pub description: Option<Description<kind::WaterSettings>>,
@@ -91,9 +112,11 @@ pub mod v1_21_120 {
     use crate::{Caustics, Description, ParticleConcentrations, Waves};
     use bedrock_addon_core::document::UnknownMembers;
     use bedrock_addon_core::id::kind;
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
 
     /// Water settings at format 1.21.120: `waves` without `sampleWidth`.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
     pub struct WaterSettings {
         /// The settings' name (JSON `description`).
         pub description: Option<Description<kind::WaterSettings>>,
@@ -110,9 +133,13 @@ pub mod v1_21_120 {
 
 /// Format 1.26.0.
 pub mod v1_26_0 {
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
+
     /// Water settings at format 1.26.0: the members of the newest struct, `description` still
     /// optional.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+    #[facet(transparent)]
     pub struct WaterSettings(pub crate::WaterSettings);
 }
 

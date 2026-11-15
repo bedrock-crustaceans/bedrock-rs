@@ -1,36 +1,29 @@
-//! Reading a settings payload from its slice of the text: one object level at a time (its
-//! members as raw slices, so every finding has the place of its own value), the scalar and
-//! composite value forms with the game's texts, and the unknown members kept for write-back.
-//!
-//! The text is core's, in which a member written twice has its last value only.
+//! Reading a settings payload: the profile the game's lenient reader has, and the value forms its
+//! members take (a number in a range, a colour, a triple, keyframes by time) with the game's
+//! texts. The documents' structs derive the rest of the read.
 
-use facet_json::RawJson;
-use indexmap::IndexMap;
-
-use super::codes;
-use super::value::{Description, Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
+use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Kind as CodeKind, Severity, Span,
+    Code, CodeDef, Diagnostic, Diagnostics, Kind as CodeKind, Severity, Span,
 };
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, Kind};
-use bedrock_addon_core::json::{JsonSlice, ScalarShape, Value, parse_at};
+use bedrock_addon_core::json::kit::{
+    Disposition, Expected, MemberOrder, Members, Node, Profile, Read, Texts, UnknownAt, WrongKind,
+};
+use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{NullHandling, ParseCx, Scalars, read_payload_with};
 use bedrock_addon_shared_shapes::color::hex_bytes;
 
-/// The read failed; its reason is in the diagnostics.
-///
-/// A marker only: it means the finding was already pushed, and it carries nothing else.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct Failed;
-
-/// The outcome of reading one value.
-pub(crate) type Read<T> = Result<T, Failed>;
+use super::codes;
+use super::value::{Keyframe, Keyframes, Rgb8, Rgba8, Vec3};
 
 /// A numeric constraint, both ends included: core's `cereal::NumericRange`, with the `f32` ends the
 /// game writes its constraints in ([`range`]).
-pub(crate) type Range = bedrock_addon_core::diagnostic::cereal::NumericRange;
+pub(crate) type Range = NumericRange;
 
 /// `[min, max]`, the `f32` ends widened exactly, so a value compares and a finding prints as
 /// against the `f32`s.
@@ -42,403 +35,305 @@ pub(crate) const fn range(min: f32, max: f32) -> Range {
     Range::inclusive(min as f64, max as f64)
 }
 
-/// One JSON value of the document: its text and where it is.
-#[derive(Clone, Debug)]
-pub(crate) struct Node<'a> {
-    /// The value's text, with its offset in the file.
-    pub(crate) slice: JsonSlice<'a>,
-    /// The value's path in the file.
-    pub(crate) at: JsonPath,
+/// The game's reader binds every member in the order it declares them, tells each failure, and
+/// tells the members it does not know last.
+const PROFILE: Profile = Profile::EVERY_FAILURE
+    .with_members(MemberOrder::Declaration)
+    .with_unknown(UnknownAt::Last);
+
+/// The text of a value of the wrong JSON type: a number is asked for by its own line, an object
+/// by cereal's.
+fn wrong_kind(expected: Expected, _: &Value) -> Code {
+    match expected {
+        Expected::Number => Code::from(&codes::MUST_BE_NUMBER),
+        Expected::Object => cereal::expected_object(),
+        _ => Code::from(&core_codes::INVALID_TYPE),
+    }
 }
 
-impl<'a> Node<'a> {
-    /// The value's place in the file.
-    fn span(&self) -> Span {
-        let narrow = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
-        Span {
-            offset: narrow(self.slice.offset),
-            len: narrow(self.slice.text.len()),
-        }
-    }
-
-    /// A finding about this value.
-    pub(crate) fn finding(&self, code: Code, severity: Severity) -> Diagnostic {
-        Diagnostic::error(code)
-            .severity(severity)
-            .at(self.at.clone())
-            .span(self.span())
-    }
-
-    /// Reports an error about this value.
-    pub(crate) fn error(&self, code: Code, d: &mut Diagnostics) -> Failed {
-        d.push(self.finding(code, Severity::Error));
-        Failed
-    }
-
-    /// The member or element `raw` of this value, at `at`.
-    fn child(&self, raw: &RawJson<'a>, at: JsonPath) -> Option<Node<'a>> {
-        Some(Node {
-            slice: self.slice.nested(raw)?,
-            at,
+/// `read` as the game's reader of a payload reads: every member told where it is met, a `null`
+/// member absent, an unknown member an information (the game loads a file with one) kept for
+/// write-back.
+pub(crate) fn lenient(read: Read<'_>) -> Read<'_> {
+    read.profile(PROFILE)
+        .texts(Texts {
+            wrong_kind: Some(WrongKind(wrong_kind)),
+            ..Texts::CODES
         })
-    }
-
-    /// The first byte of the value that is neither white space nor inside a comment.
-    fn first_token(&self) -> Option<u8> {
-        self.slice.first_byte()
-    }
-
-    /// The value is a JSON `null`, which reads as an absent member (core's rule).
-    fn is_null(&self) -> bool {
-        self.first_token() == Some(b'n')
-            && matches!(parse_at::<ScalarShape>(self.slice), Ok(ScalarShape::Null))
-    }
-
-    /// The value as a scalar; `None` for an object, an array or text that is no value.
-    fn scalar(&self) -> Option<ScalarShape> {
-        match self.first_token()? {
-            b'{' | b'[' => None,
-            _ => parse_at::<ScalarShape>(self.slice).ok(),
-        }
-    }
+        .null(NullHandling::Own)
+        .scalars(Scalars::Strict)
+        .unknown_severity(Severity::Info)
+        .clamp_kept()
 }
 
-/// The members of one object, each a raw slice, taken out one by one; what is left is unknown
-/// to the struct.
-pub(crate) struct Members<'a> {
-    node: Node<'a>,
-    map: IndexMap<String, RawJson<'a>>,
+/// Reads the payload `payload` of a version struct `T` ([`lenient`]).
+pub(crate) fn payload<T: FromJson>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    read_payload_with(payload, cx, d, lenient)
 }
 
-/// The members of the object `node`; an `InvalidType` error ("expected an object") for any
-/// other value.
-pub(crate) fn members<'a>(node: &Node<'a>, d: &mut Diagnostics) -> Read<Members<'a>> {
-    if node.first_token() != Some(b'{') {
-        return Err(node.error(bedrock_addon_core::diagnostic::cereal::expected_object(), d));
-    }
-    match parse_at::<IndexMap<String, RawJson<'a>>>(node.slice) {
-        Ok(map) => Ok(Members {
-            node: node.clone(),
-            map,
-        }),
-        Err(_) => Err(node.error(bedrock_addon_core::diagnostic::cereal::expected_object(), d)),
-    }
+/// [`payload`] with the unknown members `table` names told as the members of another format
+/// version ([`hints`]).
+pub(crate) fn payload_hinted<T: FromJson>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+    table: &[Hint],
+) -> Option<T> {
+    let from = d.len();
+    let value = self::payload(payload, cx, d);
+    hints(d, from, cx, table);
+    value
 }
 
-impl<'a> Members<'a> {
-    /// The path of the member `key`.
-    fn path(&self, key: &str) -> JsonPath {
-        self.node.at.child(key)
-    }
+/// The member of a newer or older struct that the struct read does not know: an unknown member
+/// whose finding names the `format_version` it is declared from (`NeedsFormatVersion`) or is
+/// no longer used from (`NoLongerUsed`).
+pub(crate) type Hint = (&'static str, &'static CodeDef<2>, FormatVersion);
 
-    /// Takes the member `key` out; `None` when it is absent or `null`.
-    fn take(&mut self, key: &str) -> Option<Node<'a>> {
-        let raw = self.map.shift_remove(key)?;
-        let node = self.node.child(&raw, self.path(key))?;
-        (!node.is_null()).then_some(node)
-    }
+/// The member `path` of a struct is declared from the format `version` on.
+pub(crate) const fn later(path: &'static str, version: FormatVersion) -> Hint {
+    (path, &codes::NEEDS_FORMAT_VERSION, version)
+}
 
-    /// The optional member `key`, read by `read`.
-    pub(crate) fn opt<T>(
-        &mut self,
-        key: &str,
-        d: &mut Diagnostics,
-        read: impl FnOnce(&Node<'a>, &mut Diagnostics) -> Read<T>,
-    ) -> Read<Option<T>> {
-        match self.take(key) {
-            Some(node) => read(&node, d).map(Some),
-            None => Ok(None),
-        }
-    }
+/// The member `path` of a struct is no longer used from the format `version` on.
+pub(crate) const fn gone(path: &'static str, version: FormatVersion) -> Hint {
+    (path, &codes::NO_LONGER_USED, version)
+}
 
-    /// The required member `key`, read by `read`; a `MissingRequiredField` error at the
-    /// member's path when it is absent.
-    pub(crate) fn req<T>(
-        &mut self,
-        key: &str,
-        d: &mut Diagnostics,
-        read: impl FnOnce(&Node<'a>, &mut Diagnostics) -> Read<T>,
-    ) -> Read<T> {
-        if let Some(node) = self.take(key) {
-            return read(&node, d);
-        }
-        d.push(
-            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
-                .at(self.path(key))
-                .span(self.node.span()),
-        );
-        Err(Failed)
+/// Gives the unknown members of `d` from `from` on that `table` names (by their path below the
+/// payload, `waves/sampleWidth`) the finding of the format they belong to. The game is silent
+/// about a file that loads, so the finding is the crate's own, an information.
+pub(crate) fn hints(d: &mut Diagnostics, from: usize, cx: &ParseCx<'_>, table: &[Hint]) {
+    if table.is_empty() {
+        return;
     }
-
-    /// The members left, in document order: `(key, value)`.
-    pub(crate) fn rest(self) -> impl Iterator<Item = (String, Node<'a>)> {
-        let Members { node, map } = self;
-        map.into_iter().filter_map(move |(key, raw)| {
-            let at = node.at.child(&key);
-            let child = node.child(&raw, at)?;
-            Some((key, child))
-        })
-    }
-
-    /// Ends the object: every member left is unknown to the struct, an `UnrecognizedField`
-    /// information (the game is silent about a file that loads) and kept. A member named in
-    /// `later` is declared by a newer struct: the finding names the `format_version` it needs.
-    /// A number of a kept member that is beyond a double is replaced (`kept`).
-    pub(crate) fn finish(
-        self,
-        later: &[(&'static str, FormatVersion)],
-        d: &mut Diagnostics,
-    ) -> UnknownMembers {
-        self.finish_with(later, &[], d)
-    }
-
-    /// [`finish`](Self::finish) for a struct that also has members an older struct declared
-    /// and this one no longer does: a member named in `gone` is unknown like any other, and
-    /// its finding names the `format_version` from which it is no longer used.
-    pub(crate) fn finish_with(
-        self,
-        later: &[(&'static str, FormatVersion)],
-        gone: &[(&'static str, FormatVersion)],
-        d: &mut Diagnostics,
-    ) -> UnknownMembers {
-        let hint =
-            |def: &'static CodeDef<2>, known: &[(&'static str, FormatVersion)], key: &str| {
-                known
-                    .iter()
-                    .find(|(name, _)| *name == key)
-                    .map(|(name, version)| def.with([(*name).to_owned(), version.to_string()]))
-            };
-        let mut extra = UnknownMembers::default();
-        for (key, node) in self.rest() {
-            let code = hint(&codes::NEEDS_FORMAT_VERSION, later, &key)
-                .or_else(|| hint(&codes::NO_LONGER_USED, gone, &key))
-                .unwrap_or_else(|| Code::from(&core_codes::UNRECOGNIZED_FIELD));
-            // The game reads every deferred settings file leniently: an unknown member is no
-            // error, and the parse log is printed only for an invalid document. The game is
-            // silent about a file that loads, so the finding is an information.
-            d.push(node.finding(code, Severity::Info));
-            if let Some(value) = kept(&node, d) {
-                extra.insert(key, value);
+    let told = std::mem::take(d);
+    for (index, mut finding) in told.into_iter().enumerate() {
+        if index >= from && finding.code.is(&core_codes::UNRECOGNIZED_FIELD) {
+            let hint = table.iter().find(|(path, ..)| {
+                let mut at = cx.at.clone();
+                path.split('/').for_each(|step| at.push(step));
+                at == finding.location.json_path
+            });
+            if let Some((path, def, version)) = hint {
+                let name = path.rsplit('/').next().unwrap_or(path);
+                finding.code = def.with([name.to_owned(), version.to_string()]);
             }
         }
-        extra
+        d.push(finding);
     }
 }
 
-/// The unknown member `node` as it is kept for write-back: its JSON value. A number in it
-/// beyond a double (`1e999`) has no value to keep and none the writer could write: it is kept
-/// as the largest finite double of its sign, with an `InvalidValue` information at the number,
-/// its own path and span (the clamp is the crate's own, for the write-back; core's walk does
-/// the replacing).
-fn kept(node: &Node<'_>, d: &mut Diagnostics) -> Option<Value> {
-    let mut value = bedrock_addon_core::json::from_str_jsonc::<Value>(node.slice.text).ok()?;
-    for clamped in bedrock_addon_core::json::clamp_non_finite(&mut value, Some(node.slice)) {
-        let mut at = node.at.clone();
-        at.append(&clamped.path);
-        let finding = Diagnostic::of(&core_codes::INVALID_VALUE)
-            .severity(Severity::Info)
-            .at(at);
-        d.push(match clamped.span {
-            Some(span) => finding.span(span),
-            None => finding,
-        });
-    }
-    Some(value)
-}
-
-/// A JSON number: its value and whether it was an integer token.
-fn number(node: &Node<'_>, d: &mut Diagnostics) -> Read<(f64, bool)> {
-    #[allow(
-        clippy::cast_precision_loss,
-        reason = "as the game reads an integer into a float"
-    )]
-    match node.scalar() {
-        Some(ScalarShape::UInt(value)) => Ok((value as f64, true)),
-        Some(ScalarShape::Int(value)) => Ok((value as f64, true)),
-        Some(ScalarShape::Number(value)) => Ok((value, false)),
-        _ => Err(node.error(Code::from(&codes::MUST_BE_NUMBER), d)),
-    }
-}
-
-/// A number in `range`: an `InvalidValue` error with the game's range text outside it. A
-/// number beyond `f32` is outside every range.
-pub(crate) fn float_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
-    let (value, _) = number(node, d)?;
-    #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
-    let narrow = value as f32;
-    if range.contains(f64::from(narrow)) {
-        Ok(narrow)
-    } else {
-        Err(node.error(range.code(), d))
-    }
-}
-
-/// A number without a constraint. One beyond `f32` is read as the largest finite float of its
-/// sign with an `InvalidValue` information (the crate's own): it never loads as an infinity
-/// the writer would refuse.
-pub(crate) fn float(node: &Node<'_>, d: &mut Diagnostics) -> Read<f32> {
-    let (value, _) = number(node, d)?;
-    #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
-    let narrow = value as f32;
-    if narrow.is_finite() {
-        return Ok(narrow);
-    }
-    d.push(node.finding(Code::from(&core_codes::INVALID_VALUE), Severity::Info));
-    Ok(if value < 0.0 { f32::MIN } else { f32::MAX })
-}
-
-/// An integer in `[min, max]`. A real token with no fraction is taken as the integer (it is
-/// not known whether the game's integer reader takes `16.0`); one with a fraction is an
-/// `InvalidValue` error.
-pub(crate) fn integer_in(min: i32, max: i32, node: &Node<'_>, d: &mut Diagnostics) -> Read<i32> {
-    let (value, _) = number(node, d)?;
-    if value.fract() != 0.0 {
-        return Err(node.error(Code::from(&core_codes::INVALID_VALUE), d));
-    }
-    if value < f64::from(min) || value > f64::from(max) {
-        #[allow(clippy::cast_precision_loss, reason = "the bounds are small integers")]
-        let range = range(min as f32, max as f32);
-        return Err(node.error(range.code(), d));
-    }
-    #[allow(clippy::cast_possible_truncation, reason = "within [min, max]")]
-    Ok(value as i32)
-}
-
-/// `true` or `false`.
-pub(crate) fn boolean(node: &Node<'_>, d: &mut Diagnostics) -> Read<bool> {
-    match node.scalar() {
-        Some(ScalarShape::Bool(value)) => Ok(value),
-        _ => Err(node.error(Code::from(&core_codes::INVALID_TYPE), d)),
-    }
-}
-
-/// A string.
-pub(crate) fn string(node: &Node<'_>, d: &mut Diagnostics) -> Read<String> {
-    match node.scalar() {
-        Some(ScalarShape::String(value)) => Ok(value),
-        _ => Err(node.error(Code::from(&core_codes::INVALID_TYPE), d)),
-    }
-}
-
-/// One of the names of `table`: an `InvalidEnumValue` error for any other string, an
-/// `InvalidType` error for a value that is no string.
-pub(crate) fn choice<T: Copy>(
-    table: &[(&str, T)],
-    node: &Node<'_>,
+/// [`payload_hinted`] of a struct that requires the member `member` of the payload, which the game
+/// asks for first: a missing one (or a `null`) is told before every other finding of the read,
+/// whether or not the rest reads, and rejects the payload.
+pub(crate) fn payload_requiring<T: FromJson>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
     d: &mut Diagnostics,
-) -> Read<T> {
-    let name = string(node, d)?;
-    match table.iter().find(|(known, _)| *known == name) {
-        Some((_, value)) => Ok(*value),
-        None => Err(node.error(Code::from(&core_codes::INVALID_ENUM_VALUE), d)),
+    table: &[Hint],
+    member: &str,
+) -> Option<T> {
+    let from = d.len();
+    let value = payload_hinted(payload, cx, d, table);
+    let lacking = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text)
+        .ok()
+        .and_then(|json| {
+            json.as_object()
+                .map(|object| object.get(member).is_none_or(Value::is_null))
+        })
+        .unwrap_or(false);
+    if !lacking {
+        return value;
+    }
+    let narrow = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
+    let missing = Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
+        .at(cx.at.child(member))
+        .span(Span {
+            offset: narrow(payload.offset),
+            len: narrow(payload.text.len()),
+        });
+    let told = std::mem::take(d);
+    for (index, finding) in told.into_iter().enumerate() {
+        if index == from {
+            d.push(missing.clone());
+        }
+        d.push(finding);
+    }
+    if d.len() == from {
+        d.push(missing);
+    }
+    None
+}
+
+/// A finding of the crate's own about the value at `node`, an information.
+pub(crate) fn info(node: &Node<'_>, code: Code) -> Diagnostic {
+    let mut finding = Diagnostic::of(code)
+        .severity(Severity::Info)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    finding
+}
+
+/// A number in `range` (`schema::read_with` of a ranged member): an `InvalidValue` error with the
+/// game's range text outside it. A number beyond `f32` is outside every range.
+pub(crate) fn float_in(range: Range) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<f32> {
+    move |node, read| {
+        let value = read.number(node)?;
+        #[allow(clippy::cast_possible_truncation, reason = "the game reads a float")]
+        let narrow = value as f32;
+        if range.contains(f64::from(narrow)) {
+            return Some(narrow);
+        }
+        read.refuse(node, range.code());
+        None
     }
 }
 
-/// `description.identifier`: any string, since the game puts no constraint on it. One without
-/// a namespace is a `NamespaceRule` info (the game accepts it, so the finding is the crate's
-/// own).
-pub(crate) fn identifier<K: Kind>(node: &Node<'_>, d: &mut Diagnostics) -> Read<Id<K>> {
-    let text = string(node, d)?;
+/// A whole number in `[min, max]` (`schema::read_with` of a member of an integer type). A real
+/// token with no fraction is taken as the integer (it is not known whether the game's integer
+/// reader takes `16.0`); one with a fraction is an `InvalidValue` error.
+pub(crate) fn whole_in<T>(bounds: (T, T)) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<T>
+where
+    T: Copy + Into<f64> + TryFrom<i64>,
+{
+    move |node, read| {
+        let (min, max) = (bounds.0.into(), bounds.1.into());
+        let value = read.number(node)?;
+        if value.fract() != 0.0 {
+            read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+            return None;
+        }
+        if value < min || value > max {
+            read.refuse(node, Range::inclusive(min, max).code());
+            return None;
+        }
+        #[allow(clippy::cast_possible_truncation, reason = "within [min, max]")]
+        T::try_from(value as i64).ok()
+    }
+}
+
+/// A member the game asks for, read by `value`: a `null` is no value, a missing member (told at
+/// the member, over the `null`).
+pub(crate) fn present<T>(
+    value: impl Fn(&Node<'_>, &mut Read<'_>) -> Option<T>,
+) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<T> {
+    move |node, read| {
+        if node.value().is_null() {
+            read.refuse(node, Code::from(&core_codes::MISSING_REQUIRED_FIELD));
+            return None;
+        }
+        value(node, read)
+    }
+}
+
+/// `description.identifier`: any string, since the game puts no constraint on it. One without a
+/// namespace is a `NamespaceRule` info (the game accepts it, so the finding is the crate's own).
+pub(crate) fn identifier<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Id<K>> {
+    let text = read.string(node)?;
     if !text.contains(':') {
-        d.push(node.finding(Code::from(&core_codes::NAMESPACE_RULE), Severity::Info));
+        read.push(info(node, Code::from(&core_codes::NAMESPACE_RULE)));
     }
-    Ok(Id::parse(text))
+    Some(Id::parse(text))
 }
 
-/// A `description` object: `identifier` is required inside it.
-pub(crate) fn description<K: Kind>(node: &Node<'_>, d: &mut Diagnostics) -> Read<Description<K>> {
-    let mut m = members(node, d)?;
-    let identifier = m.req("identifier", d, identifier::<K>);
-    let extra = m.finish(&[], d);
-    Ok(Description {
-        identifier: identifier?,
-        extra,
-    })
+/// The unknown members of `members` that `known` does not name: each told as the game's reader
+/// tells it (an information, and one for each number of it beyond a double), and kept.
+pub(crate) fn unknown(
+    read: &mut Read<'_>,
+    members: &Members<'_>,
+    known: &[&str],
+) -> UnknownMembers {
+    let mut kept = UnknownMembers::default();
+    for (key, member) in members.iter().filter(|(key, _)| !known.contains(key)) {
+        read.unknown_member(&member, Disposition::Keep);
+        if let Some(value) = Value::from_json(&member, read) {
+            kept.insert(key.to_owned(), value);
+        }
+    }
+    kept
 }
 
 /// The channels of a colour: `N` integers 0–255, or `#` and `2 N` hex digits (the bytes in
 /// the order written). An array element outside 0–255 is read as the nearest bound with a
 /// `ClampedValue` info (vanilla clamps silently); one with a fraction is an `InvalidValue`
-/// error; anything else is an `InvalidType` error with `text`.
+/// error; anything else is an `InvalidType` error with `wrong_type`.
 fn channels<const N: usize>(
     wrong_type: &'static CodeDef<0>,
     node: &Node<'_>,
-    d: &mut Diagnostics,
-) -> Read<[u8; N]> {
-    let wrong = |at: &Node<'_>, d: &mut Diagnostics| at.error(Code::from(wrong_type), d);
-    let mut out = [0_u8; N];
-    match node.first_token() {
-        Some(b'"') => {
-            let Some(ScalarShape::String(hex)) = node.scalar() else {
-                return Err(wrong(node, d));
-            };
-            hex_bytes::<N>(&hex).ok_or_else(|| wrong(node, d))
-        }
-        Some(b'[') => {
-            let Ok(elements) = parse_at::<Vec<RawJson<'_>>>(node.slice) else {
-                return Err(wrong(node, d));
-            };
-            if elements.len() != N {
-                return Err(wrong(node, d));
-            }
-            let mut failed = false;
-            for (i, (raw, channel)) in elements.iter().zip(out.iter_mut()).enumerate() {
-                let at = node.at.index(i);
-                let Some(element) = node.child(raw, at) else {
-                    return Err(wrong(node, d));
-                };
-                let value = match element.scalar() {
-                    #[allow(clippy::cast_precision_loss, reason = "clamped to 0–255 below")]
-                    Some(ScalarShape::UInt(value)) => value as f64,
-                    #[allow(clippy::cast_precision_loss, reason = "clamped to 0–255 below")]
-                    Some(ScalarShape::Int(value)) => value as f64,
-                    Some(ScalarShape::Number(value)) => value,
-                    _ => {
-                        wrong(&element, d);
-                        failed = true;
-                        continue;
-                    }
-                };
-                if value.fract() != 0.0 {
-                    element.error(Code::from(&core_codes::INVALID_VALUE), d);
-                    failed = true;
-                    continue;
-                }
-                let clamped = value.clamp(0.0, 255.0);
-                #[allow(clippy::float_cmp, reason = "exact: whether the clamp changed it")]
-                if clamped != value {
-                    d.push(element.finding(Code::from(&core_codes::CLAMPED_VALUE), Severity::Info));
-                }
-                #[allow(
-                    clippy::cast_possible_truncation,
-                    clippy::cast_sign_loss,
-                    reason = "clamped to 0–255"
-                )]
-                {
-                    *channel = clamped as u8;
-                }
-            }
-            if failed { Err(Failed) } else { Ok(out) }
-        }
-        _ => Err(wrong(node, d)),
+    read: &mut Read<'_>,
+) -> Option<[u8; N]> {
+    if read.stopped() {
+        return None;
     }
+    let value = node.value();
+    if let Some(hex) = value.as_string() {
+        let bytes = hex_bytes::<N>(hex.as_str());
+        if bytes.is_none() {
+            read.refuse(node, Code::from(wrong_type));
+        }
+        return bytes;
+    }
+    if value.as_array().is_none_or(|elements| elements.len() != N) {
+        read.refuse(node, Code::from(wrong_type));
+        return None;
+    }
+    let elements = read.array(node)?;
+    let mut out = [0_u8; N];
+    let mut failed = false;
+    for (index, channel) in out.iter_mut().enumerate() {
+        let element = elements.element(index)?;
+        let Some(number) = element.value().as_number() else {
+            read.refuse(&element, Code::from(wrong_type));
+            failed = true;
+            continue;
+        };
+        let number = number.to_f64_lossy();
+        if number.fract() != 0.0 {
+            read.refuse(&element, Code::from(&core_codes::INVALID_VALUE));
+            failed = true;
+            continue;
+        }
+        let clamped = number.clamp(0.0, 255.0);
+        #[allow(clippy::float_cmp, reason = "exact: whether the clamp changed it")]
+        if clamped != number {
+            read.push(info(&element, Code::from(&core_codes::CLAMPED_VALUE)));
+        }
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            reason = "clamped to 0–255"
+        )]
+        {
+            *channel = clamped as u8;
+        }
+    }
+    (!failed).then_some(out)
 }
 
 /// A colour without alpha: `[r, g, b]` or `"#RRGGBB"`.
-pub(crate) fn rgb(node: &Node<'_>, d: &mut Diagnostics) -> Read<Rgb8> {
-    let [red, green, blue] = channels::<3>(&codes::RGB, node, d)?;
-    Ok(Rgb8 { red, green, blue })
+impl FromJson for Rgb8 {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let [r, g, b] = channels::<3>(&codes::RGB, node, read)?;
+        Some(Self::new(r, g, b))
+    }
 }
 
 /// A colour with alpha: `[r, g, b, a]` or `"#AARRGGBB"` (alpha first in the hex form).
-pub(crate) fn rgba(node: &Node<'_>, d: &mut Diagnostics) -> Read<Rgba8> {
-    let hex = node.first_token() == Some(b'"');
-    let [first, second, third, fourth] = channels::<4>(&codes::RGBA, node, d)?;
-    Ok(if hex {
-        Rgba8::new(second, third, fourth, first)
-    } else {
-        Rgba8::new(first, second, third, fourth)
-    })
+impl FromJson for Rgba8 {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let hex = node.value().is_string();
+        let [first, second, third, fourth] = channels::<4>(&codes::RGBA, node, read)?;
+        Some(if hex {
+            Self::new(second, third, fourth, first)
+        } else {
+            Self::new(first, second, third, fourth)
+        })
+    }
 }
 
 /// The value of the hexadecimal float that follows a `0x`: hexadecimal digits with an
@@ -577,6 +472,21 @@ pub(crate) fn strtof(text: &str) -> Option<f32> {
     text[..end].parse().ok()
 }
 
+/// Keyframed numbers in `range` (`schema::read_with` of a member).
+pub(crate) fn keyframed_in(
+    range: Range,
+) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<Keyframes<f32>> {
+    keyframed(float_in(range))
+}
+
+/// A keyframed value, each value read by `value` (`schema::read_with` of a member): see
+/// [`keyframes`].
+pub(crate) fn keyframed<T>(
+    value: impl Fn(&Node<'_>, &mut Read<'_>) -> Option<T>,
+) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<Keyframes<T>> {
+    move |node, read| keyframes(node, read, &value)
+}
+
 /// A keyframed value: a single value read by `value`, or an object of at least one keyframe
 /// whose keys are times.
 ///
@@ -590,65 +500,75 @@ pub(crate) fn strtof(text: &str) -> Option<f32> {
 ///   information; the keyframe that does not stand is a `DroppedField` info at its own key
 ///   (the game keeps both). `-0` and `0` are one time, held as `0`.
 /// - Any other JSON type is an `InvalidType` error, "Expected keyframes.".
-pub(crate) fn keyframes<'a, T>(
-    node: &Node<'a>,
-    d: &mut Diagnostics,
-    value: impl Fn(&Node<'a>, &mut Diagnostics) -> Read<T>,
-) -> Read<Keyframes<T>> {
-    if node.first_token() != Some(b'{') {
-        // The single form: the value reader's own type error is the keyframe binder's.
-        let mut own = Diagnostics::default();
-        let read = value(node, &mut own);
-        let mistyped = read.is_err()
-            && own
-                .iter()
-                // By kind: the value readers raise the family's and core's wrong-type
-                // definitions, the only ones of the kind that can occur here.
-                .any(|f| f.kind() == CodeKind::WrongType);
-        if mistyped {
-            return Err(node.error(Code::from(&codes::KEYFRAMES), d));
-        }
-        for finding in own {
-            d.push(finding);
-        }
-        return read.map(Keyframes::Single);
+pub(crate) fn keyframes<T>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    value: impl Fn(&Node<'_>, &mut Read<'_>) -> Option<T>,
+) -> Option<Keyframes<T>> {
+    if read.stopped() {
+        return None;
     }
-    let m = members(node, d)?;
+    if !node.value().is_object() {
+        // The single form: the value reader's own type error is the keyframe binder's.
+        let mut attempt = read.fork();
+        let single = value(node, &mut attempt);
+        // By kind: the value readers raise the family's and core's wrong-type definitions, the
+        // only ones of the kind that can occur here.
+        let mistyped = single.is_none()
+            && attempt
+                .findings_mut()
+                .iter()
+                .any(|found| found.kind() == CodeKind::WrongType);
+        if mistyped {
+            read.refuse(node, Code::from(&codes::KEYFRAMES));
+            return None;
+        }
+        read.commit(attempt);
+        return single.map(Keyframes::Single);
+    }
+    let members = read.object(node)?;
     let mut frames = Vec::new();
     let mut failed = false;
     let mut any = false;
-    for (key, child) in m.rest() {
+    for (key, child) in members.iter() {
         any = true;
-        let read = value(&child, d);
-        let Some(time) = strtof(&key) else {
-            child.error(codes::KEY_CONVERSION.with(["float"]), d);
+        let read_value = value(&child, read);
+        let Some(time) = strtof(key) else {
+            read.refuse(&child, codes::KEY_CONVERSION.with(["float"]));
             failed = true;
             continue;
         };
-        let Ok(value) = read else {
+        let Some(read_value) = read_value else {
             failed = true;
             continue;
         };
         if !(0.0..=1.0).contains(&time) {
             // The game skips a key outside the domain without a line, so the finding is an
             // information.
-            d.push(child.finding(
+            read.push(info(
+                &child,
                 Code::from(&core_codes::KEYFRAME_OUT_OF_DOMAIN),
-                Severity::Info,
             ));
             continue;
         }
         // `-0` is the time `0`.
         let time = time + 0.0;
-        frames.push((Keyframe { time, value }, child));
+        frames.push((
+            Keyframe {
+                time,
+                value: read_value,
+            },
+            child,
+        ));
     }
     if failed {
-        return Err(Failed);
+        return None;
     }
     if !any || frames.is_empty() {
-        return Err(node.error(Code::from(&core_codes::INVALID_VALUE), d));
+        read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+        return None;
     }
-    Ok(Keyframes::Keys(standing(frames, d)))
+    Some(Keyframes::Keys(standing(frames, read)))
 }
 
 /// The keyframes that stand, by time: of the keyframes of one time the last in `frames`
@@ -657,7 +577,7 @@ pub(crate) fn keyframes<'a, T>(
 /// findings are the crate's own). The times are finite and none is `-0`.
 pub(super) fn standing<T>(
     mut frames: Vec<(Keyframe<T>, Node<'_>)>,
-    d: &mut Diagnostics,
+    read: &mut Read<'_>,
 ) -> Vec<Keyframe<T>> {
     // Stable: keyframes of one time stay in document order.
     frames.sort_by(|a, b| a.0.time.total_cmp(&b.0.time));
@@ -665,9 +585,9 @@ pub(super) fn standing<T>(
     for (frame, child) in frames {
         #[allow(clippy::float_cmp, reason = "exact: two keys of one time")]
         if kept.last().is_some_and(|(last, _)| last.time == frame.time) {
-            d.push(child.finding(Code::from(&core_codes::INVALID_VALUE), Severity::Info));
+            read.push(info(&child, Code::from(&core_codes::INVALID_VALUE)));
             if let Some((_, replaced)) = kept.pop() {
-                d.push(replaced.finding(Code::from(&core_codes::DROPPED_FIELD), Severity::Info));
+                read.push(info(&replaced, Code::from(&core_codes::DROPPED_FIELD)));
             }
         }
         kept.push((frame, child));
@@ -675,76 +595,49 @@ pub(super) fn standing<T>(
     kept.into_iter().map(|(frame, _)| frame).collect()
 }
 
-/// A triple of numbers whose components lie in `range`: `[x, y, z]`, or an object of optional
-/// `x`, `y`, `z` (0 when left out). An unknown member of the object form is an
-/// `UnrecognizedField` finding and is not kept (the value is written back as the array).
-#[allow(
-    clippy::many_single_char_names,
-    reason = "x, y and z are the members' names"
-)]
-pub(crate) fn vec3_in(range: Range, node: &Node<'_>, d: &mut Diagnostics) -> Read<Vec3> {
-    let wrong = |d: &mut Diagnostics| node.error(Code::from(&codes::VEC3), d);
-    match node.first_token() {
-        Some(b'[') => {
-            let Ok(elements) = parse_at::<Vec<RawJson<'_>>>(node.slice) else {
-                return Err(wrong(d));
-            };
+/// A triple of numbers whose components lie in `range` (`schema::read_with` of a member):
+/// `[x, y, z]`, or an object of optional `x`, `y`, `z` (0 when left out). An unknown member of
+/// the object form is an `UnrecognizedField` finding and is not kept (the value is written back
+/// as the array).
+pub(crate) fn vec3_in(range: Range) -> impl Fn(&Node<'_>, &mut Read<'_>) -> Option<Vec3> {
+    move |node, read| {
+        if read.stopped() {
+            return None;
+        }
+        let component = float_in(range);
+        let value = node.value();
+        if value.is_array() {
+            let elements = read.array(node)?;
             if elements.len() != 3 {
-                return Err(wrong(d));
+                read.refuse(node, Code::from(&codes::VEC3));
+                return None;
             }
             let mut out = [0.0_f32; 3];
             let mut failed = false;
-            for (i, (raw, component)) in elements.iter().zip(out.iter_mut()).enumerate() {
-                let at = node.at.index(i);
-                let Some(element) = node.child(raw, at) else {
-                    return Err(wrong(d));
-                };
-                match float_in(range, &element, d) {
-                    Ok(value) => *component = value,
-                    Err(Failed) => failed = true,
+            for (index, slot) in out.iter_mut().enumerate() {
+                match elements.element(index).and_then(|n| component(&n, read)) {
+                    Some(read) => *slot = read,
+                    None => failed = true,
                 }
             }
-            if failed {
-                Err(Failed)
-            } else {
-                Ok(Vec3::new(out[0], out[1], out[2]))
+            (!failed).then(|| Vec3::new(out[0], out[1], out[2]))
+        } else if value.is_object() {
+            let members = read.object(node)?;
+            let mut out = [0.0_f32; 3];
+            let mut failed = false;
+            for (slot, key) in out.iter_mut().zip(["x", "y", "z"]) {
+                if let Some(member) = members.get(key).filter(|n| !n.value().is_null()) {
+                    match component(&member, read) {
+                        Some(read) => *slot = read,
+                        None => failed = true,
+                    }
+                }
             }
+            unknown(read, &members, &["x", "y", "z"]);
+            (!failed).then(|| Vec3::new(out[0], out[1], out[2]))
+        } else {
+            read.refuse(node, Code::from(&codes::VEC3));
+            None
         }
-        Some(b'{') => {
-            let mut m = members(node, d)?;
-            let x = m.opt("x", d, |n, d| float_in(range, n, d));
-            let y = m.opt("y", d, |n, d| float_in(range, n, d));
-            let z = m.opt("z", d, |n, d| float_in(range, n, d));
-            m.finish(&[], d);
-            Ok(Vec3::new(
-                x?.unwrap_or(0.0),
-                y?.unwrap_or(0.0),
-                z?.unwrap_or(0.0),
-            ))
-        }
-        _ => Err(wrong(d)),
-    }
-}
-
-/// The payload a version struct parses, as a node at the payload's path.
-pub(crate) fn payload<'a>(
-    slice: JsonSlice<'a>,
-    cx: &bedrock_addon_core::versioning::ParseCx<'_>,
-) -> Node<'a> {
-    Node {
-        slice,
-        at: cx.at.clone(),
-    }
-}
-
-#[cfg(test)]
-mod failed_tests {
-    use super::*;
-
-    /// The failure marker compares equal to itself, so a `Read` can be asserted on.
-    #[test]
-    fn a_failed_read_equals_a_failed_read() {
-        let read: Read<u8> = Err(Failed);
-        assert_eq!(read, Err(Failed));
     }
 }

@@ -34,7 +34,6 @@ macro_rules! chain {
             pub enum $history {
                 $( $(#[$vmeta])* $variant($ty), )+
             }
-            molang = none;
         }
 
         /// Runs the remaining upgrade steps of a document `parse_as_written` gave: the same
@@ -65,8 +64,6 @@ macro_rules! chain {
 
         $(#[$meta])*
         pub type $history = ::bedrock_addon_core::versioning::Single<Family>;
-
-        ::bedrock_addon_core::impl_no_molang!($latest);
 
         /// Runs the checks of a document `parse_as_written` gave: the same result `parse` gives
         /// for its file (one struct, so no upgrade step).

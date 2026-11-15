@@ -6,9 +6,12 @@
 //! (`local_lighting/local_lighting.json`), merged per block — loaded together as the
 //! `DeferredSettings` group.
 //!
-//! The reader stays a hand walk over each payload's slices (a node and members of its own), with
-//! the game's texts per value form and every finding at its own value's place; moving it onto the
-//! reader kit is more than a swap of helpers.
+//! Every payload's structs derive their read (`read_payload_with` under the game's lenient
+//! profile, [`read::lenient`]): the members in the order the struct declares them, each failure
+//! told at its own value, a `null` member absent, an unknown member an information kept for
+//! write-back. What the structs do not say is a field's `schema::read_with`: a number in its range
+//! (`read::float_in(RANGE)`, the range the writer checks too), a colour, a triple, keyframes by
+//! time; the game's texts are those forms'. The writer stays a hand mirror of the structs.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

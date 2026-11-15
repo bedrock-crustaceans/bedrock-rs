@@ -7,7 +7,8 @@ use crate::AtmosphereSettings;
 pub mod v1_21_40 {
     /// Atmosphere settings at format 1.21.40: the members of the newest struct, `description`
     /// optional.
-    #[derive(Clone, Debug, Default, PartialEq)]
+    #[derive(Clone, Debug, PartialEq, facet::Facet, bedrock_addon_core::schema::Schema)]
+    #[facet(transparent)]
     pub struct AtmosphereSettings(pub crate::AtmosphereSettings);
 }
 

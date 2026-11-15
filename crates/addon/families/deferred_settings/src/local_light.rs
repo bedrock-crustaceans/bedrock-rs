@@ -2,9 +2,16 @@
 
 use indexmap::IndexMap;
 
+use super::read;
 use super::value::Rgb8;
+use bedrock_addon_core::diagnostic::Code;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BlockId;
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_entries};
+use facet::Facet;
+use std::collections::HashSet;
 
 /// The local lights of the deferred renderer (`minecraft:local_light_settings`, the one file
 /// `local_lighting/local_lighting.json` of each pack), at its only format version (1.21.120).
@@ -22,7 +29,7 @@ pub struct LocalLightSettings {
 }
 
 /// The light one block gives off.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct LocalLight {
     /// Whether the light is a point light (JSON `light_type`; see
     /// [`LocalLight::light_type`]).
@@ -35,7 +42,9 @@ pub struct LocalLight {
 }
 
 /// The kind of a block's local light.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(schema::string_only, rename_all = "snake_case")]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum LightType {
     /// `"static_light"`: lights its surroundings without a moving highlight; the default.
@@ -45,13 +54,32 @@ pub enum LightType {
     PointLight,
 }
 
-impl LightType {
-    /// The JSON names, in the order the game lists them.
-    pub(crate) const NAMES: &'static [(&'static str, Self)] = &[
-        ("static_light", Self::StaticLight),
-        ("point_light", Self::PointLight),
-    ];
+/// The entries of the file, each by the block it names. Every entry is read, so every failing
+/// one is reported; one failure rejects the file. Of two keys that name one block (`torch`,
+/// `minecraft:torch`) the later entry stands, with a `DuplicateIdentifier` information. The
+/// game keeps both strings and resolves each to the same block without a word, so the finding
+/// is the crate's own.
+impl FromJson for LocalLightSettings {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let mut seen = HashSet::new();
+        let lights = read_entries::<BlockId, LocalLight>(node, read, |entry, read| {
+            let light = LocalLight::from_json(entry, read)?;
+            let block = BlockId::parse(entry.path().last_key().unwrap_or_default());
+            if !seen.insert(block) {
+                read.push(read::info(
+                    entry,
+                    Code::from(&core_codes::DUPLICATE_IDENTIFIER),
+                ));
+            }
+            Some(light)
+        })?;
+        Some(Self { lights })
+    }
 }
+
+bedrock_addon_core::impl_no_molang!(LocalLightSettings);
 
 super::defaults! {
     LocalLight {
@@ -62,70 +90,28 @@ super::defaults! {
 mod codec {
     //! Reading and writing `minecraft:local_light_settings`.
 
-    use bedrock_addon_core::diagnostic::codes as core_codes;
-    use indexmap::map::Entry;
-
-    use super::{LightType, LocalLight, LocalLightSettings};
-    use crate::read::{self, Node, Read, members};
+    use super::{LocalLight, LocalLightSettings};
+    use crate::read;
     use crate::write::{self, Object, Written};
-    use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
-    use bedrock_addon_core::id::BlockId;
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
     use bedrock_addon_core::versioning::{ParseCx, VersionStruct};
 
     /// The members of one block's entry.
     const MEMBERS: &[&str] = &["light_type", "light_color"];
 
-    fn light(node: &Node<'_>, d: &mut Diagnostics) -> Read<LocalLight> {
-        let mut m = members(node, d)?;
-        let light_type = m.opt("light_type", d, |n, d| read::choice(LightType::NAMES, n, d));
-        let light_color = m.opt("light_color", d, read::rgb);
-        let extra = m.finish(&[], d);
-        Ok(LocalLight {
-            light_type: light_type?,
-            light_color: light_color?,
-            extra,
-        })
-    }
-
     fn write_light(light: &LocalLight, at: &JsonPath) -> Written {
         let mut object = Object::new(at);
-        object.opt("light_type", light.light_type.as_ref(), |kind, at| {
-            write::choice(LightType::NAMES, *kind, at)
+        object.opt("light_type", light.light_type.as_ref(), |kind, _| {
+            Ok(Value::from(kind.name()))
         })?;
         object.opt("light_color", light.light_color.as_ref(), write::rgb)?;
         object.finish(&light.extra, MEMBERS)
     }
 
     impl VersionStruct for LocalLightSettings {
-        /// Every entry is read, so every failing one is reported; one failure rejects the
-        /// file. Of two keys that name one block (`torch`, `minecraft:torch`) the later
-        /// entry stands, with a `DuplicateIdentifier` information. The game keeps both strings
-        /// and resolves each to the same block without a word, so the finding is the crate's
-        /// own.
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let m = members(&read::payload(payload, cx), d).ok()?;
-            let mut lights = indexmap::IndexMap::new();
-            let mut failed = false;
-            for (key, node) in m.rest() {
-                let Ok(light) = light(&node, d) else {
-                    failed = true;
-                    continue;
-                };
-                match lights.entry(BlockId::parse(key)) {
-                    Entry::Vacant(entry) => {
-                        entry.insert(light);
-                    }
-                    Entry::Occupied(mut entry) => {
-                        d.push(node.finding(
-                            Code::from(&core_codes::DUPLICATE_IDENTIFIER),
-                            Severity::Info,
-                        ));
-                        entry.insert(light);
-                    }
-                }
-            }
-            (!failed).then_some(Self { lights })
+            read::payload(payload, cx, d)
         }
 
         fn write(&self) -> Result<Value, EncodeError> {

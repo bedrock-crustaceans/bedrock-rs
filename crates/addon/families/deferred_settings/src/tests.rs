@@ -538,24 +538,24 @@ fn keyframe_text(n: usize) -> String {
 #[test]
 #[allow(clippy::float_cmp, reason = "exact: the values the text holds")]
 fn the_keyframes_of_one_member_are_read_and_merged_in_near_linear_time() {
-    use super::read::{self, Node};
+    use super::read;
     use super::value::Keyframes;
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::versioning::Reading;
     near_linear(
         "keyframes of one member",
         2_000,
         keyframe_text,
         |text, n| {
-            let node = Node {
-                slice: JsonSlice::new(&text),
-                at: JsonPath::new(),
-            };
+            let json: Value = from_str_jsonc(&text).unwrap();
+            let node = Node::new(&json, JsonPath::new());
             let mut d = Diagnostics::default();
-            let read = read::keyframes(&node, &mut d, |n, d| {
-                read::float_in(read::range(0.0, 10.0), n, d)
-            });
-            let Ok(Keyframes::Keys(frames)) = read else {
+            let mut reader = read::lenient(Read::new(Reading::OWN, &mut d));
+            let read = read::keyframes(&node, &mut reader, read::float_in(read::range(0.0, 10.0)));
+            drop(reader);
+            let Some(Keyframes::Keys(frames)) = read else {
                 panic!("frames")
             };
             // Half of the keys stand, each the later of its two; the other half is reported.
@@ -573,12 +573,15 @@ fn the_keyframes_of_one_member_are_read_and_merged_in_near_linear_time() {
     reason = "exact: the values the keyframes were built with"
 )]
 fn the_keyframes_of_one_member_are_merged_in_near_linear_time() {
-    use super::read::{self, Node};
+    use super::read;
     use super::value::Keyframe;
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::json::Value;
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::versioning::Reading;
     // The merge alone, on keyframes already read: `n` of them, the times descending and each
     // time twice, so that the reader's own (linear) cost does not hide the merge's.
+    let one: &'static Value = Box::leak(Box::new(Value::from(1)));
     let frames = |n: usize| -> Vec<(Keyframe<f32>, Node<'static>)> {
         let times = n / 2;
         (0..n)
@@ -588,17 +591,15 @@ fn the_keyframes_of_one_member_are_merged_in_near_linear_time() {
                 let time = (index / 2) as f32 / times as f32;
                 #[allow(clippy::cast_precision_loss, reason = "small counts")]
                 let value = (index % 2) as f32;
-                let node = Node {
-                    slice: JsonSlice::new("1"),
-                    at: JsonPath::new(),
-                };
-                (Keyframe { time, value }, node)
+                (Keyframe { time, value }, Node::new(one, JsonPath::new()))
             })
             .collect()
     };
     near_linear("the merge of keyframes", 40_000, frames, |frames, n| {
         let mut d = Diagnostics::default();
-        let kept = read::standing(frames, &mut d);
+        let mut reader = read::lenient(Read::new(Reading::OWN, &mut d));
+        let kept = read::standing(frames, &mut reader);
+        drop(reader);
         assert_eq!(kept.len(), n / 2);
         assert!(kept.windows(2).all(|pair| pair[0].time < pair[1].time));
         // The later of each two stands: it was built with the value 0.
