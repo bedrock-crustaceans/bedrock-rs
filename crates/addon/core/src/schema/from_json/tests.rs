@@ -345,6 +345,11 @@ fn a_string_enum_reads_its_names() {
         ["Error root core/invalid_enum_value"]
     );
     assert_eq!(door::<Mode>("3").1, ["Error root core/invalid_enum_value"]);
+    // facet read a `null` as a variant that is none.
+    assert_eq!(
+        door::<Mode>("null").1,
+        ["Error root core/invalid_enum_value"]
+    );
     assert_eq!(door::<Mode>("[]").1, ["Error root core/invalid_type"]);
     assert_eq!(
         door::<Mode>(r#"{"fast": 1}"#).1,
@@ -1480,4 +1485,43 @@ fn a_range_tells_the_members_it_does_not_read_when_the_reading_says_so() {
         Profile::FIRST_FAILURE,
     );
     assert_eq!(told, ["Warning root/depth/2 core/member_not_kept"]);
+}
+
+#[test]
+fn a_strict_bool_takes_a_bool_and_no_other_value() {
+    use crate::json::StrictBool;
+    let (value, told) = door::<StrictBool>("true");
+    assert_eq!((value, told.len()), (Some(StrictBool(true)), 0));
+    for text in ["1", r#""true""#, "null"] {
+        let (value, told) = door::<StrictBool>(text);
+        assert_eq!(value, None, "{text}");
+        assert_eq!(told, ["Error root core/invalid_type"], "{text}");
+    }
+}
+
+#[test]
+fn a_value_in_memory_reads_as_the_plain_typed_read_does() {
+    use crate::json::{MAX_JSON_DEPTH, Value};
+    let json = |text: &str| -> Value { from_str_jsonc(text).expect("JSON") };
+    let lamp = |text: &str| schema::read_value::<Lamp>(&json(text));
+    assert_eq!(
+        lamp(r#"{"level": 3, "zz": 1}"#).map(|lamp| lamp.level),
+        Some(3)
+    );
+    // Strict scalars, and a required member.
+    assert_eq!(lamp(r#"{"level": 3.5}"#), None);
+    assert_eq!(lamp(r#"{"level": "3"}"#), None);
+    assert_eq!(lamp(r#"{"lit": true}"#), None);
+    // A number beyond its float is no read.
+    assert_eq!(schema::read_value::<f32>(&json("1e39")), None);
+    // Nested as deep as a document may be, and no deeper.
+    let nested = |levels: usize| {
+        let mut deep = Value::from(0_i64);
+        for _ in 0..levels {
+            deep = Value::from(facet_value::VArray::from_iter([deep]));
+        }
+        deep
+    };
+    assert!(schema::read_value::<Value>(&nested(MAX_JSON_DEPTH)).is_some());
+    assert!(schema::read_value::<Value>(&nested(MAX_JSON_DEPTH + 1)).is_none());
 }

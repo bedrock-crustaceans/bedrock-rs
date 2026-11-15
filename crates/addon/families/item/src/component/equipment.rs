@@ -17,6 +17,7 @@ use bedrock_addon_core::schema::{self, Schema};
 #[facet(schema::unknown = "keep")]
 pub struct DamageAbsorption {
     /// The damage causes (JSON `absorbable_causes`, required, at least one).
+    #[facet(schema::min_len = 1)]
     pub absorbable_causes: Vec<String>,
 }
 
@@ -25,9 +26,11 @@ pub struct DamageAbsorption {
 #[facet(schema::unknown = "keep")]
 pub struct Durability {
     /// The durability, at least 0 (JSON `max_durability`, required).
+    #[facet(schema::min = 0)]
     pub max_durability: i32,
     /// The chance in percent, 0–100, that a use spends durability (JSON `damage_chance`;
     /// default 100).
+    #[facet(schema::min = 0, schema::max = 100)]
     pub damage_chance: Option<IntRange>,
 }
 
@@ -47,6 +50,7 @@ impl Durability {
 #[facet(schema::unknown = "keep")]
 pub struct DurabilitySensor {
     /// The thresholds (JSON `durability_thresholds`, required, at least one).
+    #[facet(schema::min_len = 1)]
     pub durability_thresholds: Vec<DurabilityThreshold>,
 }
 

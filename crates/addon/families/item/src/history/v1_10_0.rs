@@ -3,12 +3,13 @@
 //! whose `components` name no registered component).
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::json::kit::{Members, Node, Profile, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::BuiltIns;
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, parse_payload, write_payload,
+    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, read_payload, write_payload,
 };
 use facet::Facet;
 use facet_value::{VArray, VObject};
@@ -20,8 +21,8 @@ use crate::legacy::{
     ItemFormat, LegacyCamera, LegacyEffect, LegacyFood, LegacyFormatItem, LegacyItemData,
     LegacySeed, number, seed_warning,
 };
-use crate::read::is_component_based;
-use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
+use crate::read::{Raw, is_component_based};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics};
 
 /// An item in the legacy item format (no `SemVersion`
 /// reaches its readers, so one shape serves 1.10 to 1.16.0).
@@ -40,18 +41,18 @@ impl Versioned for Item {
 }
 
 /// What the legacy item is parsed from.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 struct Shell {
     description: Description,
-    components: Option<Value>,
+    components: Option<Raw>,
     events: Option<Value>,
 }
 
 impl VersionStruct for Item {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let mut found = Diagnostics::default();
-        let shell: Option<Shell> = parse_payload(payload, cx, &mut found);
+        let shell = read_payload::<Shell>(payload, cx, &mut found);
         // unknown keys are ignored silently at every version (and kept)
         found.retain(|f| {
             !matches!(
@@ -76,17 +77,20 @@ impl VersionStruct for Item {
         let at = cx.at.child("components");
         let components = match &shell.components {
             None => LegacyFormatItem::default(),
-            Some(value) => {
-                let Some(object) = value.as_object() else {
+            Some(raw) => {
+                if !raw.value.is_object() {
                     d.push(Diagnostic::of(&codes::COMPONENTS_NOT_OBJECT).at(at));
                     return None;
-                };
+                }
+                let node = Node::with_text(&raw.value, at.clone(), raw.slice());
+                let mut read = Read::new(cx.load.reading, d)
+                    .profile(Profile::EVERY_FAILURE)
+                    .load(cx.load);
                 read_format_item(
-                    object,
+                    &node,
                     &shell.description.identifier,
                     cx.load.built_ins(),
-                    &at,
-                    d,
+                    &mut read,
                 )
             }
         };
@@ -115,16 +119,18 @@ impl VersionStruct for Item {
 // The 1.10.0 item holds no Molang a document's walk visits.
 bedrock_addon_core::impl_no_molang!(Item);
 
-/// An information at `at`: the member reads its value as another one than the document writes
-/// (the legacy readers take any JSON value, as `asInt`, `asFloat`, `asBool` do; what they
-/// make of it is said). The game is silent, so the finding is the crate's own information.
-fn told(code: Code, at: JsonPath, d: &mut Diagnostics) {
-    d.push(Diagnostic::info(code).at(at));
+/// The legacy readers take any JSON value for a member, as jsoncpp's `asInt`, `asFloat` and
+/// `asBool` do, and say what they make of it: an information at the member (the game is silent,
+/// so each is the crate's own).
+fn told(read: &mut Read<'_>, code: Code, node: &Node<'_>) {
+    let mut finding = Diagnostic::info(code).at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
-/// A value of another JSON type than the member's: an `InvalidType` information at `at`.
-fn wrong_type(at: JsonPath, d: &mut Diagnostics) {
-    told(Code::from(&core_codes::INVALID_TYPE), at, d);
+/// A value of another JSON type than the member's: an `InvalidType` information at the member.
+fn wrong_type(read: &mut Read<'_>, node: &Node<'_>) {
+    told(read, Code::from(&core_codes::INVALID_TYPE), node);
 }
 
 /// A JSON number as the double it spells.
@@ -133,59 +139,80 @@ fn double(value: &Value) -> Option<f64> {
 }
 
 /// `asInt`: a number truncated toward zero, a bool as 0 or 1. A fraction is truncated and a
-/// number beyond an `i32` is not taken, each with an `InvalidValue` information at `at`; a
-/// bool and any other value come with an `InvalidType` information.
+/// number beyond an `i32` is not taken, each with an `InvalidValue` information; a bool and any
+/// other value come with an `InvalidType` information.
 #[allow(clippy::cast_possible_truncation, reason = "vanilla's asInt truncates")]
-fn as_int(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<i32> {
-    let Some(number) = double(value) else {
-        wrong_type(at, d);
-        return value.as_bool().map(i32::from);
+fn as_int(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
+    let Some(number) = double(node.value()) else {
+        wrong_type(read, node);
+        return node.value().as_bool().map(i32::from);
     };
     let whole = number.trunc();
     if whole < f64::from(i32::MIN) || whole > f64::from(i32::MAX) {
-        told(Code::from(&core_codes::INVALID_VALUE), at, d);
+        told(read, Code::from(&core_codes::INVALID_VALUE), node);
         return None;
     }
     if number.fract() != 0.0 {
-        told(Code::from(&core_codes::INVALID_VALUE), at, d);
+        told(read, Code::from(&core_codes::INVALID_VALUE), node);
     }
     Some(whole as i32)
 }
 
 /// `asFloat`. A number beyond an `f32` is the largest finite float of its sign, with the
-/// information of such a number at `at`; another value comes with an `InvalidType`
-/// information.
+/// information of such a number; another value comes with an `InvalidType` information.
 #[allow(clippy::cast_possible_truncation, reason = "an f32 member")]
-fn as_float(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<f32> {
-    let Some(number) = double(value) else {
-        wrong_type(at, d);
+fn as_float(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    let Some(number) = double(node.value()) else {
+        wrong_type(read, node);
         return None;
     };
     let nearest = number as f32;
     if nearest.is_infinite() {
-        d.push(bedrock_addon_core::molang::beyond_f32_warning(at, None));
+        let mut finding = bedrock_addon_core::molang::beyond_f32_warning(node.path().clone(), None);
+        finding.location.span = node.span();
+        read.push(finding);
         return Some(f32::MAX.copysign(nearest));
     }
     Some(nearest)
 }
 
-/// `asBool`: a bool, or a non-zero number (with an `InvalidType` information at `at`, as any
-/// other value).
-fn as_bool(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<bool> {
-    if let Some(flag) = value.as_bool() {
+/// `asBool`: a bool, or a non-zero number (with an `InvalidType` information, as any other
+/// value).
+fn as_bool(node: &Node<'_>, read: &mut Read<'_>) -> Option<bool> {
+    if let Some(flag) = node.value().as_bool() {
         return Some(flag);
     }
-    wrong_type(at, d);
-    number(value).map(|n| n != 0.0)
+    wrong_type(read, node);
+    number(node.value()).map(|n| n != 0.0)
 }
 
-/// A string member; another value is not taken, with an `InvalidType` information at `at`.
-fn as_string(value: &Value, at: JsonPath, d: &mut Diagnostics) -> Option<String> {
-    let text = value.as_string().map(|s| s.as_str().to_owned());
+/// A string member; another value is not taken, with an `InvalidType` information.
+fn as_string(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    let text = node.value().as_string().map(|s| s.as_str().to_owned());
     if text.is_none() {
-        wrong_type(at, d);
+        wrong_type(read, node);
     }
     text
+}
+
+/// The members of the object `node`; a value of another JSON type is told, and has none.
+fn members_of<'v>(node: &Node<'v>, read: &mut Read<'_>) -> Option<Members<'v>> {
+    if node.value().is_object() {
+        return read.object(node);
+    }
+    wrong_type(read, node);
+    None
+}
+
+/// The elements of the array `node`; a value of another JSON type is told, and has none.
+fn elements_of<'v>(node: &Node<'v>, read: &mut Read<'_>) -> Vec<Node<'v>> {
+    if node.value().is_array() {
+        return read
+            .array(node)
+            .map_or_else(Vec::new, |e| e.iter().collect());
+    }
+    wrong_type(read, node);
+    Vec::new()
 }
 
 /// The client keys of the legacy format, kept as written.
@@ -198,46 +225,46 @@ const CLIENT_KEYS: [&str; 6] = [
     "minecraft:rarity",
 ];
 
-/// Reads the legacy key set from `components` (at `at`).
-/// `effects` answers which mob effects the game has (the context's provider).
+/// Reads the legacy key set from the `components` object at `node`: `effects` answers which mob
+/// effects the game has (the context's provider), `identifier` is the item's. Every finding is
+/// an information, and every member reads.
 pub(crate) fn read_format_item(
-    components: &VObject,
+    node: &Node<'_>,
     identifier: &str,
     effects: &dyn BuiltIns,
-    at: &JsonPath,
-    d: &mut Diagnostics,
+    read: &mut Read<'_>,
 ) -> LegacyFormatItem {
     let mut item = LegacyFormatItem::default();
-    for (key, value) in components {
-        let key = key.as_str();
+    let Some(members) = members_of(node, read) else {
+        return item;
+    };
+    for (key, member) in members.iter() {
         match key {
-            "minecraft:max_damage" => {
-                item.max_damage = as_int(value, at.child(key), d).unwrap_or_default();
-            }
+            "minecraft:max_damage" => item.max_damage = as_int(&member, read).unwrap_or_default(),
             "minecraft:hand_equipped" => {
-                item.hand_equipped = as_bool(value, at.child(key), d).unwrap_or_default();
+                item.hand_equipped = as_bool(&member, read).unwrap_or_default();
             }
             "minecraft:stacked_by_data" => {
-                item.stacked_by_data = as_bool(value, at.child(key), d).unwrap_or_default();
+                item.stacked_by_data = as_bool(&member, read).unwrap_or_default();
             }
-            "minecraft:foil" => item.foil = as_bool(value, at.child(key), d).unwrap_or_default(),
-            "minecraft:block" => item.block = as_string(value, at.child(key), d),
+            "minecraft:foil" => item.foil = as_bool(&member, read).unwrap_or_default(),
+            "minecraft:block" => item.block = as_string(&member, read),
             "minecraft:use_duration" => {
-                item.use_duration = as_int(value, at.child(key), d).unwrap_or_default();
+                item.use_duration = as_int(&member, read).unwrap_or_default();
             }
             "minecraft:max_stack_size" => {
-                item.max_stack_size = as_int(value, at.child(key), d).unwrap_or(64);
+                item.max_stack_size = as_int(&member, read).unwrap_or(64);
             }
             "minecraft:food" => {
-                item.food = Some(read_food(value, identifier, effects, &at.child(key), d));
+                item.food = Some(read_food(&member, identifier, effects, read));
             }
-            "minecraft:seed" => item.seed = Some(read_seed(value, &at.child(key), d)),
-            "minecraft:camera" => item.camera = Some(read_camera(value, &at.child(key), d)),
+            "minecraft:seed" => item.seed = Some(read_seed(&member, read)),
+            "minecraft:camera" => item.camera = Some(read_camera(&member, read)),
             other if CLIENT_KEYS.contains(&other) => {
-                item.client.insert(other.to_owned(), value.clone());
+                item.client.insert(other.to_owned(), member.value().clone());
             }
             other => {
-                item.extra.insert(other.to_owned(), value.clone());
+                item.extra.insert(other.to_owned(), member.value().clone());
             }
         }
     }
@@ -250,70 +277,58 @@ fn known_effect(name: &str, effects: &dyn BuiltIns) -> bool {
     effects.effect(name)
 }
 
+/// The game logs an unknown effect name at the content log's error level and the loop goes on: a
+/// kept error.
+fn told_unknown_effect(
+    read: &mut Read<'_>,
+    node: &Node<'_>,
+    identifier: &str,
+    what: &str,
+    name: &str,
+) {
+    let code = codes::LEGACY_EFFECT_NAME.with([identifier, what, name]);
+    let mut finding = Diagnostic::error(code).at(node.path().clone()).into_kept();
+    finding.location.span = node.span();
+    read.push(finding);
+}
+
 /// `minecraft:food` of the legacy format as the game's legacy reader reads it.
 fn read_food(
-    value: &Value,
+    node: &Node<'_>,
     identifier: &str,
     effects: &dyn BuiltIns,
-    at: &JsonPath,
-    d: &mut Diagnostics,
+    read: &mut Read<'_>,
 ) -> LegacyFood {
     let mut food = LegacyFood::default();
-    let Some(object) = value.as_object() else {
-        wrong_type(at.clone(), d);
+    let Some(members) = members_of(node, read) else {
         return food;
     };
-    for (key, member) in object {
-        let key = key.as_str();
+    for (key, member) in members.iter() {
         match key {
-            "nutrition" => food.nutrition = as_int(member, at.child(key), d).unwrap_or_default(),
-            "saturation_modifier" => food.saturation_modifier = Some(member.clone()),
-            "using_converts_to" => food.using_converts_to = as_string(member, at.child(key), d),
-            "on_use_action" => food.on_use_action = as_string(member, at.child(key), d),
-            "on_use_range" => food.on_use_range = Some(member.clone()),
-            "cooldown_type" => food.cooldown_type = as_string(member, at.child(key), d),
-            "cooldown_time" => {
-                food.cooldown_time = as_int(member, at.child(key), d).unwrap_or_default();
-            }
-            "can_always_eat" => {
-                food.can_always_eat = as_bool(member, at.child(key), d).unwrap_or_default();
-            }
+            "nutrition" => food.nutrition = as_int(&member, read).unwrap_or_default(),
+            "saturation_modifier" => food.saturation_modifier = Some(member.value().clone()),
+            "using_converts_to" => food.using_converts_to = as_string(&member, read),
+            "on_use_action" => food.on_use_action = as_string(&member, read),
+            "on_use_range" => food.on_use_range = Some(member.value().clone()),
+            "cooldown_type" => food.cooldown_type = as_string(&member, read),
+            "cooldown_time" => food.cooldown_time = as_int(&member, read).unwrap_or_default(),
+            "can_always_eat" => food.can_always_eat = as_bool(&member, read).unwrap_or_default(),
             "effects" => {
-                if !member.is_array() {
-                    wrong_type(at.child(key), d);
-                }
-                for (i, effect) in member.as_array().into_iter().flatten().enumerate() {
-                    let path = at.child("effects").index(i);
-                    let Some(effect) = effect.as_object() else {
-                        wrong_type(path, d);
+                for effect in elements_of(&member, read) {
+                    let Some(entry) = members_of(&effect, read) else {
                         continue;
                     };
                     // A member of the effect, read by `read` when it is written.
-                    let name = effect
+                    let name = entry
                         .get("name")
-                        .and_then(|name| as_string(name, path.child("name"), d))
+                        .and_then(|name| as_string(&name, read))
                         .unwrap_or_default();
                     if !known_effect(&name, effects) {
-                        // The game logs an unknown effect name at the content log's error
-                        // level and adds the effect on: a kept error.
-                        d.push_kept_error(
-                            Diagnostic::error(codes::LEGACY_EFFECT_NAME.with([
-                                identifier,
-                                "effect",
-                                name.as_str(),
-                            ]))
-                            .at(path.clone()),
-                        );
+                        told_unknown_effect(read, &effect, identifier, "effect", &name);
                     }
-                    let chance = effect
-                        .get("chance")
-                        .and_then(|chance| as_float(chance, path.child("chance"), d));
-                    let duration = effect
-                        .get("duration")
-                        .and_then(|duration| as_int(duration, path.child("duration"), d));
-                    let amplifier = effect
-                        .get("amplifier")
-                        .and_then(|amplifier| as_int(amplifier, path.child("amplifier"), d));
+                    let chance = entry.get("chance").and_then(|n| as_float(&n, read));
+                    let duration = entry.get("duration").and_then(|n| as_int(&n, read));
+                    let amplifier = entry.get("amplifier").and_then(|n| as_int(&n, read));
                     food.effects.push(LegacyEffect {
                         name,
                         chance: chance.unwrap_or(1.0),
@@ -323,29 +338,16 @@ fn read_food(
                 }
             }
             "remove_effects" => {
-                if !member.is_array() {
-                    wrong_type(at.child(key), d);
-                }
-                for (i, name) in member.as_array().into_iter().flatten().enumerate() {
-                    let path = at.child("remove_effects").index(i);
-                    let name = as_string(name, path.clone(), d).unwrap_or_default();
+                for entry in elements_of(&member, read) {
+                    let name = as_string(&entry, read).unwrap_or_default();
                     if !known_effect(&name, effects) {
-                        // The game logs an unknown name in `remove_effects` at the error
-                        // level and the loop goes on: a kept error.
-                        d.push_kept_error(
-                            Diagnostic::error(codes::LEGACY_EFFECT_NAME.with([
-                                identifier,
-                                "remove_effect",
-                                name.as_str(),
-                            ]))
-                            .at(path),
-                        );
+                        told_unknown_effect(read, &entry, identifier, "remove_effect", &name);
                     }
                     food.remove_effects.push(name);
                 }
             }
             other => {
-                food.extra.insert(other.to_owned(), member.clone());
+                food.extra.insert(other.to_owned(), member.value().clone());
             }
         }
     }
@@ -353,61 +355,49 @@ fn read_food(
 }
 
 /// `minecraft:seed` of the legacy format as the game's legacy reader reads it.
-fn read_seed(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> LegacySeed {
+fn read_seed(node: &Node<'_>, read: &mut Read<'_>) -> LegacySeed {
     let mut seed = LegacySeed::default();
-    if !value.is_object() {
-        wrong_type(at.clone(), d);
-    }
-    for (key, member) in value.as_object().into_iter().flat_map(VObject::iter) {
-        let key = key.as_str();
+    let Some(members) = members_of(node, read) else {
+        return seed;
+    };
+    for (key, member) in members.iter() {
         match key {
-            "crop_result" => seed.crop_result = as_string(member, at.child(key), d),
-            "plant_at" => seed.plant_at = Some(member.clone()),
+            "crop_result" => seed.crop_result = as_string(&member, read),
+            "plant_at" => seed.plant_at = Some(member.value().clone()),
             "plant_at_any_solid_surface" => {
-                seed.plant_at_any_solid_surface =
-                    as_bool(member, at.child(key), d).unwrap_or_default();
+                seed.plant_at_any_solid_surface = as_bool(&member, read).unwrap_or_default();
             }
-            "plant_at_face" => seed.plant_at_face = as_string(member, at.child(key), d),
+            "plant_at_face" => seed.plant_at_face = as_string(&member, read),
             other => {
-                seed.extra.insert(other.to_owned(), member.clone());
+                seed.extra.insert(other.to_owned(), member.value().clone());
             }
         }
     }
     seed
 }
 
-/// `minecraft:camera` of the legacy format as the game's legacy reader reads it.
-fn read_camera(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> LegacyCamera {
+/// `minecraft:camera` of the legacy item format as the game's legacy reader reads it.
+fn read_camera(node: &Node<'_>, read: &mut Read<'_>) -> LegacyCamera {
     let mut camera = LegacyCamera::default();
-    if !value.is_object() {
-        wrong_type(at.clone(), d);
-    }
-    for (key, member) in value.as_object().into_iter().flat_map(VObject::iter) {
-        let key = key.as_str();
-        let n = if matches!(
-            key,
-            "black_bars_duration"
-                | "black_bars_screen_ratio"
-                | "shutter_duration"
-                | "shutter_screen_ratio"
-                | "picture_duration"
-                | "slide_away_duration"
-        ) {
-            as_float(member, at.child(key), d).unwrap_or_default()
-        } else {
-            0.0
-        };
-        match key {
-            "black_bars_duration" => camera.black_bars_duration = n,
-            "black_bars_screen_ratio" => camera.black_bars_screen_ratio = n,
-            "shutter_duration" => camera.shutter_duration = n,
-            "shutter_screen_ratio" => camera.shutter_screen_ratio = n,
-            "picture_duration" => camera.picture_duration = n,
-            "slide_away_duration" => camera.slide_away_duration = n,
+    let Some(members) = members_of(node, read) else {
+        return camera;
+    };
+    for (key, member) in members.iter() {
+        let slot = match key {
+            "black_bars_duration" => &mut camera.black_bars_duration,
+            "black_bars_screen_ratio" => &mut camera.black_bars_screen_ratio,
+            "shutter_duration" => &mut camera.shutter_duration,
+            "shutter_screen_ratio" => &mut camera.shutter_screen_ratio,
+            "picture_duration" => &mut camera.picture_duration,
+            "slide_away_duration" => &mut camera.slide_away_duration,
             other => {
-                camera.extra.insert(other.to_owned(), member.clone());
+                camera
+                    .extra
+                    .insert(other.to_owned(), member.value().clone());
+                continue;
             }
-        }
+        };
+        *slot = as_float(&member, read).unwrap_or_default();
     }
     camera
 }
@@ -572,7 +562,8 @@ impl Upgrade for Item {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::diagnostic::{JsonPath, Severity};
+    use bedrock_addon_core::versioning::Reading;
 
     /// A provider that knows the effects of its list, compared as `known_effect` compared
     /// before the provider: bare and without ASCII case.
@@ -601,11 +592,10 @@ mod tests {
         let mut d = Diagnostics::default();
         let effects = Effects(&["minecraft:speed", "minecraft:poison"]);
         let item = read_format_item(
-            json.as_object().unwrap(),
+            &Node::new(&json, JsonPath::new()),
             "demo:x",
             &effects,
-            &JsonPath::new(),
-            &mut d,
+            &mut Read::new(Reading::NULL_ABSENT, &mut d),
         );
         let texts: Vec<String> = d.iter().map(|f| f.code.to_string()).collect();
         assert_eq!(
@@ -626,11 +616,10 @@ mod tests {
         // a provider that knows every name tells none
         let mut d = Diagnostics::default();
         read_format_item(
-            json.as_object().unwrap(),
+            &Node::new(&json, JsonPath::new()),
             "demo:x",
             &Effects(&["speed", "zoom", "poison", "fizz"]),
-            &JsonPath::new(),
-            &mut d,
+            &mut Read::new(Reading::NULL_ABSENT, &mut d),
         );
         assert!(d.is_empty());
     }

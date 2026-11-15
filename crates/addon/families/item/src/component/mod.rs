@@ -33,18 +33,18 @@ pub use value::{
 };
 
 pub(crate) use equipment::ENCHANT_SLOTS;
-pub(crate) use value::{ValueComponent, parse_value, read_bare};
+pub(crate) use value::{ValueComponent, parse_value};
 
-use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::CustomComponent;
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 use bedrock_addon_core::molang::{MolangFieldSpec, MolangVersionSource};
-use bedrock_addon_core::versioning::{ConvertMode, parse_component};
+use bedrock_addon_core::schema::FromJson;
+use bedrock_addon_core::versioning::{ConvertMode, read_component};
 use bedrock_addon_derive::Components;
 
 use crate::history::ItemFamily;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 
 /// `LegacyCreatorFeatures`: satisfied only by the ten vanilla pack UUIDs.
 const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
@@ -124,7 +124,7 @@ pub enum ItemComponent {
     #[component(name = "minecraft:icon", shorthand = scalar, released = "1.20.0", requires = [LCF], parse = parse_value::<Icon>)]
     Icon(Icon),
     /// `minecraft:interact_button`.
-    #[component(name = "minecraft:interact_button", released = "1.20.30", parse = look::parse_interact_button)]
+    #[component(name = "minecraft:interact_button", released = "1.20.30", parse = typed::<InteractButton>)]
     InteractButton(InteractButton),
     /// `minecraft:kinetic_weapon`.
     #[component(name = "minecraft:kinetic_weapon", released = "1.21.90", fields = [{ name = "", since_engine = "1.21.130" }], parse = typed::<KineticWeapon>)]
@@ -196,7 +196,8 @@ pub enum ItemComponent {
 }
 
 /// The parser of a typed component's table row: the component from its slice, its unknown
-/// members kept and reported.
+/// members kept and reported, the members of a range that the range does not read told (the
+/// slices' reading says so).
 pub(crate) fn typed<T>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
@@ -204,60 +205,9 @@ pub(crate) fn typed<T>(
     d: &mut Diagnostics,
 ) -> Option<ItemComponent>
 where
-    T: for<'a> facet::Facet<'a> + Into<ItemComponent>,
+    T: FromJson + for<'a> facet::Facet<'a> + Into<ItemComponent>,
 {
-    let component = parse_component::<T, ItemComponent>(slice, mode, cx, d);
-    if component.is_some() {
-        // A member the schema does not know is an error under the strict slices, which
-        // refuses the item; the modern slices are the only readers of this table (the
-        // write-back probe of `write.rs` reads only the `Unrecognized*` codes).
-        tell_range_members::<T>(slice, d, bedrock_addon_core::diagnostic::Severity::Error);
-    }
-    component
-}
-
-/// Tells of the members of a range given as an object that the range does not read
-/// (`damage_chance: {"min": 1, "max": 5, "zz": 3}`): a range has no place for them, so they
-/// are not kept as a component's own unknown members are; each is a `MemberNotKept` at the
-/// member at `severity`: the game binds `min` and `max` alone for an integer and a float
-/// range, so any other member is "found in the input, but is not present in the Schema": an
-/// error under the strict slices and a level-2 line (a warning) under the unstrict ones.
-pub(crate) fn tell_range_members<T>(
-    slice: JsonSlice<'_>,
-    d: &mut Diagnostics,
-    severity: bedrock_addon_core::diagnostic::Severity,
-) where
-    T: for<'a> facet::Facet<'a>,
-{
-    use bedrock_addon_core::json::{
-        from_str_jsonc, keep_members, keep_members_and_range_members, parse_at,
-    };
-    let (Ok(json), Ok(plain), Ok(ranged)) = (
-        from_str_jsonc::<Value>(slice.text),
-        parse_at::<T>(slice),
-        parse_at::<T>(slice),
-    ) else {
-        return;
-    };
-    // Told only: the component's own parse keeps its members.
-    let mut none = bedrock_addon_core::document::Unknown::new();
-    let known: Vec<bedrock_addon_core::diagnostic::JsonPath> =
-        keep_members(&plain, &json, &mut none)
-            .0
-            .into_iter()
-            .map(|(path, _)| path)
-            .collect();
-    for (path, _) in keep_members_and_range_members(&ranged, &json, &mut none).0 {
-        if !known.contains(&path) {
-            d.push(
-                Diagnostic::error(bedrock_addon_core::diagnostic::Code::from(
-                    &core_codes::MEMBER_NOT_KEPT,
-                ))
-                .severity(severity)
-                .at(path),
-            );
-        }
-    }
+    read_component::<T, ItemComponent>(slice, mode, cx, d)
 }
 
 /// `repair_amount`: the version of the item's `format_version`
@@ -348,10 +298,15 @@ mod tests {
     use bedrock_addon_core::schema::{ShorthandRows, misshapen_shorthand_rows};
 
     /// The paths and specs the Molang walk of the payload `text` visits.
-    fn walked<T: for<'a> facet::Facet<'a> + MolangFields>(
+    fn walked<T: for<'a> facet::Facet<'a> + FromJson + MolangFields>(
         text: &str,
     ) -> Vec<(String, MolangFieldSpec)> {
-        let mut value: T = bedrock_addon_core::json::from_str(text).expect("the payload reads");
+        let mut value: T = bedrock_addon_core::versioning::read_slice(
+            JsonSlice::new(text),
+            &LoadContext::detached(),
+            &mut Diagnostics::default(),
+        )
+        .expect("the payload reads");
         let mut seen = Vec::new();
         visit_fields(&mut value, &JsonPath::new(), |field| {
             seen.push((field.path.to_string(), *field.spec));

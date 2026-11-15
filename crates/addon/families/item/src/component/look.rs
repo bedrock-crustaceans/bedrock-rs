@@ -1,18 +1,14 @@
 //! What the item shows: `display_name`, `glint`, `hover_text_color`, `icon`,
 //! `interact_button`, `rarity`, `record`, `tags`.
 
-use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::SoundEventName;
-use bedrock_addon_core::json::{JsonSlice, Value};
-use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_core::json::Value;
 use facet::Facet;
 use indexmap::IndexMap;
 
-use super::ItemComponent;
 use super::value::{ValueComponent, value_component};
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, FromJson, Schema, from_value_ref};
 
 /// `minecraft:display_name`: the item's name, or a localization key (JSON `{"value": text}`).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -75,8 +71,7 @@ impl ValueComponent for Icon {
 /// `minecraft:interact_button`: the touch-control interact button.
 ///
 /// JSON `true`/`false`, or the button's text (which also turns it on); no object form.
-/// Its row's parser reads it; the JSON value is facet's proxy, so the component is
-/// written as the flag or the text.
+/// The JSON value is facet's proxy, so the component is written as the flag or the text.
 #[derive(Clone, Debug, Default, PartialEq, Facet)]
 #[facet(opaque, proxy = Value)]
 pub struct InteractButton {
@@ -124,22 +119,11 @@ impl From<&InteractButton> for Value {
     }
 }
 
-/// The parser of `minecraft:interact_button`: a bool or a string; another type is a
-/// type error, which refuses the item. The one context without `strict_components` is the
-/// write-back probe of `write.rs`, which reads only the `Unrecognized*` codes, so the error
-/// stands for it too.
-pub(crate) fn parse_interact_button(
-    slice: JsonSlice<'_>,
-    _: ConvertMode,
-    _: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<ItemComponent> {
-    let value = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
-    let button = value.as_ref().and_then(InteractButton::from_value);
-    if button.is_none() {
-        d.push(Diagnostic::of(&core_codes::INVALID_TYPE));
+/// A bool or a string; another type is a type error, which refuses the item.
+impl FromJson for InteractButton {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::from_value(value).ok_or(()))
     }
-    button.map(ItemComponent::InteractButton)
 }
 
 /// `minecraft:record`: the item is a music disc.
@@ -196,7 +180,8 @@ pub struct Tags {
 
 #[cfg(test)]
 mod tests {
-    use super::{InteractButton, ItemComponent};
+    use super::InteractButton;
+    use crate::component::ItemComponent;
     use bedrock_addon_core::json::Value;
 
     /// The write dispatch writes the button through its proxy: the flag, or the text.

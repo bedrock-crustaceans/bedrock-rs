@@ -102,6 +102,21 @@ pub struct Blast {
     pub mode: Explode,
 }
 
+/// A mood, by name.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
+pub enum Mood {
+    Calm,
+    Angry,
+}
+
+/// `{"mood": …}`, or the mood bare: a member that is a unit enum.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Feeling {
+    pub mood: Mood,
+}
+
 /// A member a later format adds.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Gated {
@@ -109,6 +124,11 @@ pub struct Gated {
     #[facet(schema::since_format = "1.21.0")]
     pub new: Option<u8>,
 }
+
+/// A list of names.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(transparent)]
+pub struct Tags(pub Vec<String>);
 
 /// Two members, no shorthand.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -132,6 +152,10 @@ pub enum Part {
     Maybe(Maybe),
     #[component(name = "minecraft:blast", shorthand = scalar, parse = read_component::<Blast, Part>)]
     Blast(Blast),
+    #[component(name = "minecraft:feeling", shorthand = scalar, parse = read_component::<Feeling, Part>)]
+    Feeling(Feeling),
+    #[component(name = "minecraft:tags", parse = read_component::<Tags, Part>)]
+    Tags(Tags),
     #[component(name = "minecraft:pair", parse = read_component::<Pair, Part>)]
     Pair(Pair),
     #[component(name = "minecraft:gated", parse = read_component::<Gated, Part>)]
@@ -162,7 +186,7 @@ const TOKENS: &[&str] = &[
     r#""no""#,
 ];
 
-fn readings() -> [(&'static str, Reading); 6] {
+fn readings() -> [(&'static str, Reading); 7] {
     [
         ("document", Reading::DOCUMENT),
         (
@@ -173,6 +197,12 @@ fn readings() -> [(&'static str, Reading); 6] {
         ),
         ("null_absent", Reading::NULL_ABSENT),
         ("own", Reading::OWN),
+        (
+            "non_strict",
+            Reading::OWN
+                .with_scalars(Scalars::NonStrict)
+                .with_beyond_width(BeyondWidth::Error),
+        ),
         (
             "default_and_tell",
             Reading::DOCUMENT
@@ -302,6 +332,7 @@ fn a_component_reads_as_the_door_reads_it() {
                 ("maybe", both::<Maybe>(reading, token)),
                 ("blast", both::<Blast>(reading, token)),
                 ("pair", both::<Pair>(reading, token)),
+                ("tags", both::<Tags>(reading, token)),
             ];
             for (row, (door, read)) in cases {
                 compared += 1;
@@ -403,7 +434,7 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
             })
             .collect()
     };
-    let cases: [(&str, &str, &str); 9] = [
+    let cases: [(&str, &str, &str); 12] = [
         (
             "pair",
             "[1]",
@@ -449,6 +480,21 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
             "[1, 2]",
             "unexpected token: got sequence start, expected scalar value",
         ),
+        (
+            "tags",
+            "5",
+            "unexpected token: got scalar, expected sequence start",
+        ),
+        (
+            "tags",
+            "null",
+            "unexpected token: got scalar, expected sequence start",
+        ),
+        (
+            "tags",
+            "{}",
+            "unexpected token: got object, expected array",
+        ),
     ];
     let cx = context(Reading::DOCUMENT);
     for (row, token, text) in cases {
@@ -466,6 +512,10 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
             "damage" => {
                 parse_component::<Damage, Part>(slice, ConvertMode::Strict, &cx, &mut door);
                 read_component::<Damage, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+            "tags" => {
+                parse_component::<Tags, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Tags, Part>(slice, ConvertMode::Strict, &cx, &mut read);
             }
             "count" => {
                 parse_component::<Count, Part>(slice, ConvertMode::Strict, &cx, &mut door);
@@ -485,6 +535,38 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
         )];
         assert_eq!(told(&door), want, "the door, {row} {token}");
         assert_eq!(told(&read), want, "the reader, {row} {token}");
+    }
+}
+
+/// A bare array given to a shorthand's unit enum is the door's malformed input whatever the
+/// slice's scalar rule says: facet's enum read takes a name or an object.
+#[test]
+fn an_array_given_to_a_shorthand_unit_enum_is_the_door_s_syntax_error() {
+    for (name, reading) in readings() {
+        let cx = context(reading);
+        for token in ["[]", "[1]"] {
+            let slice = JsonSlice::new(token);
+            let (mut door, mut read) = (Diagnostics::default(), Diagnostics::default());
+            parse_component::<Feeling, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+            read_component::<Feeling, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            let told = |d: &Diagnostics| -> Vec<String> {
+                d.iter()
+                    .map(|f| format!("{:?} {} {}", f.severity, f.code.id(), f.code))
+                    .collect()
+            };
+            assert_eq!(
+                told(&read),
+                told(&door),
+                "{name} {token}: the reader against the door"
+            );
+            assert_eq!(
+                told(&read),
+                [
+                    "Error core/syntax unexpected token: got sequence start, expected string or struct for enum"
+                ],
+                "{name} {token}"
+            );
+        }
     }
 }
 
@@ -542,7 +624,7 @@ fn a_member_since_a_format_is_unknown_in_a_component_of_an_older_document() {
 #[test]
 fn a_slice_reads_as_a_component_without_a_shorthand() {
     let cx = context(Reading::DOCUMENT);
-    let told = |text: &str| {
+    let read = |text: &str| {
         let mut d = Diagnostics::default();
         let value: Option<Friction> = read_slice(JsonSlice::new(text), &cx, &mut d);
         let told: Vec<String> = d
@@ -551,12 +633,19 @@ fn a_slice_reads_as_a_component_without_a_shorthand() {
             .collect();
         (value, told)
     };
-    assert_eq!(told("0.5"), (Some(Friction(0.5)), Vec::new()));
-    let (value, told) = told(r#""slick""#);
+    assert_eq!(read("0.5"), (Some(Friction(0.5)), Vec::new()));
+    let (value, told) = read(r#""slick""#);
     assert_eq!(value, None);
     assert_eq!(told.len(), 1, "{told:?}");
     assert!(
         told[0].starts_with("Error core/invalid_type Some(Span"),
+        "{told:?}"
+    );
+    // A value of the wrong JSON kind for the root is the door's syntax error, as a component's.
+    let (value, told) = read("[1]");
+    assert_eq!(value, None);
+    assert!(
+        told[0].starts_with("Error core/syntax Some(Span"),
         "{told:?}"
     );
 }

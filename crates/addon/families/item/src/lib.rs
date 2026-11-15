@@ -2,6 +2,22 @@
 //!
 //! `minecraft:item` of a behaviour pack, in the newest format version; older documents are
 //! upgraded when they load.
+//!
+//! # How a document is read
+//!
+//! Every document is read on the derived reader (`#[derive(Schema)]`, `versioning::read_payload`
+//! and `read_component`): the item object is a derived struct that keeps each component with its
+//! text, and each component is read by the row of its format (a typed component of
+//! [`component`], an old shape of [`history`]), so one that fails is dropped alone. The slices'
+//! readings say what is told: a member of a range that the range does not read is told in every
+//! slice (`Reading::range_members`). What stays hand code is what the game's own readers do by
+//! hand, each beside its type: the legacy item format of 1.10 (`history::v1_10_0`, read from
+//! the nodes of its `components` object as the game's hand-written parser reads it, every
+//! finding an information), the legacy reading of a component-based document's keys
+//! (`legacy::read_legacy`, a rule over the values of the components that decides what the
+//! game's legacy reader takes and tells), the release gates (`history::gates`), the members a
+//! format does not bind yet (`history::document::unbind_members`) and the checks that drop a
+//! component (`check_component`, which asks the derived check for the bounds).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -53,7 +69,7 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     self, BetaPermission, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family, InputKind,
-    Loaded, MissingVersion, Reading, StructIndex, ValidateCx,
+    Loaded, MissingVersion, RangeMembers, Reading, StructIndex, ValidateCx,
 };
 use indexmap::IndexMap;
 
@@ -99,11 +115,13 @@ impl Family for ItemFamily {
     /// rejects the item. The legacy slice below 1.26.30 reads through the jsoncpp reader, which
     /// takes a `null` as absent, and keeps the lenient reading.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
+        // A member of a range that the range does not read is told in every slice.
         if is_modern(index) {
             Reading::DOCUMENT
         } else {
             Reading::NULL_ABSENT
         }
+        .with_range_members(RangeMembers::NotKept)
     }
 
     fn components() -> &'static ComponentTable<Self> {

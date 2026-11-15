@@ -42,6 +42,54 @@ fn deviation_a_listed_custom_component_name_gets_empty_data() {
     );
 }
 
+/// A listed custom component name that is no string: a number is the text facet makes of it
+/// (`1.0` is `1`, `1e2` is `100`) and a `null` is the empty name, each told as an information;
+/// a bool or a list is a type error that refuses the item (unverified in vanilla).
+#[test]
+fn deviation_a_listed_custom_component_name_that_is_no_string_reads_as_facet_made_it() {
+    let json = item(
+        "1.21.50",
+        "demo:x",
+        r#""minecraft:custom_components": ["demo:a", 7, 1.5, 1.0, 1e2, null]"#,
+    );
+    let document = loads(&json, &third_party());
+    let names: Vec<String> = document
+        .deprecated
+        .custom_components_v1
+        .as_ref()
+        .and_then(Value::as_array)
+        .unwrap()
+        .iter()
+        .map(|entry| {
+            let name = entry.as_object().unwrap().get("name").unwrap();
+            name.as_string().unwrap().as_str().to_owned()
+        })
+        .collect();
+    assert_eq!(names, ["demo:a", "7", "1.5", "1", "100", ""]);
+    let told = document
+        .diagnostics()
+        .iter()
+        .filter(|f| f.code.id() == "core/invalid_type")
+        .map(|f| f.location.json_path.to_string())
+        .collect::<Vec<_>>();
+    let at = |i: usize| format!("minecraft:item/components/minecraft:custom_components/{i}");
+    assert_eq!(told, [at(1), at(2), at(3), at(4), at(5)]);
+    for element in ["true", "[1]"] {
+        let json = item(
+            "1.21.50",
+            "demo:x",
+            &format!(r#""minecraft:custom_components": ["demo:a", {element}]"#),
+        );
+        let d = rejects(&json, &third_party());
+        assert!(
+            d.iter().any(|f| f.code.id() == "core/invalid_type"
+                && f.severity == bedrock_addon_core::diagnostic::Severity::Error
+                && f.location.json_path.to_string() == at(1)),
+            "{element}: {d:#?}"
+        );
+    }
+}
+
 /// 1.26.0 → 1.26.30 `digger_to_legacy_on_dig_trigger`: a
 /// triggered digger is copied to our side-car key `legacy_on_dig_trigger` (vanilla's 1.26.30
 /// side-car has no JSON key), and stays in the components.

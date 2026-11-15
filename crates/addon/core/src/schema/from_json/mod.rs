@@ -146,3 +146,31 @@ pub fn read_document<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Optio
     }
     value
 }
+
+/// A value held in memory read as `T`, in silence: what an upgrade step does with a `Value` it
+/// built or kept as written, and wrote out as text to read the text (`signed_zero`,
+/// `to_json` and `from_str`). `None` when it does not read: a member of the wrong type or a
+/// missing required one, a number its type does not hold, a value nested deeper than the text
+/// of a document may be ([`MAX_JSON_DEPTH`](crate::json::MAX_JSON_DEPTH)). Nothing is told, and
+/// nothing is converted: scalars read strictly, `null` as the type's own rule, a member `T` does
+/// not know is ignored.
+///
+/// ```
+/// use bedrock_addon_core::json::{Value, from_str_jsonc};
+/// use bedrock_addon_core::schema::read_value;
+///
+/// let json: Value = from_str_jsonc(r#"[1, 2, 3]"#).unwrap();
+/// assert_eq!(read_value::<Vec<u8>>(&json), Some(vec![1, 2, 3]));
+/// assert_eq!(read_value::<Vec<bool>>(&json), None);
+/// ```
+pub fn read_value<T: FromJson>(value: &crate::json::Value) -> Option<T> {
+    use crate::diagnostic::{Diagnostics, JsonPath};
+    use crate::versioning::{BeyondWidth, Reading, Scalars};
+    crate::json::levels_of(value).ok()?;
+    let mut told = Diagnostics::default();
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error);
+    let mut read = Read::new(reading, &mut told).profile(crate::json::kit::Profile::FIRST_FAILURE);
+    read_document(&Node::new(value, JsonPath::new()), &mut read)
+}

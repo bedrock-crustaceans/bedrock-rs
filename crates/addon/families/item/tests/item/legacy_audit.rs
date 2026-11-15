@@ -736,7 +736,7 @@ const EXPECTED_UNREAD: &[(&str, &[&str], &str)] = &[
         r#"{"value": {"a": 1}}"#,
         &[
             "core/dropped_component Info at minecraft:item/components/minecraft:rarity",
-            "core/invalid_type Info at minecraft:item/components/minecraft:rarity/value/a",
+            "core/invalid_type Info at minecraft:item/components/minecraft:rarity/value",
         ],
         "absent",
     ),

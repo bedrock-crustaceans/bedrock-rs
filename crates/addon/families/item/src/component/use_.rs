@@ -97,9 +97,10 @@ pub enum UseAnimationKind {
 #[facet(schema::unknown = "keep")]
 pub struct UseModifiers {
     /// How long a use lasts, in seconds, at least 0 (JSON `use_duration`).
-    #[facet(default)]
+    #[facet(default, schema::min = 0.0)]
     pub use_duration: f32,
     /// The movement speed factor while using it, 0–1 (JSON `movement_modifier`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub movement_modifier: Option<f32>,
     /// Using it emits vibrations (JSON `emit_vibrations`; default true).
     #[facet(default = true)]

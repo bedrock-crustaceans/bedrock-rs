@@ -22,12 +22,12 @@ bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
 bedrock_addon_derive = { path = "../../derive" }
 bytes = { workspace = true }
 facet = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
 nbtx = { workspace = true, optional = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
+facet-json = { workspace = true }
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../../test_support" }

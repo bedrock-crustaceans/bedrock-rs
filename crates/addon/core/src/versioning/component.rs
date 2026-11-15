@@ -126,7 +126,8 @@ where
     let _ = mode;
     let parsed = parsed_or_told(slice, d)?;
     let shorthand = shorthand_member::<T, C>(slice);
-    if let Some(finding) = door_syntax::<T>(&parsed.value, shorthand, cx, span_of(slice)) {
+    let member = shorthand.map(|key| member_kind(<T as Facet<'static>>::SHAPE, key));
+    if let Some(finding) = door_syntax::<T>(&parsed.value, member, cx, span_of(slice)) {
         d.push(finding);
         return None;
     }
@@ -156,7 +157,8 @@ where
 }
 
 /// Reads one value `T` from `slice` on the new reader, as [`read_component`] reads a component
-/// that has no shorthand: under the context's reading by the typed door's profile
+/// that has no shorthand (a value of the wrong JSON kind for `T`'s root is the door's
+/// `core/syntax` there as well): under the context's reading by the typed door's profile
 /// ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)), every finding
 /// relative to the value and spanning it, the unknown members it keeps in `d`'s table, relative
 /// to it. For a family's row that reads a form of its own beside the typed one (a bare key
@@ -168,6 +170,10 @@ pub fn read_slice<T: crate::schema::FromJson>(
 ) -> Option<T> {
     use crate::json::kit::Node;
     let parsed = parsed_or_told(slice, d)?;
+    if let Some(finding) = door_syntax::<T>(&parsed.value, None, cx, span_of(slice)) {
+        d.push(finding);
+        return None;
+    }
     let node = Node::parsed(&parsed, JsonPath::new());
     let mut read = door_read(cx, d);
     crate::schema::read_document::<T>(&node, &mut read)
@@ -219,27 +225,29 @@ fn door_read<'d>(cx: &'d LoadContext, d: &'d mut Diagnostics) -> crate::json::ki
 /// of facet's own read, where the reader's wrong type names no member. It is told when:
 ///
 /// - `T` is a struct (`T::EXPECTED` an object) and the value is no object, `null` included;
+/// - `T` reads a list (`T::EXPECTED` an array) and the value is no array;
 /// - `T` reads a scalar (a transparent newtype) and the value is an array, or an empty object
 ///   (an object with a member is told at the member: a wrong type);
-/// - the row is a one-member shorthand (`member` is the member's key) of a scalar member and
-///   the value is an array.
+/// - the row is a one-member shorthand (`member` is the member's kind) of a scalar member and
+///   the value is an array; of a unit enum, whatever the scalar rule says.
 ///
 /// An array given to a scalar is a refused scalar under `DefaultAndTell` (the component is kept
 /// with the member's default and the refusal told), and a wrong type at its first element under
 /// strict scalars, not this.
-fn door_syntax<T: crate::schema::FromJson + for<'a> Facet<'a>>(
+fn door_syntax<T: crate::schema::FromJson>(
     value: &Value,
-    member: Option<&str>,
+    member: Option<MemberKind>,
     cx: &LoadContext,
     span: crate::diagnostic::Span,
 ) -> Option<Diagnostic> {
     use crate::json::kit::Expected;
-    // A strict scalar reads an array through its elements (a wrong type at the first), and a
-    // refused scalar under `DefaultAndTell` is the scalar rule's.
+    // A scalar judged by the slice's rule (any but the plain typed reader's) reads an array
+    // through its elements (a wrong type at the first), and a refused scalar under
+    // `DefaultAndTell` is the scalar rule's.
     let refused = cx.reading.on_member_failure == super::MemberFailure::DefaultAndTell
-        || cx.reading.scalars == super::Scalars::Strict;
+        || cx.reading.scalars != super::Scalars::ConvertAndTell;
     let scalar = match member {
-        Some(key) => member_is_scalar(<T as Facet<'static>>::SHAPE, key),
+        Some(kind) => kind == MemberKind::Scalar,
         None => matches!(
             T::EXPECTED,
             Some(Expected::Number | Expected::Bool | Expected::String)
@@ -255,8 +263,21 @@ fn door_syntax<T: crate::schema::FromJson + for<'a> Facet<'a>>(
             "scalar"
         };
         (got, "struct start")
+    } else if member.is_none() && T::EXPECTED == Some(Expected::Array) {
+        if value.is_array() {
+            return None;
+        }
+        // Facet's words: a scalar is told by the parser, an object by the list's own reader.
+        if value.is_object() {
+            ("object", "array")
+        } else {
+            ("scalar", "sequence start")
+        }
     } else if scalar && value.is_array() && !refused {
         ("sequence start", "scalar value")
+    } else if member == Some(MemberKind::UnitEnum) && value.is_array() {
+        // Facet's enum read: a name or an object, whatever the slice's scalar rule says.
+        ("sequence start", "string or struct for enum")
     } else if scalar
         && member.is_none()
         && value
@@ -278,14 +299,24 @@ fn door_syntax<T: crate::schema::FromJson + for<'a> Facet<'a>>(
     Some(finding)
 }
 
-/// Whether the member `key` of the struct `shape` is a scalar, an `Option` or a transparent
-/// wrapper of one: what facet reads as one token.
-fn member_is_scalar(shape: &'static facet::Shape, key: &str) -> bool {
+/// What facet reads a one-member shorthand's member as ([`member_kind`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MemberKind {
+    /// One token: a scalar, an `Option` or a transparent wrapper of one.
+    Scalar,
+    /// An enum of names only (every variant a unit): a name, or an object of one member.
+    UnitEnum,
+    /// Anything else.
+    Other,
+}
+
+/// What the member `key` of the struct `shape` is read as ([`MemberKind`]).
+fn member_kind(shape: &'static facet::Shape, key: &str) -> MemberKind {
     let facet::Type::User(facet::UserType::Struct(st)) = shape.ty else {
-        return false;
+        return MemberKind::Other;
     };
     let Some(field) = st.fields.iter().find(|f| f.effective_name() == key) else {
-        return false;
+        return MemberKind::Other;
     };
     let mut shape = field.shape();
     loop {
@@ -297,7 +328,16 @@ fn member_is_scalar(shape: &'static facet::Shape, key: &str) -> bool {
             },
         };
     }
-    shape.effective_proxy(None).is_some() || matches!(shape.def, facet::Def::Scalar)
+    if shape.effective_proxy(None).is_some() || matches!(shape.def, facet::Def::Scalar) {
+        MemberKind::Scalar
+    } else if let facet::Type::User(facet::UserType::Enum(kind)) = shape.ty
+        && !shape.is_untagged()
+        && kind.variants.iter().all(|v| v.data.fields.is_empty())
+    {
+        MemberKind::UnitEnum
+    } else {
+        MemberKind::Other
+    }
 }
 
 /// The member a bare scalar of `slice` stands for: `T` is the payload of a `shorthand =

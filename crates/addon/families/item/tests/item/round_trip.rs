@@ -82,6 +82,23 @@ fn an_older_documents_unknown_members_are_written_at_their_level() {
     }
 }
 
+/// The newest writer reads the text it would write to find what the strict format refuses: a
+/// member written `null` is read as absent there, so a component the older format held as
+/// written is still read and its unbound members are told.
+#[test]
+fn the_newest_writer_reads_a_null_member_as_absent_to_find_the_members_it_refuses() {
+    let older = item(
+        "1.20.30",
+        "demo:old",
+        r#""minecraft:storage_item": {"max_slots": null, "max_weight_limit": 32}"#,
+    );
+    let first = loads(&older, &third_party());
+    assert!(refused_at(
+        &first.to_json(),
+        "minecraft:item/components/minecraft:storage_item/max_weight_limit"
+    ));
+}
+
 /// The legacy reading of a newest-format document is part of its value, and the written
 /// text gives the same one: a component the legacy reader also reads is held in the form the
 /// writer writes it in (`{"value": 16}` for `16`), whatever form the file had.

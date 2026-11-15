@@ -167,7 +167,7 @@ pub struct SwingSounds {
 }
 
 /// `minecraft:throwable`: the item can be thrown.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Throwable {
     /// The swing animation plays (JSON `do_swing_animation`).

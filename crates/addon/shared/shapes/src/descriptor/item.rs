@@ -192,8 +192,16 @@ impl From<Value> for ItemDescriptor {
     }
 }
 
-// bridge: an item descriptor reads its forms by its own rule, an unread one kept as written
-bedrock_addon_core::from_json_via_value!(ref ItemDescriptor);
+/// Every value reads: one no form takes is kept as written ([`ItemDescriptor::Invalid`]), which
+/// `check` tells.
+impl bedrock_addon_core::schema::FromJson for ItemDescriptor {
+    fn from_json(
+        node: &bedrock_addon_core::json::kit::Node<'_>,
+        read: &mut bedrock_addon_core::json::kit::Read<'_>,
+    ) -> Option<Self> {
+        (!read.stopped()).then(|| Self::from(node.value()))
+    }
+}
 
 impl From<&ItemDescriptor> for Value {
     fn from(descriptor: &ItemDescriptor) -> Self {

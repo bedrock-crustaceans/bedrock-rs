@@ -633,8 +633,8 @@ pub fn flattened<T>(value: Option<T>, ok: &mut bool) -> Option<T> {
     value
 }
 
-/// A string enum read by name with `from_name`: another string, a number or a bool is an
-/// invalid enum value, `null` and an array a wrong type; an object, which facet reads as an
+/// A string enum read by name with `from_name`: another string, a number, a bool or a `null`
+/// (facet read it as a variant that is none) is an invalid enum value, an array a wrong type; an object, which facet reads as an
 /// externally tagged variant, an invalid enum value at its first member (a wrong type when it
 /// has none). An enum read from a string only (`schema::string_only`) takes any other JSON
 /// type as a wrong type.
@@ -659,7 +659,7 @@ pub fn unit_enum<T>(
         }
         return found;
     }
-    if value.is_null() || value.is_array() {
+    if value.is_array() {
         read.wrong_type(node);
         return None;
     }

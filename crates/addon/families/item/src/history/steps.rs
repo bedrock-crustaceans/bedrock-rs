@@ -7,13 +7,14 @@ use bedrock_addon_core::document::{ComponentMap, CustomComponent};
 use bedrock_addon_core::molang::{
     Molang, MolangContext, MolangFieldMut, MolangFields, visit_fields,
 };
+use bedrock_addon_core::schema::read_value;
 use bedrock_addon_core::shared::EventTrigger;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx};
 use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use facet_value::VObject;
 
 use super::component::{Component, Components, CustomComponentEntry, CustomComponents};
-use super::document::{ItemDocument, into_component_map, is_name_list, retype};
+use super::document::{ItemDocument, into_component_map, is_name_list};
 use super::{
     v1_16_100, v1_19_83, v1_20_0, v1_20_20, v1_20_30, v1_20_40, v1_20_50, v1_20_60, v1_20_80,
     v1_21_10, v1_21_30, v1_21_40, v1_21_50, v1_21_60, v1_21_80, v1_21_90, v1_21_110, v1_26_0,
@@ -150,7 +151,7 @@ fn repair_items(items: &Value, cx: &mut UpgradeCx<'_>) -> Vec<RepairItem> {
                 }
             }
         }
-        match retype::<RepairItem>(&entry) {
+        match read_value::<RepairItem>(&entry) {
             Some(entry) => {
                 kept.push(entry);
                 places.push(index);

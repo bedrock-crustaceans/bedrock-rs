@@ -179,6 +179,16 @@ impl<T: crate::shared::RangeEnd> FromJson for crate::shared::Range<T> {
     }
 }
 
+/// `true` or `false` and nothing else, whatever the reading's scalars say: a number, a string
+/// is a wrong type.
+impl FromJson for crate::json::StrictBool {
+    const EXPECTED: Option<Expected> = Some(Expected::Bool);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        read.bool(node).map(Self)
+    }
+}
+
 /// A string, kept as written; any other value is a wrong type.
 impl<K: crate::id::Kind> FromJson for crate::id::Id<K> {
     const EXPECTED: Option<Expected> = Some(Expected::String);

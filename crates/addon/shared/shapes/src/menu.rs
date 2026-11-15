@@ -3,7 +3,9 @@
 use facet::Facet;
 
 use bedrock_addon_core::document::Extra;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{StrictBool, Value};
+use bedrock_addon_core::schema::{FromJson, Schema, from_value_ref};
 use bedrock_addon_core::shared::read::{Failure, ROOT, ShapeError, ShapeErrorKind, wrong_type};
 
 /// An item's or block's creative-menu placement: as the game's item and block
@@ -13,26 +15,20 @@ use bedrock_addon_core::shared::read::{Failure, ROOT, ShapeError, ShapeErrorKind
 /// constraints differ per family and stay there: an item's `category` is optional and its
 /// `group` at most 256 characters and namespaced from 1.21.60; a block's `category` is
 /// required and its `group` a namespaced name without spaces.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[doc(alias = "menu_category")]
 pub struct MenuCategory {
     /// The creative tab (JSON `category`).
-    #[facet(default)]
     pub category: Option<CreativeCategory>,
     /// The expandable group within the tab (JSON `group`): a vanilla `itemGroup.name.*` or a
     /// pack-defined group.
-    #[facet(default)]
     pub group: Option<String>,
     /// Hidden from commands such as `/give` (JSON `is_hidden_in_commands`; a boolean only).
-    #[facet(default)]
     pub is_hidden_in_commands: Option<StrictBool>,
     /// Unknown members.
     #[facet(skip, rename = "\u{0}extra")]
     pub extra: Extra,
 }
-
-// bridge: a facet type without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(MenuCategory);
 
 impl MenuCategory {
     /// The `construction` category with no group.
@@ -118,8 +114,12 @@ impl TryFrom<Value> for CreativeCategory {
     }
 }
 
-// bridge: a category reads its names by its own rule
-bedrock_addon_core::from_json_via_value!(ref CreativeCategory);
+/// A category name; any other value is a wrong type.
+impl FromJson for CreativeCategory {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl TryFrom<&CreativeCategory> for Value {
     type Error = ShapeError;
@@ -132,6 +132,6 @@ impl TryFrom<&CreativeCategory> for Value {
     }
 }
 
-// A menu category reads its own syntax and holds no Molang, no bound and no trigger.
-bedrock_addon_core::impl_no_molang!(MenuCategory);
-bedrock_addon_core::impl_schema_leaf!(MenuCategory);
+// A creative category reads its own names and holds no Molang, no bound and no trigger.
+bedrock_addon_core::impl_no_molang!(CreativeCategory);
+bedrock_addon_core::impl_schema_leaf!(CreativeCategory);

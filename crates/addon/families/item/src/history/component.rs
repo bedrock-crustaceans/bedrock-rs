@@ -1,7 +1,10 @@
 //! The components of the older item formats: the newest types where the shape did not change,
 //! and the old shapes below.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Severity};
 use bedrock_addon_core::document::CustomComponent;
+use bedrock_addon_core::json::kit::{Disposition, Node, Read};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::shared::{EventTrigger, IntRange};
 use bedrock_addon_derive::Components;
@@ -22,7 +25,7 @@ use crate::component::{
     ValueComponent, visit_block_descriptor, visit_item_descriptors, visit_optional_item_descriptor,
 };
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::{self, ElementFailure, FromJson, Schema, read_each, read_list};
 
 /// One component of an older item format: a component of the newest format whose shape it
 /// already had, an old shape, a custom component or a key the format does not bind.
@@ -147,6 +150,12 @@ pub struct RenderOffsets {
     pub value: Value,
 }
 
+impl FromJson for RenderOffsets {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        Value::from_json(node, read).map(|value| Self { value })
+    }
+}
+
 /// `minecraft:weapon` (up to 1.20.30).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
@@ -261,7 +270,7 @@ impl ValueComponent for LegacyIcon {
 #[facet(schema::unknown = "keep")]
 pub struct LegacyStorageItem {
     /// JSON `max_slots`.
-    #[facet(default = 64)]
+    #[facet(default = 64, schema::max = 64)]
     pub max_slots: i32,
     /// JSON `allow_nested_storage_items`.
     #[facet(default = true)]
@@ -273,10 +282,10 @@ pub struct LegacyStorageItem {
     #[facet(default, skip_serializing_if = Vec::is_empty, schema::molang_with = visit_item_descriptors)]
     pub allowed_items: Vec<ItemDescriptor>,
     /// JSON `max_weight_limit` (default 64).
-    #[facet(default = 64)]
+    #[facet(default = 64, schema::max = 64)]
     pub max_weight_limit: i32,
     /// JSON `weight_in_storage_item` (default 4).
-    #[facet(default = 4)]
+    #[facet(default = 4, schema::min = 0)]
     pub weight_in_storage_item: i32,
 }
 
@@ -285,6 +294,35 @@ pub struct LegacyStorageItem {
 pub struct CustomComponentList {
     /// The names, in order.
     pub names: Vec<String>,
+}
+
+/// The list of names. An element that is no string but a number or a `null` is the name facet
+/// makes of it (`7` is `"7"`, `null` is `""`), told at the element as an information of the
+/// crate's own (it is not known whether the game's non-strict reader coerces it or fails).
+impl FromJson for CustomComponentList {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        read_each(node, read, |element, read| {
+            let value = element.value();
+            if let Some(name) = value.as_string() {
+                return Some(name.as_str().to_owned());
+            }
+            if !(value.is_number() || value.is_null()) {
+                read.wrong_type(element);
+                return None;
+            }
+            let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE)
+                .severity(Severity::Info)
+                .at(element.path().clone());
+            finding.location.span = element.span();
+            read.push(finding);
+            Some(if value.is_null() {
+                String::new()
+            } else {
+                bedrock_addon_core::json::to_facet_json(value).unwrap_or_default()
+            })
+        })
+        .map(|names| Self { names })
+    }
 }
 
 /// `minecraft:custom_components` of 1.21.60–1.26.0: `[name]` or `[{name, data}]`.
@@ -301,6 +339,57 @@ pub struct CustomComponentEntry {
     pub name: String,
     /// The parameters (`{}` when written as a name).
     pub data: Value,
+}
+
+/// A list of entries, each a name or `{name, data}`; one that is neither is a type error that
+/// refuses the item, and the others are read.
+impl FromJson for CustomComponents {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        read_list(node, read, ElementFailure::Drop, |entry, read| {
+            let read_entry = CustomComponentEntry::read(entry, read);
+            if read_entry.is_none() {
+                let mut finding =
+                    Diagnostic::of(&core_codes::INVALID_TYPE).at(entry.path().clone());
+                finding.location.span = entry.span();
+                read.push(finding);
+            }
+            read_entry
+        })
+        .map(|components| Self { components })
+    }
+}
+
+impl CustomComponentEntry {
+    /// An entry written as its name, or as `{name, data}`; any other member of the object has
+    /// no place in it, and is told where it is (a member the schema does not know).
+    fn read(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let empty = || Value::from(facet_value::VObject::new());
+        if let Some(name) = node.value().as_string() {
+            return Some(Self {
+                name: name.as_str().to_owned(),
+                data: empty(),
+            });
+        }
+        if !node.value().is_object() {
+            return None;
+        }
+        let members = read.object(node)?;
+        let name = members
+            .get("name")?
+            .value()
+            .as_string()?
+            .as_str()
+            .to_owned();
+        let data = members
+            .get("data")
+            .map_or_else(empty, |data| data.value().clone());
+        for (key, member) in members.iter() {
+            if !["name", "data"].contains(&key) {
+                read.unknown_member(&member, Disposition::Report);
+            }
+        }
+        Some(Self { name, data })
+    }
 }
 
 impl CustomComponents {

@@ -130,6 +130,7 @@ probes! {
     opt OptValue: Value;
     req ReqValue: Value;
     opt OptUnit: Unit;
+    req ReqUnit: Unit;
     opt OptUntagged: Untagged;
     opt OptStruct: Inner;
     opt OptArray: [u8; 2];

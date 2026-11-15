@@ -1,48 +1,28 @@
 //! Components that hold one value and also read the bare value: `{"value": x}`
 //! or `x`. A one-value component's row says `shorthand = scalar`, and the door reads its bare
-//! value as the member (`versioning::parse_component`); [`ValueComponent`] is left for the
+//! value as the member (`versioning::read_component`); [`ValueComponent`] is left for the
 //! components whose bare value is not their member as written.
 
-use bedrock_addon_core::json::{JsonSlice, ScalarFailure, parse_with_rules};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::ConvertMode;
+use bedrock_addon_core::versioning::{ConvertMode, read_slice};
 use facet::Facet;
 
 use super::{ItemComponent, typed};
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 
 /// A component whose bare value is not its one member as written, read by hand: `icon`, whose
 /// key is its `textures.default`, and the legacy chain's `use_duration` and `icon`, which no
 /// row of [`ItemComponent`] reads.
-pub(crate) trait ValueComponent: for<'a> Facet<'a> {
+pub(crate) trait ValueComponent: FromJson + for<'a> Facet<'a> {
     /// The bare value's type.
-    type Scalar: for<'a> Facet<'a>;
+    type Scalar: FromJson;
     /// The component holding `value`.
     fn from_scalar(value: Self::Scalar) -> Self;
 }
 
-/// Reads the bare `value` of a one-value component from `slice` under the slice's scalar rules
-/// (`LoadContext::scalar_rules`), and says what it is read as where that is another value than
-/// the text writes (a string where a number belongs, a number beyond a float), as a member of
-/// the object form is told. A bare value no arm of its type takes is told at the value here.
-pub(crate) fn read_bare<S: for<'a> Facet<'a>>(
-    slice: JsonSlice<'_>,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Result<S, ScalarFailure> {
-    let read = parse_with_rules::<S>(slice, None, cx.scalar_rules).inspect_err(|failure| {
-        if let ScalarFailure::Refused(misread) = failure {
-            d.push(misread.finding(&JsonPath::new()));
-        }
-    })?;
-    for told in read.told {
-        d.push(told.finding(&JsonPath::new()));
-    }
-    Ok(read.value)
-}
-
-/// Parses a [`ValueComponent`] from its object form or its bare value (`minecraft:icon`'s
+/// Reads a [`ValueComponent`] from its object form or its bare value (`minecraft:icon`'s
 /// row). A bare value of the wrong type drops the component with one error, a type error
 /// that refuses the item; a bare value its type refuses is told at the value and dropped.
 pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
@@ -54,17 +34,7 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     if slice.opens_an_object() {
         return typed::<T>(slice, mode, cx, d);
     }
-    match read_bare::<T::Scalar>(slice, cx, d) {
-        Ok(value) => Some(T::from_scalar(value).into()),
-        Err(ScalarFailure::Refused(_)) => None,
-        Err(ScalarFailure::Read(error)) => {
-            // A scalar of another type is a type error that refuses the item; the one
-            // context without `strict_components` is the write-back probe of `write.rs`,
-            // which reads only the `Unrecognized*` codes.
-            d.push(Diagnostic::error(error.code_with_path(false)).span(error.span));
-            None
-        }
-    }
+    read_slice::<T::Scalar>(slice, cx, d).map(|value| T::from_scalar(value).into())
 }
 
 /// Declares a one-value component: its value, its default (`= x`) and the bounds of the value

@@ -8,15 +8,17 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected};
 use bedrock_addon_core::id::ItemId;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value};
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
 use bedrock_addon_core::pack_identity::PackType;
+use bedrock_addon_core::schema::{FromJson, Schema, read_document};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
-    self, DocumentRead, Family, LoadOutcome, Loaded, OpenBeta, ParseCx,
+    self, DocumentRead, Family, LoadOutcome, Loaded, OpenBeta, ParseCx, Reading,
 };
 use bedrock_addon_shared_shapes::CreativeCategory;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::component::ItemComponent;
@@ -44,8 +46,7 @@ pub(crate) fn is_component_based(
     if !version_ok {
         return Err("the format version is neither 1.16.100 nor 1.17.0 or later");
     }
-    let probe = bedrock_addon_core::json::from_str_borrowed_jsonc::<Probe<'_>>(payload.text).ok();
-    let registered = probe
+    let registered = probe(payload)
         .and_then(|p| p.components)
         .is_some_and(|components| components.keys().any(|key| is_registered(key)));
     if registered {
@@ -55,10 +56,63 @@ pub(crate) fn is_component_based(
     }
 }
 
-/// What the routing reads of a payload: its component names.
+/// A member as written: its value, and its text at the offset it stands at in the file. A
+/// component is read by its own row from its text (one that fails is dropped alone), the legacy
+/// item's `components` object from both.
 #[derive(facet::Facet)]
-struct Probe<'a> {
-    components: Option<IndexMap<String, RawJson<'a>>>,
+pub(crate) struct Raw {
+    pub(crate) value: Value,
+    text: String,
+    offset: usize,
+}
+
+impl Raw {
+    /// The member's text as a slice of the file.
+    pub(crate) fn slice(&self) -> JsonSlice<'_> {
+        JsonSlice {
+            text: &self.text,
+            offset: self.offset,
+        }
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(Raw);
+bedrock_addon_core::impl_no_molang!(Raw);
+
+impl FromJson for Raw {
+    /// A `null` member is the item's rule to apply.
+    const HOLDS_NULL: bool = true;
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let value = node.value().clone();
+        let (text, offset) = match node.text() {
+            Some(slice) => (slice.text.to_owned(), slice.offset),
+            None => (bedrock_addon_core::json::to_json(&value).ok()?, 0),
+        };
+        Some(Self {
+            value,
+            text,
+            offset,
+        })
+    }
+}
+
+/// What the routing reads of a payload: its component names.
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
+struct Probe {
+    components: Option<IndexMap<String, Value>>,
+}
+
+/// The routing's read of a payload, in silence: `None` for one that is no object or whose
+/// `components` is no object.
+fn probe(payload: JsonSlice<'_>) -> Option<Probe> {
+    let parsed = parse_slice(payload, Options::default()).ok()?;
+    let node = Node::parsed(&parsed, JsonPath::new());
+    let mut told = Diagnostics::default();
+    read_document(&node, &mut Read::new(Reading::NULL_ABSENT, &mut told))
 }
 
 /// Whether vanilla's component factory registers `key`, or it is a `tag:` key.

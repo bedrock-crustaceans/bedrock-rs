@@ -9,6 +9,8 @@ use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{FromJson, from_value_ref};
 use bedrock_addon_core::shared::read::{
     Failure, ROOT, ShapeError, ShapeErrorKind, compact, fail, jsoncpp_type, molang_source,
     molang_value, wrong_type,
@@ -275,8 +277,13 @@ impl From<Value> for BlockDescriptor {
     }
 }
 
-// bridge: the block shapes read by their own rules
-bedrock_addon_core::from_json_via_value!(ref BlockDescriptor);
+/// Every value reads: one no form takes is kept as written ([`BlockDescriptor::Invalid`]), which
+/// `check` tells.
+impl FromJson for BlockDescriptor {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        (!read.stopped()).then(|| Self::from(node.value()))
+    }
+}
 
 impl From<&BlockDescriptor> for Value {
     fn from(descriptor: &BlockDescriptor) -> Self {
@@ -457,8 +464,12 @@ impl TryFrom<Value> for BlockSpecifier {
     }
 }
 
-// bridge: the block shapes read by their own rules
-bedrock_addon_core::from_json_via_value!(ref BlockSpecifier);
+/// A block name, or `{"name", "states"}`; any other value is a wrong type.
+impl FromJson for BlockSpecifier {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl From<&BlockSpecifier> for Value {
     fn from(specifier: &BlockSpecifier) -> Self {

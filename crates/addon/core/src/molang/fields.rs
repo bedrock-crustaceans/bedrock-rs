@@ -288,7 +288,11 @@ impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
 }
 
 // A filter and a range hold no Molang a document's walk visits.
-crate::impl_no_molang!(crate::shared::Filter, crate::shared::FilterSubject);
+crate::impl_no_molang!(
+    crate::shared::Filter,
+    crate::shared::FilterSubject,
+    crate::json::StrictBool,
+);
 
 impl<T: crate::shared::RangeEnd> MolangFields for crate::shared::Range<T> {
     fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
