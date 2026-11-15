@@ -147,11 +147,11 @@ pub(super) struct Scanner<'t> {
 }
 
 impl<'t> Scanner<'t> {
-    pub(super) fn new(text: &'t str) -> Self {
+    pub(super) fn new(text: &'t str, comments: bool) -> Self {
         Self {
             text,
             bytes: text.as_bytes(),
-            lexer: Lexer::new(text.as_bytes(), Rules::strict(true)),
+            lexer: Lexer::new(text.as_bytes(), Rules::strict(comments)),
         }
     }
 

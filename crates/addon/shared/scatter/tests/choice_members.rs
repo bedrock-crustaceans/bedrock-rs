@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+use bedrock_addon_core::json::parse::{Options, parse};
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::versioning::{BeyondWidth, Choices, Reading, Scalars};
@@ -21,8 +21,8 @@ const NOT_KEEPING: Reading = KEEPING
 
 /// Reads `text` as `T` under `reading`: the value and each finding as `severity path code`.
 fn read<T: FromJson>(text: &str, reading: Reading) -> (Option<T>, Vec<String>) {
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["x"]), JsonSlice::new(text));
+    let parsed = parse(text, Options::default()).expect("JSON");
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["x"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(reading, &mut found);
     let value = T::from_json(&node, &mut read);

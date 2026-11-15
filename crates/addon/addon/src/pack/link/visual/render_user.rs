@@ -25,6 +25,7 @@ use std::collections::{HashMap, HashSet};
 use bedrock_addon_core::diagnostic::{JsonPath, Severity, sentence};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::parse::Options;
 use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
 use indexmap::IndexMap;
@@ -124,7 +125,7 @@ pub(super) fn run(cx: &LinkCx<'_>, out: &mut Findings, all: &Uses) {
             .entry((origin.pack.index(), origin.path.clone()))
             .or_insert_with(|| {
                 let bytes = cx.bytes(PackSide::Resource, &origin.pack, &origin.path, out)?;
-                let value = bedrock_addon_core::json::from_slice_jsonc::<Value>(&bytes).ok()?;
+                let value = bedrock_addon_core::json::parse::parse_bytes(&bytes, Options::default()).ok()?;
                 Some(FileText::new(value))
             });
         let written = Written::new(file.as_ref(), key);

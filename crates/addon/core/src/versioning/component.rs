@@ -213,11 +213,9 @@ fn parsed_or_told<'t>(
     d: &mut Diagnostics,
 ) -> Option<crate::json::parse::Parsed<'t>> {
     let parsed = crate::json::parse::parse_slice(slice, crate::json::parse::Options::default());
-    if parsed.is_err()
-        && let Err(error) = crate::json::parse_at::<Value>(slice)
-    {
-        d.push(super::payload::slice_error(
-            &error,
+    if let Err(fault) = &parsed {
+        d.push(super::payload::fault_finding(
+            fault,
             &JsonPath::new(),
             slice,
             Severity::Error,

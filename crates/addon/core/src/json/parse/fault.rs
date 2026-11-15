@@ -4,7 +4,7 @@
 use facet_format::DeserializeErrorKind;
 use facet_json::DeserializeError;
 
-use crate::diagnostic::Span;
+use crate::diagnostic::{Code, Span, builders, codes};
 
 /// What a bad string escape should have been.
 pub(super) const ESCAPE: &str =
@@ -61,7 +61,8 @@ pub enum FaultKind {
         /// What was wanted.
         expected: &'static str,
     },
-    /// A `\u` escape that does not name a character (a surrogate without its pair).
+    /// A `\u` escape that does not name a character (a surrogate without its pair), or a
+    /// string of bytes that are not UTF-8 ([`parse_bytes`](super::parse_bytes)).
     #[error("invalid UTF-8")]
     InvalidUtf8,
     /// The text is longer than the 4 GiB a span can address.
@@ -95,6 +96,17 @@ impl Fault {
     /// for an empty document when the text was blank.
     pub fn is_end_of_input(&self) -> bool {
         matches!(self.kind, FaultKind::UnexpectedEof { .. })
+    }
+
+    /// The code of a finding of the fault: `EMPTY_DOCUMENT` where a `blank` text (empty or
+    /// white space only) ended, else `core/syntax` with the fault's words.
+    #[must_use]
+    pub fn code(&self, blank: bool) -> Code {
+        if blank && self.is_end_of_input() {
+            Code::from(&codes::EMPTY_DOCUMENT)
+        } else {
+            builders::syntax(self.kind.to_string())
+        }
     }
 }
 

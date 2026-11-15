@@ -3,8 +3,8 @@
 use facet::Shape;
 
 use super::scalars::scalar_arm;
-use super::untagged::untagged_arm;
 use super::{Cursor, Step, Typed, Unknown, Value, rule_of, walk_object, walk_value, with_step};
+use crate::json::arms::untagged_arm;
 use crate::json::scalar::Token;
 
 pub(super) fn walk_enum(

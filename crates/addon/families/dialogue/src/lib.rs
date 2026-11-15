@@ -29,6 +29,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::DialogueSceneTag;
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::parse::{Options, parse};
 use bedrock_addon_core::json::{EncodeError, Precedence, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
@@ -537,7 +538,8 @@ const LABEL_CODE_POINTS: usize = 16;
 /// What `TextObjectRoot::asString()` gives is inferred: each `text` part's string, each
 /// `translate` part's key untranslated, nothing for other parts.
 fn evaluated(raw: &str) -> String {
-    let parsed = bedrock_addon_core::json::from_str::<Value>(raw).ok();
+    let plain = Options::default().without_comments();
+    let parsed = parse(raw, plain).ok().map(|parsed| parsed.value);
     let parts = parsed
         .as_ref()
         .and_then(Value::as_object)

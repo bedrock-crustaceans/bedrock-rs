@@ -7,8 +7,8 @@
 
 use bedrock_addon_core::id::MaterialId;
 use bedrock_addon_core::json::{
-    BeyondWidth, JsonSlice, ScalarFailure, ScalarRules, Scalars, Value, from_str, null_members,
-    parse_at, parse_with_rules, unknown_members,
+    BeyondWidth, JsonSlice, ScalarFailure, ScalarRules, Scalars, Value, from_str,
+    null_members_of_shape, parse_at, parse_with_rules, unknown_members,
 };
 use bedrock_addon_core::molang::Molang;
 use facet::Facet;
@@ -95,7 +95,7 @@ fn a_flattened_structs_null_members_are_found() {
     let json: Value =
         from_str(r#"{"identifier": "x", "count": null, "inner": {"a": null}, "tail": null}"#)
             .unwrap();
-    let nulls: Vec<String> = null_members(Outer::SHAPE, &json)
+    let nulls: Vec<String> = null_members_of_shape(Outer::SHAPE, &json)
         .iter()
         .map(ToString::to_string)
         .collect();

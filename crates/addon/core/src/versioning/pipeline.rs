@@ -852,14 +852,14 @@ impl Run {
                     ));
                     return None;
                 }
-                let message = failure.error.kind.to_string();
+                let message = failure.message();
                 let finding = if F::ENVELOPE.check == EnvelopeCheck::Never {
-                    error(syntax(message), JsonPath::new(), Some(failure.span))
+                    error(syntax(message), JsonPath::new(), Some(failure.span()))
                 } else {
                     error(
                         crate::diagnostic::codes::DOCUMENT_JSON.with([message.clone()]),
                         JsonPath::new(),
-                        Some(failure.span),
+                        Some(failure.span()),
                     )
                     .detail(DiagnosticDetail::Syntax(message))
                 };

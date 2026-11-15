@@ -1956,3 +1956,116 @@ fn a_scalar_shape_of_a_value_is_the_shape_the_door_reads_the_token_as() {
         assert_eq!(ScalarShape::of(&value), None, "{token}");
     }
 }
+
+// ---------------------------------------------------------------------------------------------
+// Bytes that may not be UTF-8, and plain JSON
+// ---------------------------------------------------------------------------------------------
+
+/// Bytes that are no UTF-8, put in a text: a lone lead byte, a lone continuation byte, the lead
+/// of a two-byte character cut short.
+const BAD_BYTES: &[&[u8]] = &[b"\xff", b"\x80", b"\xc3", b"\xe9 "];
+
+/// `text` with each of [`BAD_BYTES`] put in at a spread of places, and with them in a comment.
+fn bad_bytes(text: &str, places: usize) -> Vec<Vec<u8>> {
+    let bytes = text.as_bytes();
+    let step = (bytes.len() / places).max(1);
+    let mut out = Vec::new();
+    for at in (0..=bytes.len()).step_by(step) {
+        for bad in BAD_BYTES {
+            let mut edited = bytes[..at].to_vec();
+            edited.extend_from_slice(bad);
+            edited.extend_from_slice(&bytes[at..]);
+            out.push(edited);
+            let mut commented = bytes[..at].to_vec();
+            commented.extend_from_slice(b"/* ");
+            commented.extend_from_slice(bad);
+            commented.extend_from_slice(b" */");
+            commented.extend_from_slice(&bytes[at..]);
+            out.push(commented);
+        }
+    }
+    out
+}
+
+#[test]
+fn bytes_that_may_not_be_utf8_read_as_the_door_reads_them() {
+    use bedrock_addon_core::json::from_slice_jsonc;
+    use bedrock_addon_core::json::parse::parse_bytes;
+    let mut seeds: Vec<String> = RULES.iter().map(|text| (*text).to_owned()).collect();
+    seeds.extend([
+        r#"{"a": "x", "b": [1, 2.5, null]} // after"#.to_owned(),
+        "/* head */ [\"é\", {\"k\": \"v\"}] [junk".to_owned(),
+        r#"{"deep": [[[{"s": "é"}]]], "n": 18446744073709551616}"#.to_owned(),
+    ]);
+    let (mut texts, mut differed) = (0, Vec::new());
+    for seed in &seeds {
+        let mut cases = bad_bytes(seed, 24);
+        cases.push(seed.as_bytes().to_vec());
+        for bytes in cases {
+            texts += 1;
+            let door = from_slice_jsonc::<Value>(&bytes).map_err(|error| Refusal {
+                span: error
+                    .span
+                    .map(|span| (span.offset as usize, span.len as usize)),
+                kind: format!("{:?}", error.kind),
+                words: error.kind.to_string(),
+            });
+            let ours = parse_bytes(&bytes, Options::default()).map_err(refusal);
+            let same = match (&door, &ours) {
+                (Ok(a), Ok(b)) => identical(a, b),
+                (Err(a), Err(b)) => a == b,
+                _ => false,
+            };
+            if !same {
+                differed.push(format!(
+                    "{:?}\n  door: {}\n  ours: {}",
+                    String::from_utf8_lossy(&bytes),
+                    summary(&door),
+                    summary(&ours)
+                ));
+            }
+        }
+    }
+    eprintln!("bytes: {texts} texts, {} differ", differed.len());
+    assert!(
+        differed.is_empty(),
+        "parse_bytes differs from from_slice_jsonc on {} of {texts} byte texts; the first:\n{}",
+        differed.len(),
+        differed[..differed.len().min(8)].join("\n")
+    );
+}
+
+#[test]
+fn parse_options_without_comments_read_as_the_plain_door_reads() {
+    use bedrock_addon_core::json::from_str;
+    let mut seeds: Vec<String> = RULES.iter().map(|text| (*text).to_owned()).collect();
+    seeds.push("// x\n1".to_owned());
+    seeds.push(r#"{"a": "// not a comment", "b": /* c */ 1}"#.to_owned());
+    let mut texts = Vec::new();
+    for seed in &seeds {
+        texts.push(seed.clone());
+        texts.extend(damaged(seed, 12, JUNK));
+    }
+    let mut differed = Vec::new();
+    for text in &texts {
+        let door = from_str::<Value>(text).map_err(|error| Refusal {
+            span: error
+                .span
+                .map(|span| (span.offset as usize, span.len as usize)),
+            kind: format!("{:?}", error.kind),
+            words: error.kind.to_string(),
+        });
+        let ours = ours(text, Options::default().without_comments());
+        if let Some(difference) = difference(text, &door, &ours) {
+            differed.push(difference);
+        }
+    }
+    eprintln!("plain: {} texts, {} differ", texts.len(), differed.len());
+    assert!(
+        differed.is_empty(),
+        "the parser without comments differs from the plain door on {} of {} texts; the first:\n{}",
+        differed.len(),
+        texts.len(),
+        differed[..differed.len().min(8)].join("\n")
+    );
+}

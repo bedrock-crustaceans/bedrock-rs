@@ -429,7 +429,11 @@ pub trait Content: Sealed + Sized + Send + Sync + 'static {
         self.write_json(&mut text, style)?;
         let root = std::str::from_utf8(&text)
             .ok()
-            .and_then(|text| crate::json::from_str::<crate::json::Value>(text).ok());
+            .and_then(|text| {
+                let plain = crate::json::parse::Options::default().without_comments();
+                crate::json::parse::parse(text, plain).ok()
+            })
+            .map(|parsed| parsed.value);
         let Some(root) = root else {
             // Not JSON (lang, a binary file): it holds no unknown member.
             out.extend_from_slice(&text);

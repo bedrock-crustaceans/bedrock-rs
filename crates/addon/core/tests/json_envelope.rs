@@ -116,7 +116,7 @@ fn a_duplicate_payload_key_keeps_the_last_value_at_the_first_position() {
 fn a_syntax_error_is_an_error_at_its_file_offset() {
     let text = r#"{ "format_version": "1.0.0", "p": { ] }"#;
     let error = probe_envelope(JsonSlice::new(text)).unwrap_err();
-    assert_eq!(error.span.offset as usize, text.find(']').unwrap());
+    assert_eq!(error.span().offset as usize, text.find(']').unwrap());
 }
 
 #[test]
@@ -130,4 +130,62 @@ fn comments_inside_the_payload_stay_in_its_slice() {
     let text = "{ \"format_version\": \"1.0.0\", \"p\": { /* c */ \"a\": 1 } }";
     let envelope = probe_envelope(JsonSlice::new(text)).unwrap();
     assert_eq!(envelope.payload("p").unwrap().text, "{ /* c */ \"a\": 1 }");
+}
+
+/// What the probe says of a root that is no object, and where: facet-json's words for a text
+/// read as a map (an array is read as a list of pairs; an empty one is a type mismatch over the
+/// whole slice), pinned as the door has them. A syntax error of the text wins.
+#[test]
+fn a_root_that_is_not_an_object_is_refused_in_the_door_s_words() {
+    const SCALAR: &str =
+        "unexpected token: got scalar, expected struct start or sequence start for map";
+    let pairs = |got: &str| {
+        format!("unexpected token: got {got}, expected ordered field or sequence end for map")
+    };
+    let empty = "type mismatch: expected IndexMap<String, RawJson>, got array";
+    let cases: Vec<(&str, String, (u32, u32))> = vec![
+        ("[1, 2]", pairs("scalar"), (3, 1)),
+        ("[1] x", pairs("scalar"), (3, 1)),
+        ("[\"a\"]", pairs("scalar"), (3, 1)),
+        ("[[\"a\", 1]]", pairs("sequence start"), (3, 1)),
+        ("[{}]", pairs("struct start"), (3, 1)),
+        ("[]", empty.to_owned(), (3, 2)),
+        (" [ ]", empty.to_owned(), (3, 4)),
+        ("\"x\"", SCALAR.to_owned(), (3, 3)),
+        ("1", SCALAR.to_owned(), (3, 1)),
+        ("-0", SCALAR.to_owned(), (3, 2)),
+        ("1e999", SCALAR.to_owned(), (3, 5)),
+        ("true", SCALAR.to_owned(), (3, 4)),
+        ("null", SCALAR.to_owned(), (3, 4)),
+        (
+            "",
+            "unexpected end of input, expected value".to_owned(),
+            (3, 0),
+        ),
+        (
+            "  ",
+            "unexpected end of input, expected value".to_owned(),
+            (3, 2),
+        ),
+        (
+            "{\"a\": }",
+            "unexpected token: got ObjectEnd, expected value".to_owned(),
+            (9, 1),
+        ),
+        (
+            "[1 2]",
+            "unexpected token: got U64(2), expected ',' or ']'".to_owned(),
+            (6, 1),
+        ),
+    ];
+    for (text, words, (offset, len)) in cases {
+        let error = probe_envelope(JsonSlice { text, offset: 3 }).unwrap_err();
+        assert_eq!(error.message(), words, "{text:?}");
+        assert_eq!(
+            (error.span().offset, error.span().len),
+            (offset, len),
+            "{text:?}"
+        );
+    }
+    assert!(probe_envelope(JsonSlice::new("{} x")).is_ok());
 }

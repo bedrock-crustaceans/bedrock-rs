@@ -154,10 +154,11 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
     let Ok(parsed) =
         crate::json::parse::parse_slice(payload, crate::json::parse::Options::default())
     else {
-        // Not reached for a payload the envelope has read; the door's typed read words the
-        // failure.
-        if let Err(error) = crate::json::parse_at::<Value>(payload) {
-            d.push(slice_error(&error, &cx.at, payload, Severity::Error));
+        // Not reached for a payload the envelope has read.
+        if let Err(fault) =
+            crate::json::parse::parse_slice(payload, crate::json::parse::Options::default())
+        {
+            d.push(fault_finding(&fault, &cx.at, payload, Severity::Error));
         }
         return None;
     };
@@ -290,6 +291,27 @@ pub(super) fn slice_error(
         severity,
         Phase::Parse,
         Location::new(None, None, join(base, &error.path), Some(error.span)),
+    )
+}
+
+/// The finding of a syntax fault of `slice`, at `base`.
+pub(super) fn fault_finding(
+    fault: &crate::json::parse::Fault,
+    base: &JsonPath,
+    slice: JsonSlice<'_>,
+    severity: Severity,
+) -> Diagnostic {
+    let blank = slice.text.trim().is_empty();
+    Diagnostic::new(
+        fault.code(blank),
+        severity,
+        Phase::Parse,
+        Location::new(
+            None,
+            None,
+            base.clone(),
+            Some(crate::json::slice_fault_span(fault, slice)),
+        ),
     )
 }
 

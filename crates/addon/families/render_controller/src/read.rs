@@ -103,7 +103,7 @@ pub(crate) fn parse_file(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Par
     };
     if (folded_key(&parsed.diagnostics) || parsed.dropped.iter().any(|(_, d)| folded_key(d)))
         && bytes.iter().any(u8::is_ascii_uppercase)
-        && let Ok(written) = bedrock_addon_core::json::from_slice_jsonc::<Value>(bytes)
+        && let Ok(written) = bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default())
     {
         let mut spelled = Spelled::new();
         parsed.diagnostics = as_spelled(

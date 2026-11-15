@@ -1,11 +1,14 @@
-//! The arm of an untagged enum facet reads a JSON value as, without the typed value.
+//! The arm of an untagged enum facet reads a JSON value as, without the typed value: an
+//! object's arm by its keys ([`untagged_arm`]), a scalar's by the profile ([`choose_scalar_arm`]),
+//! and the lookup of a key among a struct's fields ([`find_field`]) both share with the null
+//! finder.
 
 use std::borrow::Cow;
 use std::ptr;
 
-use facet::{Def, Field, Shape};
+use facet::{Def, Field, Shape, Type, UserType};
 
-use super::{Lookup, Value, find_field, struct_fields};
+use crate::json::{Declared, ScalarRules, Scalars, Token, Value, Verdict, judge};
 
 /// The arm of an untagged enum facet reads a JSON value as, mirroring facet-format rc.7's
 /// untagged deserialiser without the typed value:
@@ -141,7 +144,7 @@ fn key_shape(arm: &ObjectArm, key: &str) -> Option<&'static Shape> {
 }
 
 /// A JSON scalar as facet-json's parser hands it to the solver.
-pub(super) enum Scalar<'v> {
+pub(crate) enum Scalar<'v> {
     Null,
     Bool,
     /// A non-negative integer token.
@@ -280,7 +283,7 @@ fn object_fields(variant: &'static facet::Variant) -> ObjectArm {
 }
 
 /// The payload shape of a newtype variant.
-pub(super) fn payload_shape(variant: &'static facet::Variant) -> Option<&'static Shape> {
+pub(crate) fn payload_shape(variant: &'static facet::Variant) -> Option<&'static Shape> {
     match variant.data.fields {
         [field] if variant.data.kind != facet::StructKind::Struct => Some(field.shape()),
         _ => None,
@@ -298,5 +301,160 @@ fn see_through(mut shape: &'static Shape) -> &'static Shape {
             },
             _ => return shape,
         };
+    }
+}
+
+/// The arm of an untagged enum that reads a scalar token ([`choose_scalar_arm`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ScalarArm {
+    /// `null` or a unit variant's name: the enum's unit variant reads it.
+    Unit,
+    /// The newtype variant `index`, around a type with a declared scalar type (`declared`) or
+    /// an enum of unit variants.
+    Arm { index: usize, declared: bool },
+    /// No arm takes the token under the profile: a type error at the enum.
+    Refused,
+    /// No newtype variant reads a scalar.
+    None,
+}
+
+/// The arm of an untagged enum that reads the scalar `token`, as the pre-pass chooses it under
+/// `rules` (the scalar pre-pass's rule, with the arm facet itself reads under `ConvertAndTell` named
+/// even where it has no declared scalar type).
+pub(crate) fn choose_scalar_arm(
+    variants: &'static [facet::Variant],
+    token: Token<'_>,
+    rules: ScalarRules,
+) -> ScalarArm {
+    if matches!(token, Token::Null) && variants.iter().any(|v| v.data.fields.is_empty()) {
+        return ScalarArm::Unit;
+    }
+    if let Token::Str(text) = token
+        && variants
+            .iter()
+            .any(|v| v.data.fields.is_empty() && v.effective_name() == text)
+    {
+        return ScalarArm::Unit;
+    }
+    // The newtype variants facet reads a scalar as (`VariantFormat::NewtypeScalar`), with the
+    // declared type of each that has one.
+    let arms: Vec<(usize, &'static Shape, Option<Declared>)> = variants
+        .iter()
+        .enumerate()
+        .filter_map(|(index, variant)| {
+            let payload = see_through_pointer(payload_shape(variant)?);
+            let scalar = payload.scalar_type();
+            (scalar.is_some() || is_unit_enum(payload))
+                .then(|| (index, payload, scalar.and_then(Declared::of)))
+        })
+        .collect();
+    if rules.scalars == Scalars::ConvertAndTell {
+        let json = token_value(token);
+        let Some(scalar) = Scalar::of(&json) else {
+            return ScalarArm::None;
+        };
+        let chosen = arms
+            .iter()
+            .find(|(_, payload, _)| scalar.match_quality(payload).is_some())
+            .or_else(|| arms.first());
+        return chosen.map_or(ScalarArm::None, |(index, _, declared)| ScalarArm::Arm {
+            index: *index,
+            declared: declared.is_some(),
+        });
+    }
+    let arm_rules = rules.with_scalars(Scalars::Strict);
+    let takes =
+        |declared: Declared| !matches!(judge(declared, token, arm_rules), Verdict::Refused(_));
+    if let Some((index, _, _)) = arms
+        .iter()
+        .find(|(_, _, declared)| declared.is_some_and(takes))
+    {
+        return ScalarArm::Arm {
+            index: *index,
+            declared: true,
+        };
+    }
+    if !arms.is_empty() && arms.iter().all(|(_, _, declared)| declared.is_some()) {
+        return ScalarArm::Refused;
+    }
+    // An arm around a unit enum, which facet reads the token into: its own read words it.
+    arms.first()
+        .map_or(ScalarArm::None, |(index, _, _)| ScalarArm::Arm {
+            index: *index,
+            declared: false,
+        })
+}
+
+/// The value of a scalar token, for the scalar matching facet's untagged read does.
+fn token_value(token: Token<'_>) -> Value {
+    match token {
+        Token::Null => Value::NULL,
+        Token::Bool(b) => Value::from(b),
+        Token::UInt(u) => Value::from(u),
+        Token::Int(i) => Value::from(i),
+        Token::Real(x) => Value::from(x),
+        Token::Str(text) => Value::from(text),
+    }
+}
+
+/// `shape` without pointers (facet-solver `deref_pointer`).
+fn see_through_pointer(mut shape: &'static Shape) -> &'static Shape {
+    while let Def::Pointer(def) = shape.def {
+        match def.pointee() {
+            Some(pointee) => shape = pointee,
+            None => break,
+        }
+    }
+    shape
+}
+
+/// An enum of unit variants only, which facet reads from a scalar (facet-solver
+/// `is_unit_enum_shape`).
+fn is_unit_enum(shape: &'static Shape) -> bool {
+    match shape.ty {
+        Type::User(UserType::Enum(en)) => en.variants.iter().all(|v| v.data.fields.is_empty()),
+        _ => false,
+    }
+}
+
+/// Where a JSON key goes among a struct's fields.
+pub(crate) enum Lookup {
+    /// To the field at this index.
+    Field(usize, &'static Field),
+    /// Into the flattened field at this index: a struct one of whose fields takes the key, or
+    /// a map.
+    Flattened(usize, &'static Field),
+    /// Nowhere.
+    Unknown,
+}
+
+pub(crate) fn find_field(fields: &'static [Field], key: &str) -> Lookup {
+    for (index, field) in fields.iter().enumerate() {
+        if field.should_skip_deserializing() {
+            continue;
+        }
+        if field.is_flattened() {
+            let takes = match field.shape().def {
+                Def::Map(_) => true,
+                _ => struct_fields(field.shape())
+                    .is_some_and(|inner| !matches!(find_field(inner, key), Lookup::Unknown)),
+            };
+            if takes {
+                return Lookup::Flattened(index, field);
+            }
+            continue;
+        }
+        if field.effective_name() == key || field.alias == Some(key) {
+            return Lookup::Field(index, field);
+        }
+    }
+    Lookup::Unknown
+}
+
+/// The named fields of a struct shape.
+pub(crate) fn struct_fields(shape: &'static Shape) -> Option<&'static [Field]> {
+    match shape.ty {
+        Type::User(UserType::Struct(st)) => Some(st.fields),
+        _ => None,
     }
 }

@@ -1,7 +1,8 @@
 //! `MetaError`: why a metadata file, a privilege list or a type descriptor was rejected.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::json::{SliceError, TooDeep};
+use bedrock_addon_core::json::TooDeep;
+use bedrock_addon_core::json::parse::Fault;
 
 /// Why the JSON of a metadata file was refused.
 #[derive(Debug, thiserror::Error)]
@@ -9,7 +10,7 @@ use bedrock_addon_core::json::{SliceError, TooDeep};
 pub enum JsonFault {
     /// The text is not JSON.
     #[error(transparent)]
-    Syntax(#[from] SliceError),
+    Syntax(#[from] Fault),
     /// A member has a type its field does not take, or a member its field needs is missing.
     #[error("the value at `{path}` does not read as the file's shape")]
     Shape {
@@ -18,8 +19,8 @@ pub enum JsonFault {
     },
 }
 
-impl From<SliceError> for MetaError {
-    fn from(error: SliceError) -> Self {
+impl From<Fault> for MetaError {
+    fn from(error: Fault) -> Self {
         Self::Json(JsonFault::Syntax(error))
     }
 }

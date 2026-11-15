@@ -1,9 +1,7 @@
 //! The scalar duties of the walk: the misread scalars, and the pre-pass's judgment.
 
-use facet::{Def, Shape, Type, UserType};
-
-use super::untagged::{Scalar, payload_shape};
 use super::{Cursor, Misreading, ScalarCall, Value};
+use crate::json::arms::{ScalarArm, choose_scalar_arm};
 use crate::json::scalar::{Declared, Refusal, ScalarRules, Scalars, Token, Verdict, judge};
 
 /// How a member of the scalar type `ty` misread the scalar `json`, if it did: the typed
@@ -104,118 +102,5 @@ pub(super) fn scalar_arm(
             None
         }
         ScalarArm::Arm { .. } | ScalarArm::Unit | ScalarArm::None => None,
-    }
-}
-
-/// The arm of an untagged enum that reads a scalar token ([`choose_scalar_arm`]).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ScalarArm {
-    /// `null` or a unit variant's name: the enum's unit variant reads it.
-    Unit,
-    /// The newtype variant `index`, around a type with a declared scalar type (`declared`) or
-    /// an enum of unit variants.
-    Arm { index: usize, declared: bool },
-    /// No arm takes the token under the profile: a type error at the enum.
-    Refused,
-    /// No newtype variant reads a scalar.
-    None,
-}
-
-/// The arm of an untagged enum that reads the scalar `token`, as the pre-pass chooses it under
-/// `rules` ([`scalar_arm`]'s rule, with the arm facet itself reads under `ConvertAndTell` named
-/// even where it has no declared scalar type).
-pub(crate) fn choose_scalar_arm(
-    variants: &'static [facet::Variant],
-    token: Token<'_>,
-    rules: ScalarRules,
-) -> ScalarArm {
-    if matches!(token, Token::Null) && variants.iter().any(|v| v.data.fields.is_empty()) {
-        return ScalarArm::Unit;
-    }
-    if let Token::Str(text) = token
-        && variants
-            .iter()
-            .any(|v| v.data.fields.is_empty() && v.effective_name() == text)
-    {
-        return ScalarArm::Unit;
-    }
-    // The newtype variants facet reads a scalar as (`VariantFormat::NewtypeScalar`), with the
-    // declared type of each that has one.
-    let arms: Vec<(usize, &'static Shape, Option<Declared>)> = variants
-        .iter()
-        .enumerate()
-        .filter_map(|(index, variant)| {
-            let payload = see_through_pointer(payload_shape(variant)?);
-            let scalar = payload.scalar_type();
-            (scalar.is_some() || is_unit_enum(payload))
-                .then(|| (index, payload, scalar.and_then(Declared::of)))
-        })
-        .collect();
-    if rules.scalars == Scalars::ConvertAndTell {
-        let json = token_value(token);
-        let Some(scalar) = Scalar::of(&json) else {
-            return ScalarArm::None;
-        };
-        let chosen = arms
-            .iter()
-            .find(|(_, payload, _)| scalar.match_quality(payload).is_some())
-            .or_else(|| arms.first());
-        return chosen.map_or(ScalarArm::None, |(index, _, declared)| ScalarArm::Arm {
-            index: *index,
-            declared: declared.is_some(),
-        });
-    }
-    let arm_rules = rules.with_scalars(Scalars::Strict);
-    let takes =
-        |declared: Declared| !matches!(judge(declared, token, arm_rules), Verdict::Refused(_));
-    if let Some((index, _, _)) = arms
-        .iter()
-        .find(|(_, _, declared)| declared.is_some_and(takes))
-    {
-        return ScalarArm::Arm {
-            index: *index,
-            declared: true,
-        };
-    }
-    if !arms.is_empty() && arms.iter().all(|(_, _, declared)| declared.is_some()) {
-        return ScalarArm::Refused;
-    }
-    // An arm around a unit enum, which facet reads the token into: its own read words it.
-    arms.first()
-        .map_or(ScalarArm::None, |(index, _, _)| ScalarArm::Arm {
-            index: *index,
-            declared: false,
-        })
-}
-
-/// The value of a scalar token, for the scalar matching facet's untagged read does.
-fn token_value(token: Token<'_>) -> Value {
-    match token {
-        Token::Null => Value::NULL,
-        Token::Bool(b) => Value::from(b),
-        Token::UInt(u) => Value::from(u),
-        Token::Int(i) => Value::from(i),
-        Token::Real(x) => Value::from(x),
-        Token::Str(text) => Value::from(text),
-    }
-}
-
-/// `shape` without pointers (facet-solver `deref_pointer`).
-fn see_through_pointer(mut shape: &'static Shape) -> &'static Shape {
-    while let Def::Pointer(def) = shape.def {
-        match def.pointee() {
-            Some(pointee) => shape = pointee,
-            None => break,
-        }
-    }
-    shape
-}
-
-/// An enum of unit variants only, which facet reads from a scalar (facet-solver
-/// `is_unit_enum_shape`).
-fn is_unit_enum(shape: &'static Shape) -> bool {
-    match shape.ty {
-        Type::User(UserType::Enum(en)) => en.variants.iter().all(|v| v.data.fields.is_empty()),
-        _ => false,
     }
 }

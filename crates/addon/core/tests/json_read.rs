@@ -149,16 +149,16 @@ fn a_backslash_before_a_non_ascii_character_is_malformed_input_at_its_span() {
     let failure = probe_envelope(JsonSlice::new(text)).unwrap_err();
     let at = text.find('\\').unwrap();
     assert_eq!(
-        failure.span,
+        failure.span(),
         Span {
             offset: u32::try_from(at).unwrap(),
             len: 3
         }
     );
-    assert_eq!(failure.span.line_col(text), (2, 9));
+    assert_eq!(failure.span().line_col(text), (2, 9));
     assert_eq!(&text[at..at + 3], "\\é");
     assert_eq!(
-        malformed(&failure.error),
+        failure.message(),
         "unexpected character 'é', expected one of `\"\\/bfnrtu` after a backslash (bad escape \
          sequence in string)"
     );
@@ -183,7 +183,7 @@ fn every_unsafe_class_is_malformed_input_through_every_entry_point() {
     for (class, content) in UNSAFE_STRINGS {
         for document in documents(content) {
             let envelope = probe_envelope(JsonSlice::new(&document)).unwrap_err();
-            assert!(malformed(&envelope.error).contains("escape"), "{class}");
+            assert!(envelope.message().contains("escape"), "{class}");
             let typed = parse_at::<IndexMap<String, Value>>(JsonSlice::new(&document)).unwrap_err();
             assert!(malformed(&typed.error).contains("escape"), "{class}");
             for error in [

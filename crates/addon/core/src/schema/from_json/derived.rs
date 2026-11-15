@@ -14,11 +14,11 @@ use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail};
 use crate::document::UnknownMembers;
 use crate::json::NULL_MEMBER_READ_AS_ABSENT;
 use crate::json::Token;
+use crate::json::arms::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::json::kit::Mark;
 use crate::json::kit::{
     Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
 };
-use crate::json::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::schema::UnknownRule;
 use crate::version::FormatVersion;
 use crate::versioning::NullHandling;

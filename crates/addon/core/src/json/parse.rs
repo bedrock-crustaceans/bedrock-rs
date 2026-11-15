@@ -44,7 +44,7 @@ use fault::{ESCAPE, SHALLOWER, UNICODE_ESCAPE, to_u32};
 use spans::{Edge, Node};
 use token::{Lit, Mat, Scanner, Tk};
 
-use super::lex::UnsafeText;
+use super::lex::{Kind, Lexer, Marks, Rules, UnsafeText, scan_tokens};
 use super::slice::JsonSlice;
 use super::text::MAX_JSON_DEPTH;
 use super::{Value, Winner};
@@ -80,12 +80,16 @@ pub struct Options<'a> {
     /// Which copy of a key written twice stands. The default keeps every copy as
     /// `from_str_jsonc::<Value>` reads them (`Winner::Keep`).
     pub duplicates: Duplicates<'a>,
+    /// `//` and `/* */` comments are white space (the default); without them a `/` is a byte
+    /// that starts no token, as plain JSON has it (`from_str`).
+    pub comments: bool,
 }
 
 impl Default for Options<'_> {
     fn default() -> Self {
         Self {
             duplicates: Duplicates::Uniform(Winner::Keep),
+            comments: true,
         }
     }
 }
@@ -96,6 +100,7 @@ impl<'a> Options<'a> {
     pub fn winner(winner: Winner) -> Self {
         Self {
             duplicates: Duplicates::Uniform(winner),
+            ..Self::default()
         }
     }
 
@@ -105,6 +110,7 @@ impl<'a> Options<'a> {
     pub fn last_except(keep: &'a [&'a str]) -> Self {
         Self {
             duplicates: Duplicates::LastExcept(keep),
+            ..Self::default()
         }
     }
 
@@ -113,6 +119,16 @@ impl<'a> Options<'a> {
     pub fn by_path(winner: &'a dyn Fn(&JsonPath) -> Winner) -> Self {
         Self {
             duplicates: Duplicates::ByPath(winner),
+            ..Self::default()
+        }
+    }
+
+    /// The same options for plain JSON: a comment is no white space.
+    #[must_use]
+    pub fn without_comments(self) -> Self {
+        Self {
+            comments: false,
+            ..self
         }
     }
 }
@@ -151,6 +167,130 @@ pub fn parse<'t>(text: &'t str, options: Options<'_>) -> Result<Parsed<'t>, Faul
 /// As [`parse`], at file offsets.
 pub fn parse_slice<'t>(slice: JsonSlice<'t>, options: Options<'_>) -> Result<Parsed<'t>, Fault> {
     read(slice.text, slice.offset, options).map_err(|fault| fault.rebased(slice.offset))
+}
+
+/// Reads `bytes`, which may not be UTF-8: UTF-8 bytes as [`parse`] reads their text; other
+/// bytes are read when only their comments are not UTF-8 (a byte of a comment that is no ASCII
+/// reads as `?`, so offsets stay), and refused otherwise: a string that is not UTF-8 is
+/// [`FaultKind::InvalidUtf8`] on the string, a byte outside strings and comments a byte that
+/// starts no token. What follows the root value is not read, UTF-8 or not.
+///
+/// # Errors
+///
+/// The [`Fault`] of the first syntax error, as `from_slice_jsonc::<Value>` tells it.
+pub fn parse_bytes(bytes: &[u8], options: Options<'_>) -> Result<Value, Fault> {
+    if let Ok(text) = std::str::from_utf8(bytes) {
+        return parse(text, options).map(|parsed| parsed.value);
+    }
+    let scanned = scan_tokens(bytes, options.comments, &mut Marks::default());
+    let root = match scanned {
+        Ok(scanned) => scanned
+            .root_end
+            .and_then(|end| bytes.get(..end))
+            .unwrap_or(bytes),
+        Err(refused) => return Err(scan_refusal(bytes, refused.found, refused.token, options)),
+    };
+    let text = match std::str::from_utf8(root) {
+        Ok(text) => Cow::Borrowed(text),
+        Err(_) => Cow::Owned(text_outside_comments(root, options.comments)?),
+    };
+    parse(&text, options).map(|parsed| parsed.value)
+}
+
+/// The fault of bytes, not UTF-8, the scan refused at `found`: the first fault of the UTF-8
+/// text before the refused token when there is one there (the token itself stands in by a
+/// token of its kind with nothing in it), else what the scan refused.
+fn scan_refusal(bytes: &[u8], found: UnsafeText, token: usize, options: Options<'_>) -> Fault {
+    let before = bytes
+        .get(..token)
+        .and_then(|before| std::str::from_utf8(before).ok());
+    if let Some(before) = before {
+        let stand_in = match (found, bytes.get(token)) {
+            (UnsafeText::UnterminatedComment { .. }, _) => "",
+            (_, Some(b'{')) => "{",
+            (_, Some(b'[')) => "[",
+            _ => "\"\"",
+        };
+        let probe = format!("{before}{stand_in}");
+        if let Err(mut earlier) = parse(&probe, options)
+            && !earlier.is_end_of_input()
+            && (earlier.span.offset as usize) <= token
+        {
+            if earlier.span.offset as usize == token {
+                let len = token_len(bytes, token);
+                earlier.span = fault::span_of(token, len);
+                if let FaultKind::UnexpectedToken { got, .. } = &mut earlier.kind
+                    && bytes.get(token) == Some(&b'"')
+                {
+                    let written = &bytes[token..token + len];
+                    *got = format!("String({})", String::from_utf8_lossy(written));
+                }
+            }
+            return earlier;
+        }
+    }
+    let mut fault = Parser::refused(found);
+    if let (UnsafeText::TooDeep { offset }, FaultKind::UnexpectedChar { ch, .. }) =
+        (found, &mut fault.kind)
+        && bytes.get(offset) == Some(&b'{')
+    {
+        *ch = '{';
+    }
+    fault
+}
+
+/// The length of the token at `at`: a string to its closing quote (whatever follows its
+/// backslashes) or to the end of the text; one byte for a bracket.
+fn token_len(bytes: &[u8], at: usize) -> usize {
+    if bytes.get(at) != Some(&b'"') {
+        return 1;
+    }
+    let mut i = at + 1;
+    loop {
+        match bytes.get(i) {
+            None => return bytes.len() - at,
+            Some(b'"') => return i + 1 - at,
+            Some(b'\\') => i += 2,
+            Some(_) => i += 1,
+        }
+    }
+}
+
+/// `bytes` with every byte of a comment that is not ASCII replaced by `?` (offsets stay), as
+/// text; a fault where a string, or a byte outside strings and comments, is not UTF-8.
+fn text_outside_comments(bytes: &[u8], comments: bool) -> Result<String, Fault> {
+    let mut copy = bytes.to_vec();
+    let mut lexer = Lexer::new(bytes, Rules::strict(comments));
+    loop {
+        let from = lexer.at();
+        lexer.skip_trivia();
+        for byte in &mut copy[from..lexer.at()] {
+            if !byte.is_ascii() {
+                *byte = b'?';
+            }
+        }
+        let Some(token) = lexer.token().map_err(Parser::refused)? else {
+            break;
+        };
+        if matches!(token.kind, Kind::String { .. })
+            && std::str::from_utf8(&bytes[token.range()]).is_err()
+        {
+            return Err(Fault::new(token.start, token.len(), FaultKind::InvalidUtf8));
+        }
+    }
+    String::from_utf8(copy).map_err(|failure| {
+        // A byte that starts no token.
+        let at = failure.utf8_error().valid_up_to();
+        let ch = bytes.get(at).copied().map_or('?', char::from);
+        Fault::new(
+            at,
+            1,
+            FaultKind::UnexpectedChar {
+                ch,
+                expected: fault::TOKEN,
+            },
+        )
+    })
 }
 
 /// The text a JSON string literal spells, its escapes decoded; `None` when `token` is no string
@@ -294,7 +434,7 @@ impl<'t, 'o> Parser<'t, 'o> {
     fn new(text: &'t str, options: Options<'o>) -> Self {
         let by_path = matches!(options.duplicates, Duplicates::ByPath(_));
         Self {
-            scanner: Scanner::new(text),
+            scanner: Scanner::new(text, options.comments),
             options,
             frames: Vec::new(),
             slots: Vec::new(),

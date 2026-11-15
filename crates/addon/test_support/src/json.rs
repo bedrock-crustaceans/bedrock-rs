@@ -1,7 +1,8 @@
 //! Test JSON, read through the door: [`json`] as the game reads a pack file (comments allowed),
 //! [`strict`] as plain JSON (a comment is an error).
 
-use bedrock_addon_core::json::{Value, from_str, from_str_jsonc};
+use bedrock_addon_core::json::parse::{Options, parse};
+use bedrock_addon_core::json::{Value, from_str_jsonc};
 
 /// `text` read as a JSON value by the door's jsonc entry point; panics with the text and the
 /// error when it is no JSON.
@@ -10,11 +11,14 @@ pub fn json(text: &str) -> Value {
     from_str_jsonc(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
-/// `text` read as a JSON value by the door's plain entry point, which refuses a comment; panics
-/// with the text and the error when it is no plain JSON.
+/// `text` read as plain JSON, which refuses a comment; panics with the text and the fault when
+/// it is no plain JSON.
 #[track_caller]
 pub fn strict(text: &str) -> Value {
-    from_str(text).unwrap_or_else(|e| panic!("{text}: {e}"))
+    match parse(text, Options::default().without_comments()) {
+        Ok(parsed) => parsed.value,
+        Err(fault) => panic!("{text}: {fault}"),
+    }
 }
 
 #[cfg(test)]

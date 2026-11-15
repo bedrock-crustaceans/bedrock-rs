@@ -42,12 +42,12 @@
 //! use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 //! use bedrock_addon_core::json::kit::{Node, Read};
 //! use bedrock_addon_core::schema::UnknownRule;
-//! use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+//! use bedrock_addon_core::json::parse::{Options, parse};
 //! use bedrock_addon_core::versioning::Reading;
 //!
 //! let text = r#"{"name": "ruby", "size": "big", "glow": 1}"#;
-//! let json: Value = from_str_jsonc(text).unwrap();
-//! let payload = Node::with_text(&json, JsonPath::of_keys(["minecraft:gem"]), JsonSlice::new(text));
+//! let parsed = parse(text, Options::default()).unwrap();
+//! let payload = Node::parsed(&parsed, JsonPath::of_keys(["minecraft:gem"]));
 //! let mut found = Diagnostics::default();
 //! let mut read = Read::new(Reading::DOCUMENT, &mut found);
 //!
@@ -72,9 +72,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use facet_json::RawJson;
 use facet_value::{VArray, VObject};
-use indexmap::IndexMap;
 
 use super::parse::{Parsed, SpanNode};
 use super::{Coerce, Coercing, JsonSlice, Value};
@@ -89,6 +87,7 @@ use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 #[doc(hidden)]
 pub mod fixed_path;
 // hidden: API not yet reviewed
+mod misread;
 mod scalar;
 #[cfg(test)]
 mod tests;
@@ -96,16 +95,15 @@ mod tests;
 pub mod write;
 mod written;
 
+pub use misread::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
 pub use scalar::Scalar;
 pub use written::{Present, Written};
 
 /// A value being read: where it is in the document, and its text when the caller has it.
 ///
 /// The text is the span source: with it, a finding at the node or below it carries the byte
-/// range of the file it is about. It is either a [`JsonSlice`] the value was read from (at its
-/// file offset: [`with_text`](Self::with_text); the members' and elements' spans are then found
-/// by reading each level of that text again), or the tree of spans [`json::parse`](super::parse)
-/// made with the value ([`parsed`](Self::parsed): every span is a lookup).
+/// range of the file it is about. It is the tree of spans [`json::parse`](super::parse) made
+/// with the value ([`parsed`](Self::parsed): every span is a lookup).
 #[derive(Clone, Debug)]
 pub struct Node<'v> {
     value: &'v Value,
@@ -118,8 +116,6 @@ pub struct Node<'v> {
 enum Text<'v> {
     /// No text: no span.
     None,
-    /// A slice of the file, taken as it is.
-    Slice(JsonSlice<'v>),
     /// A node of a parse's span tree. The root of a read of a whole text has that text as
     /// `whole`, white space and comments round the value included, as a slice has it.
     Tree {
@@ -132,7 +128,6 @@ impl std::fmt::Debug for Text<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::None => f.write_str("None"),
-            Self::Slice(slice) => f.debug_tuple("Slice").field(slice).finish(),
             Self::Tree { node, .. } => f.debug_tuple("Tree").field(&node.span()).finish(),
         }
     }
@@ -147,7 +142,6 @@ impl<'v> Text<'v> {
     fn slice(self) -> Option<JsonSlice<'v>> {
         match self {
             Self::None => None,
-            Self::Slice(slice) => Some(slice),
             Self::Tree { node, whole } => Some(whole.unwrap_or_else(|| node.text())),
         }
     }
@@ -155,7 +149,6 @@ impl<'v> Text<'v> {
     fn span(self) -> Option<Span> {
         match self {
             Self::None => None,
-            Self::Slice(slice) => Some(span_of(slice)),
             Self::Tree { node, whole } => Some(whole.map_or_else(|| node.span(), span_of)),
         }
     }
@@ -186,38 +179,10 @@ impl<'v> Node<'v> {
         }
     }
 
-    /// The value at `path` read from `text`: findings at it and below it carry spans.
-    ///
-    /// ```
-    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
-    /// # use bedrock_addon_core::json::kit::{Node, Read};
-    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
-    /// # use bedrock_addon_core::versioning::Reading;
-    /// # fn told(d: &Diagnostics) -> Vec<String> {
-    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
-    /// # }
-    /// let text = r#"{"size": "big"}"#;
-    /// let json: Value = from_str_jsonc(text).unwrap();
-    /// let root = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
-    /// let mut found = Diagnostics::default();
-    /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
-    /// let members = read.object(&root).unwrap();
-    /// let size = read.required(&members, "size").unwrap();
-    /// // The span is the member's value as the file has it.
-    /// let span = size.span().unwrap();
-    /// assert_eq!(&text[span.offset as usize..][..span.len as usize], r#""big""#);
-    /// ```
-    pub fn with_text(value: &'v Value, path: JsonPath, text: JsonSlice<'v>) -> Self {
-        Self {
-            value,
-            path,
-            text: Text::Slice(text),
-        }
-    }
-
     /// The root of a [parsed](super::parse) text, at `path`: findings at it and below it carry
     /// spans, each a lookup in the tree the parse made beside the value (nothing reads the text
-    /// again). The root's own span is the text as given, as [`with_text`](Self::with_text)'s.
+    /// again). The root's own span is the text as given, white space and comments round the
+    /// value included.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -272,7 +237,7 @@ impl<'v> Node<'v> {
 pub struct Members<'v> {
     node: Node<'v>,
     object: &'v VObject,
-    texts: Level<'v, IndexMap<String, RawJson<'v>>>,
+    texts: Option<SpanNode<'v, 'v>>,
     /// The members of a tree level that has many, by key: made by the first lookup.
     by_key: OnceLock<HashMap<Cow<'v, str>, usize>>,
 }
@@ -342,14 +307,14 @@ impl<'v> Members<'v> {
     pub fn iter(&self) -> impl Iterator<Item = (&'v str, Node<'v>)> + '_ {
         // A tree that lists as many members as the object has has no repeated key, so its
         // members are the object's in the same order: no lookup by key per member.
-        let aligned = matches!(&self.texts, Level::Tree(tree) if tree.len() == self.object.len());
+        let aligned = matches!(&self.texts, Some(tree) if tree.len() == self.object.len());
         self.object
             .iter()
             .enumerate()
             .map(move |(index, (key, value))| {
                 let key = key.as_str();
                 let node = match &self.texts {
-                    Level::Tree(tree) if aligned => match tree.member_at(index) {
+                    Some(tree) if aligned => match tree.member_at(index) {
                         Some(member) if member.key == key => {
                             self.child_of(Text::tree(member.value), key, value)
                         }
@@ -388,13 +353,9 @@ impl<'v> Members<'v> {
     }
 
     fn child(&self, key: &str, value: &'v Value) -> Node<'v> {
-        let text = match (&self.texts, self.node.text) {
-            (Level::Raw(texts), Text::Slice(text)) => texts
-                .get(key)
-                .and_then(|raw| text.nested(raw))
-                .map_or(Text::None, Text::Slice),
-            (Level::Tree(tree), _) => self.tree_member(tree, key).map_or(Text::None, Text::tree),
-            _ => Text::None,
+        let text = match &self.texts {
+            Some(tree) => self.tree_member(tree, key).map_or(Text::None, Text::tree),
+            None => Text::None,
         };
         Node {
             value,
@@ -410,22 +371,11 @@ impl<'v> Members<'v> {
 pub struct Elements<'v> {
     node: Node<'v>,
     array: &'v VArray,
-    texts: Level<'v, Vec<RawJson<'v>>>,
+    texts: Option<SpanNode<'v, 'v>>,
 }
 
 /// The most members of an object whose lookup by key scans them.
 const SCAN_MEMBERS: usize = 16;
-
-/// Where the texts of one level's children come from.
-#[derive(Clone, Debug)]
-enum Level<'v, R> {
-    /// The level has no text.
-    None,
-    /// The level read again as raw slices (a [`Node::with_text`] slice).
-    Raw(R),
-    /// The level's node of the parse's tree.
-    Tree(SpanNode<'v, 'v>),
-}
 
 impl<'v> Elements<'v> {
     /// The array itself.
@@ -464,13 +414,9 @@ impl<'v> Elements<'v> {
     /// ```
     pub fn element(&self, index: usize) -> Option<Node<'v>> {
         let value = self.array.get(index)?;
-        let text = match (&self.texts, self.node.text) {
-            (Level::Raw(texts), Text::Slice(text)) => texts
-                .get(index)
-                .and_then(|raw| text.nested(raw))
-                .map_or(Text::None, Text::Slice),
-            (Level::Tree(tree), _) => tree.element(index).map_or(Text::None, Text::tree),
-            _ => Text::None,
+        let text = match &self.texts {
+            Some(tree) => tree.element(index).map_or(Text::None, Text::tree),
+            None => Text::None,
         };
         Some(Node {
             value,
@@ -2009,11 +1955,8 @@ impl<'d> Read<'d> {
             return None;
         };
         let texts = match node.text {
-            Text::None => Level::None,
-            Text::Slice(text) => super::from_str_borrowed_jsonc(text.text)
-                .ok()
-                .map_or(Level::None, Level::Raw),
-            Text::Tree { node, .. } => Level::Tree(node),
+            Text::None => None,
+            Text::Tree { node, .. } => Some(node),
         };
         Some(Members {
             node: node.clone(),
@@ -2050,11 +1993,8 @@ impl<'d> Read<'d> {
             return None;
         };
         let texts = match node.text {
-            Text::None => Level::None,
-            Text::Slice(text) => super::from_str_borrowed_jsonc(text.text)
-                .ok()
-                .map_or(Level::None, Level::Raw),
-            Text::Tree { node, .. } => Level::Tree(node),
+            Text::None => None,
+            Text::Tree { node, .. } => Some(node),
         };
         Some(Elements {
             node: node.clone(),
@@ -2111,8 +2051,8 @@ impl<'d> Read<'d> {
     /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
     /// # }
     /// let text = r#"{"pack_id": "x"}"#;
-    /// let json: Value = from_str_jsonc(text).unwrap();
-    /// let root = Node::with_text(&json, JsonPath::of_keys(["entry"]), JsonSlice::new(text));
+    /// let parsed = bedrock_addon_core::json::parse::parse(text, Default::default()).unwrap();
+    /// let root = Node::parsed(&parsed, JsonPath::of_keys(["entry"]));
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
     /// let members = read.object(&root).unwrap();

@@ -177,12 +177,12 @@ fn item(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
 #[test]
 fn crafting_catalog_s_reader_reads_as_the_kit() {
     assert_reads_as(FIXTURES, EXPECTED, |text, found| {
-        let json = value(text);
-        let payload = Node::with_text(
-            &json,
-            at(&["minecraft:crafting_items_catalog"]),
+        let parsed = crate::json::parse::parse_slice(
             JsonSlice::new(text),
-        );
+            crate::json::parse::Options::default(),
+        )
+        .unwrap();
+        let payload = Node::parsed(&parsed, at(&["minecraft:crafting_items_catalog"]));
         // The raw reader warns; the strict slice makes the warnings errors.
         let mut read = Read::new(Reading::DOCUMENT.with_unknown(Severity::Warning), found);
         catalog(&mut read, &payload).is_some()

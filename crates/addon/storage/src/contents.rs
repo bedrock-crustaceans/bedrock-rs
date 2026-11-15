@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::parse::Options;
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, Scalars, TooDeep, Value, check_depth, last_wins, strip_bom,
 };
@@ -78,7 +79,8 @@ impl ContentsJson {
         // they are.
         let parsed: Result<Value, _> = match std::str::from_utf8(bytes) {
             Ok(text) => bedrock_addon_core::json::from_str_jsonc(&last_wins(text)),
-            Err(_) => bedrock_addon_core::json::from_slice_jsonc(bytes),
+            Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default())
+                .map_err(|fault| fault.to_error()),
         };
         let json = parsed.map_err(|error| ContentsError::Json(Box::new(error.into())))?;
         let mut told = Diagnostics::default();

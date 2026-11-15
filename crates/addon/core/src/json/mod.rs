@@ -33,6 +33,7 @@
 //!   parser (its writers call themselves for each level of a value).
 
 // hidden: API not yet reviewed
+pub(crate) mod arms;
 #[doc(hidden)]
 pub mod build;
 #[cfg(test)]
@@ -80,7 +81,8 @@ pub use coerce::{Coerce, Coercing, IsIntRule, WideInt};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use duplicates::{Winner, blank_repeats, first_wins, last_wins, last_wins_except};
-pub use envelope::{EnvelopeVersion, RootProbe, probe_envelope};
+pub(crate) use envelope::slice_fault_span;
+pub use envelope::{EnvelopeError, EnvelopeVersion, RootProbe, probe_envelope};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use finite::{Clamped, clamp_non_finite, clamp_non_finite_warned};
@@ -88,7 +90,7 @@ pub use finite_bytes::FiniteBytes;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use null::{
-    NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members, nulls_read, parse_at_null_absent,
+    NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members_of_shape, nulls_read, parse_at_null_absent,
     reject_nulls, remove_null_members, tell_null_members,
 };
 pub use prepared::{PrepareError, Prepared};
@@ -122,15 +124,16 @@ pub(crate) use stack::with_stack_for;
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
 pub(crate) use walk::door_unknown_members;
-pub(crate) use walk::untagged::untagged_arm;
-pub(crate) use walk::{ScalarArm, choose_scalar_arm};
 pub(crate) use write::levels_of;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use walk::{
-    BEYOND_FLOAT_MEMBER, Misread, Misreading, keep_members, keep_members_and_range_members,
-    keep_unknown_members, keep_unknown_members_with, too_deep_to_walk, unknown_members,
+    keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
+    too_deep_to_walk, unknown_members,
 };
+// hidden: API not yet reviewed
+#[doc(hidden)]
+pub use kit::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
 pub use write::{Precedence, merge_unknown, merge_unknown_with};
 // hidden: API not yet reviewed
 #[doc(hidden)]

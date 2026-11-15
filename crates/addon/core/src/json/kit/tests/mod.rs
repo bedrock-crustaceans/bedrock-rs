@@ -272,7 +272,12 @@ fn an_unknown_member_is_told_under_the_code_the_texts_name() {
 fn findings_span_the_text_of_their_value_when_the_node_has_it() {
     let text = r#"{"list": [1, {"deep": "x"}], "flag": 0}"#;
     let json = value(text);
-    let root = Node::with_text(&json, at(&["root"]), JsonSlice { text, offset: 100 });
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice { text, offset: 100 },
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let root = Node::parsed(&parsed, at(&["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found);
     let members = read.object(&root).expect("an object");
@@ -342,38 +347,56 @@ fn a_parsed_node_spans_the_text_of_its_value_as_a_node_with_the_text_does() {
     );
 }
 
-/// Every node of `a` and `b`, which hold one document, must have the span and the text the
-/// other has, by the member and the element lookups and by the iterations.
-fn assert_same_spans(a: &Node<'_>, b: &Node<'_>, text: &str) {
-    assert_eq!(a.span(), b.span(), "span of {} in {text}", a.path());
-    assert_eq!(a.text(), b.text(), "text of {} in {text}", a.path());
+/// Every node below `a`, by the member and the element lookups and by the iterations, must span
+/// the text of its value at its file offset: the text read again is the node's value, and the
+/// lookup by key gives the node the iteration gives.
+/// `values`: the document repeats no key whose copies merge, so a node's text holds its value.
+fn assert_spans_are_texts(a: &Node<'_>, file: &str, offset: usize, values: bool) {
+    // A member that a repeated key merged into its first copy has no text of its own.
+    let (Some(slice), Some(span)) = (a.text(), a.span()) else {
+        assert!(
+            !values && a.span().is_none(),
+            "{} has no text in {file}",
+            a.path()
+        );
+        return;
+    };
+    assert_eq!(
+        slice.offset,
+        span.offset as usize,
+        "offset of {} in {file}",
+        a.path()
+    );
+    let start = slice.offset - offset;
+    assert_eq!(
+        &file[start..start + span.len as usize],
+        slice.text,
+        "text of {}",
+        a.path()
+    );
+    let again = crate::json::parse::parse_slice(slice, crate::json::parse::Options::default())
+        .expect("its text");
+    if values {
+        assert_eq!(&again.value, a.value(), "value of {} in {file}", a.path());
+    }
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found);
     if a.value().is_object() {
-        let (ma, mb) = (
-            read.object(a).expect("object"),
-            read.object(b).expect("object"),
-        );
-        let (ia, ib): (Vec<_>, Vec<_>) = (ma.iter().collect(), mb.iter().collect());
-        assert_eq!(ia.len(), ib.len(), "{text}");
-        for ((ka, na), (kb, nb)) in ia.iter().zip(&ib) {
-            assert_eq!(ka, kb, "{text}");
-            assert_same_spans(na, nb, text);
-            // The lookup by key agrees with the iteration.
-            let (ga, gb) = (ma.get(ka).expect("written"), mb.get(ka).expect("written"));
-            assert_same_spans(&ga, &gb, text);
+        let members = read.object(a).expect("object");
+        for (key, node) in members.iter() {
+            assert_spans_are_texts(&node, file, offset, values);
+            let got = members.get(key).expect("written");
+            assert_eq!(got.span(), node.span(), "{file}");
         }
     } else if a.value().is_array() {
-        let (ea, eb) = (read.array(a).expect("array"), read.array(b).expect("array"));
-        assert_eq!(ea.len(), eb.len(), "{text}");
-        for (na, nb) in ea.iter().zip(eb.iter()) {
-            assert_same_spans(&na, &nb, text);
+        for node in read.array(a).expect("array").iter() {
+            assert_spans_are_texts(&node, file, offset, values);
         }
     }
 }
 
 #[test]
-fn a_parsed_node_has_every_span_a_node_with_the_text_has() {
+fn every_node_of_a_parse_spans_the_text_of_its_value() {
     let many = format!(
         "{{{}}}",
         (0..70)
@@ -400,9 +423,11 @@ fn a_parsed_node_has_every_span_a_node_with_the_text_has() {
         )
         .expect("a document");
         assert_eq!(parsed.value, json, "{text}");
-        let by_slice = Node::with_text(&json, at(&["r"]), JsonSlice { text, offset: 40 });
-        let by_tree = Node::parsed(&parsed, at(&["r"]));
-        assert_same_spans(&by_slice, &by_tree, text);
+        let root = Node::parsed(&parsed, at(&["r"]));
+        let last = crate::json::Winner::LastInPlace;
+        let values = crate::json::parse::parse(text, crate::json::parse::Options::winner(last))
+            .is_ok_and(|unmerged| unmerged.value == json);
+        assert_spans_are_texts(&root, text, 40, values);
     }
 }
 
@@ -481,8 +506,12 @@ fn a_strict_reading_takes_a_scalar_of_its_own_kind_alone() {
 fn a_non_strict_read_tells_each_scalar_it_takes_as_the_other_json_type() {
     use crate::json::Declared;
     let text = r#"[2, 0, true, false, 2.5, 1, "x"]"#;
-    let json = value(text);
-    let root = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let root = Node::parsed(&parsed, JsonPath::new());
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found).non_strict("read as the bound type");
     let elements = read.array(&root).expect("an array");

@@ -218,12 +218,11 @@ const READERS: &[Reader] = &[
     }),
     ("probe_envelope", Gives::Text, |text| {
         match probe_envelope(JsonSlice::new(text)) {
-            Ok(_) => Read::Text,
-            Err(error) => match refusal_of(&error.error) {
-                // A root that is no object is the envelope's own refusal.
-                Read::Other(_) if !text.starts_with('{') => Read::Text,
-                other => other,
-            },
+            Err(bedrock_addon_core::json::EnvelopeError::Syntax(fault)) => {
+                refusal_of(&fault.to_error())
+            }
+            // A root that is no object is the envelope's own refusal.
+            Ok(_) | Err(_) => Read::Text,
         }
     }),
     ("scan", Gives::Text, |text| {

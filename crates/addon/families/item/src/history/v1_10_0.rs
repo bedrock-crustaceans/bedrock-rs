@@ -4,6 +4,7 @@
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::kit::{Members, Node, Profile, Read};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::BuiltIns;
 use bedrock_addon_core::schema::Schema;
@@ -81,7 +82,11 @@ impl VersionStruct for Item {
                     d.push(Diagnostic::of(&codes::COMPONENTS_NOT_OBJECT).at(at));
                     return None;
                 }
-                let node = Node::with_text(&raw.value, at.clone(), raw.slice());
+                let parsed = parse_slice(raw.slice(), Options::default());
+                let node = match &parsed {
+                    Ok(parsed) => Node::parsed(parsed, at.clone()),
+                    Err(_) => Node::new(&raw.value, at.clone()),
+                };
                 let mut read = Read::new(cx.load.reading, d)
                     .profile(Profile::EVERY_FAILURE)
                     .load(cx.load);

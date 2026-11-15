@@ -18,8 +18,12 @@ fn read_as<T: FromJson>(
     reading: Reading,
     profile: Profile,
 ) -> (Option<T>, Vec<String>) {
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(reading, &mut found).profile(profile);
     let value = T::from_json(&node, &mut read);
@@ -141,8 +145,12 @@ struct Plain {
 #[test]
 fn a_struct_that_keeps_puts_its_unknown_members_in_the_table_by_the_door_s_rule() {
     let text = r#"{"marked": {"a": 1}, "kept": {"b": 2}, "plain": {"c": 3}, "boxed": {"d": 4}}"#;
-    let json: Value = from_str_jsonc(text).unwrap();
-    let node = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::new());
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found).profile(Profile::FIRST_FAILURE);
     assert!(Holder::from_json(&node, &mut read).is_some());
@@ -511,8 +519,12 @@ fn a_transparent_newtype_reads_as_its_field() {
 #[test]
 fn every_finding_spans_the_value_it_is_about() {
     let text = r#"{"level": "x"}"#;
-    let json: Value = from_str_jsonc(text).unwrap();
-    let node = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::new());
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found).profile(Profile::FIRST_FAILURE);
     assert!(Lamp::from_json(&node, &mut read).is_none());
@@ -713,8 +725,12 @@ fn a_read_that_fails_keeps_no_unknown_member() {
             (r#"{"zz": 1, "a": "x"}"#, false),
             (r#"{"zz": 1, "a": 2}"#, true),
         ] {
-            let json: Value = from_str_jsonc(text).unwrap();
-            let node = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+            let parsed = crate::json::parse::parse_slice(
+                JsonSlice::new(text),
+                crate::json::parse::Options::default(),
+            )
+            .unwrap();
+            let node = Node::parsed(&parsed, JsonPath::new());
             let mut found = Diagnostics::default();
             found
                 .unknown_mut()
@@ -913,8 +929,12 @@ fn a_committed_fork_keeps_its_moves_and_a_stopped_read_forks_stopped() {
 #[test]
 fn an_object_given_to_a_string_enum_spans_its_first_member() {
     let text = r#"{"fast": 1}"#;
-    let json: Value = from_str_jsonc(text).unwrap();
-    let node = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::new());
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found);
     assert_eq!(Mode::from_json(&node, &mut read), None);
@@ -1318,8 +1338,12 @@ fn read_root<T: FromJson>(
     profile: Profile,
     texts: Texts,
 ) -> (Option<T>, Vec<String>) {
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(reading, &mut found).profile(profile).texts(texts);
     let value = crate::schema::read_document::<T>(&node, &mut read);
@@ -1578,8 +1602,12 @@ fn a_molang_number_beyond_f32_is_clamped_where_the_read_says() {
     let (value, told) = door::<Vec<Molang>>(text);
     assert_eq!(value, None);
     assert_eq!(told, ["Error root/0 core/invalid_type"]);
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found)
         .profile(Profile::FIRST_FAILURE)
@@ -1617,8 +1645,12 @@ fn a_molang_number_beyond_f32_is_clamped_where_the_read_says() {
 #[test]
 fn a_kept_number_beyond_a_double_is_clamped_where_the_read_says() {
     let text = r#"[1.5, {"a": -1e999}, 1e999]"#;
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found)
         .profile(Profile::FIRST_FAILURE)
@@ -1733,8 +1765,12 @@ fn an_unknown_member_kept_beyond_a_double_is_clamped_where_the_read_says() {
         extra: crate::document::UnknownMembers,
     }
     let text = r#"{"known": 1, "more": [1e999]}"#;
-    let json: Value = from_str_jsonc(text).expect("JSON");
-    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let parsed = crate::json::parse::parse_slice(
+        JsonSlice::new(text),
+        crate::json::parse::Options::default(),
+    )
+    .unwrap();
+    let node = Node::parsed(&parsed, JsonPath::of_keys(["root"]));
     let mut found = Diagnostics::default();
     let mut read = Read::new(Reading::DOCUMENT, &mut found).clamp_kept();
     let holder = Holder::from_json(&node, &mut read).expect("a value");

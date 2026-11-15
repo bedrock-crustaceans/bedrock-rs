@@ -275,8 +275,12 @@ fn style(read: &mut Read<'_>, payload: &Node<'_>) -> Option<(String, ())> {
 #[test]
 fn ddui_s_style_reader_reads_as_the_kit() {
     assert_reads_as(FIXTURES, EXPECTED, |text, found| {
-        let json = value(text);
-        let payload = Node::with_text(&json, at(&["minecraft:ui-style"]), JsonSlice::new(text));
+        let parsed = crate::json::parse::parse_slice(
+            JsonSlice::new(text),
+            crate::json::parse::Options::default(),
+        )
+        .unwrap();
+        let payload = Node::parsed(&parsed, at(&["minecraft:ui-style"]));
         let mut read = Read::new(Reading::DOCUMENT, found);
         style(&mut read, &payload).is_some()
     });

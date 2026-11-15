@@ -3,6 +3,7 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, JsonPath, Span, code_for_deserialize_error_kind};
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::parse::Options;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
@@ -58,7 +59,8 @@ fn read(
         Ok(text) => {
             bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
         }
-        Err(_) => bedrock_addon_core::json::from_slice_jsonc(bytes),
+        Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default())
+            .map_err(|fault| fault.to_error()),
     };
     let root: Value = match parsed {
         Ok(root) => root,

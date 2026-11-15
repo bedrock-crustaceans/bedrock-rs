@@ -20,21 +20,19 @@ use super::scalar::{Declared, ScalarRules, Verdict};
 use super::slice::element_of;
 use crate::diagnostic::JsonPath;
 use crate::document::Unknown as Table;
+pub(crate) use crate::json::arms::{Lookup, find_field, struct_fields};
 use crate::schema::UnknownRule;
 
 mod enums;
 mod keep;
-mod misread;
 mod scalars;
-pub(crate) mod untagged;
 
+use super::{Misread, Misreading};
 use enums::walk_enum;
 pub(crate) use keep::door_unknown_members;
 pub use keep::{
     keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
 };
-pub use misread::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
-pub(crate) use scalars::{ScalarArm, choose_scalar_arm};
 use scalars::{judge_scalar, misreading};
 
 /// Every member of `json` that no field of `shape` takes, at any depth, with its path, in
@@ -606,48 +604,6 @@ fn rule_of<'a>(mut attributes: impl Iterator<Item = &'a facet::Attr>) -> Option<
         .find(|attr| attr.ns() == Some("schema") && attr.key() == "unknown")
         .and_then(|attr| attr.get_as::<&'static str>())
         .and_then(|word| UnknownRule::from_word(word))
-}
-
-/// Where a JSON key goes among a struct's fields.
-enum Lookup {
-    /// To the field at this index.
-    Field(usize, &'static Field),
-    /// Into the flattened field at this index: a struct one of whose fields takes the key, or
-    /// a map.
-    Flattened(usize, &'static Field),
-    /// Nowhere.
-    Unknown,
-}
-
-fn find_field(fields: &'static [Field], key: &str) -> Lookup {
-    for (index, field) in fields.iter().enumerate() {
-        if field.should_skip_deserializing() {
-            continue;
-        }
-        if field.is_flattened() {
-            let takes = match field.shape().def {
-                Def::Map(_) => true,
-                _ => struct_fields(field.shape())
-                    .is_some_and(|inner| !matches!(find_field(inner, key), Lookup::Unknown)),
-            };
-            if takes {
-                return Lookup::Flattened(index, field);
-            }
-            continue;
-        }
-        if field.effective_name() == key || field.alias == Some(key) {
-            return Lookup::Field(index, field);
-        }
-    }
-    Lookup::Unknown
-}
-
-/// The named fields of a struct shape.
-fn struct_fields(shape: &'static Shape) -> Option<&'static [Field]> {
-    match shape.ty {
-        Type::User(UserType::Struct(st)) => Some(st.fields),
-        _ => None,
-    }
 }
 
 /// `#[facet(skip)] extra: Extra`.
