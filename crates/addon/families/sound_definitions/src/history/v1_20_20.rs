@@ -43,6 +43,6 @@ impl Upgrade for SoundDefinitions {
         if document.is_object() {
             upgrade::disallow_concurrent_streaming(&mut document, &mut Upgraded::default());
         }
-        Latest::read(document, cx.diagnostics)
+        Latest::read(&document, cx.diagnostics)
     }
 }

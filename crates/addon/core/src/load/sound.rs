@@ -7,12 +7,15 @@ use crate::load::{LoadContext, WalkFile};
 
 use crate::diagnostic::builders::syntax;
 use crate::diagnostic::{
-    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Severity, codes,
+    Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, codes,
 };
 use crate::document::{Origin, RawLayer, Rejected, unversioned};
 use crate::json::{EncodeError, MAX_JSON_DEPTH, Value, WriteStyle, check_depth, write_json};
 
 use crate::json::jsoncpp::ReadError;
+use crate::json::kit::{Node, Profile, Read, UnknownAt};
+use crate::schema::{FromJson, read_document};
+use crate::versioning::{NullHandling, Reading, Scalars};
 
 /// One pack's copy of a sound document: its JSON, or why it is none.
 #[derive(Clone, Debug)]
@@ -83,6 +86,22 @@ pub fn readable(
         }
     }
     out
+}
+
+/// Reads the merged document `json` as `T` the way the game's jsoncpp fork reads it: each member
+/// coerced for its type ([`Scalars::Fork`]), a `null` the default ([`NullHandling::AbsentSilently`]),
+/// the members of an object in the order its type declares them and its unknown ones, told as an
+/// information, after them; every finding is told in the validate phase. A value that does not
+/// read is `T`'s default.
+pub fn read_merged<T: FromJson + Default>(json: &Value, diagnostics: &mut Diagnostics) -> T {
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Fork)
+        .with_null(NullHandling::AbsentSilently);
+    let mut read = Read::new(reading, diagnostics)
+        .profile(Profile::DECLARED_ORDER.with_unknown(UnknownAt::Last))
+        .phase(Phase::Validate)
+        .unknown_severity(Severity::Info);
+    read_document(&Node::new(json, JsonPath::new()), &mut read).unwrap_or_default()
 }
 
 /// The layers of a merge, top first.

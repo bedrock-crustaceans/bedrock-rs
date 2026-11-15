@@ -1,19 +1,24 @@
 //! `sounds/sound_definitions.json` at its newest shape: the typed read of the upgraded JSON
 //! and its rules.
+#![allow(
+    clippy::unnecessary_wraps,
+    reason = "a `schema::read_with` function reads to an `Option`, which these never fail"
+)]
 
 use super::codes;
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
-use bedrock_addon_core::json::kit::Written;
-use bedrock_addon_core::json::kit::sound::read::{boolean, float, integer, real, string};
-use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
-use bedrock_addon_core::json::kit::sound::write::{self, Object, Present, present};
+use bedrock_addon_core::json::kit::write::{self, Object};
+use bedrock_addon_core::json::kit::{Node, Present, Read, Written};
 use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::load::sound::read_merged;
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::SemVersion;
 
 /// The longest sound path vanilla's 1024-byte stack string holds.
@@ -45,7 +50,7 @@ pub const CATEGORIES: &[&str] = &[
 /// the value holds nothing ([`foreign_root`](Self::foreign_root)).
 /// [`json`](Self::json) is the upgraded document the value was read from.
 #[doc(alias = "sound_definitions.json")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct SoundDefinitions {
     /// `format_version`, when it reads as a version (a string or three integers). Vanilla
@@ -133,73 +138,22 @@ impl SoundDefinitions {
     /// The value of a document that is already the 1.26.50 shape, read as it is: no version
     /// step runs and the findings of the read are dropped. `Content::parse` reads a file with
     /// both.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "the signature of the other two documents' `from_json`"
+    )]
     pub fn from_json(json: Value) -> Self {
-        Self::read(json, &mut Diagnostics::default())
+        Self::read(&json, &mut Diagnostics::default())
     }
 
     /// Reads an upgraded document.
-    pub(crate) fn read(json: Value, diagnostics: &mut Diagnostics) -> Self {
-        let root = read_root(&json, diagnostics);
-        let format_version = super::upgrade::version_member(&json);
-        let mut extra = root.extra;
-        // The members the client reads that the typed ones cannot hold, kept as written.
-        let unread = [
-            ("format_version", format_version.is_none()),
-            (
-                "sound_definitions",
-                !fork::member(&json, "sound_definitions").is_object(),
-            ),
-        ];
-        for (key, unread) in unread {
-            if unread && fork::has_member(&json, key) {
-                extra.insert(key.to_owned(), fork::member(&json, key).clone());
-            }
-        }
-        Self {
-            format_version,
-            sound_definitions: root.definitions,
-            not_definitions: root.not_definitions,
-            extra,
-            foreign_root: (!json.is_object() && !json.is_null()).then(|| json.clone()),
-            read: present(&json, &ROOT_KEYS),
-            json: Written(Some(json)),
-        }
+    pub(crate) fn read(json: &Value, diagnostics: &mut Diagnostics) -> Self {
+        read_merged(json, diagnostics)
     }
 }
 
 /// The members of the root the client reads.
 const ROOT_KEYS: [&str; 2] = ["format_version", "sound_definitions"];
-
-/// The members of a definition the client reads.
-const DEFINITION_KEYS: [&str; 9] = [
-    "category",
-    "min_distance",
-    "max_distance",
-    "__use_legacy_max_distance",
-    "subtitle",
-    "sounds",
-    "external_event_name",
-    "external_event_parameters",
-    "actions",
-];
-
-/// The members of an object entry of `sounds` the client reads.
-const ENTRY_KEYS: [&str; 8] = [
-    "name",
-    "volume",
-    "pitch",
-    "weight",
-    "is3D",
-    "stream",
-    "interruptible",
-    "allow_concurrent_streaming",
-];
-
-/// The members of an external event's parameter the client reads.
-const PARAMETER_KEYS: [&str; 2] = ["parameter", "value"];
-
-/// The members of an action the client reads.
-const ACTION_KEYS: [&str; 6] = ["action_type", "name", "target", "enabled", "param", "delay"];
 
 /// A string member's JSON.
 fn text(text: &str) -> Value {
@@ -231,28 +185,42 @@ fn list<T>(
 }
 
 /// One sound definition: the sounds an event plays and how.
-#[derive(Clone, Debug, Default, PartialEq)]
+///
+/// The scalar members read as the game reads them; the three lists, which depend on the
+/// definition (an external event replaces `sounds`, a category sets the default of an entry's
+/// `is3D`), are read by [`after_read`] once the members are.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::quiet = "volume pitch", schema::after_read = after_read)]
 #[non_exhaustive]
 pub struct SoundDefinition {
     /// `category`, as written (vanilla does not check it); `""` when absent or no string.
+    #[facet(default, schema::read_with = text_or_empty)]
     pub category: String,
     /// `min_distance`; 0.0 (the engine's default) when absent or `null`.
+    #[facet(default)]
     pub min_distance: f32,
     /// `max_distance`; 0.0 (the engine's default) when absent or `null`.
+    #[facet(default)]
     pub max_distance: f32,
     /// `__use_legacy_max_distance`, which the 1.14.0 step sets on every definition of an
     /// older file; `false` when absent.
+    #[facet(default, rename = "__use_legacy_max_distance", schema::read_with = legacy_flag)]
     pub use_legacy_max_distance: bool,
     /// `subtitle`; `""` when absent or no string.
+    #[facet(default, schema::read_with = text_or_empty)]
     pub subtitle: String,
     /// `sounds`: the entries one of which is played. Empty when the definition names an
     /// external event.
+    #[facet(default, schema::read_with = schema::read_later)]
     pub sounds: Vec<SoundEntry>,
     /// `external_event_name`, when it is a string; `sounds` is then not read.
+    #[facet(schema::or_kept = "silent", schema::read_with = text_only)]
     pub external_event_name: Option<String>,
     /// `external_event_parameters`, read only with an external event.
+    #[facet(default, schema::read_with = schema::read_later)]
     pub external_event_parameters: Vec<ExternalEventParameter>,
     /// `actions`.
+    #[facet(default, schema::read_with = schema::read_later)]
     pub actions: Vec<SoundAction>,
     /// The members the client does not read, and those it reads that the definition did not:
     /// `sounds` and `external_event_parameters` beside an external event, an
@@ -260,6 +228,7 @@ pub struct SoundDefinition {
     /// as written (the typed list holds its reading).
     pub extra: UnknownMembers,
     /// The members the definition was read with.
+    #[facet(skip, rename = "\u{0}read")]
     pub(crate) read: Present,
 }
 
@@ -325,17 +294,20 @@ impl SoundDefinition {
 }
 
 /// How an entry of `sounds` is written.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum SoundEntryForm {
     /// A bare path string.
     Path,
     /// An object with `name` and its options.
+    #[default]
     Object,
 }
 
 /// One entry of a definition's `sounds`, with vanilla's defaults filled in.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::quiet = "load_on_low_memory pitch:")]
 #[allow(
     clippy::struct_excessive_bools,
     reason = "four independent bool members of vanilla's entry"
@@ -344,29 +316,39 @@ pub enum SoundEntryForm {
 pub struct SoundEntry {
     /// How the entry is written. The two forms differ in one default:
     /// [`interruptible`](Self::interruptible).
+    #[facet(skip, rename = "\u{0}form")]
     pub form: SoundEntryForm,
     /// `name`: the path of the audio file without its extension, which the client appends
     /// (`.fsb`, `.ogg`, `.wav`) when the sound is first played.
+    #[facet(default)]
     pub name: String,
     /// `volume`; 1.0 by default.
+    #[facet(default = 1.0)]
     pub volume: f32,
     /// `pitch`; 1.0 by default. A file below format 1.14.0 loses it.
+    #[facet(default = 1.0)]
     pub pitch: f32,
     /// `weight`; 1 by default.
+    #[facet(default = 1)]
     pub weight: i32,
     /// `is3D`; by default whether the definition's category is neither `music` nor `ui`.
+    #[facet(default = true, rename = "is3D")]
     pub is_3d: bool,
     /// `stream`; `false` by default.
+    #[facet(default)]
     pub stream: bool,
     /// `interruptible`; `true` by default for an object entry and `false` for a path string.
+    #[facet(default = true)]
     pub interruptible: bool,
     /// `allow_concurrent_streaming`: whether a streamed entry may play while another stream
     /// plays; `true` by default. The 1.26.50 step writes `false` into every streamed object
     /// entry of an older file that does not say. A path string does not say and reads `true`.
+    #[facet(default = true)]
     pub allow_concurrent_streaming: bool,
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members an object entry was read with.
+    #[facet(skip, rename = "\u{0}read")]
     pub(crate) read: Present,
 }
 
@@ -411,16 +393,19 @@ impl SoundEntry {
 }
 
 /// One entry of `external_event_parameters`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct ExternalEventParameter {
     /// `parameter`.
+    #[facet(default)]
     pub parameter: String,
     /// `value`; 0.0 unless it is written with a fraction (an integer such as `1` is 0.0).
+    #[facet(default, schema::read_with = real)]
     pub value: f32,
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members the parameter was read with.
+    #[facet(skip, rename = "\u{0}read")]
     pub(crate) read: Present,
 }
 
@@ -437,24 +422,31 @@ impl ExternalEventParameter {
 }
 
 /// One entry of `actions` (used by vanilla's own packs only).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct SoundAction {
     /// `action_type`; −1 unless it is an integer.
+    #[facet(default = -1, schema::read_with = action_type)]
     pub action_type: i32,
     /// `name`.
+    #[facet(default)]
     pub name: String,
     /// `target`.
+    #[facet(default)]
     pub target: String,
     /// `enabled`; `false` by default.
+    #[facet(default)]
     pub enabled: bool,
     /// `param`; 0.0 unless it is written with a fraction.
+    #[facet(default, schema::read_with = real)]
     pub param: f32,
     /// `delay`; 0.0 unless it is written with a fraction.
+    #[facet(default, schema::read_with = real)]
     pub delay: f32,
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members the action was read with.
+    #[facet(skip, rename = "\u{0}read")]
     pub(crate) read: Present,
 }
 
@@ -474,226 +466,226 @@ impl SoundAction {
     }
 }
 
-/// What [`read_root`] read of a root.
-#[derive(Debug, Default)]
-pub(crate) struct RootRead {
-    /// The definitions.
-    pub(crate) definitions: IndexMap<SoundEventName, SoundDefinition>,
-    /// The members of `sound_definitions` that are no object.
-    pub(crate) not_definitions: UnknownMembers,
-    /// The root's members the client does not read.
-    pub(crate) extra: UnknownMembers,
-}
-
-/// Reads the root of an upgraded document: the definitions under `sound_definitions`, each a
-/// `SoundDefinition` or skipped with its finding. A `null` root reads as nothing.
-pub(crate) fn read_root(root: &Value, diagnostics: &mut Diagnostics) -> RootRead {
-    let mut out = RootRead::default();
-    let mut report = Reporter::new(diagnostics);
-    if root.is_null() {
-        return out;
-    }
-    if !root.is_object() {
-        // The game writes an error line to the content log; nothing of the file is registered
-        // and the parser returns normally: every entry dropped, the file kept, a kept error. The
-        // value holds no definition.
-        report.kept(Code::from(&codes::CONTENTS_MALFORMED));
-        return out;
-    }
-    out.extra = check_unknown(root, &ROOT_KEYS, &[], &mut report);
-    report.enter("sound_definitions");
-    let definitions = fork::member(root, "sound_definitions");
-    if !definitions.is_object() {
-        // The game writes an error line to the content log; no definition is registered and the
-        // parser returns normally: a kept error. The value holds the member as written.
-        report.kept(Code::from(&codes::SECTION_MALFORMED));
-        return out;
-    }
-    let Some(object) = definitions.as_object() else {
-        return out;
-    };
-    for (name, value) in object {
-        let name = name.as_str();
-        report.enter(name);
-        if value.is_object() {
-            out.definitions.insert(
-                SoundEventName::parse(name),
-                read_definition(name, value, &mut report),
-            );
-        } else {
-            out.not_definitions.insert(name.to_owned(), value.clone());
-            // The game registers an empty event.
-            report.vanilla(
-                codes::MALFORMED_SOUND.with([name.to_owned()]),
-                Severity::Info,
-            );
+/// The merged document: the definitions under `sound_definitions`, each a [`SoundDefinition`]
+/// or kept as written with its finding, and the members of the root the client does not read. A
+/// `null` root reads as nothing; one that is no object is a kept error, with nothing read.
+impl FromJson for SoundDefinitions {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let root = node.value();
+        let mut out = Self {
+            format_version: super::upgrade::version_member(root),
+            foreign_root: (!root.is_object() && !root.is_null()).then(|| root.clone()),
+            json: Written(Some(root.clone())),
+            ..Self::default()
+        };
+        if root.is_null() {
+            return Some(out);
         }
-        report.leave();
+        if !root.is_object() {
+            // The game writes an error line to the content log; nothing of the file is registered
+            // and the parser returns normally: every entry dropped, the file kept, a kept error.
+            read.push(Diagnostic::of(&codes::CONTENTS_MALFORMED));
+            return Some(out);
+        }
+        let members = read.object(node)?;
+        out.read = Written(Some(
+            ROOT_KEYS
+                .into_iter()
+                .filter(|key| members.contains(key))
+                .collect(),
+        ));
+        for (key, member) in members.iter().filter(|(key, _)| !ROOT_KEYS.contains(key)) {
+            read.push(Diagnostic::info(&core_codes::UNRECOGNIZED_FIELD).at(member.path().clone()));
+            out.extra.insert(key.to_owned(), member.value().clone());
+        }
+        let section = Node::new(
+            fork::member(root, "sound_definitions"),
+            node.path().child("sound_definitions"),
+        );
+        if section.value().is_object() {
+            for (name, member) in read.object(&section)?.iter() {
+                if member.value().is_object() {
+                    let definition = SoundDefinition::from_json(&member, read)?;
+                    out.sound_definitions
+                        .insert(SoundEventName::parse(name), definition);
+                } else {
+                    // The game registers an empty event.
+                    let code = codes::MALFORMED_SOUND.with([name.to_owned()]);
+                    read.push(Diagnostic::info(code).at(member.path().clone()));
+                    out.not_definitions
+                        .insert(name.to_owned(), member.value().clone());
+                }
+            }
+        } else {
+            // The game writes an error line to the content log; no definition is registered and
+            // the parser returns normally: a kept error. The value holds the member as written.
+            read.push(Diagnostic::of(&codes::SECTION_MALFORMED).at(section.path().clone()));
+        }
+        // The members the client reads that the typed ones cannot hold, kept as written.
+        let unread = [
+            ("format_version", out.format_version.is_none()),
+            ("sound_definitions", !section.value().is_object()),
+        ];
+        for (key, unread) in unread {
+            if unread && members.contains(key) {
+                out.extra
+                    .insert(key.to_owned(), fork::member(root, key).clone());
+            }
+        }
+        Some(out)
     }
-    out
 }
 
-/// Reads one definition object.
-fn read_definition(name: &str, value: &Value, report: &mut Reporter<'_>) -> SoundDefinition {
-    let mut definition = SoundDefinition {
-        category: fork::text(fork::member(value, "category"))
-            .unwrap_or_default()
-            .to_owned(),
-        min_distance: float(value, "min_distance", 0.0, report),
-        max_distance: float(value, "max_distance", 0.0, report),
-        use_legacy_max_distance: legacy_flag(value, report),
-        subtitle: fork::text(fork::member(value, "subtitle"))
-            .unwrap_or_default()
-            .to_owned(),
-        extra: check_unknown(value, &DEFINITION_KEYS, &["volume", "pitch"], report),
-        read: present(value, &DEFINITION_KEYS),
-        ..SoundDefinition::default()
-    };
-    check_category(name, value, &definition, report);
+/// A text member as the game reads it without a word: the string, else `""`.
+fn text_or_empty(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    Some(fork::text(node.value()).unwrap_or_default().to_owned())
+}
+
+/// A text member that is none when it is no string, and then kept as written
+/// (`schema::or_kept`).
+fn text_only(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    fork::text(node.value()).map(str::to_owned)
+}
+
+/// A float the game reads only when it is written with a fraction (`isDouble()`): else 0.0.
+fn real(node: &Node<'_>, _: &mut Read<'_>) -> Option<f32> {
+    Some(match fork::stored(node.value()) {
+        Stored::Real => fork::as_float(node.value(), 0.0),
+        _ => 0.0,
+    })
+}
+
+/// An integer the game reads only when it is written as one (`isInt()`): else −1.
+fn action_type(node: &Node<'_>, _: &mut Read<'_>) -> Option<i32> {
+    Some(match fork::stored(node.value()) {
+        Stored::Integer => fork::as_int(node.value(), 0),
+        _ => -1,
+    })
+}
+
+/// `__use_legacy_max_distance`: a bool member whose vanilla spelling, the string `"true"` of
+/// the 1.14.0 step, is no finding.
+fn legacy_flag(node: &Node<'_>, read: &mut Read<'_>) -> Option<bool> {
+    if fork::text(node.value()) == Some("true") {
+        return Some(true);
+    }
+    bool::from_json(node, read)
+}
+
+/// The elements of the list `key` of `owner` as jsoncpp iterates it: an array's elements at their
+/// indices, an object's values in key order (at their keys when `by_key`, else at their
+/// positions), nothing for another value.
+fn iterated<'v>(owner: &Node<'v>, key: &str, by_key: bool) -> Vec<Node<'v>> {
+    let (list, at) = (fork::member(owner.value(), key), owner.path().child(key));
+    match fork::stored(list) {
+        Stored::Array => fork::elements(list)
+            .into_iter()
+            .enumerate()
+            .map(|(index, element)| Node::new(element, at.index(index)))
+            .collect(),
+        Stored::Object => fork::member_names(list)
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| {
+                let at = if by_key {
+                    at.child(&name)
+                } else {
+                    at.index(index)
+                };
+                Node::new(fork::member(list, &name), at)
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Which members of the branch not read are kept as written.
+type Kept = fn(&Value) -> bool;
+
+/// What the members of a definition cannot say alone, in the game's order: the `music.*` name
+/// check and the category list, then either the external event's parameters or the sounds, then
+/// the actions; each list written as an object of entries is kept as written, as is a member of
+/// the branch not read.
+fn after_read(definition: &mut SoundDefinition, node: &Node<'_>, read: &mut Read<'_>) {
+    check_category(definition, node, read);
+    let value = node.value();
     let external = fork::member(value, "external_event_name");
-    let sounds = fork::member(value, "sounds");
-    if !external.is_null() && !sounds.is_null() {
+    if !external.is_null() && !fork::member(value, "sounds").is_null() {
         // The game never reads `external_event_name` when `sounds` is present and says nothing,
         // so the crate reports the combination as an information.
-        report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-        let _ = name;
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
     }
-    // The members read on one branch alone are kept as written on the other.
-    let unread = |key: &str, definition: &mut SoundDefinition| {
+    // A member read on one branch alone is kept as written on the other; a list written as an
+    // object is read in sorted key order and kept as written, the merge recurses into it.
+    let mut keep = |key: &str, kept: Kept| {
         let member = fork::member(value, key);
-        if !member.is_null() {
+        if kept(member) {
             definition.extra.insert(key.to_owned(), member.clone());
         }
     };
-    // A list written as an object is read in sorted key order and kept as written: the merge
-    // recurses into it.
-    let as_object = |key: &str, definition: &mut SoundDefinition| {
-        let member = fork::member(value, key);
-        if member.is_object() {
-            definition.extra.insert(key.to_owned(), member.clone());
-        }
-    };
-    if let Some(event) = fork::text(external) {
-        unread("sounds", &mut definition);
-        as_object("external_event_parameters", &mut definition);
-        definition.external_event_name = Some(event.to_owned());
-        report.enter("external_event_parameters");
-        let parameters = fork::member(value, "external_event_parameters");
-        for (index, parameter) in fork::elements(parameters).into_iter().enumerate() {
-            report.enter_index(index);
-            definition
-                .external_event_parameters
-                .push(ExternalEventParameter {
-                    parameter: string(parameter, "parameter", report),
-                    value: real(parameter, "value"),
-                    extra: check_unknown(parameter, &PARAMETER_KEYS, &[], report),
-                    read: present(parameter, &PARAMETER_KEYS),
-                });
-            report.leave();
-        }
-        report.leave();
+    let (written, object): (Kept, Kept) = (|member| !member.is_null(), Value::is_object);
+    if external.is_string() {
+        keep("sounds", written);
+        keep("external_event_parameters", object);
     } else {
-        unread("external_event_name", &mut definition);
-        unread("external_event_parameters", &mut definition);
-        as_object("sounds", &mut definition);
-        report.enter("sounds");
-        // An entry is named as the file has it: by its key where `sounds` is an
-        // object (walked in sorted key order), by its index in a list.
-        let keys = sounds.is_object().then(|| fork::member_names(sounds));
-        for (index, entry) in fork::elements(sounds).into_iter().enumerate() {
-            match keys.as_ref().and_then(|keys| keys.get(index)) {
-                Some(key) => report.enter(key),
-                None => report.enter_index(index),
-            }
-            if let Some(entry) = read_entry(entry, &definition, report) {
-                definition.sounds.push(entry);
-            }
-            report.leave();
-        }
-        report.leave();
+        keep("external_event_parameters", written);
+        keep("sounds", object);
     }
-    definition.actions = read_actions(value, report);
-    as_object("actions", &mut definition);
-    definition
-}
-
-/// The `actions` of a definition; an element that is no object is skipped.
-fn read_actions(value: &Value, report: &mut Reporter<'_>) -> Vec<SoundAction> {
-    let mut actions = Vec::new();
-    report.enter("actions");
-    for (index, action) in fork::elements(fork::member(value, "actions"))
-        .into_iter()
-        .enumerate()
-    {
-        if !action.is_object() {
-            continue;
-        }
-        report.enter_index(index);
-        let action_type = fork::member(action, "action_type");
-        actions.push(SoundAction {
-            action_type: if fork::stored(action_type) == Stored::Integer {
-                fork::as_int(action_type, 0)
+    keep("actions", object);
+    if external.is_string() {
+        for parameter in iterated(node, "external_event_parameters", false) {
+            let read_one = if parameter.value().is_object() {
+                ExternalEventParameter::from_json(&parameter, read)
             } else {
-                -1
-            },
-            name: string(action, "name", report),
-            target: string(action, "target", report),
-            enabled: boolean(action, "enabled", false, report),
-            param: real(action, "param"),
-            delay: real(action, "delay"),
-            extra: check_unknown(action, &ACTION_KEYS, &[], report),
-            read: present(action, &ACTION_KEYS),
-        });
-        report.leave();
+                Some(ExternalEventParameter::default())
+            };
+            definition.external_event_parameters.extend(read_one);
+        }
+    } else {
+        let is_3d = definition.is_3d_by_default();
+        for entry in iterated(node, "sounds", true) {
+            definition.sounds.extend(read_entry(&entry, is_3d, read));
+        }
     }
-    report.leave();
-    actions
+    for action in iterated(node, "actions", false) {
+        if action.value().is_object() {
+            definition
+                .actions
+                .extend(SoundAction::from_json(&action, read));
+        }
+    }
 }
 
 /// the `music.*` name check and the category list.
-fn check_category(
-    name: &str,
-    value: &Value,
-    definition: &SoundDefinition,
-    report: &mut Reporter<'_>,
-) {
+fn check_category(definition: &SoundDefinition, node: &Node<'_>, read: &mut Read<'_>) {
     // Only a name with a `.` is split, and its first segment is compared with `music`
     // case-sensitively; the category is compared without case.
+    let name = node.path().last_key().unwrap_or_default();
     let first = name.split_once('.').map(|(first, _)| first);
     if first == Some("music") && !definition.category.eq_ignore_ascii_case("music") {
-        report.vanilla(
-            codes::NOT_MUSIC.with([name.to_owned()]),
-            // The game logs this at the content log's warning level.
-            Severity::Warning,
-        );
+        // The game logs this at the content log's warning level.
+        let code = codes::NOT_MUSIC.with([name.to_owned()]);
+        read.push(Diagnostic::of(code).at(node.path().clone()));
     }
     // The game stores the category as a free string and checks only the `music` prefix above;
     // a name the volume map lacks is ignored without a word, so the crate reports it as an
     // information.
-    if fork::member(value, "category").is_string()
+    if fork::member(node.value(), "category").is_string()
         && !CATEGORIES.contains(&definition.category.as_str())
     {
-        report.at(
-            "category",
-            Code::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        let at = node.path().child("category");
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(at));
     }
 }
 
 /// One element of `sounds`: a path string or an object; `null` is skipped silently, another
-/// type with a warning.
-fn read_entry(
-    entry: &Value,
-    definition: &SoundDefinition,
-    report: &mut Reporter<'_>,
-) -> Option<SoundEntry> {
-    let is_3d = definition.is_3d_by_default();
-    let read = match fork::stored(entry) {
+/// type with an information. The object's `is3D` is the category's when it has none.
+fn read_entry(node: &Node<'_>, is_3d: bool, read: &mut Read<'_>) -> Option<SoundEntry> {
+    let entry = match fork::stored(node.value()) {
         Stored::Null => return None,
         Stored::String => SoundEntry {
             form: SoundEntryForm::Path,
-            name: fork::to_text(entry),
+            name: fork::to_text(node.value()),
             volume: 1.0,
             pitch: 1.0,
             weight: 1,
@@ -704,50 +696,30 @@ fn read_entry(
             extra: UnknownMembers::default(),
             read: Present::default(),
         },
-        Stored::Object => SoundEntry {
-            form: SoundEntryForm::Object,
-            name: string(entry, "name", report),
-            volume: float(entry, "volume", 1.0, report),
-            pitch: float(entry, "pitch", 1.0, report),
-            weight: integer(entry, "weight", 1, report),
-            is_3d: boolean(entry, "is3D", is_3d, report),
-            stream: boolean(entry, "stream", false, report),
-            interruptible: boolean(entry, "interruptible", true, report),
-            allow_concurrent_streaming: boolean(entry, "allow_concurrent_streaming", true, report),
-            extra: check_unknown(
-                entry,
-                &ENTRY_KEYS,
-                &["load_on_low_memory", "pitch:"],
-                report,
-            ),
-            read: present(entry, &ENTRY_KEYS),
-        },
+        Stored::Object => {
+            let mut entry = SoundEntry::from_json(node, read)?;
+            if fork::member(node.value(), "is3D").is_null() {
+                entry.is_3d = is_3d;
+            }
+            entry
+        }
         _ => {
-            report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
+            read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
             return None;
         }
     };
-    if read.name.len() > MAX_NAME_BYTES {
+    if entry.name.len() > MAX_NAME_BYTES {
         // The game asserts and keeps an empty path.
-        report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
         return None;
     }
-    Some(read)
-}
-
-/// `__use_legacy_max_distance`: a bool member whose vanilla spelling, the string `"true"` of
-/// the 1.14.0 step, is no finding.
-fn legacy_flag(value: &Value, report: &mut Reporter<'_>) -> bool {
-    let member = fork::member(value, "__use_legacy_max_distance");
-    if fork::text(member) == Some("true") {
-        return true;
-    }
-    boolean(value, "__use_legacy_max_distance", false, report)
+    Some(entry)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use facet::{Type, UserType};
 
     /// The keys of a written object, in order.
     fn keys(value: &Value) -> Vec<&str> {
@@ -759,8 +731,24 @@ mod tests {
             .collect()
     }
 
-    /// The key lists name the members by their spelling in the writers: an object whose every
-    /// member is set writes exactly the keys of its list.
+    /// The members the derived read takes of a type (its fields but the three that are no
+    /// member), sorted.
+    fn read_keys<'a, T: Facet<'a>>() -> Vec<&'static str> {
+        let Type::User(UserType::Struct(shape)) = T::SHAPE.ty else {
+            unreachable!("a struct");
+        };
+        let mut keys: Vec<&str> = shape
+            .fields
+            .iter()
+            .filter(|field| !matches!(field.name, "extra" | "read" | "form"))
+            .map(|field| field.rename.unwrap_or(field.name))
+            .collect();
+        keys.sort_unstable();
+        keys
+    }
+
+    /// The members the derived read takes are the members of the writers: an object whose every
+    /// member is set writes exactly the keys of its type's fields.
     #[test]
     fn every_key_the_reader_knows_is_a_member_the_writer_writes() {
         let entry = SoundEntry {
@@ -815,12 +803,26 @@ mod tests {
             read: Present::default(),
             json: Written::default(),
         };
-        let written = |value: Result<Value, EncodeError>| value.expect("written");
-        assert_eq!(keys(&written(root.to_value())), ROOT_KEYS);
-        assert_eq!(keys(&written(definition.to_value())), DEFINITION_KEYS);
-        assert_eq!(keys(&written(entry.to_value(&definition))), ENTRY_KEYS);
-        assert_eq!(keys(&written(parameter.to_value())), PARAMETER_KEYS);
-        assert_eq!(keys(&written(action.to_value())), ACTION_KEYS);
+        let written = |value: Result<Value, EncodeError>| {
+            let value = value.expect("written");
+            let mut keys: Vec<String> = keys(&value).into_iter().map(str::to_owned).collect();
+            keys.sort_unstable();
+            keys
+        };
+        assert_eq!(written(root.to_value()), ROOT_KEYS);
+        assert_eq!(
+            written(definition.to_value()),
+            read_keys::<SoundDefinition>()
+        );
+        assert_eq!(
+            written(entry.to_value(&definition)),
+            read_keys::<SoundEntry>()
+        );
+        assert_eq!(
+            written(parameter.to_value()),
+            read_keys::<ExternalEventParameter>()
+        );
+        assert_eq!(written(action.to_value()), read_keys::<SoundAction>());
     }
 
     #[test]

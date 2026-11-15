@@ -51,13 +51,26 @@ fn member_of(field: &syn::Field, index: usize) -> Member {
 
 /// The value a field the read does not take is built with: a `skip` field's facet `default`
 /// (its type's `Default` without one), the struct's kept unknown members for an
-/// `UnknownMembers` field, the object as written for a `Written` one.
-fn untaken_value(field: &syn::Field) -> TokenStream {
+/// `UnknownMembers` field, the object as written for a `Written` one, and for a `Present` one
+/// the `names` (the JSON names of the struct's fields) the object wrote, `null` ones included.
+fn untaken_value(field: &syn::Field, names: &[&String]) -> TokenStream {
     let mut scratch = Vec::new();
     let attrs = FieldAttrs::read(&field.attrs, &mut scratch);
     let ty = &field.ty;
     if named(ty, "UnknownMembers") {
         return quote!(__extra);
+    }
+    if named(ty, "Present") {
+        return quote!(::core::convert::From::from(::core::option::Option::Some(
+            [#(#names),*]
+                .into_iter()
+                .filter(|__name: &&'static str| __object
+                    .node()
+                    .value()
+                    .as_object()
+                    .is_some_and(|__members| __members.contains_key(*__name)))
+                .collect::<::std::vec::Vec<&'static str>>()
+        )));
     }
     if named(ty, "Written") {
         return quote!(::core::convert::From::from(::core::option::Option::Some(
@@ -298,13 +311,25 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     );
     FieldRead {
         slot: quote!(let mut #slot = #new_slot;),
-        arm: quote! {
-            #names => {
-                if !__object.absent(__member, __read) {
+        // A field that reads a `null` as a value reads it, whatever the reading does with a
+        // `null` member of the others (it is not absent for it).
+        arm: if info.attrs.reads_null.is_some() {
+            quote! {
+                #names => {
                     #read_call
                     #since_engine
+                    true
                 }
-                true
+            }
+        } else {
+            quote! {
+                #names => {
+                    if !__object.absent(__member, __read) {
+                        #read_call
+                        #since_engine
+                    }
+                    true
+                }
             }
         },
         kept: info.attrs.or_kept.map(|_| {
@@ -475,6 +500,41 @@ fn extra_arg(extra: bool) -> TokenStream {
     }
 }
 
+/// The disposal of an unknown member `__key`: the struct's, and for the members it says are
+/// `quiet` the same members kept and told nothing.
+fn disposal(quiet: &[String]) -> TokenStream {
+    if quiet.is_empty() {
+        return quote!(__disposal);
+    }
+    quote!(if ::core::matches!(__key, #(#quiet)|*) {
+        __disposal.silenced()
+    } else {
+        __disposal
+    })
+}
+
+/// The value a struct's read builds from its fields' values `__v<index>`: each field's own, the
+/// kept unknown members, the object as written, or the names the object wrote.
+fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
+    let own_names: Vec<&String> = infos
+        .iter()
+        .filter(|info| taken(info) && !info.inline)
+        .map(|info| &info.json)
+        .collect();
+    let inits = fields.iter().enumerate().map(|(index, field)| {
+        let member = member_of(field, index);
+        let value = format_ident!("__v{index}");
+        let built = match infos.iter().find(|info| info.member == member) {
+            Some(info) if !taken(info) => quote!(__extra),
+            Some(info) if info.option.is_some() => quote!(#value),
+            Some(_) => quote!(#value?),
+            None => untaken_value(field, &own_names),
+        };
+        quote!(#member: #built)
+    });
+    quote!(#construct { #(#inits),* })
+}
+
 /// The body of a read of `fields` from `__object`, evaluating to `Option<#construct ..>`, with
 /// `__object`, `__read`, `__unknown` and `__tag` in scope (`Fields::read_fields`' parameters);
 /// `knows` is the function that names the fields' members.
@@ -483,6 +543,7 @@ fn fields_body(
     fields: &Fields,
     infos: &[FieldInfo],
     rule: Option<&String>,
+    quiet: &[String],
     knows: &TokenStream,
 ) -> TokenStream {
     let p = paths();
@@ -529,20 +590,9 @@ fn fields_body(
         let core = core();
         quote!(let mut __extra = #core::document::UnknownMembers::default();)
     });
-    let inits = fields.iter().enumerate().map(|(index, field)| {
-        let member = member_of(field, index);
-        let value = format_ident!("__v{index}");
-        let built = match infos.iter().find(|info| info.member == member) {
-            Some(info) if !taken(info) => quote!(__extra),
-            Some(info) if info.option.is_some() => quote!(#value),
-            Some(_) => quote!(#value?),
-            None => untaken_value(field),
-        };
-        quote!(#member: #built)
-    });
-    let build = quote!(#construct { #(#inits),* });
+    let build = built_value(construct, fields, infos);
     let (names, gates) = member_names_and_gates(infos);
-    let unknown_member = unknown_member(&extra_arg);
+    let unknown_member = unknown_member(&extra_arg, quiet);
     quote! {
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
@@ -591,12 +641,13 @@ fn fields_body(
 
 /// The tell of one unknown member, given to the read twice: for the unknown members told with the
 /// members and for the ones told after the keeps of what the members could not read.
-fn unknown_member(extra_arg: &TokenStream) -> TokenStream {
+fn unknown_member(extra_arg: &TokenStream, quiet: &[String]) -> TokenStream {
     let p = paths();
     let (node, read) = (&p.node, &p.read);
+    let disposal = disposal(quiet);
     quote! {
         |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
-            __object.unknown(__key, __member, __read, __disposal, #extra_arg);
+            __object.unknown(__key, __member, __read, #disposal, #extra_arg);
         }
     }
 }
@@ -628,6 +679,16 @@ fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
             _ => None,
         })
         .collect()
+}
+
+/// The call of the struct's `schema::after_read` rule on the value just read, if it has one.
+fn after_read(container: &ContainerAttrs) -> Option<TokenStream> {
+    let (after, _) = container.after_read.as_ref()?;
+    Some(quote! {
+        if let ::core::option::Option::Some(__built) = &mut __value {
+            (#after)(__built, __node, __read);
+        }
+    })
 }
 
 /// The read of a struct: `FromJson` (the object, then its fields) and `Fields`; a transparent
@@ -696,11 +757,13 @@ pub(super) fn struct_read(
         };
     }
     let knows = knows(infos);
+    let after_read = after_read(container);
     let body = fields_body(
         &quote!(#ident),
         fields,
         infos,
         container.unknown.as_ref(),
+        &container.quiet,
         &quote!(<Self as #fields_trait>::knows),
     );
     quote! {
@@ -711,13 +774,14 @@ pub(super) fn struct_read(
 
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 let __object = #object::open(__node, __read)?;
-                let __value = <Self as #fields_trait>::read_fields(
+                let mut __value = <Self as #fields_trait>::read_fields(
                     &__object,
                     __read,
                     true,
                     ::core::option::Option::None,
                 );
                 __object.close(__read);
+                #after_read
                 __value
             }
         }
@@ -819,6 +883,7 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         &variant.variant.fields,
         variant.fields,
         variant.unknown.as_ref(),
+        &[],
         &quote!(|__key: &str| -> bool { #knows }),
     );
     quote! {

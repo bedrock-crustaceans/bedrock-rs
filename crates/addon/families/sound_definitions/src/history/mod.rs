@@ -62,7 +62,7 @@ impl MolangFields for SoundDefinitions {
 
 impl VersionStruct for SoundDefinitions {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        document(payload, cx, d).map(|document| Self::read(document, d))
+        document(payload, cx, d).map(|document| Self::read(&document, d))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -114,7 +114,7 @@ impl SoundDefinitionsHistory {
         } else if selected == <v1_20_20::SoundDefinitions as Versioned>::VERSION {
             Self::V1_20_20(v1_20_20::SoundDefinitions { document })
         } else {
-            Self::V1_26_50(SoundDefinitions::read(document, diagnostics))
+            Self::V1_26_50(SoundDefinitions::read(&document, diagnostics))
         }
     }
 

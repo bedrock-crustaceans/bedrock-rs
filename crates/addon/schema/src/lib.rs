@@ -109,8 +109,22 @@ facet::define_attr_grammar! {
         CheckWith(arbitrary),
         /// `rule = path` (compile-time, on a struct): a rule across its fields,
         /// `fn(&mut Self, &mut SchemaCx<'_>)`, called with the context at the struct's own path
-        /// after every field's check.
+        /// after every field's check (`after_read` is its twin at the read).
         Rule(arbitrary),
+        /// `quiet = "a b"` (compile-time, on a struct): the members named are unknown ones
+        /// the struct keeps and tells nothing of, where it tells the others: the members the
+        /// game's own files carry and its reader never reads. It is `unknown = "silent"` for
+        /// the named members alone.
+        Quiet(arbitrary),
+        /// `after_read = path` (compile-time, on a struct): a rule over the value just read,
+        /// `fn(&mut Self, &Node<'_>, &mut Read<'_>)`, called by the struct's own read after its
+        /// members and its unknown ones, with the object as written: what a member cannot say
+        /// alone (a default that follows a sibling, a member kept beside the typed one). It
+        /// tells its findings to the read and does not fail the owner; a struct that is
+        /// flattened into another is not hooked. It is `rule` at the read: `rule` judges the
+        /// typed value in the check (a `SchemaCx`, no JSON); this one runs in the read, with the
+        /// object as written, in the order the read tells and in the phase it is given.
+        AfterRead(arbitrary),
         /// `trigger` (marker, on a struct): the struct is an event trigger itself (an entity's
         /// `on_*` component, `{event, filters, target}`): its trigger member is its own path,
         /// beside those of its fields.

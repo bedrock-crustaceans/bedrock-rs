@@ -54,6 +54,17 @@ pub struct Disposal {
     pub told: UnknownRule,
 }
 
+impl Disposal {
+    /// The same members kept, and told nothing (`schema::quiet`).
+    #[must_use]
+    pub fn silenced(self) -> Self {
+        Self {
+            told: UnknownRule::Silent,
+            ..self
+        }
+    }
+}
+
 /// The object a struct reads its fields from: its members, and the `schema::unknown` of the
 /// field that holds it, which comes before the struct's own.
 #[derive(Debug)]
@@ -130,11 +141,16 @@ impl<'v> Object<'v> {
         Disposal { keep, told }
     }
 
-    /// Whether the member `node` is read as absent for its `null` ([`NullHandling::Absent`]),
-    /// which is then told ([`Pass::Absent`]).
+    /// Whether the member `node` is read as absent for its `null` ([`NullHandling::Absent`],
+    /// which is then told ([`Pass::Absent`]); [`NullHandling::AbsentSilently`], which is not).
     pub fn absent(&self, node: &Node<'_>, read: &mut Read<'_>) -> bool {
-        if !node.value().is_null() || read.reading().null != NullHandling::Absent {
+        if !node.value().is_null() {
             return false;
+        }
+        match read.reading().null {
+            NullHandling::AbsentSilently => return true,
+            NullHandling::Absent => {}
+            _ => return false,
         }
         let mut finding = Diagnostic::of(&core_codes::VALUE_REWRITTEN)
             .detail(DiagnosticDetail::Note(NULL_MEMBER_READ_AS_ABSENT));

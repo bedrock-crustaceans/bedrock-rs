@@ -5,12 +5,11 @@ use super::codes;
 use indexmap::IndexMap;
 
 use super::events::{LEGACY_AMBIENT_EVENTS, is_level_sound_event};
+use crate::report::{Reporter, check_unknown, integer, string};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
-use bedrock_addon_core::json::kit::sound::read::{integer, string};
-use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
 
 /// The event bindings of the resource packs, `sounds.json` (`#[doc(alias)]` `sounds.json`):

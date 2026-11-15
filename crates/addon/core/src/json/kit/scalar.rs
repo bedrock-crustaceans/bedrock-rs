@@ -6,7 +6,8 @@ use std::borrow::Cow;
 
 use super::{Expected, Node, Pass, Read};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath};
+use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath, Severity};
+use crate::json::jsoncpp::fork::{self, Stored};
 use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, fits, judge};
 use crate::json::{Misread, Misreading};
 
@@ -95,6 +96,10 @@ impl Read<'_> {
     ///   or a number for a string read converted and told as a wrong type that does not fail
     ///   the member (a [`Pass::Misread`] error under [`Passes::AfterRead`](super::Passes::AfterRead)); a bool for a number or a
     ///   string, and a string that does not convert, a wrong type;
+    /// - [`Scalars::Fork`]: the value as the sound files' reader coerces it for the member
+    ///   ([`fork`]'s `asFloat`, `asBool`, `asInt`, `asString`; `null` is the type's zero), told
+    ///   as an information (`INVALID_VALUE`) at the member when it is not of the member's own
+    ///   type (a number or bool for a float is no word), never refused;
     /// - a number beyond its float read as the infinity it is, and an information that says so
     ///   (`BEYOND_FLOAT_MEMBER`, [`BeyondWidth::ClampAndTell`]: the versioned load clamps it in
     ///   the text and reads again) or a wrong type ([`BeyondWidth::Error`]);
@@ -127,6 +132,9 @@ impl Read<'_> {
     pub fn scalar<'v>(&mut self, node: &Node<'v>, declared: Declared) -> Option<Scalar<'v>> {
         if self.stopped {
             return None;
+        }
+        if self.reading.scalars == Scalars::Fork {
+            return Some(self.fork_scalar(node, declared));
         }
         let Some(token) = Token::of(node.value) else {
             self.wrong_kind(node, expected(declared));
@@ -194,6 +202,42 @@ impl Read<'_> {
                 None
             }
         }
+    }
+
+    /// The value `node` holds as the sound files' reader coerces it for a member of `declared`
+    /// ([`Scalars::Fork`]), and an information at the member where it is of another JSON type
+    /// than the reader takes without a word.
+    fn fork_scalar(&mut self, node: &Node<'_>, declared: Declared) -> Scalar<'static> {
+        let value = node.value;
+        let (scalar, quiet) = match declared {
+            Declared::Float { .. } => (
+                Scalar::Real(f64::from(fork::as_float(value, 0.0))),
+                !matches!(
+                    fork::stored(value),
+                    Stored::String | Stored::Array | Stored::Object
+                ),
+            ),
+            Declared::Bool => (
+                Scalar::Bool(fork::as_bool(value, false)),
+                matches!(fork::stored(value), Stored::Null | Stored::Bool),
+            ),
+            Declared::Int { .. } => (
+                integer(i128::from(fork::as_int(value, 0))),
+                matches!(fork::stored(value), Stored::Null | Stored::Integer),
+            ),
+            Declared::Text => (
+                Scalar::Text(Cow::Owned(fork::to_text(value))),
+                matches!(fork::stored(value), Stored::Null | Stored::String),
+            ),
+        };
+        if !quiet {
+            let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
+                .severity(Severity::Info)
+                .at(node.path.clone());
+            finding.location.span = node.span();
+            self.push(finding);
+        }
+        scalar
     }
 
     /// Tells a negative whole number given to an unsigned integer member under the member's

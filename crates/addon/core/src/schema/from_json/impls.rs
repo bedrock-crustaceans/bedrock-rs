@@ -9,7 +9,7 @@ use super::FromJson;
 use crate::json::Declared;
 use crate::json::Value;
 use crate::json::kit::{Expected, Node, Read, Scalar};
-use crate::versioning::{MemberFailure, NullHandling, Strings};
+use crate::versioning::{MemberFailure, NullHandling};
 
 macro_rules! integers {
     ($($ty:ty => $bits:literal, $signed:literal;)+) => {
@@ -80,19 +80,11 @@ impl FromJson for bool {
     }
 }
 
-/// A string, as the reading's profile reads it; under [`Strings::AsString`] any other value as
-/// jsoncpp's `asString` reads it (a bool its name, anything else empty), told as a wrong type.
+/// A string, as the reading's profile reads it.
 impl FromJson for String {
     const EXPECTED: Option<Expected> = Some(Expected::String);
 
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        if read.reading().strings == Strings::AsString && !node.value().is_string() {
-            if read.stopped() {
-                return None;
-            }
-            read.wrong_kind(node, Expected::String);
-            return Some(crate::json::kit::fixed_path::to_text(node.value()));
-        }
         if let Scalar::Text(text) = read.scalar(node, Declared::Text)? {
             return Some(text.into_owned());
         }

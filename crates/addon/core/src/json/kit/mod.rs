@@ -26,8 +26,8 @@
 //!
 //! | axis | what the kit does with it |
 //! |---|---|
-//! | [`Reading::null`] | [`NullHandling::Absent`]: [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
-//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them). In the hand reads [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
+//! | [`Reading::null`] | [`NullHandling::Absent`] (and `AbsentSilently`, which tells nothing): [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
+//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`). In the hand reads [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
 //! | [`Reading::beyond_width`] | in [`scalar`](Read::scalar): a number beyond its float reads as the infinity it is, told so the load clamps it and reads again ([`BeyondWidth::ClampAndTell`](crate::json::BeyondWidth::ClampAndTell)), or is a wrong type ([`BeyondWidth::Error`](crate::json::BeyondWidth::Error)) |
 //! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`](crate::versioning::UnknownMask::Error) an error, [`UnknownMask::Warn`](crate::versioning::UnknownMask::Warn) a warning |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
@@ -79,7 +79,7 @@ use super::parse::{Parsed, SpanNode};
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
-    Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Span,
+    Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity, Span,
 };
 use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 
@@ -88,14 +88,14 @@ use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 pub mod fixed_path;
 // hidden: API not yet reviewed
 mod scalar;
-#[doc(hidden)]
-pub mod sound;
 #[cfg(test)]
 mod tests;
+#[doc(hidden)]
+pub mod write;
 mod written;
 
 pub use scalar::Scalar;
-pub use written::Written;
+pub use written::{Present, Written};
 
 /// A value being read: where it is in the document, and its text when the caller has it.
 ///
@@ -1086,6 +1086,9 @@ pub struct Read<'d> {
     /// The note of the information a scalar read as another JSON type than written is told with
     /// ([`non_strict`](Self::non_strict)).
     rewrite_note: Option<&'static str>,
+    /// The phase every finding of the read is told in, where it is not the default
+    /// ([`phase`](Self::phase)).
+    phase: Option<Phase>,
     /// The format version the document is written at, and the pack's `min_engine_version`,
     /// for the members a struct reads from a version on ([`versions`](Self::versions)).
     versions: Versions,
@@ -1143,6 +1146,7 @@ impl<'d> Read<'d> {
             unknown_severity,
             findings: Sink::Borrowed(findings),
             rewrite_note: None,
+            phase: None,
             versions: Versions::default(),
             failed: false,
             profile: Profile::EVERY_FAILURE,
@@ -1193,6 +1197,15 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The read telling every finding in `phase`, where the default ([`Phase::Parse`]) is not
+    /// the document's: a merged document is read after the stack's merge, in
+    /// [`Phase::Validate`].
+    #[must_use]
+    pub fn phase(mut self, phase: Phase) -> Self {
+        self.phase = Some(phase);
+        self
+    }
+
     /// The profile the read tells by.
     pub fn telling(&self) -> Profile {
         self.profile
@@ -1239,6 +1252,7 @@ impl<'d> Read<'d> {
             unknown_severity: self.unknown_severity,
             findings: Sink::Owned(Diagnostics::default()),
             rewrite_note: self.rewrite_note,
+            phase: self.phase,
             versions: self.versions,
             failed: false,
             profile: self.profile,
@@ -1728,7 +1742,10 @@ impl<'d> Read<'d> {
     /// assert!(read.failed());
     /// assert_eq!(told(&found), ["Error name invalid value"]);
     /// ```
-    pub fn push(&mut self, finding: Diagnostic) {
+    pub fn push(&mut self, mut finding: Diagnostic) {
+        if let Some(phase) = self.phase {
+            finding.phase = phase;
+        }
         let rejects = finding.rejects();
         self.failed |= rejects;
         self.errors += usize::from(rejects);
@@ -2107,7 +2124,7 @@ impl<'d> Read<'d> {
     }
 
     /// The member `key` of `members`, when it is written; nothing is told. A `null` member is
-    /// absent under [`NullHandling::Absent`].
+    /// absent under [`NullHandling::Absent`] and [`NullHandling::AbsentSilently`].
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -2134,7 +2151,11 @@ impl<'d> Read<'d> {
     /// ```
     pub fn opt<'v>(&self, members: &Members<'v>, key: &str) -> Option<Node<'v>> {
         let node = members.get(key)?;
-        let absent = node.value.is_null() && self.reading.null == NullHandling::Absent;
+        let absent = node.value.is_null()
+            && matches!(
+                self.reading.null,
+                NullHandling::Absent | NullHandling::AbsentSilently
+            );
         (!absent).then_some(node)
     }
 

@@ -15,6 +15,28 @@ use crate::molang::{Molang, MolangList, MolangSource};
 use crate::version::FormatVersion;
 use crate::versioning::RangeMembers;
 
+/// The read of a member that the struct's own rule reads (`schema::after_read`): the member is
+/// one of the struct's, so it is no unknown one, and the derived read takes the default of its
+/// field and tells nothing.
+///
+/// ```
+/// use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+/// use bedrock_addon_core::json::kit::{Node, Read};
+/// use bedrock_addon_core::json::{Value, from_str_jsonc};
+/// use bedrock_addon_core::schema::read_later;
+/// use bedrock_addon_core::versioning::Reading;
+///
+/// let json: Value = from_str_jsonc("[1, 2]").unwrap();
+/// let mut found = Diagnostics::default();
+/// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+/// let node = Node::new(&json, JsonPath::of_keys(["sounds"]));
+/// assert_eq!(read_later::<Vec<u8>>(&node, &mut read), Some(Vec::new()));
+/// assert!(found.iter().next().is_none());
+/// ```
+pub fn read_later<T: Default>(_: &Node<'_>, _: &mut Read<'_>) -> Option<T> {
+    Some(T::default())
+}
+
 /// The value `node` holds converted by `convert`, or the wrong type its member is told when the
 /// conversion refuses it: the read of a leaf behind `#[facet(proxy = json::Value)]` and a
 /// `TryFrom<json::Value>`, as the door reads it. The value is cloned for the conversion; a

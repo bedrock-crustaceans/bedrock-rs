@@ -5,7 +5,11 @@
 //! packs' copies as written.
 //!
 //! The file has a version chain ([`history`]); the version steps run on each copy before the
-//! merge.
+//! merge. What is typed is the merged, upgraded document, read as the game's jsoncpp fork reads
+//! it (every member coerced, none refused, a `null` the default): [`SoundDefinition`] and the
+//! types below it derive their read, the root, a map keyed by sound event name, reads by a
+//! hand `FromJson`, and what a definition's members cannot say alone (an external event
+//! replaces `sounds`, the category sets an entry's `is3D`) is the rule `after_read` runs.
 //!
 //! A finding about a merged sound definition is located in the file of the highest pack that
 //! writes that definition, also when the member it is about was written by a lower pack and
@@ -217,7 +221,7 @@ fn merge_definitions(
     let mut found = Diagnostics::default();
     // Vanilla runs the steps once more on the merged root; every copy is stamped by now.
     upgrade::upgrade(&mut merged, &mut found);
-    let value = SoundDefinitions::read(merged, &mut found);
+    let value = SoundDefinitions::read(&merged, &mut found);
     let top = copies.last().map(|(origin, _, _)| origin);
     for mut finding in found {
         // `sound_definitions/<name>/…` belongs to the copy that wrote the name last.
@@ -279,7 +283,7 @@ impl Content for SoundDefinitions {
             };
             // The same findings a stack gives its lowest copy.
             let upgraded = prepare_definitions(json, None, &mut steps);
-            let value = Self::read(upgraded, &mut steps);
+            let value = Self::read(&upgraded, &mut steps);
             // A file without the wrapper has its definitions at the root: a finding of the
             // steps and of the reading, which name them in the upgraded document, is at the
             // member as the file has it.

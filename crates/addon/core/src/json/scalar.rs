@@ -35,6 +35,14 @@ pub enum Scalars {
     /// (a fraction into an integer, a bool into a number, an integer out of range) is the typed
     /// read's own refusal. Every slice but the ones that say otherwise.
     ConvertAndTell,
+    /// The jsoncpp variant the sound files are read with (`json::jsoncpp::fork`): every member
+    /// is coerced as the game's reader coerces it (`asFloat`, `asBool`, `asInt`, `asString`)
+    /// and no token is refused. A `null` reads as the type's zero, a value of another JSON
+    /// type than the member's as the reader makes of it (`"1"` for a float is `0.0`, a number
+    /// for a bool is `!= 0`, a string for a bool is `!is_empty`, a bool for a text is its
+    /// name), and the crate tells it as an information at the member
+    /// ([`Read::scalar`](crate::json::kit::Read::scalar)). `judge` never refuses under it.
+    Fork,
 }
 
 /// What a number beyond the width of its float member does (`1e39` for an `f32`): the reading
@@ -360,6 +368,8 @@ pub fn judge(declared: Declared, token: Token<'_>, rules: ScalarRules) -> Verdic
         Scalars::NonStrict => non_strict(declared, token),
         Scalars::JsonCpp => json_cpp(declared, token),
         Scalars::ConvertAndTell => convert_and_tell(declared, token),
+        // Read by `Read::scalar` over the value, whose coercions are not tokens.
+        Scalars::Fork => Verdict::Keep,
     };
     match verdict {
         Verdict::Refused(Refusal::BeyondWidth)

@@ -1,33 +1,38 @@
 //! `sounds/music_definitions.json`: which sound event each music situation plays, and the
 //! pause between tracks.
+//!
+//! The client merges the packs' copies as JSON and reads the result with a jsoncpp that coerces
+//! every member and refuses none. The merge stays a raw JSON merge ([`LOADER`]); what is typed is
+//! the merged document, read by the derived reader of [`MusicDefinition`] under
+//! `Scalars::Fork` and a silent `null`, with the root, a map keyed by music name, read by a hand
+//! `FromJson` (a name that is empty, or a value that is no object, is kept as written).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod codes;
 
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::document::unversioned::{lone, version_at};
 use bedrock_addon_core::document::{
     Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
 };
 use bedrock_addon_core::id::MusicDefinitionId;
-use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::fork;
-use bedrock_addon_core::json::kit::Written;
-use bedrock_addon_core::json::kit::sound::read::{boolean, float, string};
-use bedrock_addon_core::json::kit::sound::report::{Reporter, check_unknown};
-use bedrock_addon_core::json::kit::sound::write::{self, Object, Present, present};
-use bedrock_addon_core::json::{EncodeError, WriteStyle};
+use bedrock_addon_core::json::kit::write::{self, Object};
+use bedrock_addon_core::json::kit::{Node, Present, Read, Written};
+use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
 use bedrock_addon_core::load::sound::{
-    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
-    write_document,
+    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, read_merged,
+    readable, write_document,
 };
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::ENGINE_VERSION;
 
 /// Game ticks per second, for the delays vanilla stores as ticks.
@@ -44,7 +49,7 @@ const TICKS_PER_SECOND: f32 = 20.0;
 /// of the file member by member. [`json`](Self::json) is the document the value was read
 /// from.
 #[doc(alias = "music_definitions.json")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 #[non_exhaustive]
 pub struct MusicDefinitions {
     /// The definitions by music name, in file order.
@@ -77,19 +82,17 @@ impl MusicDefinitions {
 
     /// The value of a document, read as it is; the findings of the read are dropped.
     /// `Content::parse` reads a file with them.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "the signature of the other two documents' `from_json`"
+    )]
     pub fn from_json(json: Value) -> Self {
-        Self::read(json, &mut Diagnostics::default())
+        Self::read(&json, &mut Diagnostics::default())
     }
 
     /// Reads a document.
-    pub(crate) fn read(json: Value, diagnostics: &mut Diagnostics) -> Self {
-        let (definitions, extra) = read_root(&json, diagnostics);
-        Self {
-            definitions,
-            extra,
-            foreign_root: (!json.is_object() && !json.is_null()).then(|| json.clone()),
-            json: Written(Some(json)),
-        }
+    pub(crate) fn read(json: &Value, diagnostics: &mut Diagnostics) -> Self {
+        read_merged(json, diagnostics)
     }
 
     /// The document the value writes: every definition, then the members of
@@ -118,29 +121,41 @@ impl MusicDefinitions {
 }
 
 /// One music definition.
-#[derive(Clone, Debug, Default, PartialEq)]
+///
+/// Read as the game reads it: each member coerced as jsoncpp's `asString`, `asFloat` and `asBool`
+/// coerce it, a `null` the default, and the members it does not read kept in
+/// [`extra`](Self::extra) and told as an information.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = after_read)]
 #[non_exhaustive]
 pub struct MusicDefinition {
-    /// `event_name`: the sound event that holds the tracks; `""` when absent.
-    pub event_name: String,
-    /// `min_delay`, in seconds; 0.0 when absent.
-    pub min_delay: f32,
-    /// `max_delay`, in seconds; 0.0 when absent.
-    pub max_delay: f32,
-    /// `play_in_order`: play the event's sounds as a playlist; `false` when absent.
-    pub play_in_order: bool,
     /// `override_interruptible`: the `name` of each entry, the sound categories this music
     /// may interrupt. An entry that is no object, or has no `name`, is `""`. An object of
     /// entries (read in sorted key order) is kept as written in [`extra`](Self::extra), since
     /// the client's merge recurses into it where it replaces an array whole.
+    #[facet(default, schema::read_with = interruptible)]
     pub override_interruptible: Vec<String>,
     /// `replace`, as written: a truthy value makes this definition replace the lower packs'
     /// instead of merging into it. Only the merge reads it.
+    #[facet(schema::reads_null, schema::read_with = replace)]
     pub replace: Option<Value>,
+    /// `event_name`: the sound event that holds the tracks; `""` when absent.
+    #[facet(default)]
+    pub event_name: String,
+    /// `min_delay`, in seconds; 0.0 when absent.
+    #[facet(default)]
+    pub min_delay: f32,
+    /// `max_delay`, in seconds; 0.0 when absent.
+    #[facet(default)]
+    pub max_delay: f32,
+    /// `play_in_order`: play the event's sounds as a playlist; `false` when absent.
+    #[facet(default)]
+    pub play_in_order: bool,
     /// The members the client does not read, and an `override_interruptible` written as an
     /// object, as written.
     pub extra: UnknownMembers,
     /// The members the definition was read with.
+    #[facet(skip, rename = "\u{0}read")]
     pub(crate) read: Present,
 }
 
@@ -236,94 +251,73 @@ pub(crate) fn replace_predicate(dst: &mut Value, src: &Value) -> bool {
     false
 }
 
-/// Reads the merged document: one definition per member of the root object, and the members
-/// that are none.
-pub(crate) fn read_root(
-    root: &Value,
-    diagnostics: &mut Diagnostics,
-) -> (IndexMap<MusicDefinitionId, MusicDefinition>, UnknownMembers) {
-    let mut out = IndexMap::new();
-    let mut extra = UnknownMembers::default();
-    let mut report = Reporter::new(diagnostics);
-    let Some(object) = root.as_object() else {
-        return (out, extra);
-    };
-    for (name, value) in object {
-        let name = name.as_str();
-        report.enter(name);
-        if name.is_empty() {
-            // The game writes this line to the content log at the warning level.
-            report.vanilla(Code::from(&codes::NO_NAME), Severity::Warning);
-            extra.insert(name.to_owned(), value.clone());
-        } else if value.is_object() {
-            out.insert(
-                MusicDefinitionId::parse(name),
-                read_definition(value, &mut report),
-            );
-        } else {
-            // The game registers an empty music definition.
-            report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-            extra.insert(name.to_owned(), value.clone());
+/// The merged document: one definition per member of the root object, and the members that are
+/// none. A root that is no object has none and is kept as written.
+impl FromJson for MusicDefinitions {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let mut out = Self {
+            foreign_root: (!node.value().is_object() && !node.value().is_null())
+                .then(|| node.value().clone()),
+            json: Written(Some(node.value().clone())),
+            ..Self::default()
+        };
+        if !node.value().is_object() {
+            return Some(out);
         }
-        report.leave();
+        for (name, member) in read.object(node)?.iter() {
+            let at = member.path().clone();
+            if name.is_empty() {
+                // The game writes this line to the content log at the warning level.
+                read.push(Diagnostic::of(&codes::NO_NAME).at(at));
+            } else if member.value().is_object() {
+                let definition = MusicDefinition::from_json(&member, read)?;
+                out.definitions
+                    .insert(MusicDefinitionId::parse(name), definition);
+                continue;
+            } else {
+                // The game registers an empty music definition.
+                read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(at));
+            }
+            out.extra.insert(name.to_owned(), member.value().clone());
+        }
+        Some(out)
     }
-    (out, extra)
 }
 
-/// The members of a definition the client reads.
-const DEFINITION_KEYS: [&str; 6] = [
-    "event_name",
-    "min_delay",
-    "max_delay",
-    "play_in_order",
-    "override_interruptible",
-    "replace",
-];
-
-/// One definition object.
-fn read_definition(value: &Value, report: &mut Reporter<'_>) -> MusicDefinition {
-    let mut override_interruptible = Vec::new();
-    report.enter("override_interruptible");
-    for (index, entry) in fork::elements(fork::member(value, "override_interruptible"))
+/// `override_interruptible`: the `name` of each entry as jsoncpp reads a list, an array's elements
+/// or an object's values in key order, and nothing for any other value.
+fn interruptible(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    fork::elements(node.value())
         .into_iter()
         .enumerate()
-    {
-        report.enter_index(index);
-        override_interruptible.push(string(entry, "name", report));
-        report.leave();
-    }
-    report.leave();
-    let replace = fork::has_member(value, "replace").then(|| {
-        // Only the merge reads it, as a boolean:
-        boolean(value, "replace", false, report);
-        fork::member(value, "replace").clone()
-    });
-    let mut definition = MusicDefinition {
-        event_name: string(value, "event_name", report),
-        min_delay: float(value, "min_delay", 0.0, report),
-        max_delay: float(value, "max_delay", 0.0, report),
-        play_in_order: boolean(value, "play_in_order", false, report),
-        override_interruptible,
-        replace,
-        extra: check_unknown(value, &DEFINITION_KEYS, &[], report),
-        read: present(value, &DEFINITION_KEYS),
-    };
-    let entries = fork::member(value, "override_interruptible");
+        .map(|(index, entry)| {
+            let at = node.path().index(index).child("name");
+            String::from_json(&Node::new(fork::member(entry, "name"), at), read)
+        })
+        .collect()
+}
+
+/// `replace`, as written; read as a boolean for the information it tells where it is not one,
+/// since the merge reads it that way.
+fn replace(node: &Node<'_>, read: &mut Read<'_>) -> Option<Value> {
+    bool::from_json(node, read)?;
+    Some(node.value().clone())
+}
+
+/// What a definition's members cannot say alone: an `override_interruptible` written as an object
+/// is kept as written (the merge recurses into an object), and a minimum above the maximum is
+/// kept with an information, as the game stores the values as given.
+fn after_read(definition: &mut MusicDefinition, node: &Node<'_>, read: &mut Read<'_>) {
+    let entries = fork::member(node.value(), "override_interruptible");
     if entries.is_object() {
-        // The merge recurses into an object: kept as written, not as the array it reads as.
         definition
             .extra
             .insert("override_interruptible".to_owned(), entries.clone());
     }
     if definition.min_delay > definition.max_delay {
-        // The game stores the values as given.
-        report.at(
-            "min_delay",
-            Code::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-        );
+        let at = node.path().child("min_delay");
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(at));
     }
-    definition
 }
 
 /// Where a pack keeps its music definitions.
@@ -355,7 +349,7 @@ fn merge_music(copies: Vec<SoundCopy>, _: &StackCx<'_>) -> Merged<MusicDefinitio
     }
     let merged = target.unwrap_or(Value::NULL);
     let mut found = Diagnostics::default();
-    let value = MusicDefinitions::read(merged, &mut found);
+    let value = MusicDefinitions::read(&merged, &mut found);
     let top = copies.last().map(|(origin, _, _)| origin);
     for mut finding in found {
         let owner = path_member(&finding.location.json_path, 0)
@@ -401,7 +395,7 @@ impl Content for MusicDefinitions {
                 Err(message) => return Err(not_json(origin, &message)),
             };
             let mut found = Diagnostics::default();
-            let value = Self::read(json, &mut found);
+            let value = Self::read(&json, &mut found);
             let mut diagnostics = Diagnostics::default();
             located(found, &origin, &mut diagnostics);
             Ok(Document::new(
@@ -441,10 +435,11 @@ mod tests {
             .collect()
     }
 
-    /// `DEFINITION_KEYS` names the members by their spelling in the writer: a definition whose
-    /// every member is set writes exactly those keys.
+    /// The members the derived read takes are the members the writer writes: a definition whose
+    /// every member is set writes exactly the keys of the type's fields.
     #[test]
     fn every_key_the_reader_knows_is_a_member_the_writer_writes() {
+        use facet::{Type, UserType};
         let definition = MusicDefinition {
             event_name: "music.game".to_owned(),
             min_delay: 1.0,
@@ -454,9 +449,19 @@ mod tests {
             replace: Some(Value::from(true)),
             ..MusicDefinition::default()
         };
-        assert_eq!(
-            keys(&definition.to_value().expect("written")),
-            DEFINITION_KEYS
-        );
+        let Type::User(UserType::Struct(shape)) = MusicDefinition::SHAPE.ty else {
+            unreachable!("a struct");
+        };
+        let mut read: Vec<&str> = shape
+            .fields
+            .iter()
+            .map(|field| field.name)
+            .filter(|name| !matches!(*name, "extra" | "read"))
+            .collect();
+        read.sort_unstable();
+        let written = definition.to_value().expect("written");
+        let mut written = keys(&written);
+        written.sort_unstable();
+        assert_eq!(written, read);
     }
 }

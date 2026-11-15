@@ -1040,30 +1040,6 @@ fn a_list_reads_as_its_keys_say() {
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-struct Texted {
-    message: Option<String>,
-}
-
-/// jsoncpp's `asString`: a bool its name, anything else empty, told as a wrong type.
-#[test]
-fn a_string_read_as_jsoncpp_s_as_string_takes_any_value() {
-    let reading = lenient().with_strings(crate::versioning::Strings::AsString);
-    for (text, read) in [
-        (r#"{"message": true}"#, "true"),
-        (r#"{"message": 5}"#, ""),
-        (r#"{"message": [1]}"#, ""),
-    ] {
-        let (value, told) = read_as::<Texted>(text, reading, Profile::EVERY_FAILURE);
-        assert_eq!(
-            value.and_then(|v| v.message).as_deref(),
-            Some(read),
-            "{text}"
-        );
-        assert_eq!(told, ["Info root/message core/invalid_type"], "{text}");
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "silent")]
 struct Quiet {
     name: Option<String>,
@@ -1147,11 +1123,11 @@ fn a_member_kept_as_written_comes_before_the_unknown_members_that_are_told_last(
 }
 
 /// A `reads_null` field takes a `null` as a value of its type: `Some`, read by the type's own
-/// read (here jsoncpp's `asString`, which tells it), where any other `Option` field reads it by
-/// the null rule as `None`.
+/// read (here the sound files' `asString`, which makes it the empty text), where any other
+/// `Option` field reads it by the null rule as `None`.
 #[test]
 fn a_reads_null_field_reads_a_null_as_a_value() {
-    let reading = lenient().with_strings(crate::versioning::Strings::AsString);
+    let reading = lenient().with_scalars(Scalars::Fork);
     let (value, told) = read_as::<Nulled>(
         r#"{"text": null, "any": null, "plain": null}"#,
         reading,
@@ -1165,7 +1141,7 @@ fn a_reads_null_field_reads_a_null_as_a_value() {
             plain: None,
         })
     );
-    assert_eq!(told, ["Info root/text core/invalid_type"]);
+    assert!(told.is_empty(), "{told:?}");
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]

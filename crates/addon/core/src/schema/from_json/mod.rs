@@ -39,7 +39,7 @@ mod tests;
 pub use bridge::read_via_facet;
 pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
 pub use keys::{KeyPattern, Keys, read_keyed};
-pub use leaves::{from_value, from_value_ref};
+pub use leaves::{from_value, from_value_ref, read_later};
 
 use crate::json::kit::{Expected, Node, Read};
 

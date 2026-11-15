@@ -9,6 +9,15 @@
 //! whichever form it was written, one no table sets [`SoundRange::UNSET`], a `base` chain worked
 //! out), which no longer says how the author wrote it.
 //!
+//! The read is a hand walk (`bindings.rs`, reporting through its private `Reporter`), the one
+//! sound document with no typed struct that declares it: what is typed is the resolved reading,
+//! and each step of it depends on the table above the value read (a sound's range is its
+//! table's where it sets none, in whichever form it was written; a variant key is parsed with
+//! the `__molang_version` of the entry that holds it; an event table is read in four contexts
+//! that differ in the members they know and in what a missing `events` is). A derived read
+//! has no place for that context: it would need a read scope the leaves can ask, and a
+//! flattened struct read in declaration order.
+//!
 //! [`Merged`]: bedrock_addon_core::document::Merged
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -16,6 +25,7 @@
 mod bindings;
 pub mod codes;
 mod events;
+mod report;
 
 pub use bindings::{
     BlockSounds, EntitySoundEntry, EntitySounds, EventSounds, InteractiveEntityEntry,

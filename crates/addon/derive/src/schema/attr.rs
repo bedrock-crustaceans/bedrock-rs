@@ -240,6 +240,10 @@ pub(crate) struct ContainerAttrs {
     pub string_only: bool,
     /// `schema::rule = path`: a rule across the fields of the struct.
     pub rule: Option<(Expr, Span)>,
+    /// `schema::after_read = path`: a rule over the value the read has just built.
+    pub after_read: Option<(Expr, Span)>,
+    /// `schema::quiet = [..]`: the unknown members the read keeps and tells nothing of.
+    pub quiet: Vec<String>,
     /// `schema::trigger`: the struct is an event trigger itself.
     pub trigger: bool,
     /// `schema::molang = SPEC` on a struct: the default spec of the Molang walk below it.
@@ -288,7 +292,7 @@ const FIELD_KEYS: &[&str] = &[
 ];
 const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order", "string_only"];
 /// The keys of a struct alone.
-const STRUCT_KEYS: &[&str] = &["rule", "trigger"];
+const STRUCT_KEYS: &[&str] = &["rule", "after_read", "quiet", "trigger"];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -776,6 +780,25 @@ impl ContainerAttrs {
                         errors,
                     );
                 }),
+                Some("after_read") if place == Place::Struct => value_expr(entry, "after_read")
+                    .map(|expr| {
+                        once(
+                            &mut out.after_read,
+                            (expr, entry.span),
+                            "after_read",
+                            entry.span,
+                            errors,
+                        );
+                    }),
+                Some("quiet") if place == Place::Struct => {
+                    string_value(entry, "quiet").map(|names| {
+                        out.quiet = names
+                            .value()
+                            .split_whitespace()
+                            .map(str::to_owned)
+                            .collect();
+                    })
+                }
                 Some("trigger") if place == Place::Struct => {
                     out.trigger = true;
                     Ok(())

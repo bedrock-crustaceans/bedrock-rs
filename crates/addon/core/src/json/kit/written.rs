@@ -37,8 +37,15 @@ use super::Value;
 /// assert!(loaded.written.is_some());
 /// ```
 #[derive(Clone, Debug, facet::Facet)]
-#[facet(transparent)]
+#[facet(transparent, default)]
 pub struct Written<T = Value>(pub Option<T>);
+
+/// The members of a struct the object it was read from wrote, `null` ones included, left out
+/// of equality: a skipped field of this type, named `Present`, is filled by the derived read
+/// with the JSON names of the struct's own fields the object has (`None` for a value built by
+/// hand). A game reader that takes a `null` or an absent member for the default needs it to
+/// write a member back only when the author wrote it.
+pub type Present = Written<Vec<&'static str>>;
 
 /// Every authored text is equal to every other: the holder's fields decide.
 impl<T> PartialEq for Written<T> {

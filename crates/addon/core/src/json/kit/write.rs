@@ -7,27 +7,11 @@
 //! which of its known members it was read with ([`Present`]), and its writer writes those and
 //! every other member whose value is not what an absent member reads as.
 
+use super::Present;
 use crate::diagnostic::JsonPath;
 use crate::document::UnknownMembers;
-use crate::json::kit::Written;
 use crate::json::{EncodeError, Value};
 use facet_value::VObject;
-
-/// The known members an object was read with, left out of equality (two values with the
-/// same fields are equal whatever they were read from); `None` for a value built by hand.
-pub type Present = Written<Vec<&'static str>>;
-
-/// The members of `known` that the object `value` has, `null` ones included.
-pub fn present(value: &Value, known: &[&'static str]) -> Present {
-    let object = value.as_object();
-    Written(Some(
-        known
-            .iter()
-            .copied()
-            .filter(|key| object.is_some_and(|object| object.contains_key(key)))
-            .collect(),
-    ))
-}
 
 /// An object being written from a struct read with the members `present`, whose members the
 /// client does not read are `extra`.
@@ -150,6 +134,7 @@ pub fn array(values: impl IntoIterator<Item = Value>) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::json::kit::Written;
 
     fn json(text: &str) -> Value {
         crate::json::from_str_jsonc(text).expect("JSON")
@@ -157,11 +142,7 @@ mod tests {
 
     #[test]
     fn a_member_is_written_when_it_was_read_or_is_not_its_absent_reading() {
-        let read = present(
-            &json(r#"{"a": null, "b": 1, "z": 2}"#),
-            &["a", "b", "c", "d"],
-        );
-        assert_eq!(read.0, Some(vec!["a", "b"]));
+        let read = Written(Some(vec!["a", "b"]));
         let mut extra = UnknownMembers::default();
         extra.insert("z".to_owned(), Value::from(2));
         // A known member kept as written: written from `extra`, after the others.
