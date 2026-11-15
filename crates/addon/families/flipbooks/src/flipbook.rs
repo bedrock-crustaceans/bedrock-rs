@@ -3,6 +3,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use facet::Facet;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
@@ -13,28 +14,17 @@ use bedrock_addon_core::document::{
     UnknownMembers, unversioned,
 };
 use bedrock_addon_core::id::AtlasKey;
-use bedrock_addon_core::json::jsoncpp::lenient::{
-    as_bool, as_int, int_is_coerced, non_null, read_lenient, to_text,
-};
+use bedrock_addon_core::json::jsoncpp::lenient::{as_int, read_lenient, to_text};
+use bedrock_addon_core::json::kit::{Node, Profile, Read, UnknownAt};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::WalkFile;
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading, Scalars};
 
 /// The file's path in a resource pack.
 pub(crate) const PATH: &str = "textures/flipbook_textures.json";
-
-/// The members the game reads of an entry.
-const KNOWN: [&str; 8] = [
-    "flipbook_texture",
-    "atlas_tile",
-    "atlas_index",
-    "atlas_tile_variant",
-    "ticks_per_frame",
-    "frames",
-    "replicate",
-    "blend_frames",
-];
 
 /// The flipbooks of a resource stack: the merged entries of every pack's
 /// `textures/flipbook_textures.json`, lowest pack first, each in the place of its first
@@ -85,8 +75,10 @@ impl FromIterator<Flipbook> for Flipbooks {
 /// One flipbook: an image strip that animates a tile of the terrain atlas.
 ///
 /// A member the entry does not write is `None`, and the accessor of the same name gives
-/// vanilla's default.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// vanilla's default. Read as the game reads it: each member coerced as jsoncpp's `asInt`,
+/// `asString` and `asBool` coerce it, a `null` an absent member, the members it does not read kept in
+/// [`extra`](Self::extra); what the game coerces or ignores in silence is told as an information.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Flipbook {
     /// `flipbook_texture`: the strip image, pack-relative and without extension. Its frames
     /// are squares stacked top to bottom.
@@ -100,15 +92,35 @@ pub struct Flipbook {
     pub atlas_tile_variant: Option<i32>,
     /// `ticks_per_frame`; 1 when absent, and the game treats less than 1 as 1.
     pub ticks_per_frame: Option<i32>,
-    /// `frames`: the frame indices in playback order. Absent (or empty, or no array), the
-    /// frames play in the image's order.
-    pub frames: Option<Vec<i32>>,
     /// `replicate`: the size of the atlas area drawn into, in tiles per axis; 1 when absent.
     pub replicate: Option<i32>,
     /// `blend_frames`: interpolate between frames; true when absent.
+    #[facet(schema::read_with = blend_frames)]
     pub blend_frames: Option<bool>,
+    /// `frames`: the frame indices in playback order. Absent (or empty, or no array), the
+    /// frames play in the image's order.
+    #[facet(schema::read_with = frames)]
+    pub frames: Option<Vec<i32>>,
     /// Members vanilla does not read.
     pub extra: UnknownMembers,
+}
+
+/// `blend_frames`: the game reads a number as a bool too, and the crate tells it.
+fn blend_frames(node: &Node<'_>, read: &mut Read<'_>) -> Option<bool> {
+    let blend = bool::from_json(node, read)?;
+    if node.value().is_number() {
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
+    }
+    Some(blend)
+}
+
+/// `frames`: the game reads it only when it is an array, and an empty one is no list of frames.
+fn frames(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<i32>> {
+    if !node.value().is_array() {
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
+        return None;
+    }
+    Some(Vec::from_json(node, read)?).filter(|frames| !frames.is_empty())
 }
 
 impl Flipbook {
@@ -207,48 +219,26 @@ fn recursive_merge(target: &mut Value, source: &Value) {
     }
 }
 
-/// Reads one typed entry from a merged object, with vanilla's coercions.
-fn read_entry(entry: &VObject) -> Flipbook {
-    // A `null` member is an absent one to every accessor (the default either way), and is
-    // held as absent: written, it would be the default the author did not write.
-    let present = |key: &str| non_null(entry.get(key));
-    let int = |key: &str, default: i32| present(key).map(|value| as_int(Some(value), default));
-    let frames = entry
-        .get("frames")
-        .and_then(Value::as_array)
-        .filter(|frames| !frames.is_empty())
-        .map(|frames| {
-            frames
-                .as_slice()
-                .iter()
-                .map(|frame| as_int(Some(frame), 0))
-                .collect()
-        });
-    let mut extra = UnknownMembers::default();
-    for (key, value) in entry {
-        if !KNOWN.contains(&key.as_str()) {
-            extra.insert(key.as_str().to_owned(), value.clone());
-        }
-    }
-    Flipbook {
-        flipbook_texture: present("flipbook_texture").map(|v| to_text(Some(v))),
-        atlas_tile: present("atlas_tile").map(|v| to_text(Some(v))),
-        atlas_index: int("atlas_index", 0),
-        atlas_tile_variant: int("atlas_tile_variant", 0),
-        ticks_per_frame: int("ticks_per_frame", 1),
-        frames,
-        replicate: int("replicate", 1),
-        blend_frames: present("blend_frames").map(|v| as_bool(Some(v), true)),
-        extra,
-    }
+/// Reads one typed entry with vanilla's coercions; the findings go to `d`. A member that
+/// reads nothing resets, so the entry always reads.
+fn read_entry(entry: &Value, at: JsonPath, d: &mut Diagnostics) -> Flipbook {
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Lenient)
+        .with_null(NullHandling::AbsentSilently)
+        .with_on_member_failure(MemberFailure::DefaultAndTell);
+    let mut read = Read::new(reading, d)
+        .profile(Profile::DECLARED_ORDER.with_unknown(UnknownAt::Last))
+        .unknown_severity(Severity::Info);
+    schema::read_document(&Node::new(entry, at), &mut read).unwrap_or_default()
 }
 
 /// The typed entries of a merged array.
 fn read_entries(root: &VArray) -> Vec<Flipbook> {
+    let mut silence = Diagnostics::default();
     root.as_slice()
         .iter()
-        .filter_map(Value::as_object)
-        .map(read_entry)
+        .filter(|entry| entry.is_object())
+        .map(|entry| read_entry(entry, JsonPath::new(), &mut silence))
         .collect()
 }
 
@@ -266,61 +256,23 @@ fn check_file(root: &Value, origin: &Origin, out: &mut Diagnostics) -> bool {
     let mut seen: HashSet<FlipbookKey> = HashSet::new();
     for (index, entry) in entries.as_slice().iter().enumerate() {
         let at = JsonPath::new().index(index);
-        let Some(entry) = entry.as_object() else {
+        if !entry.is_object() {
             out.push(invalid().at(at).in_file(origin));
             continue;
-        };
-        let member = |key: &str| at.child(key);
-        for key in ["flipbook_texture", "atlas_tile"] {
-            if non_null(entry.get(key)).is_some_and(|value| !value.is_string()) {
-                out.push(invalid().at(member(key)).in_file(origin));
-            }
         }
-        for key in [
-            "atlas_index",
-            "atlas_tile_variant",
-            "ticks_per_frame",
-            "replicate",
-        ] {
-            if entry.get(key).is_some_and(int_is_coerced) {
-                out.push(invalid().at(member(key)).in_file(origin));
-            }
+        let mut told = Diagnostics::default();
+        let flipbook = read_entry(entry, at.clone(), &mut told);
+        for finding in told {
+            out.push(finding.in_file(origin));
         }
-        if non_null(entry.get("blend_frames")).is_some_and(|value| !value.is_bool()) {
-            out.push(invalid().at(member("blend_frames")).in_file(origin));
-        }
-        if let Some(frames) = non_null(entry.get("frames")) {
-            if let Some(frames) = frames.as_array() {
-                for (frame, value) in frames.as_slice().iter().enumerate() {
-                    if value.is_null() || int_is_coerced(value) {
-                        let mut at = member("frames");
-                        at.push_index(frame);
-                        out.push(invalid().at(at).in_file(origin));
-                    }
-                }
-            } else {
-                // Vanilla reads `frames` only when it is an array.
-                out.push(invalid().at(member("frames")).in_file(origin));
-            }
-        }
-        for (key, _) in entry {
-            if !KNOWN.contains(&key.as_str()) {
-                out.push(
-                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                        .severity(Severity::Info)
-                        .at(member(key.as_str()))
-                        .in_file(origin),
-                );
-            }
-        }
-        if as_int(entry.get("ticks_per_frame"), 1) < 1 {
+        if flipbook.ticks_per_frame() < 1 {
             out.push(
                 Diagnostic::of(&core_codes::CLAMPED_VALUE)
-                    .at(member("ticks_per_frame"))
+                    .at(at.child("ticks_per_frame"))
                     .in_file(origin),
             );
         }
-        if !seen.insert(raw_key(entry)) {
+        if !seen.insert(flipbook.merge_key()) {
             out.push(
                 Diagnostic::of(&core_codes::DUPLICATE_IDENTIFIER)
                     .severity(Severity::Info)

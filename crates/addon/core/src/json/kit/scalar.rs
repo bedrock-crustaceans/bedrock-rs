@@ -8,6 +8,7 @@ use super::{Expected, Node, Pass, Read};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath, Severity};
 use crate::json::jsoncpp::fork::{self, Stored};
+use crate::json::jsoncpp::lenient;
 use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, fits, judge};
 use crate::json::{Misread, Misreading};
 
@@ -100,6 +101,10 @@ impl Read<'_> {
     ///   ([`fork`]'s `asFloat`, `asBool`, `asInt`, `asString`; `null` is the type's zero), told
     ///   as an information (`INVALID_VALUE`) at the member when it is not of the member's own
     ///   type (a number or bool for a float is no word), never refused;
+    /// - [`Scalars::Lenient`]: the same for the texture files (`jsoncpp::lenient`: an integer
+    ///   keeps its low 32 bits, a number beyond a float is the largest finite one), told at the
+    ///   member where the value is not of the kind the member reads without a word, a `null`
+    ///   that reaches the read included;
     /// - a number beyond its float read as the infinity it is, and an information that says so
     ///   (`BEYOND_FLOAT_MEMBER`, [`BeyondWidth::ClampAndTell`]: the versioned load clamps it in
     ///   the text and reads again) or a wrong type ([`BeyondWidth::Error`]);
@@ -134,8 +139,10 @@ impl Read<'_> {
         if self.stopped {
             return None;
         }
-        if self.reading.scalars == Scalars::Fork {
-            return Some(self.fork_scalar(node, declared));
+        match self.reading.scalars {
+            Scalars::Fork => return Some(self.fork_scalar(node, declared)),
+            Scalars::Lenient => return Some(self.lenient_scalar(node, declared)),
+            _ => {}
         }
         let Some(token) = Token::of(node.value) else {
             self.wrong_kind(node, expected(declared));
@@ -232,13 +239,49 @@ impl Read<'_> {
             ),
         };
         if !quiet {
-            let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
-                .severity(Severity::Info)
-                .at(node.path.clone());
-            finding.location.span = node.span();
-            self.push(finding);
+            self.tell_coerced(node);
         }
         scalar
+    }
+
+    /// The value `node` holds as the texture files' reader coerces it for a member of
+    /// `declared` ([`Scalars::Lenient`]: `jsoncpp::lenient`'s `asInt`, `asFloat`, `asBool` and
+    /// `asString`, over the 32-bit integer and float the files hold), and an information at the
+    /// member where the value is not of the kind the member reads without a word.
+    fn lenient_scalar(&mut self, node: &Node<'_>, declared: Declared) -> Scalar<'static> {
+        let value = Some(node.value);
+        let (scalar, quiet) = match declared {
+            Declared::Float { .. } => (
+                Scalar::Real(f64::from(lenient::as_float(value, 0.0))),
+                node.value.is_number() && !lenient::float_is_clamped(node.value),
+            ),
+            Declared::Bool => (
+                Scalar::Bool(lenient::as_bool(value, false)),
+                node.value.is_bool() || node.value.is_number(),
+            ),
+            Declared::Int { .. } => (
+                integer(i128::from(lenient::as_int(value, 0))),
+                !node.value.is_null() && !lenient::int_is_coerced(node.value),
+            ),
+            Declared::Text => (
+                Scalar::Text(Cow::Owned(lenient::to_text(value))),
+                node.value.is_string(),
+            ),
+        };
+        if !quiet {
+            self.tell_coerced(node);
+        }
+        scalar
+    }
+
+    /// Tells that `node` was coerced for its member: an information of the crate's own, the
+    /// game's reader being silent.
+    fn tell_coerced(&mut self, node: &Node<'_>) {
+        let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
+            .severity(Severity::Info)
+            .at(node.path.clone());
+        finding.location.span = node.span();
+        self.push(finding);
     }
 
     /// Tells a negative whole number given to an unsigned integer member under the member's

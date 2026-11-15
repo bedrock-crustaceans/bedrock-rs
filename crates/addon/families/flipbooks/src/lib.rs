@@ -4,8 +4,11 @@
 //! What a flipbook says of the terrain atlas and of its image is a link rule: the family
 //! knows neither.
 //!
-//! The reader stays a hand walk over the merged array, as the client reads it after its own merge:
-//! no schema stands behind it.
+//! An entry is read by the derived reader of [`Flipbook`] under `Scalars::Lenient` (the client's
+//! jsoncpp coerces every member and refuses none) and a silent `null`: once per pack's copy, for
+//! the findings that name the pack, and once on the merged array, for the value. What stays hand
+//! code is what is not an entry: the file's root, the elements that are no object, the clamp of
+//! `ticks_per_frame` and the entries of one key.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

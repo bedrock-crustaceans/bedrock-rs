@@ -37,6 +37,17 @@ pub enum Scalars {
     /// name), and the crate tells it as an information at the member
     /// ([`Read::scalar`](crate::json::kit::Read::scalar)). `judge` never refuses under it.
     Fork,
+    /// The jsoncpp variant the texture files are read with (`json::jsoncpp::lenient`): every
+    /// member is coerced as the game's reader coerces it, no token is refused, and the crate
+    /// tells it as an information at the member (`INVALID_VALUE`) where the value is not of
+    /// the type read without a word. It differs from [`Fork`](Self::Fork) in what is quiet and
+    /// in the integer rule: an integer keeps its low 32 bits (the sound files' reader reads
+    /// one past 64 bits as `0`), an integer member is quiet only for an integer token that fits
+    /// 32 bits, a float member for a number that fits a float (a bool is told, a number beyond
+    /// a float is read as the largest finite one and told), a bool member for a bool or a
+    /// number, a string member for a string. A `null` that reaches the read is told (the owner
+    /// that reads a `null` member as absent never asks).
+    Lenient,
 }
 
 /// What a number beyond the width of its float member does (`1e39` for an `f32`): the reading
@@ -340,7 +351,7 @@ pub fn judge(declared: Declared, token: Token<'_>, rules: ScalarRules) -> Verdic
         Scalars::NonStrict => non_strict(declared, token),
         Scalars::ConvertAndTell => convert_and_tell(declared, token),
         // Read by `Read::scalar` over the value, whose coercions are not tokens.
-        Scalars::Fork => Verdict::Keep,
+        Scalars::Fork | Scalars::Lenient => Verdict::Keep,
     };
     match verdict {
         Verdict::Refused(Refusal::BeyondWidth)

@@ -1,17 +1,24 @@
 //! The texture atlas document: `textures/terrain_texture.json` and `textures/item_texture.json`,
 //! one type for both, as vanilla has one class and one loader for them.
 
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::jsoncpp::lenient::strtouint32_hex;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_shared_shapes::OneOrMany;
 
+use super::read::{
+    mip_levels, non_empty_text, path, silent_text, textures, tiles, tint_base_color, weight,
+};
+
 /// Which of the two atlas files a [`TextureAtlas`] is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum AtlasKind {
     /// `textures/terrain_texture.json`: block faces.
     Terrain,
@@ -48,26 +55,35 @@ impl AtlasKind {
 /// is `None`, and the accessor of the same name gives vanilla's default.
 #[doc(alias = "terrain_texture.json")]
 #[doc(alias = "item_texture.json")]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::quiet = "resource_pack_name format_version")]
 pub struct TextureAtlas {
-    /// Which file this is.
+    /// Which file this is (not in the document: the reader sets it).
+    #[facet(skip, default = AtlasKind::Terrain)]
     pub kind: AtlasKind,
     /// `texture_name`: the atlas page's resource name. Required: a merged document without
-    /// it builds no atlas.
+    /// it builds no atlas; the reader sets it.
+    #[facet(default, schema::read_with = schema::read_later)]
     pub texture_name: String,
     /// `padding`: the requested pad size around each tile; 0 when absent.
+    #[facet(schema::reads_null)]
     pub padding: Option<i32>,
     /// `num_mip_levels`; 1 when absent, and 0 counts as 1.
+    #[facet(schema::reads_null, schema::read_with = mip_levels)]
     pub num_mip_levels: Option<i32>,
     /// `default_leather_color`, as written; the text after its first character is read as hex.
+    #[facet(schema::reads_null, schema::read_with = silent_text)]
     pub default_leather_color: Option<String>,
     /// `default_horse_leather_color`, as written.
+    #[facet(schema::reads_null, schema::read_with = silent_text)]
     pub default_horse_leather_color: Option<String>,
     /// `texture_data`: the tiles by short name, in document order. `None` when the document
     /// has no such member.
+    #[facet(schema::read_with = tiles)]
     pub texture_data: Option<IndexMap<AtlasKey, AtlasItem>>,
     /// `resource_pack_name` and `format_version`: written by vanilla's own files and read by
-    /// nothing.
+    /// nothing (the reader moves them out of `extra`).
+    #[facet(skip)]
     pub ignored: UnknownMembers,
     /// Members vanilla does not read.
     pub extra: UnknownMembers,
@@ -175,11 +191,8 @@ pub(super) fn after_first(text: &str) -> &str {
 }
 
 /// One tile of an atlas: an entry of `texture_data`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AtlasItem {
-    /// `textures`: one element, or one per index. A block picks the index by its texture
-    /// variant; an item by its frame.
-    pub textures: AtlasTextures,
     /// `quad`; false when absent. Read at this level only.
     pub quad: Option<bool>,
     /// `additive`; false when absent. Read at this level only, and given to every layer.
@@ -188,6 +201,10 @@ pub struct AtlasItem {
     pub mip_fade_amount: Option<f32>,
     /// `mip_fade_color`: the default of every layer; no colour when absent.
     pub mip_fade_color: Option<Color>,
+    /// `textures`: one element, or one per index. A block picks the index by its texture
+    /// variant; an item by its frame.
+    #[facet(schema::read_with = textures)]
+    pub textures: AtlasTextures,
     /// Members vanilla does not read.
     pub extra: UnknownMembers,
 }
@@ -306,7 +323,8 @@ pub struct ResolvedLayer<'a> {
 pub type AtlasTextures = OneOrMany<TextureElement>;
 
 /// One element of `textures`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum TextureElement {
     /// An object whose `variations` is an array: one weighted layer per entry. Vanilla reads
     /// nothing else of the object.
@@ -325,7 +343,8 @@ pub enum TextureElement {
 }
 
 /// One entry of a `variations` array.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum VariationEntry {
     /// An object.
     Layer(Box<TextureLayer>),
@@ -342,23 +361,28 @@ pub const MIN_WEIGHT: f32 = 0.05;
 pub const MAX_WEIGHT: f32 = 1_000_000.0;
 
 /// An object element: one image and how it is drawn.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct TextureLayer {
     /// `path`: the image, pack-relative and without extension.
+    #[facet(schema::read_with = path)]
     pub path: Option<String>,
     /// `tint_map_path`: the tint map image.
+    #[facet(schema::read_with = non_empty_text)]
     pub tint_map_path: Option<String>,
     /// `overlay_color`, as written; the text after its first character is read as `RRGGBB`.
+    #[facet(schema::read_with = non_empty_text)]
     pub overlay_color: Option<String>,
     /// `tint_color`: a colour, or one colour per channel of the tint map.
     pub tint_color: Option<Tint>,
     /// `tint_base_color`: one colour per channel of the tint map.
+    #[facet(schema::read_with = tint_base_color)]
     pub tint_base_color: Option<TintMapColor>,
     /// `mip_fade_amount`; the tile's when absent.
     pub mip_fade_amount: Option<f32>,
     /// `mip_fade_color`; the tile's when absent.
     pub mip_fade_color: Option<Color>,
     /// `weight`, within [[`MIN_WEIGHT`], [`MAX_WEIGHT`]]; 1 when absent.
+    #[facet(schema::reads_null, schema::read_with = weight)]
     pub weight: Option<f32>,
     /// `isotropic`: the faces drawn without a fixed orientation.
     pub isotropic: Option<Isotropic>,
@@ -393,7 +417,8 @@ impl TextureLayer {
 }
 
 /// A `tint_color`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum Tint {
     /// One colour for the whole image.
     Color(Color),
@@ -402,7 +427,7 @@ pub enum Tint {
 }
 
 /// The colours of the four tint map channels.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
 pub struct TintMapColor {
     /// `r_color`.
     pub r_color: Option<Color>,
@@ -415,7 +440,8 @@ pub struct TintMapColor {
 }
 
 /// A colour of an atlas document.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet)]
+#[repr(u8)]
 pub enum Color {
     /// `[r, g, b]`: the alpha is 255.
     Rgb([u8; 3]),
@@ -451,7 +477,8 @@ impl Color {
 }
 
 /// A block face of `isotropic`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[repr(u8)]
 pub enum Face {
     /// `down`.
     Down,
@@ -518,7 +545,8 @@ impl Face {
 }
 
 /// An `isotropic` member.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[repr(u8)]
 pub enum Isotropic {
     /// A bool: every face, or none.
     All(bool),

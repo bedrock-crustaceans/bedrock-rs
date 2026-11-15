@@ -5,6 +5,8 @@ use std::collections::{BTreeMap, HashMap};
 
 use indexmap::IndexMap;
 
+use crate::id::{Id, Kind};
+
 use super::cx::SchemaCx;
 use super::rows::FieldRow;
 
@@ -182,6 +184,24 @@ macro_rules! map_fields {
 }
 
 map_fields!(IndexMap, HashMap);
+
+/// The same walk into a map keyed by identifier, at the identifier's text.
+impl<K: Kind, T: SchemaFields, S> SchemaFields for IndexMap<Id<K>, T, S>
+where
+    S: core::hash::BuildHasher,
+{
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        for (key, inner) in self.iter_mut() {
+            cx.enter(key.as_str());
+            inner.check_fields(cx);
+            cx.leave();
+        }
+    }
+
+    fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+        T::trigger_members(&member(prefix, "*"), out);
+    }
+}
 
 impl<T: SchemaFields> SchemaFields for BTreeMap<String, T> {
     fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {

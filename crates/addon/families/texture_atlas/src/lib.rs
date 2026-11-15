@@ -6,8 +6,11 @@
 //! The image paths of the merged atlas are looked up in the stack's file listing, so the load
 //! can say which tile has no image and which variations the pack filter drops.
 //!
-//! The reader stays a hand walk over the merged JSON, with the coercions of vanilla's JSON library:
-//! the client reads the merged document by hand, with no schema behind it.
+//! The merged JSON is read by the derived reader of [`TextureAtlas`] under `Scalars::Lenient`
+//! (the coercions of vanilla's JSON library: it coerces every member and refuses none) and a
+//! silent `null`. What the game reads by a rule of its own is a leaf `FromJson` (a colour, a tint,
+//! an `isotropic` setting, an element of `textures`) or a `read_with` fn of a member (the weight's
+//! clamp, a text that is none when empty, the tiles that are dropped with an error).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

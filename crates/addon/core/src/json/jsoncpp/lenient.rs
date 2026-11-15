@@ -1,6 +1,7 @@
 //! The game's JSON reader as the texture files see it: the lenient parse of one copy (comments,
 //! any root, content after the root ignored) and the `Json::Value` accessors whose coercions
-//! the atlas and flipbook readers reproduce on the merged value.
+//! the atlas and flipbook readers reproduce on the merged value (`Scalars::Lenient` reads a
+//! derived member by them).
 
 use crate::json::{
     Coerce, Coercing, IsIntRule, MAX_JSON_DEPTH, Value, WideInt, check_depth, strip_bom,

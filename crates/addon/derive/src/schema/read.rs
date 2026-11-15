@@ -51,13 +51,14 @@ fn member_of(field: &syn::Field, index: usize) -> Member {
 
 /// The value a field the read does not take is built with: a `skip` field's facet `default`
 /// (its type's `Default` without one), the struct's kept unknown members for an
-/// `UnknownMembers` field, the object as written for a `Written` one, and for a `Present` one
-/// the `names` (the JSON names of the struct's fields) the object wrote, `null` ones included.
+/// `UnknownMembers` field that is not `skip` (a `skip` one holds nothing the read keeps), the
+/// object as written for a `Written` one, and for a `Present` one the `names` (the JSON names
+/// of the struct's fields) the object wrote, `null` ones included.
 fn untaken_value(field: &syn::Field, names: &[&String]) -> TokenStream {
     let mut scratch = Vec::new();
     let attrs = FieldAttrs::read(&field.attrs, &mut scratch);
     let ty = &field.ty;
-    if named(ty, "UnknownMembers") {
+    if named(ty, "UnknownMembers") && !attrs.skip {
         return quote!(__extra);
     }
     if named(ty, "Present") {

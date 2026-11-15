@@ -314,6 +314,15 @@ impl<T: MolangFields> MolangFields for IndexMap<String, T> {
     }
 }
 
+/// The same walk into a map keyed by identifier, at the identifier's text.
+impl<K: crate::id::Kind, T: MolangFields> MolangFields for IndexMap<crate::id::Id<K>, T> {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        for (key, inner) in self.iter_mut() {
+            visitor.nested(key.as_str(), inner);
+        }
+    }
+}
+
 impl<T: MolangFields, S: std::hash::BuildHasher> MolangFields
     for std::collections::HashMap<String, T, S>
 {

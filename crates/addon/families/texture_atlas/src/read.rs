@@ -1,130 +1,31 @@
 //! Reading a [`TextureAtlas`] from the merged JSON of the stack, with the coercions of
-//! vanilla's JSON library.
+//! vanilla's JSON library: the derived reader of the types under `Scalars::Lenient` and a
+//! silent `null`, and a leaf or a `read_with` fn for each member the game reads by a rule of
+//! its own.
 
-use facet_value::VObject;
 use indexmap::IndexMap;
 
 use super::codes;
 use super::types::{
     AtlasItem, AtlasKind, AtlasTextures, Color, Face, Isotropic, MAX_WEIGHT, MIN_WEIGHT,
-    TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry, face_is_read,
+    TextureAtlas, TextureElement, TextureLayer, Tint, TintMapColor, VariationEntry, after_first,
+    face_is_read,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::jsoncpp::lenient::{
-    as_bool, as_float, as_int, float_is_clamped, int_is_coerced, is_empty, non_null,
-    strtouint32_hex, to_text,
-};
+use bedrock_addon_core::json::jsoncpp::lenient::{as_float, is_empty, strtouint32_hex, to_text};
+use bedrock_addon_core::json::kit::{Node, Profile, Read, Recovery, UnknownAt};
+use bedrock_addon_core::schema::{FromJson, UnknownRule, read_document, read_entries};
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading, Scalars};
+use bedrock_addon_shared_shapes::OneOrMany;
 
 /// The members of the root that vanilla's own files write and nothing reads.
 const IGNORED: [&str; 2] = ["resource_pack_name", "format_version"];
-/// The members of the root that `_createAtlas` reads.
-const ROOT: [&str; 6] = [
-    "padding",
-    "num_mip_levels",
-    "default_leather_color",
-    "default_horse_leather_color",
-    "texture_name",
-    "texture_data",
-];
-/// The members of a tile that `_readNode` reads.
-const NODE: [&str; 5] = [
-    "textures",
-    "quad",
-    "additive",
-    "mip_fade_amount",
-    "mip_fade_color",
-];
-/// The members of a layer that the game reads.
-const LAYER: [&str; 9] = [
-    "path",
-    "tint_map_path",
-    "overlay_color",
-    "tint_color",
-    "tint_base_color",
-    "mip_fade_amount",
-    "mip_fade_color",
-    "weight",
-    "isotropic",
-];
 /// The members of a tint map.
 const CHANNELS: [&str; 4] = ["r_color", "g_color", "b_color", "a_color"];
-
-/// The findings of one read, each at its place in the merged document.
-struct Reader<'a> {
-    out: &'a mut Diagnostics,
-    path: JsonPath,
-}
-
-impl Reader<'_> {
-    /// A finding at the current path.
-    fn report(&mut self, code: Code, severity: Severity) {
-        self.out.push(
-            Diagnostic::error(code)
-                .severity(severity)
-                .at(self.path.clone())
-                .phase(Phase::Validate),
-        );
-    }
-
-    /// A finding at member `key` of the current path.
-    fn report_at(&mut self, key: &str, code: Code, severity: Severity) {
-        self.path.push(key);
-        self.report(code, severity);
-        self.path.pop();
-    }
-
-    /// The game's content-log error after which the atlas loads: a kept error.
-    fn kept(&mut self, code: Code) {
-        self.out.push_kept_error(
-            Diagnostic::error(code)
-                .at(self.path.clone())
-                .phase(Phase::Validate),
-        );
-    }
-
-    /// A lint of the crate's own at member `key`: vanilla coerces or ignores the value silently, an
-    /// information.
-    fn invalid(&mut self, key: &str) {
-        self.report_at(key, Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-    }
-
-    /// Runs `read` one member down.
-    fn within<T>(&mut self, key: &str, read: impl FnOnce(&mut Self) -> T) -> T {
-        self.path.push(key);
-        let value = read(self);
-        self.path.pop();
-        value
-    }
-
-    /// Runs `read` one array element down.
-    fn within_index<T>(&mut self, index: usize, read: impl FnOnce(&mut Self) -> T) -> T {
-        self.path.push_index(index);
-        let value = read(self);
-        self.path.pop();
-        value
-    }
-
-    /// The members of `object` outside `known`, each reported as unrecognized.
-    fn unknown(&mut self, object: &VObject, known: &[&str]) -> UnknownMembers {
-        let mut extra = UnknownMembers::default();
-        for (key, value) in object {
-            if !known.contains(&key.as_str()) {
-                // The game reads the members it knows and ignores the rest.
-                self.report_at(
-                    key.as_str(),
-                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                    Severity::Info,
-                );
-                extra.insert(key.as_str().to_owned(), value.clone());
-            }
-        }
-        extra
-    }
-}
 
 /// Reads the atlas of `kind` from the merged document; `None`, with vanilla's error, when the
 /// document names no `texture_name` (vanilla then builds no atlas).
@@ -133,383 +34,367 @@ pub(super) fn read_atlas(
     merged: &Value,
     out: &mut Diagnostics,
 ) -> Option<TextureAtlas> {
-    let mut reader = Reader {
-        out,
-        path: JsonPath::new(),
-    };
     // A `null` `texture_name` counts as present, and reads as `""`.
-    let root = merged.as_object();
-    let Some((root, name)) = root.and_then(|root| Some((root, root.get("texture_name")?))) else {
-        reader.report(
-            codes::NO_TEXTURE_NAME.with([kind.path().to_owned()]),
-            Severity::Error,
+    let name = merged.as_object().and_then(|root| root.get("texture_name"));
+    let Some(name) = name else {
+        out.push(
+            Diagnostic::error(codes::NO_TEXTURE_NAME.with([kind.path().to_owned()]))
+                .phase(Phase::Validate),
         );
         return None;
     };
     let texture_name = to_text(Some(name));
+    let at = JsonPath::new().child("texture_name");
     if texture_name.is_empty() {
         // The game raises a debug assert here; a release build goes on, so this is an
         // information with its text.
-        reader.report_at(
-            "texture_name",
-            Code::from(&codes::NO_TEXTURE_PAGE),
-            Severity::Info,
+        out.push(
+            Diagnostic::info(&codes::NO_TEXTURE_PAGE)
+                .at(at)
+                .phase(Phase::Validate),
         );
     } else if texture_name != kind.expected_name() {
         // The game registers the page under the other name and nothing binds it; the crate
         // reports an information.
-        reader.invalid("texture_name");
+        out.push(
+            Diagnostic::info(&core_codes::INVALID_VALUE)
+                .at(at)
+                .phase(Phase::Validate),
+        );
     }
-    let padding = reader.int(root, "padding");
-    let num_mip_levels = reader.int(root, "num_mip_levels");
-    if num_mip_levels.is_some_and(|levels| levels < 0) {
-        reader.invalid("num_mip_levels");
-    }
-    let texture_data = match root.get("texture_data") {
-        None => None,
-        Some(data) if data.is_null() => None,
-        Some(data) => {
-            let tiles = data
-                .as_object()
-                .map(|data| reader.within("texture_data", |reader| reader.tiles(data)));
-            if tiles.is_none() {
-                // The member names of a non-object are empty: no tile, silently.
-                reader.invalid("texture_data");
-            }
-            tiles
-        }
-    };
-    let mut ignored = UnknownMembers::default();
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Lenient)
+        .with_null(NullHandling::AbsentSilently)
+        .with_on_member_failure(MemberFailure::DefaultAndTell);
+    let mut read = Read::new(reading, out)
+        .profile(
+            Profile::DECLARED_ORDER
+                .with_unknown(UnknownAt::Last)
+                .with_recovery(Recovery::Value),
+        )
+        .phase(Phase::Validate)
+        .unknown_severity(Severity::Info);
+    let mut atlas: TextureAtlas = read_document(&Node::new(merged, JsonPath::new()), &mut read)?;
+    atlas.kind = kind;
+    atlas.texture_name = texture_name;
     for key in IGNORED {
-        if let Some(value) = root.get(key) {
-            ignored.insert(key.to_owned(), value.clone());
+        if let Some(value) = atlas.extra.remove(key) {
+            atlas.ignored.insert(key.to_owned(), value);
         }
     }
-    let known: Vec<&str> = ROOT.into_iter().chain(IGNORED).collect();
-    Some(TextureAtlas {
-        kind,
-        texture_name,
-        padding,
-        num_mip_levels,
-        default_leather_color: root.get("default_leather_color").map(|v| to_text(Some(v))),
-        default_horse_leather_color: root
-            .get("default_horse_leather_color")
-            .map(|v| to_text(Some(v))),
-        texture_data,
-        ignored,
-        extra: reader.unknown(root, &known),
-    })
+    Some(atlas)
 }
 
-impl Reader<'_> {
-    /// A present member read as an integer defaulting to 0: a value that is no integer of 32
-    /// bits is coerced, with an information of the crate's own.
-    fn int(&mut self, object: &VObject, key: &str) -> Option<i32> {
-        let value = object.get(key)?;
-        if value.is_null() || int_is_coerced(value) {
-            self.invalid(key);
-        }
-        Some(as_int(Some(value), 0))
-    }
+/// An information of the crate's own at `node`: the game coerces or ignores the value in
+/// silence.
+fn invalid(read: &mut Read<'_>, at: &JsonPath) {
+    read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(at.clone()));
+}
 
-    /// A present member read as a bool defaulting to `false`; anything but a bool or a number is
-    /// coerced, with an information of the crate's own.
-    fn flag(&mut self, object: &VObject, key: &str) -> Option<bool> {
-        let value = non_null(object.get(key))?;
-        if !value.is_bool() && !value.is_number() {
-            self.invalid(key);
-        }
-        Some(as_bool(Some(value), false))
-    }
+/// The game's content-log error after which the atlas loads: a kept error.
+fn kept(read: &mut Read<'_>, code: Code, at: &JsonPath) {
+    read.findings_mut().push_kept_error(
+        Diagnostic::error(code)
+            .at(at.clone())
+            .phase(Phase::Validate),
+    );
+}
 
-    /// `asFloat(default)` of a present member.
-    fn float(&mut self, object: &VObject, key: &str, default: f32) -> Option<f32> {
-        let value = non_null(object.get(key))?;
-        // The crate reports a value that is no number, or a number beyond a float (read as the
-        // largest finite one).
-        if !value.is_number() || float_is_clamped(value) {
-            self.invalid(key);
-        }
-        Some(as_float(Some(value), default))
+/// `num_mip_levels`: an integer, a negative count told.
+pub(super) fn mip_levels(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
+    let levels = i32::from_json(node, read)?;
+    if levels < 0 {
+        invalid(read, node.path());
     }
+    Some(levels)
+}
 
-    /// The tiles of `texture_data`: an entry that is no object, or has no `textures`, is
-    /// dropped with vanilla's error.
-    fn tiles(&mut self, data: &VObject) -> IndexMap<AtlasKey, AtlasItem> {
-        let mut tiles = IndexMap::new();
-        for (key, value) in data {
-            let key = key.as_str();
-            let Some(node) = value.as_object() else {
-                self.report_at(key, codes::ENTRY_NOT_OBJECT.with([key]), Severity::Error);
-                continue;
-            };
-            if let Some(item) = self.within(key, |reader| reader.tile(key, node)) {
-                tiles.insert(AtlasKey::parse(key), item);
-            }
-        }
-        tiles
+/// A colour of the leather members, as written: the game reads them as text, whatever they are.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the signature of a `read_with` fn"
+)]
+pub(super) fn silent_text(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    Some(to_text(Some(node.value())))
+}
+
+/// `texture_data`: an object of tiles; the game takes no tile of another value.
+pub(super) fn tiles(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<AtlasKey, AtlasItem>> {
+    if !node.value().is_object() {
+        // The member names of a non-object are empty: no tile, silently.
+        invalid(read, node.path());
+        return None;
     }
+    read_entries(node, read, tile)
+}
 
-    /// One tile (`_readNode`).
-    fn tile(&mut self, key: &str, node: &VObject) -> Option<AtlasItem> {
-        let Some(textures) = non_null(node.get("textures")) else {
-            self.report(
-                codes::MISSING_TEXTURES.with([key.to_owned()]),
-                Severity::Error,
-            );
-            return None;
-        };
-        let quad = self.flag(node, "quad");
-        let additive = self.flag(node, "additive");
-        let mip_fade_amount = self.float(node, "mip_fade_amount", 0.0);
-        let mip_fade_color = self.color(node, "mip_fade_color");
-        let textures = self.within("textures", |reader| match textures.as_array() {
-            Some(elements) => {
-                if elements.is_empty() {
-                    // The game keeps the tile with no index (a block that names it gets a
-                    // content-log warning); the crate reports an information here.
-                    reader.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-                }
-                AtlasTextures::Many(
-                    elements
-                        .as_slice()
-                        .iter()
-                        .enumerate()
-                        .map(|(index, element)| {
-                            reader.within_index(index, |reader| reader.element(element))
-                        })
-                        .collect(),
-                )
-            }
-            None => AtlasTextures::One(reader.element(textures)),
-        });
-        Some(AtlasItem {
-            textures,
-            quad,
-            additive,
-            mip_fade_amount,
-            mip_fade_color,
-            extra: self.unknown(node, &NODE),
-        })
+/// One tile (`_readNode`): an entry that is no object, or has no `textures`, is dropped with
+/// vanilla's error.
+fn tile(node: &Node<'_>, read: &mut Read<'_>) -> Option<AtlasItem> {
+    let key = node.path().last_key().unwrap_or_default();
+    let Some(object) = node.value().as_object() else {
+        read.push(Diagnostic::error(codes::ENTRY_NOT_OBJECT.with([key])).at(node.path().clone()));
+        return None;
+    };
+    if object.get("textures").is_none_or(Value::is_null) {
+        read.push(
+            Diagnostic::error(codes::MISSING_TEXTURES.with([key.to_owned()]))
+                .at(node.path().clone()),
+        );
+        return None;
     }
+    AtlasItem::from_json(node, read)
+}
 
-    /// One element of `textures`.
-    fn element(&mut self, element: &Value) -> TextureElement {
-        if let Some(object) = element.as_object() {
-            let variations = non_null(object.get("variations")).and_then(Value::as_array);
+/// `textures`: one element or an array of them; the game keeps a tile with an empty array and
+/// no index, the crate tells it.
+pub(super) fn textures(node: &Node<'_>, read: &mut Read<'_>) -> Option<AtlasTextures> {
+    let textures = AtlasTextures::from_json(node, read)?;
+    if matches!(&textures, OneOrMany::Many(elements) if elements.is_empty()) {
+        invalid(read, node.path());
+    }
+    Some(textures)
+}
+
+impl FromJson for TextureElement {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let value = node.value();
+        if let Some(object) = value.as_object() {
+            let variations = object
+                .get("variations")
+                .filter(|variations| variations.is_array());
             let Some(entries) = variations else {
-                return TextureElement::Layer(Box::new(self.layer(object)));
+                return TextureLayer::from_json(node, read)
+                    .map(|layer| Self::Layer(Box::new(layer)));
             };
-            let variations = self.within("variations", |reader| {
-                entries
-                    .as_slice()
-                    .iter()
-                    .enumerate()
-                    .map(|(index, entry)| reader.within_index(index, |reader| reader.entry(entry)))
-                    .collect()
-            });
-            return TextureElement::Variations {
+            let entries = Node::new(entries, node.path().child("variations"));
+            let variations = Vec::from_json(&entries, read)?;
+            let members = read.object(node)?;
+            let mut ignored = UnknownMembers::default();
+            for (key, value) in read.unknown(&members, &["variations"], UnknownRule::Keep) {
+                ignored.insert(key.to_owned(), value.clone());
+            }
+            return Some(Self::Variations {
                 variations,
-                ignored: self.unknown(object, &["variations"]),
-            };
+                ignored,
+            });
         }
-        if let Some(path) = element.as_string() {
-            return TextureElement::Path(path.as_str().to_owned());
+        if let Some(path) = value.as_string() {
+            return Some(Self::Path(path.as_str().to_owned()));
         }
         // The game gives the index no layer, silently; the crate reports an information.
-        self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-        TextureElement::Invalid(element.clone())
+        invalid(read, node.path());
+        Some(Self::Invalid(value.clone()))
     }
+}
 
-    /// One entry of `variations`.
-    fn entry(&mut self, entry: &Value) -> VariationEntry {
-        if let Some(object) = entry.as_object() {
-            VariationEntry::Layer(Box::new(self.layer(object)))
-        } else if let Some(path) = entry.as_string() {
-            VariationEntry::Path(path.as_str().to_owned())
+impl FromJson for VariationEntry {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let value = node.value();
+        if value.is_object() {
+            TextureLayer::from_json(node, read).map(|layer| Self::Layer(Box::new(layer)))
+        } else if let Some(path) = value.as_string() {
+            Some(Self::Path(path.as_str().to_owned()))
         } else {
             // The game raises a debug assert; the empty layer is kept: an information.
-            self.report(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-            VariationEntry::Invalid(entry.clone())
+            invalid(read, node.path());
+            Some(Self::Invalid(value.clone()))
         }
     }
+}
 
-    /// One object layer.
-    fn layer(&mut self, object: &VObject) -> TextureLayer {
-        let path = object.get("path").filter(|path| !is_empty(Some(path)));
-        if path.is_some_and(|path| !path.is_string()) {
-            self.invalid("path");
-        }
-        let tint_map_path = object.get("tint_map_path");
-        if tint_map_path.is_some_and(|path| !path.is_string() && !path.is_null()) {
-            self.invalid("tint_map_path");
-        }
-        let overlay_color = object.get("overlay_color");
-        if overlay_color.is_some_and(|color| !color.is_string() && !color.is_null()) {
-            self.invalid("overlay_color");
-        }
-        let non_empty = |value: Option<&Value>| Some(to_text(value)).filter(|s| !s.is_empty());
-        let tint_color = match object.get("tint_color") {
-            Some(tint) if !is_empty(Some(tint)) && tint.is_object() => tint
-                .as_object()
-                .map(|map| Tint::Map(self.within("tint_color", |reader| reader.tint_map(map)))),
-            _ => self.color(object, "tint_color").map(Tint::Color),
-        };
-        let tint_base_color = match object.get("tint_base_color") {
-            Some(base) if is_empty(Some(base)) => None,
-            Some(base) => {
-                let map = base
-                    .as_object()
-                    .map(|map| self.within("tint_base_color", |reader| reader.tint_map(map)));
-                if map.is_none() {
-                    self.invalid("tint_base_color");
-                }
-                map
-            }
-            None => None,
-        };
-        TextureLayer {
-            path: path.map(|path| to_text(Some(path))),
-            tint_map_path: non_empty(tint_map_path),
-            overlay_color: non_empty(overlay_color),
-            tint_color,
-            tint_base_color,
-            mip_fade_amount: self.float(object, "mip_fade_amount", 0.0),
-            mip_fade_color: self.color(object, "mip_fade_color"),
-            weight: object.get("weight").map(|weight| self.weight(weight)),
-            isotropic: self.isotropic(object.get("isotropic")),
-            extra: self.unknown(object, &LAYER),
-        }
+/// `path`: the image; an empty value is none (jsoncpp's `empty()`).
+pub(super) fn path(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    if is_empty(Some(node.value())) {
+        return None;
     }
+    String::from_json(node, read)
+}
 
-    /// The weight (default 1.0), clamped to the weight range with vanilla's warnings.
-    fn weight(&mut self, value: &Value) -> f32 {
-        let weight = as_float(Some(value), 0.0);
-        // A NaN is raised to the minimum too.
-        let (clamped, text, bound) = if weight >= MIN_WEIGHT {
-            if weight > MAX_WEIGHT {
-                (MAX_WEIGHT, &codes::WEIGHT_HIGH, "1000000")
-            } else {
-                return weight;
-            }
+/// `tint_map_path` and `overlay_color`: text, none when it is empty.
+pub(super) fn non_empty_text(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    Some(String::from_json(node, read)?).filter(|text| !text.is_empty())
+}
+
+/// `tint_base_color`: the channels' colours; an empty value is none, anything but an object is
+/// told.
+pub(super) fn tint_base_color(node: &Node<'_>, read: &mut Read<'_>) -> Option<TintMapColor> {
+    if is_empty(Some(node.value())) {
+        return None;
+    }
+    if !node.value().is_object() {
+        invalid(read, node.path());
+        return None;
+    }
+    TintMapColor::from_json(node, read)
+}
+
+/// The weight (default 1.0), clamped to the weight range with vanilla's warnings.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the signature of a `read_with` fn"
+)]
+pub(super) fn weight(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    let weight = as_float(Some(node.value()), 0.0);
+    // A NaN is raised to the minimum too.
+    let (clamped, text, bound) = if weight >= MIN_WEIGHT {
+        if weight > MAX_WEIGHT {
+            (MAX_WEIGHT, &codes::WEIGHT_HIGH, "1000000")
         } else {
-            (MIN_WEIGHT, &codes::WEIGHT_LOW, "0.05")
-        };
-        // The game logs both texts at the content log's warning level and stores the clamped
-        // weight: the game's warning.
-        self.report_at("weight", text.with([bound]), Severity::Warning);
-        clamped
-    }
+            return Some(weight);
+        }
+    } else {
+        (MIN_WEIGHT, &codes::WEIGHT_LOW, "0.05")
+    };
+    // The game logs both texts at the content log's warning level and stores the clamped
+    // weight: the game's warning.
+    read.push(
+        Diagnostic::error(text.with([bound]))
+            .severity(Severity::Warning)
+            .at(node.path().clone()),
+    );
+    Some(clamped)
+}
 
-    /// The four channels of a tint map.
-    fn tint_map(&mut self, map: &VObject) -> TintMapColor {
-        self.unknown(map, &CHANNELS);
-        TintMapColor {
-            r_color: self.color(map, "r_color"),
-            g_color: self.color(map, "g_color"),
-            b_color: self.color(map, "b_color"),
-            a_color: self.color(map, "a_color"),
+impl FromJson for Tint {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().as_object().is_some_and(|map| !map.is_empty()) {
+            TintMapColor::from_json(node, read).map(Self::Map)
+        } else {
+            Color::from_json(node, read).map(Self::Color)
         }
     }
+}
 
-    /// The isotropic setting: a bool, or an object of faces.
-    fn isotropic(&mut self, value: Option<&Value>) -> Option<Isotropic> {
-        let value = non_null(value)?;
-        if let Some(all) = value.as_bool() {
-            return Some(Isotropic::All(all));
-        }
-        let Some(object) = value.as_object() else {
-            // A number, a string or an array leaves the mask alone.
-            self.invalid("isotropic");
-            return None;
+/// The four channels of a tint map; the game reads the members it knows and ignores the rest,
+/// which the crate tells first.
+impl FromJson for TintMapColor {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let members = read.object(node)?;
+        read.unknown(&members, &CHANNELS, UnknownRule::Report);
+        let mut channel = |key: &str| {
+            members
+                .get(key)
+                .filter(|member| !member.value().is_null())
+                .and_then(|member| Color::from_json(&member, read))
         };
-        self.within("isotropic", |reader| {
-            // `side` present and not `null`, whatever its type, selects the key set.
-            let with_side = non_null(object.get("side")).is_some();
-            let mut faces = IndexMap::new();
-            for (key, on) in object {
-                let Some(face) = Face::from_name(key.as_str()) else {
-                    // The game is silent about an unknown face, so this is the crate's own
-                    // information.
-                    reader.report_at(
-                        key.as_str(),
-                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                        Severity::Info,
-                    );
-                    continue;
-                };
-                if on.is_null() {
-                    continue;
-                }
-                match on.as_bool() {
-                    Some(on) if face_is_read(face, with_side) => {
-                        faces.insert(face, on);
-                    }
-                    // A face outside the key set, or a value that is no bool: not read.
-                    _ => reader.invalid(key.as_str()),
-                }
-            }
-            // The key set is `side`'s even when its own value was no bool.
-            if with_side && !faces.contains_key(&Face::Side) {
-                faces.insert(Face::Side, false);
-            }
-            Some(Isotropic::Faces(faces))
+        Some(Self {
+            r_color: channel("r_color"),
+            g_color: channel("g_color"),
+            b_color: channel("b_color"),
+            a_color: channel("a_color"),
         })
     }
+}
 
-    /// A colour at member `key`: `None` when it is absent, `null` or refused.
-    fn color(&mut self, object: &VObject, key: &str) -> Option<Color> {
-        let value = non_null(object.get(key))?;
-        self.within(key, |reader| reader.color_value(value))
-    }
-
-    /// One colour value.
-    fn color_value(&mut self, value: &Value) -> Option<Color> {
+/// A colour: an array of three or more channels, or a text read as hex after its first
+/// character; anything else is the game's error, and the colour is none.
+impl FromJson for Color {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let value = node.value();
         if let Some(components) = value.as_array().filter(|array| array.len() >= 3) {
             let mut bytes = [255u8; 4];
             for (index, slot) in bytes.iter_mut().enumerate() {
                 if let Some(component) = components.get(index) {
-                    *slot = self.within_index(index, |reader| reader.component(component));
+                    *slot = component_byte(component, &node.path().index(index), read);
                 }
             }
             let [r, g, b, a] = bytes;
             return Some(if components.len() == 3 {
-                Color::Rgb([r, g, b])
+                Self::Rgb([r, g, b])
             } else {
-                Color::Rgba([r, g, b, a])
+                Self::Rgba([r, g, b, a])
             });
         }
         match value.as_string().map(facet_value::VString::as_str) {
             // The game throws on `""`; the crate refuses it like any other bad colour.
-            Some(text) if !text.is_empty() => {
-                Some(Color::Hex(strtouint32_hex(super::types::after_first(text))))
-            }
+            Some(text) if !text.is_empty() => Some(Self::Hex(strtouint32_hex(after_first(text)))),
             _ => {
                 // The game logs this at the content log's error level; the atlas loads: a kept
                 // error.
-                self.kept(Code::from(&codes::BAD_COLOR));
+                kept(read, Code::from(&codes::BAD_COLOR), node.path());
                 None
             }
         }
     }
+}
 
-    /// One colour component: `null` is 255, an integer (or a bool) is clamped to a byte, and
-    /// anything else is 255 with vanilla's error.
-    fn component(&mut self, value: &Value) -> u8 {
-        if value.is_null() {
-            return 255;
+/// One colour component: `null` is 255, an integer (or a bool) is clamped to a byte, and
+/// anything else is 255 with vanilla's error.
+fn component_byte(value: &Value, at: &JsonPath, read: &mut Read<'_>) -> u8 {
+    if value.is_null() {
+        return 255;
+    }
+    if let Some(flag) = value.as_bool() {
+        return u8::from(flag);
+    }
+    if let Some(number) = value.as_number().filter(|number| !number.is_float()) {
+        // An integer token fits 64 bits; one above `i64` is above a byte.
+        let wide = number.to_i64().unwrap_or(i64::MAX);
+        return u8::try_from(wide.clamp(0, 255)).unwrap_or(255);
+    }
+    // The game logs this at the content log's error level (as it does for the other colour
+    // texts); the value is 255 and the atlas loads: a kept error.
+    kept(read, Code::from(&codes::NOT_INTEGRAL), at);
+    255
+}
+
+/// The isotropic setting: a bool, or an object of faces.
+impl FromJson for Isotropic {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let value = node.value();
+        if let Some(all) = value.as_bool() {
+            return Some(Self::All(all));
         }
-        if let Some(flag) = value.as_bool() {
-            return u8::from(flag);
+        let Some(object) = value.as_object() else {
+            // A number, a string or an array leaves the mask alone.
+            invalid(read, node.path());
+            return None;
+        };
+        // `side` present and not `null`, whatever its type, selects the key set.
+        let with_side = object.get("side").is_some_and(|side| !side.is_null());
+        let mut faces = IndexMap::new();
+        for (key, on) in object {
+            let at = node.path().child(key.as_str());
+            let Some(face) = Face::from_name(key.as_str()) else {
+                // The game is silent about an unknown face, so this is the crate's own
+                // information.
+                read.push(Diagnostic::info(&core_codes::UNRECOGNIZED_FIELD).at(at));
+                continue;
+            };
+            if on.is_null() {
+                continue;
+            }
+            match on.as_bool() {
+                Some(on) if face_is_read(face, with_side) => {
+                    faces.insert(face, on);
+                }
+                // A face outside the key set, or a value that is no bool: not read.
+                _ => invalid(read, &at),
+            }
         }
-        if let Some(number) = value.as_number().filter(|number| !number.is_float()) {
-            // An integer token fits 64 bits; one above `i64` is above a byte.
-            let wide = number.to_i64().unwrap_or(i64::MAX);
-            return u8::try_from(wide.clamp(0, 255)).unwrap_or(255);
+        // The key set is `side`'s even when its own value was no bool.
+        if with_side && !faces.contains_key(&Face::Side) {
+            faces.insert(Face::Side, false);
         }
-        // The game logs this at the content log's error level (as it does for the other colour
-        // texts); the value is 255 and the atlas loads: a kept error.
-        self.kept(Code::from(&codes::NOT_INTEGRAL));
-        255
+        Some(Self::Faces(faces))
     }
 }
+
+// Leaves of the derived check and Molang walk: none holds a bound or Molang.
+bedrock_addon_core::impl_schema_leaf!(
+    TextureElement,
+    VariationEntry,
+    Tint,
+    TintMapColor,
+    Color,
+    Isotropic
+);
+bedrock_addon_core::impl_no_molang!(
+    TextureElement,
+    VariationEntry,
+    Tint,
+    TintMapColor,
+    Color,
+    Isotropic
+);
