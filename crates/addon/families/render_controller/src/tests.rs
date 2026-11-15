@@ -1,6 +1,34 @@
 //! Unit tests of the render controller internals the integration tests cannot name.
 
-use super::read::{MAXIMUM, V1_8_0, controller_of, controller_path, read_pair};
+use super::read::{MAXIMUM, PROFILE, V1_8_0, controller_of, controller_path, pair};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::json::kit::{Node, Read, Texts};
+use bedrock_addon_core::json::parse::{Options, parse};
+use bedrock_addon_core::schema::{FromJson, Schema, read_document};
+use bedrock_addon_core::versioning::Reading;
+use facet::Facet;
+
+/// `text` read as `T` at the member `at` under the schema's read: the value and the findings
+/// as `name at path: text`, in the order they are told.
+fn read_as<T: FromJson>(text: &str, at: &[&str], root: bool) -> (Option<T>, Vec<String>) {
+    let parsed = parse(text, Options::default()).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::TREE, &mut found)
+        .profile(PROFILE)
+        .texts(Texts::TREE);
+    let node = Node::parsed(&parsed, JsonPath::of_keys(at.iter().copied()));
+    let value = if root {
+        read_document::<T>(&node, &mut read)
+    } else {
+        T::from_json(&node, &mut read)
+    };
+    drop(read);
+    let told = found
+        .iter()
+        .map(|d| format!("{} at {}: {}", d.code.id(), d.location.json_path, d.code))
+        .collect();
+    (value, told)
+}
 
 #[test]
 fn the_schema_bounds_are_1_8_0_and_65535_0_0() {
@@ -23,22 +51,25 @@ fn a_finding_below_a_controller_names_it() {
     );
 }
 
-/// What `read_pair` makes of `text` at the member `offset`: whether it read a pair, and its findings as
-/// `name at path: text`, in the order they are told.
-fn pair(text: &str) -> (bool, Vec<String>) {
-    use bedrock_addon_core::json::node_tree::{Node, Walk};
-    let mut walk = Walk::new(
-        super::read::RULES,
-        &bedrock_addon_core::diagnostic::JsonPath::of_keys(["offset"]),
-    );
-    let node = Node::of(bedrock_addon_core::json::JsonSlice::new(text)).unwrap();
-    let read = read_pair(&mut walk, node).is_some();
-    let findings = walk
-        .diagnostics
+/// What `pair` makes of `text` at the member `offset`: whether it read a pair, and its findings
+/// as `name at path: text`, in the order they are told.
+fn pair_of(text: &str) -> (bool, Vec<String>) {
+    let parsed = parse(text, Options::default()).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::TREE, &mut found)
+        .profile(PROFILE)
+        .texts(Texts::TREE);
+    let read_it = pair(
+        &Node::parsed(&parsed, JsonPath::of_keys(["offset"])),
+        &mut read,
+    )
+    .is_some();
+    drop(read);
+    let findings = found
         .iter()
         .map(|d| format!("{} at {}: {}", d.code.id(), d.location.json_path, d.code))
         .collect();
-    (read, findings)
+    (read_it, findings)
 }
 
 /// A pair of expressions is told of by its elements first, each at its index, then by its
@@ -46,7 +77,7 @@ fn pair(text: &str) -> (bool, Vec<String>) {
 #[test]
 fn a_pair_of_expressions_is_told_of_by_its_elements_then_by_its_length() {
     const NO_ARRAY: &str = "core/unknown_child_option at offset: unknown child schema option type.  Allowed types: array";
-    assert_eq!(pair(r#"[1, "q.x"]"#), (true, vec![]));
+    assert_eq!(pair_of(r#"[1, "q.x"]"#), (true, vec![]));
     let element = |index: usize| {
         format!(
             "core/unknown_child_option at offset/{index}: unknown child schema option type.  Allowed types: ExpressionNode"
@@ -75,49 +106,45 @@ fn a_pair_of_expressions_is_told_of_by_its_elements_then_by_its_length() {
         ),
         ("[1, 2, 3, {}]", vec![element(3), length("large (4 > 2)")]),
     ] {
-        let (read, told) = pair(text);
+        let (read, told) = pair_of(text);
         assert!(!read, "{text}");
         assert_eq!(told, findings, "{text}");
     }
 }
 
+/// Two members, the second required.
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Two {
+    a: Option<bool>,
+    b: bool,
+}
+
+/// One float.
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Float {
+    x: f32,
+}
+
 /// W2: under the family's rules a member that failed fails its object, and the required check
-/// is then not made (the opposite of geometry, which judges by the errors raised).
+/// is then not made (as geometry, the object is judged by the errors raised below it).
 #[test]
 fn a_failed_member_fails_the_object_and_the_required_check_is_not_made() {
-    use bedrock_addon_core::diagnostic::JsonPath;
-    use bedrock_addon_core::json::node_tree::{Group, Hit, Node, Walk};
-    let groups = [Group::name("a"), Group::required("b")];
-    let mut walk = Walk::new(super::read::RULES, &JsonPath::new());
-    let ok = walk.object(Node::root(r#"{"a": 1}"#).unwrap(), &groups, |_, _, _, _| {
-        Hit::Failed
-    });
-    assert!(!ok, "a member that failed must fail the object");
-    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.id()).collect();
-    assert!(
-        findings.is_empty(),
-        "the required check must not run after a failed member: {findings:?}"
+    let (value, told) = read_as::<Two>(r#"{"a": 1}"#, &[], true);
+    assert_eq!(value, None, "a member that failed must fail the object");
+    assert_eq!(
+        told,
+        ["core/unknown_child_option at a: unknown child schema option type.  Allowed types: bool"],
+        "the required check must not run after a failed member"
     );
 }
 
 /// W3: a number a float does not hold is told, as a `LossyConversion` information.
 #[test]
 fn a_float_that_narrows_is_told_as_lossy() {
-    use bedrock_addon_core::diagnostic::{JsonPath, Severity};
-    use bedrock_addon_core::json::node_tree::{Node, Walk};
-    let mut walk = Walk::new(super::read::RULES, &JsonPath::new());
-    walk.enter("x");
+    let (value, told) = read_as::<Float>(r#"{"x": 0.123456789012}"#, &[], true);
+    assert_eq!(value, Some(Float { x: 0.123_456_79 }));
     assert_eq!(
-        walk.float(Node::root("0.123456789012").unwrap()),
-        Some(0.123_456_79)
-    );
-    let findings: Vec<_> = walk
-        .diagnostics
-        .iter()
-        .map(|d| (d.severity, d.code.id(), d.location.json_path.to_string()))
-        .collect();
-    assert_eq!(
-        findings,
-        [(Severity::Info, "core/lossy_conversion", "x".to_owned())]
+        told,
+        ["core/lossy_conversion at x: value loses precision when written"]
     );
 }

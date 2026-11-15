@@ -1,34 +1,43 @@
-//! What both animation loaders read their schema trees with on core's node-tree walker
-//! (`json::node_tree`): the rules of the walk (member names that match case-insensitively and in
-//! full, in the file's order), the key patterns only these trees have (time keys, axes), and
-//! vanilla's `atof` the keys are read with.
+//! What both animation loaders read their schema trees with on the derived read: the reading and
+//! the profile of the game's node tree for them (member names that match ignoring ASCII case, in
+//! the file's order), the key patterns only these trees have (time keys, axes), and vanilla's
+//! `atof` the keys are read with.
 
-use bedrock_addon_core::json::node_tree::{
-    Failure, Lossy, Names, Order, Pattern, Rules, Validation,
-};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::json::kit::{Names, Profile, Read, Texts};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{KeyPattern, Keys};
+use bedrock_addon_core::versioning::Reading;
 
-/// The rules of the game's animation and animation controller schemas: names and prefixes
-/// compared without regard to ASCII case, the members in the file's order, strict, an object
-/// failed by any member, and a lossy float read silently.
-pub const RULES: Rules = Rules {
-    names: Names::IgnoreAsciiCase,
-    order: Order::Document,
-    validation: Validation::Strict,
-    failure: Failure::MemberFailed,
-    lossy: Lossy::Silent,
-};
+/// The profile of those schemas: the node tree's, names and prefixes compared without regard to
+/// ASCII case, the members in the file's order, a lossy float read silently.
+pub const PROFILE: Profile = Profile::TREE.with_names(Names::IgnoreAsciiCase);
+
+/// The read of a file of a pack with context `cx`, telling into `findings`.
+pub fn read<'d>(cx: &'d LoadContext, findings: &'d mut Diagnostics) -> Read<'d> {
+    Read::new(Reading::TREE, findings)
+        .profile(PROFILE)
+        .texts(Texts::TREE)
+        .load(cx)
+}
 
 /// `[0-9]+(\.[0-9]+)?`: a time key.
-pub const TIME: Pattern = Pattern::Custom {
+pub const TIME: KeyPattern = KeyPattern::Custom {
     matches: is_time_key,
     regex: r"[0-9]+(\.[0-9]+)?",
 };
 
+/// Members by their time key, none required.
+pub const TIMES: Keys = Keys::new(TIME);
+
 /// `[xyz]`, in either case.
-pub const AXIS: Pattern = Pattern::Custom {
+pub const AXIS: KeyPattern = KeyPattern::Custom {
     matches: is_axis,
     regex: "[xyz]",
 };
+
+/// Members by an identifier (`[a-zA-Z0-9_.-]+`), at least one.
+pub const IDENTIFIERS: Keys = Keys::new(KeyPattern::IDENTIFIER).required();
 
 /// `[0-9]+(\.[0-9]+)?`, in full.
 pub(crate) fn is_time_key(key: &str) -> bool {
@@ -64,7 +73,10 @@ pub fn atof(key: &str) -> f32 {
 mod tests {
     use super::*;
     use bedrock_addon_core::diagnostic::JsonPath;
-    use bedrock_addon_core::json::node_tree::{Group, Hit, Node, Walk};
+    use bedrock_addon_core::json::kit::Node;
+    use bedrock_addon_core::json::parse::{Options, parse};
+    use bedrock_addon_core::schema::{FromJson, read_document};
+    use facet::Facet;
 
     #[test]
     fn time_keys_match_in_full() {
@@ -93,51 +105,59 @@ mod tests {
         assert!((atof("1.") - 1.0).abs() < f32::EPSILON);
     }
 
-    /// The keys `object` hands its callback, in the order it hands them, and the findings.
-    fn walked(text: &str, groups: &[Group], read: Hit) -> (bool, Vec<String>, Vec<String>) {
-        let mut walk = Walk::new(RULES, &JsonPath::new());
-        let mut keys = Vec::new();
-        let ok = walk.object(Node::root(text).unwrap(), groups, |_, _, key, _| {
-            keys.push(key.to_owned());
-            read
-        });
-        let findings = walk
-            .diagnostics
+    /// Three members, each read where the file has it.
+    #[derive(Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
+    struct Three {
+        a: Option<f32>,
+        b: Option<f32>,
+        c: Option<f32>,
+    }
+
+    /// The value and the findings of `text` read as `T` under the schemas' read.
+    fn read_as<T: FromJson>(text: &str) -> (Option<T>, Vec<String>) {
+        let parsed = parse(text, Options::default()).unwrap();
+        let cx = LoadContext::detached();
+        let mut findings = Diagnostics::default();
+        let mut reader = read(&cx, &mut findings);
+        let value = read_document::<T>(&Node::parsed(&parsed, JsonPath::new()), &mut reader);
+        drop(reader);
+        let told = findings
             .iter()
             .map(|d| format!("{:?} {} at {}", d.severity, d.code, d.location.json_path))
             .collect();
-        (ok, keys, findings)
+        (value, told)
     }
 
-    /// W1: the members of an object are walked in the file's order.
+    /// W1: the members of an object are read in the file's order.
     #[test]
-    fn members_are_walked_in_document_order() {
-        let groups = [Group::name("a"), Group::name("b"), Group::name("c")];
-        let (ok, keys, _) = walked(r#"{"b": 1, "a": 2, "c": 3}"#, &groups, Hit::Ok);
-        assert!(ok);
-        assert_eq!(keys, ["b", "a", "c"]);
+    fn members_are_read_in_document_order() {
+        let (value, told) = read_as::<Three>(r#"{"c": true, "a": "x", "b": 1}"#);
+        assert_eq!(value, None);
+        let paths: Vec<&str> = told.iter().map(|t| t.rsplit(' ').next().unwrap()).collect();
+        assert_eq!(paths, ["c", "a"]);
     }
 
-    /// W2: a member whose read fails fails the object, though it raised no finding, and the
-    /// required check is then not made.
+    /// Two members, the second required.
+    #[derive(Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
+    struct Two {
+        a: Option<bool>,
+        b: bool,
+    }
+
+    /// W2: a member whose read fails fails the object, and the required check is then not made.
     #[test]
-    fn a_member_failed_without_a_finding_fails_the_object_and_skips_the_required_check() {
-        let groups = [Group::name("a"), Group::required("b")];
-        let (ok, keys, findings) = walked(r#"{"a": 1}"#, &groups, Hit::Failed);
-        assert!(!ok);
-        assert_eq!(keys, ["a"]);
-        assert!(findings.is_empty(), "{findings:?}");
+    fn a_failed_member_fails_the_object_and_skips_the_required_check() {
+        let (value, told) = read_as::<Two>(r#"{"a": 1}"#);
+        assert_eq!(value, None);
+        let paths: Vec<&str> = told.iter().map(|t| t.rsplit(' ').next().unwrap()).collect();
+        assert_eq!(paths, ["a"], "{told:?}");
     }
 
     /// W3: a number a float does not hold is read without a `LossyConversion` information.
     #[test]
     fn a_float_that_narrows_is_not_told_as_lossy() {
-        let mut walk = Walk::new(RULES, &JsonPath::new());
-        walk.enter("x");
-        assert_eq!(
-            walk.float(Node::root("0.123456789012").unwrap()),
-            Some(0.123_456_79)
-        );
-        assert!(walk.diagnostics.is_empty());
+        let (value, told) = read_as::<Three>(r#"{"a": 0.123456789012}"#);
+        assert_eq!(value.and_then(|t| t.a), Some(0.123_456_79));
+        assert!(told.is_empty(), "{told:?}");
     }
 }

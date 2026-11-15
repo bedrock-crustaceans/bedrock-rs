@@ -3,22 +3,20 @@
 //! which builds `minecraft:geometry[]`. The 1.8 schema's `format_version` maximum is 1.11.0,
 //! and the game splits a geometry's key at its last `:` into the identifier and the parent.
 
+use facet::Facet;
 use indexmap::IndexMap;
 
 use super::super::codes;
-use super::super::read::{
-    LocatorForm, read_locators, read_poly_mesh, read_render_group_id, read_texture_mesh,
-};
-use super::super::walk::Leaves;
+use super::super::walk::{LOCATORS, floats, int, read_payload, read_root, render_group_id, texels};
 use super::super::{
     Bone as NewBone, BoneLegacy, Cube as NewCube, CubeUv, Description, Geometry as NewGeometry,
     GeometryLegacy, Locator, PolyMesh, TextureMesh,
 };
-use super::v0_0_0::{SHARED_GEOMETRY_MEMBERS, read_root};
-use super::{settle, v1_12_0, walk_for};
+use super::v1_12_0;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Span};
-use bedrock_addon_core::json::node_tree::{Group, Node, Walk};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::molang::MolangVisitor;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
@@ -39,7 +37,8 @@ pub struct GeometryFile {
 }
 
 /// One geometry of a 1.8 file.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Geometry {
     /// `debug`.
     pub debug: Option<bool>,
@@ -48,10 +47,13 @@ pub struct Geometry {
     /// `visible_bounds_height`.
     pub visible_bounds_height: Option<f32>,
     /// `visible_bounds_offset`.
+    #[facet(schema::read_with = floats)]
     pub visible_bounds_offset: Option<[f32; 3]>,
     /// `texturewidth`.
+    #[facet(schema::read_with = int)]
     pub texturewidth: Option<i32>,
     /// `textureheight`.
+    #[facet(schema::read_with = int)]
     pub textureheight: Option<i32>,
     /// `cape`: lost by the step to 1.12.
     pub cape: Option<String>,
@@ -59,25 +61,31 @@ pub struct Geometry {
     pub bones: Option<Vec<Bone>>,
     /// What the step from the older shape carried over (`preserve_model_pose`); never read
     /// from a 1.8 file.
+    #[facet(skip, rename = "\u{0}legacy")]
     pub legacy: GeometryLegacy,
 }
 
 /// One bone of a 1.8 file.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Bone {
     /// `name`.
     pub name: String,
     /// `reset`.
     pub reset: Option<bool>,
     /// `neverRender`.
+    #[facet(rename = "neverRender")]
     pub never_render: Option<bool>,
     /// `parent`.
     pub parent: Option<String>,
     /// `pivot`.
+    #[facet(schema::read_with = floats)]
     pub pivot: Option<[f32; 3]>,
     /// `rotation`.
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `bind_pose_rotation`.
+    #[facet(schema::read_with = floats)]
     pub bind_pose_rotation: Option<[f32; 3]>,
     /// `mirror`.
     pub mirror: Option<bool>,
@@ -86,11 +94,13 @@ pub struct Bone {
     /// `debug`.
     pub debug: Option<bool>,
     /// `render_group_id`.
+    #[facet(schema::read_with = render_group_id)]
     pub render_group_id: Option<u32>,
     /// `cubes`.
     pub cubes: Option<Vec<Cube>>,
     /// `locators`: a 1.8 file holds vectors only; the object form is here only when the step
     /// from the older shape carried it over.
+    #[facet(schema::keys = LOCATORS)]
     pub locators: Option<IndexMap<String, Locator>>,
     /// `poly_mesh`.
     pub poly_mesh: Option<PolyMesh>,
@@ -99,13 +109,17 @@ pub struct Bone {
 }
 
 /// One cube of a 1.8 file.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Cube {
     /// `origin`.
+    #[facet(schema::read_with = floats)]
     pub origin: Option<[f32; 3]>,
     /// `size`.
+    #[facet(schema::read_with = floats)]
     pub size: Option<[f32; 3]>,
     /// `uv`.
+    #[facet(schema::read_with = texels)]
     pub uv: Option<[f32; 2]>,
     /// `inflate`.
     pub inflate: Option<f32>,
@@ -115,102 +129,8 @@ pub struct Cube {
 
 // ---- reading -------------------------------------------------------------------------------------
 
-fn read_geometry(walk: &mut Walk, node: Node<'_>) -> Option<Geometry> {
-    let mut g = Geometry::default();
-    let mut groups = SHARED_GEOMETRY_MEMBERS.to_vec();
-    groups.push(Group::name("debug"));
-    groups.push(Group::name("bones"));
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk
-            .float(v)
-            .map(|x| g.visible_bounds_width = Some(x))
-            .into(),
-        1 => walk
-            .float(v)
-            .map(|x| g.visible_bounds_height = Some(x))
-            .into(),
-        2 => walk
-            .floats(v)
-            .map(|x| g.visible_bounds_offset = Some(x))
-            .into(),
-        3 => walk.int(v).map(|x| g.texturewidth = Some(x)).into(),
-        4 => walk.int(v).map(|x| g.textureheight = Some(x)).into(),
-        5 => walk.string(v).map(|x| g.cape = Some(x)).into(),
-        6 => walk.bool(v).map(|x| g.debug = Some(x)).into(),
-        _ => walk.list(v, read_bone).map(|b| g.bones = Some(b)).into(),
-    });
-    ok.then_some(g)
-}
-
-fn read_bone(walk: &mut Walk, node: Node<'_>) -> Option<Bone> {
-    let mut b = Bone::default();
-    let groups = [
-        Group::required("name"),
-        Group::name("reset"),
-        Group::name("neverRender"),
-        Group::name("parent"),
-        Group::name("pivot"),
-        Group::name("rotation"),
-        Group::name("bind_pose_rotation"),
-        Group::name("mirror"),
-        Group::name("inflate"),
-        Group::name("debug"),
-        Group::name("render_group_id"),
-        Group::name("cubes"),
-        Group::name("locators"),
-        Group::name("poly_mesh"),
-        Group::name("texture_meshes"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk.string(v).map(|s| b.name = s).into(),
-        1 => walk.bool(v).map(|x| b.reset = Some(x)).into(),
-        2 => walk.bool(v).map(|x| b.never_render = Some(x)).into(),
-        3 => walk.string(v).map(|s| b.parent = Some(s)).into(),
-        4 => walk.floats(v).map(|x| b.pivot = Some(x)).into(),
-        5 => walk.floats(v).map(|x| b.rotation = Some(x)).into(),
-        6 => walk
-            .floats(v)
-            .map(|x| b.bind_pose_rotation = Some(x))
-            .into(),
-        7 => walk.bool(v).map(|x| b.mirror = Some(x)).into(),
-        8 => walk.float(v).map(|x| b.inflate = Some(x)).into(),
-        9 => walk.bool(v).map(|x| b.debug = Some(x)).into(),
-        10 => read_render_group_id(walk, v)
-            .map(|x| b.render_group_id = Some(x))
-            .into(),
-        11 => walk.list(v, read_cube).map(|c| b.cubes = Some(c)).into(),
-        12 => read_locators(walk, v, LocatorForm::VectorOnly)
-            .map(|l| b.locators = Some(l))
-            .into(),
-        13 => read_poly_mesh(walk, v)
-            .map(|m| b.poly_mesh = Some(m))
-            .into(),
-        _ => walk
-            .list(v, read_texture_mesh)
-            .map(|m| b.texture_meshes = Some(m))
-            .into(),
-    });
-    ok.then_some(b)
-}
-
-fn read_cube(walk: &mut Walk, node: Node<'_>) -> Option<Cube> {
-    let mut c = Cube::default();
-    let groups = [
-        Group::name("origin"),
-        Group::name("size"),
-        Group::name("uv"),
-        Group::name("inflate"),
-        Group::name("mirror"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk.floats(v).map(|x| c.origin = Some(x)).into(),
-        1 => walk.floats(v).map(|x| c.size = Some(x)).into(),
-        2 => walk.texels(v).map(|x| c.uv = Some(x)).into(),
-        3 => walk.float(v).map(|x| c.inflate = Some(x)).into(),
-        _ => walk.bool(v).map(|x| c.mirror = Some(x)).into(),
-    });
-    ok.then_some(c)
-}
+/// The Molang walk of a type of this era: none, it holds no Molang.
+fn none<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
 
 impl Versioned for GeometryFile {
     const VERSION: FormatVersion = known::V1_8_0;
@@ -220,21 +140,22 @@ bedrock_addon_core::impl_no_molang!(GeometryFile);
 
 impl VersionStruct for GeometryFile {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = walk_for(cx);
+        let mut found = Diagnostics::default();
         if cx.original_version > MAX_FORMAT_VERSION {
             // The version node's maximum: 1.11.1 up to 1.12.0 fails the schema.
-            walk.enter("format_version");
-            walk.error(
-                codes::ABOVE_MAX_VERSION.with([
-                    cx.original_version.to_string(),
-                    MAX_FORMAT_VERSION.to_string(),
-                ]),
-                Span { offset: 0, len: 0 },
-            );
-            walk.leave();
+            let mut finding = Diagnostic::error(codes::ABOVE_MAX_VERSION.with([
+                cx.original_version.to_string(),
+                MAX_FORMAT_VERSION.to_string(),
+            ]))
+            .at(cx.at.child("format_version"));
+            finding.location.span = Some(Span { offset: 0, len: 0 });
+            found.push(finding);
         }
-        let file = Node::of(payload).and_then(|root| read_root(&mut walk, root, read_geometry));
-        settle(walk, file, d).map(|(debug, geometries)| Self {
+        let read = read_payload(payload, cx, &mut found, read_root::<Geometry>);
+        let failed = found.has_errors();
+        d.extend(found);
+        let (debug, geometries) = read.filter(|_| !failed)?;
+        Some(Self {
             format_version: cx.original_version,
             debug,
             geometries,

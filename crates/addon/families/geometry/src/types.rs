@@ -6,7 +6,14 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
+use facet::Facet;
+
+use crate::walk::{
+    LOCATORS, floats, gui_only, identifier, int, polys, render_group_id, shelf, uv_rotation,
+    vectors2, vectors3,
+};
 
 /// The newest geometry schema, 1.26.40.
 pub(crate) const LATEST: FormatVersion = known::V1_26_40;
@@ -38,7 +45,8 @@ pub struct GeometryFile {
 }
 
 /// One geometry (`minecraft:geometry[i]`): a description and its bones.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct Geometry {
     /// `description`.
     pub description: Description,
@@ -46,22 +54,27 @@ pub struct Geometry {
     pub cape: Option<String>,
     /// `item_display_transforms` (from 1.21.0): how the geometry is posed when a block item is
     /// shown in the hand, the GUI, on the ground, in a frame, on a head or on a shelf.
+    #[facet(schema::since_format = "1.21.0")]
     pub item_display_transforms: Option<ItemDisplayTransforms>,
     /// `bones`.
     pub bones: Option<Vec<Bone>>,
     /// `__legacy`: what an upgraded file older than 1.12.0 carried that the newest schema has
     /// no member for. Empty for a file written at 1.12.0 or later, and then not written.
+    #[facet(skip, rename = "\u{0}legacy")]
     pub legacy: GeometryLegacy,
     /// The geometries this one inherits bones from (`legacy.parent` and its parents), filled
     /// when a pack stack is loaded. Never read from a file and never written.
+    #[facet(skip, opaque, rename = "\u{0}inherited")]
     pub inherited: Option<Arc<Inherited>>,
 }
 
 /// `description` of a geometry.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct Description {
     /// `identifier`: `geometry.<name>`. A namespace (`minecraft:geometry.<name>`) is accepted
     /// only in the base game's packs, from 1.19.30.
+    #[facet(schema::read_with = identifier)]
     pub identifier: String,
     /// `visible_bounds_width`: clamped to 0.1–50 when read; 1 when absent
     /// ([`visible_bounds_width`](Self::visible_bounds_width)).
@@ -69,16 +82,19 @@ pub struct Description {
     /// `visible_bounds_height`: clamped to 0.1–50 when read; 1 when absent.
     pub visible_bounds_height: Option<f32>,
     /// `visible_bounds_offset`: (0, 0, 0) when absent.
+    #[facet(schema::read_with = floats)]
     pub visible_bounds_offset: Option<[f32; 3]>,
     /// `texture_width`: 64 when absent.
+    #[facet(schema::read_with = int)]
     pub texture_width: Option<i32>,
     /// `texture_height`: 64 when absent.
+    #[facet(schema::read_with = int)]
     pub texture_height: Option<i32>,
 }
 
 /// `__legacy` of a geometry: members of a file older than 1.12.0 that vanilla still reads after
 /// its upgrade but that no later schema declares.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Facet)]
 pub struct GeometryLegacy {
     /// The geometry this one inherits from: the part after the last `:` of a legacy key
     /// `geometry.child:geometry.parent`.
@@ -98,15 +114,18 @@ impl GeometryLegacy {
 }
 
 /// One bone (`bones[i]`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct Bone {
     /// `name`, lower-cased as vanilla keys bones.
     pub name: String,
     /// `parent`, lower-cased: a bone of the same geometry.
     pub parent: Option<String>,
     /// `pivot`.
+    #[facet(schema::read_with = floats)]
     pub pivot: Option<[f32; 3]>,
     /// `rotation`, in degrees.
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `mirror`: the default of the bone's cubes; `false` when absent.
     pub mirror: Option<bool>,
@@ -115,24 +134,28 @@ pub struct Bone {
     /// `debug`.
     pub debug: Option<bool>,
     /// `render_group_id`: at least 0.
+    #[facet(schema::read_with = render_group_id)]
     pub render_group_id: Option<u32>,
     /// `binding` (from 1.16.0): a Molang expression naming the bone this one follows, compiled
     /// at the pack's `min_engine_version`.
+    #[facet(schema::since_format = "1.16.0")]
     pub binding: Option<Molang>,
     /// `cubes`.
     pub cubes: Option<Vec<Cube>>,
     /// `locators`, by name.
+    #[facet(schema::keys = LOCATORS)]
     pub locators: Option<IndexMap<String, Locator>>,
     /// `poly_mesh`.
     pub poly_mesh: Option<PolyMesh>,
     /// `texture_meshes`.
     pub texture_meshes: Option<Vec<TextureMesh>>,
     /// `__legacy`: members of a file older than 1.12.0; empty otherwise, and then not written.
+    #[facet(skip, rename = "\u{0}legacy")]
     pub legacy: BoneLegacy,
 }
 
 /// `__legacy` of a bone.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct BoneLegacy {
     /// `reset`.
     pub reset: Option<bool>,
@@ -150,15 +173,20 @@ impl BoneLegacy {
 }
 
 /// One cube (`cubes[i]`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct Cube {
     /// `origin`: the corner with the lowest coordinates.
+    #[facet(schema::read_with = floats)]
     pub origin: Option<[f32; 3]>,
     /// `size`.
+    #[facet(schema::read_with = floats)]
     pub size: Option<[f32; 3]>,
     /// `rotation` in degrees, applied x, then y, then z, around [`pivot`](Self::pivot).
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `pivot`: the cube's centre when absent ([`pivot`](Self::pivot)).
+    #[facet(schema::read_with = floats)]
     pub pivot: Option<[f32; 3]>,
     /// `inflate`: the bone's when absent.
     pub inflate: Option<f32>,
@@ -169,7 +197,8 @@ pub struct Cube {
 }
 
 /// `uv` of a cube.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum CubeUv {
     /// `[u, v]`: the box layout from that texel. Vanilla reads whole texels; a fraction is cut
     /// off when the file is read.
@@ -179,7 +208,8 @@ pub enum CubeUv {
 }
 
 /// The per-face form of a cube's `uv`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct Faces {
     /// `north`.
     pub north: Option<FaceUv>,
@@ -196,21 +226,26 @@ pub struct Faces {
 }
 
 /// One face of a cube's `uv`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct FaceUv {
     /// `uv`.
+    #[facet(schema::read_with = floats)]
     pub uv: [f32; 2],
     /// `uv_size`: the face's size on the cube when absent.
+    #[facet(schema::read_with = floats)]
     pub uv_size: Option<[f32; 2]>,
     /// `uv_rotation` (from 1.21.0): 0, 90, 180 or 270; any other value is reported and read as
     /// absent.
+    #[facet(schema::since_format = "1.21.0", schema::read_with = uv_rotation)]
     pub uv_rotation: Option<i32>,
     /// `material_instance`: the block material instance drawn on this face.
     pub material_instance: Option<String>,
 }
 
 /// One locator (`locators.<name>`).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum Locator {
     /// `[x, y, z]`.
     Position([f32; 3]),
@@ -226,22 +261,28 @@ pub enum Locator {
 }
 
 /// `poly_mesh` of a bone (from 1.8.0).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct PolyMesh {
     /// `normalized_uvs`: UVs are 0–1 instead of texels.
     pub normalized_uvs: Option<bool>,
     /// `positions`.
+    #[facet(schema::read_with = vectors3)]
     pub positions: Option<Vec<[f32; 3]>>,
     /// `normals`.
+    #[facet(schema::read_with = vectors3)]
     pub normals: Option<Vec<[f32; 3]>>,
     /// `uvs`.
+    #[facet(schema::read_with = vectors2)]
     pub uvs: Option<Vec<[f32; 2]>>,
     /// `polys`.
+    #[facet(schema::read_with = polys)]
     pub polys: Polys,
 }
 
 /// `polys` of a poly mesh.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum Polys {
     /// Polygons of three or four vertices, each vertex an index into positions, normals and
     /// UVs.
@@ -252,24 +293,30 @@ pub enum Polys {
 }
 
 /// One texture mesh (`texture_meshes[i]`, from 1.8.0).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct TextureMesh {
     /// `texture`.
     pub texture: String,
     /// `position`: (0, 0, 0) when absent.
+    #[facet(schema::read_with = floats)]
     pub position: Option<[f32; 3]>,
     /// `local_pivot`: (0, 0, 0) when absent.
+    #[facet(schema::read_with = floats)]
     pub local_pivot: Option<[f32; 3]>,
     /// `rotation`: (0, 0, 0) when absent.
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `scale`: (1, 1, 1) when absent.
+    #[facet(schema::read_with = floats)]
     pub scale: Option<[f32; 3]>,
     /// `use_pixel_depth`: `true` when absent.
     pub use_pixel_depth: Option<bool>,
 }
 
 /// `item_display_transforms` (from 1.21.0).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct ItemDisplayTransforms {
     /// `gui`.
     pub gui: Option<ItemDisplayTransform>,
@@ -290,24 +337,32 @@ pub struct ItemDisplayTransforms {
     /// `embedded`: read only in a file of 1.21.110 or later.
     pub embedded: Option<ItemDisplayTransform>,
     /// `shelf` (from 1.26.40); an older file gets a copy of `fixed`.
+    #[facet(schema::read_with = shelf)]
     pub shelf: Option<ItemDisplayTransform>,
 }
 
 /// One transform of `item_display_transforms`. A vector outside its range is reported and read
 /// as absent.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::none)]
 pub struct ItemDisplayTransform {
     /// `translation`: −80 to 80 on each axis.
+    #[facet(schema::read_with = floats)]
     pub translation: Option<[f32; 3]>,
     /// `rotation`: −360 to 360.
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `scale`: 0 to 4.
+    #[facet(schema::read_with = floats)]
     pub scale: Option<[f32; 3]>,
     /// `rotation_pivot`: −80 to 80.
+    #[facet(schema::read_with = floats)]
     pub rotation_pivot: Option<[f32; 3]>,
     /// `scale_pivot`: −80 to 80.
+    #[facet(schema::read_with = floats)]
     pub scale_pivot: Option<[f32; 3]>,
     /// `fit_to_frame`: declared for `gui` only; `true` when absent.
+    #[facet(schema::read_with = gui_only)]
     pub fit_to_frame: Option<bool>,
 }
 

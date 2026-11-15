@@ -19,15 +19,17 @@ pub mod v1_19_30;
 pub mod v1_21_0;
 pub mod v1_8_0;
 
+use facet::Facet;
+
 use super::GeometryFile;
-use super::read::{Era, read_file};
-use super::walk::rules;
+use super::walk::{geometries, read_payload};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::document::{Document, Rejected};
-use bedrock_addon_core::json::node_tree::{Node, Walk};
+use bedrock_addon_core::json::kit::Node;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema, read_document};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
@@ -50,31 +52,31 @@ pub const VERSIONS: [FormatVersion; 8] = [
 
 /// Below this version an undeclared or wrong-typed member is removed with a warning; from it,
 /// such a member fails the file.
-pub const STRICT_FROM: FormatVersion = FormatVersion::new(1, 19, 30);
+pub const STRICT_FROM: FormatVersion = super::walk::STRICT_FROM;
 
-/// The walk of a struct's parse: lenient below 1.19.30.
-pub(crate) fn walk_for(cx: &ParseCx<'_>) -> Walk {
-    Walk::new(rules(cx.original_version < STRICT_FROM), &cx.at)
+/// A file of 1.12.0 or later as its schema reads it: the version (read before the schema was
+/// chosen, whatever it holds), `debug` and the geometries. The members a later schema declares
+/// are gated by the document's format (`schema::since_format`), which the era's struct starts
+/// at.
+#[derive(Facet, Schema)]
+#[facet(schema::molang_with = super::molang::none)]
+struct Modern {
+    format_version: Value,
+    debug: Option<bool>,
+    #[facet(rename = "minecraft:geometry", schema::read_with = geometries)]
+    geometries: Vec<super::Geometry>,
 }
 
-/// Hands a walk's findings over; `value` when the walk raised no error.
-pub(crate) fn settle<T>(walk: Walk, value: Option<T>, d: &mut Diagnostics) -> Option<T> {
-    let failed = walk.diagnostics.has_errors();
-    d.extend(walk.diagnostics);
-    value.filter(|_| !failed)
-}
-
-/// Reads a file of 1.12.0 or later with the schema of the struct `schema`.
+/// Reads a file of 1.12.0 or later with the schema of its era.
 pub(crate) fn parse_modern(
     payload: JsonSlice<'_>,
-    schema: FormatVersion,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<(Option<bool>, Vec<super::Geometry>)> {
-    let mut walk = walk_for(cx);
-    let era = Era::of(schema, cx.load.engine_version);
-    let file = Node::of(payload).and_then(|root| read_file(&mut walk, root, era));
-    settle(walk, file, d).map(|file| (file.debug, file.geometries))
+    let file = read_payload(payload, cx, d, |node: &Node<'_>, read| {
+        read_document::<Modern>(node, read)
+    })?;
+    Some((file.debug, file.geometries))
 }
 
 /// Declares the file struct of an era from 1.12.0 on, with its chain traits.
@@ -107,8 +109,7 @@ macro_rules! modern_file {
                 cx: &::bedrock_addon_core::versioning::ParseCx<'_>,
                 d: &mut ::bedrock_addon_core::diagnostic::Diagnostics,
             ) -> Option<Self> {
-                let (debug, geometries) =
-                    $crate::history::parse_modern(payload, $version, cx, d)?;
+                let (debug, geometries) = $crate::history::parse_modern(payload, cx, d)?;
                 Some(Self {
                     format_version: cx.original_version,
                     debug,
@@ -130,7 +131,7 @@ impl Versioned for GeometryFile {
 
 impl VersionStruct for GeometryFile {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let (debug, geometries) = parse_modern(payload, Self::VERSION, cx, d)?;
+        let (debug, geometries) = parse_modern(payload, cx, d)?;
         Some(Self {
             format_version: cx.original_version,
             debug,

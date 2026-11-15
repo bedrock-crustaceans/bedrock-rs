@@ -4,7 +4,6 @@
 //! `geometry/<name>`, the name its constant's in lower case.
 
 use bedrock_addon_core::diagnostic::{Class, CodeDef, CodeMeta, Disposition, Kind};
-use bedrock_addon_core::json::node_tree;
 
 // ---- the envelope and its version gates ----
 
@@ -46,14 +45,14 @@ pub static INTERNAL_BLOCKS_FLOOR: CodeDef<0> = CodeDef::new(
 .game("Internal blocks are required to use geometry version >= 1.19.30");
 
 /// The keyed (1.8) layout's version node maximum: 1.11.1 up to 1.12.0 fails the schema (the
-/// node tree's `ABOVE_MAX_VERSION`).
+/// version node's line).
 pub static ABOVE_MAX_VERSION: CodeDef<2> = CodeDef::new(
     "geometry/above_max_version",
     Kind::UnsupportedVersion,
     Class::Error,
     "format_version {} above the keyed layout's maximum {}",
 )
-.game(node_tree::ABOVE_MAX_VERSION);
+.game("Version {} greater than max allowed version ({})");
 
 /// The crate's own information for an unreadable `format_version`.
 pub static VERSION_NOT_VALID: CodeDef<1> = CodeDef::new(

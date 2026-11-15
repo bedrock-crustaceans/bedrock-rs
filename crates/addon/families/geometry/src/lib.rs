@@ -5,9 +5,12 @@
 //! `format_version`, upgraded in place to the newest shape, and each geometry is registered by
 //! its identifier.
 //!
-//! The reader stays a schema walk on core's node-tree walker (`json::node_tree`, under the rules
-//! of `walk`), because vanilla validates each file against the JSON schema of its
-//! `format_version` rather than reading a typed struct.
+//! Vanilla validates each file against the JSON schema node tree of its `format_version`,
+//! leniently below 1.19.30. The types of each era are that schema: they derive `Schema` and read
+//! on core's derived read under the era's profile and reading (`walk`), the members of a later
+//! schema gated by the document's format; what has a syntax of its own reads by a leaf (the
+//! fixed-length float arrays, texels, indices, ints, the identifier, `uv_rotation`, polys, a
+//! cube's `uv`, the locator forms, the old roots' `geometry.<name>` members).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

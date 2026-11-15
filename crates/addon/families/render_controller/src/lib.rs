@@ -3,9 +3,12 @@
 //! Vanilla reads them with an ad-hoc loader behind one strict schema built at 1.8.0 whatever the
 //! file's `format_version` says, so there is one struct and no upgrade step.
 //!
-//! The reader stays a schema walk on core's node-tree walker (`json::node_tree`), because vanilla
-//! checks every file against its one 1.8.0 schema with an ad-hoc loader rather than reading a
-//! typed struct.
+//! Vanilla checks every file against its one 1.8.0 schema, a JSON schema node tree, with an
+//! ad-hoc loader after folding the text's case. The fold, the paths given back their spelling and
+//! the controller stage stay the family's (`read.rs`); the types are the schema: they derive
+//! `Schema` and read on core's derived read under the node tree's profile (members in sorted key
+//! order, a lossy float told), with a read for the values the controller parser takes its own
+//! way (strings as Molang sources, the bone-pattern lists, a pair of expressions).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

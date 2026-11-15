@@ -1115,6 +1115,69 @@ fn the_first_copy_of_a_key_stands_as_first_wins_has_it() {
     tally.assert_none_differ("first wins");
 }
 
+/// A text read as the animation loaders' schema reader reads it: each object as an `IndexMap` of its members'
+/// texts (of a key written twice, the first place and the last value), each member again.
+fn in_place(text: &str) -> Option<Value> {
+    use facet_json::RawJson;
+    let value = from_str_borrowed_jsonc::<Value>(text).ok()?;
+    if value.is_object()
+        && let Ok(members) =
+            from_str_borrowed_jsonc::<indexmap::IndexMap<String, RawJson<'_>>>(text)
+    {
+        let mut object = facet_value::VObject::new();
+        for (key, raw) in members {
+            object.insert(key.as_str(), in_place(raw.as_ref())?);
+        }
+        return Some(Value::from(object));
+    }
+    if value.is_array()
+        && let Ok(elements) = from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(text)
+    {
+        let elements: Option<Vec<Value>> =
+            elements.iter().map(|raw| in_place(raw.as_ref())).collect();
+        return Some(Value::from(
+            elements?.into_iter().collect::<facet_value::VArray>(),
+        ));
+    }
+    from_str_borrowed_jsonc::<Value>(text).ok()
+}
+
+#[test]
+fn the_last_copy_of_a_key_stands_at_the_first_place_as_an_indexmap_keeps_it() {
+    let mut texts = repeating_texts();
+    texts.push(r#"{"a":1,"b":2,"a":{"x":[1,2]},"c":3,"a":{"y":4}}"#.to_owned());
+    let mut read = 0;
+    for text in &texts {
+        let (Some(walked), Ok(parsed)) = (
+            in_place(text),
+            parse(text, Options::winner(Winner::LastInPlace)),
+        ) else {
+            continue;
+        };
+        read += 1;
+        assert!(
+            identical(&parsed.value, &walked),
+            "{text}\n{:?}\n{walked:?}",
+            parsed.value
+        );
+        // A member's span is its last copy's.
+        if let Some(object) = parsed.value.as_object() {
+            for (key, _) in object {
+                let mut at = JsonPath::new();
+                at.push(key.as_str());
+                let span = parsed.spans.at(&at).unwrap();
+                let raw = &text[span.offset as usize..][..span.len as usize];
+                assert_eq!(
+                    in_place(raw).as_ref(),
+                    object.get(key.as_str()),
+                    "{text} {key}"
+                );
+            }
+        }
+    }
+    assert!(read > 10, "{read}");
+}
+
 #[test]
 fn every_copy_stands_as_the_door_reads_a_text_that_is_left_as_written() {
     let mut tally = Tally::default();

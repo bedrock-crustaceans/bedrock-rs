@@ -308,11 +308,9 @@ pub fn wording<const BY_PLACE: bool, const NAMES_ONLY: bool>(path: &JsonPath) ->
 /// the schema does not declare (an error, whatever the mask says), a wrong type by its place.
 pub const fn texts(wording: fn(&JsonPath) -> Code) -> Texts {
     Texts {
-        missing_named: Some(&core_codes::REQUIRED_CHILD),
-        unknown_named: Some(&core_codes::CHILD_NOT_VALID),
         missing_in_object: true,
         wrong_at: Some(WrongAt(wording)),
-        ..Texts::CODES
+        ..Texts::TREE
     }
 }
 

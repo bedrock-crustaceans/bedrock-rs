@@ -76,38 +76,40 @@ fn timed<T>(
     visitor.leave();
 }
 
-impl MolangFields for super::Animation {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        let spec = &ANIMATION_VALUE;
-        visitor.field("start_delay", spec, &mut self.start_delay);
-        visitor.field("loop_delay", spec, &mut self.loop_delay);
-        visitor.field("anim_time_update", spec, &mut self.anim_time_update);
-        visitor.field("blend_weight", spec, &mut self.blend_weight);
-        if let Some(bones) = &mut self.bones {
-            visitor.enter(Step::Key("bones"));
-            for (name, bone) in bones.iter_mut() {
-                visitor.enter(Step::Key(name));
-                channel(visitor, "position", &mut bone.position);
-                channel(visitor, "rotation", &mut bone.rotation);
-                channel(visitor, "scale", &mut bone.scale);
-                visitor.leave();
-            }
+/// The Molang walk of a value its channel walks (`schema::molang_with`): nothing of its own.
+pub(crate) fn by_channel<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
+
+/// The Molang walk of an animation (`schema::molang_with`).
+pub(crate) fn animation(this: &mut super::Animation, visitor: &mut MolangVisitor<'_>) {
+    let spec = &ANIMATION_VALUE;
+    visitor.field("start_delay", spec, &mut this.start_delay);
+    visitor.field("loop_delay", spec, &mut this.loop_delay);
+    visitor.field("anim_time_update", spec, &mut this.anim_time_update);
+    visitor.field("blend_weight", spec, &mut this.blend_weight);
+    if let Some(bones) = &mut this.bones {
+        visitor.enter(Step::Key("bones"));
+        for (name, bone) in bones.iter_mut() {
+            visitor.enter(Step::Key(name));
+            channel(visitor, "position", &mut bone.position);
+            channel(visitor, "rotation", &mut bone.rotation);
+            channel(visitor, "scale", &mut bone.scale);
             visitor.leave();
         }
-        timed(
-            visitor,
-            "particle_effects",
-            &mut self.particle_effects,
-            |v, step, e| {
-                v.enter(step);
-                particle(v, spec, e);
-                v.leave();
-            },
-        );
-        timed(visitor, "timeline", &mut self.timeline, |v, step, e| {
-            event(v, step, &ANIMATION_EVENT, e);
-        });
+        visitor.leave();
     }
+    timed(
+        visitor,
+        "particle_effects",
+        &mut this.particle_effects,
+        |v, step, e| {
+            v.enter(step);
+            particle(v, spec, e);
+            v.leave();
+        },
+    );
+    timed(visitor, "timeline", &mut this.timeline, |v, step, e| {
+        event(v, step, &ANIMATION_EVENT, e);
+    });
 }
 
 impl MolangFields for AnimationFile {

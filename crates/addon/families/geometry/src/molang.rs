@@ -20,6 +20,10 @@ pub(crate) const BINDING: MolangFieldSpec = MolangFieldSpec::REJECTING
     .reader(ReaderKind::SchemaValidated)
     .compile_empty();
 
+/// The Molang walk of a geometry type (`schema::molang_with`): the file's walk ([`visit`])
+/// reaches its one Molang member by its own.
+pub(crate) fn none<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
+
 /// Visits `minecraft:geometry[*].bones[*].binding`.
 pub(crate) fn visit(geometries: &mut [Geometry], visitor: &mut MolangVisitor<'_>) {
     visitor.enter(Step::Key("minecraft:geometry"));

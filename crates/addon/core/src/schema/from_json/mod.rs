@@ -30,6 +30,7 @@ mod bridge;
 #[doc(hidden)]
 pub mod derived;
 mod impls;
+mod keys;
 mod leaves;
 
 #[cfg(test)]
@@ -37,6 +38,7 @@ mod tests;
 
 pub use bridge::read_via_facet;
 pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
+pub use keys::{KeyPattern, Keys, read_keyed};
 pub use leaves::{from_value, from_value_ref};
 
 use crate::json::kit::{Expected, Node, Read};
@@ -90,6 +92,12 @@ use crate::json::kit::{Expected, Node, Read};
 pub trait FromJson: Sized {
     /// Reads the value at `node`, telling every finding to `read`; `None` when the value could
     /// not be read (already told).
+    ///
+    /// A `None` tells a finding first, always. Under [`Objects::Tree`] a value that failed
+    /// without an error is left out of its object and the read goes on, so a leaf that fails
+    /// silently would lose a member without a word: a debug build panics on it.
+    ///
+    /// [`Objects::Tree`]: crate::json::kit::Objects::Tree
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self>;
 
     /// What JSON the type takes, in the words of a wrong type ([`Texts::wrong_kind`]): where

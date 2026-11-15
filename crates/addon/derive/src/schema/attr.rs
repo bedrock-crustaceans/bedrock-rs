@@ -208,6 +208,8 @@ pub(crate) struct FieldAttrs {
     pub kept: Option<Span>,
     /// `schema::key_with = path`: the rule of a map's keys, `fn(&str) -> Option<Code>`.
     pub key_with: Option<(Expr, Span)>,
+    /// `schema::keys = KEYS`: the rule a map's member names are read by, a `schema::Keys`.
+    pub keys: Option<(Expr, Span)>,
     /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
     pub iterated: Option<Span>,
     /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
@@ -282,6 +284,7 @@ const FIELD_KEYS: &[&str] = &[
     "key_with",
     "skip_code",
     "negative",
+    "keys",
 ];
 const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order", "string_only"];
 /// The keys of a struct alone.
@@ -588,7 +591,7 @@ impl FieldAttrs {
                     }
                     "fallback" | "molang" | "molang_with" | "read_with" | "check_with"
                     | "wrong_type" | "missing" | "invalid" | "low_code" | "high_code"
-                    | "key_with" | "skip_code" | "negative" => {
+                    | "key_with" | "skip_code" | "negative" | "keys" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -603,6 +606,7 @@ impl FieldAttrs {
                             "key_with" => &mut out.key_with,
                             "skip_code" => &mut out.skip_code,
                             "check_with" => &mut out.check_with,
+                            "keys" => &mut out.keys,
                             _ => &mut out.read_with,
                         };
                         once(slot, (expr, span), &key, span, errors);
@@ -711,6 +715,7 @@ impl FieldAttrs {
             .or_else(|| self.low_code.as_ref().map(|(_, s)| *s))
             .or_else(|| self.high_code.as_ref().map(|(_, s)| *s))
             .or_else(|| self.key_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.keys.as_ref().map(|(_, s)| *s))
             .or_else(|| self.skip_code.as_ref().map(|(_, s)| *s))
             .or(self.kept)
             .or_else(|| self.min_len.as_ref().map(|(_, s)| *s))

@@ -150,7 +150,7 @@ impl<T: FromJson> FromJson for Option<T> {
     const EXPECTED: Option<Expected> = T::EXPECTED;
 
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        if node.value().is_null() {
+        if node.value().is_null() && read.reading().null != NullHandling::AsValue {
             return null::<T>(node, read).then_some(None);
         }
         T::from_json(node, read).map(Some)
@@ -288,6 +288,7 @@ pub fn read_list<T>(
             return None;
         }
         let was_failed = read.failed();
+        let mark = read.mark();
         match element(&at, read) {
             Some(value) => {
                 out.push(value);
@@ -295,7 +296,7 @@ pub fn read_list<T>(
                     kept.push(index);
                 }
             }
-            None if drops => {
+            None if drops || read.left_out_since(mark) => {
                 kept.get_or_insert_with(|| (0..index).collect());
                 read.set_failed(was_failed);
             }
@@ -464,7 +465,7 @@ fn map_entries<K: MapKey, V>(
     let keeps = read.field_unknown() == Some(crate::schema::UnknownRule::Keep);
     let drops = read.defaults_drop(node, false);
     let mut failed = false;
-    for (key, member) in members.iter() {
+    for (key, member) in read.ordered(&members) {
         if read.stopped() {
             return None;
         }
@@ -473,6 +474,7 @@ fn map_entries<K: MapKey, V>(
             failed = true;
             continue;
         };
+        let mark = read.mark();
         let value = if keeps {
             read.in_map_value(true, |read| entry(&member, read))
         } else {
@@ -480,7 +482,7 @@ fn map_entries<K: MapKey, V>(
         };
         match value {
             Some(value) => put(key, value),
-            None if read.take_defaulted() || drops => {}
+            None if read.take_defaulted() || drops || read.left_out_since(mark) => {}
             None => failed = true,
         }
     }

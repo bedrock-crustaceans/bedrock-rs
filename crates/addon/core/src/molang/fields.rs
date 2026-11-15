@@ -282,6 +282,14 @@ impl<T: MolangFields, const N: usize> MolangFields for [T; N] {
     }
 }
 
+/// A pair (`[a, b]`, as its read takes it): its two elements, as a fixed array's.
+impl<A: MolangFields, B: MolangFields> MolangFields for (A, B) {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visitor.nested(0_usize, &mut self.0);
+        visitor.nested(1_usize, &mut self.1);
+    }
+}
+
 /// An identifier holds no Molang.
 impl<K: crate::id::Kind> MolangFields for crate::id::Id<K> {
     fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}

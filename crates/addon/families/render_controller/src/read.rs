@@ -3,67 +3,63 @@
 
 use std::collections::HashMap;
 
+use facet::Facet;
 use facet_value::VObject;
 use indexmap::{IndexMap, IndexSet};
 
 use super::codes;
 use super::fold::{Folded, fold};
 use super::molang::{MolangRun, run};
-use super::{
-    BonePattern, RenderController, RenderControllerArrays, RenderControllerFile, Rgba, UvAnim,
-};
+use super::{BonePattern, RenderController, RenderControllerFile};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, JsonPathSegment, Phase, Severity,
     Span,
 };
-use bedrock_addon_core::json::node_tree::{
-    Failure, Group, Hit, Kind, Lossy, Names, Node, Order, Pattern, REQUIRED_CHILD, Rules,
-    Validation, Walk,
-};
-use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, check_depth, last_wins, parse_at,
-};
+use bedrock_addon_core::json::kit::{Lossy, MemberOrder, Node, Profile, Read, Texts};
+use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse};
+use bedrock_addon_core::json::{JsonSlice, MAX_JSON_DEPTH, Value, Winner, check_depth, parse_at};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
 use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::schema::{
+    self, FromJson, KeyPattern, Keys, Schema, read_document, read_each, read_keyed,
+};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersionInput, SemVersion};
-use bedrock_addon_shared_shapes::TrueOnly;
+use bedrock_addon_core::versioning::Reading;
 
 /// The schema's `format_version` minimum and the family's floor.
 pub(crate) const V1_8_0: SemVersion = SemVersion::new(1, 8, 0);
 /// The version node's default maximum, which the schema never overrides.
 pub(crate) const MAXIMUM: SemVersion = SemVersion::new(65535, 0, 0);
 
-/// The rules of the game's render controller schema: names as written, the members of an
-/// object in sorted key order (jsoncpp's `std::map`), strict, an object failed by any member,
-/// and a lossy float told.
-pub(crate) const RULES: Rules = Rules {
-    names: Names::Exact,
-    order: Order::Sorted,
-    validation: Validation::Strict,
-    failure: Failure::MemberFailed,
-    lossy: Lossy::Told,
-};
+/// The profile of that schema: the node tree's, names as written, the members of an object in
+/// sorted key order (jsoncpp's `std::map`), and a lossy float told.
+pub(crate) const PROFILE: Profile = Profile::TREE
+    .with_members(MemberOrder::Sorted)
+    .with_lossy(Lossy::Told);
 
-/// The controller key pattern.
-const CONTROLLER_KEY: Pattern = Pattern::Prefixed {
+/// The controller keys: `controller\.render\.[a-zA-Z0-9_.:-]+`, at least one.
+const CONTROLLERS: Keys = Keys::new(KeyPattern::Prefixed {
     prefix: "controller.render.",
     extra: b"_.:-",
     regex: r"controller\.render\.[a-zA-Z0-9_.:-]+",
-};
-/// The array name pattern of every `arrays` kind.
-const ARRAY_KEY: Pattern = Pattern::Prefixed {
+})
+.required();
+/// The array names of every `arrays` kind: `array\.[a-zA-Z0-9_.:-]+`, at least one.
+const ARRAYS: Keys = Keys::new(KeyPattern::Prefixed {
     prefix: "array.",
     extra: b"_.:-",
     regex: r"array\.[a-zA-Z0-9_.:-]+",
-};
-/// `[a-zA-Z0-9_.:*]+`: a bone pattern.
-const BONE: Pattern = Pattern::Charset {
+})
+.required();
+/// The bone patterns of one element: `[a-zA-Z0-9_.:*]+`, at least one.
+const BONES: Keys = Keys::new(KeyPattern::Charset {
     extra: b"_.:*",
     regex: "[a-zA-Z0-9_.:*]+",
-};
+})
+.required();
 
 /// What reading one file gave.
 pub(crate) struct Parsed {
@@ -86,19 +82,6 @@ impl Parsed {
             diagnostics,
         }
     }
-}
-
-/// The controllers as the schema walk reads them, with what the later stages need to know and
-/// the model does not keep.
-#[derive(Default)]
-struct Drafts {
-    controllers: IndexMap<String, RenderController>,
-    /// The controllers without a `textures` member.
-    without_textures: Vec<String>,
-    /// `materials` values written as JSON numbers, by controller key and position in
-    /// [`RenderController::materials`]: the game reads them as the empty text when it parses
-    /// the controller, after its schema accepted the number.
-    numeric_materials: IndexSet<(String, usize)>,
 }
 
 /// Reads one render controller file at `path` of a pack with context `cx`.
@@ -213,28 +196,33 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     let original = prepared.as_str();
     // the fold runs on the raw text, before the JSON reader sees it.
     let folded = fold(original);
-    // The whole text is parsed first: a syntax error anywhere drops the file.
-    if let Err(e) = parse_at::<Value>(JsonSlice::new(&folded.text)) {
-        return malformed(e.error.to_string());
-    }
-    // Of a key written twice (also two keys the fold made equal) the last value stands.
-    let cleaned = last_wins(&folded.text);
-    let Some(root) = Node::of(JsonSlice::new(&cleaned)) else {
-        return malformed("not a JSON value".to_owned());
+    // The whole text is parsed first: a syntax error anywhere drops the file. Of a key written
+    // twice (also two keys the fold made equal) the last value stands.
+    let Ok(text) = parse(&folded.text, Options::winner(Winner::Last)) else {
+        let error = parse_at::<Value>(JsonSlice::new(&folded.text)).err();
+        return malformed(
+            error.map_or_else(|| "not a JSON value".to_owned(), |e| e.error.to_string()),
+        );
     };
 
-    let mut walk = Walk::new(RULES, &JsonPath::new());
-    let mut drafts = Drafts::default();
-    let written = read_root(&mut walk, root, &mut drafts);
-    let marked = std::mem::take(&mut walk.marked);
-    let mut diagnostics = walk.diagnostics;
-    let Some(written) = written.filter(|_| !diagnostics.has_errors()) else {
+    let mut diagnostics = Diagnostics::default();
+    let mut read = Read::new(Reading::TREE, &mut diagnostics)
+        .profile(PROFILE)
+        .texts(Texts::TREE);
+    let document = read_root(&text, &mut read);
+    drop(read);
+    let Some((written, controllers)) = document.filter(|_| !diagnostics.has_errors()) else {
         folding_hints(&mut diagnostics, &folded, original);
         return Parsed::failed(diagnostics, None);
     };
 
     let at_version = || JsonPath::of_keys(["format_version"]);
-    unresolvable_names(marked, &folded, original, &mut diagnostics);
+    unresolvable_names(
+        marked(&controllers, &text),
+        &folded,
+        original,
+        &mut diagnostics,
+    );
     if written.is_pre_release() {
         diagnostics.push(
             Diagnostic::of(core_codes::PRERELEASE_FORMAT_VERSION.with([written.to_string()]))
@@ -252,9 +240,15 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
         );
     }
 
+    let numeric_materials = numeric_materials(&text.value);
+    let without_textures: Vec<String> = controllers
+        .iter()
+        .filter(|(_, controller)| controller.textures.is_empty())
+        .map(|(key, _)| key.clone())
+        .collect();
     let mut file = RenderControllerFile {
         format_version: written.format_version(),
-        render_controllers: drafts.controllers,
+        render_controllers: controllers,
         dropped: IndexMap::new(),
     };
     // The Molang passes: versions, then the compile check with each member's failure scope.
@@ -267,7 +261,7 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
                 beta_literal: false,
                 prerelease: written.is_pre_release(),
             },
-            numeric_materials: &drafts.numeric_materials,
+            numeric_materials: &numeric_materials,
         },
         &mut diagnostics,
     );
@@ -277,7 +271,7 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
 
     // The controller stage: `RenderController::parse` returned an error for these.
     let mut failed: IndexSet<String> = outcome.dropped;
-    for key in drafts.without_textures {
+    for key in without_textures {
         diagnostics.push(
             Diagnostic::of(&codes::MUST_CONTAIN_TEXTURES)
                 .at(controller_path(&key, Some("textures"))),
@@ -388,56 +382,61 @@ fn folding_hints(diagnostics: &mut Diagnostics, folded: &Folded, original: &str)
 
 // ---- the schema --------------------------------------------------------------------------------
 
-/// The walk of a whole file; the version when the root's members validated.
-fn read_root(walk: &mut Walk, root: Node<'_>, drafts: &mut Drafts) -> Option<SemVersion> {
-    if root.kind() != Kind::Object {
-        walk.bad_type("object", root);
-        return None;
+/// A render controller file as its schema reads it. Both members are required; the required
+/// check is the caller's ([`read_root`]), so that a missing `format_version` has its own code.
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Document {
+    #[facet(schema::read_with = format_version)]
+    format_version: Option<Written>,
+    #[facet(schema::keys = CONTROLLERS)]
+    render_controllers: Option<IndexMap<String, RenderController>>,
+}
+
+/// A `format_version` as written.
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(opaque)]
+struct Written(SemVersion);
+
+bedrock_addon_core::impl_schema_leaf!(Written);
+bedrock_addon_core::impl_no_molang!(Written);
+
+/// The read of a whole file: the version and the controllers when the root's members validated.
+fn read_root(
+    text: &Text<'_>,
+    read: &mut Read<'_>,
+) -> Option<(SemVersion, IndexMap<String, RenderController>)> {
+    let Document {
+        format_version,
+        render_controllers,
+    } = read_document(&Node::parsed(text, JsonPath::new()), read)?;
+    let root = Some(text.spans.root().span());
+    if format_version.is_none() {
+        let mut finding = Diagnostic::error(codes::REQUIRED_CHILD.with(["format_version"]));
+        finding.location.span = root;
+        read.push(finding);
     }
-    let mut version = None;
-    let mut controllers = false;
-    // Both members are required; the required check is written out below so that a missing
-    // `format_version` has its own code.
-    let groups = [
-        Group::name("format_version"),
-        Group::name("render_controllers"),
-    ];
-    let ok = walk.object(root, &groups, |walk, group, _, node| {
-        if group == 0 {
-            // A member that is present counts as found even when its value fails.
-            version = Some(format_version(walk, node));
-            matches!(version, Some(Some(_))).into()
-        } else {
-            controllers = true;
-            read_controllers(walk, node, drafts).into()
-        }
-    });
-    if !ok {
-        return None;
+    if render_controllers.is_none() {
+        let mut finding =
+            Diagnostic::error(core_codes::REQUIRED_CHILD.with(["render_controllers"]));
+        finding.location.span = root;
+        read.push(finding);
     }
-    if version.is_none() {
-        walk.error(codes::REQUIRED_CHILD.with(["format_version"]), root.span());
-    }
-    if !controllers {
-        walk.missing("render_controllers", root);
-    }
-    version.flatten().filter(|_| controllers)
+    Some((format_version?.0, render_controllers?))
 }
 
 /// The `format_version` node: a version string (`NoWildcards`; a partial `"1.10"` is 1.10.0)
 /// within the schema's bounds.
-fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
-    let written = node.string();
+fn format_version(node: &Node<'_>, read: &mut Read<'_>) -> Option<Written> {
+    let written = node.value().as_string().map(facet_value::VString::as_str);
     let version = written
-        .as_deref()
         .filter(|t| *t != "beta")
         .and_then(SemVersion::parse)
         .filter(|v| !v.is_any());
     let Some(version) = version else {
-        walk.error(codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"]), node.span());
+        read.error(node, codes::UNKNOWN_OPTION_TYPE.with(["SemVersion"]));
         return None;
     };
-    let as_written = written.as_deref().unwrap_or("");
+    let as_written = written.unwrap_or("");
     let refused = if version < V1_8_0 {
         Some(core_codes::VERSION_BELOW_MIN.with([as_written.to_owned(), V1_8_0.to_string()]))
     } else if version > MAXIMUM {
@@ -446,18 +445,72 @@ fn format_version(walk: &mut Walk, node: Node<'_>) -> Option<SemVersion> {
         None
     };
     if let Some(code) = refused {
-        walk.error(code, node.span());
+        read.error(node, code);
         return None;
     }
-    Some(version)
+    Some(Written(version))
 }
 
-/// Marks the member `name` at the walk's path when it kept a capital: a controller key or an
-/// array name the game then registers under a name no lower-cased reference reaches.
-fn mark_capitals(walk: &mut Walk, name: &str, value: Node<'_>) {
-    if name.bytes().any(|b| b.is_ascii_uppercase()) {
-        walk.mark(value.span());
+/// The names that kept a capital, each at its path and spanning its value, in the order the
+/// schema meets them: a controller key or an array name the game then registers under a name
+/// no lower-cased reference reaches.
+fn marked(
+    controllers: &IndexMap<String, RenderController>,
+    text: &Text<'_>,
+) -> Vec<(JsonPath, Span)> {
+    let capital = |name: &str| name.bytes().any(|b| b.is_ascii_uppercase());
+    let mut out = Vec::new();
+    let mut mark = |at: JsonPath| {
+        if let Some(span) = text.spans.at(&at) {
+            out.push((at, span));
+        }
+    };
+    for (key, controller) in controllers {
+        if capital(key) {
+            mark(controller_path(key, None));
+        }
+        let Some(arrays) = &controller.arrays else {
+            continue;
+        };
+        for (kind, lists) in [
+            ("geometries", &arrays.geometries),
+            ("materials", &arrays.materials),
+            ("textures", &arrays.textures),
+        ] {
+            for name in lists.keys().filter(|name| capital(name)) {
+                mark(controller_path(key, Some("arrays")).with(&[kind, name.as_str()]));
+            }
+        }
     }
+    out
+}
+
+/// The `materials` values written as JSON numbers, by controller key and position in
+/// [`RenderController::materials`] (the elements in order, inside one the patterns in sorted
+/// order): the game reads them as the empty text when it parses the controller, after its
+/// schema accepted the number.
+fn numeric_materials(root: &Value) -> IndexSet<(String, usize)> {
+    let mut out = IndexSet::new();
+    let controllers = root
+        .as_object()
+        .and_then(|root| root.get("render_controllers"))
+        .and_then(Value::as_object);
+    for (key, controller) in controllers.into_iter().flat_map(|c| c.iter()) {
+        let elements = controller
+            .as_object()
+            .and_then(|c| c.get("materials"))
+            .and_then(Value::as_array);
+        let mut values = Vec::new();
+        for element in elements.into_iter().flatten() {
+            let mut members: Vec<_> = element.as_object().into_iter().flatten().collect();
+            members.sort_by(|a, b| a.0.as_str().as_bytes().cmp(b.0.as_str().as_bytes()));
+            values.extend(members.into_iter().map(|(_, value)| value.is_number()));
+        }
+        for (index, _) in values.iter().enumerate().filter(|(_, numeric)| **numeric) {
+            out.insert((key.as_str().to_owned(), index));
+        }
+    }
+    out
 }
 
 /// An information, the crate's own, at each name that kept capitals, with the line of the
@@ -487,323 +540,117 @@ fn unresolvable_names(
     }
 }
 
-fn read_controllers(walk: &mut Walk, node: Node<'_>, drafts: &mut Drafts) -> bool {
-    if node.kind() != Kind::Object {
-        walk.bad_type("object", node);
-        return false;
-    }
-    walk.object(
-        node,
-        &[Group::pattern(CONTROLLER_KEY, true)],
-        |walk, _, key, v| {
-            if v.kind() != Kind::Object {
-                walk.bad_type("object", v);
-                return Hit::Failed;
-            }
-            mark_capitals(walk, key, v);
-            read_controller(walk, v, key, drafts).into()
-        },
-    )
-}
-
-/// The members of a controller, in the schema's order (the order its required check reports).
-const CONTROLLER_MEMBERS: [Group; 14] = [
-    Group::name("rebuild_animation_matrices"),
-    Group::name("arrays"),
-    Group::required("geometry"),
-    Group::name("part_visibility"),
-    Group::name("materials"),
-    Group::name("textures"),
-    Group::name("color"),
-    Group::name("overlay_color"),
-    Group::name("on_fire_color"),
-    Group::name("is_hurt_color"),
-    Group::name("uv_anim"),
-    Group::name("light_color_multiplier"),
-    Group::name("ignore_lighting"),
-    Group::name("filter_lighting"),
-];
-
-/// A source whose version pass 1 sets.
-fn source(text: String) -> MolangSource {
-    MolangSource::string(text, RawVersion(-1))
-}
-
-#[allow(clippy::too_many_lines, reason = "one arm per member of the schema")]
-fn read_controller(walk: &mut Walk, node: Node<'_>, key: &str, drafts: &mut Drafts) -> bool {
-    let mut geometry = None;
-    let mut textures = None;
-    let mut numeric = Vec::new();
-    let mut c = RenderController {
-        geometry: source(String::new()),
-        textures: Vec::new(),
-        materials: Vec::new(),
-        part_visibility: Vec::new(),
-        arrays: None,
-        color: None,
-        overlay_color: None,
-        on_fire_color: None,
-        is_hurt_color: None,
-        uv_anim: None,
-        light_color_multiplier: None,
-        ignore_lighting: None,
-        filter_lighting: None,
-        rebuild_animation_matrices: None,
-    };
-    let ok = walk.object(node, &CONTROLLER_MEMBERS, |walk, group, _, v| match group {
-        0 => walk
-            .bool(v)
-            .map(|x| c.rebuild_animation_matrices = Some(x))
-            .into(),
-        1 => read_arrays(walk, v).map(|x| c.arrays = Some(x)).into(),
-        2 => walk.string(v).map(|x| geometry = Some(x)).into(),
-        3 => read_bones(walk, v, Walk::molang)
-            .map(|x| c.part_visibility = x)
-            .into(),
-        4 => read_bones(walk, v, |walk, v| {
-            let value = walk.molang(v)?;
-            // The schema takes a number here and the controller parser then
-            // reads it as the empty text, whatever the number: told at the member,
-            // since no number is what the file is written with (`0` stands for the empty
-            // text).
-            if matches!(value, Molang::Const(_)) {
-                walk.push(
-                    Code::from(&core_codes::INVALID_TYPE),
-                    Severity::Info,
-                    Some(v.span()),
-                );
-            }
-            Some(value)
-        })
-        .map(|entries| {
-            for (index, (pattern, value)) in entries.into_iter().enumerate() {
-                // The element is read as a string with an empty default: a string is its text, a
-                // bool `true` / `false`, a number the empty text.
-                let text = match value {
-                    Molang::Expr(source) => source.as_str().to_owned(),
-                    Molang::Bool(b) => b.to_string(),
-                    Molang::Const(_) => {
-                        numeric.push(index);
-                        String::new()
-                    }
-                    // The enum is non-exhaustive; the schema reader gives the three above.
-                    _ => String::new(),
-                };
-                c.materials.push((pattern, source(text)));
-            }
-        })
-        .into(),
-        5 => read_strings(walk, v).map(|x| textures = Some(x)).into(),
-        6 => read_color(walk, v).map(|x| c.color = Some(x)).into(),
-        7 => read_color(walk, v)
-            .map(|x| c.overlay_color = Some(x))
-            .into(),
-        8 => read_color(walk, v)
-            .map(|x| c.on_fire_color = Some(x))
-            .into(),
-        9 => read_color(walk, v)
-            .map(|x| c.is_hurt_color = Some(x))
-            .into(),
-        10 => read_uv_anim(walk, v).map(|x| c.uv_anim = Some(x)).into(),
-        11 => walk
-            .molang(v)
-            .map(|x| c.light_color_multiplier = Some(x))
-            .into(),
-        12 => walk.bool(v).map(|x| c.ignore_lighting = Some(x)).into(),
-        _ => match walk.bool(v) {
-            Some(true) => {
-                c.filter_lighting = Some(TrueOnly);
-                Hit::Ok
-            }
-            Some(false) => {
-                // The node's allowed-value set is `{true}`.
-                walk.invalid(core_codes::VALUE_NOT_ALLOWED.with(["false"]), v);
-                Hit::Failed
-            }
-            None => Hit::Failed,
-        },
-    });
-    let (true, Some(geometry)) = (ok, geometry) else {
-        return false;
-    };
-    c.geometry = source(geometry);
-    match textures {
-        Some(textures) => c.textures = textures,
-        None => drafts.without_textures.push(key.to_owned()),
-    }
-    drafts
-        .numeric_materials
-        .extend(numeric.into_iter().map(|index| (key.to_owned(), index)));
-    drafts.controllers.insert(key.to_owned(), c);
-    true
+/// A string node the controller parser reads as a Molang source, whose version pass 1 sets.
+pub(crate) fn source(node: &Node<'_>, read: &mut Read<'_>) -> Option<MolangSource> {
+    let text = String::from_json(node, read)?;
+    Some(MolangSource::string(text, RawVersion(-1)))
 }
 
 /// "Required child  not found" with an empty name: an array whose required element option
-/// found no element.
-fn no_element(walk: &mut Walk, node: Node<'_>) {
-    // The required-child line told as an invalid value: the line given whole.
-    walk.invalid(
-        core_codes::INVALID_VALUE_WORDED.with([REQUIRED_CHILD.replacen("{}", "", 1)]),
-        node,
-    );
+/// found no element; the required-child line told as an invalid value, given whole.
+fn no_element(node: &Node<'_>, read: &mut Read<'_>) {
+    let line = core_codes::REQUIRED_CHILD.template().replacen("{}", "", 1);
+    read.error(node, core_codes::INVALID_VALUE_WORDED.with([line]));
 }
 
-/// An array of at least one string, each a Molang source.
-fn read_strings(walk: &mut Walk, node: Node<'_>) -> Option<Vec<MolangSource>> {
-    let mut list = Vec::new();
-    let ok = walk.array(node, |walk, _, element| {
-        walk.string(element).map(|s| list.push(source(s))).into()
-    });
-    if ok && list.is_empty() {
-        no_element(walk, node);
+/// An array of at least one string, each a Molang source (`textures`, an `arrays` list).
+pub(crate) fn sources(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<MolangSource>> {
+    let list = read_each(node, read, source)?;
+    if list.is_empty() {
+        no_element(node, read);
         return None;
     }
-    ok.then_some(list)
+    Some(list)
 }
 
-/// `arrays`: the three kinds, each an object of at least one `array.<name>` list.
-fn read_arrays(walk: &mut Walk, node: Node<'_>) -> Option<RenderControllerArrays> {
-    if node.kind() != Kind::Object {
-        walk.bad_type("object", node);
-        return None;
-    }
-    let mut arrays = RenderControllerArrays::default();
-    let groups = [
-        Group::name("geometries"),
-        Group::name("materials"),
-        Group::name("textures"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| {
-        if v.kind() != Kind::Object {
-            walk.bad_type("object", v);
-            return Hit::Failed;
-        }
-        let mut map = IndexMap::new();
-        let ok = walk.object(v, &[Group::pattern(ARRAY_KEY, true)], |walk, _, name, v| {
-            mark_capitals(walk, name, v);
-            read_strings(walk, v)
-                .map(|list| map.insert(name.to_owned(), list))
-                .into()
-        });
-        match group {
-            0 => arrays.geometries = map,
-            1 => arrays.materials = map,
-            _ => arrays.textures = map,
-        }
-        ok.into()
-    });
-    ok.then_some(arrays)
+/// An `arrays` kind: an object of at least one `array.<name>` list.
+pub(crate) fn named_lists(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) -> Option<IndexMap<String, Vec<MolangSource>>> {
+    read_keyed(node, read, &ARRAYS, sources)
 }
 
 /// `materials` / `part_visibility`: an array of at least one object, each of at least one bone
 /// pattern; the pairs in array order and, inside one object, in sorted key order.
-fn read_bones(
-    walk: &mut Walk,
-    node: Node<'_>,
-    mut value: impl FnMut(&mut Walk, Node<'_>) -> Option<Molang>,
+fn bones<V>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    value: fn(&Node<'_>, &mut Read<'_>) -> Option<V>,
+) -> Option<Vec<(BonePattern, V)>> {
+    let elements = read_each(node, read, |element, read| {
+        read_keyed(element, read, &BONES, value)
+    })?;
+    if elements.is_empty() {
+        no_element(node, read);
+        return None;
+    }
+    let pairs = elements.into_iter().flatten();
+    Some(
+        pairs
+            .map(|(pattern, v)| (BonePattern(pattern), v))
+            .collect(),
+    )
+}
+
+/// `part_visibility`.
+pub(crate) fn part_visibility(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
 ) -> Option<Vec<(BonePattern, Molang)>> {
-    let mut list = Vec::new();
-    let mut elements = 0_usize;
-    let ok = walk.array(node, |walk, _, element| {
-        elements += 1;
-        if element.kind() != Kind::Object {
-            walk.bad_type("object", element);
-            return Hit::Failed;
-        }
-        walk.object(
-            element,
-            &[Group::pattern(BONE, true)],
-            |walk, _, pattern, v| {
-                value(walk, v)
-                    .map(|m| list.push((BonePattern(pattern.to_owned()), m)))
-                    .into()
-            },
-        )
-        .into()
-    });
-    if ok && elements == 0 {
-        no_element(walk, node);
-        return None;
-    }
-    ok.then_some(list)
+    bones(node, read, Molang::from_json)
 }
 
-fn read_color(walk: &mut Walk, node: Node<'_>) -> Option<Rgba> {
-    if node.kind() != Kind::Object {
-        walk.bad_type("object", node);
-        return None;
-    }
-    let mut color = Rgba::default();
-    let groups = [
-        Group::name("r"),
-        Group::name("g"),
-        Group::name("b"),
-        Group::name("a"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| {
-        let Some(value) = walk.molang(v) else {
-            return Hit::Failed;
+/// `materials`: each value an expression the controller parser reads as a string with an empty
+/// default: a string is its text, a bool `true` / `false`, a number the empty text.
+pub(crate) fn materials(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) -> Option<Vec<(BonePattern, MolangSource)>> {
+    let pairs = bones(node, read, material)?;
+    let pairs = pairs.into_iter().map(|(pattern, value)| {
+        let text = match value {
+            Molang::Expr(source) => source.as_str().to_owned(),
+            Molang::Bool(b) => b.to_string(),
+            // A number (`Const`), and the variants the schema read gives none of.
+            _ => String::new(),
         };
-        match group {
-            0 => color.r = Some(value),
-            1 => color.g = Some(value),
-            2 => color.b = Some(value),
-            _ => color.a = Some(value),
-        }
-        Hit::Ok
+        (pattern, MolangSource::string(text, RawVersion(-1)))
     });
-    ok.then_some(color)
+    Some(pairs.collect())
 }
 
-fn read_uv_anim(walk: &mut Walk, node: Node<'_>) -> Option<UvAnim> {
-    if node.kind() != Kind::Object {
-        walk.bad_type("object", node);
-        return None;
+/// One `materials` value: an expression. The schema takes a number here and the controller
+/// parser then reads it as the empty text, whatever the number: told at the member, since no
+/// number is what the file is written with (`0` stands for the empty text).
+fn material(node: &Node<'_>, read: &mut Read<'_>) -> Option<Molang> {
+    let value = Molang::from_json(node, read)?;
+    if matches!(value, Molang::Const(_)) {
+        let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE)
+            .severity(Severity::Info)
+            .at(node.path().clone());
+        finding.location.span = node.span();
+        read.push(finding);
     }
-    let mut offset = None;
-    let mut scale = None;
-    let groups = [Group::required("offset"), Group::required("scale")];
-    let ok = walk.object(node, &groups, |walk, group, _, v| {
-        let pair = read_pair(walk, v);
-        let read = pair.is_some();
-        if group == 0 {
-            offset = pair;
-        } else {
-            scale = pair;
-        }
-        read.into()
-    });
-    match (ok, offset, scale) {
-        (true, Some(offset), Some(scale)) => Some(UvAnim { offset, scale }),
-        _ => None,
-    }
+    Some(value)
 }
 
-/// An array of exactly two expressions (the node's minimum and maximum are both 2).
-pub(super) fn read_pair(walk: &mut Walk, node: Node<'_>) -> Option<[Molang; 2]> {
-    // The array is read once, for its elements and for its length.
-    let elements = walk.elements(node);
-    if elements.is_none() {
-        walk.bad_type("array", node);
-    }
-    if node.kind() != Kind::Array {
-        return None;
-    }
-    let elements = elements.unwrap_or_default();
+/// An array of exactly two expressions (the node's minimum and maximum are both 2), told of by
+/// its elements first, then by its length.
+pub(super) fn pair(node: &Node<'_>, read: &mut Read<'_>) -> Option<[Molang; 2]> {
+    let elements = read.array(node)?;
     let n = elements.len();
-    let mut values = Vec::new();
-    for (index, element) in elements.into_iter().enumerate() {
-        walk.enter_index(index);
-        values.extend(walk.molang(element));
-        walk.leave();
-    }
+    let values: Vec<Molang> = elements
+        .iter()
+        .filter_map(|element| Molang::from_json(&element, read))
+        .collect();
     let def = match n.cmp(&2) {
         std::cmp::Ordering::Less => Some(&core_codes::ARRAY_TOO_SMALL),
         std::cmp::Ordering::Greater => Some(&core_codes::ARRAY_TOO_LARGE),
         std::cmp::Ordering::Equal => None,
     };
     if let Some(def) = def {
-        walk.invalid(def.with([n.to_string(), "2".to_owned()]), node);
+        read.error(node, def.with([n.to_string(), "2".to_owned()]));
         return None;
     }
     values.try_into().ok()

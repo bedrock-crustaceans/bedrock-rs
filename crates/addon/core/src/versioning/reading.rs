@@ -35,6 +35,12 @@ pub enum NullHandling {
     /// The framework applies no rule: the family's hand-written reader takes `null` as it
     /// does (a `FirstRun` family, a legacy slice, an MCB source).
     Own,
+    /// A `null` is a value like any other: the member's type reads it, and refuses it as it
+    /// refuses any JSON it does not take (the game's schema node tree, which types every
+    /// value). An `Option` member written `null` is read, not absent. This is
+    /// `schema::reads_null` for every `Option` the read meets, in a slice that reads every
+    /// `null` so; a family that reads a few members so says the key on those.
+    AsValue,
 }
 
 impl NullHandling {
@@ -43,7 +49,7 @@ impl NullHandling {
         match self {
             Self::Rejected => Some(NullRule::Rejected),
             Self::Absent => Some(NullRule::Absent),
-            Self::Own => None,
+            Self::Own | Self::AsValue => None,
         }
     }
 }
@@ -212,6 +218,17 @@ impl Reading {
         choices: Choices::ByMember,
         range_members: RangeMembers::Silent,
     };
+    /// The game's JSON schema node tree (the animation, render controller, geometry and fog
+    /// loaders) with [`Profile::TREE`](crate::json::kit::Profile::TREE) and
+    /// [`Texts::TREE`](crate::json::kit::Texts::TREE): every value typed (a `null` read by its
+    /// member's type), scalars strictly, a float beyond its width the largest finite one, an
+    /// unknown member an error.
+    pub const TREE: Self = Self::OWN
+        .with_null(NullHandling::AsValue)
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Finite)
+        .with_unknown(UnknownMask::Error);
+
     /// The reading with `null` read as `null`.
     #[must_use]
     pub const fn with_null(self, null: NullHandling) -> Self {

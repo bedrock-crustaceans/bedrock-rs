@@ -60,8 +60,8 @@ pub use cx::{BoundRules, SchemaCx, TreeWording, Verdict};
 #[doc(hidden)]
 pub use from_json::derived as derive_support;
 pub use from_json::{
-    ElementFailure, FromJson, MapKey, from_value, from_value_ref, read_document, read_each,
-    read_entries, read_iterated, read_list, read_value,
+    ElementFailure, FromJson, KeyPattern, Keys, MapKey, from_value, from_value_ref, read_document,
+    read_each, read_entries, read_iterated, read_keyed, read_list, read_value,
 };
 // hidden: the bridge to the old typed door, which goes with it
 #[doc(hidden)]

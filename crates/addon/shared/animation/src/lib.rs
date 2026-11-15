@@ -1,12 +1,13 @@
-//! What the `animation` and `animation_controller` families share: the schema-walk rules both
+//! What the `animation` and `animation_controller` families share: the schema-tree reading both
 //! loaders read with, the particle, sound and event values both files hold, and the reading,
 //! Molang check, validation, writing and registry combine both file kinds go through.
-//! A family composes these; the crate depends on `bedrock_addon_core` only.
+//! A family composes these; the crate depends on `bedrock_addon_core` and the shared shapes.
 //!
-//! Both loaders walk their schema trees on core's node-tree walker (`json::node_tree`) under
-//! [`walk::RULES`]; [`walk`] holds those rules, the time-key and axis patterns and the
-//! [`walk::atof`] both families read keys with. The bone keyframes are the `animation` family's
-//! own.
+//! Both loaders read their documents as `Schema` types on core's derived read, as the game's
+//! schema node tree reads them ([`walk::read`]: [`Reading::TREE`](bedrock_addon_core::versioning::Reading::TREE) and [`walk::PROFILE`]);
+//! [`walk`] holds them, the time-key and axis patterns and the [`walk::atof`] both families read
+//! keys with, and [`read`] the reads of the values both files hold. The bone keyframes are the
+//! `animation` family's own.
 //!
 //! The Molang check ([`molang::run`]) compiles only with this crate's `molang` feature, which
 //! each family forwards from its own.

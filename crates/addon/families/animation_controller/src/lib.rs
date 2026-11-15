@@ -5,10 +5,12 @@
 //! type serves both stacks; what differs is runtime: the registry each side keeps, the Molang
 //! query catalogue the compile check uses, and a few diagnostics of the crate's own.
 //!
-//! The reader stays a schema walk on core's `json::node_tree` walker under
-//! `bedrock_addon_shared_animation`'s rules, because vanilla
-//! checks the files against its controller schema with a loader of its own rather than reading a
-//! typed struct.
+//! Vanilla checks the files against its controller schema, a JSON schema node tree, with a
+//! loader of its own, after a format-version gate of its own. The gate stays a rule of the family
+//! (`read.rs`); the types of each version are the schema: they derive `Schema` and read on core's
+//! derived read under the node tree's profile (`bedrock_addon_shared_animation::walk`), with a
+//! leaf read for the values of a syntax of their own (a transition, a state's animation, a blend
+//! transition, the 1.8 curves and particle effect).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -2623,3 +2623,22 @@ mod negative {
         );
     }
 }
+
+/// A struct holding pairs: the derive walks a pair's two elements, each a nested type's check.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Pairs {
+    pub list: Vec<(Color, Color)>,
+}
+
+#[test]
+fn a_pair_is_walked_element_by_element() {
+    let mut pairs = Pairs {
+        list: vec![(Color { r: 1, g: 2, b: 3 }, Color { r: 4, g: 5, b: 6 })],
+    };
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out);
+    pairs.check(&mut cx);
+    drop(cx);
+    assert!(out.is_empty());
+    assert!(Pairs::triggers().is_empty());
+}

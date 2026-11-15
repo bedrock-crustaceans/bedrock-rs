@@ -48,6 +48,16 @@ pub enum BeyondWidth {
     /// number tells it (`BEYOND_FLOAT_MEMBER`): the versioned load clamps the number in the
     /// text and reads again.
     ClampAndTell,
+    /// The member reads the largest finite float of its width, and an information at the
+    /// number tells it (`INVALID_VALUE`), in the one read: the game's schema node tree's float
+    /// node. It is `schema::finite` for every float the read meets, a list's elements and a
+    /// map's values too (one rule in `Read::scalar`), as [`Read::clamp_molang`] and
+    /// [`Read::clamp_kept`] say it for a Molang number and for the numbers of a value kept
+    /// whole; the findings are the same, told at once there and after the read here.
+    ///
+    /// [`Read::clamp_molang`]: crate::json::kit::Read::clamp_molang
+    /// [`Read::clamp_kept`]: crate::json::kit::Read::clamp_kept
+    Finite,
 }
 
 /// Every JSON scalar shape a deserialiser can offer, so a wrapper can reject the wrong ones:

@@ -5,16 +5,18 @@
 //! The game's step to 1.8 turns the text forms of `mirror` and `reset` into booleans and removes
 //! an empty cube by moving the last cube into its place.
 
+use facet::Facet;
 use indexmap::IndexMap;
 
-use super::super::read::{LocatorForm, read_locators, read_render_group_id};
-use super::super::walk::{GEOMETRY, Leaves};
+use super::super::walk::{LOCATORS, floats, int, read_payload, read_root, render_group_id, texels};
 use super::super::{GeometryLegacy, Locator};
-use super::{settle, v1_8_0, walk_for};
+use super::v1_8_0;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Walk};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::molang::MolangVisitor;
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
@@ -32,17 +34,21 @@ pub struct GeometryFile {
 }
 
 /// One geometry of a file older than 1.8.0.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Geometry {
     /// `visible_bounds_width`.
     pub visible_bounds_width: Option<f32>,
     /// `visible_bounds_height`.
     pub visible_bounds_height: Option<f32>,
     /// `visible_bounds_offset`.
+    #[facet(schema::read_with = floats)]
     pub visible_bounds_offset: Option<[f32; 3]>,
     /// `texturewidth`.
+    #[facet(schema::read_with = int)]
     pub texturewidth: Option<i32>,
     /// `textureheight`.
+    #[facet(schema::read_with = int)]
     pub textureheight: Option<i32>,
     /// `preserve_model_pose`.
     pub preserve_model_pose: Option<bool>,
@@ -53,7 +59,8 @@ pub struct Geometry {
 }
 
 /// A bool member that this era also takes as a string (`mirror`, `reset`).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[repr(u8)]
 pub enum Flag {
     /// A JSON bool.
     Bool(bool),
@@ -63,17 +70,21 @@ pub enum Flag {
 
 /// One bone of a file older than 1.8.0. It has no `parent`: vanilla's own old mobs get their
 /// hierarchy from a table in the game.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Bone {
     /// `name`.
     pub name: String,
     /// `reset`.
     pub reset: Option<Flag>,
     /// `neverRender`.
+    #[facet(rename = "neverRender")]
     pub never_render: Option<bool>,
     /// `pivot`.
+    #[facet(schema::read_with = floats)]
     pub pivot: Option<[f32; 3]>,
     /// `rotation`.
+    #[facet(schema::read_with = floats)]
     pub rotation: Option<[f32; 3]>,
     /// `mirror`.
     pub mirror: Option<Flag>,
@@ -82,16 +93,19 @@ pub struct Bone {
     /// `debug`.
     pub debug: Option<bool>,
     /// `render_group_id`.
+    #[facet(schema::read_with = render_group_id)]
     pub render_group_id: Option<u32>,
     /// `cubes`.
     pub cubes: Option<Vec<CubeSlot>>,
     /// `locators`: a vector, or `{"offset", "rotation", "ignore_inherited_scale"}` with only
     /// `offset` required.
+    #[facet(schema::keys = LOCATORS)]
     pub locators: Option<IndexMap<String, Locator>>,
 }
 
 /// One element of `cubes`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum CubeSlot {
     /// An object.
     Cube(Cube),
@@ -100,13 +114,17 @@ pub enum CubeSlot {
 }
 
 /// One cube of a file older than 1.8.0.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = none)]
 pub struct Cube {
     /// `origin`.
+    #[facet(schema::read_with = floats)]
     pub origin: Option<[f32; 3]>,
     /// `size`.
+    #[facet(schema::read_with = floats)]
     pub size: Option<[f32; 3]>,
     /// `uv`.
+    #[facet(schema::read_with = texels)]
     pub uv: Option<[f32; 2]>,
     /// `inflate`.
     pub inflate: Option<f32>,
@@ -116,141 +134,34 @@ pub struct Cube {
 
 // ---- reading -------------------------------------------------------------------------------------
 
-/// The root of a file older than 1.12.0: `format_version`, `debug` and at least one
-/// `geometry.<name>` member, each read by `read`.
-pub(crate) fn read_root<'a, G>(
-    walk: &mut Walk,
-    root: Node<'a>,
-    mut read: impl FnMut(&mut Walk, Node<'a>) -> Option<G>,
-) -> Option<(Option<bool>, IndexMap<String, G>)> {
-    let mut debug = None;
-    let mut geometries = IndexMap::new();
-    let groups = [
-        // Vanilla writes the version it validates with into the file first, so the member is
-        // never missing.
-        Group::name("format_version"),
-        Group::name("debug"),
-        Group::pattern(GEOMETRY, true),
-    ];
-    let ok = walk.object(root, &groups, |walk, group, key, node| match group {
-        0 => Hit::Ok,
-        1 => walk.bool(node).map(|b| debug = Some(b)).into(),
-        _ => read(walk, node)
-            .map(|g| geometries.insert(key.to_owned(), g))
-            .into(),
-    });
-    ok.then_some((debug, geometries))
-}
+/// The Molang walk of a type of this era: none, it holds no Molang.
+fn none<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
 
-/// The geometry members both eras below 1.12.0 share, in the order their readers match them
-/// (groups 0 to 5); each era appends its own.
-pub(crate) const SHARED_GEOMETRY_MEMBERS: [Group; 6] = [
-    Group::name("visible_bounds_width"),
-    Group::name("visible_bounds_height"),
-    Group::name("visible_bounds_offset"),
-    Group::name("texturewidth"),
-    Group::name("textureheight"),
-    Group::name("cape"),
-];
-
-fn read_flag(walk: &mut Walk, node: Node<'_>) -> Option<Flag> {
-    match node.kind() {
-        Kind::Bool => walk.bool(node).map(Flag::Bool),
-        Kind::String => walk.string(node).map(Flag::Text),
-        _ => {
-            walk.bad_type("bool, string", node);
-            None
+/// A bool, or a string.
+impl FromJson for Flag {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let value = node.value();
+        if let Some(flag) = value.as_bool() {
+            return Some(Self::Bool(flag));
         }
+        if let Some(text) = value.as_string() {
+            return Some(Self::Text(text.as_str().to_owned()));
+        }
+        read.wrong_accepting(node, "bool, string");
+        None
     }
 }
 
-fn read_geometry(walk: &mut Walk, node: Node<'_>) -> Option<Geometry> {
-    let mut g = Geometry::default();
-    let mut groups = SHARED_GEOMETRY_MEMBERS.to_vec();
-    groups.push(Group::name("preserve_model_pose"));
-    groups.push(Group::name("bones"));
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk
-            .float(v)
-            .map(|x| g.visible_bounds_width = Some(x))
-            .into(),
-        1 => walk
-            .float(v)
-            .map(|x| g.visible_bounds_height = Some(x))
-            .into(),
-        2 => walk
-            .floats(v)
-            .map(|x| g.visible_bounds_offset = Some(x))
-            .into(),
-        3 => walk.int(v).map(|x| g.texturewidth = Some(x)).into(),
-        4 => walk.int(v).map(|x| g.textureheight = Some(x)).into(),
-        5 => walk.string(v).map(|x| g.cape = Some(x)).into(),
-        6 => walk.bool(v).map(|x| g.preserve_model_pose = Some(x)).into(),
-        _ => walk.list(v, read_bone).map(|b| g.bones = Some(b)).into(),
-    });
-    ok.then_some(g)
+/// An element of `cubes`: a cube, or anything else, which stays in the array until the step
+/// removes it (its `size()` is 0); it is reported here.
+impl FromJson for CubeSlot {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        Some(Cube::from_json(node, read).map_or(Self::NotACube, Self::Cube))
+    }
 }
 
-fn read_bone(walk: &mut Walk, node: Node<'_>) -> Option<Bone> {
-    let mut b = Bone::default();
-    let groups = [
-        Group::required("name"),
-        Group::name("reset"),
-        Group::name("neverRender"),
-        Group::name("pivot"),
-        Group::name("rotation"),
-        Group::name("mirror"),
-        Group::name("inflate"),
-        Group::name("debug"),
-        Group::name("render_group_id"),
-        Group::name("cubes"),
-        Group::name("locators"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk.string(v).map(|s| b.name = s).into(),
-        1 => read_flag(walk, v).map(|f| b.reset = Some(f)).into(),
-        2 => walk.bool(v).map(|x| b.never_render = Some(x)).into(),
-        3 => walk.floats(v).map(|x| b.pivot = Some(x)).into(),
-        4 => walk.floats(v).map(|x| b.rotation = Some(x)).into(),
-        5 => read_flag(walk, v).map(|f| b.mirror = Some(f)).into(),
-        6 => walk.float(v).map(|x| b.inflate = Some(x)).into(),
-        7 => walk.bool(v).map(|x| b.debug = Some(x)).into(),
-        8 => read_render_group_id(walk, v)
-            .map(|x| b.render_group_id = Some(x))
-            .into(),
-        9 => walk
-            .list(v, |walk, cube| {
-                // An element that is not an object stays in the array until the step removes
-                // it (its `size()` is 0); it is reported here.
-                Some(read_cube(walk, cube).map_or(CubeSlot::NotACube, CubeSlot::Cube))
-            })
-            .map(|cubes| b.cubes = Some(cubes))
-            .into(),
-        _ => read_locators(walk, v, LocatorForm::Pre18)
-            .map(|l| b.locators = Some(l))
-            .into(),
-    });
-    ok.then_some(b)
-}
-
-fn read_cube(walk: &mut Walk, node: Node<'_>) -> Option<Cube> {
-    let mut c = Cube::default();
-    let groups = [
-        Group::name("origin"),
-        Group::name("size"),
-        Group::name("uv"),
-        Group::name("inflate"),
-        Group::name("mirror"),
-    ];
-    let ok = walk.object(node, &groups, |walk, group, _, v| match group {
-        0 => walk.floats(v).map(|x| c.origin = Some(x)).into(),
-        1 => walk.floats(v).map(|x| c.size = Some(x)).into(),
-        2 => walk.texels(v).map(|x| c.uv = Some(x)).into(),
-        3 => walk.float(v).map(|x| c.inflate = Some(x)).into(),
-        _ => read_flag(walk, v).map(|f| c.mirror = Some(f)).into(),
-    });
-    ok.then_some(c)
-}
+bedrock_addon_core::impl_schema_leaf!(Flag, CubeSlot);
+bedrock_addon_core::impl_no_molang!(Flag, CubeSlot);
 
 impl Versioned for GeometryFile {
     const VERSION: FormatVersion = known::V0_0_0;
@@ -260,9 +171,8 @@ bedrock_addon_core::impl_no_molang!(GeometryFile);
 
 impl VersionStruct for GeometryFile {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = walk_for(cx);
-        let file = Node::of(payload).and_then(|root| read_root(&mut walk, root, read_geometry));
-        settle(walk, file, d).map(|(debug, geometries)| Self {
+        let (debug, geometries) = read_payload(payload, cx, d, read_root::<Geometry>)?;
+        Some(Self {
             format_version: cx.original_version,
             debug,
             geometries,

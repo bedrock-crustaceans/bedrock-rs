@@ -249,6 +249,9 @@ impl FromJson for Molang {
         if read.stopped() {
             return None;
         }
+        if read.telling().objects == crate::json::kit::Objects::Tree {
+            return expression_node(node, read);
+        }
         let value = node.value();
         if let Some(number) = value.as_number() {
             let x = number.to_f64_lossy() as f32;
@@ -269,6 +272,38 @@ impl FromJson for Molang {
         read.wrong_type(node);
         None
     }
+}
+
+/// The game's schema node tree's `ExpressionNode` (a tree's read of a [`Molang`]): a number (one
+/// beyond `f32` the largest finite float of its sign, with an `INVALID_VALUE` information at it),
+/// a bool or a string, whose context version the Molang passes set. Anything else is a wrong type
+/// accepting `"ExpressionNode"`.
+fn expression_node(node: &Node<'_>, read: &mut Read<'_>) -> Option<Molang> {
+    use crate::molang::{JsonScalar, RawVersion, ReadField, ReaderKind};
+    let value = node.value();
+    let scalar = if let Some(number) = value.as_number() {
+        JsonScalar::Number(number.to_f64_lossy())
+    } else if let Some(b) = value.as_bool() {
+        JsonScalar::Bool(b)
+    } else if let Some(text) = value.as_string() {
+        JsonScalar::String(Arc::from(text.as_str()))
+    } else {
+        read.wrong_accepting(node, "ExpressionNode");
+        return None;
+    };
+    let Ok((ReadField::Value(value), clamped)) =
+        crate::molang::read_finite(scalar, ReaderKind::SchemaValidated, RawVersion(-1))
+    else {
+        read.wrong_accepting(node, "ExpressionNode");
+        return None;
+    };
+    if clamped {
+        read.push(crate::molang::beyond_f32_warning(
+            node.path().clone(),
+            node.span(),
+        ));
+    }
+    Some(value)
 }
 
 /// An expression: a string, or the object form `{"expression": string, "version": integer of

@@ -2,9 +2,11 @@
 //! events and event strings.
 
 use bedrock_addon_core::molang::{Molang, MolangSource};
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 
 /// A particle event (`particle_effects` of an animation or a controller state).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct ParticleEffect {
     /// `effect`: the short name from the client entity's `particle_effects` map (vanilla
     /// lower-cases it); kept as written.
@@ -14,11 +16,12 @@ pub struct ParticleEffect {
     /// `pre_effect_script`: Molang run when the emitter is created; absent, none.
     pub pre_effect_script: Option<Molang>,
     /// `bind_to_actor`: absent the effect follows the actor; only `false` may be written.
+    #[facet(schema::read_with = crate::read::only_false)]
     pub bind_to_actor: Option<bool>,
 }
 
 /// A sound event (`sound_effects` of an animation or a controller state).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Facet, Schema)]
 pub struct SoundEffect {
     /// `effect`: the short name from the client entity's `sound_effects` map (vanilla
     /// lower-cases it); kept as written.
@@ -29,7 +32,8 @@ pub struct SoundEffect {
 
 /// An event string of a `timeline` or a controller state's `on_entry` / `on_exit`, split the way
 /// the game splits it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum EventString {
     /// `/<command>`: a slash command, run with the pack's command version.
     Command {

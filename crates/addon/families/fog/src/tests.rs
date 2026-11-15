@@ -295,21 +295,36 @@ fn a_text_too_deep_and_not_utf8_behind_a_bom_is_told_as_too_deep() {
     assert_eq!(messages, ["nesting too deep"]);
 }
 
+/// Two members, the second required.
+#[derive(Debug, PartialEq, facet::Facet, bedrock_addon_core::schema::Schema)]
+struct Two {
+    a: Option<bool>,
+    b: bool,
+}
+
 /// W2: under the family's rules a member that failed fails its object, and the required check
-/// is then not made (the opposite of geometry, which judges by the errors raised).
+/// is then not made (as geometry, the object is judged by the errors raised below it).
 #[test]
 fn a_failed_member_fails_the_object_and_the_required_check_is_not_made() {
-    use bedrock_addon_core::diagnostic::JsonPath;
-    use bedrock_addon_core::json::node_tree::{Group, Hit, Node, Walk};
-    let groups = [Group::name("a"), Group::required("b")];
-    let mut walk = Walk::new(super::jsonutil::RULES, &JsonPath::new());
-    let ok = walk.object(Node::root(r#"{"a": 1}"#).unwrap(), &groups, |_, _, _, _| {
-        Hit::Failed
-    });
-    assert!(!ok, "a member that failed must fail the object");
-    let findings: Vec<_> = walk.diagnostics.iter().map(|d| d.code.id()).collect();
-    assert!(
-        findings.is_empty(),
-        "the required check must not run after a failed member: {findings:?}"
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read, Texts};
+    use bedrock_addon_core::json::parse::{Options, parse};
+    use bedrock_addon_core::versioning::Reading;
+    let parsed = parse(r#"{"a": 1}"#, Options::default()).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN, &mut found)
+        .profile(super::jsonutil::PROFILE)
+        .texts(Texts::TREE);
+    let value = bedrock_addon_core::schema::read_document::<Two>(
+        &Node::parsed(&parsed, JsonPath::new()),
+        &mut read,
+    );
+    drop(read);
+    assert_eq!(value, None, "a member that failed must fail the object");
+    let findings: Vec<_> = found.iter().map(|d| d.code.id()).collect();
+    assert_eq!(
+        findings,
+        ["core/unknown_child_option"],
+        "the required check must not run after a failed member"
     );
 }

@@ -39,57 +39,60 @@ fn color(visitor: &mut MolangVisitor<'_>, key: &str, color: &mut Option<Rgba>) {
     visitor.leave();
 }
 
-impl MolangFields for RenderController {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("geometry", &PARSED_SOURCE, &mut self.geometry);
-        visitor.field("textures", &PARSED_SOURCE, &mut self.textures);
-        // The index is the pair's position in the list, which is the element's index in the
-        // file when every element object holds one pattern (as it does when the crate writes it).
-        visitor.enter(Step::Key("materials"));
-        for (index, (pattern, value)) in self.materials.iter_mut().enumerate() {
-            visitor.enter(Step::Index(index));
-            visitor.field(pattern.0.as_str(), &SCHEMA_VALUE, value);
-            visitor.leave();
-        }
+/// The Molang walk of a value its controller's walk reaches by its own (`schema::molang_with`):
+/// nothing of its own.
+pub(crate) fn by_controller<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
+
+/// The Molang walk of a controller (`schema::molang_with`).
+pub(crate) fn controller(this: &mut RenderController, visitor: &mut MolangVisitor<'_>) {
+    visitor.field("geometry", &PARSED_SOURCE, &mut this.geometry);
+    visitor.field("textures", &PARSED_SOURCE, &mut this.textures);
+    // The index is the pair's position in the list, which is the element's index in the
+    // file when every element object holds one pattern (as it does when the crate writes it).
+    visitor.enter(Step::Key("materials"));
+    for (index, (pattern, value)) in this.materials.iter_mut().enumerate() {
+        visitor.enter(Step::Index(index));
+        visitor.field(pattern.0.as_str(), &SCHEMA_VALUE, value);
         visitor.leave();
-        visitor.enter(Step::Key("part_visibility"));
-        for (index, (pattern, value)) in self.part_visibility.iter_mut().enumerate() {
-            visitor.enter(Step::Index(index));
-            visitor.field(pattern.0.as_str(), &SCHEMA_VALUE, value);
-            visitor.leave();
-        }
+    }
+    visitor.leave();
+    visitor.enter(Step::Key("part_visibility"));
+    for (index, (pattern, value)) in this.part_visibility.iter_mut().enumerate() {
+        visitor.enter(Step::Index(index));
+        visitor.field(pattern.0.as_str(), &SCHEMA_VALUE, value);
         visitor.leave();
-        if let Some(arrays) = &mut self.arrays {
-            visitor.enter(Step::Key("arrays"));
-            visitor.field("geometries", &PARSED_SOURCE, &mut arrays.geometries);
-            visitor.field("materials", &PARSED_SOURCE, &mut arrays.materials);
-            visitor.field("textures", &PARSED_SOURCE, &mut arrays.textures);
-            visitor.leave();
-        }
-        color(visitor, "color", &mut self.color);
-        color(visitor, "overlay_color", &mut self.overlay_color);
-        color(visitor, "on_fire_color", &mut self.on_fire_color);
-        color(visitor, "is_hurt_color", &mut self.is_hurt_color);
-        if let Some(uv_anim) = &mut self.uv_anim {
-            visitor.enter(Step::Key("uv_anim"));
-            for (key, pair) in [
-                ("offset", &mut uv_anim.offset),
-                ("scale", &mut uv_anim.scale),
-            ] {
-                visitor.enter(Step::Key(key));
-                for (index, value) in pair.iter_mut().enumerate() {
-                    visitor.field(index, &SCHEMA_VALUE, value);
-                }
-                visitor.leave();
+    }
+    visitor.leave();
+    if let Some(arrays) = &mut this.arrays {
+        visitor.enter(Step::Key("arrays"));
+        visitor.field("geometries", &PARSED_SOURCE, &mut arrays.geometries);
+        visitor.field("materials", &PARSED_SOURCE, &mut arrays.materials);
+        visitor.field("textures", &PARSED_SOURCE, &mut arrays.textures);
+        visitor.leave();
+    }
+    color(visitor, "color", &mut this.color);
+    color(visitor, "overlay_color", &mut this.overlay_color);
+    color(visitor, "on_fire_color", &mut this.on_fire_color);
+    color(visitor, "is_hurt_color", &mut this.is_hurt_color);
+    if let Some(uv_anim) = &mut this.uv_anim {
+        visitor.enter(Step::Key("uv_anim"));
+        for (key, pair) in [
+            ("offset", &mut uv_anim.offset),
+            ("scale", &mut uv_anim.scale),
+        ] {
+            visitor.enter(Step::Key(key));
+            for (index, value) in pair.iter_mut().enumerate() {
+                visitor.field(index, &SCHEMA_VALUE, value);
             }
             visitor.leave();
         }
-        visitor.field(
-            "light_color_multiplier",
-            &SCHEMA_VALUE,
-            &mut self.light_color_multiplier,
-        );
+        visitor.leave();
     }
+    visitor.field(
+        "light_color_multiplier",
+        &SCHEMA_VALUE,
+        &mut this.light_color_multiplier,
+    );
 }
 
 impl MolangFields for RenderControllerFile {

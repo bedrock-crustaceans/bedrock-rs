@@ -20,10 +20,14 @@ mod tests;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FogId;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::known;
 use bedrock_addon_shared_shapes::{HexOr, Keyframes};
+use facet::Facet;
 
-pub(crate) use jsonutil::{Era, read_document};
+use read::{coefficient, density, fog_color, height, percent, positive, scattering_g};
+
+pub(crate) use jsonutil::read_document;
 pub(crate) use write::{color_ju, float, norm_ju, object_with};
 
 use crate::history::{FogFamily, FogHistory};
@@ -74,7 +78,8 @@ pub(crate) const FLOOR: bedrock_addon_core::version::FormatVersion = known::V1_1
 /// rule's warning. Where the older schema cannot hold them either (a distance entry
 /// without one of its four members, an unknown member, a keyframed value, an identifier
 /// without a namespace), `to_json` is `NotRepresentable` at the entry that breaks the rule.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 #[doc(alias = "minecraft:fog_settings")]
 #[doc(alias = "fogs")]
 pub struct FogSettings {
@@ -89,7 +94,8 @@ pub struct FogSettings {
 }
 
 /// `description` of [`FogSettings`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogDescription {
     /// `identifier`: any non-empty text; compared as written, case included. The namespace
     /// `minecraft` (the text before the first `:`, or the whole text, lower-cased) is the base
@@ -100,7 +106,8 @@ pub struct FogDescription {
 }
 
 /// `distance`: one setting per medium the camera can be in.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogDistanceCollection {
     /// `air`.
     pub air: Option<FogDistanceSetting>,
@@ -120,30 +127,36 @@ pub struct FogDistanceCollection {
 
 /// One distance setting. Every member is optional; a member a present setting leaves out is 0
 /// (`fog_start`, `fog_end`) or `fixed` (`render_distance_type`), which the accessors give.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogDistanceSetting {
     /// `fog_start`: where the fog begins; at most `fog_end`.
     pub fog_start: Option<f32>,
     /// `fog_end`: where the fog is opaque; at least 0.
+    #[facet(schema::read_with = positive)]
     pub fog_end: Option<f32>,
     /// `render_distance_type`: what the two distances are measured in.
     pub render_distance_type: Option<DistanceType>,
     /// `fog_color`.
+    #[facet(schema::read_with = fog_color)]
     pub fog_color: Option<FogColor>,
     /// The members the schema does not know (a `transition_fog` outside `water` is one).
     pub extra: UnknownMembers,
 }
 
 /// The `water` distance setting: the members of [`FogDistanceSetting`] and `transition_fog`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogWaterDistanceSetting {
     /// `fog_start`: where the fog begins; at most `fog_end`.
     pub fog_start: Option<f32>,
     /// `fog_end`: where the fog is opaque; at least 0.
+    #[facet(schema::read_with = positive)]
     pub fog_end: Option<f32>,
     /// `render_distance_type`: what the two distances are measured in.
     pub render_distance_type: Option<DistanceType>,
     /// `fog_color`.
+    #[facet(schema::read_with = fog_color)]
     pub fog_color: Option<FogColor>,
     /// `transition_fog`: how the fog changes while the camera stays under water.
     pub transition_fog: Option<FogTransitionSetting>,
@@ -152,24 +165,30 @@ pub struct FogWaterDistanceSetting {
 }
 
 /// `transition_fog` of the water setting: from `init_fog` towards the setting itself over time.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogTransitionSetting {
     /// `init_fog`: the fog on entering the water.
     pub init_fog: Option<FogDistanceSetting>,
     /// `min_percent`: 0 to 1.
+    #[facet(schema::read_with = percent)]
     pub min_percent: Option<f32>,
     /// `mid_seconds`: at least 0, and below `max_seconds` unless both are 0.
+    #[facet(schema::read_with = positive)]
     pub mid_seconds: Option<f32>,
     /// `mid_percent`: 0 to 1.
+    #[facet(schema::read_with = percent)]
     pub mid_percent: Option<f32>,
     /// `max_seconds`: at least 0.
+    #[facet(schema::read_with = positive)]
     pub max_seconds: Option<f32>,
     /// The members the schema does not know.
     pub extra: UnknownMembers,
 }
 
 /// `volumetric`: the fog of the deferred renderer.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricCollection {
     /// `density`: how dense the fog is, per medium.
     pub density: Option<FogVolumetricDensityCollection>,
@@ -182,7 +201,8 @@ pub struct FogVolumetricCollection {
 }
 
 /// `volumetric.density`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricDensityCollection {
     /// `air`.
     pub air: Option<FogVolumetricDensitySetting>,
@@ -200,22 +220,27 @@ pub struct FogVolumetricDensityCollection {
 
 /// One density setting. Either `uniform` is `true` and neither height is written, or both
 /// heights are written with `zero_density_height` at or above `max_density_height`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricDensitySetting {
     /// `max_density`: 0 to 1.
+    #[facet(schema::read_with = density)]
     pub max_density: Option<Keyframed<f32>>,
     /// `uniform`: the same density at every height.
     pub uniform: Option<bool>,
     /// `zero_density_height`: the height at which the fog ends, −64 to 320.
+    #[facet(schema::read_with = height)]
     pub zero_density_height: Option<Keyframed<f32>>,
     /// `max_density_height`: the height below which the fog is at `max_density`, −64 to 320.
+    #[facet(schema::read_with = height)]
     pub max_density_height: Option<Keyframed<f32>>,
     /// The members the schema does not know.
     pub extra: UnknownMembers,
 }
 
 /// `volumetric.media_coefficients`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricMediaCoeffsCollection {
     /// `air`.
     pub air: Option<FogVolumetricMediaCoeffsSetting>,
@@ -228,18 +253,22 @@ pub struct FogVolumetricMediaCoeffsCollection {
 }
 
 /// The coefficients of one medium.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricMediaCoeffsSetting {
     /// `absorption`: how much of each colour the medium absorbs.
+    #[facet(schema::read_with = coefficient)]
     pub absorption: Option<Keyframed<ColorNorm>>,
     /// `scattering`: how much of each colour the medium scatters.
+    #[facet(schema::read_with = coefficient)]
     pub scattering: Option<Keyframed<ColorNorm>>,
     /// The members the schema does not know.
     pub extra: UnknownMembers,
 }
 
 /// `volumetric.henyey_greenstein_g`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricHenyeyGreensteinGCollection {
     /// `air`.
     pub air: Option<FogVolumetricHenyeyGreensteinGSetting>,
@@ -250,17 +279,21 @@ pub struct FogVolumetricHenyeyGreensteinGCollection {
 }
 
 /// The scattering direction of one medium.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = jsonutil::no_molang)]
 pub struct FogVolumetricHenyeyGreensteinGSetting {
     /// `henyey_greenstein_g`: −1 (backwards) to 1 (forwards).
+    #[facet(schema::read_with = scattering_g)]
     pub henyey_greenstein_g: Option<Keyframed<f32>>,
     /// The members the schema does not know.
     pub extra: UnknownMembers,
 }
 
 /// What `fog_start` and `fog_end` are measured in (`render_distance_type`).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum DistanceType {
     /// `"fixed"`: blocks. The value of a setting that leaves the member out.
     #[default]

@@ -2,13 +2,6 @@
 //! struct of the file's era ([`era`]), the upgrade to the newest shape and the identifier and
 //! parse-time checks.
 
-mod era;
-
-pub(crate) use era::{
-    Era, LocatorForm, V1_12_0, V1_19_30, read_file, read_locators, read_poly_mesh,
-    read_render_group_id, read_texture_mesh,
-};
-
 use std::borrow::Cow;
 
 use crate::GeometryFile;
@@ -17,21 +10,27 @@ use crate::history::v1_8_0::MAX_FORMAT_VERSION as KEYED_MAXIMUM;
 use crate::history::{GeometryHistory, VERSIONS};
 use crate::molang;
 use crate::validate::{Place, first_bad_identifier, parse_time};
-use crate::walk::rules;
+use crate::walk::{root_member, written_text};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
-use bedrock_addon_core::json::node_tree::{Kind, Node, Walk};
+use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, check_depth, parse_at, strip_bom,
+    JsonSlice, MAX_JSON_DEPTH, Value, Winner, check_depth, parse_at, strip_bom,
 };
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{ParseCx, UpgradeCx};
+
+/// 1.12.0: the first version with the `minecraft:geometry` list; below it the geometries are
+/// `geometry.<name>` members of the root.
+pub(crate) const V1_12_0: FormatVersion = FormatVersion::new(1, 12, 0);
+/// 1.19.30: the first strict era.
+pub(crate) const V1_19_30: FormatVersion = FormatVersion::new(1, 19, 30);
 
 /// The version a file without a readable `format_version` is read as (vanilla's `"1.0"`
 /// default).
@@ -108,27 +107,23 @@ fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a
 /// writes `format_version "1.1"` into the file and validates it against the schema older
 /// than 1.8) or a warning when unreadable.
 fn read_version(
-    root: Node<'_>,
+    text: &Text<'_>,
     diagnostics: &mut Diagnostics,
 ) -> (Option<FormatVersion>, FormatVersion, String) {
-    let walk = Walk::new(rules(true), &JsonPath::new());
-    let node = walk
-        .members(root)
-        .unwrap_or_default()
-        .into_iter()
-        .find_map(|(key, node)| (key == "format_version").then_some(node));
-    let Some(node) = node else {
+    let Some(node) = root_member(&text.value, "format_version") else {
         // The crate's own finding: the game has no text for a missing version here.
         diagnostics
             .push(Diagnostic::of(&core_codes::MISSING_FORMAT_VERSION).severity(Severity::Info));
         return (None, DEFAULT_VERSION, "1.0".to_owned());
     };
-    let as_written = if node.kind() == Kind::String {
-        node.string().unwrap_or_default()
-    } else {
-        node.text().to_owned()
+    let as_written = match node.as_string() {
+        Some(text) => text.as_str().to_owned(),
+        None => written_text(text, "format_version")
+            .unwrap_or_default()
+            .to_owned(),
     };
-    let version = (node.kind() == Kind::String)
+    let version = node
+        .is_string()
         .then(|| SemVersion::parse(&as_written))
         .flatten()
         // `"beta"` and a wildcard are no version the game's version parser reads.
@@ -163,20 +158,21 @@ pub(crate) fn read_written(
         Outcome::Failed => return Outcome::Failed,
     };
     let slice = JsonSlice::new(&source);
-    let Some(root) = Node::of(slice) else {
+    let Ok(text) = parse(&source, Options::winner(Winner::Last)) else {
         return Outcome::Failed;
     };
-    match root.kind() {
-        Kind::Null => return Outcome::Empty,
-        Kind::Object => {}
-        _ => {
-            diagnostics.push(Diagnostic::of(&codes::NOT_AN_OBJECT).detail(
-                DiagnosticDetail::Syntax("the root is not an object".to_owned()),
-            ));
-            return Outcome::Failed;
-        }
+    if text.value.is_null() {
+        return Outcome::Empty;
     }
-    let (written, effective, as_written) = read_version(root, diagnostics);
+    if !text.value.is_object() {
+        diagnostics.push(
+            Diagnostic::of(&codes::NOT_AN_OBJECT).detail(DiagnosticDetail::Syntax(
+                "the root is not an object".to_owned(),
+            )),
+        );
+        return Outcome::Failed;
+    }
+    let (written, effective, as_written) = read_version(&text, diagnostics);
     if effective > cx.engine_version {
         diagnostics.push(
             Diagnostic::of(

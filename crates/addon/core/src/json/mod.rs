@@ -53,7 +53,6 @@ mod lex;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod lossy;
-pub mod node_tree;
 mod null;
 // hidden: API not yet reviewed
 #[doc(hidden)]

@@ -3,10 +3,14 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::molang::{Molang, MolangSource};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_shared_animation::walk::atof;
+use bedrock_addon_shared_animation::walk::{IDENTIFIERS, atof};
 use bedrock_addon_shared_shapes::TrueOnly;
+use facet::Facet;
+
+use crate::read::CURVE;
 
 use super::{EventString, ParticleEffect, SoundEffect};
 
@@ -28,25 +32,31 @@ pub struct AnimationControllerFile {
 }
 
 /// One animation controller: a state machine over animations.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_file_walk)]
 pub struct AnimationController {
     /// `initial_state`: the state to start in, compared as written with the lower-cased state
     /// names; absent, the state `default`, else the first state.
     pub initial_state: Option<String>,
     /// `states`: each state by its name as written (vanilla lower-cases it).
+    #[facet(schema::keys = IDENTIFIERS)]
     pub states: IndexMap<String, State>,
     /// Not JSON: the file's `format_version` was below 1.17.30, so vanilla lower-cases every
     /// transition expression (string literals included) before compiling it.
+    #[facet(skip, rename = "\u{0}lowercase_transitions")]
     pub lowercase_transitions: bool,
     /// Not JSON: the file's `format_version` was below 1.18.10, so the initial state's
     /// `on_entry` events do not fire when the controller starts.
+    #[facet(skip, rename = "\u{0}legacy_event_skipping")]
     pub legacy_event_skipping: bool,
 }
 
 /// One state of an [`AnimationController`].
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::state)]
 pub struct State {
     /// `variables`: state variables by name (vanilla stores `variable.<lower-cased name>`).
+    #[facet(schema::keys = IDENTIFIERS)]
     pub variables: Option<IndexMap<String, StateVariable>>,
     /// `animations`: the animations the state plays, by short name, with blend weights.
     pub animations: Option<Vec<StateAnimation>>,
@@ -68,18 +78,21 @@ pub struct State {
 }
 
 /// A state variable (`variables.<name>`): `input` remapped through `remap_curve`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_file_walk)]
 pub struct StateVariable {
     /// `input`: the value remapped.
     pub input: Molang,
     /// `remap_curve`: input value (key) to output value; absent, the input is stored as is.
     /// Vanilla evaluates the frames in its own member order (sorted key text), see
     /// [`StateVariable::frames`].
+    #[facet(schema::keys = CURVE)]
     pub remap_curve: Option<IndexMap<String, f32>>,
 }
 
 /// One entry of a state's `animations` array.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum StateAnimation {
     /// A short name, played at weight 1 (vanilla lower-cases it).
     Name(String),
@@ -88,7 +101,7 @@ pub enum StateAnimation {
 }
 
 /// One `transitions` entry: `{"<state>": "<condition>"}`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
 pub struct Transition {
     /// The target state, as written (vanilla lower-cases it).
     pub target: String,
@@ -97,7 +110,8 @@ pub struct Transition {
 }
 
 /// A state's `blend_transition`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum BlendTransition {
     /// A number: fade out over this many seconds (0: no blend).
     Seconds(f32),

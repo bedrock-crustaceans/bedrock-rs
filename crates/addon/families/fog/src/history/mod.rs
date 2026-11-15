@@ -41,7 +41,6 @@ bedrock_addon_core::version_chain! {
 }
 
 // The newest settings have no Molang field (the older structs' impl is their payload's).
-bedrock_addon_core::impl_no_molang!(FogSettings);
 
 /// Runs the remaining upgrade steps and the checks of a document
 /// [`FogSettings::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result

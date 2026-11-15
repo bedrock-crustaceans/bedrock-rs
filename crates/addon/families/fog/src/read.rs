@@ -1,22 +1,18 @@
 //! Reading [`FogSettings`] from the text of a 1.26.20 payload, as the game's cereal loader
 //! reads `FogParametersSrcV0`: every member but `description.identifier` is optional, a member
 //! the schema does not know is kept and reported (the game ignores it without a word), and a wrong type or a
-//! value outside its constraint fails the document.
+//! value outside its constraint fails the document. The settings types are the schema and read
+//! on the derived read (an object fails by an error below it, and only then is a missing member
+//! not told); what has a syntax of its own reads by a `read_with` here.
 
-use super::{
-    ColorNorm, DistanceType, FogColor, FogDescription, FogDistanceCollection, FogDistanceSetting,
-    FogSettings, FogTransitionSetting, FogVolumetricCollection, FogVolumetricDensityCollection,
-    FogVolumetricDensitySetting, FogVolumetricHenyeyGreensteinGCollection,
-    FogVolumetricHenyeyGreensteinGSetting, FogVolumetricMediaCoeffsCollection,
-    FogVolumetricMediaCoeffsSetting, FogWaterDistanceSetting, Keyframed, same_zero,
-};
+use super::{ColorNorm, FogColor, FogSettings, Keyframed, same_zero};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::id::FogId;
-use bedrock_addon_core::json::kit::{Disposition, Node, Read};
-use bedrock_addon_core::json::{JsonSlice, Value, parse_at};
-use bedrock_addon_core::versioning::Reading;
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{BeyondWidth, JsonSlice};
+use bedrock_addon_core::schema::{FromJson, read_document};
+use bedrock_addon_core::versioning::{Reading, Scalars};
 use bedrock_addon_shared_shapes::Keyframe;
 use bedrock_addon_shared_shapes::color::is_hex;
 
@@ -27,18 +23,22 @@ pub(crate) fn read_settings(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<FogSettings> {
-    let json = parse_at::<Value>(payload).ok()?;
+    let text = parse_slice(payload, Options::default()).ok()?;
     let mut found = Diagnostics::default();
     // The cereal pass: a wrong type or a broken constraint is an error that fails the file;
     // an unknown member is kept and told as information (the game says nothing).
-    let mut read = Read::new(Reading::DOCUMENT, &mut found).unknown_severity(Severity::Info);
-    let settings = settings(&mut read, &Node::with_text(&json, at.clone(), payload));
+    let reading = Reading::DOCUMENT
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error);
+    let mut read = Read::new(reading, &mut found)
+        .unknown_severity(Severity::Info)
+        .profile(Profile::TREE);
+    let settings = read_document::<FogSettings>(&Node::parsed(&text, at.clone()), &mut read);
+    drop(read);
     let failed = found.has_errors();
     d.extend(found);
     settings.filter(|_| !failed)
 }
-
-// ---- the lenient walk ---------------------------------------------------------------------------
 
 /// `code` at `node`, spanning it.
 fn tell(read: &mut Read<'_>, code: Code, severity: Severity, node: &Node<'_>) {
@@ -64,63 +64,9 @@ fn token<'v>(node: &Node<'v>) -> &'v str {
     node.text().map_or("", |text| text.text)
 }
 
-/// Walks an object in document order: `on` reads a member it knows and says whether it read
-/// (`None` for a member it does not know, which is kept in `extra` with an information: V12;
-/// the game prints its parse log only for codes 2 (level 2) and 8 (level 3), never cereal's
-/// unknown-member code 4, so vanilla says nothing there). The result is
-/// `false` when the node is not an object or a member failed.
-fn object<'v>(
-    read: &mut Read<'_>,
-    node: &Node<'v>,
-    extra: &mut UnknownMembers,
-    mut on: impl FnMut(&mut Read<'_>, &str, &Node<'v>) -> Option<bool>,
-) -> bool {
-    let Some(members) = read.object(node) else {
-        return false;
-    };
-    let mut ok = true;
-    for (key, value) in members.iter() {
-        if let Some(read_it) = on(read, key, &value) {
-            ok &= read_it;
-        } else {
-            read.unknown_member(&value, Disposition::Keep);
-            extra.insert(key.to_owned(), value.value().clone());
-        }
-    }
-    ok
-}
-
-/// Stores what a member reader gave; the member read when it gave a value.
-#[allow(
-    clippy::unnecessary_wraps,
-    reason = "the walk's callback gives `None` for a member it does not know"
-)]
-fn put<T>(slot: &mut Option<T>, value: Option<T>) -> Option<bool> {
-    let read = value.is_some();
-    *slot = value;
-    Some(read)
-}
-
-fn number(read: &mut Read<'_>, node: &Node<'_>) -> Option<f32> {
-    if node.value().as_number().is_none() {
-        read.wrong_type(node);
-        return None;
-    }
-    #[allow(
-        clippy::cast_possible_truncation,
-        reason = "the game reads these members as float"
-    )]
-    let x = token(node).parse::<f64>().ok().map(|x| x as f32);
-    if x.is_none_or(|x| !x.is_finite()) {
-        read.wrong_type(node);
-        return None;
-    }
-    x
-}
-
 /// A number within `[min, max]` (`BasicNumericConstraint`).
 fn ranged(read: &mut Read<'_>, node: &Node<'_>, min: f32, max: f32) -> Option<f32> {
-    let x = number(read, node)?;
+    let x = f32::from_json(node, read)?;
     if x < min || x > max {
         violation(read, node);
         return None;
@@ -128,17 +74,34 @@ fn ranged(read: &mut Read<'_>, node: &Node<'_>, min: f32, max: f32) -> Option<f3
     Some(x)
 }
 
-fn boolean(read: &mut Read<'_>, node: &Node<'_>) -> Option<bool> {
-    read.bool(node)
+/// A number of at least 0 (`BasicNumericConstraint<double>::min(0.0)`): `fog_end`, the seconds.
+pub(crate) fn positive(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    ranged(read, node, 0.0, f32::MAX)
 }
 
-fn text(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
-    read.string(node).map(str::to_owned)
+/// A number of 0 to 1: the percents.
+pub(crate) fn percent(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    ranged(read, node, 0.0, 1.0)
+}
+
+/// `max_density`: 0 to 1, or by time key.
+pub(crate) fn density(node: &Node<'_>, read: &mut Read<'_>) -> Option<Keyframed<f32>> {
+    keyframed(read, node, |read, v| ranged(read, v, 0.0, 1.0))
+}
+
+/// A density height (both share one constraint): −64 to 320, or by time key.
+pub(crate) fn height(node: &Node<'_>, read: &mut Read<'_>) -> Option<Keyframed<f32>> {
+    keyframed(read, node, |read, v| ranged(read, v, -64.0, 320.0))
+}
+
+/// `henyey_greenstein_g`: −1 to 1, or by time key.
+pub(crate) fn scattering_g(node: &Node<'_>, read: &mut Read<'_>) -> Option<Keyframed<f32>> {
+    keyframed(read, node, |read, v| ranged(read, v, -1.0, 1.0))
 }
 
 /// The string form of a colour, or its constraint violation.
 fn hex(read: &mut Read<'_>, node: &Node<'_>) -> Option<String> {
-    let written = text(read, node)?;
+    let written = String::from_json(node, read)?;
     // `SharedTypes::REGEX_RGB_COLOR`: `^#[a-fA-F0-9]{6}$`.
     if is_hex(&written, 6) {
         Some(written)
@@ -163,7 +126,7 @@ fn triple<'v>(read: &mut Read<'_>, node: &Node<'v>) -> Option<[Node<'v>; 3]> {
 /// `Color255RGB`: `#RRGGBB`, or three integers, each clamped to 0–255 as
 /// `colorFromIntArray3` clamps it (with a `ClampedValue` info, ours). A real (`0.5`, `1.0`) or a
 /// string is refused (ours; what the game's integer reader does with a real is not known).
-fn fog_color(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogColor> {
+pub(crate) fn fog_color(node: &Node<'_>, read: &mut Read<'_>) -> Option<FogColor> {
     let value = node.value();
     if value.is_string() {
         return hex(read, node).map(FogColor::Hex);
@@ -213,12 +176,17 @@ fn color_norm(read: &mut Read<'_>, node: &Node<'_>) -> Option<ColorNorm> {
     let mut rgb = [0.0_f32; 3];
     let mut ok = true;
     for (index, element) in nodes.iter().enumerate() {
-        match number(read, element) {
+        match f32::from_json(element, read) {
             Some(x) => rgb[index] = x,
             None => ok = false,
         }
     }
     ok.then_some(ColorNorm::Array(rgb))
+}
+
+/// A coefficient: a colour, or colours by time key. An object is the keyed form.
+pub(crate) fn coefficient(node: &Node<'_>, read: &mut Read<'_>) -> Option<Keyframed<ColorNorm>> {
+    keyframed(read, node, color_norm)
 }
 
 /// `CerealHelpers::TimeKeyframes<float, T>`: one value, or an object whose keys are numbers
@@ -275,260 +243,6 @@ fn keyframed<'v, T>(
         );
     }
     ok.then_some(Keyframed::Keys(times))
-}
-
-// ---- the schema --------------------------------------------------------------------------------
-
-fn settings(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogSettings> {
-    let mut description = None;
-    let mut distance = None;
-    let mut volumetric = None;
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "description" => put(&mut description, self::description(read, v)),
-        "distance" => put(&mut distance, self::distance(read, v)),
-        "volumetric" => put(&mut volumetric, self::volumetric(read, v)),
-        _ => None,
-    });
-    if ok && description.is_none() {
-        tell(
-            read,
-            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-            Severity::Error,
-            node,
-        );
-    }
-    ok.then_some(FogSettings {
-        description: description?,
-        distance,
-        volumetric,
-        extra,
-    })
-}
-
-fn description(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogDescription> {
-    let mut identifier = None;
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        // `SharedTypes::Identifier<9>`: any string, stored as written.
-        "identifier" => put(&mut identifier, text(read, v)),
-        _ => None,
-    });
-    if ok && identifier.is_none() {
-        tell(
-            read,
-            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-            Severity::Error,
-            node,
-        );
-    }
-    ok.then_some(FogDescription {
-        identifier: FogId::parse(identifier?),
-        extra,
-    })
-}
-
-/// Reads member `key` of a distance setting into `setting`; `None` when it is none of the
-/// four.
-fn base_member(
-    read: &mut Read<'_>,
-    key: &str,
-    v: &Node<'_>,
-    setting: &mut FogDistanceSetting,
-) -> Option<bool> {
-    match key {
-        "fog_start" => put(&mut setting.fog_start, number(read, v)),
-        // `BasicNumericConstraint<double>::min(0.0)`.
-        "fog_end" => put(&mut setting.fog_end, ranged(read, v, 0.0, f32::MAX)),
-        "render_distance_type" => put(&mut setting.render_distance_type, distance_type(read, v)),
-        "fog_color" => put(&mut setting.fog_color, fog_color(read, v)),
-        _ => None,
-    }
-}
-
-/// The enum `"FogDistanceSetting DistanceType"`: `"fixed"` = 0, `"render"` = 1, as written.
-fn distance_type(read: &mut Read<'_>, node: &Node<'_>) -> Option<DistanceType> {
-    match text(read, node)?.as_str() {
-        "fixed" => Some(DistanceType::Fixed),
-        "render" => Some(DistanceType::Render),
-        _ => {
-            tell(
-                read,
-                Code::from(&core_codes::INVALID_ENUM_VALUE),
-                Severity::Error,
-                node,
-            );
-            None
-        }
-    }
-}
-
-fn distance_setting(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogDistanceSetting> {
-    let mut setting = FogDistanceSetting::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| {
-        base_member(read, key, v, &mut setting)
-    });
-    setting.extra = extra;
-    ok.then_some(setting)
-}
-
-fn water_setting(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogWaterDistanceSetting> {
-    let mut base = FogDistanceSetting::default();
-    let mut transition_fog = None;
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "transition_fog" => put(&mut transition_fog, transition(read, v)),
-        _ => base_member(read, key, v, &mut base),
-    });
-    ok.then_some(FogWaterDistanceSetting {
-        fog_start: base.fog_start,
-        fog_end: base.fog_end,
-        render_distance_type: base.render_distance_type,
-        fog_color: base.fog_color,
-        transition_fog,
-        extra,
-    })
-}
-
-fn transition(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogTransitionSetting> {
-    let mut t = FogTransitionSetting::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "init_fog" => put(&mut t.init_fog, distance_setting(read, v)),
-        "min_percent" => put(&mut t.min_percent, ranged(read, v, 0.0, 1.0)),
-        "mid_seconds" => put(&mut t.mid_seconds, ranged(read, v, 0.0, f32::MAX)),
-        "mid_percent" => put(&mut t.mid_percent, ranged(read, v, 0.0, 1.0)),
-        "max_seconds" => put(&mut t.max_seconds, ranged(read, v, 0.0, f32::MAX)),
-        _ => None,
-    });
-    t.extra = extra;
-    ok.then_some(t)
-}
-
-fn distance(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogDistanceCollection> {
-    let mut c = FogDistanceCollection::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "air" => put(&mut c.air, distance_setting(read, v)),
-        "weather" => put(&mut c.weather, distance_setting(read, v)),
-        "water" => put(&mut c.water, water_setting(read, v)),
-        "lava" => put(&mut c.lava, distance_setting(read, v)),
-        "lava_resistance" => put(&mut c.lava_resistance, distance_setting(read, v)),
-        "powder_snow" => put(&mut c.powder_snow, distance_setting(read, v)),
-        _ => None,
-    });
-    c.extra = extra;
-    ok.then_some(c)
-}
-
-/// A density height; both share one constraint.
-fn height(read: &mut Read<'_>, v: &Node<'_>) -> Option<Keyframed<f32>> {
-    keyframed(read, v, |read, v| ranged(read, v, -64.0, 320.0))
-}
-
-fn density_setting(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricDensitySetting> {
-    let mut s = FogVolumetricDensitySetting::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "max_density" => put(
-            &mut s.max_density,
-            keyframed(read, v, |read, v| ranged(read, v, 0.0, 1.0)),
-        ),
-        "uniform" => put(&mut s.uniform, boolean(read, v)),
-        "zero_density_height" => put(&mut s.zero_density_height, height(read, v)),
-        "max_density_height" => put(&mut s.max_density_height, height(read, v)),
-        _ => None,
-    });
-    s.extra = extra;
-    ok.then_some(s)
-}
-
-fn density(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricDensityCollection> {
-    let mut c = FogVolumetricDensityCollection::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "air" => put(&mut c.air, density_setting(read, v)),
-        "weather" => put(&mut c.weather, density_setting(read, v)),
-        "water" => put(&mut c.water, density_setting(read, v)),
-        "lava" => put(&mut c.lava, density_setting(read, v)),
-        "lava_resistance" => put(&mut c.lava_resistance, density_setting(read, v)),
-        _ => None,
-    });
-    c.extra = extra;
-    ok.then_some(c)
-}
-
-fn coefficients(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricMediaCoeffsSetting> {
-    let mut s = FogVolumetricMediaCoeffsSetting::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "absorption" => put(&mut s.absorption, keyframed_color(read, v)),
-        "scattering" => put(&mut s.scattering, keyframed_color(read, v)),
-        _ => None,
-    });
-    s.extra = extra;
-    ok.then_some(s)
-}
-
-/// A coefficient: a colour, or colours by time key. An object is the keyed form.
-fn keyframed_color(read: &mut Read<'_>, node: &Node<'_>) -> Option<Keyframed<ColorNorm>> {
-    keyframed(read, node, color_norm)
-}
-
-fn media(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricMediaCoeffsCollection> {
-    let mut c = FogVolumetricMediaCoeffsCollection::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "air" => put(&mut c.air, coefficients(read, v)),
-        "water" => put(&mut c.water, coefficients(read, v)),
-        "cloud" => put(&mut c.cloud, coefficients(read, v)),
-        _ => None,
-    });
-    c.extra = extra;
-    ok.then_some(c)
-}
-
-fn hg_setting(
-    read: &mut Read<'_>,
-    node: &Node<'_>,
-) -> Option<FogVolumetricHenyeyGreensteinGSetting> {
-    let mut s = FogVolumetricHenyeyGreensteinGSetting::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "henyey_greenstein_g" => put(
-            &mut s.henyey_greenstein_g,
-            keyframed(read, v, |read, v| ranged(read, v, -1.0, 1.0)),
-        ),
-        _ => None,
-    });
-    s.extra = extra;
-    ok.then_some(s)
-}
-
-fn hg(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricHenyeyGreensteinGCollection> {
-    let mut c = FogVolumetricHenyeyGreensteinGCollection::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "air" => put(&mut c.air, hg_setting(read, v)),
-        "water" => put(&mut c.water, hg_setting(read, v)),
-        _ => None,
-    });
-    c.extra = extra;
-    ok.then_some(c)
-}
-
-fn volumetric(read: &mut Read<'_>, node: &Node<'_>) -> Option<FogVolumetricCollection> {
-    let mut c = FogVolumetricCollection::default();
-    let mut extra = UnknownMembers::default();
-    let ok = object(read, node, &mut extra, |read, key, v| match key {
-        "density" => put(&mut c.density, density(read, v)),
-        "media_coefficients" => put(&mut c.media_coefficients, media(read, v)),
-        "henyey_greenstein_g" => put(&mut c.henyey_greenstein_g, hg(read, v)),
-        _ => None,
-    });
-    c.extra = extra;
-    ok.then_some(c)
 }
 
 #[cfg(test)]

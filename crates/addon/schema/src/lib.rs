@@ -77,8 +77,17 @@ facet::define_attr_grammar! {
         Kept,
         /// `key_with = path` (compile-time, a map field): the rule of the map's keys,
         /// `fn(&str) -> Option<Code>`; each key it refuses is one finding at the member of that
-        /// name, graded as a broken bound is (`kept` says the game keeps it).
+        /// name, graded as a broken bound is (`kept` says the game keeps it). It judges the keys of
+        /// a map that is read: the entry stays, and the finding is the check's. `keys` decides
+        /// at the read which names are members at all (below).
         KeyWith(arbitrary),
+        /// `keys = KEYS` (compile-time, a map field keyed by `String`): the rule its members'
+        /// names are read by, a `schema::Keys` by its path: a name its pattern does not take is
+        /// an unknown member of the map (told, not kept), and a map that must have one tells a
+        /// missing member when none is read; read in the profile's order and name rule. A name it
+        /// refuses is no entry (an unknown member told at the read), where `key_with` keeps the
+        /// entry and tells in the check, under a code of its own.
+        Keys(arbitrary),
         /// `multiple_of = n` (compile-time): the value is a multiple of the positive number
         /// `n`, checked after the field's range as `value % n == 0.0` in `f64`: exact for an
         /// integer step and a binary fraction (`0.5`, `0.25`), not for a step `f64` holds only

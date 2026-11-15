@@ -14,7 +14,10 @@ use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail};
 use crate::document::UnknownMembers;
 use crate::json::NULL_MEMBER_READ_AS_ABSENT;
 use crate::json::Token;
-use crate::json::kit::{Expected, MemberOrder, Members, Node, Pass, Read, UnknownAt};
+use crate::json::kit::Mark;
+use crate::json::kit::{
+    Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
+};
 use crate::json::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::schema::UnknownRule;
 use crate::version::FormatVersion;
@@ -57,6 +60,11 @@ pub struct Disposal {
 pub struct Object<'v> {
     members: Members<'v>,
     field: Option<UnknownRule>,
+    /// What the read had told when the object was opened.
+    mark: Mark,
+    /// Under a tree ([`Objects::Tree`]), whether an error was raised while the members were
+    /// read ([`settle`](Self::settle)).
+    failed: std::cell::Cell<bool>,
 }
 
 impl<'v> Object<'v> {
@@ -69,7 +77,21 @@ impl<'v> Object<'v> {
         }
         let members = read.object(node)?;
         let field = read.set_field_unknown(None);
-        Some(Self { members, field })
+        Some(Self {
+            members,
+            field,
+            mark: read.mark(),
+            failed: std::cell::Cell::new(false),
+        })
+    }
+
+    /// Ends the read of the members: whether the struct may still be built. Under the game's
+    /// schema tree ([`Objects::Tree`]) an error raised while they were read fails it, and its
+    /// missing members are then not told.
+    pub fn settle(&self, read: &Read<'_>) -> bool {
+        let failed = read.telling().objects == Objects::Tree && read.raised_since(self.mark);
+        self.failed.set(failed);
+        !failed
     }
 
     /// Ends the read of the object: the field's word is back for a sibling the field also
@@ -183,22 +205,43 @@ impl<'v> Object<'v> {
     }
 }
 
+/// The declared name a member written as `key` is read as when the profile ignores the case of
+/// names ([`Names::IgnoreAsciiCase`]): `key` itself is no declared name, another spelling of one is.
+fn respelled_as<'n>(
+    spelling: Names,
+    names: &[&'n str],
+    knows: &impl Fn(&str) -> bool,
+    key: &str,
+) -> Option<&'n str> {
+    if spelling != Names::IgnoreAsciiCase || knows(key) {
+        return None;
+    }
+    names
+        .iter()
+        .copied()
+        .find(|name| name.eq_ignore_ascii_case(key))
+}
+
 /// Whether `key` is no member of a struct: one it does not know (or knows from a later format
-/// version than the document's, `schema::since_format`) and is not its tag.
+/// version than the document's, `schema::since_format`) and is not its tag. A spelling of a
+/// declared name in another case is that member where the profile ignores the case.
 fn is_unknown(
     read: &Read<'_>,
     tag: Option<&'static str>,
     gates: &[(&str, FormatVersion)],
+    names: &[&str],
     knows: &impl Fn(&str) -> bool,
     key: &str,
 ) -> bool {
+    let respelled = respelled_as(read.telling().names, names, knows, key);
+    let name = respelled.unwrap_or(key);
     let format = read.known_versions().format;
     let later = format.is_some_and(|format| {
         gates
             .iter()
-            .any(|(name, since)| *name == key && format < *since)
+            .any(|(gated, since)| *gated == name && format < *since)
     });
-    (!knows(key) || later) && Some(key) != tag
+    (!(knows(key) || respelled.is_some()) || later) && Some(key) != tag
 }
 
 /// Where the profile tells a struct's unknown members: before its members (`.0`), among them in
@@ -207,7 +250,7 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
     let profile = read.telling();
     match profile.unknown {
         UnknownAt::First => (true, false),
-        UnknownAt::WhereMet => (false, profile.members == MemberOrder::File),
+        UnknownAt::WhereMet => (false, profile.members != MemberOrder::Declaration),
         UnknownAt::Last => (false, false),
     }
 }
@@ -236,7 +279,8 @@ pub fn read_members(
     mut field: impl FnMut(&str, &Node<'_>, &mut Read<'_>) -> bool,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
-    let in_file_order = read.telling().members == MemberOrder::File;
+    let profile = read.telling();
+    let in_file_order = profile.members != MemberOrder::Declaration;
     let (first, among) = unknown_placement(read);
     let later = |read: &Read<'_>, key: &str| {
         read.known_versions().format.is_some_and(|format| {
@@ -245,24 +289,40 @@ pub fn read_members(
                 .any(|(name, since)| *name == key && format < *since)
         })
     };
+    let members = read.ordered(&object.members);
     if unknown && first {
-        for (key, member) in object.members() {
+        for (key, member) in &members {
             if read.stopped() {
                 return;
             }
-            if is_unknown(read, tag, gates, &knows, key) {
-                unknown_member(key, &member, read);
+            if is_unknown(read, tag, gates, names, &knows, key) {
+                unknown_member(key, member, read);
             }
         }
     }
     if in_file_order {
-        for (key, member) in object.members() {
+        // The last member read under each name a member was respelled to, for a later one of
+        // the same name ([`Names::IgnoreAsciiCase`]).
+        let mut spelled: Vec<(&str, Node<'_>)> = Vec::new();
+        for (key, member) in &members {
             if read.stopped() {
                 return;
             }
-            let read_it = !later(read, key) && field(key, &member, read);
+            let key = *key;
+            let respelled = respelled_as(profile.names, names, &knows, key);
+            let name = respelled.unwrap_or(key);
+            if respelled.is_some() {
+                read.respelled(member);
+            }
+            if profile.names == Names::IgnoreAsciiCase
+                && (knows(key) || respelled.is_some())
+                && !later(read, name)
+            {
+                one_spelling(&mut spelled, name, member, read);
+            }
+            let read_it = !later(read, name) && field(name, member, read);
             if !read_it && unknown && among {
-                unknown_member(key, &member, read);
+                unknown_member(key, member, read);
             }
         }
     } else {
@@ -285,6 +345,7 @@ pub fn read_unknown_last(
     read: &mut Read<'_>,
     unknown: bool,
     tag: Option<&'static str>,
+    names: &[&str],
     gates: &[(&str, FormatVersion)],
     knows: impl Fn(&str) -> bool,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
@@ -293,13 +354,36 @@ pub fn read_unknown_last(
     if !unknown || first || among {
         return;
     }
-    for (key, member) in object.members() {
+    for (key, member) in &read.ordered(&object.members) {
         if read.stopped() {
             return;
         }
-        if is_unknown(read, tag, gates, &knows, key) {
-            unknown_member(key, &member, read);
+        if is_unknown(read, tag, gates, names, &knows, key) {
+            unknown_member(key, member, read);
         }
+    }
+}
+
+/// Of two members read under one name in two cases ([`Names::IgnoreAsciiCase`]), the earlier is
+/// told dropped (a `DROPPED_FIELD` information at it), unless both hold one value: the later is
+/// the one the field keeps. `spelled` holds the last member read under each name.
+fn one_spelling<'n, 'v>(
+    spelled: &mut Vec<(&'n str, Node<'v>)>,
+    name: &'n str,
+    member: &Node<'v>,
+    read: &mut Read<'_>,
+) {
+    let Some((_, slot)) = spelled.iter_mut().find(|(seen, _)| *seen == name) else {
+        spelled.push((name, member.clone()));
+        return;
+    };
+    let earlier = std::mem::replace(slot, member.clone());
+    if earlier.value() != member.value() {
+        let mut finding = Diagnostic::of(&core_codes::DROPPED_FIELD)
+            .severity(crate::diagnostic::Severity::Info)
+            .at(earlier.path().clone());
+        finding.location.span = earlier.span();
+        read.push(finding);
     }
 }
 
@@ -355,6 +439,9 @@ pub struct Slot<T> {
     rules: Option<&'static MemberRules>,
     /// How many steps the path of the member read has.
     depth: usize,
+    /// Whether the member failed without an error under the game's schema tree, which leaves
+    /// it out ([`Objects::Tree`], [`Read::left_out_since`]).
+    left_out: bool,
 }
 
 impl<T> Default for Slot<T> {
@@ -363,6 +450,7 @@ impl<T> Default for Slot<T> {
             state: State::Absent,
             rules: None,
             depth: 0,
+            left_out: false,
         }
     }
 }
@@ -381,6 +469,7 @@ impl<T> Slot<T> {
             state: State::Absent,
             rules: Some(rules),
             depth: 0,
+            left_out: false,
         }
     }
 
@@ -395,6 +484,7 @@ impl<T> Slot<T> {
     ) {
         let saved = read.set_field_unknown(unknown);
         let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
+        let mark = read.mark();
         let value = read.in_map_value(false, |read| with(node, read));
         if let Some(saved) = ruled {
             read.restore_member_rules(saved);
@@ -406,9 +496,11 @@ impl<T> Slot<T> {
             None if read.take_defaulted() => State::Defaulted,
             None => State::Failed,
         };
+        self.left_out = matches!(self.state, State::Failed) && read.left_out_since(mark);
     }
 
-    /// A required field: the value, or the owner fails (a missing member told).
+    /// A required field: the value, or the owner fails (a missing member told, unless the
+    /// object of a tree failed: [`Object::settle`]).
     pub fn required(
         self,
         object: &Object<'_>,
@@ -416,17 +508,22 @@ impl<T> Slot<T> {
         read: &mut Read<'_>,
         ok: &mut bool,
     ) -> Option<T> {
+        let left_out = self.left_out;
         match self.state {
             State::Read(value) => Some(value),
-            State::Absent | State::Null | State::Defaulted | State::Kept(_) => {
+            State::Failed if !left_out => {
+                *ok = false;
+                None
+            }
+            _ if object.failed.get() => {
+                *ok = false;
+                None
+            }
+            _ => {
                 match self.rules.and_then(|rules| rules.missing) {
                     Some(code) => read.missing_member_as(&object.members, key, Code::from(code)),
                     None => read.missing_member(&object.members, key),
                 }
-                *ok = false;
-                None
-            }
-            State::Failed => {
                 *ok = false;
                 None
             }
@@ -436,11 +533,12 @@ impl<T> Slot<T> {
     /// An `Option` field: the value, `None` when absent; a failed member is `None` where the
     /// reading resets it, else the owner fails.
     pub fn optional(self, read: &Read<'_>, ok: &mut bool) -> Option<T> {
+        let left_out = self.left_out;
         match self.state {
             State::Read(value) => Some(value),
             State::Absent | State::Null | State::Defaulted | State::Kept(_) => None,
             State::Failed => {
-                *ok &= read.resets_at(self.depth);
+                *ok &= left_out || read.resets_at(self.depth);
                 None
             }
         }
@@ -483,6 +581,7 @@ impl<T> Slot<T> {
             state: State::Absent,
             rules: self.rules,
             depth: node.path().len(),
+            left_out: false,
         };
         if reads_null {
             inner.read_with(node, &mut attempt, unknown, with);
@@ -511,10 +610,11 @@ impl<T> Slot<T> {
         ok: &mut bool,
         default: impl FnOnce() -> T,
     ) -> Option<T> {
+        let left_out = self.left_out;
         match self.state {
             State::Read(value) => Some(value),
             State::Absent | State::Null | State::Defaulted | State::Kept(_) => Some(default()),
-            State::Failed if read.resets_at(self.depth) => Some(default()),
+            State::Failed if left_out || read.resets_at(self.depth) => Some(default()),
             State::Failed => {
                 *ok = false;
                 None
@@ -544,16 +644,18 @@ impl<T> Slot<T> {
     ) where
         T: FromJson,
     {
-        if !node.value().is_null() {
+        if !node.value().is_null() || read.reading().null == NullHandling::AsValue {
             return self.read(node, read, unknown);
         }
         self.depth = node.path().len();
         let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
+        let mark = read.mark();
         self.state = if super::impls::null::<T>(node, read) {
             State::Null
         } else {
             State::Failed
         };
+        self.left_out = matches!(self.state, State::Failed) && read.left_out_since(mark);
         if let Some(saved) = ruled {
             read.restore_member_rules(saved);
         }
@@ -572,16 +674,18 @@ impl<T> Slot<T> {
         kind: Kind,
         with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
     ) {
-        if !node.value().is_null() {
+        if !node.value().is_null() || read.reading().null == NullHandling::AsValue {
             return self.read_with(node, read, unknown, with);
         }
         self.depth = node.path().len();
         let ruled = self.rules.map(|rules| read.set_member_rules(node, rules));
+        let mark = read.mark();
         self.state = if super::impls::null_of(kind.expected, kind.holds_null, node, read) {
             State::Null
         } else {
             State::Failed
         };
+        self.left_out = matches!(self.state, State::Failed) && read.left_out_since(mark);
         if let Some(saved) = ruled {
             read.restore_member_rules(saved);
         }

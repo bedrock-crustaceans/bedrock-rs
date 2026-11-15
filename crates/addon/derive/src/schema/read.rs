@@ -145,6 +145,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             ));
         }
     }
+    validate_keys(info, errors);
     if let Some((_, span)) = &attrs.skip_code
         && !matches!(attrs.elements, Some((true, _)))
     {
@@ -216,6 +217,27 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                 *span,
                 "`schema::read_with` reads one member: an `UnknownMembers` field holds the \
                  members no field takes",
+            ));
+        }
+    }
+}
+
+/// The refusals of `schema::keys`: a field that is no map, or one with its own read.
+fn validate_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let held = info.option.unwrap_or(info.ty);
+    if let Some((_, span)) = &attrs.keys {
+        if ty::map_values(held).is_none() {
+            errors.push(Error::new(
+                *span,
+                "`schema::keys` is the rule of a map's member names: an `IndexMap<String, V>` \
+                 field (or an `Option` of one)",
+            ));
+        } else if attrs.read_with.is_some() {
+            errors.push(Error::new(
+                *span,
+                "a field with `schema::read_with` is read by its function, which reads the \
+                 names its own way",
             ));
         }
     }
@@ -351,12 +373,28 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
                 }
             }
         });
+    // A map read by its key rule: each name its pattern takes, the value its type's read.
+    let keyed = info.attrs.keys.as_ref().and_then(|(keys, _)| {
+        let value = ty::map_values(held)?;
+        let core = core();
+        Some(quote_spanned! {value.span()=>
+            |__node: &#node<'_>, __read: &mut #read<'_>| {
+                #core::schema::read_keyed(
+                    __node,
+                    __read,
+                    &#keys,
+                    <#value as #core::schema::FromJson>::from_json,
+                )
+            }
+        })
+    });
     let with = info
         .attrs
         .read_with
         .as_ref()
         .map(|(with, _)| quote!(#with))
-        .or(list);
+        .or(list)
+        .or(keyed);
     match (info.attrs.or_kept, with, info.option.is_some()) {
         // A value it cannot read is kept as written.
         (Some((told, _)), with, _) => {
@@ -534,11 +572,14 @@ fn fields_body(
             __read,
             __unknown,
             __tag,
+            &[#(#names),*],
             &[#(#gates),*],
             #knows,
             #unknown_member,
         );
-        let mut __ok = true;
+        // Under the game's schema tree an error raised while the members were read fails the
+        // struct, and its missing members are then not told.
+        let mut __ok = __object.settle(__read);
         #(#flattened)*
         #(#finishes)*
         if !__ok {

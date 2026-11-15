@@ -132,10 +132,24 @@ impl Read<'_> {
             self.wrong_kind(node, expected(declared));
             return None;
         };
+        if let Declared::Float { bits: 32 } = declared
+            && self.profile.lossy == super::Lossy::Told
+            && let Some(x) = number(token)
+            && crate::json::lossy::narrows(x)
+        {
+            // The member holds the nearest float, and the document is written with it: the
+            // digits it does not hold are told (the crate's own information).
+            let mut finding = Diagnostic::of(&core_codes::LOSSY_CONVERSION)
+                .severity(crate::diagnostic::Severity::Info)
+                .at(node.path.clone());
+            finding.location.span = node.span();
+            self.defer(Pass::Misread, finding);
+        }
         if let Declared::Float { bits } = declared
             && let Some(x) = number(token)
             && beyond(bits, x)
-            && self.member_rules(node).is_some_and(|rules| rules.finite)
+            && (self.reading.beyond_width == BeyondWidth::Finite
+                || self.member_rules(node).is_some_and(|rules| rules.finite))
         {
             // The field reads the largest finite float of the sign (`schema::finite`).
             self.defer(

@@ -3,9 +3,10 @@
 //!
 //! The 1.8 schema only validates; the step does the work of turning the file into the 1.10 shape.
 
+use facet::Facet;
 use indexmap::IndexMap;
 
-use super::super::read::{V1_8_0, controller_format_version, read_controllers, read_objects};
+use super::super::read::{CONTROLLERS, V1_8_0, controller_format_version, single};
 use super::super::{
     AnimationController as LatestController, AnimationControllerFile as Latest, EventString,
     ParticleEffect as LatestParticleEffect, State as LatestState, StateAnimation, StateVariable,
@@ -13,17 +14,19 @@ use super::super::{
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
-use bedrock_addon_core::json::node_tree::{Group, Hit, Kind, Node, Pattern, Walk};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse_slice};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, Winner};
 use bedrock_addon_core::molang::{
     Molang, MolangFields, MolangSource, MolangVisitor, RawVersion, Step,
 };
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_document, read_each, read_keyed};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 use bedrock_addon_shared_animation::event::command_version;
-use bedrock_addon_shared_animation::read::read_particle;
-use bedrock_addon_shared_animation::walk::{RULES, TIME};
+use bedrock_addon_shared_animation::read::Written;
+use bedrock_addon_shared_animation::walk::{IDENTIFIERS, TIMES};
 
 /// A 1.8 controller file: `{"format_version", "animation_controllers"}` with the 1.8 state shape.
 #[derive(Clone, Debug, PartialEq)]
@@ -35,19 +38,23 @@ pub struct AnimationControllerFile {
 }
 
 /// One 1.8 controller.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = by_file_walk)]
 pub struct AnimationController {
     /// `initial_state`.
     pub initial_state: Option<String>,
     /// `states`, by name as written.
+    #[facet(schema::keys = IDENTIFIERS)]
     pub states: IndexMap<String, State>,
 }
 
 /// One 1.8 state.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = by_file_walk)]
 pub struct State {
     /// `parameters`: one Molang input per curve index, with the key as written (the step
     /// removes only a key spelled exactly `parameters`).
+    #[facet(schema::read_with = parameters)]
     pub parameters: Option<Parameters>,
     /// `animations`: each element `{"<animation>": [curve, …]}` (exactly one member).
     pub animations: Option<Vec<CurveSet>>,
@@ -62,7 +69,7 @@ pub struct State {
 }
 
 /// A 1.8 state's `parameters`.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Facet)]
 pub struct Parameters {
     /// The member's key as written (`parameters` in any case).
     pub key: String,
@@ -71,7 +78,7 @@ pub struct Parameters {
 }
 
 /// One element of a 1.8 state's `animations`: an animation and one remap curve per parameter.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
 pub struct CurveSet {
     /// The animation's short name, as written.
     pub animation: String,
@@ -80,7 +87,7 @@ pub struct CurveSet {
 }
 
 /// A 1.8 transition: the condition is a typed Molang node.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
 pub struct Transition {
     /// The target state.
     pub target: String,
@@ -89,7 +96,7 @@ pub struct Transition {
 }
 
 /// A 1.8 particle effect.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Facet)]
 pub struct ParticleEffect {
     /// `effect`.
     pub effect: String,
@@ -103,172 +110,96 @@ pub struct ParticleEffect {
 
 // ---- the v1_8 schema ----------------------------------------------------------------------------
 
-/// The walk of a whole 1.8 file.
-pub(crate) fn read_file(walk: &mut Walk, root: Node<'_>) -> Option<AnimationControllerFile> {
-    if root.kind() != Kind::Object {
-        walk.bad_type("object", root);
-        return None;
-    }
-    let mut version = None;
-    let mut controllers = None;
-    let groups = [
-        Group::required("format_version"),
-        Group::required("animation_controllers"),
-    ];
-    let ok = walk.object(root, &groups, |walk, group, _, node| match group {
-        0 => controller_format_version(walk, node, &V1_8_0)
-            .map(|v| version = Some(v))
-            .into(),
-        _ => read_controllers(walk, node, read_state)
-            .map(|c| controllers = Some(c))
-            .into(),
-    });
-    let file = AnimationControllerFile {
-        format_version: version?.format_version(),
-        animation_controllers: controllers?
-            .into_iter()
-            .map(|(key, (initial_state, states))| {
-                (
-                    key,
-                    AnimationController {
-                        initial_state,
-                        states,
-                    },
-                )
-            })
-            .collect(),
-    };
-    ok.then_some(file)
+/// A 1.8 controller file as its schema reads it.
+#[derive(Facet, Schema)]
+struct Document {
+    #[facet(schema::read_with = version_1_8)]
+    format_version: Written,
+    #[facet(schema::keys = CONTROLLERS)]
+    animation_controllers: IndexMap<String, AnimationController>,
 }
 
-const STATE_MEMBERS: [Group; 6] = [
-    Group::name("parameters"),
-    Group::name("animations"),
-    Group::name("transitions"),
-    Group::name("particle_effects"),
-    Group::name("on_entry"),
-    Group::name("on_exit"),
-];
-
-fn read_state(walk: &mut Walk, node: Node<'_>) -> Option<State> {
-    let mut state = State::default();
-    let ok = walk.object(node, &STATE_MEMBERS, |walk, group, key, v| match group {
-        0 => walk
-            .strings(v)
-            .map(|inputs| {
-                state.parameters = Some(Parameters {
-                    key: key.to_owned(),
-                    inputs,
-                });
-            })
-            .into(),
-        1 => read_curve_sets(walk, v)
-            .map(|x| state.animations = Some(x))
-            .into(),
-        2 => read_transitions(walk, v)
-            .map(|x| state.transitions = Some(x))
-            .into(),
-        3 => read_objects(walk, v, read_particle_1_8)
-            .map(|x| state.particle_effects = Some(x))
-            .into(),
-        4 => walk.strings(v).map(|x| state.on_entry = Some(x)).into(),
-        _ => walk.strings(v).map(|x| state.on_exit = Some(x)).into(),
-    });
-    ok.then_some(state)
+/// The 1.8 schema's `format_version` node.
+fn version_1_8(node: &Node<'_>, read: &mut Read<'_>) -> Option<Written> {
+    controller_format_version(node, read, &V1_8_0)
 }
 
-/// `animations`: object elements only, exactly one member each, whose value is an array of
-/// curve objects.
-fn read_curve_sets(walk: &mut Walk, node: Node<'_>) -> Option<Vec<CurveSet>> {
-    let mut list = Vec::new();
-    let ok = walk.array(node, |walk, _, element| {
-        if element.kind() != Kind::Object {
-            walk.bad_type("object", element);
-            return Hit::Failed;
-        }
-        if !walk.child_count(element, 1) {
-            return Hit::Failed;
-        }
-        walk.object(
-            element,
-            &[Group::pattern(Pattern::IDENTIFIER, true)],
-            |walk, _, animation, v| {
-                let mut curves = Vec::new();
-                let ok = walk.array(v, |walk, _, curve| {
-                    if curve.kind() != Kind::Object {
-                        walk.bad_type("object", curve);
-                        return Hit::Failed;
-                    }
-                    walk.float_map(curve, TIME, false)
-                        .map(|c| curves.push(c))
-                        .into()
-                });
-                if ok {
-                    list.push(CurveSet {
-                        animation: animation.to_owned(),
-                        curves,
-                    });
-                }
-                ok.into()
-            },
-        )
-        .into()
-    });
-    ok.then_some(list)
-}
+/// The Molang walk of a value the file's walk reaches by its own: nothing of its own.
+fn by_file_walk<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
 
-fn read_transitions(walk: &mut Walk, node: Node<'_>) -> Option<Vec<Transition>> {
-    let mut list = Vec::new();
-    let ok = walk.array(node, |walk, _, element| {
-        if element.kind() != Kind::Object {
-            walk.bad_type("object", element);
-            return Hit::Failed;
-        }
-        if !walk.child_count(element, 1) {
-            return Hit::Failed;
-        }
-        walk.object(
-            element,
-            &[Group::pattern(Pattern::IDENTIFIER, true)],
-            |walk, _, target, v| {
-                walk.molang(v)
-                    .map(|condition| {
-                        list.push(Transition {
-                            target: target.to_owned(),
-                            condition,
-                        });
-                    })
-                    .into()
-            },
-        )
-        .into()
-    });
-    ok.then_some(list)
-}
-
-fn read_particle_1_8(walk: &mut Walk, node: Node<'_>) -> Option<ParticleEffect> {
-    // The 1.8 `pre_effect_script` is a string node; the rest is the shared event shape.
-    let mut script = None;
-    let members = walk.members(node)?;
-    for (key, value) in &members {
-        if key.eq_ignore_ascii_case("pre_effect_script") && value.kind() != Kind::String {
-            walk.enter(key);
-            walk.bad_type("string", *value);
-            walk.leave();
-            return None;
-        }
-        if key.eq_ignore_ascii_case("pre_effect_script") {
-            script = walk.string(*value);
-        }
-    }
-    let effect: LatestParticleEffect = read_particle(walk, node)?;
-    Some(ParticleEffect {
-        effect: effect.effect,
-        locator: effect.locator,
-        pre_effect_script: script,
-        bind_to_actor: effect.bind_to_actor,
+/// The read of a whole 1.8 file.
+pub(crate) fn read_file(text: &Text<'_>, read: &mut Read<'_>) -> Option<AnimationControllerFile> {
+    let Document {
+        format_version: Written(version),
+        animation_controllers,
+    } = read_document(&Node::parsed(text, JsonPath::new()), read)?;
+    Some(AnimationControllerFile {
+        format_version: version.format_version(),
+        animation_controllers,
     })
 }
+
+/// `parameters`: strings, with the member's key as written.
+fn parameters(node: &Node<'_>, read: &mut Read<'_>) -> Option<Parameters> {
+    let inputs = read_each(node, read, String::from_json)?;
+    let key = node.path().last_key().unwrap_or_default().to_owned();
+    Some(Parameters { key, inputs })
+}
+
+/// `{"<animation>": [curve, …]}`, each curve an object of time keys.
+impl FromJson for CurveSet {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let (animation, curves) = single(node, read, |node, read| {
+            read_each(node, read, |curve, read| {
+                read_keyed(curve, read, &TIMES, f32::from_json)
+            })
+        })?;
+        Some(Self { animation, curves })
+    }
+}
+
+/// `{"<state>": <condition>}`, the condition a typed Molang node.
+impl FromJson for Transition {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let (target, condition) = single(node, read, Molang::from_json)?;
+        Some(Self { target, condition })
+    }
+}
+
+/// The shared particle event, but for `pre_effect_script`, a string node in 1.8: one of another
+/// type is told before anything else of the effect is read, and the effect is not read.
+impl FromJson for ParticleEffect {
+    const EXPECTED: Option<Expected> = Some(Expected::Object);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let members = read.object(node)?;
+        let mut script = None;
+        for (key, value) in members.iter() {
+            if !key.eq_ignore_ascii_case("pre_effect_script") {
+                continue;
+            }
+            let Some(text) = value.value().as_string() else {
+                read.wrong_accepting(&value, "string");
+                return None;
+            };
+            script = Some(text.as_str().to_owned());
+        }
+        let effect = LatestParticleEffect::from_json(node, read)?;
+        Some(Self {
+            effect: effect.effect,
+            locator: effect.locator,
+            pre_effect_script: script,
+            bind_to_actor: effect.bind_to_actor,
+        })
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(Parameters, CurveSet, Transition, ParticleEffect);
+bedrock_addon_core::impl_no_molang!(Parameters, CurveSet, Transition, ParticleEffect);
 
 // ---- the step -----------------------------------------------------------------------------------
 
@@ -529,13 +460,31 @@ impl MolangFields for AnimationControllerFile {
     }
 }
 
+/// The payload read with its spans, as the controller loader reads its text.
+fn text_of(payload: JsonSlice<'_>) -> Option<Text<'_>> {
+    parse_slice(payload, Options::winner(Winner::LastInPlace)).ok()
+}
+
+/// `read` of the payload with its findings into `d`; the value when it raised no error.
+fn read_payload<T>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+    read: impl FnOnce(&Text<'_>, &mut Read<'_>) -> Option<T>,
+) -> Option<T> {
+    let text = text_of(payload)?;
+    let mut found = Diagnostics::default();
+    let mut reader = bedrock_addon_shared_animation::walk::read(cx.load, &mut found);
+    let file = read(&text, &mut reader);
+    drop(reader);
+    let failed = found.has_errors();
+    d.extend(found);
+    file.filter(|_| !failed)
+}
+
 impl VersionStruct for AnimationControllerFile {
-    fn parse(payload: JsonSlice<'_>, _: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = Walk::new(RULES, &JsonPath::new());
-        let file = Node::of(payload).and_then(|root| read_file(&mut walk, root));
-        let failed = walk.diagnostics.has_errors();
-        d.extend(walk.diagnostics);
-        file.filter(|_| !failed)
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        read_payload(payload, cx, d, read_file)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -545,18 +494,12 @@ impl VersionStruct for AnimationControllerFile {
 
 impl VersionStruct for Latest {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut walk = Walk::new(RULES, &JsonPath::new());
-        let commands = command_version(cx.load.min_engine_version.as_ref());
         let written = bedrock_addon_core::version::SemVersion::new(
             cx.original_version.major,
             cx.original_version.minor,
             cx.original_version.patch,
         );
-        let file = Node::of(payload)
-            .and_then(|root| super::super::read::read_file(&mut walk, root, commands, &written));
-        let failed = walk.diagnostics.has_errors();
-        d.extend(walk.diagnostics);
-        let mut file = file.filter(|_| !failed)?;
+        let mut file = read_payload(payload, cx, d, super::super::read::read_file)?;
         super::super::read::set_gates(&mut file, &written);
         Some(file)
     }

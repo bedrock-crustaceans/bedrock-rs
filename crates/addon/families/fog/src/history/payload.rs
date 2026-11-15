@@ -4,12 +4,15 @@
 //! `Legacy<FogPayload, ..>`: it reads the document with its root, which refuses a member a later
 //! root adds (an unknown member fails the file), and writes it without those members.
 
+use facet::Facet;
 use facet_value::VObject;
 
 pub use crate::DistanceType;
-use crate::{Era, color_ju, float, norm_ju, object_with, read_document};
+use crate::jsonutil::{distance_type, height, identifier, no_molang, positive, scattering_g, unit};
+use crate::{color_ju, float, norm_ju, object_with, read_document};
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{LegacyPayload, ParseCx};
 
@@ -34,17 +37,6 @@ bedrock_addon_core::impl_no_molang!(FogPayload);
 /// The format that adds `volumetric.density.weather`.
 const V1_21_0: FormatVersion = FormatVersion::new(1, 21, 0);
 
-/// The root of the strict schema that reads the struct of `version`.
-fn era(version: FormatVersion) -> Era {
-    if version >= known::V1_21_90 {
-        Era::V1_21_90
-    } else if version >= V1_21_0 {
-        Era::V1_21_0
-    } else {
-        Era::V1_16_100
-    }
-}
-
 impl LegacyPayload for FogPayload {
     fn parse(
         document: JsonSlice<'_>,
@@ -52,7 +44,7 @@ impl LegacyPayload for FogPayload {
         cx: &ParseCx<'_>,
         d: &mut Diagnostics,
     ) -> Option<Self> {
-        read_document(document, era(version), &cx.at, d)
+        read_document(document, version, &cx.at, d)
     }
 
     fn write(&self, version: FormatVersion) -> Result<Value, EncodeError> {
@@ -94,15 +86,18 @@ impl LegacyPayload for FogPayload {
 }
 
 /// `description`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct Description {
     /// `identifier`: lower-cased, it must be `namespace:name` over `a`–`z`, digits, `.` and
     /// `_`; kept as written.
+    #[facet(schema::read_with = identifier)]
     pub identifier: String,
 }
 
 /// `distance`: one setting per medium.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct Distance {
     /// `air`.
     pub air: Option<FogSetting>,
@@ -119,63 +114,79 @@ pub struct Distance {
 }
 
 /// One distance setting: the four members are required.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct FogSetting {
     /// `fog_color`.
     pub fog_color: FogColorJu,
     /// `fog_start`: any number.
     pub fog_start: f32,
     /// `fog_end`: at least 0.
+    #[facet(schema::read_with = positive)]
     pub fog_end: f32,
     /// `render_distance_type`: `"fixed"` or `"render"`, in any case.
+    #[facet(schema::read_with = distance_type)]
     pub render_distance_type: DistanceType,
     /// `transition_fog`: allowed on every entry, used for water.
     pub transition_fog: Option<TransitionFog>,
 }
 
 /// `transition_fog`: every member is required.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct TransitionFog {
     /// `init_fog`.
     pub init_fog: InitFog,
     /// `min_percent`: 0 to 1.
+    #[facet(schema::read_with = unit)]
     pub min_percent: f32,
     /// `mid_seconds`: at least 0.
+    #[facet(schema::read_with = positive)]
     pub mid_seconds: f32,
     /// `mid_percent`: 0 to 1.
+    #[facet(schema::read_with = unit)]
     pub mid_percent: f32,
     /// `max_seconds`: at least 0.
+    #[facet(schema::read_with = positive)]
     pub max_seconds: f32,
 }
 
 /// `transition_fog.init_fog`: a distance setting without a transition of its own.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct InitFog {
     /// `fog_color`.
     pub fog_color: FogColorJu,
     /// `fog_start`.
     pub fog_start: f32,
     /// `fog_end`: at least 0.
+    #[facet(schema::read_with = positive)]
     pub fog_end: f32,
     /// `render_distance_type`.
+    #[facet(schema::read_with = distance_type)]
     pub render_distance_type: DistanceType,
 }
 
 /// One density setting. No rule ties `uniform` to the heights at these versions.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct DensitySetting {
     /// `max_density`: required, 0 to 1.
+    #[facet(schema::read_with = unit)]
     pub max_density: f32,
     /// `max_density_height`: −64 to 320.
+    #[facet(schema::read_with = height)]
     pub max_density_height: Option<f32>,
     /// `zero_density_height`: −64 to 320.
+    #[facet(schema::read_with = height)]
     pub zero_density_height: Option<f32>,
     /// `uniform`.
     pub uniform: Option<bool>,
 }
 
 /// `volumetric.media_coefficients`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct MediaCoefficients {
     /// `air`.
     pub air: Option<Coefficients>,
@@ -186,7 +197,8 @@ pub struct MediaCoefficients {
 }
 
 /// The coefficients of one medium: both are required.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct Coefficients {
     /// `scattering`.
     pub scattering: CoeffColorJu,
@@ -196,7 +208,8 @@ pub struct Coefficients {
 
 /// A `fog_color` of the old schema: `"#rrggbb"` (hex digits of either case) or an array of at
 /// least three integers.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
+#[repr(u8)]
 pub enum FogColorJu {
     /// `"#rrggbb"`, as written.
     Hex(String),
@@ -206,7 +219,8 @@ pub enum FogColorJu {
 }
 
 /// A coefficient colour of the old schema: `"#rrggbb"` or an array of at least three numbers.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum CoeffColorJu {
     /// `"#rrggbb"`, as written.
     Hex(String),
@@ -215,11 +229,13 @@ pub enum CoeffColorJu {
 }
 
 /// `volumetric.density`, with `weather`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct Density {
     /// `air`.
     pub air: Option<DensitySetting>,
     /// `weather`: new at 1.21.0.
+    #[facet(schema::since_format = "1.21.0")]
     pub weather: Option<DensitySetting>,
     /// `water`.
     pub water: Option<DensitySetting>,
@@ -230,18 +246,21 @@ pub struct Density {
 }
 
 /// `volumetric`, with `henyey_greenstein_g`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct Volumetric {
     /// `density`.
     pub density: Option<Density>,
     /// `media_coefficients`.
     pub media_coefficients: Option<MediaCoefficients>,
     /// `henyey_greenstein_g`: new at 1.21.90.
+    #[facet(schema::since_format = "1.21.90")]
     pub henyey_greenstein_g: Option<HenyeyGreensteinG>,
 }
 
 /// `volumetric.henyey_greenstein_g`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct HenyeyGreensteinG {
     /// `air`.
     pub air: Option<HgSetting>,
@@ -250,9 +269,11 @@ pub struct HenyeyGreensteinG {
 }
 
 /// The scattering direction of one medium.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = no_molang)]
 pub struct HgSetting {
     /// `henyey_greenstein_g`: required, −1 to 1.
+    #[facet(schema::read_with = scattering_g)]
     pub henyey_greenstein_g: f32,
 }
 

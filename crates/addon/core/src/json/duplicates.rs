@@ -31,6 +31,11 @@ pub enum Winner {
     /// Every copy stays as written, for a family rule that reads them (block rule 11,
     /// "Duplicate component … found").
     Keep,
+    /// The last copy's value stands at the first copy's place, as an `IndexMap`'s insert keeps
+    /// it: the schema node-tree readers of the animation loaders, which read an object as such a
+    /// map. Only [`json::parse`](crate::json::parse) reads by it; a text rewrite cannot move a
+    /// value, so [`blank_repeats`] leaves the copies as written.
+    LastInPlace,
 }
 
 /// `text` with every member that does not stand blanked (newlines kept), at every level:
@@ -280,7 +285,7 @@ impl<'t, 'w> Scan<'t, 'w> {
     fn blank(&mut self, object: &Object<'t>, close: usize) {
         let members = &object.members;
         match object.winner {
-            Winner::Keep => {}
+            Winner::Keep | Winner::LastInPlace => {}
             Winner::Last => {
                 // The last index of each key, in one pass: every member before its key's last
                 // is a copy to blank, to the next member's key (linear in the members).

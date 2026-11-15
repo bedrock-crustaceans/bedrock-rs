@@ -8,7 +8,7 @@ use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
 
 /// One keyframe: a value at a time of day.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, facet::Facet)]
 pub struct Keyframe<T> {
     /// The time of day: 0 is noon, 0.25 sunset, 0.5 midnight, 0.75 sunrise.
     pub time: f32,
@@ -18,7 +18,8 @@ pub struct Keyframe<T> {
 
 /// A value that may change over the day: one value, or keyframes sorted by time
 /// (JSON `{"<time>": value, …}`). The game interpolates linearly between keyframes.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[repr(u8)]
 pub enum Keyframes<T> {
     /// A single value, the same all day (JSON: the value itself).
     Single(T),

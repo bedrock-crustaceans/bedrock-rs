@@ -1,14 +1,17 @@
 //! [`TrueOnly`]: a member whose one allowed value is `true`.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields};
 use facet::Facet;
 
 /// The one value a true-only member may have: `true`. A member whose absence is false holds an
 /// `Option<TrueOnly>`, so a `false` cannot be built, and writing gives back `true` or nothing.
 ///
 /// JSON (facet's read, for a family that reads it through facet): `true`; `false` is refused
-/// ([`NotTrue`]). A family with its own reader keeps the finding it gives a `false`.
+/// ([`NotTrue`]). The derived read takes a bool, and tells a `false` as the game's schema node
+/// tells a bool outside its allowed-value set `{true}`: `"Value 'false' not allowed"`, an error.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 #[facet(opaque, proxy = bool)]
 pub struct TrueOnly;
@@ -35,6 +38,19 @@ impl From<&TrueOnly> for bool {
 impl From<TrueOnly> for bool {
     fn from(_: TrueOnly) -> Self {
         true
+    }
+}
+
+/// A bool: `true`, or `false` told as a value its allowed-value set `{true}` refuses.
+impl FromJson for TrueOnly {
+    const EXPECTED: Option<Expected> = Some(Expected::Bool);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if !bool::from_json(node, read)? {
+            read.error(node, core_codes::VALUE_NOT_ALLOWED.with(["false"]));
+            return None;
+        }
+        Some(Self)
     }
 }
 

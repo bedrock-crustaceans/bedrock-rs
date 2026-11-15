@@ -1751,3 +1751,33 @@ fn a_kept_number_beyond_a_double_is_clamped_where_the_read_says() {
         Some(f64::MAX)
     );
 }
+
+/// A reader that returns `None` and tells nothing: the contract of `FromJson::from_json` broken.
+fn silent_failure(_: &Node<'_>, _: &mut Read<'_>) -> Option<u8> {
+    None
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct SilentFailure {
+    #[facet(schema::read_with = silent_failure)]
+    level: Option<u8>,
+}
+
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "told nothing")]
+fn a_leaf_that_fails_without_telling_is_caught_under_the_tree() {
+    drop(read_as::<SilentFailure>(
+        r#"{"level": 1}"#,
+        Reading::OWN.with_null(NullHandling::AsValue),
+        Profile::TREE,
+    ));
+}
+
+#[test]
+fn a_leaf_that_fails_without_telling_is_no_one_s_business_off_the_tree() {
+    let (quiet, told) =
+        read_as::<SilentFailure>(r#"{"level": 1}"#, Reading::OWN, Profile::EVERY_FAILURE);
+    assert_eq!(quiet, None);
+    assert!(told.is_empty(), "{told:?}");
+}

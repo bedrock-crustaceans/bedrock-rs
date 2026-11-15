@@ -3,9 +3,14 @@
 use indexmap::IndexMap;
 
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
-use bedrock_addon_shared_animation::walk::atof;
+use bedrock_addon_shared_animation::read::timed;
+use bedrock_addon_shared_animation::walk::{IDENTIFIERS, atof};
+use facet::Facet;
+
+use crate::read::{channel, entity, expression3, rotation_channel};
 
 use super::{EventString, ParticleEffect, SoundEffect};
 
@@ -30,7 +35,8 @@ pub struct AnimationFile {
 /// over time.
 ///
 /// Every member is optional; the accessors give vanilla's defaults.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::animation)]
 pub struct Animation {
     /// `loop`: stop, loop or hold on the last frame when finished (JSON `true`, `false` or
     /// `"hold_on_last_frame"`); absent stops.
@@ -49,12 +55,16 @@ pub struct Animation {
     /// `animation_length`: the length in seconds; absent, the last keyframe or timeline time.
     pub animation_length: Option<f32>,
     /// `bones`: each animated bone by its name as written (vanilla lower-cases it).
+    #[facet(schema::keys = IDENTIFIERS)]
     pub bones: Option<IndexMap<String, Bone>>,
     /// `particle_effects`: particle events by their time key (`"0.5"`).
+    #[facet(schema::read_with = timed)]
     pub particle_effects: Option<IndexMap<String, OneOrMany<ParticleEffect>>>,
     /// `sound_effects`: sound events by their time key.
+    #[facet(schema::read_with = timed)]
     pub sound_effects: Option<IndexMap<String, OneOrMany<SoundEffect>>>,
     /// `timeline`: event strings by their time key (commands, entity events, Molang).
+    #[facet(schema::read_with = timed)]
     pub timeline: Option<IndexMap<String, OneOrMany<EventString>>>,
 }
 
@@ -63,8 +73,9 @@ pub struct Animation {
 pub use bedrock_addon_shared_shapes::OneOrMany;
 
 /// What an animation does when it reaches its end.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum LoopMode {
     /// Stop applying the animation (JSON `false`, and the default).
     #[default]
@@ -76,29 +87,34 @@ pub enum LoopMode {
 }
 
 /// One animated bone (`bones.<name>`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Bone {
     /// `relative_to`: what the bone's rotation is relative to.
     pub relative_to: Option<RelativeTo>,
     /// `position`: the position channel.
+    #[facet(schema::read_with = channel)]
     pub position: Option<Channel>,
     /// `rotation`: the rotation channel, in degrees.
+    #[facet(schema::read_with = rotation_channel)]
     pub rotation: Option<Channel>,
     /// `scale`: the scale channel.
+    #[facet(schema::read_with = channel)]
     pub scale: Option<Channel>,
 }
 
 /// A bone's `relative_to` object.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct RelativeTo {
     /// `rotation`: `"entity"` (any case) makes the rotation relative to the entity; absent, to the
     /// parent bone. Kept as written.
+    #[facet(schema::read_with = entity)]
     pub rotation: Option<String>,
 }
 
 /// A bone channel (`position`, `rotation`, `scale`) in one of vanilla's four shapes.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum Channel {
     /// A single value for all three axes, one keyframe at time 0 (`"scale": 0.7`).
     Uniform(Molang),
@@ -113,7 +129,8 @@ pub enum Channel {
 }
 
 /// One element of a [`Channel::AxisSequence`].
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum AxisElement {
     /// A value at its array index (0 = x, 1 = y, 2 = z).
     Positional(Molang),
@@ -122,8 +139,9 @@ pub enum AxisElement {
 }
 
 /// One keyframe of a [`Channel::Keyframes`] channel.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum Keyframe {
     /// `[x, y, z]`, used before and after the keyframe.
     Vec3([Molang; 3]),
@@ -132,19 +150,23 @@ pub enum Keyframe {
 }
 
 /// The object form of a [`Keyframe`].
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_channel)]
 pub struct KeyframeParts {
     /// `lerp_mode`: how the curve leaves this keyframe; absent linear.
     pub lerp_mode: Option<LerpMode>,
     /// `pre`: the value approaching the keyframe.
+    #[facet(schema::read_with = expression3)]
     pub pre: Option<[Molang; 3]>,
     /// `post`: the value leaving the keyframe.
+    #[facet(schema::read_with = expression3)]
     pub post: Option<[Molang; 3]>,
 }
 
 /// A keyframe's interpolation (JSON matched ignoring case).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum LerpMode {
     /// `"linear"`.
     #[default]

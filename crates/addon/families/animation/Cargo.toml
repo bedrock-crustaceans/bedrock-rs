@@ -20,6 +20,7 @@ molang = ["bedrock_addon_shared_animation/molang"]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
 bedrock_addon_shared_animation = { path = "../../shared/animation" }
+facet = { workspace = true }
 facet-value = { workspace = true }
 thiserror = { workspace = true }
 indexmap = { workspace = true }

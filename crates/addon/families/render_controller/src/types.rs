@@ -5,9 +5,13 @@ use indexmap::IndexMap;
 
 use super::fold_case;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_shared_shapes::TrueOnly;
+use facet::Facet;
+
+use crate::read::{materials, named_lists, pair, part_visibility, source, sources};
 
 /// A render controller file (`render_controllers/*.json`): `{"format_version",
 /// "render_controllers": {"controller.render.<name>": {…}}}`.
@@ -40,21 +44,27 @@ pub struct RenderControllerFile {
 ///
 /// Only `geometry` and `textures` are required. The absent members have the game's defaults,
 /// which the accessors of the same name give (`color()`, `is_hurt_color()`, …).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::controller)]
 pub struct RenderController {
     /// `geometry`: a Molang expression naming the geometry (`geometry.default`, or an
     /// `array.<name>[…]` lookup).
+    #[facet(schema::read_with = source)]
     pub geometry: MolangSource,
-    /// `textures`: one expression per texture layer, in order; never empty.
+    /// `textures`: one expression per texture layer, in order; never empty (a controller
+    /// without them is dropped, [`RenderControllerFile::dropped`]).
+    #[facet(default, schema::read_with = sources)]
     pub textures: Vec<MolangSource>,
     /// `materials`: bone pattern and material expression, in the order the game applies them:
     /// the elements in array order and, inside one element object, sorted by key. A later entry
     /// wins for a bone several patterns match. Empty when the member is absent. A JSON bool is
     /// kept as the text `true` / `false` and a JSON number as the empty text, as the game reads
     /// them.
+    #[facet(default, schema::read_with = materials)]
     pub materials: Vec<(BonePattern, MolangSource)>,
     /// `part_visibility`: bone pattern and visibility, in the same order as `materials`; a
     /// later entry wins. Empty when the member is absent.
+    #[facet(default, schema::read_with = part_visibility)]
     pub part_visibility: Vec<(BonePattern, Molang)>,
     /// `arrays`: the named arrays the expressions index.
     pub arrays: Option<RenderControllerArrays>,
@@ -80,13 +90,17 @@ pub struct RenderController {
 
 /// The `arrays` of a controller: lists of resource references by name, one map per kind. A
 /// kind written without any array fails the file, so an empty map is an absent kind.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_controller)]
 pub struct RenderControllerArrays {
     /// `geometries`: each `array.<name>` and its geometry references; no list is empty.
+    #[facet(default, schema::read_with = named_lists)]
     pub geometries: IndexMap<String, Vec<MolangSource>>,
     /// `materials`: each `array.<name>` and its material references.
+    #[facet(default, schema::read_with = named_lists)]
     pub materials: IndexMap<String, Vec<MolangSource>>,
     /// `textures`: each `array.<name>` and its texture references.
+    #[facet(default, schema::read_with = named_lists)]
     pub textures: IndexMap<String, Vec<MolangSource>>,
 }
 
@@ -95,7 +109,8 @@ pub struct RenderControllerArrays {
 ///
 /// Once the object is written, a channel it leaves out is `this` (which is 0 for a colour), not
 /// the member's default: [`Rgba::channels`] gives the four values the game uses.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_controller)]
 pub struct Rgba {
     /// `r`.
     pub r: Option<Molang>,
@@ -108,18 +123,24 @@ pub struct Rgba {
 }
 
 /// `uv_anim`: both members are required, each exactly two values (u, v).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = crate::molang::by_controller)]
 pub struct UvAnim {
     /// `offset`: added to the texture coordinates; the game's default is (0, 0).
+    #[facet(schema::read_with = pair)]
     pub offset: [Molang; 2],
     /// `scale`: multiplied into the texture coordinates; the game's default is (1, 1).
+    #[facet(schema::read_with = pair)]
     pub scale: [Molang; 2],
 }
 
 /// A bone pattern of `materials` and `part_visibility`: letters, digits, `_`, `.`, `:` and
 /// `*`, where `*` stands for any run of bone-name characters.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct BonePattern(pub String);
+
+bedrock_addon_core::impl_schema_leaf!(BonePattern);
+bedrock_addon_core::impl_no_molang!(BonePattern);
 
 /// The Molang version the game compiles its own default expressions with, whatever the pack.
 const BUILT_IN: RawVersion = RawVersion(13);

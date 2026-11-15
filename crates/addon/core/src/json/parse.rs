@@ -16,7 +16,7 @@
 //!   while parsing. `Winner::Last` leaves the member where its last copy stands, `First` where
 //!   its first stands, and `Keep` reads every copy as facet-value does (two objects merge member
 //!   by member, two arrays join, anything else is replaced by the later copy at the first
-//!   copy's place). The faults of the text are the same whatever the rule: a copy that does not
+//!   copy's place); `LastInPlace` puts the last copy's value, whole, at the first copy's place. The faults of the text are the same whatever the rule: a copy that does not
 //!   stand is still text of the file.
 //! - An integer past 64 bits is the double it spells ([`NumberKind::WideInteger`]); a token no
 //!   double holds is an infinity ([`NumberKind::BeyondDouble`]); nothing is respelt. A reader
@@ -797,6 +797,12 @@ fn put_member<'t>(
             slot.value = None;
             slot.owner = false;
             slot.live = false;
+        }
+        (Some(old), Winner::LastInPlace) => {
+            // The first copy's place takes this one's value; both are text of the tree, and
+            // a lookup by key finds the last.
+            slots[old].value = slot.value.take();
+            slot.owner = false;
         }
         (Some(old), _) => {
             let old = &mut slots[old];

@@ -107,6 +107,23 @@ impl<T: SchemaFields, const N: usize> SchemaFields for [T; N] {
     }
 }
 
+/// A pair (`[a, b]`, as its read takes it) walks its two elements as a fixed array does.
+impl<A: SchemaFields, B: SchemaFields> SchemaFields for (A, B) {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        cx.enter_index(0);
+        self.0.check_fields(cx);
+        cx.leave();
+        cx.enter_index(1);
+        self.1.check_fields(cx);
+        cx.leave();
+    }
+
+    fn trigger_members(prefix: &str, out: &mut Vec<String>) {
+        A::trigger_members(&format!("{prefix}[]"), out);
+        B::trigger_members(&format!("{prefix}[]"), out);
+    }
+}
+
 /// An identifier is a leaf: its syntax is the identifier's own read, and it holds no trigger.
 impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
     fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
