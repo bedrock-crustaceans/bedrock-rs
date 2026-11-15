@@ -175,11 +175,7 @@ pub fn located<'a>(
                     .pack
                     .as_ref()
                     .and_then(bedrock_addon_core::pack_identity::PackRef::index),
-                f.location
-                    .path
-                    .as_ref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default(),
+                f.location.path.as_ref().map_or_default(ToString::to_string),
                 f.code.to_string(),
             )
         })

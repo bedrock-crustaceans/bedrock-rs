@@ -108,11 +108,7 @@ fn wither_target_highest_damage_drops_the_deprecated_target_goal_names() {
             .is_none(),
         "dropped, not kept"
     );
-    let text = d
-        .iter()
-        .next()
-        .map(|f| f.code.to_string())
-        .unwrap_or_default();
+    let text = d.iter().next().map_or_default(|f| f.code.to_string());
     assert_eq!(text, "member \"must_see\" is deprecated");
     assert_eq!(
         write(&value),

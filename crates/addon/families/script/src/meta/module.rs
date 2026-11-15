@@ -196,8 +196,7 @@ fn mark_details(file: &mut RawModuleFile, json: &Value) {
     fn elements(value: Option<&Value>) -> Vec<&Value> {
         value
             .and_then(Value::as_array)
-            .map(|array| array.iter().collect())
-            .unwrap_or_default()
+            .map_or_default(|array| array.iter().collect())
     }
     if let Some(functions) = &mut file.functions {
         mark_functions(functions, member(json, "functions"));

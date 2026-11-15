@@ -122,9 +122,8 @@ pub fn clamp_non_finite(value: &mut Value, source: Option<JsonSlice<'_>>) -> Vec
             open[first..].reverse();
         }
     }
-    let spans: HashMap<JsonPath, Span> = source
-        .map(|source| infinite_tokens(source).into_iter().collect())
-        .unwrap_or_default();
+    let spans: HashMap<JsonPath, Span> =
+        source.map_or_default(|source| infinite_tokens(source).into_iter().collect());
     paths
         .into_iter()
         .map(|path| Clamped {

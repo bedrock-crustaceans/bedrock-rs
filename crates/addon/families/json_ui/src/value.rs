@@ -11,8 +11,7 @@ pub(crate) use bedrock_addon_core::json::jsoncpp::{member, number};
 pub(crate) fn sorted_members(value: &Value) -> Vec<(&str, &Value)> {
     let mut members: Vec<(&str, &Value)> = value
         .as_object()
-        .map(|object| object.iter().map(|(k, v)| (k.as_str(), v)).collect())
-        .unwrap_or_default();
+        .map_or_default(|object| object.iter().map(|(k, v)| (k.as_str(), v)).collect());
     members.sort_by(|a, b| a.0.cmp(b.0));
     members
 }

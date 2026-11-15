@@ -178,8 +178,7 @@ pub fn to_text(value: Option<&Value>) -> String {
     match value {
         Some(value) if value.is_string() => value
             .as_string()
-            .map(|text| text.as_str().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|text| text.as_str().to_owned()),
         Some(value) => match value.as_bool() {
             Some(true) => "true".to_owned(),
             Some(false) => "false".to_owned(),

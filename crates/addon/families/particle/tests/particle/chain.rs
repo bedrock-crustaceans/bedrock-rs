@@ -87,8 +87,7 @@ fn the_step_moves_the_29_components_by_name() {
     let names = |payload: &Value| -> Vec<String> {
         at(payload, "components")
             .and_then(Value::as_object)
-            .map(|o| o.iter().map(|(key, _)| key.as_str().to_owned()).collect())
-            .unwrap_or_default()
+            .map_or_default(|o| o.iter().map(|(key, _)| key.as_str().to_owned()).collect())
     };
     assert_eq!(names(&input).len(), 29, "the input has the 29 components");
     assert_eq!(
@@ -119,8 +118,7 @@ fn the_step_keys_the_curves_by_name() {
     let output = step(&input);
     let names: Vec<String> = at(&output, "curves")
         .and_then(Value::as_object)
-        .map(|o| o.iter().map(|(key, _)| key.as_str().to_owned()).collect())
-        .unwrap_or_default();
+        .map_or_default(|o| o.iter().map(|(key, _)| key.as_str().to_owned()).collect());
     assert_eq!(
         names,
         ["variable.fade", "variable.swell"],

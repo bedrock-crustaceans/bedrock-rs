@@ -157,8 +157,7 @@ fn after_1_26_50(payload: &mut Payload, cx: &mut UpgradeCx<'_>) {
         .as_object()
         .and_then(|description| description.get("identifier"))
         .and_then(Value::as_string)
-        .map(|name| name.as_str().to_owned())
-        .unwrap_or_default();
+        .map_or_default(|name| name.as_str().to_owned());
     let components = components(payload);
     if is_lightweight(components.get("minecraft:type_family")) {
         components.insert_absent(CAN_STAND_ON_POWDER_SNOW, VObject::new().into());

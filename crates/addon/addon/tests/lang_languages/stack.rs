@@ -61,8 +61,7 @@ fn place(diagnostic: &Diagnostic) -> (Option<usize>, String, String) {
             .location
             .path
             .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
+            .map_or_default(ToString::to_string),
         diagnostic.location.json_path.to_string(),
     )
 }
@@ -641,9 +640,7 @@ fn a_keyword_in_a_lang_file_the_pack_does_not_list_is_reported_deviation() {
 fn described_pack(n: u128, name: &str, description: Option<&str>, files: &[(&str, &str)]) -> Pack {
     let uuid = uuid::Uuid::from_u128(n);
     let module = uuid::Uuid::from_u128(n ^ (0xabcd_u128 << 64));
-    let description = description
-        .map(|text| format!(r#""description": "{text}", "#))
-        .unwrap_or_default();
+    let description = description.map_or_default(|text| format!(r#""description": "{text}", "#));
     let manifest = format!(
         r#"{{"format_version": 2, "header": {{"name": "{name}", {description}"uuid": "{uuid}", "version": [1, 0, 0], "min_engine_version": [1, 21, 0]}}, "modules": [{{"type": "resources", "uuid": "{module}", "version": [1, 0, 0]}}]}}"#
     );

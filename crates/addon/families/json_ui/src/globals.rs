@@ -168,15 +168,12 @@ impl GlobalVariables {
 
     /// The variables of a root value: its members when it is an object.
     pub(crate) fn from_value(root: &Value) -> Self {
-        let variables = root
-            .as_object()
-            .map(|object| {
-                object
-                    .iter()
-                    .map(|(name, value)| (name.as_str().to_owned(), value.clone()))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let variables = root.as_object().map_or_default(|object| {
+            object
+                .iter()
+                .map(|(name, value)| (name.as_str().to_owned(), value.clone()))
+                .collect()
+        });
         Self { variables }
     }
 }

@@ -173,8 +173,7 @@ impl Found {
                 .location
                 .path
                 .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+                .map_or_default(ToString::to_string),
             json_path: finding.location.json_path.to_string(),
             text: finding.to_string(),
             message: finding.code.to_string(),
@@ -241,8 +240,7 @@ fn folders_below(dir: &Path) -> Vec<PathBuf> {
 /// The name of a folder.
 fn name_of(path: &Path) -> String {
     path.file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_default()
+        .map_or_default(|name| name.to_string_lossy().into_owned())
 }
 
 /// The rows of the packs that opened, the open findings by folder, the folders that did not.

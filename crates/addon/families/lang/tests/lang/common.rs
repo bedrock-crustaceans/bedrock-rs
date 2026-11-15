@@ -102,8 +102,7 @@ impl Toml {
         self.tables
             .iter()
             .find(|(n, _)| n == name)
-            .map(|(_, table)| table.clone())
-            .unwrap_or_default()
+            .map_or_default(|(_, table)| table.clone())
     }
 
     /// The `[[name]]` tables, in order.

@@ -1787,12 +1787,7 @@ fn fo18_f21_the_paths_the_game_tries_for_a_missing_true_type_file() {
         .fonts()
         .diagnostics()
         .filter(|d| d.code.id() == "font/font_load_failed")
-        .map(|d| {
-            d.detail
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default()
-        })
+        .map(|d| d.detail.as_ref().map_or_default(ToString::to_string))
         .collect();
     assert_eq!(
         tried,

@@ -347,8 +347,7 @@ fn read_payload(
         .get("component_groups")
         .as_ref()
         .and_then(members_of)
-        .map(|groups| read_groups(r, &groups))
-        .unwrap_or_default();
+        .map_or_default(|groups| read_groups(r, &groups));
     let events = shell
         .events
         .unwrap_or_default()

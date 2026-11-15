@@ -25,13 +25,12 @@ fn members(payload: &Value, key: &str) -> Vec<Option<Value>> {
         .as_object()
         .and_then(|o| o.get("settings"))
         .and_then(Value::as_array)
-        .map(|entries| {
+        .map_or_default(|entries| {
             entries
                 .iter()
                 .map(|entry| entry.as_object().and_then(|o| o.get(key)).cloned())
                 .collect()
         })
-        .unwrap_or_default()
 }
 
 /// The `v1_21_100 → v1_26_40` step moves every member of every element unchanged: each element
@@ -51,8 +50,7 @@ fn the_v1_21_100_step_keeps_every_member_of_every_element() {
     let names: Vec<String> = members(&output.payload, "values")[0]
         .as_ref()
         .and_then(Value::as_object)
-        .map(|o| o.iter().map(|(k, _)| k.as_str().to_owned()).collect())
-        .unwrap_or_default();
+        .map_or_default(|o| o.iter().map(|(k, _)| k.as_str().to_owned()).collect());
     assert_eq!(names, ["banana:slider", "banana:toggle", "banana:dropdown"]);
 }
 

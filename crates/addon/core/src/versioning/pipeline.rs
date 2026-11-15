@@ -752,7 +752,7 @@ impl Run {
         let (written, as_written) = match written {
             None => match F::payload_version(object) {
                 Some(inner) => {
-                    let text = inner.version.map(|v| v.to_string()).unwrap_or_default();
+                    let text = inner.version.map_or_default(|v| v.to_string());
                     (Some(inner), EnvelopeVersion::String(text))
                 }
                 None => (None, EnvelopeVersion::Absent),

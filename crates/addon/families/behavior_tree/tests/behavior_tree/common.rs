@@ -597,8 +597,7 @@ pub fn finding_of(diagnostic: &Diagnostic) -> Finding {
             .location
             .path
             .as_ref()
-            .map(|path| path.as_str().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|path| path.as_str().to_owned()),
         path: diagnostic.location.json_path.to_string(),
         kind: diagnostic.code.id().to_owned(),
         severity: diagnostic.severity.to_string(),

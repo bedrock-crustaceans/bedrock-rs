@@ -70,8 +70,7 @@ fn loot_mcb(dir: &Path) -> usize {
 /// The pack folders directly below `dir` (those with a manifest).
 fn pack_dirs(dir: &Path) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     dirs.retain(|path| path.join("manifest.json").is_file());
     dirs.sort();
     dirs

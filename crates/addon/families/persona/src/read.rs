@@ -373,7 +373,7 @@ fn meta_file(root: &Value, read: &mut Read<'_>) -> PieceMetadata {
         return refuse(read, code, at_version);
     };
     let written = version.as_string().map_or_else(
-        || input.version.map(|v| v.to_string()).unwrap_or_default(),
+        || input.version.map_or_default(|v| v.to_string()),
         |text| text.as_str().to_owned(),
     );
     let unsupported = |written: &str| core_codes::NO_PARSER_FOR_VERSION.with([written]);

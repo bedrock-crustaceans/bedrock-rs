@@ -47,8 +47,7 @@ fn shadowed(
                 f.location
                     .pack
                     .as_ref()
-                    .map(|p| p.name().to_owned())
-                    .unwrap_or_default(),
+                    .map_or_default(|p| p.name().to_owned()),
             )
         })
         .collect()

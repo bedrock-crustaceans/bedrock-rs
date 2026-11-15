@@ -67,17 +67,10 @@ fn found(
             assert!(f.kept);
             (
                 f.code.id(),
-                f.location
-                    .path
-                    .as_ref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default(),
+                f.location.path.as_ref().map_or_default(ToString::to_string),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
-                f.detail
-                    .as_deref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default(),
+                f.detail.as_deref().map_or_default(ToString::to_string),
             )
         })
         .collect()

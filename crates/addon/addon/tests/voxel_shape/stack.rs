@@ -72,13 +72,11 @@ fn findings(stack: &PackStack<Behavior>) -> Vec<(&'static str, Severity, String,
                 f.location
                     .pack
                     .as_ref()
-                    .map(|pack| pack.name().to_owned())
-                    .unwrap_or_default(),
+                    .map_or_default(|pack| pack.name().to_owned()),
                 f.location
                     .path
                     .as_ref()
-                    .map(|path| path.as_str().to_owned())
-                    .unwrap_or_default(),
+                    .map_or_default(|path| path.as_str().to_owned()),
             )
         })
         .collect()

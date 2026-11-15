@@ -69,8 +69,7 @@ fn tags(identifiers: &[&str], tags: &[&str]) {
         let created: Vec<&str> = created
             .components
             .get::<Tags>()
-            .map(|t| t.tags.iter().map(String::as_str).collect())
-            .unwrap_or_default();
+            .map_or_default(|t| t.tags.iter().map(String::as_str).collect());
         let wanted: Vec<&str> = tags.to_vec();
         assert!(
             created.iter().filter(|t| wanted.contains(t)).count() == wanted.len(),

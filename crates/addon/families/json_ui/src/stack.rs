@@ -193,8 +193,7 @@ pub(super) fn listed(paths: &[Value]) -> Vec<String> {
 pub(super) fn read_ui_defs(written: &Value) -> Vec<String> {
     written
         .as_array()
-        .map(|paths| listed(paths.as_slice()))
-        .unwrap_or_default()
+        .map_or_default(|paths| listed(paths.as_slice()))
 }
 
 impl Placed for UiDefsList {
@@ -502,8 +501,7 @@ fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLa
             CopyContent::Json(json) => {
                 let listed_here = member(json, "ui_defs")
                     .and_then(Value::as_array)
-                    .map(|listed_here| listed(listed_here.as_slice()))
-                    .unwrap_or_default();
+                    .map_or_default(|listed_here| listed(listed_here.as_slice()));
                 for (index, path) in listed_here.into_iter().enumerate() {
                     listers.insert(path.clone(), (copy.origin.clone(), index));
                     paths.push(path);

@@ -607,8 +607,7 @@ fn identifier(payload: &Value) -> String {
         .and_then(Value::as_object)
         .and_then(|description| description.get("identifier"))
         .and_then(Value::as_string)
-        .map(|name| name.as_str().to_owned())
-        .unwrap_or_default()
+        .map_or_default(|name| name.as_str().to_owned())
 }
 
 /// The step of `S`, run in the context `load` gives.
@@ -860,8 +859,7 @@ struct Source {
 /// Every file below `at` with one of `extensions`, sorted.
 fn files_below(at: &Path, extensions: &[&str], out: &mut Vec<PathBuf>) {
     let mut entries: Vec<PathBuf> = std::fs::read_dir(at)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     entries.sort();
     for path in entries {
         if path.is_dir() {
@@ -2366,12 +2364,11 @@ fn place_key(family: &Family, name: &str, legacy: &Legacy, value: &Value, node: 
     let siblings = places::lookup(value, &node.path[..node.path.len().saturating_sub(1)])
         .and_then(Value::as_object)
         .filter(|_| !alone)
-        .map(|object| {
+        .map_or_default(|object| {
             let mut keys: Vec<&str> = object.iter().map(|(key, _)| key.as_str()).collect();
             keys.sort_unstable();
             keys.join(",")
-        })
-        .unwrap_or_default();
+        });
     let document = if LARGE.contains(&family.name) {
         ""
     } else {
@@ -2381,8 +2378,7 @@ fn place_key(family: &Family, name: &str, legacy: &Legacy, value: &Value, node: 
         .only
         .as_ref()
         .and_then(|only| places::lookup(value, only))
-        .map(|given| format!(" given {}", kind_name(given)))
-        .unwrap_or_default();
+        .map_or_default(|given| format!(" given {}", kind_name(given)));
     format!(
         "{name} {} {} [{siblings}]{only} {document}",
         legacy.version,
@@ -2436,8 +2432,7 @@ fn read_unchanged(
                 legacy
                     .only
                     .as_ref()
-                    .map(|only| only.join("/"))
-                    .unwrap_or_default(),
+                    .map_or_default(|only| only.join("/")),
                 outcome.written.err().unwrap_or_default(),
                 legacy.from
             ));
@@ -2482,7 +2477,7 @@ fn note_unstable(
             "{} | {} | {} | (as it is) | not-reread | the written text is not what its own reading writes: {} | in {} ({name})",
             family.name,
             legacy.version,
-            legacy.only.as_ref().map(|only| only.join("/")).unwrap_or_default(),
+            legacy.only.as_ref().map_or_default(|only| only.join("/")),
             base.written.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(300).collect::<String>(),
             legacy.from
         ));

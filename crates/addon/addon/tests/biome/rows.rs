@@ -281,8 +281,7 @@ pub fn tags(document: &Biome) -> Vec<String> {
     document
         .components
         .get::<Tags>()
-        .map(|t| t.tags.clone())
-        .unwrap_or_default()
+        .map_or_default(|t| t.tags.clone())
 }
 
 /// `b07_1_21_110_tag_appends`: the 1.26.0 step appends the tags vanilla moved into data,

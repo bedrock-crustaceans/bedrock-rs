@@ -35,14 +35,12 @@ fn told(finding: &Diagnostic) -> Told {
             .location
             .pack
             .as_ref()
-            .map(|pack| pack.name().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|pack| pack.name().to_owned()),
         finding
             .location
             .path
             .as_ref()
-            .map(|path| path.as_str().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|path| path.as_str().to_owned()),
         finding.location.json_path.to_string(),
         kind,
         id,

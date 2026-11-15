@@ -14,9 +14,8 @@ pub const ORDINARY_PACK: Uuid = Uuid::from_u128(0x0000_0000_0000_4000_8000_0000_
 
 /// A format-2 manifest with one module of `module` type.
 pub fn manifest(uuid: Uuid, module: &str, min_engine: Option<&str>) -> String {
-    let min_engine = min_engine
-        .map(|version| format!(r#", "min_engine_version": {version}"#))
-        .unwrap_or_default();
+    let min_engine =
+        min_engine.map_or_default(|version| format!(r#", "min_engine_version": {version}"#));
     format!(
         r#"{{
   "format_version": 2,
@@ -50,8 +49,7 @@ pub fn line(found: &Diagnostic) -> String {
         .location
         .path
         .as_ref()
-        .map(|path| path.as_str().to_owned())
-        .unwrap_or_default();
+        .map_or_default(|path| path.as_str().to_owned());
     format!(
         "{severity} {} {file} {}",
         code_name(found),

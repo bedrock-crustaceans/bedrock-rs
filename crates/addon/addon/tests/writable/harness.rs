@@ -1105,8 +1105,7 @@ fn files_below(at: &Path, out: &mut Vec<PathBuf>) {
         return;
     }
     let mut entries: Vec<PathBuf> = std::fs::read_dir(at)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     entries.sort();
     for path in entries {
         if path.is_dir() {

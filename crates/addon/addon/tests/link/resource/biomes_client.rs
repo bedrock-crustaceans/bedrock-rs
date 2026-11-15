@@ -68,14 +68,12 @@ fn told(finding: &Diagnostic) -> Told {
             .location
             .pack
             .as_ref()
-            .map(|pack| pack.name().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|pack| pack.name().to_owned()),
         finding
             .location
             .path
             .as_ref()
-            .map(|path| path.as_str().to_owned())
-            .unwrap_or_default(),
+            .map_or_default(|path| path.as_str().to_owned()),
         finding.location.json_path.to_string(),
         kind,
         id,
@@ -292,11 +290,7 @@ fn shadows(found: &Diagnostics) -> Vec<(String, String, String, Severity, String
         .filter(|finding| finding.code.id() == "core/client_biome_shadows_lower_packs")
         .map(|finding| {
             let told = told(finding);
-            let detail = finding
-                .detail
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default();
+            let detail = finding.detail.as_ref().map_or_default(ToString::to_string);
             assert_eq!(finding.phase, Phase::Link);
             (told.3, told.4, told.5, told.1, detail)
         })

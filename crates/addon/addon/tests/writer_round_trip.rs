@@ -236,14 +236,11 @@ pub fn carry<T: Content + Debug + PartialEq>(file: &Carry<'_>, writer: &mut Pack
             let put = writer
                 .put_reporting(file.path.clone(), &document)
                 .map_err(|error| format!("{error:?}"));
-            let orphans = put
-                .as_ref()
-                .map(|told| {
-                    told.iter()
-                        .map(|finding| finding.location.json_path.to_string())
-                        .collect()
-                })
-                .unwrap_or_default();
+            let orphans = put.as_ref().map_or_default(|told| {
+                told.iter()
+                    .map(|finding| finding.location.json_path.to_string())
+                    .collect()
+            });
             let put = put.map(drop);
             Outcome::Loaded {
                 debug: format!("{:?} {:?}", document.value(), document.unknown()),
@@ -546,11 +543,7 @@ fn load(behavior: Pack, resource: Pack, options: &LoadOptions) -> Loaded {
             (
                 f.code.id().to_owned(),
                 format!("{:?}", f.severity),
-                f.location
-                    .path
-                    .as_ref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default(),
+                f.location.path.as_ref().map_or_default(ToString::to_string),
                 f.location.json_path.to_string(),
             )
         })
