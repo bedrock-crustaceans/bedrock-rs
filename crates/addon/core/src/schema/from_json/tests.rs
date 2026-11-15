@@ -9,7 +9,7 @@ use crate::document::Extra;
 use crate::json::kit::{Node, Profile, Read, Recovery, Texts};
 use crate::json::{JsonSlice, Value, from_str_jsonc};
 use crate::schema::{self, Schema};
-use crate::versioning::{MemberFailure, NullHandling, Reading, Scalars};
+use crate::versioning::{MemberFailure, NullHandling, RangeMembers, Reading, Scalars};
 
 /// Reads `text` as `T` at `root` under `reading` by `profile`: the value and each finding as
 /// `severity path code`.
@@ -1273,10 +1273,7 @@ fn read_root<T: FromJson>(
     let json: Value = from_str_jsonc(text).expect("JSON");
     let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
     let mut found = Diagnostics::default();
-    let mut read = Read::new(reading, &mut found)
-        .profile(profile)
-        .texts(texts)
-        .range_members();
+    let mut read = Read::new(reading, &mut found).profile(profile).texts(texts);
     let value = crate::schema::read_document::<T>(&node, &mut read);
     let told = found
         .iter()
@@ -1415,7 +1412,7 @@ struct Spread {
 fn a_read_that_asks_tells_the_members_a_range_does_not_read() {
     let (spread, told) = read_root::<Spread>(
         r#"{"width": {"min": 1, "a": 2}, "depth": [1, 2, 3]}"#,
-        Reading::NULL_ABSENT,
+        Reading::NULL_ABSENT.with_range_members(RangeMembers::Unrecognized),
         Profile::FIRST_FAILURE,
         Texts::CODES,
     );
@@ -1434,4 +1431,53 @@ fn a_read_that_asks_tells_the_members_a_range_does_not_read() {
         Profile::FIRST_FAILURE,
     );
     assert!(told.is_empty(), "{told:?}");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+struct Chance {
+    percent: crate::shared::IntRange,
+}
+
+#[test]
+fn a_range_tells_the_members_it_does_not_read_when_the_reading_says_so() {
+    let text = r#"{"percent": {"min": 1, "max": 5, "zz": 3, "yy": 4}, "other": 1}"#;
+    let told = |reading: Reading| {
+        let (value, told) = read_as::<Chance>(text, reading, Profile::FIRST_FAILURE);
+        assert!(value.is_some());
+        told
+    };
+    assert_eq!(
+        told(Reading::NULL_ABSENT),
+        ["Warning root/other core/unrecognized_field"],
+        "silent by default"
+    );
+    // After the unknown members of the pass before, in file order; at the unknown severity.
+    assert_eq!(
+        told(Reading::NULL_ABSENT.with_range_members(RangeMembers::NotKept)),
+        [
+            "Warning root/other core/unrecognized_field",
+            "Warning root/percent/zz core/member_not_kept",
+            "Warning root/percent/yy core/member_not_kept"
+        ]
+    );
+    assert_eq!(
+        told(Reading::DOCUMENT.with_range_members(RangeMembers::NotKept))[1],
+        "Error root/percent/zz core/member_not_kept"
+    );
+    // A range of the array form has no member to tell, and the ends of the other spelling are
+    // no unread member.
+    let (_, told) = read_as::<Chance>(
+        r#"{"percent": {"range_min": 1, "range_max": 2, "min": 9}}"#,
+        Reading::DOCUMENT.with_range_members(RangeMembers::NotKept),
+        Profile::FIRST_FAILURE,
+    );
+    assert_eq!(told, ["Error root/percent/min core/member_not_kept"]);
+    // The elements of the list form past its two ends are told the same way.
+    let (_, told) = read_as::<Spread>(
+        r#"{"depth": [1, 2, 3]}"#,
+        Reading::NULL_ABSENT.with_range_members(RangeMembers::NotKept),
+        Profile::FIRST_FAILURE,
+    );
+    assert_eq!(told, ["Warning root/depth/2 core/member_not_kept"]);
 }

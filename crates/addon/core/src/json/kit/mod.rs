@@ -81,7 +81,7 @@ use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{
     Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Span,
 };
-use crate::versioning::{NullHandling, Reading, Scalars};
+use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 
 // hidden: API not yet reviewed
 #[doc(hidden)]
@@ -952,9 +952,6 @@ pub struct Read<'d> {
     /// The member or element of the root the last failure told was in, under
     /// [`Recovery::TopLevel`].
     told_unit: Option<JsonPath>,
-    /// The members of a range's object form that it does not read are told
-    /// ([`range_members`](Self::range_members)).
-    range_members: bool,
 }
 
 impl<'d> Read<'d> {
@@ -981,7 +978,6 @@ impl<'d> Read<'d> {
             load: None,
             root: 0,
             told_unit: None,
-            range_members: false,
         }
     }
 
@@ -1075,7 +1071,6 @@ impl<'d> Read<'d> {
             load: self.load,
             root: self.root,
             told_unit: self.told_unit.clone(),
-            range_members: self.range_members,
         }
     }
 
@@ -1268,21 +1263,6 @@ impl<'d> Read<'d> {
     // the derived reads' protocol
     pub(crate) fn keepable(&self) -> bool {
         self.unkeepable == 0
-    }
-
-    /// The read telling the members of a range's object form that the range does not read
-    /// (`{"min": 1, "a": 2}`), and the elements of a list form past its two ends, each as an
-    /// unknown member of its struct's word `report` (told, not kept): a family whose game
-    /// reader tells them.
-    #[must_use]
-    pub fn range_members(mut self) -> Self {
-        self.range_members = true;
-        self
-    }
-
-    /// Whether the read tells the members a range does not read ([`range_members`](Self::range_members)).
-    pub fn tells_range_members(&self) -> bool {
-        self.range_members
     }
 
     /// Marks `node` as the root of the read: [`Recovery::TopLevel`]'s members and elements
@@ -2008,6 +1988,28 @@ impl<'d> Read<'d> {
             .at(node.path.clone());
         finding.location.span = node.span();
         self.defer(Pass::Unknown, finding);
+    }
+
+    /// Tells the member `node` of a range's object form, or its element past the two ends, that
+    /// the range does not read, as [`Reading::range_members`] says: an unknown member of the
+    /// word `report` (told, not kept), or a [`MEMBER_NOT_KEPT`](core_codes::MEMBER_NOT_KEPT) at
+    /// the unknown severity in the last pass ([`Pass::Misread`]), spanning its value.
+    pub(crate) fn unread_range_member(&mut self, node: &Node<'_>) {
+        match self.reading.range_members {
+            RangeMembers::Silent => {}
+            RangeMembers::Unrecognized => {
+                self.unknown_by_rule(node, crate::schema::UnknownRule::Report);
+            }
+            RangeMembers::NotKept => {
+                let code =
+                    Disposition::Report.code(self.texts, node.path.last_key().unwrap_or_default());
+                let mut finding = Diagnostic::of(code)
+                    .severity(self.unknown_severity)
+                    .at(node.path.clone());
+                finding.location.span = node.span();
+                self.defer(Pass::Misread, finding);
+            }
+        }
     }
 
     /// The bool `node` holds; a [wrong type](Self::wrong_type) for any other value.

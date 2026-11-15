@@ -122,38 +122,9 @@ where
     T: crate::schema::FromJson + for<'a> Facet<'a> + Into<C>,
     C: crate::schema::ShorthandRows,
 {
-    use crate::json::kit::{Node, Profile, Read, Versions};
+    use crate::json::kit::Node;
     let _ = mode;
-    let Ok(parsed) = crate::json::parse::parse_slice(slice, crate::json::parse::Options::default())
-    else {
-        // Not reached for a component the payload's parse has read; the door words it.
-        if let Err(error) = crate::json::parse_at::<Value>(slice) {
-            d.push(super::payload::slice_error(
-                &error,
-                &JsonPath::new(),
-                slice,
-                Severity::Error,
-            ));
-        }
-        return None;
-    };
-    let versions = Versions {
-        format: cx.document_format,
-        engine: Some(
-            cx.min_engine_version
-                .as_ref()
-                .map_or(FormatVersion::new(0, 0, 0), |engine| {
-                    engine.version.format_version()
-                }),
-        ),
-    };
-    let reader = |d| {
-        Read::new(cx.reading, d)
-            .unknown_severity(cx.grade(Class::Unknown))
-            .profile(Profile::FIRST_FAILURE)
-            .load(cx)
-            .versions(versions)
-    };
+    let parsed = parsed_or_told(slice, d)?;
     let shorthand = shorthand_member::<T, C>(slice);
     if let Some(finding) = door_syntax::<T>(&parsed.value, shorthand, cx, span_of(slice)) {
         d.push(finding);
@@ -167,7 +138,7 @@ where
         let wrapped = Value::from(object);
         let mut found = Diagnostics::default();
         let value = {
-            let mut read = reader(&mut found);
+            let mut read = door_read(cx, &mut found);
             crate::schema::read_document::<T>(&Node::new(&wrapped, JsonPath::new()), &mut read)
         };
         let kept = found.take_unknown();
@@ -180,8 +151,67 @@ where
         return value.map(Into::into);
     }
     let node = Node::parsed(&parsed, JsonPath::new());
-    let mut read = reader(d);
+    let mut read = door_read(cx, d);
     crate::schema::read_document::<T>(&node, &mut read).map(Into::into)
+}
+
+/// Reads one value `T` from `slice` on the new reader, as [`read_component`] reads a component
+/// that has no shorthand: under the context's reading by the typed door's profile
+/// ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)), every finding
+/// relative to the value and spanning it, the unknown members it keeps in `d`'s table, relative
+/// to it. For a family's row that reads a form of its own beside the typed one (a bare key
+/// where the object form is typed): the bare scalar is a `T` read here.
+pub fn read_slice<T: crate::schema::FromJson>(
+    slice: JsonSlice<'_>,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    use crate::json::kit::Node;
+    let parsed = parsed_or_told(slice, d)?;
+    let node = Node::parsed(&parsed, JsonPath::new());
+    let mut read = door_read(cx, d);
+    crate::schema::read_document::<T>(&node, &mut read)
+}
+
+/// The text of `slice` parsed with its spans; one that does not parse is told as the door tells
+/// it (not reached for a component the payload's parse has read).
+fn parsed_or_told<'t>(
+    slice: JsonSlice<'t>,
+    d: &mut Diagnostics,
+) -> Option<crate::json::parse::Parsed<'t>> {
+    let parsed = crate::json::parse::parse_slice(slice, crate::json::parse::Options::default());
+    if parsed.is_err()
+        && let Err(error) = crate::json::parse_at::<Value>(slice)
+    {
+        d.push(super::payload::slice_error(
+            &error,
+            &JsonPath::new(),
+            slice,
+            Severity::Error,
+        ));
+    }
+    parsed.ok()
+}
+
+/// The read of a component or a bare value of the context: its reading, the typed door's
+/// profile, the unknown severity of the slice, the document's format and the pack's engine.
+fn door_read<'d>(cx: &'d LoadContext, d: &'d mut Diagnostics) -> crate::json::kit::Read<'d> {
+    use crate::json::kit::{Profile, Read, Versions};
+    let versions = Versions {
+        format: cx.document_format,
+        engine: Some(
+            cx.min_engine_version
+                .as_ref()
+                .map_or(FormatVersion::new(0, 0, 0), |engine| {
+                    engine.version.format_version()
+                }),
+        ),
+    };
+    Read::new(cx.reading, d)
+        .unknown_severity(cx.grade(Class::Unknown))
+        .profile(Profile::FIRST_FAILURE)
+        .load(cx)
+        .versions(versions)
 }
 
 /// The finding of a component whose JSON is of another kind than its type's root, told as the

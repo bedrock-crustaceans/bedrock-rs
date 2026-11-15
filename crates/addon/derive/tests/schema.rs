@@ -197,6 +197,37 @@ fn a_struct_marked_trigger_is_its_own_trigger_member_before_its_fields() {
     assert_eq!(out, ["minecraft:on_hurt", "minecraft:on_hurt.on_x"]);
 }
 
+/// A text and a range with fallbacks: their getters lend the text and resolve the ends.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Sounded {
+    #[facet(schema::fallback = "attack.strong")]
+    pub sound: Option<String>,
+    #[facet(schema::fallback = (2.0, 6.0))]
+    pub cooldown: Option<bedrock_addon_core::shared::FloatRange>,
+}
+
+#[test]
+fn a_text_fallback_lends_the_text_and_a_pair_resolves_a_range() {
+    use bedrock_addon_core::shared::{FloatRange, RangeForm};
+    let none = Sounded::default();
+    assert_eq!(
+        (none.sound(), none.cooldown()),
+        ("attack.strong", (2.0, 6.0))
+    );
+    let mut half = FloatRange::new(1.0, 0.0, RangeForm::MinMax);
+    half.missing_max = true;
+    let written = Sounded {
+        sound: Some("mob.cow.say".to_owned()),
+        cooldown: Some(half),
+    };
+    assert_eq!(written.sound(), "mob.cow.say");
+    assert_eq!(
+        written.cooldown(),
+        (1.0, 6.0),
+        "a missing end is the fallback's"
+    );
+}
+
 #[test]
 fn a_struct_with_no_required_field_gets_default_and_getters_answer_the_fallback() {
     let door = BreakDoor::default();
@@ -509,6 +540,39 @@ fn molang_and_molang_with_override_the_default_walk() {
             ("boss/cond".to_owned(), MolangFieldSpec::DEFAULT.admission),
         ]
     );
+}
+
+/// The walk of [`Walked`]: its own, in place of the walk over its fields.
+fn walk_walked(walked: &mut Walked, visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {
+    if let Some(held) = &mut walked.held {
+        visitor.field("held", &TAGS, held);
+    }
+}
+
+/// A struct whose Molang walk is its own (`schema::molang_with` on the struct).
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = walk_walked)]
+pub struct Walked {
+    pub tagged: Option<Molang>,
+    pub held: Option<Molang>,
+}
+
+#[test]
+fn a_struct_s_own_molang_walk_replaces_the_walk_over_its_fields() {
+    let mut walked = Walked {
+        tagged: Some(Molang::Const(1.0)),
+        held: Some(Molang::Const(2.0)),
+    };
+    let mut seen = Vec::new();
+    visit_fields_under(
+        &mut walked,
+        &JsonPath::new(),
+        &MolangFieldSpec::DEFAULT,
+        |field| {
+            seen.push((field.path.to_string(), field.spec.admission));
+        },
+    );
+    assert_eq!(seen, [("held".to_owned(), TAGS.admission)]);
 }
 
 #[test]

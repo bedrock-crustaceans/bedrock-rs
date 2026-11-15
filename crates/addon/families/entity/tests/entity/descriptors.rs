@@ -291,8 +291,7 @@ fn one_descriptor_or_a_list_is_written_in_the_form_read() {
 
 /// An unknown control flag fails a strict read in both, but not with the same finding: the
 /// goal's flag is a closed name set that tells `InvalidType` at the element; the component's
-/// is a plain enum whose refusal is `InvalidEnumValue` at the list, or at the element before
-/// the bad one.
+/// is a plain enum whose refusal is `InvalidEnumValue`, at the element too.
 #[test]
 fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
     let (value, d) = breed(r#"{"control_flags": ["fly"]}"#, ConvertMode::Strict);
@@ -323,7 +322,7 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
         [finding(
             "core/invalid_enum_value",
             Severity::Error,
-            "control_flags"
+            "control_flags/0"
         )]
     );
     let (value, d) = wither(r#"{"control_flags": ["move", "fly"]}"#, ConvertMode::Strict);
@@ -333,7 +332,7 @@ fn an_unknown_control_flag_is_told_differently_by_a_goal_and_the_component() {
         [finding(
             "core/invalid_enum_value",
             Severity::Error,
-            "control_flags/0"
+            "control_flags/1"
         )]
     );
 }

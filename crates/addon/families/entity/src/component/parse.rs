@@ -1,21 +1,25 @@
 //! The typed read of one entity component: the `parse` of every typed row of
 //! [`EntityComponent`]'s table.
 //!
-//! A document at or above a component's typed version is read strictly: a member of the wrong
-//! type or outside its range is an error and the component is dropped. A component converted
-//! from an older document's JSON (`ConvertMode::Lenient`, the lenient conversion) keeps going: a
-//! bad member is a warning and takes its default, and only a value that is not an object drops
-//! the component. Unknown members are kept among the document's unknown members, by the path
-//! of their level, with an `UnrecognizedField` warning in both modes.
+//! Both reads are the reader's (`FromJson`, member by member). A document at or above a
+//! component's typed version is read strictly: the first member of the wrong type is an error
+//! and the component is dropped, as the typed door read it; a value outside its range is an
+//! error of the component's check. A component converted from an older document's JSON
+//! (`ConvertMode::Lenient`, the lenient conversion) keeps going: a bad member is an information
+//! and takes its default ([`Recovery`]), and only a value that is not an object drops the
+//! component. Unknown members are kept among the document's unknown members, by the path of
+//! their level, with an `UnrecognizedField` at the slice's grade in both modes.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Class, Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Told,
 };
-use bedrock_addon_core::json::{JsonSlice, NullRule, Value, to_json};
+use bedrock_addon_core::json::kit::{Node, Passes, Profile, Read, Recovery, Texts};
+use bedrock_addon_core::json::parse::{Options, Parsed, parse_slice};
+use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::{Schema, SchemaCx};
-use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
+use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx, read_document};
+use bedrock_addon_core::versioning::{ConvertMode, MemberFailure, RangeMembers};
 use facet::Facet;
 use facet_value::VObject;
 
@@ -23,7 +27,7 @@ use super::EntityComponent;
 
 /// A typed entity component: its JSON fix-ups before the typed read and its rule checks after
 /// it. Both default to nothing.
-pub(crate) trait Typed: for<'a> Facet<'a> {
+pub(crate) trait Typed: for<'a> Facet<'a> + FromJson {
     /// The object a value that is not an object stands for, if the reader accepts that form
     /// (vanilla's legacy parsers take some scalars as "all defaults"); `None` rejects it.
     fn shorthand(_json: &Value, _mode: ConvertMode) -> Option<VObject> {
@@ -40,12 +44,12 @@ pub(crate) trait Typed: for<'a> Facet<'a> {
     /// findings), reported through `cx`.
     fn check(&mut self, _cx: &mut ComponentCheck<'_>) {}
 
-    /// Whether the lenient conversion keeps a member, or a list element, whose nested member
-    /// it cannot read, that nested member taken out (so it takes its default) and told
-    /// (`InvalidValue` warning where it fails): the legacy readers of the components 1.26.60
-    /// types first read member by member, at every level. Otherwise the member or the
-    /// element goes whole.
-    const KEEP_NESTED: bool = false;
+    /// What the lenient conversion gives up of a value that does not read, as the component's
+    /// legacy reader does: the member of the component, or the element of its list, whole
+    /// ([`Recovery::TopLevel`]), or, for the legacy readers of the components 1.26.60 types
+    /// first, which read member by member at every level, the innermost value
+    /// ([`Recovery::Value`]).
+    const RECOVERY: Recovery = Recovery::TopLevel;
 }
 
 /// Where a component's rule checks report: the mode decides what a broken rule does.
@@ -377,17 +381,19 @@ fn read_shaped<T: Typed>(
     d: &mut Diagnostics,
     before: impl FnOnce(&mut VObject, &mut ComponentCheck<'_>) -> bool,
 ) -> Option<T> {
-    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok();
-    not_null(json.as_ref(), d)?;
-    let shorthand = json
-        .as_ref()
-        .filter(|json| !json.is_object())
-        .and_then(|json| T::shorthand(json, mode));
-    let as_written = shorthand.is_none();
+    let Ok(mut parsed) = parse_slice(slice, Options::default()) else {
+        // Not reached: the payload's parse has read the component's text.
+        d.push(Diagnostic::of(&core_codes::INVALID_VALUE));
+        return None;
+    };
+    not_null(Some(&parsed.value), d)?;
+    let shorthand = (!parsed.value.is_object())
+        .then(|| T::shorthand(&parsed.value, mode))
+        .flatten();
     if shorthand.is_some()
-        && json
-            .as_ref()
-            .and_then(Value::as_string)
+        && parsed
+            .value
+            .as_string()
             .is_some_and(|text| !text.as_str().is_empty())
     {
         // The legacy parser reads any string as the component of defaults; vanilla's own
@@ -395,8 +401,8 @@ fn read_shaped<T: Typed>(
         // (an information: the game does it without a word).
         d.push(Diagnostic::of(&core_codes::INVALID_TYPE).severity(Severity::Info));
     }
-    let Some(object) = shorthand.or_else(|| json.as_ref().and_then(Value::as_object).cloned())
-    else {
+    let shorthand_read = shorthand.is_some();
+    let Some(object) = shorthand.or_else(|| parsed.value.as_object().cloned()) else {
         if matches!(mode, ConvertMode::Lenient) {
             // a value that is not an object is dropped with `InvalidValue`, an information of the
             // crate's own (the game writes no content-log line for this): the legacy readers take
@@ -405,13 +411,8 @@ fn read_shaped<T: Typed>(
             d.push(Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info));
             return None;
         }
-        // Not an object (the typed read, strict): the typed read names the problem (a syntax
-        // error, a wrong type).
-        match crate::typed::read::<T>(slice, None) {
-            Err(error) => d.push(crate::typed::finding(&error, Some(slice), Severity::Error)),
-            Ok(_) => d.push(Diagnostic::of(&core_codes::INVALID_TYPE)),
-        }
-        return None;
+        // Not an object (the typed read, strict): the reader names the problem.
+        return read_value::<T>(&parsed, true, mode, cx, d).and(None);
     };
     // The game reads an entity through JsonCpp: a member written as `null` is absent and
     // keeps its default, at every version (a `null` is an absent member).
@@ -425,68 +426,97 @@ fn read_shaped<T: Typed>(
     // A fix-up may have given a member its shape (a single object wrapped into a list): the
     // `null` members it now reaches are absent too, and marked (a path through the
     // wrapped element `0` is placed at the member as written by `read_prepared`).
-    let changed = if older || changed {
-        let (prepared, any) = without_null_members::<T>(object, d);
+    if older || changed {
+        let (prepared, _) = without_null_members::<T>(object, d);
         object = prepared;
-        changed || any
-    } else {
-        changed
-    };
-    // The lenient conversion reads the JSON as vanilla writes it back (the int/real tag lost).
-    let changed = changed || !as_written || matches!(mode, ConvertMode::Lenient);
-    let text = if changed {
-        written::<T>(&object, mode, d)?
-    } else {
-        slice.text.to_owned()
-    };
-    // Spans hold only for the text as written.
-    let at = JsonSlice {
-        text: &text,
-        offset: slice.offset,
-    };
-    let mut value = match (crate::typed::read::<T>(at, Some(NullRule::Absent)), mode) {
-        (Ok(value), _) => value,
-        (Err(error), ConvertMode::Strict) => {
-            d.push(crate::typed::finding(
-                &error,
-                (!changed).then_some(at),
-                Severity::Error,
-            ));
-            return None;
-        }
-        (Err(_), ConvertMode::Lenient) => super::lenient::isolate::<T>(&mut object, d)?,
-    };
-    let source = Value::from(object);
-    let mut kept = bedrock_addon_core::document::Unknown::new();
-    let (unknown, misread) = crate::read::keep_unknown(&value, &source, &mut kept);
-    // Below the component (its caller places them).
-    d.unknown_mut().absorb(&JsonPath::new(), kept);
-    for (path, _) in unknown {
-        // The game logs an unknown member at level 2 (a warning) for the legacy slice; the
-        // strict slice from 1.21.89 makes it an error: the slice's grade.
-        d.push(
-            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                .severity(cx.grade(Class::Unknown))
-                .at(path.clone()),
-        );
     }
-    // A value of another JSON type: the typed read fails it and the entity is
-    // refused; the legacy readers' `as*`
-    // convert it in silence, the crate's own.
-    let misread_severity = match mode {
-        ConvertMode::Strict => Severity::Error,
-        ConvertMode::Lenient => Severity::Info,
-    };
-    for path in misread {
-        d.push(
-            Diagnostic::of(&core_codes::INVALID_TYPE)
-                .at(path.clone())
-                .severity(misread_severity),
-        );
+    let mut value = Value::from(object);
+    let lenient = matches!(mode, ConvertMode::Lenient);
+    if lenient {
+        // The lenient conversion reads the JSON as vanilla writes it back (the int/real tag
+        // lost).
+        written_back(&mut value);
     }
+    // What the fix-ups or the conversion rewrote is no text of the file: read without one.
+    let as_written = !(older || changed || lenient || shorthand_read);
+    parsed.value = value;
+    let mut value = read_value::<T>(&parsed, as_written, mode, cx, d)?;
     let mut check = ComponentCheck::new(mode, cx, d);
     value.check(&mut check);
     (!check.failed).then_some(value)
+}
+
+/// Reads `T` from `parsed` (the component as the fix-ups left it, its text when `as_written`,
+/// so every finding carries its span): strictly, the first failure
+/// an error that drops it, as the typed door read; in the lenient conversion every member that
+/// does not read takes its default and is told. Its unknown members are kept and told, at the
+/// grade of the slice the document is read under.
+fn read_value<T: Typed>(
+    parsed: &Parsed<'_>,
+    as_written: bool,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    let (failure, profile) = match mode {
+        ConvertMode::Strict => (MemberFailure::Refuse, Profile::FIRST_FAILURE),
+        // What does not read takes its default, told as the crate's own information.
+        ConvertMode::Lenient => (
+            MemberFailure::DefaultAndTell,
+            Profile::EVERY_FAILURE
+                .with_passes(Passes::AfterRead)
+                .with_recovery(T::RECOVERY),
+        ),
+    };
+    // The entity's scalar and null rules at every slice, whatever the context says
+    // ([`READING`](crate::READING)); its unknown members at the slice's grade.
+    let reading = crate::READING
+        .with_on_member_failure(failure)
+        .with_range_members(RangeMembers::Unrecognized);
+    let mut read = Read::new(reading, d)
+        .unknown_severity(cx.grade(Class::Unknown))
+        .profile(profile)
+        .texts(LENIENT_TEXTS)
+        .load(cx);
+    let node = if as_written {
+        Node::parsed(parsed, JsonPath::new())
+    } else {
+        Node::new(&parsed.value, JsonPath::new())
+    };
+    read_document::<T>(&node, &mut read)
+}
+
+/// The words of the lenient conversion: a value it gives up is the crate's own
+/// `InvalidValue` (the game writes no content-log line for it).
+const LENIENT_TEXTS: Texts = Texts {
+    defaulted: Some(&core_codes::INVALID_VALUE),
+    ..Texts::CODES
+};
+
+/// `value` as vanilla writes a `Dynamic` value back: an integral real (other than a negative
+/// zero, which keeps its sign) becomes an integer.
+pub(crate) fn written_back(value: &mut Value) {
+    if let Some(object) = value.as_object_mut() {
+        for (_, member) in object.iter_mut() {
+            written_back(member);
+        }
+    } else if let Some(array) = value.as_array_mut() {
+        for element in array.iter_mut() {
+            written_back(element);
+        }
+    } else if let Some(number) = value.as_number()
+        && !number.is_integer()
+    {
+        let real = number.to_f64_lossy();
+        #[allow(clippy::cast_possible_truncation, reason = "an integral real in range")]
+        if real.fract() == 0.0
+            && real.is_finite()
+            && !(real == 0.0 && real.is_sign_negative())
+            && real.abs() < 9.0e15
+        {
+            *value = Value::from(real as i64);
+        }
+    }
 }
 
 /// `None` when the component's value is `null`, which the game reads as an absent component: the
@@ -500,99 +530,53 @@ fn not_null(json: Option<&Value>, d: &mut Diagnostics) -> Option<()> {
     Some(())
 }
 
-/// `object` as JSON text: in the lenient conversion as facet writes a `Value` (an integral real
-/// becomes an integer, as in vanilla's conversion of a `Dynamic` value), else with the number
-/// tags kept.
-///
-/// A real negative zero keeps its sign in the lenient text (`-0.0`) wherever `T` reads the
-/// text so: a float member then holds the zero of the file. Where `T` does not (the zero is
-/// at an integer member, which takes the integer `0` the plain conversion writes), the plain
-/// text is the one.
-pub(super) fn json_text<T: Typed>(object: &VObject, mode: ConvertMode) -> Option<String> {
-    let value = Value::from(object.clone());
-    match mode {
-        ConvertMode::Strict => to_json(&value).ok(),
-        ConvertMode::Lenient => bedrock_addon_core::json::signed_zero::text_for::<T>(&value),
-    }
-}
-
-/// [`json_text`] for a read that gives the component up when its JSON does not write (it
-/// nests past `MAX_JSON_DEPTH`, which no file read through the door does): `InvalidValue`
-/// at the component, an information in the lenient conversion, which drops it, and an error
-/// in a strict read.
-pub(super) fn written<T: Typed>(
-    object: &VObject,
-    mode: ConvertMode,
-    d: &mut Diagnostics,
-) -> Option<String> {
-    let text = json_text::<T>(object, mode);
-    if text.is_none() {
-        // The lenient conversion's drop is the crate's own: an information (the game writes no
-        // content-log line for this).
-        let severity = match mode {
-            ConvertMode::Strict => Severity::Error,
-            ConvertMode::Lenient => Severity::Info,
-        };
-        d.push(Diagnostic::of(&core_codes::INVALID_VALUE).severity(severity));
-    }
-    text
-}
-
 #[cfg(test)]
 mod tests {
-    use bedrock_addon_core::json::MAX_JSON_DEPTH;
+    use bedrock_addon_core::diagnostic::Span;
 
     use super::*;
+    use crate::component::Attack;
 
-    /// An object whose member `zz` is arrays in arrays: `levels` levels in all.
-    fn nested(levels: usize) -> VObject {
-        let mut value = Value::from(0);
-        for _ in 1..levels {
-            let mut list = facet_value::VArray::new();
-            list.push(value);
-            value = list.into();
-        }
-        let mut object = VObject::new();
-        object.insert("zz", value);
-        object
+    /// The finding of reading `text` as an `attack` component strictly.
+    fn refused(text: &str) -> Diagnostic {
+        let mut d = Diagnostics::default();
+        let value = read::<Attack>(
+            JsonSlice::new(text),
+            ConvertMode::Strict,
+            &LoadContext::detached(),
+            &mut d,
+        );
+        assert!(value.is_none(), "a string other than `infinite`");
+        d.iter().next().expect("the refusal").clone()
     }
 
-    /// The findings as `<code> <severity> <path>`.
-    fn told(d: &Diagnostics) -> Vec<String> {
-        d.iter()
-            .map(|f| format!("{} {:?} {}", f.code.id(), f.severity, f.location.json_path))
-            .collect()
+    /// The span of the first `needle` in `text`.
+    fn span_of(text: &str, needle: &str) -> Option<Span> {
+        let offset = text.find(needle)?;
+        Some(Span {
+            offset: u32::try_from(offset).ok()?,
+            len: u32::try_from(needle.len()).ok()?,
+        })
     }
 
-    /// a component whose JSON does not write (it nests past
-    /// the limit; no pack reaches it today, the file is refused first) went without a word.
-    /// The lenient conversion drops it with an information of the crate's own, a strict read
-    /// refuses it.
     #[test]
-    fn a_component_whose_json_does_not_write_is_told_at_the_component() {
-        for (mode, severity) in [
-            (ConvertMode::Lenient, "Info"),
-            (ConvertMode::Strict, "Error"),
+    fn a_refused_member_is_spanned_at_its_value() {
+        let text = r#"{"effect_duration": "soon"}"#;
+        let found = refused(text);
+        assert!(found.is(&core_codes::INVALID_TYPE));
+        assert_eq!(found.location.span, span_of(text, r#""soon""#));
+    }
+
+    #[test]
+    fn a_refused_member_keeps_its_value_span_past_a_comment_before_it() {
+        for text in [
+            r#"{"effect_duration": /* a "quoted": comment */ "soon"}"#,
+            "{\"effect_duration\": // a line comment\n \"soon\"}",
+            r#"{"effect_duration" /* before the colon */ : "soon"}"#,
+            r#"{"damage": {"min": 1, "max": 2}, "effect_name": "a // \" /*", "effect_duration": "soon"}"#,
         ] {
-            let mut d = Diagnostics::default();
-            let text = written::<crate::component::older::ApplyKnockbackRulesV1_8_0>(
-                &nested(MAX_JSON_DEPTH),
-                mode,
-                &mut d,
-            );
-            assert!(text.is_some_and(|text| text.contains("\"zz\"")), "{mode:?}");
-            assert!(d.is_empty(), "{mode:?}: {d:#?}");
-            let text = written::<crate::component::older::ApplyKnockbackRulesV1_8_0>(
-                &nested(MAX_JSON_DEPTH + 1),
-                mode,
-                &mut d,
-            );
-            assert_eq!(text, None, "{mode:?}");
-            assert_eq!(
-                told(&d),
-                [format!("core/invalid_value {severity} ")],
-                "{mode:?}"
-            );
+            let found = refused(text);
+            assert_eq!(found.location.span, span_of(text, r#""soon""#), "{text}");
         }
     }
 }

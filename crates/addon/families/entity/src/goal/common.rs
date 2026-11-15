@@ -2,9 +2,10 @@
 //! type lists, vectors, sound events and the named-value enums the game's schema defines as constants.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::VArray;
@@ -111,9 +112,25 @@ macro_rules! names {
             }
         }
 
-        // A proxied name: no member is walked, nothing in it is Molang.
-        // bridge: read through its ScalarShape proxy
-        bedrock_addon_core::from_json_via_facet!($name);
+        /// A string that names one of the values; any other value, an unknown name included,
+        /// is a wrong type at it, as the game's closed name set refuses it.
+        impl bedrock_addon_core::schema::FromJson for $name {
+            const EXPECTED: Option<bedrock_addon_core::json::kit::Expected> =
+                Some(bedrock_addon_core::json::kit::Expected::String);
+
+            fn from_json(
+                node: &bedrock_addon_core::json::kit::Node<'_>,
+                read: &mut bedrock_addon_core::json::kit::Read<'_>,
+            ) -> Option<Self> {
+                let value = Self::from_name(read.string(node)?);
+                if value.is_none() {
+                    read.wrong_type(node);
+                }
+                value
+            }
+        }
+
+        // A name: no member is walked, nothing in it is Molang.
         bedrock_addon_core::impl_schema_leaf!($name);
         bedrock_addon_core::impl_no_molang!($name);
 
@@ -212,8 +229,23 @@ pub struct MaterialType {
     pub spelling: String,
 }
 
-// bridge: read through its ScalarShape proxy
-bedrock_addon_core::from_json_via_facet!(MaterialType);
+/// A string naming a liquid in any case, its spelling kept; any other value, an unknown name
+/// included, is a wrong type.
+impl FromJson for MaterialType {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let spelling = read.string(node)?;
+        let Some(material) = LiquidMaterial::from_name(spelling) else {
+            read.wrong_type(node);
+            return None;
+        };
+        Some(Self {
+            material,
+            spelling: spelling.to_owned(),
+        })
+    }
+}
 
 impl MaterialType {
     /// `material`, spelt in lower case as vanilla's files write it.
@@ -412,8 +444,14 @@ names! {
 #[facet(proxy = ScalarShape)]
 pub struct SoundEvent(String);
 
-// bridge: read through its ScalarShape proxy
-bedrock_addon_core::from_json_via_facet!(SoundEvent);
+/// A string, kept as written; any other value is a wrong type.
+impl FromJson for SoundEvent {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        read.string(node).map(Self::new)
+    }
+}
 
 impl SoundEvent {
     /// The event spelt `name`.
@@ -697,17 +735,5 @@ mod tests {
 }
 
 // Proxied or data-carrying values: no member is walked, nothing in them is Molang.
-bedrock_addon_core::impl_schema_leaf!(
-    LiquidMaterial,
-    MaterialType,
-    SoundEvent,
-    EntityTypes,
-    ParticleColor
-);
-bedrock_addon_core::impl_no_molang!(
-    LiquidMaterial,
-    MaterialType,
-    SoundEvent,
-    EntityTypes,
-    ParticleColor
-);
+bedrock_addon_core::impl_schema_leaf!(LiquidMaterial, MaterialType, SoundEvent, ParticleColor);
+bedrock_addon_core::impl_no_molang!(LiquidMaterial, MaterialType, SoundEvent, ParticleColor);

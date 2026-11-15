@@ -240,6 +240,9 @@ pub(crate) struct ContainerAttrs {
     pub trigger: bool,
     /// `schema::molang = SPEC` on a struct: the default spec of the Molang walk below it.
     pub molang: Option<(Expr, Span)>,
+    /// `schema::molang_with = path` on a struct: its Molang walk, in place of the walk over its
+    /// fields.
+    pub molang_with: Option<(Expr, Span)>,
     /// `schema::invalid = CODE` on an enum with data: the code of a value that names no variant.
     pub invalid: Option<(Expr, Span)>,
 }
@@ -339,7 +342,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             Place::UntaggedVariant | Place::TaggedVariant if struct_key => {
                 format!("a variant takes no `schema::{key}`: it is a struct's key")
             }
-            Place::Struct if key == "molang" => continue,
+            Place::Struct if key == "molang" || key == "molang_with" => continue,
             Place::Untagged | Place::Tagged if key == "invalid" => continue,
             Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
@@ -767,6 +770,16 @@ impl ContainerAttrs {
                     out.trigger = true;
                     Ok(())
                 }
+                Some("molang_with") if place == Place::Struct => value_expr(entry, "molang_with")
+                    .map(|expr| {
+                        once(
+                            &mut out.molang_with,
+                            (expr, entry.span),
+                            "molang_with",
+                            entry.span,
+                            errors,
+                        );
+                    }),
                 Some("molang") if place == Place::Struct => {
                     value_expr(entry, "molang").map(|expr| {
                         once(

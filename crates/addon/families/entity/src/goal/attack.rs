@@ -3,7 +3,7 @@
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
@@ -30,35 +30,28 @@ use super::molang::{push_trigger, push_triggers, visit_conditions};
 #[facet(schema::unknown = "keep")]
 pub struct AquaticChargeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_reach`: horizontal reach grown around the mob's AABB to register a hit. Default 0.05; at least 0.
-    #[facet(schema::fallback = 0.05)]
+    #[facet(schema::fallback = 0.05, schema::min = 0.0)]
     pub attack_reach: Option<f32>,
     /// `charge_cooldown_time`: range of time in seconds to wait before starting another charge. Default 2 to 6.
+    #[facet(schema::fallback = (2.0, 6.0))]
     pub charge_cooldown_time: Option<FloatRange>,
     /// `charge_overshoot_distance`: distance beyond the target the mob aims during a charge. Default 1.5; at least 0.
-    #[facet(schema::fallback = 1.5)]
+    #[facet(schema::fallback = 1.5, schema::min = 0.0)]
     pub charge_overshoot_distance: Option<f32>,
     /// `charge_speed`: absolute speed used during the charge attack. Default 0.06; at least 0.05.
-    #[facet(schema::fallback = 0.06)]
+    #[facet(schema::fallback = 0.06, schema::min = 0.05)]
     pub charge_speed: Option<f32>,
     /// `knockback_force`: knockback force applied to the target on hit. Default 2; at least 0.
-    #[facet(schema::fallback = 2.0)]
+    #[facet(schema::fallback = 2.0, schema::min = 0.0)]
     pub knockback_force: Option<f32>,
     /// `max_charge_distance`: maximum distance at which the mob attempts a charge. Default 16; at least 0.
-    #[facet(schema::fallback = 16.0)]
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub max_charge_distance: Option<f32>,
-}
-
-impl AquaticChargeAttack {
-    /// `charge_cooldown_time`, or its default 2 to 6.
-    pub fn charge_cooldown_time(&self) -> (f32, f32) {
-        self.charge_cooldown_time
-            .map_or((2.0, 6.0), |range| range.resolve(2.0, 6.0))
-    }
 }
 
 impl Goal for AquaticChargeAttack {
@@ -71,25 +64,8 @@ impl Goal for AquaticChargeAttack {
     )];
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("attack_reach", &mut self.attack_reach, Bound::Min(0.0));
+        c.bounds(self);
         c.range("charge_cooldown_time", &mut self.charge_cooldown_time);
-        c.float(
-            "charge_overshoot_distance",
-            &mut self.charge_overshoot_distance,
-            Bound::Min(0.0),
-        );
-        c.float("charge_speed", &mut self.charge_speed, Bound::Min(0.05));
-        c.float(
-            "knockback_force",
-            &mut self.knockback_force,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "max_charge_distance",
-            &mut self.max_charge_distance,
-            Bound::Min(0.0),
-        );
     }
 
     fn deprecated(&mut self, name: &str, value: &Value) {
@@ -129,6 +105,7 @@ pub struct ChargeAttack {
     #[facet(schema::fallback = 2.0)]
     pub min_distance: Option<f32>,
     /// `sound_event`: default `charge`.
+    #[facet(schema::fallback = "charge")]
     pub sound_event: Option<SoundEvent>,
     /// `speed_multiplier`: modifies the entity's speed when charging toward the target. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -136,13 +113,6 @@ pub struct ChargeAttack {
     /// `success_rate`: percent chance this entity will start a charge attack, if not already attacking (1.0 = 100%). Default 0.1428.
     #[facet(schema::fallback = 0.1428)]
     pub success_rate: Option<f32>,
-}
-
-impl ChargeAttack {
-    /// `sound_event`, or its default `charge`.
-    pub fn sound_event(&self) -> &str {
-        self.sound_event.as_ref().map_or("charge", SoundEvent::name)
-    }
 }
 
 impl Goal for ChargeAttack {
@@ -159,178 +129,86 @@ impl Goal for ChargeAttack {
 /// Deprecated members, reported and dropped: `cooldown_time`.
 // `behavior.delayed_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.delayed_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct DelayedAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_duration`: the entity's attack animation will play out over this duration (in seconds). Also controls attack cooldown. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub attack_duration: Option<f32>,
     /// `attack_once`: allows the mob to perform this melee attack behavior only once during its lifetime. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_once: Option<bool>,
     /// `attack_types`: defines the entity types this entity will attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_types: Option<String>,
     /// `can_spread_on_fire`: allows the mob, if on fire and empty handed, to ignite its target upon a successful attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub can_spread_on_fire: Option<bool>,
     /// `hit_delay_pct`: the percentage into the attack animation to apply the damage of the attack (1.0 = 100%). Default 0.5; 0 to 1.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0, schema::max = 1.0)]
     pub hit_delay_pct: Option<f32>,
     /// `inner_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_inner_boundary`. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
     pub inner_boundary_time_increase: Option<f32>,
     /// `max_path_time`: maximum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.55; at least 0.
+    #[facet(schema::fallback = 0.55, schema::min = 0.0)]
     pub max_path_time: Option<f32>,
     /// `melee_fov`: field of view, in degrees, used by the hard-coded sensing component to detect a valid attack target. Default 9e+01; at least 0.
+    #[facet(schema::fallback = 9.0e1, schema::min = 0.0)]
     pub melee_fov: Option<f32>,
     /// `min_path_time`: minimum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub min_path_time: Option<f32>,
     /// `on_attack`: defines the event to trigger when this entity successfully attacks.
     pub on_attack: Option<EventTrigger>,
     /// `on_kill`: defines the event to trigger when this entity kills the target.
     pub on_kill: Option<EventTrigger>,
     /// `outer_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_outer_boundary`. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub outer_boundary_time_increase: Option<f32>,
     /// `path_fail_time_increase`: time, in seconds, added to the attack path recalculation interval when the mob cannot move along the current path. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub path_fail_time_increase: Option<f32>,
     /// `path_inner_boundary`: distance at which to increase attack path recalculation by `inner_boundary_time_increase`. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub path_inner_boundary: Option<f32>,
     /// `path_outer_boundary`: distance at which to increase attack path recalculation by `outer_boundary_time_increase`. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0, schema::min = 0.0)]
     pub path_outer_boundary: Option<f32>,
     /// `random_stop_interval`: defines a 1-in-N chance for the mob to stop its current attack, where N equals `random_stop_interval`. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub random_stop_interval: Option<i32>,
     /// `reach_multiplier`: used with the base size of the entity to determine minimum target-distance before trying to deal attack damage. Default 1.5; at least 0.
+    #[facet(schema::fallback = 1.5, schema::min = 0.0)]
     pub reach_multiplier: Option<f32>,
     /// `require_complete_path`: specifies whether a full navigation path from the mob to the target is required. Default `false`.
+    #[facet(schema::fallback = false)]
     pub require_complete_path: Option<bool>,
     /// `sound_event`: default `attack.strong`.
+    #[facet(schema::fallback = "attack.strong")]
     pub sound_event: Option<SoundEvent>,
     /// `speed_multiplier`: multiplier applied to the mob's movement speed when moving toward its target. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `track_target`: allows the mob to track its target even if it lacks a hard-coded sensing component. Default `true`.
+    #[facet(schema::fallback = true)]
     pub track_target: Option<bool>,
     /// `x_max_rotation`: maximum rotation, in degrees, on the X-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation, in degrees, on the Y-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
     #[facet(skip, rename = "\u{0}legacy_conditions")]
     pub legacy_conditions: LegacyConditions,
-}
-
-impl DelayedAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_duration`, or its default 0.75.
-    pub fn attack_duration(&self) -> f32 {
-        self.attack_duration.unwrap_or(0.75)
-    }
-
-    /// `attack_once`, or its default `false`.
-    pub fn attack_once(&self) -> bool {
-        self.attack_once.is_some_and(|v| v)
-    }
-
-    /// `attack_types`, or its default `""`.
-    pub fn attack_types(&self) -> &str {
-        self.attack_types.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `can_spread_on_fire`, or its default `false`.
-    pub fn can_spread_on_fire(&self) -> bool {
-        self.can_spread_on_fire.is_some_and(|v| v)
-    }
-
-    /// `hit_delay_pct`, or its default 0.5.
-    pub fn hit_delay_pct(&self) -> f32 {
-        self.hit_delay_pct.unwrap_or(0.5)
-    }
-
-    /// `inner_boundary_time_increase`, or its default 0.25.
-    pub fn inner_boundary_time_increase(&self) -> f32 {
-        self.inner_boundary_time_increase.unwrap_or(0.25)
-    }
-
-    /// `max_path_time`, or its default 0.55.
-    pub fn max_path_time(&self) -> f32 {
-        self.max_path_time.unwrap_or(0.55)
-    }
-
-    /// `melee_fov`, or its default 9e+01.
-    pub fn melee_fov(&self) -> f32 {
-        self.melee_fov.unwrap_or(9.0e1)
-    }
-
-    /// `min_path_time`, or its default 0.2.
-    pub fn min_path_time(&self) -> f32 {
-        self.min_path_time.unwrap_or(0.2)
-    }
-
-    /// `outer_boundary_time_increase`, or its default 0.5.
-    pub fn outer_boundary_time_increase(&self) -> f32 {
-        self.outer_boundary_time_increase.unwrap_or(0.5)
-    }
-
-    /// `path_fail_time_increase`, or its default 0.75.
-    pub fn path_fail_time_increase(&self) -> f32 {
-        self.path_fail_time_increase.unwrap_or(0.75)
-    }
-
-    /// `path_inner_boundary`, or its default 16.
-    pub fn path_inner_boundary(&self) -> f32 {
-        self.path_inner_boundary.unwrap_or(16.0)
-    }
-
-    /// `path_outer_boundary`, or its default 32.
-    pub fn path_outer_boundary(&self) -> f32 {
-        self.path_outer_boundary.unwrap_or(32.0)
-    }
-
-    /// `random_stop_interval`, or its default 0.
-    pub fn random_stop_interval(&self) -> i32 {
-        self.random_stop_interval.unwrap_or(0)
-    }
-
-    /// `reach_multiplier`, or its default 1.5.
-    pub fn reach_multiplier(&self) -> f32 {
-        self.reach_multiplier.unwrap_or(1.5)
-    }
-
-    /// `require_complete_path`, or its default `false`.
-    pub fn require_complete_path(&self) -> bool {
-        self.require_complete_path.is_some_and(|v| v)
-    }
-
-    /// `sound_event`, or its default `attack.strong`.
-    pub fn sound_event(&self) -> &str {
-        self.sound_event
-            .as_ref()
-            .map_or("attack.strong", SoundEvent::name)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `track_target`, or its default `true`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_none_or(|v| v)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
 }
 
 impl Goal for DelayedAttack {
@@ -343,69 +221,10 @@ impl Goal for DelayedAttack {
     )];
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float(
-            "attack_duration",
-            &mut self.attack_duration,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "hit_delay_pct",
-            &mut self.hit_delay_pct,
-            Bound::MinMax(0.0, 1.0),
-        );
-        c.float(
-            "inner_boundary_time_increase",
-            &mut self.inner_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float("max_path_time", &mut self.max_path_time, Bound::Min(0.0));
-        c.float("melee_fov", &mut self.melee_fov, Bound::Min(0.0));
-        c.float("min_path_time", &mut self.min_path_time, Bound::Min(0.0));
+        c.bounds(self);
         c.trigger("on_attack", self.on_attack.as_ref());
         c.trigger("on_kill", self.on_kill.as_ref());
-        c.float(
-            "outer_boundary_time_increase",
-            &mut self.outer_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_fail_time_increase",
-            &mut self.path_fail_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_inner_boundary",
-            &mut self.path_inner_boundary,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_outer_boundary",
-            &mut self.path_outer_boundary,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "random_stop_interval",
-            &mut self.random_stop_interval,
-            Bound::Min(0),
-        );
-        c.float(
-            "reach_multiplier",
-            &mut self.reach_multiplier,
-            Bound::Min(0.0),
-        );
         c.sound("sound_event", self.sound_event.as_ref());
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
     }
 
     fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
@@ -419,8 +238,10 @@ impl Goal for DelayedAttack {
     }
 }
 
-impl MolangFields for DelayedAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl DelayedAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_attack", self.on_attack.as_ref());
         push_trigger(&mut triggers, "on_kill", self.on_kill.as_ref());
@@ -443,8 +264,10 @@ pub struct EatMob {
     #[facet(schema::fallback = 1.0)]
     pub eat_animation_time: Option<f32>,
     /// `eat_mob_sound`: sets the sound that should play when eating a mob. Default `""`.
+    #[facet(schema::fallback = "")]
     pub eat_mob_sound: Option<SoundEvent>,
     /// `loot_table`: the loot table for loot to be dropped when eating a mob. Default `""`.
+    #[facet(schema::fallback = "")]
     pub loot_table: Option<String>,
     /// `pull_in_force`: sets the force which the mob-to-be-eaten is pulled towards the eating mob. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -455,18 +278,6 @@ pub struct EatMob {
     /// `run_speed`: sets the entity's speed when running toward the target. Default 1.
     #[facet(schema::fallback = 1.0)]
     pub run_speed: Option<f32>,
-}
-
-impl EatMob {
-    /// `eat_mob_sound`, or its default `""`.
-    pub fn eat_mob_sound(&self) -> &str {
-        self.eat_mob_sound.as_ref().map_or("", SoundEvent::name)
-    }
-
-    /// `loot_table`, or its default `""`.
-    pub fn loot_table(&self) -> &str {
-        self.loot_table.as_ref().map_or("", |v| v.as_str())
-    }
 }
 
 impl Goal for EatMob {
@@ -485,14 +296,15 @@ impl Goal for EatMob {
 #[facet(schema::unknown = "keep")]
 pub struct FireAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_cooldown`: the cooldown time in seconds before this goal can be used again. Default 0.5; at least 0.
-    #[facet(schema::fallback = 0.5)]
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub attack_cooldown: Option<f32>,
     /// `attack_range`: target needs to be within this range for the attack to happen. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
     pub attack_range: Option<FloatRange>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
@@ -508,12 +320,13 @@ pub struct FireAtTarget {
     /// `owner_offset`: offset vector from the `owner_anchor`. Default `[0, 0, 0]`.
     pub owner_offset: Option<Vec3>,
     /// `post_shoot_delay`: time in seconds between firing the projectile and ending the goal. Default 0.2; at least 0.
-    #[facet(schema::fallback = 0.2)]
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub post_shoot_delay: Option<f32>,
     /// `pre_shoot_delay`: time in seconds before firing the projectile. Default 0.75; at least 0.
-    #[facet(schema::fallback = 0.75)]
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub pre_shoot_delay: Option<f32>,
     /// `projectile_def`: actor definition to use as projectile for the ranged attack. The actor must be a projectile. This field is required for the goal to be usable. Default `""`.
+    #[facet(schema::fallback = "")]
     pub projectile_def: Option<String>,
     /// `ranged_fov`: field of view (in degrees) when using sensing to detect a target for attack. Default 9e+01.
     #[facet(schema::fallback = 9.0e1)]
@@ -526,22 +339,11 @@ pub struct FireAtTarget {
 }
 
 impl FireAtTarget {
-    /// `attack_range`, or its default 0 to 0.
-    pub fn attack_range(&self) -> (f32, f32) {
-        self.attack_range
-            .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
     /// `owner_offset`, or its default `[0, 0, 0]`.
     pub fn owner_offset(&self) -> [f32; 3] {
         self.owner_offset
             .as_ref()
             .map_or([0.0, 0.0, 0.0], |v| [v.x, v.y, v.z])
-    }
-
-    /// `projectile_def`, or its default `""`.
-    pub fn projectile_def(&self) -> &str {
-        self.projectile_def.as_ref().map_or("", |v| v.as_str())
     }
 
     /// `target_offset`, or its default `[0, 0, 0]`.
@@ -556,25 +358,10 @@ impl Goal for FireAtTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float(
-            "attack_cooldown",
-            &mut self.attack_cooldown,
-            Bound::Min(0.0),
-        );
+        c.bounds(self);
         c.range("attack_range", &mut self.attack_range);
         c.filter("filters", self.filters.as_ref());
         c.vector("owner_offset", self.owner_offset.as_ref().map(|v| &v.extra));
-        c.float(
-            "post_shoot_delay",
-            &mut self.post_shoot_delay,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "pre_shoot_delay",
-            &mut self.pre_shoot_delay,
-            Bound::Min(0.0),
-        );
         c.vector(
             "target_offset",
             self.target_offset.as_ref().map(|v| &v.extra),
@@ -618,10 +405,6 @@ pub struct GuardianAttack {
 
 impl Goal for GuardianAttack {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.jump_around_target`: allows an entity to jump around a target.
@@ -631,7 +414,7 @@ impl Goal for GuardianAttack {
 #[facet(schema::unknown = "keep")]
 pub struct JumpAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -652,6 +435,7 @@ pub struct JumpAroundTarget {
     #[facet(schema::fallback = 0.1)]
     pub jump_cooldown_when_hurt_duration: Option<f32>,
     /// `landing_distance_from_target`: the range deciding how close to and how far away from the target the landing position can be when jumping. Default 4 to 8.
+    #[facet(schema::fallback = (4.0, 8.0))]
     pub landing_distance_from_target: Option<FloatRange>,
     /// `landing_position_spread_degrees`: this angle (in degrees) is used for controlling the spread when picking a landing position behind the target. A zero spread angle means the landing position will be straight behind the target with no variance. A 90 degree spread angle means the landing position can be up to 45 degrees to the left and to the right of the position straight behind the target's view direction. Default 90.
     #[facet(schema::fallback = 90)]
@@ -675,28 +459,15 @@ pub struct JumpAroundTarget {
     #[facet(schema::fallback = 10)]
     pub snap_to_surface_block_range: Option<i32>,
     /// `valid_distance_to_target`: target needs to be within this range for the jump to happen. Default 4 to 2e+01.
+    #[facet(schema::fallback = (4.0, 2.0e1))]
     pub valid_distance_to_target: Option<FloatRange>,
-}
-
-impl JumpAroundTarget {
-    /// `landing_distance_from_target`, or its default 4 to 8.
-    pub fn landing_distance_from_target(&self) -> (f32, f32) {
-        self.landing_distance_from_target
-            .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
-    }
-
-    /// `valid_distance_to_target`, or its default 4 to 2e+01.
-    pub fn valid_distance_to_target(&self) -> (f32, f32) {
-        self.valid_distance_to_target
-            .map_or((4.0, 2.0e1), |range| range.resolve(4.0, 2.0e1))
-    }
 }
 
 impl Goal for JumpAroundTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("filters", self.filters.as_ref());
         c.range(
             "landing_distance_from_target",
@@ -712,32 +483,41 @@ impl Goal for JumpAroundTarget {
 /// `minecraft:behavior.knockback_roar`: allows the mob to perform a damaging knockback that affects all nearby entities.
 // `behavior.knockback_roar`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.knockback_roar")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct KnockbackRoar {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_time`: the delay after which the knockback occurs (in seconds). Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub attack_time: Option<f32>,
     /// `cooldown_time`: time (in seconds) the mob has to wait before using the goal again. Default 0.1.
+    #[facet(schema::fallback = 0.1)]
     pub cooldown_time: Option<f32>,
     /// `damage_filters`: the list of conditions another entity must meet to be a valid target to apply damage to.
     pub damage_filters: Option<Filter>,
     /// `duration`: the max duration of the roar (in seconds). Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub duration: Option<f32>,
     /// `knockback_damage`: the damage dealt by the knockback roar. Default 6.
+    #[facet(schema::fallback = 6)]
     pub knockback_damage: Option<i32>,
     /// `knockback_filters`: the list of conditions another entity must meet to be a valid target to apply knockback to.
     pub knockback_filters: Option<Filter>,
     /// `knockback_height_cap`: the maximum height for vertical knockback. Default 0.4.
+    #[facet(schema::fallback = 0.4)]
     pub knockback_height_cap: Option<f32>,
     /// `knockback_horizontal_strength`: the strength of the horizontal knockback. Default 4.
+    #[facet(schema::fallback = 4)]
     pub knockback_horizontal_strength: Option<i32>,
     /// `knockback_range`: the radius (in blocks) of the knockback effect. Default 4.
+    #[facet(schema::fallback = 4)]
     pub knockback_range: Option<i32>,
     /// `knockback_vertical_strength`: the strength of the vertical knockback. Default 4.
+    #[facet(schema::fallback = 4)]
     pub knockback_vertical_strength: Option<i32>,
     /// `on_roar_end`: event that is triggered when the roar ends.
     pub on_roar_end: Option<EventTrigger>,
@@ -748,66 +528,21 @@ pub struct KnockbackRoar {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl KnockbackRoar {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_time`, or its default 0.5.
-    pub fn attack_time(&self) -> f32 {
-        self.attack_time.unwrap_or(0.5)
-    }
-
-    /// `cooldown_time`, or its default 0.1.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(0.1)
-    }
-
-    /// `duration`, or its default 1.
-    pub fn duration(&self) -> f32 {
-        self.duration.unwrap_or(1.0)
-    }
-
-    /// `knockback_damage`, or its default 6.
-    pub fn knockback_damage(&self) -> i32 {
-        self.knockback_damage.unwrap_or(6)
-    }
-
-    /// `knockback_height_cap`, or its default 0.4.
-    pub fn knockback_height_cap(&self) -> f32 {
-        self.knockback_height_cap.unwrap_or(0.4)
-    }
-
-    /// `knockback_horizontal_strength`, or its default 4.
-    pub fn knockback_horizontal_strength(&self) -> i32 {
-        self.knockback_horizontal_strength.unwrap_or(4)
-    }
-
-    /// `knockback_range`, or its default 4.
-    pub fn knockback_range(&self) -> i32 {
-        self.knockback_range.unwrap_or(4)
-    }
-
-    /// `knockback_vertical_strength`, or its default 4.
-    pub fn knockback_vertical_strength(&self) -> i32 {
-        self.knockback_vertical_strength.unwrap_or(4)
-    }
-}
-
 impl Goal for KnockbackRoar {
     const TYPED: FormatVersion = known::V1_26_40;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("damage_filters", self.damage_filters.as_ref());
         c.filter("knockback_filters", self.knockback_filters.as_ref());
         c.trigger("on_roar_end", self.on_roar_end.as_ref());
     }
 }
 
-impl MolangFields for KnockbackRoar {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl KnockbackRoar {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_roar_end", self.on_roar_end.as_ref());
         visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
@@ -826,85 +561,91 @@ pub struct LeapAtTarget {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `must_be_on_ground`: if true, the mob will only jump at its target if its on the ground. Setting it to false will allow it to jump even if its already in the air. Default `true`.
+    #[facet(schema::fallback = true)]
     pub must_be_on_ground: Option<bool>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `yd`: the height in blocks the mob jumps when leaping at its target. Default 0.
     #[facet(schema::fallback = 0.0)]
     pub yd: Option<f32>,
 }
 
-impl LeapAtTarget {
-    /// `must_be_on_ground`, or its default `true`.
-    pub fn must_be_on_ground(&self) -> bool {
-        self.must_be_on_ground.is_none_or(|v| v)
-    }
-
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-}
-
 impl Goal for LeapAtTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.melee_attack`: allows an entity to deal damage through a melee attack.
 // `behavior.melee_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.melee_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MeleeAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_once`: allows the mob to perform this melee attack behavior only once during its lifetime. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_once: Option<bool>,
     /// `attack_types`: defines the entity types this entity will attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_types: Option<String>,
     /// `can_spread_on_fire`: allows the mob, if on fire and empty handed, to ignite its target upon a successful attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub can_spread_on_fire: Option<bool>,
     /// `cooldown_time`: cooldown time, in seconds, between consecutive attacks. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `inner_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_inner_boundary`. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
     pub inner_boundary_time_increase: Option<f32>,
     /// `max_path_time`: maximum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.55; at least 0.
+    #[facet(schema::fallback = 0.55, schema::min = 0.0)]
     pub max_path_time: Option<f32>,
     /// `melee_fov`: field of view, in degrees, used by the hard-coded sensing component to detect a valid attack target. Default 9e+01; at least 0.
+    #[facet(schema::fallback = 9.0e1, schema::min = 0.0)]
     pub melee_fov: Option<f32>,
     /// `min_path_time`: minimum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub min_path_time: Option<f32>,
     /// `on_attack`: defines the event to trigger when this entity successfully attacks.
     pub on_attack: Option<EventTrigger>,
     /// `on_kill`: defines the event to trigger when this entity kills the target.
     pub on_kill: Option<EventTrigger>,
     /// `outer_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_outer_boundary`. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub outer_boundary_time_increase: Option<f32>,
     /// `path_fail_time_increase`: time, in seconds, added to the attack path recalculation interval when the mob cannot move along the current path. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub path_fail_time_increase: Option<f32>,
     /// `path_inner_boundary`: distance at which to increase attack path recalculation by `inner_boundary_time_increase`. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub path_inner_boundary: Option<f32>,
     /// `path_outer_boundary`: distance at which to increase attack path recalculation by `outer_boundary_time_increase`. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0, schema::min = 0.0)]
     pub path_outer_boundary: Option<f32>,
     /// `random_stop_interval`: defines a 1-in-N chance for the mob to stop its current attack, where N equals `random_stop_interval`. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub random_stop_interval: Option<i32>,
     /// `reach_multiplier`: used with the base size of the entity to determine minimum target-distance before trying to deal attack damage. Default 2; at least 0.
+    #[facet(schema::fallback = 2.0, schema::min = 0.0)]
     pub reach_multiplier: Option<f32>,
     /// `require_complete_path`: specifies whether a full navigation path from the mob to the target is required. Default `false`.
+    #[facet(schema::fallback = false)]
     pub require_complete_path: Option<bool>,
     /// `speed_multiplier`: multiplier applied to the mob's movement speed when moving toward its target. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `track_target`: allows the mob to track its target even if it lacks a hard-coded sensing component. Default `false`.
+    #[facet(schema::fallback = false)]
     pub track_target: Option<bool>,
     /// `x_max_rotation`: maximum rotation, in degrees, on the X-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation, in degrees, on the Y-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -913,165 +654,13 @@ pub struct MeleeAttack {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl MeleeAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_once`, or its default `false`.
-    pub fn attack_once(&self) -> bool {
-        self.attack_once.is_some_and(|v| v)
-    }
-
-    /// `attack_types`, or its default `""`.
-    pub fn attack_types(&self) -> &str {
-        self.attack_types.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `can_spread_on_fire`, or its default `false`.
-    pub fn can_spread_on_fire(&self) -> bool {
-        self.can_spread_on_fire.is_some_and(|v| v)
-    }
-
-    /// `cooldown_time`, or its default 1.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(1.0)
-    }
-
-    /// `inner_boundary_time_increase`, or its default 0.25.
-    pub fn inner_boundary_time_increase(&self) -> f32 {
-        self.inner_boundary_time_increase.unwrap_or(0.25)
-    }
-
-    /// `max_path_time`, or its default 0.55.
-    pub fn max_path_time(&self) -> f32 {
-        self.max_path_time.unwrap_or(0.55)
-    }
-
-    /// `melee_fov`, or its default 9e+01.
-    pub fn melee_fov(&self) -> f32 {
-        self.melee_fov.unwrap_or(9.0e1)
-    }
-
-    /// `min_path_time`, or its default 0.2.
-    pub fn min_path_time(&self) -> f32 {
-        self.min_path_time.unwrap_or(0.2)
-    }
-
-    /// `outer_boundary_time_increase`, or its default 0.5.
-    pub fn outer_boundary_time_increase(&self) -> f32 {
-        self.outer_boundary_time_increase.unwrap_or(0.5)
-    }
-
-    /// `path_fail_time_increase`, or its default 0.75.
-    pub fn path_fail_time_increase(&self) -> f32 {
-        self.path_fail_time_increase.unwrap_or(0.75)
-    }
-
-    /// `path_inner_boundary`, or its default 16.
-    pub fn path_inner_boundary(&self) -> f32 {
-        self.path_inner_boundary.unwrap_or(16.0)
-    }
-
-    /// `path_outer_boundary`, or its default 32.
-    pub fn path_outer_boundary(&self) -> f32 {
-        self.path_outer_boundary.unwrap_or(32.0)
-    }
-
-    /// `random_stop_interval`, or its default 0.
-    pub fn random_stop_interval(&self) -> i32 {
-        self.random_stop_interval.unwrap_or(0)
-    }
-
-    /// `reach_multiplier`, or its default 2.
-    pub fn reach_multiplier(&self) -> f32 {
-        self.reach_multiplier.unwrap_or(2.0)
-    }
-
-    /// `require_complete_path`, or its default `false`.
-    pub fn require_complete_path(&self) -> bool {
-        self.require_complete_path.is_some_and(|v| v)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `track_target`, or its default `false`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_some_and(|v| v)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
-}
-
 impl Goal for MeleeAttack {
     const TYPED: FormatVersion = known::V1_26_0;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
-        c.float(
-            "inner_boundary_time_increase",
-            &mut self.inner_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float("max_path_time", &mut self.max_path_time, Bound::Min(0.0));
-        c.float("melee_fov", &mut self.melee_fov, Bound::Min(0.0));
-        c.float("min_path_time", &mut self.min_path_time, Bound::Min(0.0));
+        c.bounds(self);
         c.trigger("on_attack", self.on_attack.as_ref());
         c.trigger("on_kill", self.on_kill.as_ref());
-        c.float(
-            "outer_boundary_time_increase",
-            &mut self.outer_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_fail_time_increase",
-            &mut self.path_fail_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_inner_boundary",
-            &mut self.path_inner_boundary,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_outer_boundary",
-            &mut self.path_outer_boundary,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "random_stop_interval",
-            &mut self.random_stop_interval,
-            Bound::Min(0),
-        );
-        c.float(
-            "reach_multiplier",
-            &mut self.reach_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
     }
 
     fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
@@ -1085,8 +674,10 @@ impl Goal for MeleeAttack {
     }
 }
 
-impl MolangFields for MeleeAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MeleeAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_attack", self.on_attack.as_ref());
         push_trigger(&mut triggers, "on_kill", self.on_kill.as_ref());
@@ -1097,54 +688,74 @@ impl MolangFields for MeleeAttack {
 /// `minecraft:behavior.melee_box_attack`: allows an entity to deal damage through a melee attack with reach calculations based on bounding boxes.
 // `behavior.melee_box_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.melee_box_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MeleeBoxAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_once`: allows the mob to perform this melee attack behavior only once during its lifetime. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_once: Option<bool>,
     /// `attack_types`: defines the entity types this entity will attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_types: Option<String>,
     /// `can_spread_on_fire`: allows the mob, if on fire and empty handed, to ignite its target upon a successful attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub can_spread_on_fire: Option<bool>,
     /// `cooldown_time`: cooldown time, in seconds, between consecutive attacks. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `horizontal_reach`: the attack reach of the mob will be a box with the size of the mobs bounds increased by this value in all horizontal directions. Default 0.8; at least 0.
+    #[facet(schema::fallback = 0.8, schema::min = 0.0)]
     pub horizontal_reach: Option<f32>,
     /// `inner_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_inner_boundary`. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
     pub inner_boundary_time_increase: Option<f32>,
     /// `max_path_time`: maximum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.55; at least 0.
+    #[facet(schema::fallback = 0.55, schema::min = 0.0)]
     pub max_path_time: Option<f32>,
     /// `melee_fov`: field of view, in degrees, used by the hard-coded sensing component to detect a valid attack target. Default 9e+01; at least 0.
+    #[facet(schema::fallback = 9.0e1, schema::min = 0.0)]
     pub melee_fov: Option<f32>,
     /// `min_path_time`: minimum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub min_path_time: Option<f32>,
     /// `on_attack`: defines the event to trigger when this entity successfully attacks.
     pub on_attack: Option<EventTrigger>,
     /// `on_kill`: defines the event to trigger when this entity kills the target.
     pub on_kill: Option<EventTrigger>,
     /// `outer_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_outer_boundary`. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub outer_boundary_time_increase: Option<f32>,
     /// `path_fail_time_increase`: time, in seconds, added to the attack path recalculation interval when the mob cannot move along the current path. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub path_fail_time_increase: Option<f32>,
     /// `path_inner_boundary`: distance at which to increase attack path recalculation by `inner_boundary_time_increase`. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub path_inner_boundary: Option<f32>,
     /// `path_outer_boundary`: distance at which to increase attack path recalculation by `outer_boundary_time_increase`. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0, schema::min = 0.0)]
     pub path_outer_boundary: Option<f32>,
     /// `random_stop_interval`: defines a 1-in-N chance for the mob to stop its current attack, where N equals `random_stop_interval`. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub random_stop_interval: Option<i32>,
     /// `require_complete_path`: specifies whether a full navigation path from the mob to the target is required. Default `false`.
+    #[facet(schema::fallback = false)]
     pub require_complete_path: Option<bool>,
     /// `speed_multiplier`: multiplier applied to the mob's movement speed when moving toward its target. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `track_target`: allows the mob to track its target even if it lacks a hard-coded sensing component. Default `false`.
+    #[facet(schema::fallback = false)]
     pub track_target: Option<bool>,
     /// `x_max_rotation`: maximum rotation, in degrees, on the X-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation, in degrees, on the Y-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -1153,165 +764,13 @@ pub struct MeleeBoxAttack {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl MeleeBoxAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_once`, or its default `false`.
-    pub fn attack_once(&self) -> bool {
-        self.attack_once.is_some_and(|v| v)
-    }
-
-    /// `attack_types`, or its default `""`.
-    pub fn attack_types(&self) -> &str {
-        self.attack_types.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `can_spread_on_fire`, or its default `false`.
-    pub fn can_spread_on_fire(&self) -> bool {
-        self.can_spread_on_fire.is_some_and(|v| v)
-    }
-
-    /// `cooldown_time`, or its default 1.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(1.0)
-    }
-
-    /// `horizontal_reach`, or its default 0.8.
-    pub fn horizontal_reach(&self) -> f32 {
-        self.horizontal_reach.unwrap_or(0.8)
-    }
-
-    /// `inner_boundary_time_increase`, or its default 0.25.
-    pub fn inner_boundary_time_increase(&self) -> f32 {
-        self.inner_boundary_time_increase.unwrap_or(0.25)
-    }
-
-    /// `max_path_time`, or its default 0.55.
-    pub fn max_path_time(&self) -> f32 {
-        self.max_path_time.unwrap_or(0.55)
-    }
-
-    /// `melee_fov`, or its default 9e+01.
-    pub fn melee_fov(&self) -> f32 {
-        self.melee_fov.unwrap_or(9.0e1)
-    }
-
-    /// `min_path_time`, or its default 0.2.
-    pub fn min_path_time(&self) -> f32 {
-        self.min_path_time.unwrap_or(0.2)
-    }
-
-    /// `outer_boundary_time_increase`, or its default 0.5.
-    pub fn outer_boundary_time_increase(&self) -> f32 {
-        self.outer_boundary_time_increase.unwrap_or(0.5)
-    }
-
-    /// `path_fail_time_increase`, or its default 0.75.
-    pub fn path_fail_time_increase(&self) -> f32 {
-        self.path_fail_time_increase.unwrap_or(0.75)
-    }
-
-    /// `path_inner_boundary`, or its default 16.
-    pub fn path_inner_boundary(&self) -> f32 {
-        self.path_inner_boundary.unwrap_or(16.0)
-    }
-
-    /// `path_outer_boundary`, or its default 32.
-    pub fn path_outer_boundary(&self) -> f32 {
-        self.path_outer_boundary.unwrap_or(32.0)
-    }
-
-    /// `random_stop_interval`, or its default 0.
-    pub fn random_stop_interval(&self) -> i32 {
-        self.random_stop_interval.unwrap_or(0)
-    }
-
-    /// `require_complete_path`, or its default `false`.
-    pub fn require_complete_path(&self) -> bool {
-        self.require_complete_path.is_some_and(|v| v)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `track_target`, or its default `false`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_some_and(|v| v)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
-}
-
 impl Goal for MeleeBoxAttack {
     const TYPED: FormatVersion = known::V1_26_0;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
-        c.float(
-            "horizontal_reach",
-            &mut self.horizontal_reach,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "inner_boundary_time_increase",
-            &mut self.inner_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float("max_path_time", &mut self.max_path_time, Bound::Min(0.0));
-        c.float("melee_fov", &mut self.melee_fov, Bound::Min(0.0));
-        c.float("min_path_time", &mut self.min_path_time, Bound::Min(0.0));
+        c.bounds(self);
         c.trigger("on_attack", self.on_attack.as_ref());
         c.trigger("on_kill", self.on_kill.as_ref());
-        c.float(
-            "outer_boundary_time_increase",
-            &mut self.outer_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_fail_time_increase",
-            &mut self.path_fail_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_inner_boundary",
-            &mut self.path_inner_boundary,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_outer_boundary",
-            &mut self.path_outer_boundary,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "random_stop_interval",
-            &mut self.random_stop_interval,
-            Bound::Min(0),
-        );
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
     }
 
     fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
@@ -1325,8 +784,10 @@ impl Goal for MeleeBoxAttack {
     }
 }
 
-impl MolangFields for MeleeBoxAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MeleeBoxAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_attack", self.on_attack.as_ref());
         push_trigger(&mut triggers, "on_kill", self.on_kill.as_ref());
@@ -1379,43 +840,50 @@ pub struct Ocelotattack {
 
 impl Goal for Ocelotattack {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.ram_attack`: allows this entity to damage a target by using a running attack.
 // `behavior.ram_attack`: typed from 1.26.10.
 #[doc(alias = "minecraft:behavior.ram_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct RamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `baby_knockback_modifier`: the modifier to knockback that babies have. Default 0.33333334.
+    #[facet(schema::fallback = 0.333_333_34)]
     pub baby_knockback_modifier: Option<f32>,
     /// `cooldown_range`: minimum and maximum cooldown time-range (positive, in seconds) between each attempted ram attack. Default 1e+01 to 2e+01.
+    #[facet(schema::fallback = (1.0e1, 2.0e1))]
     pub cooldown_range: Option<FloatRange>,
     /// `knockback_force`: the force of the knockback of the ram attack. Default 5.
+    #[facet(schema::fallback = 5.0)]
     pub knockback_force: Option<f32>,
     /// `knockback_height`: the height of the knockback of the ram attack. Default 0.1.
+    #[facet(schema::fallback = 0.1)]
     pub knockback_height: Option<f32>,
     /// `min_ram_distance`: the minimum distance at which the mob can start a ram attack. Default 4.
+    #[facet(schema::fallback = 4)]
     pub min_ram_distance: Option<i32>,
     /// `on_start`: the event to trigger when attacking.
     pub on_start: Option<Vec<EventTrigger>>,
     /// `pre_ram_sound`: the sound to play when an entity is about to perform a ram attack. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub pre_ram_sound: Option<SoundEvent>,
     /// `ram_distance`: the distance at which the mob start to run with ram speed. Default 7.
+    #[facet(schema::fallback = 7)]
     pub ram_distance: Option<i32>,
     /// `ram_impact_sound`: the sound to play when an entity is impacting on a ram attack. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub ram_impact_sound: Option<SoundEvent>,
     /// `ram_speed`: sets the entity's speed when charging toward the target. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub ram_speed: Option<f32>,
     /// `run_speed`: sets the entity's speed when running toward the target. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub run_speed: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -1424,73 +892,11 @@ pub struct RamAttack {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl RamAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `baby_knockback_modifier`, or its default 0.33333334.
-    pub fn baby_knockback_modifier(&self) -> f32 {
-        self.baby_knockback_modifier.unwrap_or(0.333_333_34)
-    }
-
-    /// `cooldown_range`, or its default 1e+01 to 2e+01.
-    pub fn cooldown_range(&self) -> (f32, f32) {
-        self.cooldown_range
-            .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
-    }
-
-    /// `knockback_force`, or its default 5.
-    pub fn knockback_force(&self) -> f32 {
-        self.knockback_force.unwrap_or(5.0)
-    }
-
-    /// `knockback_height`, or its default 0.1.
-    pub fn knockback_height(&self) -> f32 {
-        self.knockback_height.unwrap_or(0.1)
-    }
-
-    /// `min_ram_distance`, or its default 4.
-    pub fn min_ram_distance(&self) -> i32 {
-        self.min_ram_distance.unwrap_or(4)
-    }
-
-    /// `pre_ram_sound`, or its default `undefined`.
-    pub fn pre_ram_sound(&self) -> &str {
-        self.pre_ram_sound
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
-
-    /// `ram_distance`, or its default 7.
-    pub fn ram_distance(&self) -> i32 {
-        self.ram_distance.unwrap_or(7)
-    }
-
-    /// `ram_impact_sound`, or its default `undefined`.
-    pub fn ram_impact_sound(&self) -> &str {
-        self.ram_impact_sound
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
-
-    /// `ram_speed`, or its default 2.
-    pub fn ram_speed(&self) -> f32 {
-        self.ram_speed.unwrap_or(2.0)
-    }
-
-    /// `run_speed`, or its default 1.
-    pub fn run_speed(&self) -> f32 {
-        self.run_speed.unwrap_or(1.0)
-    }
-}
-
 impl Goal for RamAttack {
     const TYPED: FormatVersion = known::V1_26_10;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("cooldown_range", &mut self.cooldown_range);
         c.triggers("on_start", self.on_start.as_deref());
         c.sound("pre_ram_sound", self.pre_ram_sound.as_ref());
@@ -1498,8 +904,10 @@ impl Goal for RamAttack {
     }
 }
 
-impl MolangFields for RamAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl RamAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_start", self.on_start.as_deref());
         visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
@@ -1513,59 +921,54 @@ impl MolangFields for RamAttack {
 #[facet(schema::unknown = "keep")]
 pub struct RangedAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_interval`: reload-time range (in seconds), when not using a charged shot. Reload-time range scales with target-distance. Default -1 to -1.
+    #[facet(schema::fallback = (-1.0, -1.0))]
     pub attack_interval: Option<FloatRange>,
     /// `attack_range`: range of distances from the target within which the entity can perform a ranged attack. Default 0 to 0.
     pub attack_range: Option<FloatRange>,
     /// `burst_interval`: time (in seconds) between each individual shot when firing a burst of shots from a charged up attack. Default 0; greater than 0.
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::above = 0.0)]
     pub burst_interval: Option<f32>,
     /// `burst_shots`: number of shots fired every time the attacking entity uses a charged up attack. Default 1.
     #[facet(schema::fallback = 1)]
     pub burst_shots: Option<i32>,
     /// `charge_charged_trigger`: time (in seconds, then add `charge_shoot_trigger`), before a charged up attack is done charging. Charge-time decays while target is not in sight. Default 0; greater than 0.
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::above = 0.0)]
     pub charge_charged_trigger: Option<f32>,
     /// `charge_shoot_trigger`: amount of time (in seconds, then doubled) a charged shot must be charging before reloading burst shots. Charge-time decays while target is not in sight. Default 0; greater than 0.
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::above = 0.0)]
     pub charge_shoot_trigger: Option<f32>,
     /// `in_range_movement_mode`: controls how the entity moves while its target is within the configured attack range. `hold_position` makes the entity stop and hold its position while facing and attacking the target. `follow_target` makes the entity continue moving toward the target while attacking, stopping just outside the minimum attack range. Default `hold_position`.
     #[facet(schema::fallback = InRangeMovementMode::HoldPosition)]
     pub in_range_movement_mode: Option<InRangeMovementMode>,
     /// `ranged_fov`: field of view (in degrees) when using sensing to detect a target for attack. Default 9e+01; at least 0.
-    #[facet(schema::fallback = 9.0e1)]
+    #[facet(schema::fallback = 9.0e1, schema::min = 0.0)]
     pub ranged_fov: Option<f32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
     #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `speed_multiplier`: during attack behavior, this multiplier modifies the entity's speed when moving toward the target. Default 1; greater than 0.
-    #[facet(schema::fallback = 1.0)]
+    #[facet(schema::fallback = 1.0, schema::above = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `swing`: if a swing animation (using `variable.attack_time`) exists, this causes the actor to swing their arm(s) upon firing the ranged attack. Default `false`.
     #[facet(schema::fallback = false)]
     pub swing: Option<bool>,
     /// `target_in_sight_time`: minimum amount of time (in seconds) the attacking entity needs to see the target before moving toward it. Default 1; greater than 0.
-    #[facet(schema::fallback = 1.0)]
+    #[facet(schema::fallback = 1.0, schema::above = 0.0)]
     pub target_in_sight_time: Option<f32>,
     /// `x_max_rotation`: maximum rotation (in degrees), on the X-axis, this entity can rotate while trying to look at the target. Default 3e+01; at least 0.
-    #[facet(schema::fallback = 3.0e1)]
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation (in degrees), on the Y-axis, this entity can rotate its head while trying to look at the target. Default 3e+01; at least 0.
-    #[facet(schema::fallback = 3.0e1)]
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
 }
 
 impl RangedAttack {
-    /// `attack_interval`, or its default -1 to -1.
-    pub fn attack_interval(&self) -> (f32, f32) {
-        self.attack_interval
-            .map_or((-1.0, -1.0), |range| range.resolve(-1.0, -1.0))
-    }
-
     /// `attack_range`, or its default 0 to 0.
     pub fn attack_range(&self) -> (f32, f32) {
         // In the order written: the cereal range is not reordered.
@@ -1589,40 +992,8 @@ impl Goal for RangedAttack {
     ];
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("attack_interval", &mut self.attack_interval);
-        c.float(
-            "burst_interval",
-            &mut self.burst_interval,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "charge_charged_trigger",
-            &mut self.charge_charged_trigger,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "charge_shoot_trigger",
-            &mut self.charge_shoot_trigger,
-            Bound::Above(0.0),
-        );
-        c.float("ranged_fov", &mut self.ranged_fov, Bound::Min(0.0));
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "target_in_sight_time",
-            &mut self.target_in_sight_time,
-            Bound::Above(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
         // The cereal `FloatRange` binds `min` / `max` with no order constraint and no swap:
         // a range written out of order is held as written, so `attack_range.min ≤ max` is
         // not enforced.
@@ -1667,6 +1038,7 @@ pub struct SlimeAttack {
     #[facet(schema::fallback = 15.0)]
     pub grow_tired_cooldown_time: Option<f32>,
     /// `set_persistent`: allows the actor to be set to persist upon targeting a player. Default `false`.
+    #[facet(schema::fallback = false)]
     pub set_persistent: Option<bool>,
     /// `speed_multiplier`: during attack behavior, this multiplier modifies the entity's speed when moving toward the target. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -1679,19 +1051,8 @@ pub struct SlimeAttack {
     pub y_max_rotation: Option<f32>,
 }
 
-impl SlimeAttack {
-    /// `set_persistent`, or its default `false`.
-    pub fn set_persistent(&self) -> bool {
-        self.set_persistent.is_some_and(|v| v)
-    }
-}
-
 impl Goal for SlimeAttack {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.sonic_boom`: allows this entity to perform a 'sonic boom' ranged attack.
@@ -1701,7 +1062,7 @@ impl Goal for SlimeAttack {
 #[facet(schema::unknown = "keep")]
 pub struct SonicBoom {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -1718,11 +1079,13 @@ pub struct SonicBoom {
     #[facet(schema::fallback = 2.0e1)]
     pub attack_range_vertical: Option<f32>,
     /// `attack_sound`: sound event for the attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_sound: Option<SoundEvent>,
     /// `charge_sound`: sound event for the charge up. Default `""`.
+    #[facet(schema::fallback = "")]
     pub charge_sound: Option<SoundEvent>,
     /// `duration`: goal duration in seconds. Default 0; at least 0.
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::min = 0.0)]
     pub duration: Option<f32>,
     /// `duration_until_attack_sound`: duration in seconds until the attack sound is played. Default 1.7.
     #[facet(schema::fallback = 1.7)]
@@ -1741,28 +1104,15 @@ pub struct SonicBoom {
     pub speed_multiplier: Option<f32>,
 }
 
-impl SonicBoom {
-    /// `attack_sound`, or its default `""`.
-    pub fn attack_sound(&self) -> &str {
-        self.attack_sound.as_ref().map_or("", SoundEvent::name)
-    }
-
-    /// `charge_sound`, or its default `""`.
-    pub fn charge_sound(&self) -> &str {
-        self.charge_sound.as_ref().map_or("", SoundEvent::name)
-    }
-}
-
 impl Goal for SonicBoom {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
         // Bounds by hand, not schema::min/max: a bound here follows another check, and the
         // derived check runs first, which would reorder the findings.
-        c.base(&mut self.priority);
         c.sound("attack_sound", self.attack_sound.as_ref());
         c.sound("charge_sound", self.charge_sound.as_ref());
-        c.float("duration", &mut self.duration, Bound::Min(0.0));
     }
 }
 
@@ -1773,7 +1123,7 @@ impl Goal for SonicBoom {
 #[facet(schema::unknown = "keep")]
 pub struct StalkAndPounceOnTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -1812,7 +1162,7 @@ impl Goal for StalkAndPounceOnTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("stuck_blocks", self.stuck_blocks.as_ref());
     }
 }
@@ -1822,169 +1172,83 @@ impl Goal for StalkAndPounceOnTarget {
 /// Deprecated members, reported and dropped: `melee_fov`.
 // `behavior.stomp_attack`: typed from 1.26.0, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.stomp_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct StompAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `attack_once`: allows the mob to perform this melee attack behavior only once during its lifetime. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_once: Option<bool>,
     /// `attack_types`: defines the entity types this entity will attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_types: Option<String>,
     /// `can_spread_on_fire`: allows the mob, if on fire and empty handed, to ignite its target upon a successful attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub can_spread_on_fire: Option<bool>,
     /// `cooldown_time`: cooldown time, in seconds, between consecutive attacks. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `inner_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_inner_boundary`. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
     pub inner_boundary_time_increase: Option<f32>,
     /// `max_path_time`: maximum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.55; at least 0.
+    #[facet(schema::fallback = 0.55, schema::min = 0.0)]
     pub max_path_time: Option<f32>,
     /// `min_path_time`: minimum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub min_path_time: Option<f32>,
     /// `no_damage_range_multiplier`: multiplied with the final `AoE` damage range to determine a no damage range. The stomp attack will go on cooldown if target is in this no damage range. Default 2; greater than 0.
+    #[facet(schema::fallback = 2.0, schema::above = 0.0)]
     pub no_damage_range_multiplier: Option<f32>,
     /// `on_attack`: defines the event to trigger when this entity successfully attacks.
     pub on_attack: Option<EventTrigger>,
     /// `on_kill`: defines the event to trigger when this entity kills the target.
     pub on_kill: Option<EventTrigger>,
     /// `outer_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_outer_boundary`. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub outer_boundary_time_increase: Option<f32>,
     /// `path_fail_time_increase`: time, in seconds, added to the attack path recalculation interval when the mob cannot move along the current path. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub path_fail_time_increase: Option<f32>,
     /// `path_inner_boundary`: distance at which to increase attack path recalculation by `inner_boundary_time_increase`. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub path_inner_boundary: Option<f32>,
     /// `path_outer_boundary`: distance at which to increase attack path recalculation by `outer_boundary_time_increase`. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0, schema::min = 0.0)]
     pub path_outer_boundary: Option<f32>,
     /// `random_stop_interval`: defines a 1-in-N chance for the mob to stop its current attack, where N equals `random_stop_interval`. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub random_stop_interval: Option<i32>,
     /// `reach_multiplier`: used with the base size of the entity to determine minimum target-distance before trying to deal attack damage. Default 2; at least 0.
+    #[facet(schema::fallback = 2.0, schema::min = 0.0)]
     pub reach_multiplier: Option<f32>,
     /// `require_complete_path`: specifies whether a full navigation path from the mob to the target is required. Default `false`.
+    #[facet(schema::fallback = false)]
     pub require_complete_path: Option<bool>,
     /// `speed_multiplier`: multiplier applied to the mob's movement speed when moving toward its target. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `stomp_range_multiplier`: multiplied with the base size of the entity to determine stomp `AoE` damage range. Default 2; greater than 0.
+    #[facet(schema::fallback = 2.0, schema::above = 0.0)]
     pub stomp_range_multiplier: Option<f32>,
     /// `track_target`: allows the mob to track its target even if it lacks a hard-coded sensing component. Default `false`.
+    #[facet(schema::fallback = false)]
     pub track_target: Option<bool>,
     /// `x_max_rotation`: maximum rotation, in degrees, on the X-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation, in degrees, on the Y-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
     #[facet(skip, rename = "\u{0}legacy_conditions")]
     pub legacy_conditions: LegacyConditions,
-}
-
-impl StompAttack {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `attack_once`, or its default `false`.
-    pub fn attack_once(&self) -> bool {
-        self.attack_once.is_some_and(|v| v)
-    }
-
-    /// `attack_types`, or its default `""`.
-    pub fn attack_types(&self) -> &str {
-        self.attack_types.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `can_spread_on_fire`, or its default `false`.
-    pub fn can_spread_on_fire(&self) -> bool {
-        self.can_spread_on_fire.is_some_and(|v| v)
-    }
-
-    /// `cooldown_time`, or its default 1.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(1.0)
-    }
-
-    /// `inner_boundary_time_increase`, or its default 0.25.
-    pub fn inner_boundary_time_increase(&self) -> f32 {
-        self.inner_boundary_time_increase.unwrap_or(0.25)
-    }
-
-    /// `max_path_time`, or its default 0.55.
-    pub fn max_path_time(&self) -> f32 {
-        self.max_path_time.unwrap_or(0.55)
-    }
-
-    /// `min_path_time`, or its default 0.2.
-    pub fn min_path_time(&self) -> f32 {
-        self.min_path_time.unwrap_or(0.2)
-    }
-
-    /// `no_damage_range_multiplier`, or its default 2.
-    pub fn no_damage_range_multiplier(&self) -> f32 {
-        self.no_damage_range_multiplier.unwrap_or(2.0)
-    }
-
-    /// `outer_boundary_time_increase`, or its default 0.5.
-    pub fn outer_boundary_time_increase(&self) -> f32 {
-        self.outer_boundary_time_increase.unwrap_or(0.5)
-    }
-
-    /// `path_fail_time_increase`, or its default 0.75.
-    pub fn path_fail_time_increase(&self) -> f32 {
-        self.path_fail_time_increase.unwrap_or(0.75)
-    }
-
-    /// `path_inner_boundary`, or its default 16.
-    pub fn path_inner_boundary(&self) -> f32 {
-        self.path_inner_boundary.unwrap_or(16.0)
-    }
-
-    /// `path_outer_boundary`, or its default 32.
-    pub fn path_outer_boundary(&self) -> f32 {
-        self.path_outer_boundary.unwrap_or(32.0)
-    }
-
-    /// `random_stop_interval`, or its default 0.
-    pub fn random_stop_interval(&self) -> i32 {
-        self.random_stop_interval.unwrap_or(0)
-    }
-
-    /// `reach_multiplier`, or its default 2.
-    pub fn reach_multiplier(&self) -> f32 {
-        self.reach_multiplier.unwrap_or(2.0)
-    }
-
-    /// `require_complete_path`, or its default `false`.
-    pub fn require_complete_path(&self) -> bool {
-        self.require_complete_path.is_some_and(|v| v)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `stomp_range_multiplier`, or its default 2.
-    pub fn stomp_range_multiplier(&self) -> f32 {
-        self.stomp_range_multiplier.unwrap_or(2.0)
-    }
-
-    /// `track_target`, or its default `false`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_some_and(|v| v)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
 }
 
 impl Goal for StompAttack {
@@ -1994,68 +1258,9 @@ impl Goal for StompAttack {
         &[("melee_fov", deprecated_text!("melee_fov"), known::V1_26_0)];
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
-        c.float(
-            "inner_boundary_time_increase",
-            &mut self.inner_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float("max_path_time", &mut self.max_path_time, Bound::Min(0.0));
-        c.float("min_path_time", &mut self.min_path_time, Bound::Min(0.0));
-        c.float(
-            "no_damage_range_multiplier",
-            &mut self.no_damage_range_multiplier,
-            Bound::Above(0.0),
-        );
+        c.bounds(self);
         c.trigger("on_attack", self.on_attack.as_ref());
         c.trigger("on_kill", self.on_kill.as_ref());
-        c.float(
-            "outer_boundary_time_increase",
-            &mut self.outer_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_fail_time_increase",
-            &mut self.path_fail_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_inner_boundary",
-            &mut self.path_inner_boundary,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_outer_boundary",
-            &mut self.path_outer_boundary,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "random_stop_interval",
-            &mut self.random_stop_interval,
-            Bound::Min(0),
-        );
-        c.float(
-            "reach_multiplier",
-            &mut self.reach_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "stomp_range_multiplier",
-            &mut self.stomp_range_multiplier,
-            Bound::Above(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
     }
 
     fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
@@ -2069,8 +1274,10 @@ impl Goal for StompAttack {
     }
 }
 
-impl MolangFields for StompAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl StompAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_attack", self.on_attack.as_ref());
         push_trigger(&mut triggers, "on_kill", self.on_kill.as_ref());
@@ -2127,10 +1334,6 @@ pub struct Swell {
 
 impl Goal for Swell {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.swoop_attack`: allows an entity to attack using swoop attack behavior; Ideal for use with flying mobs. The behavior ends if the entity has a horizontal collision or gets hit.
@@ -2140,7 +1343,7 @@ impl Goal for Swell {
 #[facet(schema::unknown = "keep")]
 pub struct SwoopAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -2148,25 +1351,18 @@ pub struct SwoopAttack {
     #[facet(schema::fallback = 0.2)]
     pub damage_reach: Option<f32>,
     /// `delay_range`: minimum and maximum cooldown time-range (in seconds) between each attempted swoop attack. Default 1e+01 to 2e+01.
+    #[facet(schema::fallback = (1.0e1, 2.0e1))]
     pub delay_range: Option<FloatRange>,
     /// `speed_multiplier`: during swoop attack behavior, this determines the multiplier the entity's speed is modified by when moving toward the target. Default 1.
     #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
-impl SwoopAttack {
-    /// `delay_range`, or its default 1e+01 to 2e+01.
-    pub fn delay_range(&self) -> (f32, f32) {
-        self.delay_range
-            .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
-    }
-}
-
 impl Goal for SwoopAttack {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("delay_range", &mut self.delay_range);
     }
 }
@@ -2174,68 +1370,95 @@ impl Goal for SwoopAttack {
 /// `minecraft:behavior.use_kinetic_weapon`: enables a mob to use kinetic weaponry by intermittently charging at its target and repositioning afterward.
 // `behavior.use_kinetic_weapon`: typed from 1.21.120, redeclared 1.26.40.
 #[doc(alias = "minecraft:behavior.use_kinetic_weapon")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct UseKineticWeapon {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `approach_distance`: the distance to the target within which the mob begins using its kinetic weapon. Default 8; at least 0.
+    #[facet(schema::fallback = 8.0, schema::min = 0.0)]
     pub approach_distance: Option<f32>,
     /// `attack_once`: allows the mob to perform this melee attack behavior only once during its lifetime. Default `false`.
+    #[facet(schema::fallback = false)]
     pub attack_once: Option<bool>,
     /// `attack_types`: defines the entity types this entity will attack. Default `""`.
+    #[facet(schema::fallback = "")]
     pub attack_types: Option<String>,
     /// `can_spread_on_fire`: allows the mob, if on fire and empty handed, to ignite its target upon a successful attack. Default `false`.
+    #[facet(schema::fallback = false)]
     pub can_spread_on_fire: Option<bool>,
     /// `cooldown_distance`: the distance the mob retreats to after all of the item's `minecraft:kinetic_weapon` component's `max_duration` values have elapsed. After reaching this position and once `cooldown` has elapsed, the mob will approach again. This value is added to the reach midpoint. Default 8 to 8.
+    #[facet(schema::fallback = (8.0, 8.0))]
     pub cooldown_distance: Option<FloatRange>,
     /// `cooldown_speed_multiplier`: multiplier applied to the mob's movement speed while on cooldown. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown_speed_multiplier: Option<f32>,
     /// `cooldown_time`: cooldown time, in seconds, between consecutive attacks. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown_time: Option<f32>,
     /// `hijack_mount_navigation`: allows the mob to override its mount's navigation behavior with the logic defined by this goal. Requires the mount to be running the `minecraft:behavior.mount_pathing` goal, which default behavior will be ignored. Default `false`.
+    #[facet(schema::fallback = false)]
     pub hijack_mount_navigation: Option<bool>,
     /// `inner_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_inner_boundary`. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
     pub inner_boundary_time_increase: Option<f32>,
     /// `max_path_time`: maximum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.55; at least 0.
+    #[facet(schema::fallback = 0.55, schema::min = 0.0)]
     pub max_path_time: Option<f32>,
     /// `melee_fov`: field of view, in degrees, used by the hard-coded sensing component to detect a valid attack target. Default 9e+01; at least 0.
+    #[facet(schema::fallback = 9.0e1, schema::min = 0.0)]
     pub melee_fov: Option<f32>,
     /// `min_path_time`: minimum base time, in seconds, before recalculating a new attack path to the target (before increases are applied). Default 0.2; at least 0.
+    #[facet(schema::fallback = 0.2, schema::min = 0.0)]
     pub min_path_time: Option<f32>,
     /// `on_attack`: defines the event to trigger when this entity successfully attacks.
     pub on_attack: Option<EventTrigger>,
     /// `on_kill`: defines the event to trigger when this entity kills the target.
     pub on_kill: Option<EventTrigger>,
     /// `outer_boundary_time_increase`: time, in seconds, added to the attack path recalculation interval when the target is beyond `path_outer_boundary`. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub outer_boundary_time_increase: Option<f32>,
     /// `path_fail_time_increase`: time, in seconds, added to the attack path recalculation interval when the mob cannot move along the current path. Default 0.75; at least 0.
+    #[facet(schema::fallback = 0.75, schema::min = 0.0)]
     pub path_fail_time_increase: Option<f32>,
     /// `path_inner_boundary`: distance at which to increase attack path recalculation by `inner_boundary_time_increase`. Default 16; at least 0.
+    #[facet(schema::fallback = 16.0, schema::min = 0.0)]
     pub path_inner_boundary: Option<f32>,
     /// `path_outer_boundary`: distance at which to increase attack path recalculation by `outer_boundary_time_increase`. Default 32; at least 0.
+    #[facet(schema::fallback = 32.0, schema::min = 0.0)]
     pub path_outer_boundary: Option<f32>,
     /// `random_stop_interval`: defines a 1-in-N chance for the mob to stop its current attack, where N equals `random_stop_interval`. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub random_stop_interval: Option<i32>,
     /// `reposition_distance`: the distance the mob retreats to once the target is closer than the midpoint of the item's `minecraft:kinetic_weapon` component's minimum and maximum `reach`. After reaching this position, the mob will charge again. This value is added to the reach midpoint. Default 2 to 2.
+    #[facet(schema::fallback = (2.0, 2.0))]
     pub reposition_distance: Option<FloatRange>,
     /// `reposition_speed_multiplier`: multiplier applied to the mob's movement speed while repositioning. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub reposition_speed_multiplier: Option<f32>,
     /// `require_complete_path`: specifies whether a full navigation path from the mob to the target is required. Default `false`.
+    #[facet(schema::fallback = false)]
     pub require_complete_path: Option<bool>,
     /// `speed_multiplier`: multiplier applied to the mob's movement speed when moving toward its target. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `track_target`: allows the mob to track its target even if it lacks a hard-coded sensing component. Default `false`.
+    #[facet(schema::fallback = false)]
     pub track_target: Option<bool>,
     /// `weapon_min_speed_multiplier`: multiplier applied to each `min_speed` and `min_relative_speed` condition in the item's `minecraft:kinetic_weapon` component. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub weapon_min_speed_multiplier: Option<f32>,
     /// `weapon_reach_multiplier`: multiplier applied to the item's `minecraft:kinetic_weapon` component's `reach`. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub weapon_reach_multiplier: Option<f32>,
     /// `x_max_rotation`: maximum rotation, in degrees, on the X-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub x_max_rotation: Option<f32>,
     /// `y_max_head_rotation`: maximum rotation, in degrees, on the Y-axis while the mob is trying to look at its target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
     pub y_max_head_rotation: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -2244,224 +1467,15 @@ pub struct UseKineticWeapon {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl UseKineticWeapon {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `approach_distance`, or its default 8.
-    pub fn approach_distance(&self) -> f32 {
-        self.approach_distance.unwrap_or(8.0)
-    }
-
-    /// `attack_once`, or its default `false`.
-    pub fn attack_once(&self) -> bool {
-        self.attack_once.is_some_and(|v| v)
-    }
-
-    /// `attack_types`, or its default `""`.
-    pub fn attack_types(&self) -> &str {
-        self.attack_types.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `can_spread_on_fire`, or its default `false`.
-    pub fn can_spread_on_fire(&self) -> bool {
-        self.can_spread_on_fire.is_some_and(|v| v)
-    }
-
-    /// `cooldown_distance`, or its default 8 to 8.
-    pub fn cooldown_distance(&self) -> (f32, f32) {
-        self.cooldown_distance
-            .map_or((8.0, 8.0), |range| range.resolve(8.0, 8.0))
-    }
-
-    /// `cooldown_speed_multiplier`, or its default 1.
-    pub fn cooldown_speed_multiplier(&self) -> f32 {
-        self.cooldown_speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `cooldown_time`, or its default 1.
-    pub fn cooldown_time(&self) -> f32 {
-        self.cooldown_time.unwrap_or(1.0)
-    }
-
-    /// `hijack_mount_navigation`, or its default `false`.
-    pub fn hijack_mount_navigation(&self) -> bool {
-        self.hijack_mount_navigation.is_some_and(|v| v)
-    }
-
-    /// `inner_boundary_time_increase`, or its default 0.25.
-    pub fn inner_boundary_time_increase(&self) -> f32 {
-        self.inner_boundary_time_increase.unwrap_or(0.25)
-    }
-
-    /// `max_path_time`, or its default 0.55.
-    pub fn max_path_time(&self) -> f32 {
-        self.max_path_time.unwrap_or(0.55)
-    }
-
-    /// `melee_fov`, or its default 9e+01.
-    pub fn melee_fov(&self) -> f32 {
-        self.melee_fov.unwrap_or(9.0e1)
-    }
-
-    /// `min_path_time`, or its default 0.2.
-    pub fn min_path_time(&self) -> f32 {
-        self.min_path_time.unwrap_or(0.2)
-    }
-
-    /// `outer_boundary_time_increase`, or its default 0.5.
-    pub fn outer_boundary_time_increase(&self) -> f32 {
-        self.outer_boundary_time_increase.unwrap_or(0.5)
-    }
-
-    /// `path_fail_time_increase`, or its default 0.75.
-    pub fn path_fail_time_increase(&self) -> f32 {
-        self.path_fail_time_increase.unwrap_or(0.75)
-    }
-
-    /// `path_inner_boundary`, or its default 16.
-    pub fn path_inner_boundary(&self) -> f32 {
-        self.path_inner_boundary.unwrap_or(16.0)
-    }
-
-    /// `path_outer_boundary`, or its default 32.
-    pub fn path_outer_boundary(&self) -> f32 {
-        self.path_outer_boundary.unwrap_or(32.0)
-    }
-
-    /// `random_stop_interval`, or its default 0.
-    pub fn random_stop_interval(&self) -> i32 {
-        self.random_stop_interval.unwrap_or(0)
-    }
-
-    /// `reposition_distance`, or its default 2 to 2.
-    pub fn reposition_distance(&self) -> (f32, f32) {
-        self.reposition_distance
-            .map_or((2.0, 2.0), |range| range.resolve(2.0, 2.0))
-    }
-
-    /// `reposition_speed_multiplier`, or its default 1.
-    pub fn reposition_speed_multiplier(&self) -> f32 {
-        self.reposition_speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `require_complete_path`, or its default `false`.
-    pub fn require_complete_path(&self) -> bool {
-        self.require_complete_path.is_some_and(|v| v)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `track_target`, or its default `false`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_some_and(|v| v)
-    }
-
-    /// `weapon_min_speed_multiplier`, or its default 1.
-    pub fn weapon_min_speed_multiplier(&self) -> f32 {
-        self.weapon_min_speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `weapon_reach_multiplier`, or its default 1.
-    pub fn weapon_reach_multiplier(&self) -> f32 {
-        self.weapon_reach_multiplier.unwrap_or(1.0)
-    }
-
-    /// `x_max_rotation`, or its default 3e+01.
-    pub fn x_max_rotation(&self) -> f32 {
-        self.x_max_rotation.unwrap_or(3.0e1)
-    }
-
-    /// `y_max_head_rotation`, or its default 3e+01.
-    pub fn y_max_head_rotation(&self) -> f32 {
-        self.y_max_head_rotation.unwrap_or(3.0e1)
-    }
-}
-
 impl Goal for UseKineticWeapon {
     const TYPED: FormatVersion = known::V1_21_120;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float(
-            "approach_distance",
-            &mut self.approach_distance,
-            Bound::Min(0.0),
-        );
+        c.bounds(self);
         c.range("cooldown_distance", &mut self.cooldown_distance);
-        c.float(
-            "cooldown_speed_multiplier",
-            &mut self.cooldown_speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float("cooldown_time", &mut self.cooldown_time, Bound::Min(0.0));
-        c.float(
-            "inner_boundary_time_increase",
-            &mut self.inner_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float("max_path_time", &mut self.max_path_time, Bound::Min(0.0));
-        c.float("melee_fov", &mut self.melee_fov, Bound::Min(0.0));
-        c.float("min_path_time", &mut self.min_path_time, Bound::Min(0.0));
         c.trigger("on_attack", self.on_attack.as_ref());
         c.trigger("on_kill", self.on_kill.as_ref());
-        c.float(
-            "outer_boundary_time_increase",
-            &mut self.outer_boundary_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_fail_time_increase",
-            &mut self.path_fail_time_increase,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_inner_boundary",
-            &mut self.path_inner_boundary,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "path_outer_boundary",
-            &mut self.path_outer_boundary,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "random_stop_interval",
-            &mut self.random_stop_interval,
-            Bound::Min(0),
-        );
         c.range("reposition_distance", &mut self.reposition_distance);
-        c.float(
-            "reposition_speed_multiplier",
-            &mut self.reposition_speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "weapon_min_speed_multiplier",
-            &mut self.weapon_min_speed_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float(
-            "weapon_reach_multiplier",
-            &mut self.weapon_reach_multiplier,
-            Bound::Min(0.0),
-        );
-        c.float("x_max_rotation", &mut self.x_max_rotation, Bound::Min(0.0));
-        c.float(
-            "y_max_head_rotation",
-            &mut self.y_max_head_rotation,
-            Bound::Min(0.0),
-        );
     }
 
     fn upgrade(&mut self, from: FormatVersion, _: &mut Diagnostics) {
@@ -2475,8 +1489,10 @@ impl Goal for UseKineticWeapon {
     }
 }
 
-impl MolangFields for UseKineticWeapon {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl UseKineticWeapon {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_trigger(&mut triggers, "on_attack", self.on_attack.as_ref());
         push_trigger(&mut triggers, "on_kill", self.on_kill.as_ref());
@@ -2498,6 +1514,7 @@ pub struct SummonStage {
     #[facet(schema::fallback = -1.0)]
     pub entity_lifespan: Option<f32>,
     /// `entity_type`: the entity type of the entities we will spawn in this step. Default `""`.
+    #[facet(schema::fallback = "")]
     pub entity_type: Option<String>,
     /// `num_entities_spawned`: number of entities that will be spawned in this step. Default 1.
     #[facet(schema::fallback = 1)]
@@ -2509,6 +1526,7 @@ pub struct SummonStage {
     #[facet(schema::fallback = 1.0)]
     pub size: Option<f32>,
     /// `sound_event`: the sound event to play for this step. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub sound_event: Option<SoundEvent>,
     /// `summon_cap`: maximum number of summoned entities at any given time. Default 0.
     #[facet(schema::fallback = 0)]
@@ -2517,29 +1535,11 @@ pub struct SummonStage {
     #[facet(schema::fallback = 0.0)]
     pub summon_cap_radius: Option<f32>,
     /// `summon_event`: event to invoke on each summoned entity on spawn. Default `""`.
+    #[facet(schema::fallback = "")]
     pub summon_event: Option<String>,
     /// `target`: the target of the spell. This is where the spell will start (line will start here, circle will be centered here). Default `self`.
     #[facet(schema::fallback = SummonTarget::Self_)]
     pub target: Option<SummonTarget>,
-}
-
-impl SummonStage {
-    /// `entity_type`, or its default `""`.
-    pub fn entity_type(&self) -> &str {
-        self.entity_type.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `sound_event`, or its default `undefined`.
-    pub fn sound_event(&self) -> &str {
-        self.sound_event
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
-
-    /// `summon_event`, or its default `""`.
-    pub fn summon_event(&self) -> &str {
-        self.summon_event.as_ref().map_or("", |v| v.as_str())
-    }
 }
 
 impl SummonStage {
@@ -2575,19 +1575,11 @@ pub struct SummonChoice {
     /// `sequence`: list of steps for the spell. Each step has the following parameters.
     pub sequence: Option<Vec<SummonStage>>,
     /// `start_sound_event`: the sound event to play when using this spell. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub start_sound_event: Option<SoundEvent>,
     /// `weight`: the weight of this spell. Controls how likely the mob is to choose this spell when casting one. Default 0.
     #[facet(schema::fallback = 0.0)]
     pub weight: Option<f32>,
-}
-
-impl SummonChoice {
-    /// `start_sound_event`, or its default `undefined`.
-    pub fn start_sound_event(&self) -> &str {
-        self.start_sound_event
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
 }
 
 impl SummonChoice {
@@ -2778,6 +1770,7 @@ pub struct SendEventChoice {
     /// `sequence`: list of events to send.
     pub sequence: Option<Vec<SendEventStage>>,
     /// `start_sound_event`: the sound event to play when this spell starts. Default `""`.
+    #[facet(schema::fallback = "")]
     pub start_sound_event: Option<SoundEvent>,
     /// `weight`: relative weight of this spell choice when randomly selected from valid choices. Default 0.
     #[facet(schema::fallback = 0.0)]
@@ -2785,11 +1778,6 @@ pub struct SendEventChoice {
 }
 
 impl SendEventChoice {
-    /// `start_sound_event`, or its default `""`.
-    pub fn start_sound_event(&self) -> &str {
-        self.start_sound_event.as_ref().map_or("", SoundEvent::name)
-    }
-
     /// Checks the entry's members.
     pub(crate) fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.filter("filters", self.filters.as_ref());
@@ -2806,51 +1794,16 @@ pub struct SendEventStage {
     #[facet(schema::fallback = 0.0)]
     pub base_delay: Option<f32>,
     /// `event`: the event to send to the entity. Default `""`.
+    #[facet(schema::fallback = "")]
     pub event: Option<String>,
     /// `sound_event`: the sound event to play when this step happens. Default `""`.
+    #[facet(schema::fallback = "")]
     pub sound_event: Option<SoundEvent>,
 }
 
 impl SendEventStage {
-    /// `event`, or its default `""`.
-    pub fn event(&self) -> &str {
-        self.event.as_ref().map_or("", |v| v.as_str())
-    }
-
-    /// `sound_event`, or its default `""`.
-    pub fn sound_event(&self) -> &str {
-        self.sound_event.as_ref().map_or("", SoundEvent::name)
-    }
-
     /// Checks the entry's members.
     pub(crate) fn check(&mut self, c: &mut GoalCheck<'_>) {
         c.sound("sound_event", self.sound_event.as_ref());
     }
 }
-
-crate::trigger_fields!(DelayedAttack {
-    on_attack: Option<EventTrigger>,
-    on_kill: Option<EventTrigger>,
-});
-crate::trigger_fields!(KnockbackRoar {
-    on_roar_end: Option<EventTrigger>,
-});
-crate::trigger_fields!(MeleeAttack {
-    on_attack: Option<EventTrigger>,
-    on_kill: Option<EventTrigger>,
-});
-crate::trigger_fields!(MeleeBoxAttack {
-    on_attack: Option<EventTrigger>,
-    on_kill: Option<EventTrigger>,
-});
-crate::trigger_fields!(RamAttack {
-    on_start: Option<Vec<EventTrigger>>,
-});
-crate::trigger_fields!(StompAttack {
-    on_attack: Option<EventTrigger>,
-    on_kill: Option<EventTrigger>,
-});
-crate::trigger_fields!(UseKineticWeapon {
-    on_attack: Option<EventTrigger>,
-    on_kill: Option<EventTrigger>,
-});

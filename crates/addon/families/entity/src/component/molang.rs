@@ -369,7 +369,7 @@ pub struct Seat {
 }
 
 impl Typed for Rideable {
-    // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
+    // The top-level recovery: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 

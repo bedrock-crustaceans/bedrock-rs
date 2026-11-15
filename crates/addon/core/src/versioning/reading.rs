@@ -97,6 +97,23 @@ pub enum Choices {
     Whole,
 }
 
+/// Whether, and how, the members of a range that the range does not read are told
+/// ([`Reading::range_members`]): the game binds `min` and `max` (or `range_min` and
+/// `range_max`) of the object form and the first two elements of the list form, and nothing
+/// else.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum RangeMembers {
+    /// None is told.
+    Silent,
+    /// Each is an unknown member of the word `report` (told at the unknown severity, not kept),
+    /// in the pass of the other unknown members: the entity's.
+    Unrecognized,
+    /// Each is a `MEMBER_NOT_KEPT` at the unknown severity, in the last pass, after every other
+    /// finding of the read: the item's.
+    NotKept,
+}
+
 /// What a member that fails to read does to what holds it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -143,6 +160,10 @@ pub struct Reading {
     /// `ByMember` in every profile, and only a slice of a family that shares such a leaf with
     /// another says `Whole`.
     pub choices: Choices,
+    /// Whether, and how, the members of a range that the range does not read are told. Not in
+    /// the reading tables: `Silent` in every profile, and a slice of the item and entity
+    /// families says otherwise.
+    pub range_members: RangeMembers,
 }
 
 impl Reading {
@@ -161,6 +182,7 @@ impl Reading {
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
         choices: Choices::ByMember,
+        range_members: RangeMembers::Silent,
     };
     /// The `JsonCpp` families (entity, features, the legacy item): a `null` member is
     /// absent, an unknown member a warning.
@@ -174,6 +196,7 @@ impl Reading {
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
         choices: Choices::ByMember,
+        range_members: RangeMembers::Silent,
     };
     /// A slice whose reader is the family's own (`FirstRun`, a hand-written legacy slice):
     /// no null rule, an unknown member a warning.
@@ -187,6 +210,7 @@ impl Reading {
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
         choices: Choices::ByMember,
+        range_members: RangeMembers::Silent,
     };
     /// The reading with `null` read as `null`.
     #[must_use]
@@ -246,6 +270,16 @@ impl Reading {
         Self { choices, ..self }
     }
 
+    /// The reading telling the members of a range that the range does not read, as
+    /// `range_members` says.
+    #[must_use]
+    pub const fn with_range_members(self, range_members: RangeMembers) -> Self {
+        Self {
+            range_members,
+            ..self
+        }
+    }
+
     /// The reading with a failed member doing `failure`.
     #[must_use]
     pub const fn with_on_member_failure(self, failure: MemberFailure) -> Self {
@@ -300,6 +334,15 @@ mod tests {
         for reading in [Reading::DOCUMENT, Reading::NULL_ABSENT, Reading::OWN] {
             assert_eq!(reading.choices, Choices::ByMember);
             assert_eq!(reading.with_choices(Choices::Whole).choices, Choices::Whole);
+        }
+    }
+
+    #[test]
+    fn a_profile_tells_no_unread_range_member_and_a_slice_may_say_so() {
+        for reading in [Reading::DOCUMENT, Reading::NULL_ABSENT, Reading::OWN] {
+            assert_eq!(reading.range_members, RangeMembers::Silent);
+            let told = reading.with_range_members(RangeMembers::NotKept);
+            assert_eq!(told.range_members, RangeMembers::NotKept);
         }
     }
 

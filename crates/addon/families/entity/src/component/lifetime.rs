@@ -8,6 +8,7 @@ use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::Recovery;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -294,7 +295,7 @@ pub struct TransformationDelay {
 }
 
 impl Typed for Transformation {
-    const KEEP_NESTED: bool = true;
+    const RECOVERY: Recovery = Recovery::Value;
 
     /// Below 1.26.60 a sound written as one name is the list of it (vanilla's own files write
     /// one name) and a number `delay` is the delay's `value`. The typed reader refuses a lone
@@ -406,7 +407,7 @@ pub struct TimeChoice {
 }
 
 impl Typed for Timer {
-    // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
+    // The top-level recovery: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 

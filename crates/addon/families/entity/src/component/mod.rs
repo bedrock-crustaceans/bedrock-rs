@@ -39,8 +39,8 @@ pub use interact::*;
 mod projectile;
 pub(crate) use projectile::name_aliases as name_projectile_aliases;
 pub use projectile::*;
-mod lenient;
 pub(crate) mod parse;
+pub(crate) use parse::written_back;
 #[doc(hidden)]
 pub mod upgrade;
 

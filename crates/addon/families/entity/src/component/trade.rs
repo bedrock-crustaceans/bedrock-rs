@@ -6,7 +6,6 @@
 
 use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{EventTrigger, IntRange, RangeForm};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -15,7 +14,6 @@ use facet::Facet;
 use facet_value::VObject;
 
 use super::parse::{ComponentCheck, Typed};
-use super::value::visit_item_tags;
 
 /// `minecraft:admire_item`: the entity admires a held item for a while, ignoring targets.
 #[doc(alias = "minecraft:admire_item")]
@@ -77,7 +75,7 @@ impl Typed for TradeTable {}
 
 /// `minecraft:tamemount`: the entity can be tamed by riding it and feeding it.
 #[doc(alias = "minecraft:tamemount")]
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Tamemount {
     /// `attempt_temper_mod`: temper added on each failed taming attempt; default 5.
@@ -103,21 +101,6 @@ pub struct Tamemount {
     pub ride_text: String,
     /// `tame_event`: the event fired when the entity is tamed; absent means none.
     pub tame_event: Option<EventTrigger>,
-}
-
-impl Default for Tamemount {
-    fn default() -> Self {
-        Self {
-            attempt_temper_mod: 5,
-            auto_reject_items: Vec::new(),
-            feed_items: Vec::new(),
-            feed_text: String::new(),
-            max_temper: 100,
-            min_temper: 0,
-            ride_text: String::new(),
-            tame_event: None,
-        }
-    }
 }
 
 /// One item of [`Tamemount::feed_items`].
@@ -193,33 +176,6 @@ impl Typed for Tamemount {
         if let Some(event) = &self.tame_event {
             cx.extend(event.check(&JsonPath::new().child("tame_event"), cx.unknown()));
         }
-    }
-}
-
-impl MolangFields for Tamemount {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.enter("feed_items".into());
-        for (i, entry) in self.feed_items.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.enter("item".into());
-            if let Some(item) = &mut entry.item {
-                visit_item_tags(item, visitor);
-            }
-            visitor.leave();
-            visitor.leave();
-        }
-        visitor.leave();
-        visitor.enter("auto_reject_items".into());
-        for (i, entry) in self.auto_reject_items.iter_mut().enumerate() {
-            visitor.enter(i.into());
-            visitor.enter("item".into());
-            if let Some(item) = &mut entry.item {
-                visit_item_tags(item, visitor);
-            }
-            visitor.leave();
-            visitor.leave();
-        }
-        visitor.leave();
     }
 }
 
@@ -328,7 +284,7 @@ pub struct ShareableItem {
 }
 
 impl Typed for Shareables {
-    // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
+    // The top-level recovery: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 
@@ -394,7 +350,7 @@ pub struct EconomyTradeTable {
 }
 
 impl Typed for EconomyTradeTable {
-    // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
+    // The top-level recovery: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 
@@ -433,7 +389,3 @@ mod tests {
         assert_eq!(RejectItem::default(), reject);
     }
 }
-
-crate::trigger_fields!(Tamemount {
-    tame_event: Option<EventTrigger>,
-});

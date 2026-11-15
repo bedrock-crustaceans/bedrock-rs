@@ -116,7 +116,7 @@ pub enum EquipmentSlot {
 /// `spell_effects.add_effects[].duration`. JSON: a number or the string `"infinite"`; another
 /// string or any other JSON type is refused.
 // For `attack` and `spell_effects` the default is the float alternative 0.0.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum EffectSeconds {
@@ -126,9 +126,6 @@ pub enum EffectSeconds {
     #[facet(rename = "infinite")]
     Infinite,
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(EffectSeconds);
 
 impl Default for EffectSeconds {
     fn default() -> Self {
@@ -140,7 +137,7 @@ impl Default for EffectSeconds {
 /// constant bound): `healable.items[].effects[].duration`, whose help says it may be `"infinite"`; the
 /// game keeps the text as written. JSON: a number or a string.
 // A float or a string, the default being the float 0.0; "infinite" is kept as a string.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum SecondsOrText {
@@ -149,9 +146,6 @@ pub enum SecondsOrText {
     /// A text, as written.
     Text(String),
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(SecondsOrText);
 
 impl Default for SecondsOrText {
     fn default() -> Self {
@@ -205,8 +199,3 @@ pub(crate) fn tell_partial_vector(
         );
     }
 }
-
-bedrock_addon_core::impl_schema_leaf!(EffectSeconds);
-bedrock_addon_core::impl_no_molang!(EffectSeconds);
-bedrock_addon_core::impl_schema_leaf!(SecondsOrText);
-bedrock_addon_core::impl_no_molang!(SecondsOrText);

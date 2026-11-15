@@ -5,12 +5,13 @@
 //! [`goal::EntityTypes`]: crate::goal::EntityTypes
 //! [`component::EntityTypes`]: crate::component::EntityTypes
 
+use bedrock_addon_core::schema::Schema;
 use facet::Facet;
 
 /// `entity_types`: the mobs a goal reacts to, one descriptor or a list of them (vanilla
 /// `EntityTypes`, read as a list and also as a single descriptor). Written back in the form
 /// read.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 #[allow(
@@ -23,9 +24,6 @@ pub enum EntityTypes<D> {
     /// A single descriptor object.
     One(D),
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(impl<D> EntityTypes<D>);
 
 impl<D> Default for EntityTypes<D> {
     /// The empty list.

@@ -1,34 +1,17 @@
 //! Entities: `Entity`, `ComponentGroup`, `Event`, `Property`, `component::*`, `goal::*`,
 //! `history::*`.
+//!
+//! The reader: every typed part (the payload's shell, the description, a property, the scripts,
+//! the brain, each component and goal) derives `Schema` and is read by its derived `FromJson`
+//! (`read.rs`, `component/parse.rs`, `goal/check.rs`); a component or goal at its typed version
+//! strictly, by the typed door's profile, one converted from an older document under
+//! `DefaultAndTell` with the recovery of its legacy reader (`json::kit::Recovery`). What stays
+//! by hand is the entity's own: the fix-ups before a read (`Typed::shorthand`, `prepare`, the
+//! goals' `lenient_shape`), the leaf reads of the goals' closed name sets and sound names, the
+//! checks after it, and the older eras (`history`), which hold their components as JSON and
+//! upgrade them by JSON ops.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
-
-/// The `SchemaFields` of a struct that derives no `Schema` (a goal whose Molang walk reads its
-/// triggers' legacy conditions, which the derive's per-field walk cannot, and `tamemount`, which
-/// walks its item lists out of declaration order): no check (its checks stay by hand), and the
-/// trigger members of the fields listed, each its field's name as the JSON key. Only the
-/// trigger-bearing fields are listed; `check_fields` names each, so a field that is not the
-/// struct's, or not of the type stated, does not compile.
-macro_rules! trigger_fields {
-    ($ty:ty { $($field:ident: $field_ty:ty),* $(,)? }) => {
-        impl bedrock_addon_core::schema::SchemaFields for $ty {
-            fn check_fields(&mut self, _: &mut bedrock_addon_core::schema::SchemaCx<'_>) {
-                $(let _: &$field_ty = &self.$field;)*
-            }
-
-            #[allow(unused_variables, reason = "a struct with no field that holds a trigger")]
-            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
-                $(
-                    <$field_ty as bedrock_addon_core::schema::SchemaFields>::trigger_members(
-                        &bedrock_addon_core::schema::member(prefix, stringify!($field)),
-                        out,
-                    );
-                )*
-            }
-        }
-    };
-}
-pub(crate) use trigger_fields;
 
 pub mod codes;
 pub mod component;
@@ -49,7 +32,6 @@ mod molang;
 mod network;
 mod read;
 mod references;
-mod typed;
 mod types;
 mod validate;
 mod versions;
@@ -97,14 +79,10 @@ pub(crate) use versions::STRICT_SLICES;
 /// What every slice reads by, the unknown mask aside ([`Family::reading`]): a `null` member is
 /// absent (rule N1), and a scalar is read strictly (the cereal readers' rule: a number beyond
 /// its float's width is refused). The typed reads of the components and goals, which run
-/// outside the door, read by the same rules ([`SCALAR_RULES`]).
+/// outside the door, read by the same rules.
 pub(crate) const READING: Reading = Reading::NULL_ABSENT
     .with_scalars(Scalars::Strict)
     .with_beyond_width(BeyondWidth::Error);
-
-/// The scalar rules of [`READING`]: what the typed read of a component or a goal judges each
-/// scalar by.
-pub(crate) const SCALAR_RULES: bedrock_addon_core::json::ScalarRules = READING.scalar_rules();
 
 impl Family for Entity {
     const NAME: &'static str = "entity";

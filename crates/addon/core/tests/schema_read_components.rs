@@ -18,7 +18,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, ConvertMode, Family, Loaded, MemberFailure, NoStable, Reading,
     Scalars, UpgradeCx, VersionChain, parse_component, parse_component_map, read_component,
-    read_component_map,
+    read_component_map, read_slice,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
@@ -535,4 +535,28 @@ fn a_member_since_a_format_is_unknown_in_a_component_of_an_older_document() {
     let (unknown, told) = read_at(None);
     assert!(told.is_empty(), "{told:?}");
     assert!(unknown.contains("new: Some(2)"), "{unknown}");
+}
+
+/// A value read from a slice is a component without a shorthand: the context's reading, every
+/// finding at the value and spanning it.
+#[test]
+fn a_slice_reads_as_a_component_without_a_shorthand() {
+    let cx = context(Reading::DOCUMENT);
+    let told = |text: &str| {
+        let mut d = Diagnostics::default();
+        let value: Option<Friction> = read_slice(JsonSlice::new(text), &cx, &mut d);
+        let told: Vec<String> = d
+            .iter()
+            .map(|f| format!("{:?} {} {:?}", f.severity, f.code.id(), f.location.span))
+            .collect();
+        (value, told)
+    };
+    assert_eq!(told("0.5"), (Some(Friction(0.5)), Vec::new()));
+    let (value, told) = told(r#""slick""#);
+    assert_eq!(value, None);
+    assert_eq!(told.len(), 1, "{told:?}");
+    assert!(
+        told[0].starts_with("Error core/invalid_type Some(Span"),
+        "{told:?}"
+    );
 }

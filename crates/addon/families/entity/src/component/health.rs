@@ -8,6 +8,7 @@ use crate::codes;
 use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::{Code, JsonPath};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::Recovery;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -243,7 +244,7 @@ pub struct SpellEffect {
 }
 
 impl Typed for SpellEffects {
-    const KEEP_NESTED: bool = true;
+    const RECOVERY: Recovery = Recovery::Value;
 
     /// Below 1.26.60 a single `remove_effects` name is the list of it (the legacy reader takes
     /// it); the typed reader refuses it: the game logs
@@ -326,7 +327,7 @@ pub struct HealEffect {
 }
 
 impl Typed for Healable {
-    // Not KEEP_NESTED: the legacy reader is one of the game's schema readers, which validates
+    // The top-level recovery: the legacy reader is one of the game's schema readers, which validates
     // the whole tree before it parses: a nested value of another type never reaches this
     // read; from 1.15.0 it defaults the whole component.
 

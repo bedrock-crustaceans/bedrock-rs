@@ -10,6 +10,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::Recovery;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FloatRange};
 use bedrock_addon_core::versioning::ConvertMode;
@@ -400,7 +401,7 @@ pub struct MovementJump {
 }
 
 impl Typed for MovementJump {
-    const KEEP_NESTED: bool = true;
+    const RECOVERY: Recovery = Recovery::Value;
 
     /// Below 1.26.60 a `{range_min, range_max}` delay is the typed `{min, max}`.
     fn prepare(json: &mut VObject, cx: &mut ComponentCheck<'_>) -> bool {

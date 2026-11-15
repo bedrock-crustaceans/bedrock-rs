@@ -167,7 +167,7 @@ pub enum ShouldBounce {
 
 /// The launch offset of a [`Projectile`]: `[x, y, z]` or `{"x", "y", "z"}`, kept in the form
 /// read.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum ProjectileOffset {
@@ -176,9 +176,6 @@ pub enum ProjectileOffset {
     /// `{"x", "y", "z"}`.
     Object(Xyz),
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(ProjectileOffset);
 
 impl Default for ProjectileOffset {
     fn default() -> Self {
@@ -456,7 +453,7 @@ pub struct MobEffectInstance {
 
 /// An effect duration: ticks (an integer, at least 0) or a name (`infinite`). JSON: an integer
 /// or a string; any other JSON type is rejected.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum EffectDuration {
@@ -465,9 +462,6 @@ pub enum EffectDuration {
     /// A name.
     Named(String),
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(EffectDuration);
 
 /// `on_hit.particle_on_hit`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -1025,8 +1019,3 @@ impl OnHit {
         }
     }
 }
-
-bedrock_addon_core::impl_schema_leaf!(ProjectileOffset);
-bedrock_addon_core::impl_no_molang!(ProjectileOffset);
-bedrock_addon_core::impl_schema_leaf!(EffectDuration);
-bedrock_addon_core::impl_no_molang!(EffectDuration);

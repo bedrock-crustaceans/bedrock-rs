@@ -1,8 +1,9 @@
 //! Reading the newest struct ([`Entity`], and [`Beta`](super::Beta) with it) from its payload.
 //!
-//! The payload is read as a shell whose open parts stay raw slices: each component is parsed
-//! from its own slice (a failing one is dropped, the rest load), each property, the brain and
-//! the scripts are built member by member so a bad one is reported at its path.
+//! The payload is read through the reader as a shell whose open parts stay values: each
+//! component is parsed from its own slice (a failing one is dropped, the rest load), each
+//! property, the brain and the scripts are read on their own so a bad one is reported at its
+//! path.
 
 use crate::codes;
 use std::cell::OnceCell;
@@ -11,22 +12,20 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Class, Code, Diagnostic, Diagnostics, JsonPath, Kind, Phase, Severity, Span, Told,
 };
-use bedrock_addon_core::document::{
-    ComponentMap, ComponentSet, Origin, Rejected, Unknown as Table, VersionInfo,
-};
+use bedrock_addon_core::document::{ComponentMap, ComponentSet, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::id::EntityId;
-use bedrock_addon_core::json::{
-    JsonSlice, Misreading, PrepareError, Prepared, SliceError, Value,
-    keep_members_and_range_members, parse_at, strip_bom,
-};
+use bedrock_addon_core::json::kit::{Elements, Members, Node, Profile, Read};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{JsonSlice, PrepareError, Prepared, Value, strip_bom};
 use bedrock_addon_core::load::{Experiment, LoadContext};
 use bedrock_addon_core::molang::MolangSource;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_document};
 use bedrock_addon_core::version::{ENGINE_VERSION, FormatVersion, FormatVersionInput, known};
-use bedrock_addon_core::versioning::{ConvertMode, Family, Loaded, ParseCx, UnknownMask, load};
+use bedrock_addon_core::versioning::{
+    ConvertMode, Family, Loaded, NullHandling, ParseCx, Reading, UnknownMask, load,
+};
 use facet::Facet;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::component::EntityComponent;
@@ -48,92 +47,67 @@ pub(crate) const ENTITY_VERSION_STABLE: FormatVersion = known::V1_26_30;
 /// The format version that introduced the root `brain` member.
 pub(crate) const BRAIN_SINCE: FormatVersion = known::V1_21_130;
 
-/// What the newest struct is parsed from.
-#[derive(Facet)]
+/// What the newest struct is read from: the parts each read on by their own readers.
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct Shell<'a> {
-    #[facet(default)]
-    description: Option<RawJson<'a>>,
-    #[facet(default)]
-    components: Option<IndexMap<String, RawJson<'a>>>,
-    #[facet(default)]
-    component_groups: Option<IndexMap<String, RawJson<'a>>>,
-    #[facet(default)]
+struct Shell {
+    description: Option<Value>,
+    components: Option<IndexMap<String, Value>>,
+    component_groups: Option<IndexMap<String, Value>>,
     events: Option<IndexMap<String, Value>>,
-    #[facet(default)]
-    brain: Option<RawJson<'a>>,
-    #[facet(default)]
+    brain: Option<Value>,
     upgrades: Option<IndexMap<String, Value>>,
-    #[facet(default, rename = "__deprecated")]
+    #[facet(rename = "__deprecated")]
     deprecated: Option<DeprecatedShell>,
     // `SKIP_UPGRADES_KEY`: read by the chain as a flag; the newest struct does not keep it.
-    #[facet(default)]
     do_not_upgrade: Option<Value>,
     // The pre-1.8 in-payload version (`Family::payload_version`), consumed by the selection.
-    #[facet(default)]
     format_version: Option<Value>,
 }
 
 /// `__deprecated`.
-#[derive(Facet)]
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 struct DeprecatedShell {
-    #[facet(default)]
     aliases: Option<IndexMap<String, Value>>,
 }
 
-/// What `description` is parsed from.
-#[derive(Facet)]
+/// What `description` is read from.
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct DescriptionShell<'a> {
+struct DescriptionShell {
     identifier: EntityId,
-    #[facet(default)]
     runtime_identifier: Option<EntityId>,
-    #[facet(default)]
     is_spawnable: Option<bool>,
-    #[facet(default)]
     is_summonable: Option<bool>,
-    #[facet(default)]
-    properties: Option<IndexMap<String, RawJson<'a>>>,
-    #[facet(default)]
+    properties: Option<IndexMap<String, Value>>,
     aliases: Option<IndexMap<String, Value>>,
-    #[facet(default)]
     animations: Option<IndexMap<String, String>>,
-    #[facet(default)]
-    scripts: Option<RawJson<'a>>,
-    #[facet(default)]
+    scripts: Option<Value>,
     spawn_category: Option<Value>,
-    #[facet(default)]
     property_memory_mapping: Option<Value>,
-    #[facet(default)]
     entity_version: Option<Value>,
     // Vanilla's own files carry it and vanilla reads nothing from it: kept without a warning.
-    #[facet(default)]
     is_experimental: Option<Value>,
 }
 
-/// What a property is parsed from.
-#[derive(Facet)]
+/// What a property is read from.
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct PropertyShell<'a> {
+struct PropertyShell {
     #[facet(rename = "type")]
     kind: String,
-    #[facet(default)]
-    default: Option<RawJson<'a>>,
-    #[facet(default)]
+    default: Option<Value>,
     range: Option<Vec<Value>>,
-    #[facet(default)]
     values: Option<Vec<String>>,
-    #[facet(default)]
     client_sync: Option<bool>,
 }
 
-/// What `scripts` is parsed from.
-#[derive(Facet)]
+/// What `scripts` is read from.
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct ScriptsShell<'a> {
-    #[facet(default)]
-    animate: Option<Vec<RawJson<'a>>>,
+struct ScriptsShell {
+    animate: Option<Vec<Value>>,
 }
 
 /// The state of one read: the context and where findings go.
@@ -210,21 +184,11 @@ impl<'c, 'd> Reader<'c, 'd> {
         });
     }
 
-    /// A failed typed parse of a slice, at `base` followed by the failing member.
-    fn slice_error(&mut self, error: &SliceError, base: &JsonPath, severity: Severity) {
-        let code = error.code_with_path(error.has_path());
-        self.report(code, severity, base.join(&error.path), Some(error.span));
-    }
-
-    /// [`Self::typed`] with a failure that is a kept error: the game logs it at the error level
+    /// [`Self::read`] with a failure that is a kept error: the game logs it at the error level
     /// and loads the entity.
-    pub(crate) fn typed_kept<'a, T: Facet<'a>>(
-        &mut self,
-        slice: JsonSlice<'a>,
-        base: &JsonPath,
-    ) -> Option<T> {
+    pub(crate) fn read_kept<T: FromJson>(&mut self, node: &Node<'_>) -> Option<T> {
         let before = self.d.len();
-        let value = self.typed::<T>(slice, base, Severity::Error);
+        let value = self.read::<T>(node);
         for finding in self.d.iter_mut().skip(before) {
             // An unknown member is the slice's finding, not the failure's.
             if finding.severity == Severity::Error
@@ -237,70 +201,35 @@ impl<'c, 'd> Reader<'c, 'd> {
         value
     }
 
-    /// Parses `T` from `slice`, keeping the unknown members of its structs that keep them in
-    /// the table of the read (`Diagnostics::unknown_mut`; each one an `UnrecognizedField` at
-    /// [`Self::unknown`]); a failure is reported at `base` with `severity`.
-    pub(crate) fn typed<'a, T: Facet<'a>>(
-        &mut self,
-        slice: JsonSlice<'a>,
-        base: &JsonPath,
-        severity: Severity,
-    ) -> Option<T> {
-        let value = match parse_at::<T>(slice) {
-            Ok(value) => value,
-            Err(error) => {
-                self.slice_error(&error, base, severity);
-                return None;
-            }
+    /// Reads `T` at `node` by the typed door's profile (its first failure an error), keeping
+    /// the unknown members of its structs that keep them in the table of the read
+    /// (`Diagnostics::unknown_mut`), each an `UnrecognizedField` at [`Self::unknown`]. A `null`
+    /// member is what its type makes of it, as the shell's own read took it.
+    pub(crate) fn read<T: FromJson>(&mut self, node: &Node<'_>) -> Option<T> {
+        let mut found = Diagnostics::default();
+        let value = {
+            let mut read = Read::new(crate::READING, &mut found)
+                .null(NullHandling::Own)
+                .unknown_severity(self.unknown())
+                .profile(Profile::FIRST_FAILURE);
+            read_document::<T>(node, &mut read)
         };
-        if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
-            let mut kept = Table::new();
-            let (unknown, misread) = keep_unknown(&value, &json, &mut kept);
-            self.d.unknown_mut().absorb(base, kept);
-            for (path, _) in unknown {
-                // The game logs this at the warning level for a document below 1.21.89; the
-                // strict slices from that version on make it an error.
-                self.report(
-                    Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                    self.unknown(),
-                    base.join(&path),
-                    None,
-                );
-            }
-            for path in misread {
-                // Facet's coercion, which jsoncpp's `as*` conversions make in silence: the game
-                // writes no content-log line, so the crate reports an information.
-                self.report(
-                    Code::from(&core_codes::INVALID_TYPE),
-                    Severity::Info,
-                    base.join(&path),
-                    None,
-                );
+        self.d
+            .unknown_mut()
+            .absorb(&JsonPath::new(), found.take_unknown());
+        for told in found.into_told() {
+            match told {
+                Told::Finding(mut finding) => {
+                    if !self.spans {
+                        finding.location.span = None;
+                    }
+                    self.d.push(*finding);
+                }
+                Told::Moved { from, to } => self.d.moved(from, to),
             }
         }
-        Some(value)
+        value
     }
-}
-
-/// The one place a typed part of an entity (a component, a goal, the description) is
-/// compared with the JSON it was read from: the unknown members, kept in `kept` by the path
-/// of the struct they belong to (relative to `value`), among them the members a range given as an object does not
-/// read (`{"a": 1}` where a number or `{min, max}` stands; reported, not kept); and the
-/// places where the typed read took a value of another JSON type in silence (a `null` read
-/// as a struct of defaults, a scalar facet coerced), each an `InvalidType` warning of the
-/// caller.
-pub(crate) fn keep_unknown<'f, T: Facet<'f>>(
-    value: &T,
-    json: &Value,
-    kept: &mut Table,
-) -> (Vec<(JsonPath, Value)>, Vec<JsonPath>) {
-    let (unknown, misread) = keep_members_and_range_members(value, json, kept);
-    let misread = misread
-        .into_iter()
-        .filter(|misread| matches!(misread.kind, Misreading::WrongType))
-        .map(|misread| misread.path)
-        .collect();
-    (unknown, misread)
 }
 
 /// The root span of a slice.
@@ -310,16 +239,6 @@ pub(crate) fn span_of(slice: JsonSlice<'_>) -> Span {
         offset: to_u32(slice.offset),
         len: to_u32(slice.text.len()),
     }
-}
-
-/// The slice a raw member captured, with its file offset.
-fn nested<'a>(within: JsonSlice<'a>, raw: &RawJson<'a>) -> JsonSlice<'a> {
-    // A slice the borrowed reader captured always lies in `within`; anything else reads as
-    // `null`, which every caller rejects.
-    within.nested(raw).unwrap_or(JsonSlice {
-        text: "null",
-        offset: within.offset,
-    })
 }
 
 /// A raw member as a `Value` (`null` when it is no JSON, which the shell's parse rules out).
@@ -334,23 +253,18 @@ pub(crate) fn entity(
     d: &mut Diagnostics,
 ) -> Option<Entity> {
     let mut reader = Reader::new(cx.load, cx.original_version, d, true);
-    let entity = read_entity(&mut reader, payload, &cx.at)?;
-    if let Some(found) =
-        member_version_value(payload).and_then(|version| payload_version_unread(Some(&version), cx))
-    {
+    let (entity, version) = read_payload(&mut reader, payload, &cx.at)?;
+    if let Some(found) = payload_version_unread(version.as_ref(), cx) {
         reader.d.push(found);
     }
     Some(entity)
 }
 
-/// The payload's own `format_version` member, when it has one.
-fn member_version_value(payload: JsonSlice<'_>) -> Option<Value> {
-    let members =
-        bedrock_addon_core::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(
-            payload.text,
-        )
-        .ok()?;
-    bedrock_addon_core::json::from_str_jsonc::<Value>(members.get("format_version")?.as_str()).ok()
+/// The members of the object at `node`, for the reads below it: nothing is told (the read of
+/// its shell told what is wrong with it); `None` when it is no object.
+fn members_of<'v>(node: &Node<'v>) -> Option<Members<'v>> {
+    let mut quiet = Diagnostics::default();
+    Read::new(Reading::OWN, &mut quiet).object(node)
 }
 
 /// What is to tell of the payload's `format_version` (`Family::payload_version`): nothing
@@ -378,8 +292,28 @@ pub(crate) fn read_entity(
     payload: JsonSlice<'_>,
     at: &JsonPath,
 ) -> Option<Entity> {
+    read_payload(r, payload, at).map(|(entity, _)| entity)
+}
+
+/// [`read_entity`], with the payload's own `format_version` member when it has one.
+fn read_payload(
+    r: &mut Reader<'_, '_>,
+    payload: JsonSlice<'_>,
+    at: &JsonPath,
+) -> Option<(Entity, Option<Value>)> {
+    let Ok(parsed) = parse_slice(payload, Options::default()) else {
+        // Not reached: the document's parse has read the payload.
+        r.report(
+            Code::from(&core_codes::MALFORMED_INPUT),
+            Severity::Error,
+            at.clone(),
+            Some(span_of(payload)),
+        );
+        return None;
+    };
+    let root = Node::parsed(&parsed, at.clone());
     let before = r.d.len();
-    let shell: Shell<'_> = r.typed(payload, at, Severity::Error)?;
+    let shell: Shell = r.read(&root)?;
     if !r.spans {
         // A payload the steps wrote: its own unknown members were told by the parse of the
         // older struct, whose unknown members the steps write back; they are not told twice.
@@ -393,38 +327,33 @@ pub(crate) fn read_entity(
             !told_before
         });
     }
+    let members = members_of(&root)?;
     let written = Written {
         components: shell.components.is_some(),
         component_groups: shell.component_groups.is_some(),
         events: shell.events.is_some(),
         ..Written::default()
     };
-    let Some(description) = shell.description else {
-        // The file is skipped; the game's own base-game packs ship such files, so there it is
-        // only an information.
-        let severity = if r.load.is_base_game_pack {
-            // An information in a base-game pack: the game skips the entity without a message,
-            // and its own packs ship such a file.
-            Severity::Info
-        } else {
-            Severity::Error
-        };
-        r.report(
-            Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-            severity,
-            at.child("description"),
-            Some(span_of(payload)),
-        );
+    let Some(description) = members
+        .get("description")
+        .filter(|node| !node.value().is_null())
+    else {
+        missing_description(r, at, payload);
         return None;
     };
     let description_at = at.child("description");
-    let read = read_description(r, nested(payload, &description), &description_at)?;
+    let read = read_description(r, &description)?;
     let mut description = read.description;
-    let components = match shell.components {
-        Some(entries) => read_components(r, &entries, payload, &at.child("components")),
+    let components = match members.get("components").as_ref().and_then(members_of) {
+        Some(entries) => read_components(r, &entries, &at.child("components")),
         None => ComponentMap::new(),
     };
-    let component_groups = read_groups(r, shell.component_groups, payload, at);
+    let component_groups = members
+        .get("component_groups")
+        .as_ref()
+        .and_then(members_of)
+        .map(|groups| read_groups(r, &groups))
+        .unwrap_or_default();
     let events = shell
         .events
         .unwrap_or_default()
@@ -438,24 +367,10 @@ pub(crate) fn read_entity(
     // document (the strict slices' grade); below, the legacy slice ignores it and the
     // conversion to the strict newest struct does not carry it, so the write-back has none.
     r.d.unknown_mut().take_all(at);
-    let brain = shell.brain.and_then(|raw| {
-        let slice = nested(payload, &raw);
-        if r.original_version < BRAIN_SINCE {
-            // The member arrives with the 1.21.130 format; in an older document it is
-            // an unknown member.
-            r.report(
-                Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                // The game logs this at the warning level for a document below 1.21.89; the
-                // strict slices from that version on make it an error.
-                r.unknown(),
-                at.child("brain"),
-                Some(span_of(slice)),
-            );
-            return None;
-        }
-        r.typed::<Option<Brain>>(slice, &at.child("brain"), Severity::Error)
-            .flatten()
-    });
+    let brain = members
+        .get("brain")
+        .filter(|node| !node.value().is_null())
+        .and_then(|node| read_brain(r, &node));
     let mut deprecated = shell.deprecated.map(|shell| DeprecatedData {
         aliases: shell.aliases.unwrap_or_default(),
     });
@@ -468,7 +383,6 @@ pub(crate) fn read_entity(
     // (`payload_version_unread` tells of one that was not) and `do_not_upgrade` by the
     // chain; neither is kept. The skip key did what it asks for and has no
     // place in the newest struct: noted where it is.
-    let _ = shell.format_version;
     if shell.do_not_upgrade.is_some() {
         r.report(
             Code::from(&core_codes::DROPPED_FIELD),
@@ -477,56 +391,81 @@ pub(crate) fn read_entity(
             None,
         );
     }
-    Some(Entity {
-        description,
-        components,
-        component_groups,
-        events,
-        brain,
-        upgrades,
-        deprecated,
-        written,
-    })
+    Some((
+        Entity {
+            description,
+            components,
+            component_groups,
+            events,
+            brain,
+            upgrades,
+            deprecated,
+            written,
+        },
+        shell.format_version,
+    ))
+}
+
+/// A payload without its `description`: the file is skipped. The game's own base-game packs
+/// ship such files without a message, so there it is only an information.
+fn missing_description(r: &mut Reader<'_, '_>, at: &JsonPath, payload: JsonSlice<'_>) {
+    let severity = if r.load.is_base_game_pack {
+        Severity::Info
+    } else {
+        Severity::Error
+    };
+    r.report(
+        Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+        severity,
+        at.child("description"),
+        Some(span_of(payload)),
+    );
+}
+
+/// `brain`, from the 1.21.130 format on; in an older document an unknown member.
+fn read_brain(r: &mut Reader<'_, '_>, node: &Node<'_>) -> Option<Brain> {
+    if r.original_version < BRAIN_SINCE {
+        r.report(
+            Code::from(&core_codes::UNRECOGNIZED_FIELD),
+            // The game logs this at the warning level for a document below 1.21.89; the strict
+            // slices from that version on make it an error.
+            r.unknown(),
+            node.path().clone(),
+            node.span(),
+        );
+        return None;
+    }
+    r.read::<Brain>(node)
 }
 
 /// `component_groups`: each group's components; a group that is no object is dropped.
-fn read_groups(
-    r: &mut Reader<'_, '_>,
-    groups: Option<IndexMap<String, RawJson<'_>>>,
-    payload: JsonSlice<'_>,
-    at: &JsonPath,
-) -> IndexMap<String, ComponentGroup> {
+fn read_groups(r: &mut Reader<'_, '_>, groups: &Members<'_>) -> IndexMap<String, ComponentGroup> {
     let mut out = IndexMap::new();
-    let all_groups_at = at.child("component_groups");
-    for (name, raw) in groups.unwrap_or_default() {
-        let slice = nested(payload, &raw);
-        let group_at = all_groups_at.child(&name);
-        match bedrock_addon_core::json::from_str_borrowed_jsonc::<
-            Option<IndexMap<String, RawJson<'_>>>,
-        >(slice.text)
-        {
-            Ok(Some(entries)) => {
-                let components = read_components(r, &entries, slice, &group_at);
-                out.insert(name, ComponentGroup { components });
-            }
-            // A `null` group from 1.21.90 (an older document's is dropped by the 1.21.89 step).
-            // The entity's input is JsonCpp (rule N1): a member written `null` is absent, so
-            // the group is not there; the game says nothing, so the crate reports an
-            // information.
-            Ok(None) => r.report(
+    for (name, group) in groups.iter() {
+        let group_at = group.path().clone();
+        if let Some(entries) = members_of(&group) {
+            let components = read_components(r, &entries, &group_at);
+            out.insert(name.to_owned(), ComponentGroup { components });
+        } else if group.value().is_null() {
+            // A `null` group from 1.21.90 (an older document's is dropped by the 1.21.89
+            // step). The entity's input is JsonCpp (rule N1): a member written `null` is
+            // absent, so the group is not there; the game says nothing, so the crate reports
+            // an information.
+            r.report(
                 Code::from(&core_codes::INVALID_VALUE),
                 Severity::Info,
                 group_at,
-                Some(span_of(slice)),
-            ),
-            Err(_) => r.report(
+                group.span(),
+            );
+        } else {
+            r.report(
                 Code::from(&core_codes::INVALID_TYPE),
-                // A group that is no object refuses the entity: cereal's "expected an object" is
-                // an error in both masks, followed by the error-level "failed to load" line.
+                // A group that is no object refuses the entity: cereal's "expected an object"
+                // is an error in both masks, followed by the error-level "failed to load" line.
                 Severity::Error,
                 group_at,
-                Some(span_of(slice)),
-            ),
+                group.span(),
+            );
         }
     }
     out
@@ -547,13 +486,15 @@ fn read_groups(
 )]
 pub(crate) fn read_components(
     r: &mut Reader<'_, '_>,
-    entries: &IndexMap<String, RawJson<'_>>,
-    within: JsonSlice<'_>,
+    entries: &Members<'_>,
     at: &JsonPath,
 ) -> ComponentMap<EntityComponent> {
     let mut map = ComponentMap::new();
-    for (key, raw) in entries {
-        let slice = nested(within, raw);
+    for (key, member) in entries.iter() {
+        let key = &key.to_owned();
+        let Some(slice) = member.text() else {
+            continue;
+        };
         let path = at.child(key);
         let generic = goal::generic_goal(key);
         if r.original_version >= GENERIC_GOALS_SINCE
@@ -1012,25 +953,23 @@ struct ReadDescription {
 
 /// Reads `description`. `aliases` and `entity_version` come back raw: the version rules settle
 /// them.
-fn read_description(
-    r: &mut Reader<'_, '_>,
-    slice: JsonSlice<'_>,
-    at: &JsonPath,
-) -> Option<ReadDescription> {
-    let shell: DescriptionShell<'_> = r.typed(slice, at, Severity::Error)?;
+fn read_description(r: &mut Reader<'_, '_>, node: &Node<'_>) -> Option<ReadDescription> {
+    let at = node.path().clone();
+    let shell: DescriptionShell = r.read(node)?;
     // An unknown member of `description` is told and not kept.
     let unknown = r.d.unknown_mut();
-    unknown.take_all(at);
+    unknown.take_all(&at);
     if let Some(experimental) = shell.is_experimental {
-        unknown.put(at, "is_experimental", experimental);
+        unknown.put(&at, "is_experimental", experimental);
     }
+    let members = members_of(node)?;
     let mut properties = IndexMap::new();
     let mut failed = false;
-    for (name, raw) in shell.properties.unwrap_or_default() {
-        let path = at.child("properties").child(&name);
-        match read_property(r, nested(slice, &raw), &path) {
+    let listed = members.get("properties").as_ref().and_then(members_of);
+    for (name, property) in listed.iter().flat_map(Members::iter) {
+        match read_property(r, &property) {
             Some(property) => {
-                properties.insert(name, property);
+                properties.insert(name.to_owned(), property);
             }
             None => failed = true,
         }
@@ -1045,9 +984,10 @@ fn read_description(
             None,
         );
     }
-    let scripts = shell
-        .scripts
-        .and_then(|raw| read_scripts(r, nested(slice, &raw), &at.child("scripts")));
+    let scripts = members
+        .get("scripts")
+        .filter(|node| !node.value().is_null())
+        .and_then(|node| read_scripts(r, &node));
     let spawn_category = shell.spawn_category.and_then(|value| {
         let category = value
             .as_string()
@@ -1088,10 +1028,11 @@ fn read_description(
 /// kept error and `None`: the caller drops the whole property group, and the entity loads. The
 /// game logs each line (a missing JSON node, "Error loading property %s", a bad type, default
 /// or range) at the error level and then abandons the property group.
-fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<Property> {
-    let shell: PropertyShell<'_> = r.typed_kept(slice, at)?;
+fn read_property(r: &mut Reader<'_, '_>, node: &Node<'_>) -> Option<Property> {
+    let at = node.path().clone();
+    let shell: PropertyShell = r.read_kept(node)?;
     // Its unknown members are told, not kept.
-    r.d.unknown_mut().take_all(at);
+    r.d.unknown_mut().take_all(&at);
     let kind = match shell.kind.as_str() {
         "bool" => PropertyType::Bool,
         "int" => PropertyType::Int,
@@ -1107,12 +1048,14 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
         }
     };
     let values = shell.values.unwrap_or_default();
-    let default = match shell.default {
+    let default_node = members_of(node)?
+        .get("default")
+        .filter(|node| !node.value().is_null());
+    let default = match default_node {
         None => None,
-        Some(raw) => {
-            let default_slice = nested(slice, &raw);
-            let default_at = at.child("default");
-            let json = json_of(default_slice);
+        Some(default_node) => {
+            let default_at = default_node.path().clone();
+            let json = default_node.value();
             if let Some(b) = json.as_bool() {
                 Some(PropertyDefault::Bool(b))
             } else if let Some(n) = json.as_number() {
@@ -1125,7 +1068,7 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
                             Code::from(&core_codes::INVALID_VALUE),
                             Severity::Info,
                             default_at,
-                            Some(span_of(default_slice)),
+                            default_node.span(),
                         );
                         return None;
                     };
@@ -1138,14 +1081,14 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
                     Some(PropertyDefault::Enum(s.as_str().to_owned()))
                 } else {
                     Some(PropertyDefault::Expression(
-                        r.typed_kept::<MolangSource>(default_slice, &default_at)?,
+                        r.read_kept::<MolangSource>(&default_node)?,
                     ))
                 }
             } else {
                 r.report_kept(
                     Code::from(&core_codes::INVALID_TYPE),
                     default_at,
-                    Some(span_of(default_slice)),
+                    default_node.span(),
                 );
                 return None;
             }
@@ -1178,36 +1121,36 @@ fn read_property(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) ->
 /// `scripts`: string entries as written; an object entry's member values are Molang strings
 /// (another type is `InvalidType` and the entry is dropped). Vanilla skips an object entry with
 /// more or fewer than one member, with an error it logs and goes past.
-fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> Option<Scripts> {
-    let shell: ScriptsShell<'_> = r.typed(slice, at, Severity::Error)?;
+fn read_scripts(r: &mut Reader<'_, '_>, node: &Node<'_>) -> Option<Scripts> {
+    let at = node.path().clone();
+    let shell: ScriptsShell = r.read(node)?;
     // Its unknown members are told, not kept.
-    r.d.unknown_mut().take_all(at);
+    r.d.unknown_mut().take_all(&at);
     let animate_written = shell.animate.is_some();
     let mut animate = Vec::new();
     // The file's index of each entry held: a finding told later is at the file's element.
     let mut places = Vec::new();
-    let animate_at = at.child("animate");
-    for (index, raw) in shell.animate.unwrap_or_default().iter().enumerate() {
-        let entry_slice = nested(slice, raw);
-        let entry_at = animate_at.index(index);
-        if let Some(name) = json_of(entry_slice)
-            .as_string()
-            .map(|s| s.as_str().to_owned())
-        {
+    let entries = members_of(node)?
+        .get("animate")
+        .filter(|node| node.value().is_array());
+    let mut quiet = Diagnostics::default();
+    let mut nav = Read::new(Reading::OWN, &mut quiet);
+    let elements = entries.as_ref().and_then(|entries| nav.array(entries));
+    for (index, entry) in elements.iter().flat_map(Elements::iter).enumerate() {
+        let entry_at = entry.path().clone();
+        if let Some(name) = entry.value().as_string().map(|s| s.as_str().to_owned()) {
             animate.push(AnimateEntry::Always(name));
             places.push(index);
             continue;
         }
-        let Ok(members) = bedrock_addon_core::json::from_str_borrowed_jsonc::<
-            IndexMap<String, RawJson<'_>>,
-        >(entry_slice.text) else {
+        let Some(members) = members_of(&entry) else {
             r.report(
                 Code::from(&core_codes::INVALID_TYPE),
                 // The game takes a string or an object and skips another type without a line, so
                 // the crate reports an information.
                 Severity::Info,
                 entry_at,
-                Some(span_of(entry_slice)),
+                entry.span(),
             );
             continue;
         };
@@ -1216,29 +1159,27 @@ fn read_scripts(r: &mut Reader<'_, '_>, slice: JsonSlice<'_>, at: &JsonPath) -> 
             r.report_kept(
                 codes::ANIMATION_SCRIPT_OBJECT_SIZE.with([members.len().to_string()]),
                 entry_at.clone(),
-                Some(span_of(entry_slice)),
+                entry.span(),
             );
         }
         let mut conditions = IndexMap::new();
         let mut valid = true;
-        for (name, raw) in &members {
-            let value_slice = nested(entry_slice, raw);
-            let value_at = entry_at.child(name);
-            if !json_of(value_slice).is_string() {
+        for (name, value) in members.iter() {
+            if !value.value().is_string() {
                 r.report(
                     Code::from(&core_codes::INVALID_TYPE),
                     // The condition is built from a string only and the game logs no line for
                     // another type, so the crate reports an information.
                     Severity::Info,
-                    value_at,
-                    Some(span_of(value_slice)),
+                    value.path().clone(),
+                    value.span(),
                 );
                 valid = false;
                 continue;
             }
             // A failed read of the condition: kept, as the expression node is.
-            if let Some(source) = r.typed_kept::<MolangSource>(value_slice, &value_at) {
-                conditions.insert(name.clone(), source);
+            if let Some(source) = r.read_kept::<MolangSource>(&value) {
+                conditions.insert(name.to_owned(), source);
             }
         }
         if valid {

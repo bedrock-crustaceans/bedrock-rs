@@ -10,7 +10,7 @@ use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::check::{Bound, Deprecated, Goal, GoalCheck, deprecated_text};
+use super::check::{Deprecated, Goal, GoalCheck, deprecated_text};
 use super::common::ControlFlag;
 use super::convert;
 
@@ -21,7 +21,7 @@ use super::convert;
 #[facet(schema::unknown = "keep")]
 pub struct Beg {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -32,21 +32,15 @@ pub struct Beg {
     #[facet(schema::fallback = 8.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: the range of time in seconds this mob will stare at the player holding a food they like, begging for it. Default 2 to 4.
+    #[facet(schema::fallback = (2, 4))]
     pub look_time: Option<IntRange>,
-}
-
-impl Beg {
-    /// `look_time`, or its default 2 to 4.
-    pub fn look_time(&self) -> (i32, i32) {
-        self.look_time.map_or((2, 4), |range| range.resolve(2, 4))
-    }
 }
 
 impl Goal for Beg {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.items("items", self.items.as_deref());
         c.object_range("look_time", &mut self.look_time);
     }
@@ -59,59 +53,36 @@ impl Goal for Beg {
 #[facet(schema::unknown = "keep")]
 pub struct LookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `filters`: filter to determine the conditions for this mob to look at the entity.
     pub filters: Option<Filter>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
-    #[facet(schema::fallback = 8.0)]
+    #[facet(schema::fallback = 8.0, schema::min = 0.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
+    #[facet(schema::fallback = (2.0, 4.0))]
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
-    #[facet(schema::fallback = 0.02)]
+    #[facet(schema::fallback = 0.02, schema::min = 0.0, schema::max = 1.0)]
     pub probability: Option<f32>,
-}
-
-impl LookAtEntity {
-    /// `look_time`, or its default 2 to 4.
-    pub fn look_time(&self) -> (f32, f32) {
-        self.look_time
-            .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
 }
 
 impl Goal for LookAtEntity {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.int(
-            "angle_of_view_horizontal",
-            &mut self.angle_of_view_horizontal,
-            Bound::MinMax(0, 360),
-        );
-        c.int(
-            "angle_of_view_vertical",
-            &mut self.angle_of_view_vertical,
-            Bound::MinMax(0, 360),
-        );
+        c.bounds(self);
         c.filter("filters", self.filters.as_ref());
-        c.float("look_distance", &mut self.look_distance, Bound::Min(0.0));
         c.range("look_time", &mut self.look_time);
-        c.float(
-            "probability",
-            &mut self.probability,
-            Bound::MinMax(0.0, 1.0),
-        );
     }
 
     fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
@@ -126,56 +97,33 @@ impl Goal for LookAtEntity {
 #[facet(schema::unknown = "keep")]
 pub struct LookAtPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
-    #[facet(schema::fallback = 8.0)]
+    #[facet(schema::fallback = 8.0, schema::min = 0.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
+    #[facet(schema::fallback = (2.0, 4.0))]
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
-    #[facet(schema::fallback = 0.02)]
+    #[facet(schema::fallback = 0.02, schema::min = 0.0, schema::max = 1.0)]
     pub probability: Option<f32>,
-}
-
-impl LookAtPlayer {
-    /// `look_time`, or its default 2 to 4.
-    pub fn look_time(&self) -> (f32, f32) {
-        self.look_time
-            .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
 }
 
 impl Goal for LookAtPlayer {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.int(
-            "angle_of_view_horizontal",
-            &mut self.angle_of_view_horizontal,
-            Bound::MinMax(0, 360),
-        );
-        c.int(
-            "angle_of_view_vertical",
-            &mut self.angle_of_view_vertical,
-            Bound::MinMax(0, 360),
-        );
-        c.float("look_distance", &mut self.look_distance, Bound::Min(0.0));
+        c.bounds(self);
         c.range("look_time", &mut self.look_time);
-        c.float(
-            "probability",
-            &mut self.probability,
-            Bound::MinMax(0.0, 1.0),
-        );
     }
 
     fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
@@ -190,56 +138,33 @@ impl Goal for LookAtPlayer {
 #[facet(schema::unknown = "keep")]
 pub struct LookAtTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
-    #[facet(schema::fallback = 8.0)]
+    #[facet(schema::fallback = 8.0, schema::min = 0.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
+    #[facet(schema::fallback = (2.0, 4.0))]
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
-    #[facet(schema::fallback = 0.02)]
+    #[facet(schema::fallback = 0.02, schema::min = 0.0, schema::max = 1.0)]
     pub probability: Option<f32>,
-}
-
-impl LookAtTarget {
-    /// `look_time`, or its default 2 to 4.
-    pub fn look_time(&self) -> (f32, f32) {
-        self.look_time
-            .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
 }
 
 impl Goal for LookAtTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.int(
-            "angle_of_view_horizontal",
-            &mut self.angle_of_view_horizontal,
-            Bound::MinMax(0, 360),
-        );
-        c.int(
-            "angle_of_view_vertical",
-            &mut self.angle_of_view_vertical,
-            Bound::MinMax(0, 360),
-        );
-        c.float("look_distance", &mut self.look_distance, Bound::Min(0.0));
+        c.bounds(self);
         c.range("look_time", &mut self.look_time);
-        c.float(
-            "probability",
-            &mut self.probability,
-            Bound::MinMax(0.0, 1.0),
-        );
     }
 
     fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
@@ -254,56 +179,33 @@ impl Goal for LookAtTarget {
 #[facet(schema::unknown = "keep")]
 pub struct LookAtTradingPlayer {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `angle_of_view_horizontal`: the angle in degrees that the mob can see rotated on the Y-axis (left-right). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_horizontal: Option<i32>,
     /// `angle_of_view_vertical`: the angle in degrees that the mob can see rotated on the X-axis (up-down). Default 360; 0 to 360.
-    #[facet(schema::fallback = 360)]
+    #[facet(schema::fallback = 360, schema::min = 0, schema::max = 360)]
     pub angle_of_view_vertical: Option<i32>,
     /// `look_distance`: the distance in blocks from which the entity will look at the nearest entity. Default 8; at least 0.
-    #[facet(schema::fallback = 8.0)]
+    #[facet(schema::fallback = 8.0, schema::min = 0.0)]
     pub look_distance: Option<f32>,
     /// `look_time`: time range to look at the nearest entity. Default 2 to 4.
+    #[facet(schema::fallback = (2.0, 4.0))]
     pub look_time: Option<FloatRange>,
     /// `probability`: the probability of looking at the target. A value of 1.00 is 100%. Default 0.02; 0 to 1.
-    #[facet(schema::fallback = 0.02)]
+    #[facet(schema::fallback = 0.02, schema::min = 0.0, schema::max = 1.0)]
     pub probability: Option<f32>,
-}
-
-impl LookAtTradingPlayer {
-    /// `look_time`, or its default 2 to 4.
-    pub fn look_time(&self) -> (f32, f32) {
-        self.look_time
-            .map_or((2.0, 4.0), |range| range.resolve(2.0, 4.0))
-    }
 }
 
 impl Goal for LookAtTradingPlayer {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.int(
-            "angle_of_view_horizontal",
-            &mut self.angle_of_view_horizontal,
-            Bound::MinMax(0, 360),
-        );
-        c.int(
-            "angle_of_view_vertical",
-            &mut self.angle_of_view_vertical,
-            Bound::MinMax(0, 360),
-        );
-        c.float("look_distance", &mut self.look_distance, Bound::Min(0.0));
+        c.bounds(self);
         c.range("look_time", &mut self.look_time);
-        c.float(
-            "probability",
-            &mut self.probability,
-            Bound::MinMax(0.0, 1.0),
-        );
     }
 
     fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
@@ -318,11 +220,12 @@ impl Goal for LookAtTradingPlayer {
 #[facet(schema::unknown = "keep")]
 pub struct RandomLookAround {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `look_time`: the range of time in seconds the mob will stay looking in a random direction before looking elsewhere. Default 20 to 40.
+    #[facet(schema::fallback = (20, 40))]
     pub look_time: Option<IntRange>,
     /// `max_angle_of_view_horizontal`: the rightmost angle a mob can look at on the horizontal plane with respect to its initial facing direction. Default 1.8e+02.
     #[facet(schema::fallback = 1.8e2)]
@@ -335,19 +238,11 @@ pub struct RandomLookAround {
     pub probability: Option<f32>,
 }
 
-impl RandomLookAround {
-    /// `look_time`, or its default 20 to 40.
-    pub fn look_time(&self) -> (i32, i32) {
-        self.look_time
-            .map_or((20, 40), |range| range.resolve(20, 40))
-    }
-}
-
 impl Goal for RandomLookAround {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("look_time", &mut self.look_time);
     }
 }
@@ -366,8 +261,10 @@ pub struct RandomLookAroundAndSit {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `continue_if_leashed`: if the goal should continue to be used as long as the mob is leashed. Default `false`.
+    #[facet(schema::fallback = false)]
     pub continue_if_leashed: Option<bool>,
     /// `continue_sitting_on_reload`: the mob will stay sitting on reload. Default `false`.
+    #[facet(schema::fallback = false)]
     pub continue_sitting_on_reload: Option<bool>,
     /// `max_angle_of_view_horizontal`: the rightmost angle a mob can look at on the horizontal plane with respect to its initial facing direction. Default 1.8e+02.
     #[facet(schema::fallback = 1.8e2)]
@@ -395,27 +292,11 @@ pub struct RandomLookAroundAndSit {
     pub random_look_around_cooldown: Option<i32>,
 }
 
-impl RandomLookAroundAndSit {
-    /// `continue_if_leashed`, or its default `false`.
-    pub fn continue_if_leashed(&self) -> bool {
-        self.continue_if_leashed.is_some_and(|v| v)
-    }
-
-    /// `continue_sitting_on_reload`, or its default `false`.
-    pub fn continue_sitting_on_reload(&self) -> bool {
-        self.continue_sitting_on_reload.is_some_and(|v| v)
-    }
-}
-
 impl Goal for RandomLookAroundAndSit {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     const DEPRECATED: &'static [Deprecated] =
         &[("look_time", deprecated_text!("look_time"), known::V1_26_30)];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.trade_interest`: allows the mob to look at a player that is holding a tradable item.
@@ -448,8 +329,4 @@ pub struct TradeInterest {
 
 impl Goal for TradeInterest {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }

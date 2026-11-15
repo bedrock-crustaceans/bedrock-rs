@@ -6,7 +6,7 @@ use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::MolangSource;
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use facet::Facet;
 use indexmap::IndexMap;
 
@@ -335,18 +335,17 @@ pub struct Event {
 }
 
 /// `brain`: the Brain Prototype's memories.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Brain {
     /// `memories`: the entity's memories, unique by name.
     pub memories: Vec<Memory>,
     /// `internal_memory_access_mappings`: memories the engine itself writes.
-    #[facet(default)]
     pub internal_memory_access_mappings: Option<InternalMemoryAccess>,
 }
 
 /// One entry of [`Brain::memories`].
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Memory {
     /// `name`: the memory's identifier.
@@ -355,13 +354,12 @@ pub struct Memory {
     #[facet(rename = "type")]
     pub kind: MemoryType,
     /// `persists`: whether the memory is saved with the entity; `false` when absent.
-    #[facet(default)]
     pub persists: Option<bool>,
 }
 
 /// `type` of a [`Memory`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::order = "game")]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum MemoryType {
@@ -409,19 +407,13 @@ impl MemoryType {
             Self::PoiMemory => "poi_memory",
         }
     }
-
-    /// The type a JSON spelling names.
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|t| t.as_str() == name)
-    }
 }
 
 /// `brain.internal_memory_access_mappings`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct InternalMemoryAccess {
     /// `beehive_has_nectar`: the `bool` memory the engine sets while the bee carries nectar.
-    #[facet(default)]
     pub beehive_has_nectar: Option<String>,
 }
 

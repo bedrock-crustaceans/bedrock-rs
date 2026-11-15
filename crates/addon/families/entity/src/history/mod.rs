@@ -67,11 +67,11 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangContext, pass_one};
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::ops::{members, to_object};
 use bedrock_addon_core::versioning::{
-    Family, Identity, Legacy, LegacyPayload, ParseCx, UpgradeCx, parse_payload,
+    Family, Identity, Legacy, LegacyPayload, ParseCx, UpgradeCx, read_payload,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -194,26 +194,18 @@ pub struct Payload {
     pub do_not_upgrade: Option<Value>,
 }
 
-/// What a [`Payload`] is parsed from.
-#[derive(Facet)]
+/// What a [`Payload`] is read from.
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 struct Shell {
-    #[facet(default)]
     description: Option<Value>,
-    #[facet(default)]
     components: Option<Value>,
-    #[facet(default)]
     component_groups: Option<Value>,
-    #[facet(default)]
     events: Option<Value>,
-    #[facet(default)]
     brain: Option<Value>,
-    #[facet(default)]
     upgrades: Option<Value>,
-    #[facet(default)]
     do_not_upgrade: Option<Value>,
     // The pre-1.8 in-payload version (`Family::payload_version`): consumed, not kept.
-    #[facet(default)]
     format_version: Option<Value>,
 }
 
@@ -253,7 +245,7 @@ impl LegacyPayload for Payload {
         cx: &ParseCx<'_>,
         d: &mut Diagnostics,
     ) -> Option<Self> {
-        let shell: Shell = parse_payload(payload, cx, d)?;
+        let shell: Shell = read_payload(payload, cx, d)?;
         let description = shell.description.unwrap_or(Value::NULL);
         if !description.is_object() {
             // A payload without a `description` names no identifier; from 1.21.89

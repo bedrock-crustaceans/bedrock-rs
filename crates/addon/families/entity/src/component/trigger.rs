@@ -5,7 +5,7 @@
 //! `on_equipment_changed` has `slots` (1.26.20).
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::{Filter, FilterSubject};
 use facet::Facet;
 
@@ -17,8 +17,8 @@ macro_rules! triggers {
     ($( $(#[$doc:meta])* $name:ident = $key:literal; )*) => {$(
         $(#[$doc])*
         #[doc(alias = $key)]
-        #[derive(Clone, Debug, Default, PartialEq, Facet)]
-        #[facet(schema::unknown = "keep")]
+        #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+        #[facet(schema::unknown = "keep", schema::trigger)]
         pub struct $name {
             /// `event`: the event to fire, looked up in the definition of `target`; default
             /// none (empty).
@@ -38,16 +38,6 @@ macro_rules! triggers {
                     event: event.into(),
                     ..Self::default()
                 }
-            }
-        }
-
-        // The component is a trigger itself (`{event, filters, target}`): its trigger member is
-        // the empty pattern, which the derive states only for an `EventTrigger` field.
-        impl SchemaFields for $name {
-            fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
-
-            fn trigger_members(prefix: &str, out: &mut Vec<String>) {
-                out.push(prefix.to_owned());
             }
         }
 

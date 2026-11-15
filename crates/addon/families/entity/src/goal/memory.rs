@@ -11,7 +11,7 @@ use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange};
 use bedrock_addon_core::version::FormatVersion;
@@ -29,16 +29,18 @@ use super::molang::{push_triggers, visit_conditions};
 // Typed from 1.26.20, on top of the shared memory-goal members (`priority`, `control_flags`,
 // `conditional_filters`, `chance_to_start`, `retry_attempt_cooldown`, `duration`).
 #[doc(alias = "minecraft:memory_behavior.move_to_position")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MemoryMoveToPosition {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass.
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again.
     pub retry_attempt_cooldown: Option<f32>,
@@ -64,24 +66,12 @@ pub struct MemoryMoveToPosition {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl MemoryMoveToPosition {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-}
-
 impl Goal for MemoryMoveToPosition {
     const TYPED: FormatVersion = known::V1_26_20;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
-        c.float(
-            "chance_to_start",
-            &mut self.chance_to_start,
-            Bound::MinMax(0.0, 1.0),
-        );
         c.seconds("duration", &mut self.duration);
         c.seconds("interval", &mut self.interval);
         for (key, slot) in [
@@ -95,8 +85,10 @@ impl Goal for MemoryMoveToPosition {
     }
 }
 
-impl MolangFields for MemoryMoveToPosition {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MemoryMoveToPosition {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_reach", self.on_reach.as_deref());
         visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
@@ -111,13 +103,14 @@ impl MolangFields for MemoryMoveToPosition {
 #[facet(schema::unknown = "keep")]
 pub struct MemoryWait {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass.
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again.
     pub retry_attempt_cooldown: Option<f32>,
@@ -135,13 +128,8 @@ impl Goal for MemoryWait {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
-        c.float(
-            "chance_to_start",
-            &mut self.chance_to_start,
-            Bound::MinMax(0.0, 1.0),
-        );
         c.seconds("duration", &mut self.duration);
         c.triggers("on_complete", self.on_complete.as_deref());
     }
@@ -156,13 +144,14 @@ impl Goal for MemoryWait {
 #[facet(schema::unknown = "keep")]
 pub struct MemoryLookAtEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass (a shared memory-goal member).
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts; 0 to 1.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again, in seconds.
     pub retry_attempt_cooldown: Option<f32>,
@@ -170,6 +159,7 @@ pub struct MemoryLookAtEntity {
     /// end.
     pub duration: Option<FloatRange>,
     /// `look_distance`: the largest distance at which the mob looks. Required; at least 0.
+    #[facet(schema::min = 0.0)]
     pub look_distance: Option<f32>,
     /// `look_angle`: the angles of view, in degrees, a `Vec2`, each
     /// component 0 to 360.
@@ -182,16 +172,10 @@ impl Goal for MemoryLookAtEntity {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
-        c.float(
-            "chance_to_start",
-            &mut self.chance_to_start,
-            Bound::MinMax(0.0, 1.0),
-        );
         c.seconds("duration", &mut self.duration);
         c.required("look_distance", self.look_distance.is_some());
-        c.float("look_distance", &mut self.look_distance, Bound::Min(0.0));
         c.vector("look_angle", self.look_angle.as_ref().map(|v| &v.extra));
         if self
             .look_angle
@@ -213,13 +197,14 @@ impl Goal for MemoryLookAtEntity {
 #[facet(schema::unknown = "keep")]
 pub struct MemoryFollowTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `conditional_filters`: the goal starts only when these pass (a shared memory-goal member).
     pub conditional_filters: Option<Filter>,
     /// `chance_to_start`: the chance per try that the goal starts; 0 to 1.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub chance_to_start: Option<f32>,
     /// `retry_attempt_cooldown`: how long to wait before trying again, in seconds.
     pub retry_attempt_cooldown: Option<f32>,
@@ -238,13 +223,8 @@ impl Goal for MemoryFollowTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("conditional_filters", self.conditional_filters.as_ref());
-        c.float(
-            "chance_to_start",
-            &mut self.chance_to_start,
-            Bound::MinMax(0.0, 1.0),
-        );
         c.seconds("duration", &mut self.duration);
         c.float_at_least("speed_modifier", &mut self.speed_modifier, 0.0);
         c.float_at_least("min_range", &mut self.min_range, 0.0);
@@ -468,18 +448,23 @@ impl InRangeOfEntityEntry {
 /// memory holds, with the velocity another holds. Requires a jumpable-block sensor.
 // Typed from 1.26.50, on top of the base members every generic goal has.
 #[doc(alias = "minecraft:memory_behavior.jump_to_block")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MemoryJumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `jump_velocity_memory`: the `vec3` memory holding the jump velocity.
     pub jump_velocity_memory: Option<String>,
     /// `on_complete`: events run after the mob lands.
+    // Out of the reference check, as the hand-kept trigger list left it: whether it belongs
+    // there is an open question, not this conversion's.
+    #[facet(schema::foreign_event)]
     pub on_complete: Option<Vec<EventTrigger>>,
     /// `scale_factor`: the bounding box scale during the jump. Default 0.7; at least 0.
+    #[facet(schema::fallback = 0.7, schema::min = 0.0)]
     pub scale_factor: Option<f32>,
     /// `target_blockpos_memory`: the `block_pos` memory holding the target.
     pub target_blockpos_memory: Option<String>,
@@ -489,25 +474,19 @@ pub struct MemoryJumpToBlock {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl MemoryJumpToBlock {
-    /// `scale_factor`, or its default 0.7.
-    pub fn scale_factor(&self) -> f32 {
-        self.scale_factor.unwrap_or(0.7)
-    }
-}
-
 impl Goal for MemoryJumpToBlock {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("scale_factor", &mut self.scale_factor, Bound::Min(0.0));
+        c.bounds(self);
         c.triggers("on_complete", self.on_complete.as_deref());
     }
 }
 
-impl MolangFields for MemoryJumpToBlock {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MemoryJumpToBlock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_complete", self.on_complete.as_deref());
         visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
@@ -518,14 +497,18 @@ impl MolangFields for MemoryJumpToBlock {
 /// to ram and tells when it leaves the position the preparation was based on.
 // Typed from 1.26.50.
 #[doc(alias = "minecraft:memory_behavior.prepare_ram_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MemoryPrepareRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `on_entity_moved`: events run once the target has left the held position.
+    // Out of the reference check, as the hand-kept trigger list left it: whether it belongs
+    // there is an open question, not this conversion's.
+    #[facet(schema::foreign_event)]
     pub on_entity_moved: Option<Vec<EventTrigger>>,
     /// `target_entity_memory`: the `entity_ref` memory holding the target.
     pub target_entity_memory: Option<String>,
@@ -541,13 +524,15 @@ impl Goal for MemoryPrepareRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.triggers("on_entity_moved", self.on_entity_moved.as_deref());
     }
 }
 
-impl MolangFields for MemoryPrepareRamAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MemoryPrepareRamAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(
             &mut triggers,
@@ -561,24 +546,33 @@ impl MolangFields for MemoryPrepareRamAttack {
 /// `minecraft:memory_behavior.ram_attack.<name>`: oversees the mob's charge at a target.
 // Typed from 1.26.50. The two sound members default to the sound event `undefined`.
 #[doc(alias = "minecraft:memory_behavior.ram_attack")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MemoryRamAttack {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `baby_knockback_modifier`: the knockback modifier of babies. Default 1/3.
+    #[facet(schema::fallback = 1.0 / 3.0)]
     pub baby_knockback_modifier: Option<f32>,
     /// `knockback_force`: the force of the ram's knockback. Default 5.
+    #[facet(schema::fallback = 5.0)]
     pub knockback_force: Option<f32>,
     /// `knockback_height`: the height of the ram's knockback. Default 0.1.
+    #[facet(schema::fallback = 0.1)]
     pub knockback_height: Option<f32>,
     /// `on_collide`: events run once the charge has hit something.
+    // Out of the reference check, as the hand-kept trigger list left it: whether it belongs
+    // there is an open question, not this conversion's.
+    #[facet(schema::foreign_event)]
     pub on_collide: Option<Vec<EventTrigger>>,
     /// `pre_ram_sound`: the sound when the charge begins. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub pre_ram_sound: Option<SoundEvent>,
     /// `ram_impact_sound`: the sound when the charge hits. Default `undefined`.
+    #[facet(schema::fallback = "undefined")]
     pub ram_impact_sound: Option<SoundEvent>,
     /// `ram_position_memory`: the `block_pos` memory holding the position charged towards.
     pub ram_position_memory: Option<String>,
@@ -588,50 +582,21 @@ pub struct MemoryRamAttack {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl MemoryRamAttack {
-    /// `baby_knockback_modifier`, or its default 1/3.
-    pub fn baby_knockback_modifier(&self) -> f32 {
-        self.baby_knockback_modifier.unwrap_or(1.0 / 3.0)
-    }
-
-    /// `knockback_force`, or its default 5.
-    pub fn knockback_force(&self) -> f32 {
-        self.knockback_force.unwrap_or(5.0)
-    }
-
-    /// `knockback_height`, or its default 0.1.
-    pub fn knockback_height(&self) -> f32 {
-        self.knockback_height.unwrap_or(0.1)
-    }
-
-    /// `pre_ram_sound`, or its default `undefined`.
-    pub fn pre_ram_sound(&self) -> &str {
-        self.pre_ram_sound
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
-
-    /// `ram_impact_sound`, or its default `undefined`.
-    pub fn ram_impact_sound(&self) -> &str {
-        self.ram_impact_sound
-            .as_ref()
-            .map_or("undefined", SoundEvent::name)
-    }
-}
-
 impl Goal for MemoryRamAttack {
     const TYPED: FormatVersion = BRAIN_1_26_50;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.triggers("on_collide", self.on_collide.as_deref());
         c.sound("pre_ram_sound", self.pre_ram_sound.as_ref());
         c.sound("ram_impact_sound", self.ram_impact_sound.as_ref());
     }
 }
 
-impl MolangFields for MemoryRamAttack {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MemoryRamAttack {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_collide", self.on_collide.as_deref());
         visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
@@ -829,16 +794,3 @@ mod tests {
         assert!(generic_goal(&named).finding(JsonPath::new()).is_none());
     }
 }
-
-crate::trigger_fields!(MemoryMoveToPosition {
-    on_reach: Option<Vec<EventTrigger>>,
-});
-crate::trigger_fields!(MemoryJumpToBlock {
-    // `on_complete` is no trigger of the reference check: today's list leaves it out.
-});
-crate::trigger_fields!(MemoryPrepareRamAttack {
-    // `on_entity_moved` is no trigger of the reference check: today's list leaves it out.
-});
-crate::trigger_fields!(MemoryRamAttack {
-    // `on_collide` is no trigger of the reference check: today's list leaves it out.
-});

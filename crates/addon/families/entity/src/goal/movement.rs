@@ -4,7 +4,7 @@ use crate::component::descriptor_tags;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
 use bedrock_addon_core::schema::{self, GoalMeta, Schema};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::FormatVersion;
@@ -13,7 +13,7 @@ use bedrock_addon_shared_shapes::ItemDescriptor;
 use facet::Facet;
 use facet_value::VObject;
 
-use super::check::{Bound, Deprecated, Goal, GoalCheck, deprecated_text};
+use super::check::{Deprecated, Goal, GoalCheck, deprecated_text};
 use super::common::{
     ControlFlag, DamageCause, EntityTypes, LegacyConditions, LiquidMaterial, MaterialType, PoiType,
     SoundEvent, TargetSelectionMethod, Vec3,
@@ -35,10 +35,6 @@ pub struct BreakDoor {
 
 impl Goal for BreakDoor {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.circle_around_anchor`: causes an entity to circle around an anchor point placed near a point or target.
@@ -48,7 +44,7 @@ impl Goal for BreakDoor {
 #[facet(schema::unknown = "keep")]
 pub struct CircleAroundAnchor {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -59,11 +55,13 @@ pub struct CircleAroundAnchor {
     #[facet(schema::fallback = 0.5)]
     pub goal_radius: Option<f32>,
     /// `height_above_target_range`: the number of blocks above the target that the next anchor point can be set. This value is used only when the entity is tracking a target. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
     pub height_above_target_range: Option<FloatRange>,
     /// `height_adjustment_chance`: percent chance to determine how often to increase or decrease the current height around the anchor point. 1 = 100%. `height_change_chance` is deprecated and has been replaced with `height_adjustment_chance`. Default 0.002857.
     #[facet(schema::fallback = 0.002_857)]
     pub height_adjustment_chance: Option<f32>,
     /// `height_offset_range`: vertical distance from the anchor point this entity must stay within, upon a successful height adjustment. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
     pub height_offset_range: Option<FloatRange>,
     /// `radius_adjustment_chance`: percent chance to determine how often to increase the size of the current movement radius around the anchor point. 1 = 100%. `radius_change_chance` is deprecated and has been replaced with `radius_adjustment_chance`. Default 0.004.
     #[facet(schema::fallback = 0.004)]
@@ -72,37 +70,18 @@ pub struct CircleAroundAnchor {
     #[facet(schema::fallback = 1.0)]
     pub radius_change: Option<f32>,
     /// `radius_range`: horizontal distance from the anchor point this entity must stay within upon a successful radius adjustment. Default 5 to 15.
+    #[facet(schema::fallback = (5.0, 15.0))]
     pub radius_range: Option<FloatRange>,
     /// `speed_multiplier`: multiplies the speed at which this entity travels to its next desired position. Default 1.
     #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
-impl CircleAroundAnchor {
-    /// `height_above_target_range`, or its default 0 to 0.
-    pub fn height_above_target_range(&self) -> (f32, f32) {
-        self.height_above_target_range
-            .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
-    /// `height_offset_range`, or its default 0 to 0.
-    pub fn height_offset_range(&self) -> (f32, f32) {
-        self.height_offset_range
-            .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-
-    /// `radius_range`, or its default 5 to 15.
-    pub fn radius_range(&self) -> (f32, f32) {
-        self.radius_range
-            .map_or((5.0, 15.0), |range| range.resolve(5.0, 15.0))
-    }
-}
-
 impl Goal for CircleAroundAnchor {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range(
             "height_above_target_range",
             &mut self.height_above_target_range,
@@ -136,10 +115,6 @@ pub struct ControlledByPlayer {
 
 impl Goal for ControlledByPlayer {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.door_interact`: allows the mob to open and close doors.
@@ -157,10 +132,6 @@ pub struct DoorInteract {
 
 impl Goal for DoorInteract {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.explore_outskirts`: allows the entity to first travel to a random point on the outskirts of the village, and then explore random points within a small distance. This goal requires `minecraft:dweller` and `minecraft:navigation` to execute.
@@ -250,10 +221,6 @@ pub struct FindCover {
 
 impl Goal for FindCover {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.find_mount`: allows the mob to look around for another mob to ride atop it.
@@ -268,6 +235,7 @@ pub struct FindMount {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `avoid_water`: if true, the mob will not go into water blocks when going towards a mount. Default `false`.
+    #[facet(schema::fallback = false)]
     pub avoid_water: Option<bool>,
     /// `max_failed_attempts`: number of attempts to find mount. Default 20.
     #[facet(schema::fallback = 20)]
@@ -279,30 +247,15 @@ pub struct FindMount {
     #[facet(schema::fallback = 0)]
     pub start_delay: Option<i32>,
     /// `target_needed`: if true, the mob will only look for a mount if it has a target. Default `false`.
+    #[facet(schema::fallback = false)]
     pub target_needed: Option<bool>,
     /// `within_radius`: distance in blocks within which the mob will look for a mount. Default 0.
     #[facet(schema::fallback = 0.0)]
     pub within_radius: Option<f32>,
 }
 
-impl FindMount {
-    /// `avoid_water`, or its default `false`.
-    pub fn avoid_water(&self) -> bool {
-        self.avoid_water.is_some_and(|v| v)
-    }
-
-    /// `target_needed`, or its default `false`.
-    pub fn target_needed(&self) -> bool {
-        self.target_needed.is_some_and(|v| v)
-    }
-}
-
 impl Goal for FindMount {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.find_underwater_treasure`: allows the mob to move towards the nearest underwater ruin or shipwreck.
@@ -329,10 +282,6 @@ pub struct FindUnderwaterTreasure {
 
 impl Goal for FindUnderwaterTreasure {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.flee_sun`: allows the mob to run away from direct sunlight and seek shade.
@@ -361,10 +310,6 @@ impl Goal for FleeSun {
         deprecated_text!("cooldown_time"),
         known::V1_26_20,
     )];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.float`: allows the mob to stay afloat while swimming. Passengers will be kicked out the moment the mob's head goes underwater, which may not happen for tall mobs.
@@ -382,17 +327,11 @@ pub struct Float {
     #[facet(schema::fallback = 0.8)]
     pub chance_per_tick_to_float: Option<f32>,
     /// `sink_with_passengers`: if true, the mob will keep sinking as long as it has passengers. Default `false`.
+    #[facet(schema::fallback = false)]
     pub sink_with_passengers: Option<bool>,
     /// `time_under_water_to_dismount_passengers`: time in seconds that a floating vehicles head can be underwater before it causes its passengers to dismount. Default 0.
     #[facet(schema::fallback = 0.0)]
     pub time_under_water_to_dismount_passengers: Option<f32>,
-}
-
-impl Float {
-    /// `sink_with_passengers`, or its default `false`.
-    pub fn sink_with_passengers(&self) -> bool {
-        self.sink_with_passengers.is_some_and(|v| v)
-    }
 }
 
 impl Goal for Float {
@@ -435,7 +374,7 @@ impl Goal for Float {
 #[facet(schema::unknown = "keep")]
 pub struct FloatWander {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -446,6 +385,7 @@ pub struct FloatWander {
     #[facet(schema::fallback = false)]
     pub allow_navigating_through_liquids: Option<bool>,
     /// `float_duration`: range of time in seconds the mob will float around before landing and choosing to do something else. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
     pub float_duration: Option<FloatRange>,
     /// `float_wander_has_move_control`: if true, the `MoveControl` flag will be added to the behavior which means that it can no longer be active at the same time as other behaviors with `MoveControl`. Default `true`.
     #[facet(schema::fallback = true)]
@@ -479,19 +419,11 @@ pub struct FloatWander {
     pub y_offset: Option<f32>,
 }
 
-impl FloatWander {
-    /// `float_duration`, or its default 0 to 0.
-    pub fn float_duration(&self) -> (f32, f32) {
-        self.float_duration
-            .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
-}
-
 impl Goal for FloatWander {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.object_range("float_duration", &mut self.float_duration);
     }
 }
@@ -533,7 +465,7 @@ impl Goal for FollowCaravan {
 #[facet(schema::unknown = "keep")]
 pub struct FollowMob {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -543,6 +475,7 @@ pub struct FollowMob {
     /// `filters`: if non-empty, provides criteria for filtering which nearby Mobs can be followed. If empty default criteria will be used, which will exclude Players, Squid variants, Fish variants, Tadpoles, Dolphins, and mobs of the same type as the owner of the Goal.
     pub filters: Option<Filter>,
     /// `preferred_actor_type`: the type of actor to prefer following. If left unspecified, a random actor among those in range will be chosen. Default `""`.
+    #[facet(schema::fallback = "")]
     pub preferred_actor_type: Option<String>,
     /// `search_range`: the distance in blocks it will look for a mob to follow. Default 0.
     #[facet(schema::fallback = 0)]
@@ -558,13 +491,6 @@ pub struct FollowMob {
 }
 
 impl FollowMob {
-    /// `preferred_actor_type`, or its default `""`.
-    pub fn preferred_actor_type(&self) -> &str {
-        self.preferred_actor_type
-            .as_ref()
-            .map_or("", |v| v.as_str())
-    }
-
     /// `stop_distance`, when written.
     pub fn stop_distance(&self) -> Option<f32> {
         self.stop_distance
@@ -575,7 +501,7 @@ impl Goal for FollowMob {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("filters", self.filters.as_ref());
         if self.abort_navigation_on_stop.is_some() {
             c.deprecated_member(
@@ -608,8 +534,10 @@ pub struct FollowOwner {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `can_teleport`: defines if the mob will teleport to its owner when too far away. Default `true`.
+    #[facet(schema::fallback = true)]
     pub can_teleport: Option<bool>,
     /// `ignore_vibration`: defines if the mob should disregard following its owner after detecting a recent vibration. Default `false`.
+    #[facet(schema::fallback = false)]
     pub ignore_vibration: Option<bool>,
     /// `max_distance`: the maximum distance the mob can be from its owner to start following it. Applicable only when `can_teleport` is set to false. Default 6e+01.
     #[facet(schema::fallback = 6.0e1)]
@@ -628,24 +556,8 @@ pub struct FollowOwner {
     pub stop_distance: Option<f32>,
 }
 
-impl FollowOwner {
-    /// `can_teleport`, or its default `true`.
-    pub fn can_teleport(&self) -> bool {
-        self.can_teleport.is_none_or(|v| v)
-    }
-
-    /// `ignore_vibration`, or its default `false`.
-    pub fn ignore_vibration(&self) -> bool {
-        self.ignore_vibration.is_some_and(|v| v)
-    }
-}
-
 impl Goal for FollowOwner {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.follow_parent`: allows the mob to follow their parent around.
@@ -666,10 +578,6 @@ pub struct FollowParent {
 
 impl Goal for FollowParent {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.follow_target_leader`: allows mob to move towards its target leader.
@@ -679,7 +587,7 @@ impl Goal for FollowParent {
 #[facet(schema::unknown = "keep")]
 pub struct FollowTargetLeader {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -724,7 +632,7 @@ impl Goal for FollowTargetLeader {
     }
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.filter("leader_filters", self.leader_filters.as_ref());
     }
 }
@@ -732,24 +640,29 @@ impl Goal for FollowTargetLeader {
 /// `minecraft:behavior.go_home`: allows the mob to move back to the position they were spawned.
 // `behavior.go_home`: typed from 1.26.20.
 #[doc(alias = "minecraft:behavior.go_home")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct GoHome {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `calculate_new_path_radius`: distance in blocks that the mob is considered close enough to the end of the current path. A new path will then be calculated to continue toward home. Default 2.
+    #[facet(schema::fallback = 2.0)]
     pub calculate_new_path_radius: Option<f32>,
     /// `goal_radius`: distance in blocks within the mob considers it has reached the goal. This is the "wiggle room" to stop the AI from bouncing back and forth trying to reach a specific spot. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub goal_radius: Option<f32>,
     /// `interval`: a random value to determine when to randomly move somewhere. This has a 1/interval chance to choose this goal. Default 120.
+    #[facet(schema::fallback = 120)]
     pub interval: Option<i32>,
     /// `on_failed`: event(s) to run when this goal fails.
     pub on_failed: Option<Vec<EventTrigger>>,
     /// `on_home`: event(s) to run when this mob gets home.
     pub on_home: Option<Vec<EventTrigger>>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -758,45 +671,20 @@ pub struct GoHome {
     pub legacy_conditions: LegacyConditions,
 }
 
-impl GoHome {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `calculate_new_path_radius`, or its default 2.
-    pub fn calculate_new_path_radius(&self) -> f32 {
-        self.calculate_new_path_radius.unwrap_or(2.0)
-    }
-
-    /// `goal_radius`, or its default 0.5.
-    pub fn goal_radius(&self) -> f32 {
-        self.goal_radius.unwrap_or(0.5)
-    }
-
-    /// `interval`, or its default 120.
-    pub fn interval(&self) -> i32 {
-        self.interval.unwrap_or(120)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-}
-
 impl Goal for GoHome {
     const TYPED: FormatVersion = known::V1_26_20;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.triggers("on_failed", self.on_failed.as_deref());
         c.triggers("on_home", self.on_home.as_deref());
     }
 }
 
-impl MolangFields for GoHome {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl GoHome {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_failed", self.on_failed.as_deref());
         push_triggers(&mut triggers, "on_home", self.on_home.as_deref());
@@ -837,10 +725,6 @@ impl Hide {
 
 impl Goal for Hide {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.hover`: allows the mob to hover in place.
@@ -858,10 +742,6 @@ pub struct Hover {
 
 impl Goal for Hover {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.jump_to_block`: allows an entity to jump to another random block.
@@ -871,11 +751,12 @@ impl Goal for Hover {
 #[facet(schema::unknown = "keep")]
 pub struct JumpToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown_range`: minimum and maximum cooldown time-range (positive, in seconds) between each attempted jump. Default 1e+01 to 2e+01.
+    #[facet(schema::fallback = (1.0e1, 2.0e1))]
     pub cooldown_range: Option<FloatRange>,
     /// `forbidden_blocks`: blocks that the mob can't jump to.
     #[facet(schema::molang_with = descriptor_tags)]
@@ -893,46 +774,27 @@ pub struct JumpToBlock {
     #[facet(schema::molang_with = descriptor_tags)]
     pub preferred_blocks: Option<Vec<ItemDescriptor>>,
     /// `preferred_blocks_chance`: chance (between 0.0 and 1.0) that the mob will jump to a preferred block, if in range. Only matters if preferred blocks are defined. Default 1; 0 to 1.
-    #[facet(schema::fallback = 1.0)]
+    #[facet(schema::fallback = 1.0, schema::min = 0.0, schema::max = 1.0)]
     pub preferred_blocks_chance: Option<f32>,
     /// `scale_factor`: the scalefactor of the bounding box of the mob while it is jumping. Default 0.7.
     #[facet(schema::fallback = 0.7)]
     pub scale_factor: Option<f32>,
     /// `search_height`: the height (in blocks, in range \[1, 15\]) of the search box, centered around the mob. Default 10; 1 to 15.
-    #[facet(schema::fallback = 10)]
+    #[facet(schema::fallback = 10, schema::min = 1, schema::max = 15)]
     pub search_height: Option<i32>,
     /// `search_width`: the width (in blocks, in range \[1, 15\]) of the search box, centered around the mob. Default 8; 1 to 15.
-    #[facet(schema::fallback = 8)]
+    #[facet(schema::fallback = 8, schema::min = 1, schema::max = 15)]
     pub search_width: Option<i32>,
-}
-
-impl JumpToBlock {
-    /// `cooldown_range`, or its default 1e+01 to 2e+01.
-    pub fn cooldown_range(&self) -> (f32, f32) {
-        self.cooldown_range
-            .map_or((1.0e1, 2.0e1), |range| range.resolve(1.0e1, 2.0e1))
-    }
 }
 
 impl Goal for JumpToBlock {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("cooldown_range", &mut self.cooldown_range);
         c.items("forbidden_blocks", self.forbidden_blocks.as_deref());
         c.items("preferred_blocks", self.preferred_blocks.as_deref());
-        c.float(
-            "preferred_blocks_chance",
-            &mut self.preferred_blocks_chance,
-            Bound::MinMax(0.0, 1.0),
-        );
-        c.int(
-            "search_height",
-            &mut self.search_height,
-            Bound::MinMax(1, 15),
-        );
-        c.int("search_width", &mut self.search_width, Bound::MinMax(1, 15));
     }
 }
 
@@ -954,22 +816,12 @@ pub struct MountPathing {
     #[facet(schema::fallback = 0.0)]
     pub target_dist: Option<f32>,
     /// `track_target`: if true, this mob will chase after the target as long as it's a valid target. Default `false`.
+    #[facet(schema::fallback = false)]
     pub track_target: Option<bool>,
-}
-
-impl MountPathing {
-    /// `track_target`, or its default `false`.
-    pub fn track_target(&self) -> bool {
-        self.track_target.is_some_and(|v| v)
-    }
 }
 
 impl Goal for MountPathing {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_around_target`: allows an entity to move around a `target.If` the entity is too close(`i.e.closer` than destination range min and height difference limit) it will try to move away from its `target.If` the entity is too far away from its target it will try to move closer to a random position within the destination `range.A` randomized amount of those positions will be behind the target, and the spread can be tweaked with '`destination_pos_spread_degrees`'.
@@ -979,7 +831,7 @@ impl Goal for MountPathing {
 #[facet(schema::unknown = "keep")]
 pub struct MoveAroundTarget {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -987,56 +839,34 @@ pub struct MoveAroundTarget {
     #[facet(schema::fallback = 9.0e1)]
     pub destination_pos_spread_degrees: Option<f32>,
     /// `destination_position_range`: the range of distances from the target entity within which the goal should look for a position to move the owner entity to. Default 4 to 8.
+    #[facet(schema::fallback = (4.0, 8.0))]
     pub destination_position_range: Option<FloatRange>,
     /// `filters`: conditions that need to be met for the behavior to start.
     pub filters: Option<Filter>,
     /// `height_difference_limit`: distance in height (in blocks) between the owner entity and the target has to be less than this value when owner checks if it is too close and should move away from the target. This value needs to be bigger than zero for the move away logic to trigger. Default 1e+01; at least 0.
-    #[facet(schema::fallback = 1.0e1)]
+    #[facet(schema::fallback = 1.0e1, schema::min = 0.0)]
     pub height_difference_limit: Option<f32>,
     /// `horizontal_search_distance`: horizontal search distance (in blocks) when searching for a position to move away from target. Default 5; at least 0.
-    #[facet(schema::fallback = 5)]
+    #[facet(schema::fallback = 5, schema::min = 0)]
     pub horizontal_search_distance: Option<i32>,
     /// `movement_speed`: the speed with which the entity should move to its target position. Default 0.6.
     #[facet(schema::fallback = 0.6)]
     pub movement_speed: Option<f32>,
     /// `vertical_search_distance`: vertical search distance (in blocks) when searching for a position to move away from target. Default 5; at least 0.
-    #[facet(schema::fallback = 5)]
+    #[facet(schema::fallback = 5, schema::min = 0)]
     pub vertical_search_distance: Option<i32>,
-}
-
-impl MoveAroundTarget {
-    /// `destination_position_range`, or its default 4 to 8.
-    pub fn destination_position_range(&self) -> (f32, f32) {
-        self.destination_position_range
-            .map_or((4.0, 8.0), |range| range.resolve(4.0, 8.0))
-    }
 }
 
 impl Goal for MoveAroundTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range(
             "destination_position_range",
             &mut self.destination_position_range,
         );
         c.filter("filters", self.filters.as_ref());
-        c.float(
-            "height_difference_limit",
-            &mut self.height_difference_limit,
-            Bound::Min(0.0),
-        );
-        c.int(
-            "horizontal_search_distance",
-            &mut self.horizontal_search_distance,
-            Bound::Min(0),
-        );
-        c.int(
-            "vertical_search_distance",
-            &mut self.vertical_search_distance,
-            Bound::Min(0),
-        );
     }
 }
 
@@ -1061,10 +891,6 @@ pub struct MoveIndoors {
 
 impl Goal for MoveIndoors {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_outdoors`: allows this entity to move outdoors.
@@ -1075,7 +901,7 @@ impl Goal for MoveIndoors {
 #[facet(schema::unknown = "keep")]
 pub struct MoveOutdoors {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -1103,11 +929,11 @@ impl Goal for MoveOutdoors {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
         // `speed_multiplier` and `search_count` are deprecated on the base and re-bound by the
         // goal, with its own defaults (`DEFAULT_SPEED_MULTIPLIER` 0.5 and `DEFAULT_SEARCH_COUNT`
         // 10) and no bound (the game's 1.26.20 schema gives none, where the goals bound by the
         // base give `minimum: 0`).
-        c.base(&mut self.priority);
     }
 }
 
@@ -1123,52 +949,49 @@ pub struct MoveThroughVillage {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `only_at_night`: if true, the mob will only move through the village during night time. Default `false`.
+    #[facet(schema::fallback = false)]
     pub only_at_night: Option<bool>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
     #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
 }
 
-impl MoveThroughVillage {
-    /// `only_at_night`, or its default `false`.
-    pub fn only_at_night(&self) -> bool {
-        self.only_at_night.is_some_and(|v| v)
-    }
-}
-
 impl Goal for MoveThroughVillage {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_block`: allows mob to move towards a block.
 // `behavior.move_to_block`: typed from 1.26.40.
 #[doc(alias = "minecraft:behavior.move_to_block")]
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
-#[facet(schema::unknown = "keep")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
 pub struct MoveToBlock {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `goal_radius`: distance in blocks within the mob considers it has reached the goal. This is the "wiggle room" to stop the AI from bouncing back and forth trying to reach a specific spot. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
     pub goal_radius: Option<f32>,
     /// `on_reach`: event to run on block reached.
     pub on_reach: Option<Vec<EventTrigger>>,
     /// `on_stay_completed`: event to run on completing a stay of `stay_duration` at the block.
     pub on_stay_completed: Option<Vec<EventTrigger>>,
     /// `search_height`: the height in blocks that the mob will look for the block. Default 1.
+    #[facet(schema::fallback = 1)]
     pub search_height: Option<i32>,
     /// `search_range`: the distance in blocks that the mob will look for the block. Default 0.
+    #[facet(schema::fallback = 0)]
     pub search_range: Option<i32>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub speed_multiplier: Option<f32>,
     /// `start_chance`: chance to start the behavior (applied after each random `tick_interval`). Default 1.
+    #[facet(schema::fallback = 1.0)]
     pub start_chance: Option<f32>,
     /// `stay_duration`: number of ticks needed to complete a stay at the block. Default 0.
+    #[facet(schema::fallback = 0.0)]
     pub stay_duration: Option<f32>,
     /// `target_block_filters`: conditions that need to be met for a block to be a valid target.
     pub target_block_filters: Option<Filter>,
@@ -1179,6 +1002,7 @@ pub struct MoveToBlock {
     /// `target_selection_method`: kind of block to find fitting the specification. Valid values are `random` and `nearest`. Default `nearest`.
     pub target_selection_method: Option<TargetSelectionMethod>,
     /// `tick_interval`: average interval in ticks to try to run this behavior. Default 20.
+    #[facet(schema::fallback = 20)]
     pub tick_interval: Option<i32>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
@@ -1188,41 +1012,6 @@ pub struct MoveToBlock {
 }
 
 impl MoveToBlock {
-    /// `priority`, or its default 0.
-    pub fn priority(&self) -> i32 {
-        self.priority.unwrap_or(0)
-    }
-
-    /// `goal_radius`, or its default 0.5.
-    pub fn goal_radius(&self) -> f32 {
-        self.goal_radius.unwrap_or(0.5)
-    }
-
-    /// `search_height`, or its default 1.
-    pub fn search_height(&self) -> i32 {
-        self.search_height.unwrap_or(1)
-    }
-
-    /// `search_range`, or its default 0.
-    pub fn search_range(&self) -> i32 {
-        self.search_range.unwrap_or(0)
-    }
-
-    /// `speed_multiplier`, or its default 1.
-    pub fn speed_multiplier(&self) -> f32 {
-        self.speed_multiplier.unwrap_or(1.0)
-    }
-
-    /// `start_chance`, or its default 1.
-    pub fn start_chance(&self) -> f32 {
-        self.start_chance.unwrap_or(1.0)
-    }
-
-    /// `stay_duration`, or its default 0.
-    pub fn stay_duration(&self) -> f32 {
-        self.stay_duration.unwrap_or(0.0)
-    }
-
     /// `target_offset`, or its default `[0, 0, 0]`.
     pub fn target_offset(&self) -> [f32; 3] {
         self.target_offset
@@ -1235,18 +1024,13 @@ impl MoveToBlock {
         self.target_selection_method
             .unwrap_or(TargetSelectionMethod::Nearest)
     }
-
-    /// `tick_interval`, or its default 20.
-    pub fn tick_interval(&self) -> i32 {
-        self.tick_interval.unwrap_or(20)
-    }
 }
 
 impl Goal for MoveToBlock {
     const TYPED: FormatVersion = known::V1_26_40;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.triggers("on_reach", self.on_reach.as_deref());
         c.triggers("on_stay_completed", self.on_stay_completed.as_deref());
         c.filter("target_block_filters", self.target_block_filters.as_ref());
@@ -1258,8 +1042,10 @@ impl Goal for MoveToBlock {
     }
 }
 
-impl MolangFields for MoveToBlock {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+impl MoveToBlock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
         visit_items(visitor, "target_blocks", &mut self.target_blocks);
         let mut triggers = Vec::new();
         push_triggers(&mut triggers, "on_reach", self.on_reach.as_deref());
@@ -1302,10 +1088,6 @@ pub struct MoveToLand {
 
 impl Goal for MoveToLand {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_lava`: allows the mob to move back into lava when on land.
@@ -1346,10 +1128,6 @@ impl Goal for MoveToLava {
         deprecated_text!("material_type"),
         known::V1_26_10,
     )];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_liquid`: allows the mob to move into a liquid when on land.
@@ -1393,10 +1171,6 @@ impl MoveToLiquid {
 
 impl Goal for MoveToLiquid {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_poi`: allows the mob to move to a POI if able to.
@@ -1426,10 +1200,6 @@ impl MoveToPoi {
 
 impl Goal for MoveToPoi {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_random_block`: allows mob to move towards a random block.
@@ -1456,10 +1226,6 @@ pub struct MoveToRandomBlock {
 
 impl Goal for MoveToRandomBlock {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_village`: allows the mob to move into a random location within a village.
@@ -1489,10 +1255,6 @@ pub struct MoveToVillage {
 
 impl Goal for MoveToVillage {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_to_water`: allows the mob to move back into water when on land.
@@ -1533,10 +1295,6 @@ impl Goal for MoveToWater {
         deprecated_text!("material_type"),
         known::V1_26_10,
     )];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_towards_dwelling_restriction`: allows entities with the `minecraft:dweller` component to move toward their village area that the entity should be restricted to.
@@ -1557,10 +1315,6 @@ pub struct MoveTowardsDwellingRestriction {
 
 impl Goal for MoveTowardsDwellingRestriction {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_towards_home_restriction`: allows entities with a `minecraft:home` component to move towards their home position. If `restriction_radius` is set, entities will be able to run this behavior only if outside of it.
@@ -1581,10 +1335,6 @@ pub struct MoveTowardsHomeRestriction {
 
 impl Goal for MoveTowardsHomeRestriction {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.move_towards_target`: allows mob to move towards its current target.
@@ -1608,10 +1358,6 @@ pub struct MoveTowardsTarget {
 
 impl Goal for MoveTowardsTarget {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.ocelot_sit_on_block`: allows to mob to be able to sit in place like the ocelot.
@@ -1640,10 +1386,6 @@ impl Goal for OcelotSitOnBlock {
         deprecated_text!("search_count"),
         known::V1_26_10,
     )];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.open_door`: allows the mob to open doors. Requires the mob to be able to path through doors, otherwise the mob won't even want to try opening them.
@@ -1658,22 +1400,12 @@ pub struct OpenDoor {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `close_door_after`: if true, the mob will close the door after opening it and going through it. Default `true`.
+    #[facet(schema::fallback = true)]
     pub close_door_after: Option<bool>,
-}
-
-impl OpenDoor {
-    /// `close_door_after`, or its default `true`.
-    pub fn close_door_after(&self) -> bool {
-        self.close_door_after.is_none_or(|v| v)
-    }
 }
 
 impl Goal for OpenDoor {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.player_ride_tamed`: allows the mob to be ridden by the player after being tamed.
@@ -1691,10 +1423,6 @@ pub struct PlayerRideTamed {
 
 impl Goal for PlayerRideTamed {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.random_breach`: allows the mob to randomly break surface of the water.
@@ -1727,10 +1455,6 @@ pub struct RandomBreach {
 
 impl Goal for RandomBreach {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.random_fly`: allows a mob to randomly fly around.
@@ -1747,6 +1471,7 @@ pub struct RandomFly {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `can_land_on_trees`: if true, the mob can stop flying and land on a tree instead of the ground. Default `true`.
+    #[facet(schema::fallback = true)]
     pub can_land_on_trees: Option<bool>,
     /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -1759,22 +1484,11 @@ pub struct RandomFly {
     pub y_dist: Option<i32>,
 }
 
-impl RandomFly {
-    /// `can_land_on_trees`, or its default `true`.
-    pub fn can_land_on_trees(&self) -> bool {
-        self.can_land_on_trees.is_none_or(|v| v)
-    }
-}
-
 impl Goal for RandomFly {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     const DEPRECATED: &'static [Deprecated] =
         &[("interval", deprecated_text!("interval"), known::V1_26_30)];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.random_hover`: allows the mob to hover around randomly, close to the surface.
@@ -1784,11 +1498,12 @@ impl Goal for RandomFly {
 #[facet(schema::unknown = "keep")]
 pub struct RandomHover {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `hover_height`: the height above the surface which the mob will try to maintain. Default 0 to 0.
+    #[facet(schema::fallback = (0, 0))]
     pub hover_height: Option<IntRange>,
     /// `interval`: a random value to determine when to randomly move somewhere. This has a 1/interval chance to choose this goal. Default 120.
     #[facet(schema::fallback = 120)]
@@ -1807,19 +1522,11 @@ pub struct RandomHover {
     pub y_offset: Option<f32>,
 }
 
-impl RandomHover {
-    /// `hover_height`, or its default 0 to 0.
-    pub fn hover_height(&self) -> (i32, i32) {
-        self.hover_height
-            .map_or((0, 0), |range| range.resolve(0, 0))
-    }
-}
-
 impl Goal for RandomHover {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.range("hover_height", &mut self.hover_height);
     }
 }
@@ -1851,10 +1558,6 @@ pub struct RandomStroll {
 
 impl Goal for RandomStroll {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.random_swim`: allows an entity to randomly move through water.
@@ -1869,6 +1572,7 @@ pub struct RandomSwim {
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `avoid_surface`: if true, the mob will avoid surface water blocks by swimming below them. Default `true`.
+    #[facet(schema::fallback = true)]
     pub avoid_surface: Option<bool>,
     /// `interval`: a random value to determine when to randomly move somewhere. This has a 1/interval chance to choose this goal. Default 120.
     #[facet(schema::fallback = 120)]
@@ -1884,19 +1588,8 @@ pub struct RandomSwim {
     pub y_dist: Option<i32>,
 }
 
-impl RandomSwim {
-    /// `avoid_surface`, or its default `true`.
-    pub fn avoid_surface(&self) -> bool {
-        self.avoid_surface.is_none_or(|v| v)
-    }
-}
-
 impl Goal for RandomSwim {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.restrict_open_door`: allows the mob to stay indoors during night time.
@@ -1914,10 +1607,6 @@ pub struct RestrictOpenDoor {
 
 impl Goal for RestrictOpenDoor {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.restrict_sun`: allows the mob to automatically start avoiding the sun when its a clear day out.
@@ -1935,10 +1624,6 @@ pub struct RestrictSun {
 
 impl Goal for RestrictSun {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.rise_to_liquid_level`: allows the mob to stay at a certain level when in liquid.
@@ -1965,10 +1650,6 @@ pub struct RiseToLiquidLevel {
 
 impl Goal for RiseToLiquidLevel {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.slime_float`: allow slimes to float in water / lava. Can only be used by Slime and Magma Cubes.
@@ -1992,10 +1673,6 @@ pub struct SlimeFloat {
 
 impl Goal for SlimeFloat {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.slime_keep_on_jumping`: allows the entity to continuously jump around like a slime.
@@ -2016,10 +1693,6 @@ pub struct SlimeKeepOnJumping {
 
 impl Goal for SlimeKeepOnJumping {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.slime_random_direction`: allows the entity to move in random directions like a slime.
@@ -2046,10 +1719,6 @@ pub struct SlimeRandomDirection {
 
 impl Goal for SlimeRandomDirection {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.squid_dive`: allows the squid to dive down in water. Can only be used by the Squid.
@@ -2067,10 +1736,6 @@ pub struct SquidDive {
 
 impl Goal for SquidDive {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.squid_flee`: allows the squid to swim away. Can only be used by the Squid.
@@ -2088,10 +1753,6 @@ pub struct SquidFlee {
 
 impl Goal for SquidFlee {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.squid_idle`: allows the squid to swim in place idly. Can only be used by the Squid.
@@ -2109,10 +1770,6 @@ pub struct SquidIdle {
 
 impl Goal for SquidIdle {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.squid_move_away_from_ground`: allows the squid to move away from ground blocks and back to water. Can only be used by the Squid.
@@ -2130,10 +1787,6 @@ pub struct SquidMoveAwayFromGround {
 
 impl Goal for SquidMoveAwayFromGround {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.squid_out_of_water`: allows the squid to stick to the ground when outside water. Can only be used by the Squid.
@@ -2151,10 +1804,6 @@ pub struct SquidOutOfWater {
 
 impl Goal for SquidOutOfWater {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.stroll_towards_village`: allows the mob to move into a random location within a village within the search range.
@@ -2187,10 +1836,6 @@ pub struct StrollTowardsVillage {
 
 impl Goal for StrollTowardsVillage {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.swim_idle`: allows the entity go idle, if swimming. Entity must be in water.
@@ -2214,10 +1859,6 @@ pub struct SwimIdle {
 
 impl Goal for SwimIdle {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.swim_up_for_breath`: allows the mob to try to move to air once it is close to running out of its total breathable supply. Requires `minecraft:breathable`.
@@ -2256,10 +1897,6 @@ impl SwimUpForBreath {
 
 impl Goal for SwimUpForBreath {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.swim_wander`: allows the entity to wander around while swimming, when not path-finding.
@@ -2289,10 +1926,6 @@ pub struct SwimWander {
 
 impl Goal for SwimWander {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 /// `minecraft:behavior.swim_with_entity`: allows the entity to follow another entity of the matching types while both swim, matching its direction and catching up when it falls behind.
@@ -2302,38 +1935,38 @@ impl Goal for SwimWander {
 #[facet(schema::unknown = "keep")]
 pub struct SwimWithEntity {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `catch_up_multiplier`: the multiplier this entity's speed is modified by when matching another entity's direction. Default 2.5; greater than 0.
-    #[facet(schema::fallback = 2.5)]
+    #[facet(schema::fallback = 2.5, schema::above = 0.0)]
     pub catch_up_multiplier: Option<f32>,
     /// `catch_up_threshold`: distance, from the entity being followed, at which this entity will speed up to reach that entity. Default 12; greater than 0.
-    #[facet(schema::fallback = 12.0)]
+    #[facet(schema::fallback = 12.0, schema::above = 0.0)]
     pub catch_up_threshold: Option<f32>,
     /// `chance_to_stop`: percent chance to stop following the current entity, if they're riding another entity or they're not swimming. 1.0 = 100%. Default 0.0333; greater than 0.
-    #[facet(schema::fallback = 0.0333)]
+    #[facet(schema::fallback = 0.0333, schema::above = 0.0)]
     pub chance_to_stop: Option<f32>,
     /// `entity_types`: filters which types of entities are valid to follow.
     pub entity_types: Option<EntityTypes>,
     /// `match_direction_threshold`: distance, from the entity being followed, at which this entity will try to match that entity's direction. Default 2; greater than 0.
-    #[facet(schema::fallback = 2.0)]
+    #[facet(schema::fallback = 2.0, schema::above = 0.0)]
     pub match_direction_threshold: Option<f32>,
     /// `search_range`: radius around this entity to search for another entity to follow. Default 2e+01; greater than 0.
-    #[facet(schema::fallback = 2.0e1)]
+    #[facet(schema::fallback = 2.0e1, schema::above = 0.0)]
     pub search_range: Option<f32>,
     /// `speed_multiplier`: the multiplier this entity's speed is modified by when trying to catch up to the entity being followed. Default 1.5; greater than 0.
-    #[facet(schema::fallback = 1.5)]
+    #[facet(schema::fallback = 1.5, schema::above = 0.0)]
     pub speed_multiplier: Option<f32>,
     /// `state_check_interval`: time (in seconds) between checks to determine if this entity should catch up to the entity being followed or match the direction of the entity being followed. Default 0.5; at least 0.
-    #[facet(schema::fallback = 0.5)]
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
     pub state_check_interval: Option<f32>,
     /// `stop_distance`: distance, from the entity being followed, at which this entity will stop following that entity. Default 5; greater than 0.
-    #[facet(schema::fallback = 5.0)]
+    #[facet(schema::fallback = 5.0, schema::above = 0.0)]
     pub stop_distance: Option<f32>,
     /// `success_rate`: percent chance to start following another entity, if not already doing so. 1.0 = 100%. Default 0.1; greater than 0.
-    #[facet(schema::fallback = 0.1)]
+    #[facet(schema::fallback = 0.1, schema::above = 0.0)]
     pub success_rate: Option<f32>,
 }
 
@@ -2341,43 +1974,10 @@ impl Goal for SwimWithEntity {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
         // Bounds by hand, not schema::min/max: a bound here follows another check, and the
         // derived check runs first, which would reorder the findings.
-        c.base(&mut self.priority);
-        c.float(
-            "catch_up_multiplier",
-            &mut self.catch_up_multiplier,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "catch_up_threshold",
-            &mut self.catch_up_threshold,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "chance_to_stop",
-            &mut self.chance_to_stop,
-            Bound::Above(0.0),
-        );
         c.entity_types("entity_types", self.entity_types.as_ref());
-        c.float(
-            "match_direction_threshold",
-            &mut self.match_direction_threshold,
-            Bound::Above(0.0),
-        );
-        c.float("search_range", &mut self.search_range, Bound::Above(0.0));
-        c.float(
-            "speed_multiplier",
-            &mut self.speed_multiplier,
-            Bound::Above(0.0),
-        );
-        c.float(
-            "state_check_interval",
-            &mut self.state_check_interval,
-            Bound::Min(0.0),
-        );
-        c.float("stop_distance", &mut self.stop_distance, Bound::Above(0.0));
-        c.float("success_rate", &mut self.success_rate, Bound::Above(0.0));
     }
 }
 
@@ -2388,12 +1988,12 @@ impl Goal for SwimWithEntity {
 #[facet(schema::unknown = "keep")]
 pub struct TeleportToOwner {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
     /// `cooldown`: the time in seconds that must pass for the entity to be able to try to teleport again. Default 1; at least 0.
-    #[facet(schema::fallback = 1.0)]
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
     pub cooldown: Option<f32>,
     /// `filters`: conditions to be satisfied for the entity to teleport to its owner.
     pub filters: Option<Filter>,
@@ -2403,8 +2003,7 @@ impl Goal for TeleportToOwner {
     const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
-        c.float("cooldown", &mut self.cooldown, Bound::Min(0.0));
+        c.bounds(self);
         c.filter("filters", self.filters.as_ref());
     }
 }
@@ -2437,10 +2036,6 @@ impl Goal for WitherRandomAttackPosGoal {
         ("y_dist", deprecated_text!("y_dist"), known::V1_26_30),
         ("interval", deprecated_text!("interval"), known::V1_26_30),
     ];
-
-    fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.bounds(self);
-    }
 }
 
 // ---- the four goals typed at 1.26.60: `panic`, `tempt`, `float_tempt`, `send_event` ----
@@ -2465,7 +2060,7 @@ pub(crate) const ALL_IS_NOT_THE_ONLY_SOURCE: &str = "\"all\" is not the only dam
 #[facet(schema::unknown = "keep")]
 pub struct Panic {
     /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
-    #[facet(schema::fallback = 0)]
+    #[facet(schema::fallback = 0, schema::min = 0)]
     pub priority: Option<i32>,
     /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
     pub control_flags: Option<Vec<ControlFlag>>,
@@ -2483,6 +2078,7 @@ pub struct Panic {
     #[facet(schema::fallback = false)]
     pub prefer_water: Option<bool>,
     /// `sound_interval`: range of random ticks to wait between playing the panic sound. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
     pub sound_interval: Option<FloatRange>,
     /// `speed_multiplier`: movement speed multiplier when using this goal. Default 1.
     #[facet(schema::fallback = 1.0)]
@@ -2501,19 +2097,13 @@ impl Panic {
             .as_ref()
             .map_or(UNDEFINED_SOUND, SoundEvent::name)
     }
-
-    /// `sound_interval`, or its default 0 to 0.
-    pub fn sound_interval(&self) -> (f32, f32) {
-        self.sound_interval
-            .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-    }
 }
 
 impl Goal for Panic {
     const TYPED: FormatVersion = V1_26_60;
 
     fn check(&mut self, c: &mut GoalCheck<'_>) {
-        c.base(&mut self.priority);
+        c.bounds(self);
         c.sound("panic_sound", self.panic_sound.as_ref());
         c.range("sound_interval", &mut self.sound_interval);
     }
@@ -2565,18 +2155,22 @@ macro_rules! tempt_base {
     ($(#[$meta:meta])* $name:ident, $key:literal) => {
         $(#[$meta])*
         #[doc(alias = $key)]
-        #[derive(Clone, Debug, Default, PartialEq, Facet)]
-        #[facet(schema::unknown = "keep")]
+        #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+        #[facet(schema::unknown = "keep", schema::molang_with = Self::legacy_molang)]
         pub struct $name {
             /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+            #[facet(schema::fallback = 0, schema::min = 0)]
             pub priority: Option<i32>,
             /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
             pub control_flags: Option<Vec<ControlFlag>>,
             /// `can_get_scared`: if true, the mob can stop being tempted if the player moves too fast while close to this mob. Default `false`.
+            #[facet(schema::fallback = false)]
             pub can_get_scared: Option<bool>,
             /// `can_tempt_vertically`: if true, vertical distance to the player will be considered when tempting. Default `false`.
+            #[facet(schema::fallback = false)]
             pub can_tempt_vertically: Option<bool>,
             /// `can_tempt_while_ridden`: if true, the mob can be tempted even if it has a passenger (i.e. if being ridden). Default `false`.
+            #[facet(schema::fallback = false)]
             pub can_tempt_while_ridden: Option<bool>,
             /// `items`: list of items that can tempt the mob.
             pub items: Option<Vec<ItemDescriptor>>,
@@ -2585,14 +2179,17 @@ macro_rules! tempt_base {
             /// `on_tempt_start`: event to trigger when this mob starts being tempted.
             pub on_tempt_start: Option<EventTrigger>,
             /// `sound_interval`: range of random ticks to wait between tempt sounds. Default 0 to 0.
+            #[facet(schema::fallback = (0.0, 0.0))]
             pub sound_interval: Option<FloatRange>,
             /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+            #[facet(schema::fallback = 1.0)]
             pub speed_multiplier: Option<f32>,
             /// `stop_distance`: the distance at which the mob will stop following the player.
             pub stop_distance: Option<f32>,
             /// `tempt_sound`: sound to play while the mob is being tempted. Default `undefined`.
             pub tempt_sound: Option<SoundEvent>,
             /// `within_radius`: distance in blocks this mob can get tempted by a player holding an item they like. Default 0.
+            #[facet(schema::fallback = 0.0)]
             pub within_radius: Option<f32>,
             /// The legacy `condition`s of the goal's triggers, read for the Molang check;
             /// written back from each trigger's `extra`.
@@ -2602,37 +2199,6 @@ macro_rules! tempt_base {
         }
 
         impl $name {
-            /// `priority`, or its default 0.
-            pub fn priority(&self) -> i32 {
-                self.priority.map_or(0, |v| v)
-            }
-
-            /// `can_get_scared`, or its default `false`.
-            pub fn can_get_scared(&self) -> bool {
-                self.can_get_scared.is_some_and(|v| v)
-            }
-
-            /// `can_tempt_vertically`, or its default `false`.
-            pub fn can_tempt_vertically(&self) -> bool {
-                self.can_tempt_vertically.is_some_and(|v| v)
-            }
-
-            /// `can_tempt_while_ridden`, or its default `false`.
-            pub fn can_tempt_while_ridden(&self) -> bool {
-                self.can_tempt_while_ridden.is_some_and(|v| v)
-            }
-
-            /// `sound_interval`, or its default 0 to 0.
-            pub fn sound_interval(&self) -> (f32, f32) {
-                self.sound_interval
-                    .map_or((0.0, 0.0), |range| range.resolve(0.0, 0.0))
-            }
-
-            /// `speed_multiplier`, or its default 1.
-            pub fn speed_multiplier(&self) -> f32 {
-                self.speed_multiplier.map_or(1.0, |v| v)
-            }
-
             /// `stop_distance`, when written.
             pub fn stop_distance(&self) -> Option<f32> {
                 self.stop_distance.map(|v| v)
@@ -2645,25 +2211,14 @@ macro_rules! tempt_base {
                     .map_or(UNDEFINED_SOUND, SoundEvent::name)
             }
 
-            /// `within_radius`, or its default 0.
-            pub fn within_radius(&self) -> f32 {
-                self.within_radius.map_or(0.0, |v| v)
-            }
         }
-
-        // Its two triggers; its Molang walk (the triggers' legacy conditions) crosses fields,
-        // which the derive's per-field walk cannot, so it derives no `Schema`.
-        crate::trigger_fields!($name {
-            on_tempt_end: Option<EventTrigger>,
-            on_tempt_start: Option<EventTrigger>,
-        });
 
         impl Goal for $name {
             const TYPED: FormatVersion = V1_26_60;
 
 
             fn check(&mut self, c: &mut GoalCheck<'_>) {
-                c.base(&mut self.priority);
+                c.bounds(self);
                 c.items("items", self.items.as_deref());
                 c.trigger("on_tempt_end", self.on_tempt_end.as_ref());
                 c.trigger("on_tempt_start", self.on_tempt_start.as_ref());
@@ -2672,8 +2227,10 @@ macro_rules! tempt_base {
             }
         }
 
-        impl MolangFields for $name {
-            fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        impl $name {
+            /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+            /// read once into its cache, and its descriptors' tags.
+            fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
                 visit_items(visitor, "items", &mut self.items);
                 let mut triggers = Vec::new();
                 push_trigger(&mut triggers, "on_tempt_end", self.on_tempt_end.as_ref());
@@ -2695,12 +2252,3 @@ tempt_base!(
     FloatTempt,
     "minecraft:behavior.float_tempt"
 );
-
-crate::trigger_fields!(GoHome {
-    on_failed: Option<Vec<EventTrigger>>,
-    on_home: Option<Vec<EventTrigger>>,
-});
-crate::trigger_fields!(MoveToBlock {
-    on_reach: Option<Vec<EventTrigger>>,
-    on_stay_completed: Option<Vec<EventTrigger>>,
-});

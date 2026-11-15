@@ -389,8 +389,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         .as_ref()
         .map(|(rule, _)| quote!((#rule)(self, cx);));
     let molang: Vec<TokenStream> = infos.iter().map(field_molang).collect();
-    // A spec on the struct is the default of the walk below it.
-    let molang = if let Some((spec, _)) = &container.molang {
+    // A spec on the struct is the default of the walk below it; a walk of its own replaces the
+    // walk over the fields.
+    let molang = if let Some((walk, _)) = &container.molang_with {
+        quote!((#walk)(self, visitor);)
+    } else if let Some((spec, _)) = &container.molang {
         quote!(visitor.under(&#spec, |visitor| { #(#molang)* });)
     } else {
         quote!(#(#molang)*)
@@ -1328,7 +1331,6 @@ fn getters(target: &Target, infos: &[FieldInfo]) -> TokenStream {
             let name = info.ident?;
             let inner = info.option?;
             let vis = info.vis;
-            let value = typed(fallback, inner);
             // A named fallback is often a private const of the family, which the doc of a
             // public getter cannot name: it says what the const is instead.
             let doc = if matches!(fallback, syn::Expr::Path(_)) {
@@ -1339,14 +1341,40 @@ fn getters(target: &Target, infos: &[FieldInfo]) -> TokenStream {
                     attr::text(fallback)
                 )
             };
+            let core = core();
+            let (answer, some, none) = match fallback {
+                // A text: the member's own, lent.
+                syn::Expr::Lit(syn::ExprLit {
+                    lit: Lit::Str(_), ..
+                }) => (
+                    quote!(&str),
+                    quote!(::core::convert::AsRef::<str>::as_ref(value)),
+                    quote!(#fallback),
+                ),
+                // A pair of ends: the ends the member resolves to.
+                syn::Expr::Tuple(pair) if pair.elems.len() == 2 => {
+                    let (low, high) = (&pair.elems[0], &pair.elems[1]);
+                    let end = quote!(<#inner as #core::shared::Resolve>::End);
+                    (
+                        quote!((#end, #end)),
+                        quote!(#core::shared::Resolve::resolve_ends(value, #low, #high)),
+                        quote!((#low, #high)),
+                    )
+                }
+                _ => (
+                    quote!(#inner),
+                    quote!(::core::clone::Clone::clone(value)),
+                    typed(fallback, inner),
+                ),
+            };
             Some(quote! {
                 #[doc = #doc]
                 #[must_use]
                 #[allow(clippy::clone_on_copy)]
-                #vis fn #name(&self) -> #inner {
+                #vis fn #name(&self) -> #answer {
                     match &self.#name {
-                        ::core::option::Option::Some(value) => ::core::clone::Clone::clone(value),
-                        ::core::option::Option::None => #value,
+                        ::core::option::Option::Some(value) => #some,
+                        ::core::option::Option::None => #none,
                     }
                 }
             })

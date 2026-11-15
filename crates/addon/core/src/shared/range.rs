@@ -228,6 +228,24 @@ impl<T: RangeEnd> Range<T> {
     }
 }
 
+/// A member whose `schema::fallback` is a pair of ends, `(low, high)`: the derived getter
+/// answers the two ends it resolves to, the pair where the document has none.
+pub trait Resolve {
+    /// The type of an end.
+    type End;
+
+    /// The ends, a missing one `low` or `high` ([`Range::resolve`]).
+    fn resolve_ends(&self, low: Self::End, high: Self::End) -> (Self::End, Self::End);
+}
+
+impl<T: RangeEnd> Resolve for Range<T> {
+    type End = T;
+
+    fn resolve_ends(&self, low: T, high: T) -> (T, T) {
+        self.resolve(low, high)
+    }
+}
+
 impl<T: RangeEnd> TryFrom<&Value> for Range<T> {
     type Error = ShapeError;
 

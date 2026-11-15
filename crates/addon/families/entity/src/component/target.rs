@@ -150,6 +150,3 @@ impl MobDescriptor {
         }
     }
 }
-
-bedrock_addon_core::impl_schema_leaf!(EntityTypes);
-bedrock_addon_core::impl_no_molang!(EntityTypes);

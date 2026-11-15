@@ -42,7 +42,9 @@ facet::define_attr_grammar! {
         /// tells it).
         Unknown(&'static str),
         /// `fallback = x` (compile-time, an `Option` field): the value absence stands for;
-        /// the getter returns it, and it is never written into the data.
+        /// the getter returns it, and it is never written into the data. A text fallback's
+        /// getter lends the text (`&str`, the member's own by `AsRef<str>`); a pair `(low, high)`
+        /// on a range answers the two ends the range resolves to (`shared::Resolve`).
         Fallback(arbitrary),
         /// `min = x` (compile-time): the value is `>= x`; a number or another field's name. On a
         /// fixed array or a `Vec` it is the bound of each element: the first one outside is the
@@ -88,7 +90,8 @@ facet::define_attr_grammar! {
         /// whose descriptors read their `tags` otherwise states once at its documents' roots.
         Molang(arbitrary),
         /// `molang_with = path` (compile-time): a hand-written Molang walk of the field,
-        /// `fn(&mut T, &mut MolangVisitor<'_>)`.
+        /// `fn(&mut T, &mut MolangVisitor<'_>)`. On a struct, its whole walk,
+        /// `fn(&mut Self, &mut MolangVisitor<'_>)`, in place of the walk over its fields.
         MolangWith(arbitrary),
         /// `check_with = path` (compile-time): the check of the field's value, in place of the
         /// walk into its type: `fn(&mut T, &mut SchemaCx<'_>)`, `T` the field's type (an

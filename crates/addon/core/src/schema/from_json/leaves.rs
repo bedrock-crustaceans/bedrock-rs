@@ -13,6 +13,7 @@ use crate::json::Value;
 use crate::json::kit::{Expected, Node, Read, Written};
 use crate::molang::{Molang, MolangList, MolangSource};
 use crate::version::FormatVersion;
+use crate::versioning::RangeMembers;
 
 /// The value `node` holds converted by `convert`, or the wrong type its member is told when the
 /// conversion refuses it: the read of a leaf behind `#[facet(proxy = json::Value)]` and a
@@ -146,27 +147,31 @@ crate::from_json_via_value!(
     crate::shared::EventTrigger,
 );
 /// A number, a list of two or an object of `min`/`max` (or `range_min`/`range_max`), its ends
-/// read by the range's own integer and float rules; another value is a wrong type. A read that
-/// tells them ([`Read::range_members`]) tells each member of the object form the range does not
-/// read, and each element of the list form past its two ends, as an unknown member of the
-/// word `report`: told, not kept (a range has no `extra`).
+/// read by the range's own integer and float rules; another value is a wrong type. Under a
+/// reading that says so ([`Reading::range_members`](crate::versioning::Reading::range_members))
+/// each member of the object form the range does not read, and each element of the list form
+/// past its two ends, is told: told, not kept (a range has no `extra`).
 impl<T: crate::shared::RangeEnd> FromJson for crate::shared::Range<T> {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
         // bridge: a range reads its ends by its own integer and float rules
         let range = from_value_ref(node, read, |value| Self::try_from(value))?;
-        if read.tells_range_members() {
-            let report = crate::schema::UnknownRule::Report;
+        if read.reading().range_members != RangeMembers::Silent {
             if let Some(object) = node.value().as_object() {
-                let members = read.object(node)?;
-                for key in crate::shared::unread_range_members(object) {
-                    if let Some(member) = members.get(key) {
-                        read.unknown_by_rule(&member, report);
+                let unread = crate::shared::unread_range_members(object);
+                if !unread.is_empty()
+                    && let Some(members) = read.object(node)
+                {
+                    for (key, member) in members.iter() {
+                        if unread.contains(&key) {
+                            read.unread_range_member(&member);
+                        }
                     }
                 }
-            } else if node.value().is_array() {
-                let elements = read.array(node)?;
+            } else if node.value().is_array()
+                && let Some(elements) = read.array(node)
+            {
                 for element in elements.iter().skip(2) {
-                    read.unknown_by_rule(&element, report);
+                    read.unread_range_member(&element);
                 }
             }
         }
