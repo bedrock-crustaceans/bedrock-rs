@@ -215,6 +215,8 @@ impl<T: Coordinate> TryFrom<Value> for Vec3<T> {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(impl<T: Coordinate> Vec3<T>);
+
 impl<T: Coordinate> TryFrom<&Vec3<T>> for Value {
     type Error = VectorError;
 
@@ -268,6 +270,8 @@ impl<T: Coordinate> TryFrom<Value> for Vec2<T> {
         Ok(Self { x, y, form, extra })
     }
 }
+
+bedrock_addon_core::from_json_via_value!(impl<T: Coordinate> Vec2<T>);
 
 impl<T: Coordinate> TryFrom<&Vec2<T>> for Value {
     type Error = VectorError;

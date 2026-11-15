@@ -186,6 +186,8 @@ impl From<Value> for ItemDescriptor {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(ItemDescriptor);
+
 impl From<&ItemDescriptor> for Value {
     fn from(descriptor: &ItemDescriptor) -> Self {
         let (key, member, extra) = match descriptor {

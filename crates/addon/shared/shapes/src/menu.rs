@@ -31,6 +31,9 @@ pub struct MenuCategory {
     pub extra: Extra,
 }
 
+// bridge: a facet type without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(MenuCategory);
+
 impl MenuCategory {
     /// The `construction` category with no group.
     pub fn construction() -> MenuCategory {
@@ -106,6 +109,8 @@ impl TryFrom<Value> for CreativeCategory {
             .ok_or_else(|| Failure::new(ShapeErrorKind::UnknownName).into())
     }
 }
+
+bedrock_addon_core::from_json_via_value!(CreativeCategory);
 
 impl TryFrom<&CreativeCategory> for Value {
     type Error = ShapeError;

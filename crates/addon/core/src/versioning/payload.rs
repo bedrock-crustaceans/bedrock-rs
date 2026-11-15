@@ -63,6 +63,111 @@ pub fn parse_payload<'a, T: Facet<'a>>(
     Some(value)
 }
 
+/// Reads a version struct from `payload` on the new reader ([`FromJson`](crate::schema::FromJson),
+/// member by member), under the slice's reading (`cx.load.reading`) in the door's order
+/// ([`Order::Door`](crate::json::kit::Order::Door)): what [`parse_payload`] tells for the same
+/// text, at the same paths, each finding with the span of the value it is about. The read
+/// stops at its first failure, which is then all it tells; a document that reads tells, after
+/// it, the members written `null` that its reading refuses, those read as absent, its unknown
+/// members (kept ones in `d`'s table) and the scalars read as another value. `None` when a
+/// member failed (or a member written `null` was refused); a value whose only errors are its
+/// unknown members or its converted scalars is built, as `parse_payload` builds it, for the
+/// pipeline to drop. No bound is checked here: the family runs `Schema::check` where it runs it
+/// today.
+///
+/// ```
+/// use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+/// use bedrock_addon_core::json::JsonSlice;
+/// use bedrock_addon_core::load::LoadContext;
+/// use bedrock_addon_core::schema::{self, Schema};
+/// use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+/// use bedrock_addon_core::versioning::{ParseCx, read_payload};
+///
+/// #[derive(Debug, PartialEq, facet::Facet, Schema)]
+/// struct Lamp {
+///     level: u8,
+///     #[facet(schema::fallback = false)]
+///     lit: Option<bool>,
+/// }
+///
+/// let load = LoadContext::detached();
+/// let cx = ParseCx {
+///     load: &load,
+///     written: FormatVersionInput { version: Some(FormatVersion::new(1, 0, 0)), beta_literal: false, prerelease: false },
+///     original_version: FormatVersion::new(1, 0, 0),
+///     at: JsonPath::of_keys(["minecraft:lamp"]),
+/// };
+/// let mut d = Diagnostics::default();
+/// let lamp: Option<Lamp> = read_payload(JsonSlice::new(r#"{"level": 3}"#), &cx, &mut d);
+/// assert_eq!(lamp, Some(Lamp { level: 3, lit: None }));
+/// let lamp: Option<Lamp> = read_payload(JsonSlice::new(r#"{"level": "high"}"#), &cx, &mut d);
+/// assert_eq!(lamp, None);
+/// let told: Vec<String> = d.iter().map(|f| format!("{} {}", f.location.json_path, f.code)).collect();
+/// assert_eq!(told, ["minecraft:lamp/level wrong JSON type"]);
+/// ```
+pub fn read_payload<T: crate::schema::FromJson>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    read_payload_with(payload, cx, d, |read| read)
+}
+
+/// [`read_payload`] with the read set by `configure` before it reads: a family whose game
+/// tells every failure reads in [`Order::AsRead`](crate::json::kit::Order::AsRead), one that
+/// words the kit's findings its own way gives its [`Texts`](crate::json::kit::Texts).
+///
+/// ```
+/// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+/// # use bedrock_addon_core::json::JsonSlice;
+/// # use bedrock_addon_core::load::LoadContext;
+/// # use bedrock_addon_core::schema::{self, Schema};
+/// # use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
+/// # use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
+/// use bedrock_addon_core::json::kit::Order;
+/// #[derive(Debug, PartialEq, facet::Facet, Schema)]
+/// struct Pair {
+///     a: u8,
+///     b: u8,
+/// }
+/// # let load = LoadContext::detached();
+/// # let cx = ParseCx {
+/// #     load: &load,
+/// #     written: FormatVersionInput { version: Some(FormatVersion::new(1, 0, 0)), beta_literal: false, prerelease: false },
+/// #     original_version: FormatVersion::new(1, 0, 0),
+/// #     at: JsonPath::new(),
+/// # };
+/// let mut d = Diagnostics::default();
+/// let text = JsonSlice::new(r#"{"a": "x", "b": "y"}"#);
+/// let pair: Option<Pair> = read_payload_with(text, &cx, &mut d, |read| read.order(Order::AsRead));
+/// assert_eq!(pair, None);
+/// // Both failures, where the door's order tells the first.
+/// assert_eq!(d.len(), 2);
+/// ```
+pub fn read_payload_with<T: crate::schema::FromJson>(
+    payload: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+    configure: impl for<'r> FnOnce(crate::json::kit::Read<'r>) -> crate::json::kit::Read<'r>,
+) -> Option<T> {
+    let Ok(json) = crate::json::from_str_jsonc::<Value>(payload.text) else {
+        // Not reached for a payload the envelope has read; the door's typed read words the
+        // failure.
+        if let Err(error) = crate::json::parse_at::<Value>(payload) {
+            d.push(slice_error(&error, &cx.at, payload, Severity::Error));
+        }
+        return None;
+    };
+    let node = crate::json::kit::Node::with_text(&json, cx.at.clone(), payload);
+    let read = crate::json::kit::Read::new(cx.load.reading, d)
+        .unknown_severity(cx.load.grade(Class::Unknown))
+        .order(crate::json::kit::Order::Door);
+    let mut read = configure(read);
+    let value = T::from_json(&node, &mut read);
+    read.finish();
+    value
+}
+
 /// Tells each unknown member the door found, at `base` followed by its path, by its
 /// disposition: kept, or not kept by a struct that says nothing or `report`, an
 /// `UnrecognizedField` (the game logs an unknown member at content-log level 2, an error under
@@ -101,7 +206,7 @@ pub(super) fn tell_unknown(
 
 /// The finding of a read that failed, at `base` followed by the failing member: an error of
 /// facet's kind, or the scalar of an untagged enum no arm took (a type error at the enum).
-pub(super) fn failure_finding(
+pub(crate) fn failure_finding(
     failure: &ScalarFailure,
     base: &JsonPath,
     slice: JsonSlice<'_>,

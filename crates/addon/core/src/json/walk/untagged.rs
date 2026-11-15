@@ -24,7 +24,7 @@ use super::{Lookup, Value, find_field, struct_fields};
 /// `alias` are matched as `find_field` matches them, and a newtype around an `Option` or a
 /// pointer is not an object arm, as facet classifies it; these follow facet's source and are not
 /// confirmed against every input.
-pub(super) fn untagged_arm(variants: &'static [facet::Variant], json: &Value) -> Option<usize> {
+pub(crate) fn untagged_arm(variants: &'static [facet::Variant], json: &Value) -> Option<usize> {
     if json.is_array() {
         return variants.iter().position(|v| {
             payload_shape(v)

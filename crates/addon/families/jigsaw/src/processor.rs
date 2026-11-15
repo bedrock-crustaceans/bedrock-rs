@@ -69,6 +69,9 @@ pub enum Processor {
     },
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(Processor);
+
 /// The processor a `minecraft:capped` processor limits: any processor type but `capped`.
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
 #[facet(tag = "processor_type")]
@@ -212,6 +215,9 @@ pub enum BlockPredicate {
     },
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(BlockPredicate);
+
 /// A test on a block's position, by its `predicate_type`.
 #[derive(Clone, Debug, PartialEq, facet::Facet)]
 #[facet(tag = "predicate_type")]
@@ -245,6 +251,9 @@ pub enum PositionPredicate {
     },
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(PositionPredicate);
+
 /// An axis (`axis`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
@@ -277,6 +286,9 @@ pub enum BlockEntityModifier {
         loot_table: LootTablePath,
     },
 }
+
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(BlockEntityModifier);
 
 impl ProcessorList {
     /// A list without processors.

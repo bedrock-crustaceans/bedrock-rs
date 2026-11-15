@@ -60,6 +60,9 @@ pub enum Builder {
     NoiseGradient(NoiseGradientSurface),
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(Builder);
+
 impl Builder {
     /// The JSON `type` of the builder.
     pub fn type_name(&self) -> &'static str {

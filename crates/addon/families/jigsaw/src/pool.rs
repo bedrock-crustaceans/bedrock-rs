@@ -76,6 +76,9 @@ pub enum PoolElement {
     },
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(PoolElement);
+
 /// How a template follows the terrain (`projection`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]

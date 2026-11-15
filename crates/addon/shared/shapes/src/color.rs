@@ -206,6 +206,8 @@ impl<C: Channels> TryFrom<Value> for HexOr<C> {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(impl<C: Channels> HexOr<C>);
+
 impl<C: Channels> TryFrom<&HexOr<C>> for Value {
     type Error = ShapeErrorKind;
 

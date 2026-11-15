@@ -64,6 +64,8 @@ macro_rules! color_or_map {
             }
         }
 
+        bedrock_addon_core::from_json_via_value!($name);
+
         impl TryFrom<&$name> for Value {
             type Error = ShapeErrorKind;
 

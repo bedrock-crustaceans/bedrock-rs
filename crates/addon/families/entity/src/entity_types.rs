@@ -24,6 +24,9 @@ pub enum EntityTypes<D> {
     One(D),
 }
 
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(impl<D> EntityTypes<D>);
+
 impl<D> Default for EntityTypes<D> {
     /// The empty list.
     fn default() -> Self {

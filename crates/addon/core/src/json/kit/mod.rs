@@ -10,9 +10,13 @@
 //!   every finding at it carries the span of the text it is about;
 //! - [`Read`] holds the reading and the findings, and does the reading: [`object`](Read::object),
 //!   [`array`](Read::array), [`opt`](Read::opt), [`required`](Read::required),
-//!   [`unknown`](Read::unknown), [`wrong_type`](Read::wrong_type) and the scalars
-//!   ([`bool`](Read::bool), [`string`](Read::string), [`number`](Read::number),
-//!   [`int`](Read::int));
+//!   [`unknown`](Read::unknown), [`wrong_type`](Read::wrong_type), [`refuse`](Read::refuse) and
+//!   the scalars ([`bool`](Read::bool), [`string`](Read::string), [`number`](Read::number),
+//!   [`int`](Read::int), and [`scalar`](Read::scalar), a member of a declared type read under
+//!   every profile as the typed door reads it); it tells in an [`Order`] (as read, every
+//!   failure; or the typed door's, which stops at the first and tells the rest after the read,
+//!   by [`Pass`]), and a [`fork`](Read::fork) of it is an attempt to [commit](Read::commit) or
+//!   drop;
 //! - [`Members`] and [`Elements`] are an object's members and an array's elements, each a
 //!   [`Node`] one step down;
 //! - [`Written`] is the slot a family that keeps its root as the author wrote it holds it in,
@@ -23,7 +27,8 @@
 //! | axis | what the kit does with it |
 //! |---|---|
 //! | [`Reading::null`] | [`NullHandling::Absent`]: [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
-//! | [`Reading::scalars`] | [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
+//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them). In the hand reads [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
+//! | [`Reading::beyond_width`] | in [`scalar`](Read::scalar): a number beyond its float reads as the infinity it is, told so the load clamps it and reads again ([`BeyondWidth::ClampAndTell`](crate::json::BeyondWidth::ClampAndTell)), or is a wrong type ([`BeyondWidth::Error`](crate::json::BeyondWidth::Error)) |
 //! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown): [`UnknownMask::Error`](crate::versioning::UnknownMask::Error) an error, [`UnknownMask::Warn`](crate::versioning::UnknownMask::Warn) a warning |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
 //!
@@ -75,12 +80,14 @@ use crate::versioning::{NullHandling, Reading, Scalars};
 #[doc(hidden)]
 pub mod fixed_path;
 // hidden: API not yet reviewed
+mod scalar;
 #[doc(hidden)]
 pub mod sound;
 #[cfg(test)]
 mod tests;
 mod written;
 
+pub use scalar::Scalar;
 pub use written::Written;
 
 /// A value being read: where it is in the document, and its text when the caller has it.
@@ -369,6 +376,43 @@ impl Disposition {
     }
 }
 
+/// What JSON a read expected where it found another, for a family that words a wrong type by
+/// both ([`Texts::wrong_kind`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Expected {
+    /// An object.
+    Object,
+    /// An array.
+    Array,
+    /// A string.
+    String,
+    /// A number.
+    Number,
+    /// A bool.
+    Bool,
+}
+
+/// A family's wording of a wrong type that names what was expected and what was found
+/// ([`Texts::wrong_kind`]): the code to tell, from the two.
+#[derive(Clone, Copy, Debug)]
+pub struct WrongKind(pub fn(Expected, &Value) -> Code);
+
+/// By the function: two wordings are the same when they are the same function.
+impl PartialEq for WrongKind {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::fn_addr_eq(self.0, other.0)
+    }
+}
+
+impl Eq for WrongKind {}
+
+impl std::hash::Hash for WrongKind {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (self.0 as usize).hash(state);
+    }
+}
+
 /// The texts of the kit's findings. `None` is the code's own wording, which is what most of the
 /// hand-walked families print: `wrong JSON type`, `missing required field`, `unrecognized
 /// field`. A family whose game prints another line for one of them names it here once, for
@@ -397,6 +441,11 @@ pub struct Texts {
     pub missing: Option<&'static str>,
     /// The text of an unknown member, whatever its [`Disposition`].
     pub unknown: Option<&'static str>,
+    /// The code of a wrong type where the read knows what it expected ([`Read::object`],
+    /// [`Read::array`], the scalar reads), from what it expected and what it found, in place
+    /// of [`wrong_type`](Self::wrong_type): `crafting_catalog` words it as vanilla's
+    /// `MalformedInput` naming both.
+    pub wrong_kind: Option<WrongKind>,
 }
 
 impl Texts {
@@ -405,7 +454,63 @@ impl Texts {
         wrong_type: None,
         missing: None,
         unknown: None,
+        wrong_kind: None,
     };
+}
+
+/// The order a [`Read`] tells its findings in, and how many failures it tells.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Order {
+    /// Every finding where the read meets it, and every failure: the reader goes on past a
+    /// failed member and tells the next one. The hand-walked families' order.
+    #[default]
+    AsRead,
+    /// As [`AsRead`](Self::AsRead), but a struct tells the unknown members of its object, in
+    /// file order, before it reads any of its members: `crafting_catalog`'s reader.
+    UnknownFirst,
+    /// The typed door's order (`versioning::parse_payload`, whose facet read stops at its first
+    /// error): the read stops at its first failure, which is then all it tells, and a failure is
+    /// an error whatever the reading's [`on_member_failure`](Reading::on_member_failure) (but
+    /// for a scalar member under `DefaultAndTell`, below). What it finds besides is told after
+    /// the read ([`Read::finish`]), by [`Pass`], and only when nothing failed: the members
+    /// written `null` that the reading refuses (their errors then are all that is told), the
+    /// members read as absent for their `null`, the unknown members, and the scalars read as
+    /// another value. A scalar member its profile refuses under `DefaultAndTell` is read as
+    /// absent and told in the last pass, as the door's scalar pre-pass does.
+    Door,
+}
+
+/// The pass of the door ([`Order::Door`]) a finding told after the read belongs to, in the
+/// order the passes run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum Pass {
+    /// A member written `null` that its type refuses ([`NullHandling::Rejected`]): an error.
+    Null,
+    /// A member written `null` read as absent ([`NullHandling::Absent`]).
+    Absent,
+    /// An unknown member.
+    Unknown,
+    /// A scalar read as another value than it is written: converted, beyond its float, or
+    /// defaulted.
+    Misread,
+}
+
+/// Where a read's findings go: the caller's list, or the read's own (a [fork](Read::fork)).
+#[derive(Debug)]
+enum Sink<'d> {
+    Borrowed(&'d mut Diagnostics),
+    Owned(Diagnostics),
+}
+
+impl Sink<'_> {
+    fn get(&mut self) -> &mut Diagnostics {
+        match self {
+            Self::Borrowed(findings) => findings,
+            Self::Owned(findings) => findings,
+        }
+    }
 }
 
 /// One read of a hand-walked document: the slice's [`Reading`], the [`Texts`] and where the
@@ -415,8 +520,21 @@ pub struct Read<'d> {
     reading: Reading,
     texts: Texts,
     unknown_severity: Severity,
-    findings: &'d mut Diagnostics,
+    findings: Sink<'d>,
     failed: bool,
+    order: Order,
+    /// The read met its first failure under [`Order::Door`].
+    stopped: bool,
+    /// The findings of the passes after the read, under [`Order::Door`].
+    deferred: Vec<(Pass, Diagnostic)>,
+    /// The last scalar read was a member read as absent ([`Order::Door`] under
+    /// `DefaultAndTell`), for the owner to take as absent.
+    defaulted: bool,
+    /// The `schema::unknown` of the field being read, for the object it holds.
+    field_unknown: Option<crate::schema::UnknownRule>,
+    /// How many map values or boxes the read is inside: an unknown member there is told and
+    /// never kept, as the door's walk cannot reach it.
+    unkeepable: u32,
 }
 
 impl<'d> Read<'d> {
@@ -427,9 +545,214 @@ impl<'d> Read<'d> {
             reading,
             texts: Texts::CODES,
             unknown_severity,
-            findings,
+            findings: Sink::Borrowed(findings),
             failed: false,
+            order: Order::AsRead,
+            stopped: false,
+            deferred: Vec::new(),
+            defaulted: false,
+            field_unknown: None,
+            unkeepable: 0,
         }
+    }
+
+    /// The read telling in `order`.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// use bedrock_addon_core::json::kit::Order;
+    /// let json: Value = from_str_jsonc(r#"{"a": 1, "b": 2}"#).unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found).order(Order::Door);
+    /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
+    /// for key in ["a", "b"] {
+    ///     let node = read.required(&members, key).unwrap();
+    ///     read.string(&node);
+    /// }
+    /// // The door's read stops at its first failure.
+    /// assert!(read.stopped());
+    /// assert_eq!(told(&found), ["Error a wrong JSON type"]);
+    /// ```
+    #[must_use]
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    /// The order the read tells in.
+    pub fn telling(&self) -> Order {
+        self.order
+    }
+
+    /// Whether the read stopped at its first failure ([`Order::Door`]): nothing more is read
+    /// or told, and every read returns `None`.
+    pub fn stopped(&self) -> bool {
+        self.stopped
+    }
+
+    /// A read with this read's reading, texts, severities and order that tells into a list of
+    /// its own, for an attempt the caller may [`commit`](Self::commit) or drop: an arm of a
+    /// one-of that is tried and may be given up for another.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// let json: Value = from_str_jsonc("5").unwrap();
+    /// let node = Node::new(&json, JsonPath::of_keys(["v"]));
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    /// // Try the value as a string; it is none, so the attempt is dropped.
+    /// let mut attempt = read.fork();
+    /// assert!(attempt.string(&node).is_none());
+    /// drop(attempt);
+    /// // As a number it reads, and that attempt is kept.
+    /// let mut attempt = read.fork();
+    /// assert_eq!(attempt.number(&node), Some(5.0));
+    /// read.commit(attempt);
+    /// assert!(!read.failed());
+    /// assert!(told(&found).is_empty());
+    /// ```
+    #[must_use]
+    pub fn fork(&self) -> Read<'static> {
+        Read {
+            reading: self.reading,
+            texts: self.texts,
+            unknown_severity: self.unknown_severity,
+            findings: Sink::Owned(Diagnostics::default()),
+            failed: false,
+            order: self.order,
+            stopped: false,
+            deferred: Vec::new(),
+            defaulted: false,
+            field_unknown: self.field_unknown,
+            unkeepable: self.unkeepable,
+        }
+    }
+
+    /// Takes `fork`'s findings, its kept unknown members and its failure as this read's own.
+    pub fn commit(&mut self, fork: Read<'_>) {
+        let Read {
+            findings,
+            failed,
+            stopped,
+            deferred,
+            ..
+        } = fork;
+        let findings = match findings {
+            Sink::Owned(findings) => findings,
+            // A borrowed sink is not a fork's: its findings are already where they go.
+            Sink::Borrowed(_) => Diagnostics::default(),
+        };
+        self.findings.get().extend_with_unknown(findings);
+        self.deferred.extend(deferred);
+        self.failed |= failed;
+        self.stopped |= stopped;
+    }
+
+    /// Tells `finding` in `pass`: now under [`Order::AsRead`], after the read under
+    /// [`Order::Door`] ([`finish`](Self::finish)). A finding that rejects the document fails the
+    /// read when it is told.
+    pub fn defer(&mut self, pass: Pass, finding: Diagnostic) {
+        if self.stopped {
+            return;
+        }
+        match self.order {
+            Order::Door => self.deferred.push((pass, finding)),
+            Order::AsRead | Order::UnknownFirst => self.push(finding),
+        }
+    }
+
+    /// Ends the read: under [`Order::Door`], tells what the passes after the read found, unless
+    /// the read failed (its failure is then all it tells), and only the [`Pass::Null`] errors
+    /// when there are any. Nothing under [`Order::AsRead`], which has told everything already.
+    pub fn finish(&mut self) {
+        let deferred = std::mem::take(&mut self.deferred);
+        if self.stopped || self.order != Order::Door {
+            return;
+        }
+        let nulls = deferred.iter().any(|(pass, _)| *pass == Pass::Null);
+        let mut deferred = deferred;
+        // Stable: within a pass, in the order the read met them.
+        deferred.sort_by_key(|(pass, _)| *pass);
+        for (pass, finding) in deferred {
+            if nulls && pass != Pass::Null {
+                break;
+            }
+            self.push(finding);
+        }
+    }
+
+    /// The findings of the read so far, the document's table of kept unknown members with them.
+    pub fn findings_mut(&mut self) -> &mut Diagnostics {
+        self.findings.get()
+    }
+
+    /// What a failed member does under the read: the reading's
+    /// [`on_member_failure`](Reading::on_member_failure) graded ([`schema::grade`](crate::schema::grade))
+    /// under [`Order::AsRead`] and [`Order::UnknownFirst`], an error that fails the owner
+    /// under [`Order::Door`].
+    pub fn member_failure(&self) -> crate::schema::Grading {
+        match self.order {
+            Order::Door => crate::schema::grade(crate::versioning::MemberFailure::Refuse),
+            Order::AsRead | Order::UnknownFirst => {
+                crate::schema::grade(self.reading.on_member_failure)
+            }
+        }
+    }
+
+    /// Whether the last scalar read was a member read as absent ([`Order::Door`] under
+    /// `DefaultAndTell`), clearing it: its owner takes it as absent.
+    // hidden: the derived reads' protocol with the scalar reads
+    #[doc(hidden)]
+    pub fn take_defaulted(&mut self) -> bool {
+        std::mem::take(&mut self.defaulted)
+    }
+
+    /// The `schema::unknown` of the field being read, set by its owner around the read of
+    /// its value.
+    // hidden: the derived reads' protocol
+    #[doc(hidden)]
+    pub fn field_unknown(&self) -> Option<crate::schema::UnknownRule> {
+        self.field_unknown
+    }
+
+    /// Sets [`field_unknown`](Self::field_unknown), returning the one it replaces.
+    // hidden: the derived reads' protocol
+    #[doc(hidden)]
+    pub fn set_field_unknown(
+        &mut self,
+        rule: Option<crate::schema::UnknownRule>,
+    ) -> Option<crate::schema::UnknownRule> {
+        std::mem::replace(&mut self.field_unknown, rule)
+    }
+
+    /// Runs `read` inside a map value or a box, where an unknown member is told and never
+    /// kept (the door's walk cannot reach it to keep it).
+    // hidden: the derived reads' protocol
+    #[doc(hidden)]
+    pub fn unkeepable<T>(&mut self, read: impl FnOnce(&mut Self) -> T) -> T {
+        self.unkeepable += 1;
+        let out = read(self);
+        self.unkeepable -= 1;
+        out
+    }
+
+    /// Whether an unknown member read here can be kept ([`unkeepable`](Self::unkeepable)).
+    // hidden: the derived reads' protocol
+    #[doc(hidden)]
+    pub fn keepable(&self) -> bool {
+        self.unkeepable == 0
     }
 
     /// The read with `texts` for its findings.
@@ -484,6 +807,11 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The severity the read tells an unknown member at.
+    pub fn unknown_grade(&self) -> Severity {
+        self.unknown_severity
+    }
+
     /// The reading the read is under.
     pub fn reading(&self) -> Reading {
         self.reading
@@ -521,17 +849,61 @@ impl<'d> Read<'d> {
     /// ```
     pub fn push(&mut self, finding: Diagnostic) {
         self.failed |= finding.rejects();
-        self.findings.push(finding);
+        self.findings.get().push(finding);
     }
 
     /// Tells `code` at `path` and `span`, graded by the reading's
-    /// [`on_member_failure`](Reading::on_member_failure).
+    /// [`on_member_failure`](Reading::on_member_failure) ([`member_failure`](Self::member_failure)):
+    /// a failed member. Under [`Order::Door`] the read stops there; a read that has stopped
+    /// tells nothing more.
     fn fail(&mut self, code: Code, path: JsonPath, span: Option<Span>) {
-        let grading = crate::schema::grade(self.reading.on_member_failure);
+        if self.stopped {
+            return;
+        }
+        let grading = self.member_failure();
         let mut finding = Diagnostic::error(code).severity(grading.severity).at(path);
         finding.location.span = span;
         self.failed |= grading.fails_owner;
         self.push(finding);
+        self.stopped = self.order == Order::Door;
+    }
+
+    /// Tells that `node` holds a value its member refuses, with `code` (`INVALID_VALUE`, an
+    /// enum's `INVALID_ENUM_VALUE`, a leaf's own), graded as every failed member is
+    /// ([`member_failure`](Self::member_failure)).
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// use bedrock_addon_core::diagnostic::codes;
+    /// let json: Value = from_str_jsonc(r#""huge""#).unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    /// read.refuse(&Node::new(&json, JsonPath::of_keys(["size"])), (&codes::INVALID_VALUE).into());
+    /// assert!(read.failed());
+    /// assert_eq!(told(&found), ["Error size invalid value"]);
+    /// ```
+    pub fn refuse(&mut self, node: &Node<'_>, code: Code) {
+        self.fail(code, node.path.clone(), node.span());
+    }
+
+    /// Tells `finding` as a failed member, at its own path, span and code, graded as
+    /// [`refuse`](Self::refuse) grades: for a reader that builds the finding itself (the bridge
+    /// to facet's read, a leaf's own detail).
+    pub fn refuse_with(&mut self, finding: Diagnostic) {
+        if self.stopped {
+            return;
+        }
+        let grading = self.member_failure();
+        let finding = finding.severity(grading.severity);
+        self.failed |= grading.fails_owner;
+        self.push(finding);
+        self.stopped = self.order == Order::Door;
     }
 
     /// Tells that `node` holds a value of a JSON type its member does not take.
@@ -563,6 +935,40 @@ impl<'d> Read<'d> {
         self.fail(code, node.path.clone(), node.span());
     }
 
+    /// Tells that `node` holds a value of a JSON type its member does not take, where the read
+    /// knows what it `expected`: in the family's [`Texts::wrong_kind`] wording when it has one,
+    /// else as [`wrong_type`](Self::wrong_type) words it.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// use bedrock_addon_core::diagnostic::{Code, builders};
+    /// use bedrock_addon_core::json::kit::{Expected, Texts, WrongKind};
+    /// fn named(expected: Expected, found: &Value) -> Code {
+    ///     builders::syntax(format!("expected {expected:?}, found {:?}", found.is_array()))
+    /// }
+    /// let json: Value = from_str_jsonc("[]").unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found)
+    ///     .texts(Texts { wrong_kind: Some(WrongKind(named)), ..Texts::CODES });
+    /// assert!(read.object(&Node::new(&json, JsonPath::of_keys(["root"]))).is_none());
+    /// assert_eq!(told(&found), ["Error root expected Object, found true"]);
+    /// ```
+    pub fn wrong_kind(&mut self, node: &Node<'_>, expected: Expected) {
+        match self.texts.wrong_kind {
+            Some(WrongKind(word)) => {
+                let code = word(expected, node.value);
+                self.fail(code, node.path.clone(), node.span());
+            }
+            None => self.wrong_type(node),
+        }
+    }
+
     /// The members of `node`; a [wrong type](Self::wrong_type) when it is no object.
     ///
     /// ```
@@ -583,7 +989,7 @@ impl<'d> Read<'d> {
     /// ```
     pub fn object<'v>(&mut self, node: &Node<'v>) -> Option<Members<'v>> {
         let Some(object) = node.value.as_object() else {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::Object);
             return None;
         };
         let texts = node
@@ -619,7 +1025,7 @@ impl<'d> Read<'d> {
     /// ```
     pub fn array<'v>(&mut self, node: &Node<'v>) -> Option<Elements<'v>> {
         let Some(array) = node.value.as_array() else {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::Array);
             return None;
         };
         let texts = node
@@ -693,6 +1099,12 @@ impl<'d> Read<'d> {
             self.missing(members, key);
         }
         node
+    }
+
+    /// Tells that the member `key` of `members` is required and missing, spanning the object,
+    /// as [`required`](Self::required) does: for a reader that found the member absent itself.
+    pub fn missing_member(&mut self, members: &Members<'_>, key: &str) {
+        self.missing(members, key);
     }
 
     /// Tells that the member `key` of `members` is required and missing.
@@ -780,6 +1192,43 @@ impl<'d> Read<'d> {
         self.push(finding);
     }
 
+    /// Tells the one member `node` as unknown by its struct's word (`schema::unknown`), as the
+    /// typed door tells it: `keep` and `report` an `UnrecognizedField` (kept or not, the door's
+    /// one line), `reject` a `DroppedField`, `ignore` an `IgnoredMember`; at the unknown
+    /// severity, spanning its value, in [`Pass::Unknown`].
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// use bedrock_addon_core::schema::UnknownRule;
+    /// let json: Value = from_str_jsonc(r#"{"a": 1, "b": 2}"#).unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
+    /// read.unknown_by_rule(&members.get("a").unwrap(), UnknownRule::Report);
+    /// read.unknown_by_rule(&members.get("b").unwrap(), UnknownRule::Ignore);
+    /// assert_eq!(told(&found), ["Error a unrecognized field", "Error b member ignored"]);
+    /// ```
+    pub fn unknown_by_rule(&mut self, node: &Node<'_>, rule: crate::schema::UnknownRule) {
+        use crate::schema::UnknownRule;
+        let disposition = match rule {
+            UnknownRule::Keep | UnknownRule::Report => Disposition::Keep,
+            UnknownRule::Reject => Disposition::Reject,
+            UnknownRule::Ignore => Disposition::Ignore,
+        };
+        let code = disposition.code(self.texts.unknown);
+        let mut finding = Diagnostic::of(code)
+            .severity(self.unknown_severity)
+            .at(node.path.clone());
+        finding.location.span = node.span();
+        self.defer(Pass::Unknown, finding);
+    }
+
     /// The bool `node` holds; a [wrong type](Self::wrong_type) for any other value.
     ///
     /// ```
@@ -802,7 +1251,7 @@ impl<'d> Read<'d> {
     pub fn bool(&mut self, node: &Node<'_>) -> Option<bool> {
         let read = node.value.as_bool();
         if read.is_none() {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::Bool);
         }
         read
     }
@@ -830,7 +1279,7 @@ impl<'d> Read<'d> {
     pub fn string<'v>(&mut self, node: &Node<'v>) -> Option<&'v str> {
         let read = node.value.as_string().map(facet_value::VString::as_str);
         if read.is_none() {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::String);
         }
         read
     }
@@ -865,7 +1314,7 @@ impl<'d> Read<'d> {
             (None, _) => None,
         };
         if read.is_none() {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::Number);
         }
         read
     }
@@ -907,7 +1356,7 @@ impl<'d> Read<'d> {
             _ => node.value.is_int(ints),
         };
         if read.is_none() {
-            self.wrong_type(node);
+            self.wrong_kind(node, Expected::Number);
         }
         read
     }

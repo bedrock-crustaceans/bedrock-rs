@@ -127,6 +127,9 @@ pub enum EffectSeconds {
     Infinite,
 }
 
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(EffectSeconds);
+
 impl Default for EffectSeconds {
     fn default() -> Self {
         Self::Seconds(0.0)
@@ -146,6 +149,9 @@ pub enum SecondsOrText {
     /// A text, as written.
     Text(String),
 }
+
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(SecondsOrText);
 
 impl Default for SecondsOrText {
     fn default() -> Self {

@@ -250,6 +250,8 @@ impl TryFrom<Value> for WeightedBiomes {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(WeightedBiomes);
+
 impl From<&WeightedBiomes> for Value {
     fn from(biomes: &WeightedBiomes) -> Self {
         match biomes {
@@ -299,6 +301,8 @@ impl TryFrom<Value> for WeightedClimate {
         ]))
     }
 }
+
+bedrock_addon_core::from_json_via_value!(WeightedClimate);
 
 impl From<&WeightedClimate> for Value {
     fn from(climate: &WeightedClimate) -> Self {

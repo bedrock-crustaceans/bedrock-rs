@@ -8,7 +8,7 @@ struct Pair(i32, i32);
 #[repr(u8)]
 enum Shape {
     Unit,
-    Data(i32),
+    Data(i32, i32),
 }
 
 #[derive(Facet, Schema)]

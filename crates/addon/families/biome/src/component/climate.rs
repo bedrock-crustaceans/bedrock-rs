@@ -67,6 +67,9 @@ pub enum GrassTint {
     Noise {},
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(GrassTint);
+
 /// An opaque RGB colour: `"#RRGGBB"` or `[r, g, b]` with integer
 /// channels, kept in the form it was written.
 pub type Color = HexOr<[i32; 3]>;

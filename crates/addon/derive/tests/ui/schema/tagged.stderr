@@ -1,0 +1,35 @@
+error: `schema::expected` is a string enum's key: a tagged enum with data names its variants by facet's `rename`
+ --> tests/ui/schema/tagged.rs:5:23
+  |
+5 | #[facet(tag = "type", schema::expected = "a shape", schema::unknown = "keep")]
+  |                       ^^^^^^
+
+error: `schema::unknown` is about the members of an object: put it on the struct variant whose members it is about
+ --> tests/ui/schema/tagged.rs:5:53
+  |
+5 | #[facet(tag = "type", schema::expected = "a shape", schema::unknown = "keep")]
+  |                                                     ^^^^^^
+
+error: a newtype variant of an internally tagged enum holds a struct, whose members sit beside the tag: a plain value has no member to sit there
+ --> tests/ui/schema/tagged.rs:8:10
+  |
+8 |     Count(u8),
+  |          ^^^^
+
+error: a variant of a tagged enum takes no `schema::min`: put it on the field it is about
+ --> tests/ui/schema/tagged.rs:9:13
+  |
+9 |     #[facet(schema::min = 0)]
+  |             ^^^^^^
+
+error: `schema::unknown` is about the members of an object: put it on a struct variant, whose members it is about
+  --> tests/ui/schema/tagged.rs:11:13
+   |
+11 |     #[facet(schema::unknown = "keep")]
+   |             ^^^^^^
+
+error: a variant of a tagged enum holds one value or named members: a tuple of several has no JSON form the derive reads
+  --> tests/ui/schema/tagged.rs:18:9
+   |
+18 |     Both(u8, u8),
+   |         ^^^^^^^^

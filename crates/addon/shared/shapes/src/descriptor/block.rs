@@ -269,6 +269,8 @@ impl From<Value> for BlockDescriptor {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(BlockDescriptor);
+
 impl From<&BlockDescriptor> for Value {
     fn from(descriptor: &BlockDescriptor) -> Self {
         let mut object = VObject::new();
@@ -360,6 +362,8 @@ impl TryFrom<Value> for StateValue {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(StateValue);
+
 impl From<&StateValue> for Value {
     fn from(state: &StateValue) -> Self {
         match state {
@@ -428,6 +432,8 @@ impl TryFrom<Value> for BlockSpecifier {
         })
     }
 }
+
+bedrock_addon_core::from_json_via_value!(BlockSpecifier);
 
 impl From<&BlockSpecifier> for Value {
     fn from(specifier: &BlockSpecifier) -> Self {

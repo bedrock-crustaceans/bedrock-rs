@@ -55,7 +55,8 @@ pub use document::{
 };
 pub use file::BelowFloor;
 pub use legacy::{Legacy, LegacyPayload, LegacyStep};
-pub use payload::{parse_payload, write_payload};
+pub(crate) use payload::failure_finding;
+pub use payload::{parse_payload, read_payload, read_payload_with, write_payload};
 pub use pipeline::{
     Parsed, file_version, finish, finish_file, load, load_file, member_version, no_parser_version,
     parse_as_written, parse_file_as_written,

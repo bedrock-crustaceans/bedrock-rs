@@ -219,17 +219,29 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   transparent newtype) and reads back unchanged from what the writer makes of it (the
 ///   test's module reaches the struct through `super::`, so a struct declared inside a
 ///   function body does not compile in a test build: declare it at module level); a getter
-///   `fn x(&self) -> T` per `Option` field with a `schema::fallback`;
+///   `fn x(&self) -> T` per `Option` field with a `schema::fallback`; `impl FromJson` (core's
+///   `schema::FromJson`: the object, then each member in file order by its JSON name, through
+///   the field type's `FromJson` or its `schema::read_with`, an absent one by its declaration,
+///   a failed one by the reading, the unknown ones by `schema::unknown`, an `extra: Extra` or
+///   `UnknownMembers` field and the reading) and the hidden `__read::Fields` (the same read
+///   from an object it shares with a struct that flattens it); a transparent newtype reads as
+///   its field;
 /// - on a unit-only enum: `ALL` (none with `schema::order = "game"`, where the enum states
 ///   its own in the game's order and a compile-time check holds it to every variant once),
 ///   `NAMES` and `EXPECTED` (in declaration order either way), `name`, `from_name`,
-///   `parse_name`, `Display`, and empty `Schema` and `MolangFields` impls;
+///   `parse_name`, `Display`, empty `Schema` and `MolangFields` impls, and `impl FromJson` by
+///   name;
 /// - on an untagged enum (`#[facet(untagged)]`) whose variants are units, newtypes or struct
 ///   variants: `impl Schema` (empty `FIELDS`; `check` and the Molang walk of the active
 ///   variant's fields at the enum's own path, a newtype's value as the enum's; every
 ///   variant's trigger members, a shared one once), `impl MolangFields`, and
-///   `VARIANT_FIELDS`, the rows per variant. No `Default` and no getters: no variant is the
-///   default one.
+///   `VARIANT_FIELDS`, the rows per variant, and `impl FromJson` (the arm the typed door
+///   chooses: an object by its keys, an array the first list arm, a scalar the first arm its
+///   profile takes). No `Default` and no getters: no variant is the default one;
+/// - on an internally tagged enum (`#[facet(tag = "type")]`) and an externally tagged one
+///   (any other enum with data: `{"name": payload}`, a unit variant its name): the same impls
+///   as an untagged one (an externally tagged variant's fields one key down, under its name),
+///   and `impl FromJson` by the tag member or the one key.
 ///
 /// A field is required (plain `T`), filled on read (plain `T` with facet's `default = x`, the
 /// value in the field's own type) or optional (`Option<T>`, with or without
@@ -242,10 +254,11 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// container, an enum's key on a field or a struct, `unknown` on a string enum, any key on a
 /// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
 /// `EventTrigger`, `molang` on a plain value (a number, `bool` or string) or beside
-/// `molang_with`, generics, a tuple struct that is not transparent, a tagged enum with data, an
-/// untagged variant of several unnamed fields, a `schema::` key on an untagged variant other
-/// than `unknown`, and `unknown` on one that is not a struct variant. A misspelt key is facet's
-/// error.
+/// `molang_with`, `read_with` on a flattened field or an `UnknownMembers` one, generics, a tuple
+/// struct that is not transparent, a variant of several unnamed fields, an internally tagged
+/// newtype variant around a plain value, a `schema::` key on a variant of an enum with data
+/// other than `unknown`, and `unknown` on one that is not a struct variant. A misspelt key is
+/// facet's error.
 ///
 /// The emitted paths are `::bedrock_addon_core::…`, so the user crate depends on core.
 ///

@@ -55,6 +55,9 @@ pub enum NamedCondition<N: Name> {
     Conditional(IndexMap<String, Molang>),
 }
 
+// bridge: read through its NamedConditionProxy
+bedrock_addon_core::from_json_via_facet!(impl<N: Name> NamedCondition<N>);
+
 impl<N: Name> NamedCondition<N> {
     /// The text of the name this entry uses (the string form's, or the object's member that
     /// is read); `None` for an empty object.

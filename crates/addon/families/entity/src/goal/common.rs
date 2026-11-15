@@ -112,6 +112,8 @@ macro_rules! names {
         }
 
         // A proxied name: no member is walked, nothing in it is Molang.
+        // bridge: read through its ScalarShape proxy
+        bedrock_addon_core::from_json_via_facet!($name);
         bedrock_addon_core::impl_schema_leaf!($name);
         bedrock_addon_core::impl_no_molang!($name);
 
@@ -209,6 +211,9 @@ pub struct MaterialType {
     /// The name as written.
     pub spelling: String,
 }
+
+// bridge: read through its ScalarShape proxy
+bedrock_addon_core::from_json_via_facet!(MaterialType);
 
 impl MaterialType {
     /// `material`, spelt in lower case as vanilla's files write it.
@@ -407,6 +412,9 @@ names! {
 #[facet(proxy = ScalarShape)]
 pub struct SoundEvent(String);
 
+// bridge: read through its ScalarShape proxy
+bedrock_addon_core::from_json_via_facet!(SoundEvent);
+
 impl SoundEvent {
     /// The event spelt `name`.
     pub fn new(name: impl Into<String>) -> Self {
@@ -593,6 +601,8 @@ impl TryFrom<Value> for ParticleColor {
         Ok(Self::Channels(channels))
     }
 }
+
+bedrock_addon_core::from_json_via_value!(ParticleColor);
 
 impl TryFrom<&ParticleColor> for Value {
     type Error = ValueError;

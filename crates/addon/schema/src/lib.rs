@@ -56,6 +56,10 @@ facet::define_attr_grammar! {
         /// `molang_with = path` (compile-time): a hand-written Molang walk of the field,
         /// `fn(&mut T, &mut MolangVisitor<'_>)`.
         MolangWith(arbitrary),
+        /// `read_with = path` (compile-time): the field's read, in place of its type's
+        /// `FromJson`: `fn(&Node<'_>, &mut Read<'_>) -> Option<T>`, `T` the field's type (an
+        /// `Option` field's inner type), called for a member that is written.
+        ReadWith(arbitrary),
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,

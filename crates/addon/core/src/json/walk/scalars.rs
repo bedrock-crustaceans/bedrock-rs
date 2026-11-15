@@ -89,15 +89,56 @@ pub(super) fn scalar_arm(
     rules: ScalarRules,
     cursor: &mut Cursor,
 ) -> Option<usize> {
+    match choose_scalar_arm(variants, token, rules) {
+        ScalarArm::Arm {
+            index,
+            declared: true,
+        } => Some(index),
+        ScalarArm::Refused => {
+            cursor.scalars.push(ScalarCall {
+                path: cursor.path.clone(),
+                verdict: Verdict::Refused(Refusal::WrongType),
+                declared: None,
+                arm: true,
+                list: None,
+            });
+            None
+        }
+        ScalarArm::Arm { .. } | ScalarArm::Unit | ScalarArm::None => None,
+    }
+}
+
+/// The arm of an untagged enum that reads a scalar token ([`choose_scalar_arm`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ScalarArm {
+    /// `null` or a unit variant's name: the enum's unit variant reads it.
+    Unit,
+    /// The newtype variant `index`, around a type with a declared scalar type (`declared`) or
+    /// an enum of unit variants.
+    Arm { index: usize, declared: bool },
+    /// No arm takes the token under the profile: a type error at the enum.
+    Refused,
+    /// No newtype variant reads a scalar.
+    None,
+}
+
+/// The arm of an untagged enum that reads the scalar `token`, as the pre-pass chooses it under
+/// `rules` ([`scalar_arm`]'s rule, with the arm facet itself reads under `ConvertAndTell` named
+/// even where it has no declared scalar type).
+pub(crate) fn choose_scalar_arm(
+    variants: &'static [facet::Variant],
+    token: Token<'_>,
+    rules: ScalarRules,
+) -> ScalarArm {
     if matches!(token, Token::Null) && variants.iter().any(|v| v.data.fields.is_empty()) {
-        return None;
+        return ScalarArm::Unit;
     }
     if let Token::Str(text) = token
         && variants
             .iter()
             .any(|v| v.data.fields.is_empty() && v.effective_name() == text)
     {
-        return None;
+        return ScalarArm::Unit;
     }
     // The newtype variants facet reads a scalar as (`VariantFormat::NewtypeScalar`), with the
     // declared type of each that has one.
@@ -113,12 +154,17 @@ pub(super) fn scalar_arm(
         .collect();
     if rules.scalars == Scalars::ConvertAndTell {
         let json = token_value(token);
-        let scalar = Scalar::of(&json)?;
+        let Some(scalar) = Scalar::of(&json) else {
+            return ScalarArm::None;
+        };
         let chosen = arms
             .iter()
             .find(|(_, payload, _)| scalar.match_quality(payload).is_some())
-            .or_else(|| arms.first())?;
-        return chosen.2.map(|_| chosen.0);
+            .or_else(|| arms.first());
+        return chosen.map_or(ScalarArm::None, |(index, _, declared)| ScalarArm::Arm {
+            index: *index,
+            declared: declared.is_some(),
+        });
     }
     let arm_rules = match rules.scalars {
         Scalars::JsonCpp => rules,
@@ -130,18 +176,20 @@ pub(super) fn scalar_arm(
         .iter()
         .find(|(_, _, declared)| declared.is_some_and(takes))
     {
-        return Some(*index);
+        return ScalarArm::Arm {
+            index: *index,
+            declared: true,
+        };
     }
     if !arms.is_empty() && arms.iter().all(|(_, _, declared)| declared.is_some()) {
-        cursor.scalars.push(ScalarCall {
-            path: cursor.path.clone(),
-            verdict: Verdict::Refused(Refusal::WrongType),
-            declared: None,
-            arm: true,
-            list: None,
-        });
+        return ScalarArm::Refused;
     }
-    None
+    // An arm around a unit enum, which facet reads the token into: its own read words it.
+    arms.first()
+        .map_or(ScalarArm::None, |(index, _, _)| ScalarArm::Arm {
+            index: *index,
+            declared: false,
+        })
 }
 
 /// The value of a scalar token, for the scalar matching facet's untagged read does.

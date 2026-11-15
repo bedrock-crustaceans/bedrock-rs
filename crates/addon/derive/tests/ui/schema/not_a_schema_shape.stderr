@@ -4,11 +4,11 @@ error: `#[derive(Schema)]` applies to a struct with named fields or a `#[facet(t
 5 | struct Pair(i32, i32);
   |            ^^^^^^^^^^
 
-error: `#[derive(Schema)]` on an enum applies to a string enum, whose variants are all units, or to an untagged one (`#[facet(untagged)]`): a tagged variant with data has no one name
+error: a variant of a tagged enum holds one value or named members: a tuple of several has no JSON form the derive reads
   --> tests/ui/schema/not_a_schema_shape.rs:11:9
    |
-11 |     Data(i32),
-   |         ^^^^^
+11 |     Data(i32, i32),
+   |         ^^^^^^^^^^
 
 error: `#[derive(Schema)]` takes no generic parameters
   --> tests/ui/schema/not_a_schema_shape.rs:15:15

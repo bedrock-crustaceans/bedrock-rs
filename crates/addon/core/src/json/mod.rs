@@ -119,6 +119,8 @@ pub use text::MAX_JSON_DEPTH;
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
 pub(crate) use walk::door_unknown_members;
+pub(crate) use walk::untagged::untagged_arm;
+pub(crate) use walk::{ScalarArm, choose_scalar_arm};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use walk::{

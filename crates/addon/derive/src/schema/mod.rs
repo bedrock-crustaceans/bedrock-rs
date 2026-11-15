@@ -2,10 +2,12 @@
 //! `trigger_members`), `impl MolangFields`, `impl Default` when no field is required, and a
 //! getter per `Option` field with a `schema::fallback`; for a unit-only enum, `ALL`, `NAMES`,
 //! `EXPECTED`, `name`, `from_name`, `parse_name`, `Display`, an empty `impl Schema` and an
-//! empty Molang walk; for an untagged enum with data, `impl Schema` and `impl MolangFields`
-//! over the active variant and `VARIANT_FIELDS`.
+//! empty Molang walk; for an untagged or tagged enum with data, `impl Schema` and `impl
+//! MolangFields` over the active variant and `VARIANT_FIELDS`. For each, `impl FromJson`, the
+//! read (`read`).
 
 mod attr;
+mod read;
 mod ty;
 
 use proc_macro2::TokenStream;
@@ -246,10 +248,12 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
     );
     for info in &infos {
         validate_field(info, &infos, errors);
+        read::validate(info, errors);
     }
 
     let core = core();
     let ident = &input.ident;
+    let from_json = read::struct_read(ident, fields, &container, &infos);
     let rows = infos.iter().map(|info| field_row(info));
     let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
         infos
@@ -296,6 +300,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
 
         #default
         #getters
+        #from_json
     }
 }
 
@@ -900,19 +905,13 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
     if has_data && attr::is_untagged(&input.attrs) {
         return derive_untagged(input, data, errors);
     }
+    if has_data {
+        return derive_tagged(input, data, attr::tag_of(&input.attrs).as_deref(), errors);
+    }
     let container = ContainerAttrs::read(&input.attrs, Place::Enum, errors);
     let mut variants = Vec::new();
     for variant in &data.variants {
         let rename = attr::variant_rename(&variant.attrs, errors);
-        if !matches!(variant.fields, Fields::Unit) {
-            errors.push(Error::new_spanned(
-                &variant.fields,
-                "`#[derive(Schema)]` on an enum applies to a string enum, whose variants are all \
-                 units, or to an untagged one (`#[facet(untagged)]`): a tagged variant with data \
-                 has no one name",
-            ));
-            continue;
-        }
         let name = json_name(&variant.ident.to_string(), rename.as_ref(), &container);
         variants.push((&variant.ident, name));
     }
@@ -949,7 +948,10 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         ""
     };
     let from_doc = format!("The value spelt `name`{case}.");
+    let from_json = read::unit_enum_read(ident);
     quote! {
+        #from_json
+
         #[automatically_derived]
         impl #ident {
             #all
@@ -1073,9 +1075,121 @@ fn binding(index: usize) -> Ident {
 /// step); a struct variant's members are the object's. No `Default`: no variant is the
 /// default one.
 fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) -> TokenStream {
-    let _ = ContainerAttrs::read(&input.attrs, Place::Untagged, errors);
+    let container = ContainerAttrs::read(&input.attrs, Place::Untagged, errors);
     let variants = untagged_variants(data, errors);
-    untagged_impls(&input.ident, &variants)
+    let impls = untagged_impls(&input.ident, &variants, None);
+    let reads: Vec<read::ReadVariant> = data
+        .variants
+        .iter()
+        .filter_map(|variant| {
+            let info = variants.iter().find(|info| *info.ident == variant.ident)?;
+            Some(read::ReadVariant {
+                variant,
+                name: json_name(
+                    &variant.ident.to_string(),
+                    attr::rename_of(&variant.attrs).as_ref(),
+                    &container,
+                ),
+                fields: &info.fields,
+                unknown: attr::variant_unknown(&variant.attrs),
+            })
+        })
+        .collect();
+    let from_json = read::untagged_read(&input.ident, &reads);
+    quote!(#impls #from_json)
+}
+
+/// A tagged enum with data: internally (`tag = ".."`, the variant named by that member, its
+/// members beside it) or externally (`{"name": payload}`, a unit variant its name). `impl
+/// Schema`, `impl MolangFields` and `VARIANT_FIELDS` as an untagged enum's (an externally
+/// tagged variant's fields one key down), and its read.
+fn derive_tagged(
+    input: &DeriveInput,
+    data: &DataEnum,
+    tag: Option<&str>,
+    errors: &mut Vec<Error>,
+) -> TokenStream {
+    let container = ContainerAttrs::read(&input.attrs, Place::Tagged, errors);
+    read::check_tagged_variants(data, tag.is_some(), errors);
+    let mut variants: Vec<VariantInfo> = Vec::new();
+    let mut json_names = Vec::new();
+    let mut unknowns = Vec::new();
+    for variant in &data.variants {
+        let named = matches!(variant.fields, Fields::Named(_));
+        let (rename, rename_all, unknown) = attr::tagged_variant(&variant.attrs, named, errors);
+        let naming = ContainerAttrs {
+            rename_all,
+            ..ContainerAttrs::default()
+        };
+        let v = &variant.ident;
+        let access = |_: &Member, index: usize| {
+            let binding = binding(index);
+            quote!((*#binding))
+        };
+        let (pattern, fields) = match &variant.fields {
+            Fields::Unit => (quote!(Self::#v), Vec::new()),
+            Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1 => {
+                // An internally tagged newtype's struct shares the enum's object; an externally
+                // tagged one's value is the variant's payload.
+                let fields = field_infos(&variant.fields, &naming, true, access, errors);
+                let pattern = if fields.is_empty() {
+                    quote!(Self::#v(..))
+                } else {
+                    quote!(Self::#v(__f0))
+                };
+                (pattern, fields)
+            }
+            Fields::Unnamed(_) => continue,
+            Fields::Named(_) => {
+                let fields = field_infos(&variant.fields, &naming, false, access, errors);
+                let binds = variant
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, field)| {
+                        let name = field.ident.as_ref()?;
+                        fields.iter().any(|info| info.ident == Some(name)).then(|| {
+                            let binding = binding(index);
+                            quote!(#name: #binding)
+                        })
+                    });
+                (quote!(Self::#v { #(#binds,)* .. }), fields)
+            }
+        };
+        for info in &fields {
+            validate_field(info, &fields, errors);
+            read::validate(info, errors);
+        }
+        json_names.push(read::variant_name(variant, rename.as_ref(), &container));
+        unknowns.push(unknown);
+        variants.push(VariantInfo {
+            ident: v,
+            pattern,
+            fields,
+        });
+    }
+    let steps = tag.is_none().then(|| json_names.clone());
+    let impls = untagged_impls(&input.ident, &variants, steps.as_deref());
+    let reads: Vec<read::ReadVariant> = data
+        .variants
+        .iter()
+        .filter_map(|variant| {
+            let at = variants
+                .iter()
+                .position(|info| *info.ident == variant.ident)?;
+            Some(read::ReadVariant {
+                variant,
+                name: json_names[at].clone(),
+                fields: &variants[at].fields,
+                unknown: unknowns[at].clone(),
+            })
+        })
+        .collect();
+    let from_json = match tag {
+        Some(tag) => read::tagged_read(&input.ident, tag, &reads),
+        None => read::external_read(&input.ident, &reads),
+    };
+    quote!(#impls #from_json)
 }
 
 /// The variants of an untagged enum, each with its arm's pattern and its fields bound in it.
@@ -1140,15 +1254,21 @@ fn untagged_variants<'a>(data: &'a DataEnum, errors: &mut Vec<Error>) -> Vec<Var
     variants
 }
 
-/// The impls of an untagged enum over its read `variants`.
-fn untagged_impls(ident: &Ident, variants: &[VariantInfo]) -> TokenStream {
+/// The impls of an untagged enum over its read `variants`; with `steps`, each variant's
+/// fields one key down, under its name (an externally tagged enum).
+fn untagged_impls(
+    ident: &Ident,
+    variants: &[VariantInfo],
+    steps: Option<&[String]>,
+) -> TokenStream {
     let core = core();
+    let step = |index: usize| steps.and_then(|steps| steps.get(index));
     let variant_rows = variants.iter().map(|variant| {
         let name = variant.ident.to_string();
         let rows = variant.fields.iter().map(field_row);
         quote!((#name, &[#(#rows),*]))
     });
-    let check_arms = variants.iter().map(|variant| {
+    let check_arms = variants.iter().enumerate().map(|(index, variant)| {
         let pattern = &variant.pattern;
         let checks = variant
             .fields
@@ -1160,16 +1280,41 @@ fn untagged_impls(ident: &Ident, variants: &[VariantInfo]) -> TokenStream {
                     .iter()
                     .filter_map(|info| field_cross_check(info, &variant.fields)),
             );
-        quote!(#pattern => { #(#checks)* })
+        if let Some(name) = step(index) {
+            quote!(#pattern => { cx.enter(#name); #(#checks)* cx.leave(); })
+        } else {
+            quote!(#pattern => { #(#checks)* })
+        }
     });
-    let molang_arms = variants.iter().map(|variant| {
+    let molang_arms = variants.iter().enumerate().map(|(index, variant)| {
         let pattern = &variant.pattern;
         let molang = variant.fields.iter().map(field_molang);
-        quote!(#pattern => { #(#molang)* })
+        if let Some(name) = step(index) {
+            quote! {
+                #pattern => {
+                    visitor.enter(#core::molang::Step::Key(#name));
+                    #(#molang)*
+                    visitor.leave();
+                }
+            }
+        } else {
+            quote!(#pattern => { #(#molang)* })
+        }
     });
     let triggers: Vec<TokenStream> = variants
         .iter()
-        .flat_map(|variant| trigger_calls(&variant.fields))
+        .enumerate()
+        .map(|(index, variant)| {
+            let calls = trigger_calls(&variant.fields);
+            if let Some(name) = step(index) {
+                quote! {{
+                    let prefix: &str = &#core::schema::member(prefix, #name);
+                    #(#calls)*
+                }}
+            } else {
+                quote!(#(#calls)*)
+            }
+        })
         .collect();
 
     quote! {

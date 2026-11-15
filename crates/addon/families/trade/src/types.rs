@@ -94,6 +94,9 @@ pub enum ItemList {
     Item(TradeItem),
 }
 
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(ItemList);
+
 /// One item of a trade.
 ///
 /// JSON: `{"item": "<id>", "quantity"?, "functions"?, "filters"?, "price_multiplier"?}`. The
@@ -149,6 +152,9 @@ pub enum Quantity {
         max: Option<u32>,
     },
 }
+
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(Quantity);
 
 // The two forms of an entry and of a quantity: leaves of the derived walks (an untagged enum
 // holds no derived bound, trigger or Molang member).

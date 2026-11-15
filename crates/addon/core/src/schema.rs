@@ -3,7 +3,8 @@
 //! The grammar of `bedrock_addon_schema` is re-exported whole, so that `#[facet(schema::min =
 //! 0.0)]` resolves through `use bedrock_addon_core::schema::{self, Schema};`, which imports
 //! the namespace, the derive and the trait at once. Beside it: the [`Schema`] trait, its row
-//! table ([`FieldRow`]), the context a derived check reports to ([`SchemaCx`]), the grading of
+//! table ([`FieldRow`]), the read the derive emits ([`FromJson`], member by member on the
+//! reader kit), the context a derived check reports to ([`SchemaCx`]), the grading of
 //! a failed member both it and the reader kit apply ([`grade`]), and what
 //! `#[derive(Components)]` emits for a goal row ([`GoalMeta`]) and per row
 //! ([`ComponentRow`]).
@@ -14,6 +15,7 @@
 mod component;
 mod cx;
 mod default;
+mod from_json;
 mod goal;
 mod grading;
 mod molang_leaves;
@@ -36,6 +38,13 @@ pub use component::{
     shorthand_shape,
 };
 pub use cx::{SchemaCx, Verdict};
+// hidden: emitted by the schema derive
+#[doc(hidden)]
+pub use from_json::derived as __read;
+// hidden: the map impls' bound, which a family's key type implements beside the type
+#[doc(hidden)]
+pub use from_json::MapKey;
+pub use from_json::{FromJson, from_value, read_via_facet};
 // hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use default::{DefaultFault, default_round_trip};

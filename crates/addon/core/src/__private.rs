@@ -8,3 +8,6 @@ pub trait Sealed {}
 /// facet's `Shape`, for the paths `#[derive(Components)]` emits (a family names facet itself,
 /// but the derive's output names only core).
 pub use facet::Shape;
+
+/// facet's `Facet`, for the bounds `from_json_via_facet!` and `#[derive(Schema)]` emit.
+pub use facet::Facet;

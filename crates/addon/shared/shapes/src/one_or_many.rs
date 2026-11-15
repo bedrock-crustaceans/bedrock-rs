@@ -21,6 +21,9 @@ pub enum OneOrMany<T> {
     Many(Vec<T>),
 }
 
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(impl<T> OneOrMany<T>);
+
 impl<T> OneOrMany<T> {
     /// The values, in document order: one for [`One`](Self::One), all for
     /// [`Many`](Self::Many).

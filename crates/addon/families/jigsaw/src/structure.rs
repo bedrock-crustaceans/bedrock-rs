@@ -167,6 +167,9 @@ pub enum HeightProvider {
     },
 }
 
+// bridge: a tagged facet enum without the Schema derive; converted with its family
+bedrock_addon_core::from_json_via_facet!(HeightProvider);
+
 /// A height as an offset from an anchor: an object with exactly one member.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
 #[repr(u8)]
@@ -206,6 +209,9 @@ pub enum DimensionPadding {
         bottom: Option<u32>,
     },
 }
+
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(DimensionPadding);
 
 /// How far a structure's pieces may be from its start (`max_distance_from_center`).
 ///
@@ -262,6 +268,9 @@ pub enum PoolAlias {
         groups: Vec<Weighted<Vec<GroupedPoolAlias>>>,
     },
 }
+
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(PoolAlias);
 
 /// An alias inside a `random_group` alias: direct or random, never a group.
 #[derive(Clone, Debug, PartialEq, facet::Facet)]

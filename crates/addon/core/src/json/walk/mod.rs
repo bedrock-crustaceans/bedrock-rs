@@ -26,7 +26,7 @@ mod enums;
 mod keep;
 mod misread;
 mod scalars;
-mod untagged;
+pub(crate) mod untagged;
 
 use enums::walk_enum;
 pub(crate) use keep::door_unknown_members;
@@ -34,6 +34,7 @@ pub use keep::{
     keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
 };
 pub use misread::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
+pub(crate) use scalars::{ScalarArm, choose_scalar_arm};
 use scalars::{judge_scalar, misreading};
 
 /// Every member of `json` that no field of `shape` takes, at any depth, with its path, in

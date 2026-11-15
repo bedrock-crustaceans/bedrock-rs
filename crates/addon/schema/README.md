@@ -15,6 +15,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `min`, `max`, `above`, `below` | a number, or the name of another field | compile-time | `#[derive(Schema)]` |
 | `molang` | a `MolangFieldSpec` path | compile-time | `#[derive(Schema)]` |
 | `molang_with` | a function path | compile-time | `#[derive(Schema)]` |
+| `read_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` | compile-time | `#[derive(Schema)]`: the field's read in place of its type's `FromJson` |
 | `foreign_event` | (marker) | stored as `()` | `#[derive(Schema)]` |
 | `lowercase` | (marker) | stored as `()` | `#[derive(Schema)]` |
 | `expected` | `"a control flag name"` | compile-time | `#[derive(Schema)]` on a string enum |

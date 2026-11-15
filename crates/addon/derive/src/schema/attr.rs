@@ -178,6 +178,8 @@ pub(crate) struct FieldAttrs {
     pub multiple_of: Option<(f64, Span)>,
     pub molang: Option<(Expr, Span)>,
     pub molang_with: Option<(Expr, Span)>,
+    /// `schema::read_with = path`: the field's read, `fn(&Node, &mut Read) -> Option<T>`.
+    pub read_with: Option<(Expr, Span)>,
     pub foreign_event: Option<Span>,
     pub lowercase: Option<Span>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
@@ -209,6 +211,7 @@ const FIELD_KEYS: &[&str] = &[
     "multiple_of",
     "molang",
     "molang_with",
+    "read_with",
     "foreign_event",
     "lowercase",
 ];
@@ -221,10 +224,14 @@ pub(crate) enum Place {
     Enum,
     /// An untagged enum with data.
     Untagged,
+    /// An internally (`tag = ".."`) or externally tagged enum with data.
+    Tagged,
     Field,
     Variant,
     /// A variant of an untagged enum with data.
     UntaggedVariant,
+    /// A variant of a tagged enum with data.
+    TaggedVariant,
 }
 
 /// Records `value` in `slot`, or the duplicate's error.
@@ -245,7 +252,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
         let field_key = FIELD_KEYS.contains(&key.as_str());
         let enum_key = ENUM_KEYS.contains(&key.as_str());
         let message = match place {
-            Place::Struct | Place::Enum | Place::Untagged if field_key => {
+            Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
             }
             Place::Enum if key == "unknown" => {
@@ -267,12 +274,22 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
                 "`schema::{key}` is a string enum's key: an untagged enum with data has no names \
                  to read"
             ),
-            Place::Untagged if key == "unknown" => "`schema::unknown` is about the members of an \
-                 object: put it on the struct variant whose members it is about"
-                .to_owned(),
+            Place::Untagged | Place::Tagged if key == "unknown" => {
+                "`schema::unknown` is about the \
+                 members of an object: put it on the struct variant whose members it is about"
+                    .to_owned()
+            }
             Place::UntaggedVariant if field_key || enum_key => format!(
                 "a variant of an untagged enum takes no `schema::{key}`: put it on the field it \
                  is about"
+            ),
+            Place::Tagged if enum_key => format!(
+                "`schema::{key}` is a string enum's key: a tagged enum with data names its \
+                 variants by facet's `rename`"
+            ),
+            Place::TaggedVariant if field_key || enum_key => format!(
+                "a variant of a tagged enum takes no `schema::{key}`: put it on the field it is \
+                 about"
             ),
             _ => continue,
         };
@@ -442,17 +459,15 @@ impl FieldAttrs {
                         let word = unknown_word(entry)?;
                         once(&mut out.unknown, word, &key, span, errors);
                     }
-                    "fallback" => {
+                    "fallback" | "molang" | "molang_with" | "read_with" => {
                         let expr = value_expr(entry, &key)?;
-                        once(&mut out.fallback, (expr, span), &key, span, errors);
-                    }
-                    "molang" => {
-                        let expr = value_expr(entry, &key)?;
-                        once(&mut out.molang, (expr, span), &key, span, errors);
-                    }
-                    "molang_with" => {
-                        let expr = value_expr(entry, &key)?;
-                        once(&mut out.molang_with, (expr, span), &key, span, errors);
+                        let slot = match key.as_str() {
+                            "fallback" => &mut out.fallback,
+                            "molang" => &mut out.molang,
+                            "molang_with" => &mut out.molang_with,
+                            _ => &mut out.read_with,
+                        };
+                        once(slot, (expr, span), &key, span, errors);
                     }
                     "multiple_of" => {
                         let step = step(entry)?;
@@ -497,6 +512,7 @@ impl FieldAttrs {
             .or_else(|| self.multiple_of.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
             .or(self.lowercase)
             .or(self.stored)
@@ -618,6 +634,86 @@ pub(crate) fn untagged_variant(
         }
     }
     rename_all
+}
+
+/// facet's `rename` among `attrs`, read without a word about any other key.
+pub(crate) fn rename_of(attrs: &[Attribute]) -> Option<String> {
+    entries(attrs).iter().find_map(|entry| {
+        (entry.builtin().as_deref() == Some("rename")).then(|| match entry.expr() {
+            Some(Ok(Expr::Lit(syn::ExprLit {
+                lit: Lit::Str(lit), ..
+            }))) => Some(lit.value()),
+            _ => None,
+        })?
+    })
+}
+
+/// The `tag = ".."` of an internally tagged enum.
+pub(crate) fn tag_of(attrs: &[Attribute]) -> Option<String> {
+    entries(attrs).iter().find_map(|entry| {
+        (entry.builtin().as_deref() == Some("tag")).then(|| match entry.expr() {
+            Some(Ok(Expr::Lit(syn::ExprLit {
+                lit: Lit::Str(lit), ..
+            }))) => Some(lit.value()),
+            _ => None,
+        })?
+    })
+}
+
+/// What a variant of a tagged enum with data declares: facet's `rename` (its name) and
+/// `rename_all` (its members' names), and a checked `schema::unknown`, which only a struct
+/// variant (`named`) takes. An error for any other `schema::` key.
+pub(crate) fn tagged_variant(
+    attrs: &[Attribute],
+    named: bool,
+    errors: &mut Vec<Error>,
+) -> (Option<String>, Option<RenameRule>, Option<String>) {
+    let entries = entries(attrs);
+    placement(&entries, Place::TaggedVariant, errors);
+    let mut rename = None;
+    let mut rename_all = None;
+    let mut unknown = None;
+    for entry in &entries {
+        match (entry.builtin().as_deref(), entry.schema_key().as_deref()) {
+            (Some("rename"), _) => {
+                if let Some(Ok(Expr::Lit(syn::ExprLit {
+                    lit: Lit::Str(lit), ..
+                }))) = entry.expr()
+                {
+                    rename = Some(lit.value());
+                }
+            }
+            (Some("rename_all"), _) => {
+                if let Some(Ok(Expr::Lit(syn::ExprLit {
+                    lit: Lit::Str(lit), ..
+                }))) = entry.expr()
+                {
+                    rename_all = RenameRule::parse(&lit.value());
+                }
+            }
+            (_, Some("unknown")) if !named => errors.push(Error::new(
+                entry.span,
+                "`schema::unknown` is about the members of an object: put it on a struct \
+                 variant, whose members it is about",
+            )),
+            (_, Some("unknown")) => match unknown_word(entry) {
+                Ok(word) => unknown = Some(word),
+                Err(error) => errors.push(error),
+            },
+            _ => {}
+        }
+    }
+    (rename, rename_all, unknown)
+}
+
+/// The checked `schema::unknown` of a variant of an untagged enum with data (a struct
+/// variant's), read again for its object's read; errors are [`untagged_variant`]'s to tell.
+pub(crate) fn variant_unknown(attrs: &[Attribute]) -> Option<String> {
+    entries(attrs).iter().find_map(|entry| {
+        (entry.schema_key().as_deref() == Some("unknown"))
+            .then(|| unknown_word(entry).ok())
+            .flatten()
+    })
 }
 
 /// A variant's `rename`, and an error for any `schema::` key on it.

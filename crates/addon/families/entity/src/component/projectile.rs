@@ -177,6 +177,9 @@ pub enum ProjectileOffset {
     Object(Xyz),
 }
 
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(ProjectileOffset);
+
 impl Default for ProjectileOffset {
     fn default() -> Self {
         Self::Array(vec![0.0; 3])
@@ -462,6 +465,9 @@ pub enum EffectDuration {
     /// A name.
     Named(String),
 }
+
+// bridge: untagged facet enum without the Schema derive
+bedrock_addon_core::from_json_via_facet!(EffectDuration);
 
 /// `on_hit.particle_on_hit`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
