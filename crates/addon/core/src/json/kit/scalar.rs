@@ -179,6 +179,13 @@ impl Read<'_> {
             };
             return Some(Scalar::Real(largest.copysign(x)));
         }
+        if self.negative_zero_integer
+            && let (Declared::Int { .. }, Token::Real(x)) = (declared, token)
+            && x == 0.0
+            && x.is_sign_negative()
+        {
+            return Some(Scalar::UInt(0));
+        }
         let rules = self.reading.scalar_rules();
         if rules.scalars == Scalars::ConvertAndTell {
             return self.convert_and_tell(node, declared, token);

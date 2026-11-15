@@ -1038,6 +1038,9 @@ pub struct Read<'d> {
     /// A number of a `json::Value` kept whole that no double holds reads as the largest finite
     /// one and is told ([`clamps_kept`](Self::clamps_kept)).
     clamp_kept: bool,
+    /// A real `-0.0` given to an integer member reads as the integer zero
+    /// ([`negative_zero_as_integer`](Self::negative_zero_as_integer)).
+    negative_zero_integer: bool,
     /// How many findings that reject the document the read told: an object of a tree fails by
     /// those told below it ([`Objects::Tree`]).
     errors: usize,
@@ -1072,6 +1075,7 @@ impl<'d> Read<'d> {
             told_unit: None,
             clamp_molang: false,
             clamp_kept: false,
+            negative_zero_integer: false,
             errors: 0,
             respelled: Vec::new(),
         }
@@ -1179,6 +1183,7 @@ impl<'d> Read<'d> {
             told_unit: self.told_unit.clone(),
             clamp_molang: self.clamp_molang,
             clamp_kept: self.clamp_kept,
+            negative_zero_integer: self.negative_zero_integer,
             errors: 0,
             respelled: Vec::new(),
         }
@@ -1405,6 +1410,35 @@ impl<'d> Read<'d> {
     /// Whether the read clamps the numbers of the values it keeps ([`clamp_kept`](Self::clamp_kept)).
     pub fn clamps_kept(&self) -> bool {
         self.clamp_kept
+    }
+
+    /// Reads a real `-0.0` given to an integer member as the integer `0`, without a finding.
+    ///
+    /// For a conversion that leaves `-0.0` a real so that a float member keeps its sign: an
+    /// integer member has no sign to keep. Every other real is read by the reading's
+    /// [`Scalars`] rule, as [`scalar`](Self::scalar) describes.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::json::{Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::{Reading, Scalars};
+    /// use bedrock_addon_core::json::Declared;
+    /// use bedrock_addon_core::json::kit::Scalar;
+    /// let json: Value = from_str_jsonc(r#"[-0.0, 1.0]"#).unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let reading = Reading::DOCUMENT.with_scalars(Scalars::Strict);
+    /// let mut read = Read::new(reading, &mut found).negative_zero_as_integer();
+    /// let int = Declared::Int { bits: 32, signed: true };
+    /// let read: Vec<Option<Scalar>> = read.array(&Node::new(&json, JsonPath::new())).unwrap()
+    ///     .iter().map(|n| read.scalar(&n, int)).collect();
+    /// assert_eq!(read, [Some(Scalar::UInt(0)), None]);
+    /// assert_eq!(found.iter().count(), 1);
+    /// ```
+    #[must_use]
+    pub fn negative_zero_as_integer(mut self) -> Self {
+        self.negative_zero_integer = true;
+        self
     }
 
     /// Marks `node` as the root of the read: [`Recovery::TopLevel`]'s members and elements
