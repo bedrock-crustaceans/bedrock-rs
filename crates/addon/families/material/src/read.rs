@@ -112,8 +112,8 @@ pub(super) fn read_copy(bytes: &[u8]) -> Result<Layer, String> {
     let prepared = Prepared::new(bytes).map_err(|error| error.to_string())?;
     let text = prepared.as_str();
     // jsoncpp keeps the last of two equal keys, so the text is cleaned before anything reads it.
-    let mut root = bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
-        .map_err(|error| error.to_string())?;
+    let mut root = bedrock_addon_core::json::from_str_jsonc(&last_wins(text))
+        .map_err(|error| error.kind.to_string())?;
     let mut clamped = IndexSet::new();
     clamp_numbers(&mut root, &mut JsonPath::new(), &mut clamped);
     let trailing = bedrock_addon_core::json::trailing_content_finding(

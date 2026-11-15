@@ -18,7 +18,7 @@ fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
 
 /// A legacy document with one flat trade whose wanted item is `item` (JSON).
 fn wanting(item: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&format!(
+    bedrock_addon_core::json::from_str_jsonc(&format!(
         r#"{{"tiers": [{{"trades": [{{"wants": [{item}], "gives": [{{"item": "minecraft:emerald"}}]}}]}}]}}"#
     ))
     .unwrap()

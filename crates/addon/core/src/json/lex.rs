@@ -1,5 +1,5 @@
-//! The tokenizer of the door: what reads a JSON(C) text token by token before facet sees it,
-//! the one place that knows how a string, a number, white space and a comment end.
+//! The tokenizer of the parser: what reads a JSON(C) text token by token, the one place that
+//! knows how a string, a number, white space and a comment end.
 //! [`scan`] and the helpers below were `read`'s; every other scanner of `json` folds onto
 //! them.
 
@@ -90,7 +90,7 @@ impl UnsafeText {
 ///
 /// Returns `UnsafeText` for a string escape outside RFC 8259, nesting past the limit, or a `/*` comment that does not end before the root value.
 pub fn scan(bytes: &[u8], comments: bool) -> Result<Scanned, UnsafeText> {
-    scan_tokens(bytes, comments, &mut Marks::default()).map_err(|refused| refused.found)
+    scan_tokens(bytes, comments).map_err(|refused| refused.found)
 }
 
 /// What [`scan_tokens`] refused, and where the token that holds it starts: the text before
@@ -100,35 +100,6 @@ pub(super) struct Refused {
     /// The offset of the string's opening quote, of the bracket past the limit, or of the
     /// slash of the comment without an end.
     pub(super) token: usize,
-}
-
-/// What the scan marks for the copy facet reads in place of a text (`read::facet_copy`).
-#[derive(Default)]
-pub(super) struct Marks {
-    /// The integer tokens too large for 64 bits.
-    pub(super) wide: Vec<Range<usize>>,
-    /// The whole comments, each without the newline that ends a `//` one.
-    pub(super) comments: Vec<Range<usize>>,
-    /// The most arrays and objects open at once: how deep the text nests.
-    pub(super) levels: usize,
-}
-
-impl Marks {
-    /// The marks that lie within the first `len` bytes.
-    pub(super) fn within(&self, len: usize) -> Self {
-        let within = |ranges: &[Range<usize>]| {
-            ranges
-                .iter()
-                .filter(|range| range.end <= len)
-                .cloned()
-                .collect()
-        };
-        Self {
-            wide: within(&self.wide),
-            comments: within(&self.comments),
-            levels: self.levels,
-        }
-    }
 }
 
 /// The refusal of the `/*` comment at `offset` that has no end.
@@ -142,13 +113,8 @@ fn unended_comment(bytes: &[u8], offset: usize) -> Refused {
     }
 }
 
-/// [`scan`], which also marks where the integer tokens too large for 64 bits and the
-/// comments lie.
-pub(super) fn scan_tokens(
-    bytes: &[u8],
-    comments: bool,
-    marks: &mut Marks,
-) -> Result<Scanned, Refused> {
+/// [`scan`], which also says where the token that holds a refusal starts.
+pub(super) fn scan_tokens(bytes: &[u8], comments: bool) -> Result<Scanned, Refused> {
     // The open brackets. `sure` is whether the text so far is one the parser reads the same
     // way: once a bracket closes another kind, a literal is misspelt or a byte starts no
     // token, the parser has failed there, and the scan only goes on checking strings (from
@@ -157,13 +123,7 @@ pub(super) fn scan_tokens(
     let mut sure = true;
     let mut lexer = Lexer::new(bytes, Rules::strict(comments));
     let root_end = loop {
-        let unended = lexer.skip_trivia_with(|comment| {
-            // Past a fault the parser reads nothing, and its message may name a byte there:
-            // nothing is marked for the copy, so the byte it names is the author's.
-            if sure {
-                marks.comments.push(comment);
-            }
-        });
+        let unended = lexer.skip_trivia();
         // A `/*` without an end inside the root: the parser's message for it depends on
         // whether it still knows the text has comments, so the scan reports it, in
         // the parser's words. Past a fault the parser never gets this far.
@@ -199,7 +159,6 @@ pub(super) fn scan_tokens(
                     });
                 }
                 open.push(bytes[start]);
-                marks.levels = marks.levels.max(open.len());
                 false
             }
             Kind::CloseObject | Kind::CloseArray => {
@@ -221,9 +180,6 @@ pub(super) fn scan_tokens(
                 false
             }
             Kind::Number => {
-                if sure && is_wide_integer(&bytes[token.range()]) {
-                    marks.wide.push(token.range());
-                }
                 let digits = token.len() > usize::from(bytes[start] == b'-');
                 sure &= digits;
                 digits
@@ -360,7 +316,7 @@ impl Token {
     }
 }
 
-/// The one tokenizer of the door: a text read token by token, white space and comments
+/// The one tokenizer of the parser: a text read token by token, white space and comments
 /// between them, by [`Rules`]. Linear in the text; it holds nothing but its place.
 #[derive(Clone, Debug)]
 pub(super) struct Lexer<'a> {
@@ -389,13 +345,9 @@ impl<'a> Lexer<'a> {
         self.at = at;
     }
 
-    /// Steps past white space and comments, handing `whole` each comment that ends: a `//`
-    /// comment without its newline, a `/* */` comment with its `*/`. The offset of the slash of
-    /// a `/*` comment that has no end, which runs to the end of the text.
-    pub(super) fn skip_trivia_with(
-        &mut self,
-        mut whole: impl FnMut(Range<usize>),
-    ) -> Option<usize> {
+    /// Steps past white space and comments. The offset of the slash of a `/*` comment that has
+    /// no end, which runs to the end of the text.
+    pub(super) fn skip_trivia(&mut self) -> Option<usize> {
         let bytes = self.bytes;
         loop {
             match bytes.get(self.at..) {
@@ -405,12 +357,10 @@ impl<'a> Lexer<'a> {
                         .iter()
                         .position(|&byte| byte == b'\n')
                         .unwrap_or(rest.len());
-                    whole(self.at..self.at + 2 + line);
                     self.at += 2 + line;
                 }
                 Some([b'/', b'*', rest @ ..]) if self.rules.comments => {
                     if let Some(n) = rest.windows(2).position(|pair| pair == b"*/") {
-                        whole(self.at..self.at + n + 4);
                         self.at += n + 4;
                     } else {
                         let slash = self.at;
@@ -421,11 +371,6 @@ impl<'a> Lexer<'a> {
                 _ => return None,
             }
         }
-    }
-
-    /// [`Self::skip_trivia_with`], the comments unlooked at.
-    pub(super) fn skip_trivia(&mut self) -> Option<usize> {
-        self.skip_trivia_with(|_| {})
     }
 
     /// The token where the lexer is (white space is not skipped: it is a token of one byte
@@ -504,7 +449,7 @@ impl<'a> Lexer<'a> {
 }
 
 /// The arrays and objects a walk of the tokens is inside, and the path they spell: the one
-/// copy of the open frames the scanners of the door keep. It is told what the walk met
+/// copy of the open frames the scanners of the parser keep. It is told what the walk met
 /// (a bracket, a key, the end of a member) and keeps the path in step, a segment pushed or
 /// popped at a time, so the path costs nothing to keep. When a member's key is taken and
 /// when its member ends is the walk's to say: a scan that places a token takes the first
@@ -623,7 +568,7 @@ impl Structure {
 /// quotes when it does not unescape (a key the reader refused still has a name for a
 /// message).
 pub(super) fn key_text(token: &str) -> String {
-    super::from_str::<String>(token).unwrap_or_else(|_| token.trim_matches('"').to_owned())
+    super::parse::string_literal(token).unwrap_or_else(|| token.trim_matches('"').to_owned())
 }
 
 /// The index after the string whose opening quote is at `at`, read loosely: a backslash
@@ -751,4 +696,48 @@ pub(super) fn is_wide_integer(token: &[u8]) -> bool {
     }
     std::str::from_utf8(token)
         .is_ok_and(|token| token.parse::<i64>().is_err() && token.parse::<u64>().is_err())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_wide_integer;
+
+    #[test]
+    fn a_wide_integer_is_digits_alone_that_fit_neither_64_bit_type() {
+        let zeros = "0".repeat(40);
+        for (token, wide) in [
+            ("9223372036854775807", false),
+            ("9223372036854775808", false),
+            ("18446744073709551615", false),
+            ("18446744073709551616", true),
+            ("-9223372036854775808", false),
+            ("-9223372036854775809", true),
+            ("-18446744073709551615", true),
+            ("999999999999999999", false),
+            ("-999999999999999999", false),
+            ("1000000000000000000", false),
+            ("99999999999999999999", true),
+            ("18446744073709551616.0", false),
+            ("18446744073709551616e0", false),
+            ("18446744073709551616E+1", false),
+            ("1e999", false),
+            ("-", false),
+            ("", false),
+            ("0", false),
+            ("-0", false),
+        ] {
+            assert_eq!(is_wide_integer(token.as_bytes()), wide, "`{token}`");
+        }
+        assert!(!is_wide_integer(format!("{zeros}7").as_bytes()));
+        assert!(!is_wide_integer(format!("-{zeros}7").as_bytes()));
+        assert!(!is_wide_integer(
+            format!("{zeros}18446744073709551615").as_bytes()
+        ));
+        assert!(is_wide_integer(
+            format!("{zeros}18446744073709551616").as_bytes()
+        ));
+        assert!(is_wide_integer(
+            format!("-{zeros}9223372036854775809").as_bytes()
+        ));
+    }
 }

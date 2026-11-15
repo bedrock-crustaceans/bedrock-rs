@@ -201,7 +201,7 @@ mod tests {
     use super::*;
 
     fn json(text: &str) -> Value {
-        crate::json::from_str::<Value>(text).expect("valid JSON")
+        crate::json::from_str(text).expect("valid JSON")
     }
 
     #[test]

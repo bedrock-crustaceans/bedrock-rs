@@ -267,8 +267,8 @@ fn generated_strings_read_as_the_reference_decodes_them_or_are_refused() {
             "`{document}`"
         );
         let read = [
-            string_of(from_str_jsonc::<Value>(&document).ok()),
-            string_of(from_str::<Value>(&document).ok()),
+            string_of(from_str_jsonc(&document).ok()),
+            string_of(from_str(&document).ok()),
             string_of(parse(&document, Options::default()).ok().map(|p| p.value)),
             string_of(parse_bytes(document.as_bytes(), Options::default()).ok()),
             string_of(
@@ -276,7 +276,7 @@ fn generated_strings_read_as_the_reference_decodes_them_or_are_refused() {
                     .ok()
                     .map(|p| p.value),
             ),
-            from_str_jsonc::<Value>(&document)
+            from_str_jsonc(&document)
                 .ok()
                 .and_then(|v| Some(v.as_string()?.as_str().to_owned())),
         ];
@@ -294,7 +294,7 @@ fn generated_strings_read_as_the_reference_decodes_them_or_are_refused() {
             (format!("{{\"k\": \"{content}\"}}"), None),
             (format!("{{\"{content}\": \"v\"}}"), Some("v")),
         ] {
-            let map = from_str_jsonc::<Value>(&nested)
+            let map = from_str_jsonc(&nested)
                 .ok()
                 .and_then(|json| read_value::<IndexMap<String, String>>(&json))
                 .ok_or("refused");
@@ -503,7 +503,7 @@ fn document(rng: &mut Rng, case: usize) -> String {
 }
 
 /// Whether `text` has a run of digits that fits neither `u64` nor, behind a `-`, `i64`: an
-/// integer too large for 64 bits, which the door reads as a double where facet alone does
+/// integer too large for 64 bits, which the parser reads as a double where facet alone does
 /// not (`json_wide_integers_generated.rs` has those documents). A fault of the
 /// generator can join two number tokens into one.
 fn has_a_wide_integer(text: &str) -> bool {
@@ -540,7 +540,7 @@ fn generated_documents_read_through_every_entry_point_alike() {
         let door = parse(&text, Options::default()).map(|parsed| parsed.value);
         let at = parse_slice(JsonSlice::new(&text), Options::default()).map(|parsed| parsed.value);
         let bytes = parse_bytes(text.as_bytes(), Options::default());
-        let strict = from_str::<Value>(&text);
+        let strict = from_str(&text);
         let _ = probe_envelope(JsonSlice::new(&text));
         let _ = last_wins(&text);
         let tail = trailing_content(&text);
@@ -576,7 +576,7 @@ fn generated_documents_read_through_every_entry_point_alike() {
         assert_eq!(tail.is_some(), scanned.trailing.is_some(), "`{text}`");
         if let (Some(end), Ok(door)) = (scanned.root_end, &door) {
             // The root alone is the same value: what follows was not read.
-            let root = from_str_jsonc::<Value>(&text[..end]).unwrap();
+            let root = from_str_jsonc(&text[..end]).unwrap();
             assert_eq!(&root, door, "`{text}`");
             trailing += usize::from(scanned.trailing.is_some());
         }
@@ -663,7 +663,7 @@ fn without_the_number(message: &str) -> String {
 
 /// For 8000 documents of the soup above with one to three integers beyond 64 bits put in at
 /// any character (between tokens, inside a string, a comment, an escape, a literal): nothing
-/// panics, and the door reads the text or fails on it exactly as it does with a number token
+/// panics, and the parser reads the text or fails on it exactly as it does with a number token
 /// of the same length that fits a double in each integer's place: the same span, the same
 /// words (the number's value apart). The copy facet reads in place of such a text never
 /// shows.
@@ -702,11 +702,11 @@ fn malformed_text_beside_a_wide_integer_fails_as_it_does_beside_any_number() {
         let door = parse(&edited, Options::default()).map(|parsed| parsed.value);
         let at = parse_slice(JsonSlice::new(&edited), Options::default());
         let bytes = parse_bytes(edited.as_bytes(), Options::default());
-        let _ = from_str::<Value>(&edited);
+        let _ = from_str(&edited);
         let _ = probe_envelope(JsonSlice::new(&edited));
         let _ = last_wins(&edited);
-        // The reference has no integer beyond 64 bits that the generator produced: the door reads
-        // it as the tests above say.
+        // The reference has no integer beyond 64 bits that the generator produced: the parser
+        // reads it as the tests above say.
         let expected = parse(&reference, Options::default()).map(|parsed| parsed.value);
         match (&door, &expected) {
             (Ok(_), Ok(_)) => {

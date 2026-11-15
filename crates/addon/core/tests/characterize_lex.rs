@@ -1,4 +1,4 @@
-//! Characterization of the door's text scanners before they fold onto one tokenizer
+//! Characterization of the old door's text scanners before they fold onto one tokenizer
 //! (`json::lex`): every public scanner over the hostile texts of
 //! `fixtures/characterize_lex/texts.rs`, printed one line per scanner and compared with
 //! `fixtures/characterize_lex/public.txt`, which is what they answered before the fold. Not a
@@ -12,11 +12,12 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::jsoncpp::lenient;
 use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{
-    ClampPlan, JsonSlice, Prepared, Value, Width, check_depth, clamp_non_finite, clamp_text,
-    clamp_tokens, from_str_jsonc, last_wins, last_wins_except, scan,
+    ClampPlan, JsonSlice, Prepared, Width, check_depth, clamp_non_finite, clamp_text, clamp_tokens,
+    from_str_jsonc, last_wins, last_wins_except, scan,
 };
 
-/// The span of the value at `path` of `slice`: the parse tree's (`span_at` before the door went).
+/// The span of the value at `path` of `slice`: the parse tree's (`span_at` before
+/// the old door went).
 fn span_at(slice: JsonSlice<'_>, path: &JsonPath) -> Option<bedrock_addon_core::diagnostic::Span> {
     parse_slice(slice, Options::default()).ok()?.spans.at(path)
 }
@@ -126,7 +127,7 @@ fn characterize(name: &str, text: &str, out: &mut String) {
         clamped.map(|clamped| clamped.text),
         findings(&d)
     );
-    match from_str_jsonc::<Value>(text) {
+    match from_str_jsonc(text) {
         Ok(mut value) => {
             let mut d = Diagnostics::default();
             let clamped = clamp_text(slice, &value, &float, &at, &mut d);

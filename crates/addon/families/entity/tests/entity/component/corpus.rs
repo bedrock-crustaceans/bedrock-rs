@@ -298,7 +298,7 @@ fn vanilla_entity_files_read_this_modules_components_without_an_error() {
             continue;
         };
         let text = text.trim_start_matches('\u{feff}');
-        let Ok(document) = bedrock_addon_core::json::from_str_jsonc::<Value>(text) else {
+        let Ok(document) = bedrock_addon_core::json::from_str_jsonc(text) else {
             skipped += 1;
             continue;
         };
@@ -368,7 +368,7 @@ fn retail_sulfur_cube_presets_upgrade_to_the_retail_1_26_40_copy() {
     let load = |pack: &str| {
         let path = packs.join(pack).join("entities/sulfur_cube.json");
         let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path:?}: {e}"));
-        bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("JSON")
+        bedrock_addon_core::json::from_str_jsonc(&text).expect("JSON")
     };
     let (old, new) = (load("vanilla_1.26.30"), load("vanilla_1.26.40"));
     let pushables = |document: &Value| -> Vec<(String, Value)> {

@@ -155,8 +155,7 @@ pub fn canonical(text: &str) -> String {
             out.push_str("null");
         }
     }
-    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-        .expect("JSON");
+    let value = bedrock_addon_core::json::from_str_jsonc(text).expect("JSON");
     let mut out = String::new();
     walk(&value, &mut out);
     out
@@ -300,8 +299,8 @@ pub fn rewrites_at(input: &str, written: &str) -> Result<(Rewrites, Vec<String>)
     }
 
     let input = input.strip_prefix('\u{feff}').unwrap_or(input);
-    let input = from_str_jsonc::<Value>(&last_wins(input)).map_err(|error| error.to_string())?;
-    let written = from_str_jsonc::<Value>(written).map_err(|error| error.to_string())?;
+    let input = from_str_jsonc(&last_wins(input)).map_err(|error| error.to_string())?;
+    let written = from_str_jsonc(written).map_err(|error| error.to_string())?;
     let mut out = Found::default();
     walk(&input, &written, "", &mut out)?;
     Ok((out.counts, out.dropped_at))

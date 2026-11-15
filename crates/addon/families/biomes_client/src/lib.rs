@@ -276,7 +276,7 @@ fn read_copy(origin: Origin, bytes: &[u8]) -> BiomesCopy {
         }
     };
     let text = prepared.as_str();
-    match bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text)) {
+    match bedrock_addon_core::json::from_str_jsonc(&last_wins(text)) {
         Ok(json) if json.is_object() => {
             BiomesCopy::Layer(RawLayer::new(origin, json), Diagnostics::default())
         }

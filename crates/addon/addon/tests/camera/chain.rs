@@ -57,8 +57,7 @@ fn the_preset_step_copies_every_member_and_sets_the_apply_inherited_flag() {
     let mut copied = old.value().clone();
     copied.apply_inherited_starting_rotation = false;
     assert_eq!(&copied, new.value());
-    let written: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(&old.to_json().unwrap()).unwrap();
+    let written: Value = bedrock_addon::json::from_str_jsonc(&old.to_json().unwrap()).unwrap();
     let payload = written
         .as_object()
         .unwrap()
@@ -237,8 +236,8 @@ fn vanillas_presets_are_written_back_member_for_member() {
             document.diagnostics()
         );
         let written = rewritten("cameras/presets/test.json", document.value());
-        let original: Value = bedrock_addon::json::from_str_jsonc::<Value>(&text).unwrap();
-        let written: Value = bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap();
+        let original: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
+        let written: Value = bedrock_addon::json::from_str_jsonc(&written).unwrap();
         let payload = |value: &Value| {
             value
                 .as_object()
@@ -336,8 +335,8 @@ fn hand_built_documents_write_what_they_hold_and_nothing_else() {
         !written.contains("spline_type"),
         "an absent member is not invented: {written}"
     );
-    let original: Value = bedrock_addon::json::from_str_jsonc::<Value>(&text).unwrap();
-    let written: Value = bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap();
+    let original: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
+    let written: Value = bedrock_addon::json::from_str_jsonc(&written).unwrap();
     assert_eq!(written, original);
 }
 

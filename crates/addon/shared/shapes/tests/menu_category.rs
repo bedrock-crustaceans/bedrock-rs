@@ -96,14 +96,31 @@ fn d7_the_family_constraints_are_not_the_types() {
     assert_eq!(m.group.as_deref(), Some("no namespace"));
 }
 
+/// `text` read as a `MenuCategory` by the document reading: the unknown members it keeps.
+fn kept_unknown(text: &str) -> (usize, Unknown) {
+    use bedrock_addon_core::json::kit::{Node, Read};
+    let parsed = json::parse::parse(text, json::parse::Options::default()).unwrap();
+    let mut d = bedrock_addon_core::diagnostic::Diagnostics::default();
+    {
+        let mut read = Read::new(bedrock_addon_core::versioning::Reading::DOCUMENT, &mut d);
+        let _ = bedrock_addon_core::schema::read_document::<MenuCategory>(
+            &Node::parsed(&parsed, JsonPath::new()),
+            &mut read,
+        );
+    }
+    let told = d
+        .iter()
+        .filter(|f| f.is(&bedrock_addon_core::diagnostic::codes::UNRECOGNIZED_FIELD))
+        .count();
+    (told, d.unknown().clone())
+}
+
 #[test]
 fn unknown_members_are_kept_by_the_family_walk() {
     let text = r#"{"category": "items", "note": 1}"#;
     let m: MenuCategory = read(text).unwrap();
-    let value: Value = json::from_str_jsonc::<Value>(text).unwrap();
-    let mut kept = Unknown::new();
-    let unknown = json::keep_unknown_members(&m, &value, &mut kept);
-    assert_eq!(unknown.len(), 1);
+    let (unknown, kept) = kept_unknown(text);
+    assert_eq!(unknown, 1);
     assert_eq!(kept.get(&JsonPath::new(), "note"), Some(&Value::from(1i64)));
     assert_eq!(compact_with(&m, &kept), r#"{"category":"items","note":1}"#);
 }
@@ -118,10 +135,8 @@ fn a_member_named_extra_is_an_unknown_member() {
         r#"{"category":"items"}"#,
         "the member's object is not read into the side-car"
     );
-    let value: Value = json::from_str_jsonc::<Value>(text).unwrap();
-    let mut kept = Unknown::new();
-    let unknown = json::keep_unknown_members(&m, &value, &mut kept);
-    assert_eq!(unknown.len(), 1);
+    let (unknown, kept) = kept_unknown(text);
+    assert_eq!(unknown, 1);
     assert_eq!(
         compact_with(&m, &kept),
         r#"{"category":"items","extra":{"group":"x"}}"#

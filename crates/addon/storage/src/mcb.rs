@@ -1,10 +1,10 @@
 //! `\x7FMCB` binary documents → JSON text.
 //!
 //! An MCB document is a baked "Minecraft document" `{ format_version, <payload key> }`. Its
-//! output here is JSON **text**, written by the core `json` door's `Value` writer, so it takes
-//! the same facet-json path as a `.json` file and `RawJson` isolation works. The text keeps the
-//! stored types in the lexical form: a float always gets a fraction or an exponent and an
-//! integer never does, so the int/float tag survives the parse.
+//! output here is JSON **text**, written by core's `json` writer from a `Value`, so it reads as
+//! a `.json` file does. The text keeps the stored types in the lexical form: a float always
+//! gets a fraction or an exponent and an integer never does, so the int/float tag survives the
+//! parse.
 //!
 //! The header is read (magic, format version, payload key). The body is typed per payload: it
 //! has no type tags, its fields are in the order of the payload's schema, and a component is
@@ -223,9 +223,9 @@ fn decode_body(header: &McbHeader<'_>, body: &[u8]) -> Result<McbValue, StorageE
     decode(body)
 }
 
-/// `value` as compact JSON text, written by the door's `Value` writer. A float keeps a fraction
+/// `value` as compact JSON text, written by core's `json` writer. A float keeps a fraction
 /// or an exponent (`1.0`, `-0.0`, `1e300`) and an integer never gets one; a NaN or infinite
-/// float is `Mcb { NonFiniteFloat }` and a value nested past the door's depth is
+/// float is `Mcb { NonFiniteFloat }` and a value nested past `MAX_JSON_DEPTH` is
 /// `Mcb { TooDeep }`.
 pub fn write_json(value: &McbValue) -> Result<String, StorageError> {
     let value = to_value(value, 0)?;
@@ -242,7 +242,7 @@ const COMPACT: WriteStyle = WriteStyle {
     trailing_newline: false,
 };
 
-/// The door's `Value` for `value`. An `f32` goes through its own shortest text, so `0.1f32` is
+/// The `Value` for `value`. An `f32` goes through its own shortest text, so `0.1f32` is
 /// `0.1` and not the `f64` that holds the same `f32`.
 fn to_value(value: &McbValue, depth: usize) -> Result<Value, StorageError> {
     let too_deep = || StorageError::Mcb {

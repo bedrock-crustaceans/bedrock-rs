@@ -10,9 +10,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
-use crate::diagnostic::{
-    Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, code_for_deserialize_error_kind,
-};
+use crate::diagnostic::{Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity};
 use crate::json::kit::{Node, Read};
 use crate::json::{EncodeError, JsonSlice, Value};
 use crate::version::FormatVersion;
@@ -68,7 +66,7 @@ pub(super) fn read(
         match crate::json::parse::parse_slice(payload, crate::json::parse::Options::default()) {
             Ok(parsed) => parsed,
             Err(fault) => {
-                // Not reached for a payload the door has read; the text parse words the failure.
+                // Not reached for a payload the parser has read; the text parse words the failure.
                 slice_error(d, &fault, payload, &cx.at);
                 return None;
             }
@@ -243,7 +241,7 @@ fn slice_error(
     at: &JsonPath,
 ) {
     let blank = slice.text.trim().is_empty();
-    let code = code_for_deserialize_error_kind(&fault.to_error().kind, false, blank);
+    let code = fault.code(blank);
     d.push(Diagnostic::new(
         code,
         Severity::Error,

@@ -31,7 +31,7 @@ mod baked_items_load {
     }
 
     fn payload(text: &str) -> Value {
-        let value: Value = crate::json::from_str_jsonc::<Value>(text).unwrap();
+        let value: Value = crate::json::from_str_jsonc(text).unwrap();
         value.as_object().unwrap()["minecraft:item"].clone()
     }
 

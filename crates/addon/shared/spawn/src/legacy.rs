@@ -102,11 +102,11 @@ fn others(
 /// checked, a third root member is kept).
 #[allow(clippy::too_many_lines, reason = "vanilla's parser, step by step")]
 pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Option<Read> {
-    let root = match bedrock_addon_core::json::from_str_jsonc::<Value>(document.text) {
+    let root = match bedrock_addon_core::json::from_str_jsonc(document.text) {
         Ok(root) => root,
         Err(error) => {
             finding_with(
-                Diagnostic::of(builders::syntax(error.to_string())),
+                Diagnostic::of(builders::syntax(error.kind.to_string())),
                 &JsonPath::new(),
                 d,
             );

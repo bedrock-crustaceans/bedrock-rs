@@ -168,8 +168,7 @@ fn every_item_molang_occurrence_loads_with_its_text_and_version() {
     let pairs = skip!(game_files::MOLANG_PAIRS);
     let install_b = skip!(game_files::CLIENT_INSTALL_B);
     let text = std::fs::read_to_string(pairs).unwrap();
-    let pairs_document: Value =
-        bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&text).unwrap();
+    let pairs_document: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
     let mut cx = LoadContext::detached();
     cx.is_base_game_pack = true;
     let (mut checked, mut archived) = (0, 0);

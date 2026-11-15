@@ -88,10 +88,7 @@ fn a_legacy_expression_beyond_f32_is_written_as_authored_deviation() {
             // authored, and reads back so.
             let written = written_at_1_26_0(&document.to_json());
             let read = |text: &str| {
-                let root: Value = bedrock_addon_core::json::from_str_jsonc::<
-                    bedrock_addon_core::json::Value,
-                >(text)
-                .unwrap();
+                let root: Value = bedrock_addon_core::json::from_str_jsonc(text).unwrap();
                 let mut value = root
                     .as_object()
                     .and_then(|root| root.get("minecraft:item"))

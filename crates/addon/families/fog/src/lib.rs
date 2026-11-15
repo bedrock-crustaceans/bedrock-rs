@@ -403,7 +403,7 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
     // Of a member written twice the last value stands, before anything looks at the text.
     let cleaned = last_wins(text).into_owned();
     let root = parse(&cleaned, Options::default())
-        .map_err(|fault| malformed(fault.to_error().to_string()))?
+        .map_err(|fault| malformed(fault.kind.to_string()))?
         .value;
     // `Json::Value::empty()`: null, or an array or object without members.
     let is_empty = root.is_null()

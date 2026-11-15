@@ -1,7 +1,7 @@
 //! `Manifest::parse`: the text, the reader the `format_version` selects, and the document.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, JsonPath, Span, code_for_deserialize_error_kind};
+use bedrock_addon_core::diagnostic::{Code, JsonPath, Span};
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::parse::Options;
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, check_depth, strip_bom};
@@ -59,15 +59,13 @@ fn read(
         Ok(text) => {
             bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
         }
-        Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default())
-            .map_err(|fault| fault.to_error()),
+        Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default()),
     };
     let root: Value = match parsed {
         Ok(root) => root,
-        Err(error) => {
+        Err(fault) => {
             let blank = bytes.iter().all(u8::is_ascii_whitespace);
-            let code = code_for_deserialize_error_kind(&error.kind, false, blank);
-            sink.error_in_text(code, file_span(file, bytes, error.span));
+            sink.error_in_text(fault.code(blank), file_span(file, bytes, fault.span));
             return None;
         }
     };
@@ -117,19 +115,12 @@ fn read(
 }
 
 /// A span of the BOM-stripped `text` as a range of `file`; the whole file when there is none.
-fn file_span(file: &[u8], text: &[u8], span: Option<facet::Span>) -> Span {
-    let to_u32 = |n: usize| u32::try_from(n).unwrap_or(u32::MAX);
-    let bom = to_u32(file.len() - text.len());
-    span.map_or(
-        Span {
-            offset: 0,
-            len: to_u32(file.len()),
-        },
-        |span| Span {
-            offset: bom.saturating_add(span.offset),
-            len: span.len,
-        },
-    )
+fn file_span(file: &[u8], text: &[u8], span: Span) -> Span {
+    let bom = u32::try_from(file.len() - text.len()).unwrap_or(u32::MAX);
+    Span {
+        offset: bom.saturating_add(span.offset),
+        len: span.len,
+    }
 }
 
 /// Where the manifest came from: the file, and a pack handle of the identity it declares (the

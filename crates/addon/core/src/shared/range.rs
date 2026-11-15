@@ -127,12 +127,6 @@ impl RangeEnd for f32 {
     }
 }
 
-/// Whether `shape` is a [`Range`]'s.
-pub(crate) fn is_range(shape: &'static facet::Shape) -> bool {
-    use facet::Facet;
-    shape.id == IntRange::SHAPE.id || shape.id == FloatRange::SHAPE.id
-}
-
 /// The members of a range's object form that the range does not read: every key but the two
 /// ends of the form it is read as (`range_min` / `range_max` when one of them is there, else
 /// `min` / `max`), in document order.

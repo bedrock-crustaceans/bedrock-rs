@@ -35,11 +35,8 @@ fn mark_variants(values: &[i32]) -> Value {
             )
         })
         .collect();
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&format!(
-        r#"{{"any_of": [{}]}}"#,
-        tests.join(",")
-    ))
-    .unwrap()
+    bedrock_addon_core::json::from_str_jsonc(&format!(r#"{{"any_of": [{}]}}"#, tests.join(",")))
+        .unwrap()
 }
 
 /// Whether `finding` is the information that a legacy blob is written under its deprecated

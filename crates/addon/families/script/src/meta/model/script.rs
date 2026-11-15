@@ -192,7 +192,7 @@ pub struct Argument {
     /// Whether the file has a `details` key: `null` is written for an argument without details,
     /// and script-generated arguments have no key at all. Not a JSON member; filled by
     /// [`ModuleMetadata::parse`](crate::meta::ModuleMetadata::parse).
-    #[facet(skip, rename = "\u{0}details_key_present")]
+    #[facet(skip)]
     pub details_key_present: bool,
 }
 

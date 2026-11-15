@@ -379,10 +379,9 @@ fn aa06_categories_load_unchanged_and_default_to_priority_1() {
     // Written back, the document is the file's.
     let written = document.to_json().unwrap();
     let a: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
-            .unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&written).unwrap();
     let b: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text).unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&text).unwrap();
     assert_eq!(a, b);
     assert_eq!(loads(categories(&written)).value(), document.value());
 }

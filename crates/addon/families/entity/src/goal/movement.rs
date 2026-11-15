@@ -651,7 +651,7 @@ pub struct GoHome {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -983,7 +983,7 @@ pub struct MoveToBlock {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -2133,7 +2133,7 @@ macro_rules! tempt_base {
             /// The legacy `condition`s of the goal's triggers, read for the Molang check;
             /// written back from each trigger's `extra`.
             #[doc(hidden)]
-            #[facet(skip, rename = "\u{0}legacy_conditions")]
+            #[facet(skip)]
             pub legacy_conditions: LegacyConditions,
         }
 

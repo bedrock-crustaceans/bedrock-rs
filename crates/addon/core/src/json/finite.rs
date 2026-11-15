@@ -162,7 +162,7 @@ fn all_finite(value: &Value) -> bool {
 
 /// Every number token of `source` that spells an infinity, in the order of the text: its
 /// path from the root of the slice and its span in the file. One pass over the tokens of a
-/// text the door reads (a text it would refuse gives what was found before the fault).
+/// text the parser reads (a text it would refuse gives what was found before the fault).
 pub(super) fn infinite_tokens(source: JsonSlice<'_>) -> Vec<(JsonPath, Span)> {
     let text = source.text;
     let mut lexer = Lexer::new(text.as_bytes(), Rules::strict(true));

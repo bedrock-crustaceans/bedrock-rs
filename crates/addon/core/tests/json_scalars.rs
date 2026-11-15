@@ -1,15 +1,15 @@
 //! The scalar judge: how a scalar token is read against its member's declared type under each
 //! profile a slice reads by. Its oracles were the readers it stands for, now deleted with the
-//! door: the strict wrappers (`Strict`, and `NonStrict` under `with_reader_mode`) and the
+//! old reader: the strict wrappers (`Strict`, and `NonStrict` under the reader mode) and the
 //! post-hoc misread walk of a plain member (`ConvertAndTell`); and the legacy block reader's
 //! fixtures (`families/block/tests/block/legacy_reader.rs`).
 //!
-//! The door's side of the tables is frozen in `json_scalars.pins`, one line per cell:
-//! `key<TAB>verdict<TAB>door`, the judge's verdict and what the door read (checked to agree
-//! while the door ran: a wrapper refused what the judge refuses and read the token as written
+//! The old reader's side of the tables is frozen in `json_scalars.pins`, one line per cell:
+//! `key<TAB>verdict<TAB>door`, the judge's verdict and what the old reader read (checked to agree
+//! while it ran: a wrapper refused what the judge refuses and read the token as written
 //! or as the judge respells it; the misread walk told what the judge says). The tests hold the
 //! judge to the pinned verdict; `BEDROCK_DOOR_PINS=<dir>` writes each test's cells (the pinned
-//! door's read beside) to `<dir>/<test>` instead of checking them.
+//! old read beside) to `<dir>/<test>` instead of checking them.
 
 use bedrock_addon_core::json::{
     BeyondWidth, Declared, Refusal, Respelt, ScalarRules, Scalars, Token, Value, Verdict,
@@ -33,7 +33,7 @@ fn frozen() -> &'static HashMap<&'static str, (&'static str, &'static str)> {
 }
 
 /// The cell `key` of `test`: the judge's `verdict` must be the pinned one. Under
-/// `BEDROCK_DOOR_PINS` the cell (with the pinned door's read) is written to that directory
+/// `BEDROCK_DOOR_PINS` the cell (with the pinned old read) is written to that directory
 /// instead.
 fn cell(test: &str, key: &str, verdict: &str) {
     let pinned = frozen().get(key).copied();
@@ -112,7 +112,7 @@ const TOKENS: &[&str] = &[
 ];
 
 fn value(text: &str) -> Value {
-    from_str_jsonc::<Value>(text).unwrap()
+    from_str_jsonc(text).unwrap()
 }
 
 /// The verdict on `text` for a member of `declared` under `rules`.
@@ -387,7 +387,7 @@ fn a_number_beyond_its_float_is_refused_or_clamped_and_told_by_the_slice() {
             Verdict::Keep
         );
     }
-    // An `f64` holds every number the door reads.
+    // An `f64` holds every number the parser reads.
     assert_eq!(
         verdict(Declared::Float { bits: 64 }, "1e300", STRICT),
         Verdict::Keep

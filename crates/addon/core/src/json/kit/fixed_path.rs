@@ -217,7 +217,7 @@ mod tests {
     use crate::schema::UnknownRule;
 
     fn json(text: &str) -> Value {
-        crate::json::from_str_jsonc::<Value>(text).unwrap()
+        crate::json::from_str_jsonc(text).unwrap()
     }
 
     /// The reader of the fixed-path files tells every finding of the kit as an information, at

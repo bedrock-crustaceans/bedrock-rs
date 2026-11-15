@@ -123,8 +123,7 @@ fn json_of(root: &Path, path: &PackPath) -> Value {
     let bytes = std::fs::read(root.join(path.as_str())).expect("the file");
     let text = String::from_utf8_lossy(&bytes);
     let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
-    bedrock_addon::json::from_str_jsonc::<Value>(text)
-        .unwrap_or_else(|error| panic!("{path}: {error}"))
+    bedrock_addon::json::from_str_jsonc(text).unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
 fn counts(entries: &[(&str, usize)]) -> BTreeMap<String, usize> {
@@ -298,7 +297,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
         let path = &piece.meta.origin().path;
         assert!(
             same(
-                &bedrock_addon::json::from_str_jsonc::<Value>(&text).expect("JSON"),
+                &bedrock_addon::json::from_str_jsonc(&text).expect("JSON"),
                 &json_of(&root, path)
             ),
             "{entry}: {path}"
@@ -309,7 +308,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
             let path = &store.origin().path;
             assert!(
                 same(
-                    &bedrock_addon::json::from_str_jsonc::<Value>(&text).expect("JSON"),
+                    &bedrock_addon::json::from_str_jsonc(&text).expect("JSON"),
                     &json_of(&root, path)
                 ),
                 "{entry}: {path}"

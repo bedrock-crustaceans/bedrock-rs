@@ -75,7 +75,7 @@ pub(super) struct Edge {
 /// Which copy of a key written twice the tree holds is the [`Winner`](crate::json::Winner)
 /// the text was parsed with: `First` the first, `Last` the last (and the member stands where
 /// that copy does), `Keep` every copy in the file's order. [`SpanNode::member`] is the last
-/// copy of a key whatever the rule, as [`span_at`](crate::json::span_at) takes it.
+/// copy of a key whatever the rule.
 #[derive(Clone, Debug)]
 pub struct Spans<'t> {
     text: &'t str,
@@ -102,7 +102,7 @@ impl<'t> Spans<'t> {
         }
     }
 
-    /// The whole text: what [`span_at`](crate::json::span_at) gives for the empty path.
+    /// The whole text: what [`Spans::at`] gives for the empty path.
     pub fn whole(&self) -> Span {
         Span {
             offset: self.base,
@@ -118,10 +118,9 @@ impl<'t> Spans<'t> {
         }
     }
 
-    /// The span of the value `path` names, as [`span_at`](crate::json::span_at) gives it on
-    /// the text: the whole text for the empty path, `None` when a step of the path is not
-    /// in the text (a member that is not there, an index past the end, a step into a value
-    /// that is no container of that kind).
+    /// The span of the value `path` names in the text: the whole text for the empty path,
+    /// `None` when a step of the path is not in the text (a member that is not there, an index
+    /// past the end, a step into a value that is no container of that kind).
     pub fn at(&self, path: &JsonPath) -> Option<Span> {
         let mut at: Option<SpanNode<'_, 't>> = None;
         for segment in path.segments() {
@@ -131,7 +130,7 @@ impl<'t> Spans<'t> {
     }
 
     /// The span of the value `path` names, or of the deepest value on the way when a step
-    /// cannot be taken, or the whole text: [`span_reached`](crate::json::span_reached).
+    /// cannot be taken, or the whole text.
     pub fn reached(&self, path: &JsonPath) -> Span {
         let mut at: Option<SpanNode<'_, 't>> = None;
         for segment in path.segments() {

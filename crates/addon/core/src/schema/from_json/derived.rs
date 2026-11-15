@@ -860,8 +860,8 @@ pub enum Arm {
     Unit,
 }
 
-/// The arm of the untagged enum `T` that reads `node`, as the door chooses it
-/// (`json::walk`'s mirror of facet's untagged read, under the reading's scalar profile): an
+/// The arm of the untagged enum `T` that reads `node`, as facet's untagged read chose it
+/// (mirrored here, under the reading's scalar profile): an
 /// object by its keys, an array the first list arm, a scalar the first arm that takes it. A
 /// scalar no arm takes, or a value of a kind no arm reads, is a wrong type at the enum. An enum
 /// with `schema::invalid` (`invalid`) tells a negative whole number no arm takes (an unsigned
@@ -915,7 +915,7 @@ pub fn unit_arm(node: &Node<'_>, names: &[&str]) -> Option<usize> {
 }
 
 /// The variant an internally tagged enum's object names by its member `tag`: the object and
-/// the name, or the failure told as the door tells it: no object a wrong type, a tag that is
+/// the name, or the failure told as facet-json told it: no object a wrong type, a tag that is
 /// missing or no string a missing member at the tag (facet looks for a string tag and finds
 /// none).
 pub fn tagged<'v>(
@@ -938,7 +938,7 @@ pub fn tagged<'v>(
     Some((object, name))
 }
 
-/// Tells that the tag of an internally tagged enum names no variant, as the door tells it: a
+/// Tells that the tag of an internally tagged enum names no variant, as facet-json told it: a
 /// wrong type at the enum's object; under the enum's `schema::invalid` (`invalid`), that code, at
 /// the member the object belongs to.
 pub fn unknown_tag(object: Object<'_>, read: &mut Read<'_>, invalid: Option<&'static CodeDef<0>>) {

@@ -38,10 +38,8 @@ fn deviation_a_listed_custom_component_name_gets_empty_data() {
     let list = document.deprecated.custom_components_v1.clone().unwrap();
     assert_eq!(
         list,
-        bedrock_addon_core::json::from_str_jsonc::<Value>(
-            r#"[{"name": "demo:shake", "data": {}}]"#
-        )
-        .unwrap()
+        bedrock_addon_core::json::from_str_jsonc(r#"[{"name": "demo:shake", "data": {}}]"#)
+            .unwrap()
     );
 }
 
@@ -145,10 +143,8 @@ fn deviation_the_custom_component_list_moves_to_custom_components_v1() {
     assert_eq!(
         document.deprecated.custom_components_v1,
         Some(
-            bedrock_addon_core::json::from_str_jsonc::<Value>(
-                r#"[{"name": "demo:shake", "data": {}}]"#
-            )
-            .unwrap()
+            bedrock_addon_core::json::from_str_jsonc(r#"[{"name": "demo:shake", "data": {}}]"#)
+                .unwrap()
         )
     );
     assert!(

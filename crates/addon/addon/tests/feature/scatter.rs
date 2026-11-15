@@ -69,8 +69,7 @@ fn a_scatter_feature_and_a_feature_rule_hold_the_same_scatter_params() {
     assert_eq!(old.distribution.x, None);
     rule.distribution = Some(old.distribution);
     let written = rule.to_json().unwrap();
-    let value: bedrock_addon::json::Value =
-        bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&written).unwrap();
+    let value: bedrock_addon::json::Value = bedrock_addon::json::from_str_jsonc(&written).unwrap();
     let keys: Vec<&str> = value.as_object().unwrap()["minecraft:feature_rules"]
         .as_object()
         .unwrap()["distribution"]

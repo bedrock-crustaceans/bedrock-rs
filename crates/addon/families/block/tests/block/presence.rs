@@ -61,7 +61,7 @@ fn block(description: &str, components: &str) -> String {
 fn rewritten(input: &str) -> (String, String) {
     let document = loads(input, &everything());
     let written = document.to_json().unwrap();
-    let read = |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
+    let read = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).unwrap();
     (sorted(&read(&written)), sorted(&read(input)))
 }
 

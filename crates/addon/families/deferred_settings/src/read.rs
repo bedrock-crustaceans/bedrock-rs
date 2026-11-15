@@ -140,7 +140,7 @@ pub(crate) fn payload_requiring<T: FromJson>(
 ) -> Option<T> {
     let from = d.len();
     let value = payload_hinted(payload, cx, d, table);
-    let lacking = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text)
+    let lacking = bedrock_addon_core::json::from_str_jsonc(payload.text)
         .ok()
         .and_then(|json| {
             json.as_object()

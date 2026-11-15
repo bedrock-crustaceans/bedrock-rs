@@ -196,7 +196,7 @@ impl<'c, 'd> Reader<'c, 'd> {
         value
     }
 
-    /// Reads `T` at `node` by the typed door's profile (its first failure an error), keeping
+    /// Reads `T` at `node` by the first-failure profile (its first failure an error), keeping
     /// the unknown members of its structs that keep them in the table of the read
     /// (`Diagnostics::unknown_mut`), each an `UnrecognizedField` at [`Self::unknown`]. A `null`
     /// member is what its type makes of it, as the shell's own read took it.
@@ -238,7 +238,7 @@ pub(crate) fn span_of(slice: JsonSlice<'_>) -> Span {
 
 /// A raw member as a `Value` (`null` when it is no JSON, which the shell's parse rules out).
 fn json_of(slice: JsonSlice<'_>) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).unwrap_or(Value::NULL)
+    bedrock_addon_core::json::from_str_jsonc(slice.text).unwrap_or(Value::NULL)
 }
 
 /// Reads the newest struct from its payload.

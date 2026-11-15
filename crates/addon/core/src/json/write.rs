@@ -7,11 +7,6 @@
 //! reads back to the same `f32` with a `.0` on integral values (jsoncpp's real tag survives), a
 //! `Value`'s numbers with their int/real tag, no `null` for an absent `Option`, and
 //! `EncodeError::NotRepresentable` instead of `null` for a non-finite number.
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "this module is the JSON door: the one caller of facet-json"
-)]
 
 use std::borrow::Cow;
 
@@ -87,7 +82,7 @@ pub fn write_json_with_precedence<'f, T: Facet<'f>>(
     // The writer's output is JSON this reader accepts; were it not, the value has no JSON form.
     let mut root = std::str::from_utf8(&text)
         .ok()
-        .and_then(|text| super::from_str_jsonc::<Value>(text).ok())
+        .and_then(|text| super::from_str_jsonc(text).ok())
         .ok_or(EncodeError::NotRepresentable {
             at: JsonPath::new(),
             what: Unrepresentable::Unsupported,
@@ -263,104 +258,129 @@ pub fn to_json<'f, T: Facet<'f>>(value: &T) -> Result<String, EncodeError> {
     Ok(String::from_utf8(out).unwrap_or_default())
 }
 
-/// `value` as facet-json writes a `Value`: on one line, an integral real as an integer
-/// (`1.0` is `1`), which is how a conversion that types a `Value` by writing and reading it
-/// wants it. The one call of facet-json's own writer in the crate family.
+/// `value` on one line, as facet-json wrote a `Value`: no white space, an integral real as an
+/// integer (`1.0` is `1`, a negative zero `0`), which is how a conversion that types a `Value`
+/// by writing and reading it wants it; another real in Rust's shortest spelling of the
+/// double, written out in full (`1e300` is a `1` and 300 zeros); a real that is not finite
+/// `null`. A string escapes `"`, `\` and the control characters (`\n`, `\r`, `\t`, `\b`,
+/// `\f`, the rest as `\u00xx`) and keeps every other character as it is.
 ///
 /// A value nested deeper than `MAX_JSON_DEPTH` is refused ([`Unrepresentable::TooDeep`], at
-/// the array or object past the limit): no reader reads such a text. facet-json writes a
-/// value by a call of itself for each level, so the depth is counted first and the write
-/// run with the stack that depth can take, as a typed read is: one megabyte of stack on the
-/// calling thread is enough at any depth.
+/// the array or object past the limit): no reader reads such a text. The value is written
+/// without a call for each level.
 ///
 /// # Errors
 ///
-/// Returns `EncodeError::NotRepresentable` when `value` is nested past `MAX_JSON_DEPTH` or facet-json cannot write it.
+/// Returns `EncodeError::NotRepresentable` when `value` is nested past `MAX_JSON_DEPTH` or holds
+/// something no JSON text spells (bytes, a date).
 pub fn to_facet_json(value: &Value) -> Result<String, EncodeError> {
-    let levels = levels_of(value).map_err(|at| EncodeError::NotRepresentable {
+    levels_of(value).map_err(|at| EncodeError::NotRepresentable {
         at,
         what: Unrepresentable::TooDeep,
     })?;
-    with_stack_for(levels, || facet_json::to_string(value)).map_err(|_| {
-        EncodeError::NotRepresentable {
-            at: crate::diagnostic::JsonPath::new(),
-            what: Unrepresentable::Unsupported,
-        }
-    })
-}
-
-/// [`to_facet_json`], but for a real that is a negative zero, which is written `-0.0` and
-/// not `0`: an integer has no sign, so the text of `to_facet_json` loses it. For a
-/// conversion that types a `Value` into a member that holds a float; one that types it into
-/// an integer wants [`to_facet_json`]'s `0`. Without a negative zero in `value` the two
-/// texts are the same.
-///
-/// # Errors
-///
-/// Returns `EncodeError` under the same conditions as [`to_facet_json`].
-pub fn to_facet_json_signed(value: &Value) -> Result<String, EncodeError> {
-    fn negative_zero(value: &Value) -> bool {
-        value.as_number().is_some_and(|number| {
-            let real = number.to_f64_lossy();
-            number.is_float() && real == 0.0 && real.is_sign_negative()
-        })
-    }
-    fn holds_one(value: &Value) -> bool {
-        if let Some(array) = value.as_array() {
-            array.iter().any(holds_one)
-        } else if let Some(object) = value.as_object() {
-            object.iter().any(|(_, member)| holds_one(member))
-        } else {
-            negative_zero(value)
-        }
-    }
-    // Arrays and objects are written here, one line and no space as facet-json writes
-    // them; every scalar and key by facet-json, but the negative zero.
-    fn write(value: &Value, out: &mut String) -> Result<(), ()> {
-        if let Some(array) = value.as_array() {
-            out.push('[');
-            for (index, element) in array.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                write(element, out)?;
-            }
-            out.push(']');
-        } else if let Some(object) = value.as_object() {
-            out.push('{');
-            for (index, (key, member)) in object.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                out.push_str(&facet_json::to_string(&Value::from(key.as_str())).map_err(|_| ())?);
-                out.push(':');
-                write(member, out)?;
-            }
-            out.push('}');
-        } else if negative_zero(value) {
-            out.push_str("-0.0");
-        } else {
-            out.push_str(&facet_json::to_string(value).map_err(|_| ())?);
-        }
-        Ok(())
-    }
-    // The depth is checked, and bounded, by the plain text first.
-    let plain = to_facet_json(value)?;
-    let levels = levels_of(value).map_err(|at| EncodeError::NotRepresentable {
-        at,
-        what: Unrepresentable::TooDeep,
-    })?;
-    with_stack_for(levels, || {
-        if !holds_one(value) {
-            return Ok(plain);
-        }
-        let mut out = String::with_capacity(plain.len() + 8);
-        write(value, &mut out).map(|()| out)
-    })
-    .map_err(|()| EncodeError::NotRepresentable {
+    let mut out = String::new();
+    compact(value, &mut out).map_err(|()| EncodeError::NotRepresentable {
         at: crate::diagnostic::JsonPath::new(),
         what: Unrepresentable::Unsupported,
-    })
+    })?;
+    Ok(out)
+}
+
+/// What is left to write of an open array or object.
+enum Open<'v> {
+    Array(std::slice::Iter<'v, Value>),
+    Object(facet_value::Iter<'v>),
+}
+
+/// Writes `value` to `out` as [`to_facet_json`] spells it, with a stack of its own.
+fn compact(value: &Value, out: &mut String) -> Result<(), ()> {
+    let mut open: Vec<(Open<'_>, bool)> = Vec::new();
+    let mut next = Some(value);
+    loop {
+        if let Some(value) = next.take() {
+            if let Some(array) = value.as_array() {
+                out.push('[');
+                open.push((Open::Array(array.iter()), true));
+            } else if let Some(object) = value.as_object() {
+                out.push('{');
+                open.push((Open::Object(object.iter()), true));
+            } else {
+                compact_scalar(value, out)?;
+            }
+        }
+        let Some((top, first)) = open.last_mut() else {
+            return Ok(());
+        };
+        let step = match top {
+            Open::Array(elements) => elements.next().map(|element| (None, element)),
+            Open::Object(members) => members.next().map(|(key, member)| (Some(key), member)),
+        };
+        if let Some((key, member)) = step {
+            if !std::mem::replace(first, false) {
+                out.push(',');
+            }
+            if let Some(key) = key {
+                compact_string(key.as_str(), out);
+                out.push(':');
+            }
+            next = Some(member);
+        } else {
+            out.push(match top {
+                Open::Array(_) => ']',
+                Open::Object(_) => '}',
+            });
+            open.pop();
+        }
+    }
+}
+
+/// A scalar of [`compact`].
+fn compact_scalar(value: &Value, out: &mut String) -> Result<(), ()> {
+    if value.is_null() {
+        out.push_str("null");
+    } else if let Some(flag) = value.as_bool() {
+        out.push_str(if flag { "true" } else { "false" });
+    } else if let Some(text) = value.as_string() {
+        compact_string(text.as_str(), out);
+    } else if let Some(number) = value.as_number() {
+        if let Some(integer) = number.to_i64() {
+            out.push_str(&integer.to_string());
+        } else if let Some(integer) = number.to_u64() {
+            out.push_str(&integer.to_string());
+        } else {
+            let real = number.to_f64_lossy();
+            if real.is_finite() {
+                out.push_str(&real.to_string());
+            } else {
+                out.push_str("null");
+            }
+        }
+    } else {
+        return Err(());
+    }
+    Ok(())
+}
+
+/// A string of [`compact`], in its quotes.
+fn compact_string(text: &str, out: &mut String) {
+    out.push('"');
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            '\u{08}' => out.push_str("\\b"),
+            '\u{0C}' => out.push_str("\\f"),
+            c if c.is_ascii_control() => {
+                use std::fmt::Write as _;
+                let _ = write!(out, "\\u{:04x}", u32::from(c));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
 }
 
 /// How deep `value` nests, counted without a call for each level; the path of the first
@@ -735,15 +755,6 @@ impl FormatSerializer for Writer<'_> {
             return Ok(true);
         }
         Ok(false)
-    }
-
-    fn raw_serialize_shape(&self) -> Option<&'static Shape> {
-        Some(facet_json::RawJson::SHAPE)
-    }
-
-    fn raw_scalar(&mut self, content: &str) -> Result<(), ()> {
-        self.raw(content);
-        Ok(())
     }
 
     fn format_namespace(&self) -> Option<&'static str> {

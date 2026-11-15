@@ -84,7 +84,7 @@ pub struct LoadingMessages {
     /// the written file, not only those beside the edited member. `Debug` shows the root;
     /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
-    #[facet(skip, rename = "\u{0}written")]
+    #[facet(skip)]
     pub written: Written,
 }
 

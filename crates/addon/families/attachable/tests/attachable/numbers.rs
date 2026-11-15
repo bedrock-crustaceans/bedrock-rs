@@ -101,7 +101,7 @@ fn a_named_script_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
                 scripts.scale
             );
             // A number is written, not its digits as a string.
-            let json: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&written).unwrap();
+            let json: Value = bedrock_addon_core::json::from_str_jsonc(&written).unwrap();
             let scale = &json.as_object().unwrap()["minecraft:attachable"]
                 .as_object()
                 .unwrap()["description"]

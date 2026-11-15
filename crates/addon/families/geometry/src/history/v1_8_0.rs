@@ -61,7 +61,7 @@ pub struct Geometry {
     pub bones: Option<Vec<Bone>>,
     /// What the step from the older shape carried over (`preserve_model_pose`); never read
     /// from a 1.8 file.
-    #[facet(skip, rename = "\u{0}legacy")]
+    #[facet(skip)]
     pub legacy: GeometryLegacy,
 }
 

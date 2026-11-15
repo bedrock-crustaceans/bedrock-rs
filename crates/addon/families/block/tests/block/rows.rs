@@ -636,11 +636,10 @@ fn format_1_26_30_stamp() {
             brief(block.diagnostics())
         );
         // Written back: the input with `format_version` unchanged.
-        let written: bedrock_addon_core::json::Value =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
-                &bedrock_addon_core::document::Content::to_json(block.value()).unwrap(),
-            )
-            .unwrap();
+        let written: bedrock_addon_core::json::Value = bedrock_addon_core::json::from_str_jsonc(
+            &bedrock_addon_core::document::Content::to_json(block.value()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(
             written.as_object().and_then(|o| o.get("format_version")),
             Some(&bedrock_addon_core::json::Value::from("1.26.30"))

@@ -23,7 +23,6 @@ facet = { workspace = true }
 indexmap = { workspace = true }
 
 [dev-dependencies]
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 bedrock_addon_test_support = { path = "../../test_support" }
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

@@ -245,7 +245,7 @@ mod tests {
     use super::*;
 
     fn value(text: &str) -> Value {
-        crate::json::from_str_jsonc::<Value>(text).unwrap()
+        crate::json::from_str_jsonc(text).unwrap()
     }
 
     #[test]

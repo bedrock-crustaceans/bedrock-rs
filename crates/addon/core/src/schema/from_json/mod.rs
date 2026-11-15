@@ -104,7 +104,7 @@ pub trait FromJson: Sized {
     const EXPECTED: Option<Expected> = None;
 
     /// Whether the type holds a `null` as written (`json::Value`): an `Option` of it reads a
-    /// `null` member as `None` without a word under every null rule, as the door does
+    /// `null` member as `None` without a word under every null rule, as facet-json did
     /// (vanilla's dynamic value holds a `null`).
     #[doc(hidden)]
     const HOLDS_NULL: bool = false;
@@ -114,10 +114,10 @@ pub trait FromJson: Sized {
 /// ([`Read::finish`]): the entry of every read of a root, where [`FromJson::from_json`] is the
 /// read of one value inside it. The unknown members the read keeps go to the table of the
 /// read's findings only when the value is read: a document that fails keeps none, as the
-/// door's typed read kept them only after it worked.
+/// old typed read kept them only after it worked.
 ///
 /// The read goes a few calls deeper for each level of the text, so it runs on the stack the
-/// text's depth can take, as the typed door's read did (`json::stack`): on the thread's own
+/// text's depth can take, as the old typed read did (`json::stack`): on the thread's own
 /// where enough is left, else on one made for it. A text nests at most
 /// [`MAX_JSON_DEPTH`](crate::json::MAX_JSON_DEPTH) deep; a deeper one is read on the stack
 /// that depth takes.
@@ -152,8 +152,8 @@ pub fn read_document<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Optio
 }
 
 /// A value held in memory read as `T`, in silence: what an upgrade step does with a `Value` it
-/// built or kept as written, and wrote out as text to read the text (`signed_zero`,
-/// `to_json` and `from_str`). `None` when it does not read: a member of the wrong type or a
+/// built or kept as written, and wrote out as text to read the text (`to_json` and
+/// `from_str`). `None` when it does not read: a member of the wrong type or a
 /// missing required one, a number its type does not hold, a value nested deeper than the text
 /// of a document may be ([`MAX_JSON_DEPTH`](crate::json::MAX_JSON_DEPTH)). Nothing is told, and
 /// nothing is converted: scalars read strictly, `null` as the type's own rule, a member `T` does

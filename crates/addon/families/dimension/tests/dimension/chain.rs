@@ -26,12 +26,12 @@ fn with_bounds(base: &Value, min: i32, max: i32) -> Value {
             r#""components":{"#,
             &format!(r#""components":{{"minecraft:dimension_bounds":{{"min":{min},"max":{max}}},"#),
         );
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(&text).unwrap()
 }
 
 /// The whole document the step reads: the dimension of `bounds`, if any.
 fn overworld_input(bounds: Option<(i32, i32)>) -> Value {
-    let base: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(
+    let base: Value = bedrock_addon_core::json::from_str_jsonc(
         r#"{"format_version": "1.21.60", "minecraft:dimension": {"description": {"identifier": "minecraft:overworld"}, "components": {"minecraft:generation": {"generator_type": "void"}}}}"#,
     )
     .unwrap();

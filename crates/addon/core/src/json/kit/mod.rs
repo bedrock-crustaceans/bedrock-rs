@@ -13,7 +13,7 @@
 //!   [`unknown`](Read::unknown), [`wrong_type`](Read::wrong_type), [`refuse`](Read::refuse) and
 //!   the scalars ([`bool`](Read::bool), [`string`](Read::string), [`number`](Read::number),
 //!   [`int`](Read::int), and [`scalar`](Read::scalar), a member of a declared type read under
-//!   every profile as the typed door reads it); it tells by a [`Profile`] (every failure or
+//!   every profile as facet-json read it); it tells by a [`Profile`] (every failure or
 //!   the first, members in file or declaration order, unknown members first, where met or
 //!   last, the findings that fail nothing where met or after the read by [`Pass`]), and a
 //!   [`fork`](Read::fork) of it is an attempt to [commit](Read::commit) or drop;
@@ -653,11 +653,11 @@ impl Expected {
 /// `versioning::read_payload_with`), not the slice's [`Reading`]: it is the shape of the game's
 /// reader of a document, the same in every slice of the families read so far, where a
 /// [`Reading`] says what differs between slices (the null rule, the scalars, the unknown mask);
-/// and the old typed door, which reads by the same [`Reading`], has no profile to honour.
+/// and the old typed read, which read by the same [`Reading`], had no profile to honour.
 ///
 /// | profile | failures | members | unknown | passes | for |
 /// |---|---|---|---|---|---|
-/// | [`FIRST_FAILURE`](Self::FIRST_FAILURE) | first | file | where met | after the read | a family facet read through `versioning::parse_payload` (the default of `read_payload`) |
+/// | [`FIRST_FAILURE`](Self::FIRST_FAILURE) | first | file | where met | after the read | a family that facet-json read (the default of `read_payload`) |
 /// | [`EVERY_FAILURE`](Self::EVERY_FAILURE) | every | file | where met | where met | a game reader that binds every member and tells each failure (poi, camera, aim assist, the atomic client entity); the default of [`Read::new`] |
 /// | [`UNKNOWN_FIRST`](Self::UNKNOWN_FIRST) | every | file | first | where met | a reader that tells an object's unknown members before it reads it (`crafting_catalog`, the simplified spawn rules, block culling) |
 /// | [`DECLARED_ORDER`](Self::DECLARED_ORDER) | every | declaration | first | where met | a reader that asks for its members one by one in the order it declares them, after telling the unknown ones (the kit's hand walks: `ddui`'s styles, loot, deferred settings) |
@@ -786,16 +786,16 @@ pub enum Passes {
     WhereMet,
     /// After the read ([`Read::finish`]), by [`Pass`] (in its order, each pass in the order the
     /// read met its findings), and only when the read did not stop; the refused `null`s, when
-    /// there are any, are then all that is told: the typed door's passes. A converted scalar is
-    /// the door's misread wrong type, which leaves its member read; under `DefaultAndTell` a
+    /// there are any, are then all that is told: the old typed read's passes. A converted scalar
+    /// is its misread wrong type, which leaves its member read; under `DefaultAndTell` a
     /// scalar member its profile refuses is read as absent and told in the last pass, as the
-    /// door's scalar pre-pass blanks it.
+    /// old scalar pre-pass blanked it.
     AfterRead,
 }
 
 impl Profile {
-    /// The read of facet's typed door (`versioning::parse_payload`): the first failure, in file
-    /// order, and the rest by pass after the read. What every family that read through the door
+    /// The read of facet-json's typed read (the old `parse_payload`): the first failure, in file
+    /// order, and the rest by pass after the read. What every family that read through it
     /// reads by, and `versioning::read_payload`'s default.
     pub const FIRST_FAILURE: Self = Self {
         failures: Failures::First,
@@ -1015,7 +1015,7 @@ pub struct Read<'d> {
     /// The `schema::unknown` of the field being read, for the object it holds.
     field_unknown: Option<crate::schema::UnknownRule>,
     /// How many map values or boxes the read is inside: an unknown member there is told and
-    /// never kept, as the door's walk cannot reach it.
+    /// never kept, as the old walk could not reach it.
     unkeepable: u32,
     /// The value read is a map's value, not a struct's member: a `null` there its profile
     /// refuses is not read as absent ([`Passes::AfterRead`] under `DefaultAndTell`).
@@ -1256,7 +1256,7 @@ impl<'d> Read<'d> {
             return;
         }
         // A read that went on past its first failure tells a refused `null` and a converted
-        // scalar of a document that read alone: the door's passes ran on what read.
+        // scalar of a document that read alone: the old passes ran on what read.
         let past_failure = self.profile.failures == Failures::FirstOnly && self.failed;
         let nulls = !past_failure && deferred.iter().any(|(pass, _)| *pass == Pass::Null);
         let mut deferred = deferred;
@@ -1322,7 +1322,7 @@ impl<'d> Read<'d> {
     }
 
     /// Runs `read` inside a map value or a box, where an unknown member is told and never
-    /// kept (the door's walk cannot reach it to keep it).
+    /// kept (the old walk could not reach it to keep it).
     // the derived reads' protocol
     pub(crate) fn unkeepable<T>(&mut self, read: impl FnOnce(&mut Self) -> T) -> T {
         self.unkeepable += 1;
@@ -1788,7 +1788,7 @@ impl<'d> Read<'d> {
     }
 
     /// Tells that `node` is a value its enum has no variant for, under `code` (the enum's
-    /// `schema::invalid`), graded as every failed member is: as the typed door tells a variant
+    /// `schema::invalid`), graded as every failed member is: as facet-json told a variant
     /// lookup, at the member the value belongs to (a list's elements at the list's path), over
     /// the value.
     // the derived reads' protocol
@@ -2228,8 +2228,8 @@ impl<'d> Read<'d> {
         self.push(finding);
     }
 
-    /// Tells the one member `node` as unknown by its struct's word (`schema::unknown`), as the
-    /// typed door tells it: `keep` and `report` an `UnrecognizedField` (kept or not, the door's
+    /// Tells the one member `node` as unknown by its struct's word (`schema::unknown`), as
+    /// facet-json told it: `keep` and `report` an `UnrecognizedField` (kept or not, its
     /// one line), `reject` a `DroppedField`, `ignore` an `IgnoredMember`, `silent` nothing; at
     /// the unknown severity, spanning its value, in [`Pass::Unknown`].
     ///

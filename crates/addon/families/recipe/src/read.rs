@@ -239,7 +239,7 @@ impl<'c> Reader<'c> {
         let root: Value = match bedrock_addon_core::json::from_str_jsonc(text) {
             Ok(root) => root,
             Err(error) => {
-                let message = error.to_string();
+                let message = error.kind.to_string();
                 // The game's text is `JSON: %s has an error: \n %s`.
                 self.diagnostics.push(
                     Diagnostic::of(

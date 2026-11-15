@@ -125,7 +125,7 @@ fn a04_1_26_0_latest() {
     // Written back, it is the document that was read.
     let written = round_trip(&document, |text| attachable(text, &cx()));
     let json = |text: &str| -> bedrock_addon_core::json::Value {
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text).unwrap()
+        bedrock_addon_core::json::from_str_jsonc(text).unwrap()
     };
     assert_eq!(json(&written), json(&text));
 }

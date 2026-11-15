@@ -642,15 +642,13 @@ mod tests {
         }];
         let ok = validate(
             &MEMBERS,
-            &bedrock_addon_core::json::from_str_jsonc::<Value>(r#"{"min_difficulty": "HARD"}"#)
-                .unwrap(),
+            &bedrock_addon_core::json::from_str_jsonc(r#"{"min_difficulty": "HARD"}"#).unwrap(),
             true,
         );
         assert!(!ok.failed && ok.problems.is_empty(), "{ok:?}");
         let bad = validate(
             &MEMBERS,
-            &bedrock_addon_core::json::from_str_jsonc::<Value>(r#"{"min_difficulty": "extreme"}"#)
-                .unwrap(),
+            &bedrock_addon_core::json::from_str_jsonc(r#"{"min_difficulty": "extreme"}"#).unwrap(),
             false,
         );
         assert!(bad.failed);
@@ -674,7 +672,7 @@ mod tests {
         }];
         let empty = validate(
             &MEMBERS,
-            &bedrock_addon_core::json::from_str_jsonc::<Value>("{}").unwrap(),
+            &bedrock_addon_core::json::from_str_jsonc("{}").unwrap(),
             true,
         );
         assert!(empty.failed);
@@ -684,7 +682,7 @@ mod tests {
         ));
         let unknown = validate(
             &MEMBERS,
-            &bedrock_addon_core::json::from_str_jsonc::<Value>(r#"{"x": 1}"#).unwrap(),
+            &bedrock_addon_core::json::from_str_jsonc(r#"{"x": 1}"#).unwrap(),
             true,
         );
         assert!(matches!(unknown.problems[..], [Problem::Unknown { .. }]));
@@ -708,7 +706,7 @@ mod tests {
             Some(bedrock_addon_core::versioning::Loaded::Stable(entity)) => entity
                 .to_json()
                 .ok()
-                .and_then(|text| bedrock_addon_core::json::from_str_jsonc::<Value>(&text).ok()),
+                .and_then(|text| bedrock_addon_core::json::from_str_jsonc(&text).ok()),
             _ => None,
         };
         (written, loaded.diagnostics)

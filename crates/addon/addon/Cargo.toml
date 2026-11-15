@@ -260,7 +260,6 @@ bedrock_addon_family_voxel_shape = { path = "../families/voxel_shape", optional 
 # end generated: the family crates
 thiserror = { workspace = true }
 facet = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
 bytes = { workspace = true }

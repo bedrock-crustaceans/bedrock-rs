@@ -21,7 +21,7 @@ fn parse<T: FromJson>(json: &str) -> T {
 
 /// `json` read as a `T`, or `None` when the JSON or the type refuses it.
 fn read<T: FromJson>(json: &str) -> Option<T> {
-    read_value(&from_str_jsonc::<Value>(json).ok()?)
+    read_value(&from_str_jsonc(json).ok()?)
 }
 
 fn write<T: facet::Facet<'static>>(value: &T) -> String {
@@ -1167,21 +1167,28 @@ mod round_trip {
 }
 
 mod strict_types {
-    use bedrock_addon_core::json::{
-        BeyondWidth, Indent, JsonSlice, ScalarRules, Scalars, WriteStyle, parse_with_rules,
-        write_json,
-    };
+    use bedrock_addon_core::json::{Indent, WriteStyle, write_json};
 
     use super::*;
 
     /// Vanilla's strict schema fails a member of the wrong JSON type ("unknown child schema
     /// option type"); facet alone coerces `"3"` to 3 and `5` to `"5"`, so the members are read
     /// by the strict scalar rules the client entity and attachable slices read them by.
-    fn strict<T: facet::Facet<'static>>(json: &'static str) -> bool {
-        let rules = ScalarRules::PLAIN
-            .with_scalars(Scalars::Strict)
-            .with_beyond_width(BeyondWidth::Error);
-        parse_with_rules::<T>(JsonSlice::new(json), None, rules).is_err()
+    fn strict<T: bedrock_addon_core::schema::FromJson>(json: &'static str) -> bool {
+        use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+        use bedrock_addon_core::json::kit::{Node, Profile, Read};
+        use bedrock_addon_core::json::parse::{Options, parse};
+        let parsed = parse(json, Options::default()).unwrap();
+        let mut d = Diagnostics::default();
+        let value = {
+            let reading = bedrock_addon_core::versioning::Reading::OWN.strict();
+            let mut read = Read::new(reading, &mut d).profile(Profile::FIRST_FAILURE);
+            bedrock_addon_core::schema::read_document::<T>(
+                &Node::parsed(&parsed, JsonPath::new()),
+                &mut read,
+            )
+        };
+        value.is_none() || d.iter().any(|f| f.severity >= Severity::Error)
     }
 
     #[test]

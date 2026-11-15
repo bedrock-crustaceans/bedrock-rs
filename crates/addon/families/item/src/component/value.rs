@@ -1,5 +1,5 @@
 //! Components that hold one value and also read the bare value: `{"value": x}`
-//! or `x`. A one-value component's row says `shorthand = scalar`, and the door reads its bare
+//! or `x`. A one-value component's row says `shorthand = scalar`, and the reader reads its bare
 //! value as the member (`versioning::read_component`); [`ValueComponent`] is left for the
 //! components whose bare value is not their member as written.
 

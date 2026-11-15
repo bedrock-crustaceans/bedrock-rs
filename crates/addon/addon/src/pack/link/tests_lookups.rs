@@ -923,7 +923,7 @@ fn every_item_name_of_the_vanilla_loot_tables_is_an_item() {
     for file in &files {
         let text = std::fs::read_to_string(file).expect("a loot table");
         let text = text.trim_start_matches('\u{feff}');
-        let Ok(value) = json::from_str_jsonc::<Value>(text) else {
+        let Ok(value) = json::from_str_jsonc(text) else {
             continue;
         };
         item_names(&value, &mut names);

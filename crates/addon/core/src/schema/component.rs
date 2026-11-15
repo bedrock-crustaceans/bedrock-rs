@@ -37,7 +37,7 @@ pub fn find_row(rows: &'static [ComponentRow], name: &str) -> Option<&'static Co
 }
 
 /// The payloads of a component enum's `shorthand = scalar` rows, for
-/// `versioning::parse_component`: implemented by `#[derive(Components)]` for every component
+/// `versioning::read_component`: implemented by `#[derive(Components)]` for every component
 /// enum (a `from_only` one has no rows, and so none). A family's shape test reads it through
 /// [`misshapen_shorthand_rows`].
 pub trait ShorthandRows {
@@ -67,7 +67,7 @@ pub const fn shape_of<T: facet::Facet<'static>>() -> &'static facet::Shape {
 #[non_exhaustive]
 pub enum ShorthandShape {
     /// A struct with one named member (`skip` fields aside): the bare scalar is that member's
-    /// value, read by the door as the member (`versioning::parse_component`).
+    /// value, read by the reader as the member (`versioning::read_component`).
     OneField {
         /// The member's JSON key.
         key: &'static str,

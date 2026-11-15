@@ -295,10 +295,9 @@ fn molang_pairs_biome_height_ranges_load_with_their_text_and_version() {
     use bedrock_addon::json::Value;
     let client = skip!(game_files::CLIENT_INSTALL_B);
     let pairs_path = skip!(game_files::MOLANG_PAIRS);
-    let pairs: Value = bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(
-        &std::fs::read_to_string(pairs_path).unwrap(),
-    )
-    .expect("JSON");
+    let pairs: Value =
+        bedrock_addon::json::from_str_jsonc(&std::fs::read_to_string(pairs_path).unwrap())
+            .expect("JSON");
     let mut driver = base_game_driver();
     let pack = driver
         .pack_dir(client.join("behavior_packs").join("vanilla"))

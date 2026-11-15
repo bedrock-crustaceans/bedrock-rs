@@ -274,7 +274,7 @@ fn every_tag_of_the_vanilla_recipes_is_a_tag_of_the_game() {
             if path.is_dir() {
                 read(&path, out, files);
             } else if let Ok(text) = std::fs::read_to_string(&path)
-                && let Ok(value) = crate::json::from_str_jsonc::<Value>(&text)
+                && let Ok(value) = crate::json::from_str_jsonc(&text)
             {
                 *files += 1;
                 tags(&value, out);

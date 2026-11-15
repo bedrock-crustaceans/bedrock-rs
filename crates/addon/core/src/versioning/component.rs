@@ -3,10 +3,8 @@
 //! the newest struct (release gates, deprecation, area, superseded versions).
 
 use facet::Facet;
-use facet_json::RawJson;
-use indexmap::IndexMap;
 
-use super::payload::{failure_finding, join, span_of, tell_unknown};
+use super::payload::{join, span_of};
 use super::{
     ComponentTable, ContextArea, ConvertMode, ExperimentalField, Family, FieldGate, FieldMeta,
 };
@@ -15,100 +13,23 @@ use crate::diagnostic::{
     Class, Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use crate::document::{ComponentMap, ComponentRef, ComponentSet, CustomComponent};
-use crate::json::{JsonSlice, NullRule, ScalarRead, Value, parse_with_rules, reject_nulls};
+use crate::json::{JsonSlice, Value};
 use crate::load::{Experiment, LoadContext, LoadRequirement};
 use crate::version::FormatVersion;
 
-/// Parses one typed component from its slice: `T` from the text (its plain scalars read by the
-/// slice's scalar rules, `LoadContext::scalar_rules`; strict wrappers decide what coerces, so
-/// `mode` is the caller's to honour), its unknown members kept in `d`'s table (by paths
-/// relative to the component, which the component-map parser places; which structs keep them
-/// is `parse_payload`'s rule) and told as `parse_payload` tells them (an `UnrecognizedField`
-/// graded by the slice's reading, or the word a struct states). A failed parse (a member of the wrong type, `0x8`, or a required member missing,
-/// `0x80`) is one finding: in a cereal slice of a document-input family
-/// ([`LoadContext::strict_components`]) an error, which rejects the whole document under both
-/// masks; elsewhere (`JsonCpp` slices, hand-written legacy slices) an error too. A legacy
-/// block whose component fails to parse logs "Failed to parse block '%s'" at level 3 and the
-/// game refuses the whole block, and the `JsonCpp` readers fail a value of another type with
-/// code `0x8`, an error under both masks. Findings are relative to the component; the
-/// component-map parser places them. The usual `parse` of a `#[derive(Components)]` row:
-/// `parse = versioning::parse_component::<Friction, ItemComponent>`.
-///
-/// A row with `shorthand = scalar` whose payload is a struct of one member
-/// ([`ShorthandShape::OneField`](crate::schema::ShorthandShape)) also reads a payload that is
-/// no object (`5` for `{"value": 5}`): the text is read as that member, by the slice's scalar
-/// rules and its null rule (a bare `null` is the member's `null`: a type error under
-/// `Rejected`, the member left out under `Absent`), its findings at the component. Under
-/// [`ScalarRules::default_and_tell`](crate::json::ScalarRules) a bare scalar of the wrong
-/// type is the member's: blanked and told, and the component kept with the member's default. A failed read spans the text as
-/// written; a scalar no arm of an untagged member takes is told, as every such refusal at the
-/// door ([`ScalarFailure::Refused`](crate::json::ScalarFailure)), without a span.
-/// An untagged enum or a transparent newtype reads the scalar itself, so the row's shorthand
-/// changes nothing there.
-pub fn parse_component<T, C>(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<C>
-where
-    T: for<'a> Facet<'a> + Into<C>,
-    C: crate::schema::ShorthandRows,
-{
-    let _ = mode;
-    if let Some(key) = shorthand_member::<T, C>(slice) {
-        return parse_shorthand::<T>(slice, key, cx, d).map(Into::into);
-    }
-    let rule = cx.null_rule;
-    let ScalarRead {
-        value,
-        told,
-        json,
-        absent,
-    } = match parse_with_rules::<T>(slice, rule, cx.scalar_rules) {
-        Ok(read) => read,
-        Err(failure) => {
-            // Both readers fail the slice; `strict_components` only names the input.
-            let _ = cx.strict_components;
-            d.push(failure_finding(&failure, &JsonPath::new(), slice));
-            return None;
-        }
-    };
-    // Under the `Rejected` null rule a `null` where the component reads a value is a type
-    // error, which rejects the document.
-    if rule == Some(NullRule::Rejected) && reject_nulls(&value, slice, &JsonPath::new(), d) {
-        return None;
-    }
-    if let Some(json) = json {
-        // Each member read as absent (rule N1; the pre-pass left it out of `json`) is marked:
-        // the write-back writes its default.
-        crate::json::tell_null_members(&absent, &JsonPath::new(), d);
-        let mut kept = crate::document::Unknown::new();
-        let unknown = crate::json::door_unknown_members(&value, &json, cx.keeps_unknown, &mut kept);
-        d.unknown_mut().absorb(&JsonPath::new(), kept);
-        tell_unknown(unknown, &JsonPath::new(), cx, d);
-        // A scalar its member read as another value is told where it is.
-        for told in told {
-            d.push(told.finding(&JsonPath::new()));
-        }
-    }
-    Some(value.into())
-}
-
 /// Reads one typed component from its slice on the new reader ([`FromJson`](crate::schema::FromJson),
-/// member by member): what [`parse_component`] does, the same signature, so a row's `parse`
-/// takes `read_component::<T, C>` where it took `parse_component::<T, C>`. `T` read under the
-/// slice's reading by the typed door's profile
+/// member by member): a row's `parse` takes `read_component::<T, C>`. `T` read under the
+/// slice's reading by the first-failure profile
 /// ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)), on a stack its depth
 /// can take, every finding relative to the component (the component-map parser places them)
 /// and spanning its value; the unknown members it keeps in `d`'s table, relative to it.
 ///
 /// A row with `shorthand = scalar` whose payload is a struct of one member reads a payload
-/// that is no object as that member, as `parse_component` does: by the slice's scalar and null
+/// that is no object as that member: by the slice's scalar and null
 /// rules, its findings at the component, spanning the text as written.
 ///
 /// A component whose JSON is of the wrong kind for its type's root (an array or a scalar for a
-/// struct, an array for a scalar or a one-member shorthand) is told as the typed door tells it,
+/// struct, an array for a scalar or a one-member shorthand) is told as facet-json told it,
 /// `core/syntax` ("unexpected token: got X, expected Y") at the component: the oracle
 /// `a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error` pins the words.
 pub fn read_component<T, C>(
@@ -142,7 +63,7 @@ where
     use crate::json::kit::Node;
     let _ = mode;
     let parsed = parsed_or_told(slice, d)?;
-    let shorthand = shorthand_member::<T, C>(slice);
+    let shorthand = shorthand_member::<T, C>(parsed.value.as_object().is_some());
     let member = shorthand.map(|key| member_kind(<T as Facet<'static>>::SHAPE, key));
     if let Some(finding) = door_syntax::<T>(&parsed.value, member, cx, span_of(slice)) {
         d.push(finding);
@@ -174,8 +95,8 @@ where
 }
 
 /// Reads one value `T` from `slice` on the new reader, as [`read_component`] reads a component
-/// that has no shorthand (a value of the wrong JSON kind for `T`'s root is the door's
-/// `core/syntax` there as well): under the context's reading by the typed door's profile
+/// that has no shorthand (a value of the wrong JSON kind for `T`'s root is
+/// `core/syntax` there as well): under the context's reading by the first-failure profile
 /// ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)), every finding
 /// relative to the value and spanning it, the unknown members it keeps in `d`'s table, relative
 /// to it. For a family's row that reads a form of its own beside the typed one (a bare key
@@ -206,7 +127,7 @@ pub fn read_slice_with<T: crate::schema::FromJson>(
     crate::schema::read_document::<T>(&node, &mut read)
 }
 
-/// The text of `slice` parsed with its spans; one that does not parse is told as the door tells
+/// The text of `slice` parsed with its spans; one that does not parse is told as the parser tells
 /// it (not reached for a component the payload's parse has read).
 fn parsed_or_told<'t>(
     slice: JsonSlice<'t>,
@@ -224,8 +145,8 @@ fn parsed_or_told<'t>(
     parsed.ok()
 }
 
-/// The read of a component or a bare value of the context: its reading, the typed door's
-/// profile, the unknown severity of the slice and the document's format.
+/// The read of a component or a bare value of the context: its reading, the
+/// first-failure profile, the unknown severity of the slice and the document's format.
 fn door_read<'d>(cx: &'d LoadContext, d: &'d mut Diagnostics) -> crate::json::kit::Read<'d> {
     use crate::json::kit::{Profile, Read};
     Read::new(cx.reading, d)
@@ -235,8 +156,8 @@ fn door_read<'d>(cx: &'d LoadContext, d: &'d mut Diagnostics) -> crate::json::ki
         .format(cx.document_format)
 }
 
-/// The finding of a component whose JSON is of another kind than its type's root, told as the
-/// typed door told it: `core/syntax`, "unexpected token: got X, expected Y", the malformed input
+/// The finding of a component whose JSON is of another kind than its type's root, told as
+/// facet-json told it: `core/syntax`, "unexpected token: got X, expected Y", the malformed input
 /// of facet's own read, where the reader's wrong type names no member. It is told when:
 ///
 /// - `T` is a struct (`T::EXPECTED` an object) and the value is no object, `null` included;
@@ -356,8 +277,9 @@ fn member_kind(shape: &'static facet::Shape, key: &str) -> MemberKind {
 }
 
 /// The member a bare scalar of `slice` stands for: `T` is the payload of a `shorthand =
-/// scalar` row of `C`, a struct of one member, and the text is no object.
-fn shorthand_member<T, C>(slice: JsonSlice<'_>) -> Option<&'static str>
+/// scalar` row of `C`, a struct of one member, and the text is no object (`object` is whether
+/// it is one).
+fn shorthand_member<T, C>(object: bool) -> Option<&'static str>
 where
     T: for<'a> Facet<'a>,
     C: crate::schema::ShorthandRows,
@@ -368,88 +290,7 @@ where
     else {
         return None;
     };
-    (!slice.opens_an_object()).then_some(key)
-}
-
-/// Reads the bare scalar of `slice` as the member `key` of `T`: the text is read inside
-/// `{"key": …}`, and what is told of the member is told at the component, spanning the text
-/// as the file has it.
-fn parse_shorthand<T>(
-    slice: JsonSlice<'_>,
-    key: &str,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<T>
-where
-    T: for<'a> Facet<'a>,
-{
-    use crate::json::ScalarFailure;
-    let mut prefix = String::from("{");
-    prefix.push_str(&crate::json::to_json(&key).ok()?);
-    prefix.push(':');
-    // A line comment at the end of the text ends before the closing brace.
-    let wrapped = format!("{prefix}{}\n}}", slice.text);
-    let inner = JsonSlice {
-        text: &wrapped,
-        offset: slice.offset,
-    };
-    // The member's own place is the text's: a span inside it moves back by the prefix, any
-    // other (the object around it) is the text's whole.
-    let start = slice.offset + prefix.len();
-    let end = start + slice.text.len();
-    let unwrap = |span: crate::diagnostic::Span| {
-        let (offset, len) = (span.offset as usize, span.len as usize);
-        if offset >= start && offset + len <= end {
-            crate::diagnostic::Span {
-                offset: span.offset - u32::try_from(prefix.len()).unwrap_or(u32::MAX),
-                len: span.len,
-            }
-        } else {
-            super::payload::span_of(slice)
-        }
-    };
-    // A bare `null` is the member's `null`: the slice's null rule reads it as the object
-    // form's.
-    let rule = cx.null_rule;
-    match parse_with_rules::<T>(inner, rule, cx.scalar_rules) {
-        Ok(read) => {
-            let mut found = Diagnostics::default();
-            if rule == Some(NullRule::Rejected)
-                && reject_nulls(&read.value, inner, &JsonPath::new(), &mut found)
-            {
-                for mut finding in found {
-                    finding.location.json_path = below_member(&finding.location.json_path);
-                    finding.location.span = finding.location.span.map(unwrap);
-                    d.push(finding);
-                }
-                return None;
-            }
-            let absent: Vec<JsonPath> = read.absent.iter().map(below_member).collect();
-            crate::json::tell_null_members(&absent, &JsonPath::new(), d);
-            for mut told in read.told {
-                told.path = below_member(&told.path);
-                d.push(told.finding(&JsonPath::new()));
-            }
-            Some(read.value)
-        }
-        Err(failure) => {
-            let failure = match failure {
-                ScalarFailure::Read(mut error) => {
-                    error.path = below_member(&error.path);
-                    error.span = unwrap(error.span);
-                    ScalarFailure::Read(error)
-                }
-                ScalarFailure::Refused(mut refused) => {
-                    refused.misread.path = below_member(&refused.misread.path);
-                    // Kept right for `spanned_finding`; the door's finding has no span.
-                    refused.span = refused.span.map(unwrap);
-                    ScalarFailure::Refused(refused)
-                }
-            };
-            d.push(failure_finding(&failure, &JsonPath::new(), slice));
-            None
-        }
-    }
+    (!object).then_some(key)
 }
 
 /// `path` without its first step, the member a bare scalar was read as.
@@ -462,43 +303,6 @@ fn below_member(path: &JsonPath) -> JsonPath {
         }
     }
     out
-}
-
-/// Parses a `components` object held as raw slices (`entries`, borrowed from `within`, the
-/// payload's text) into family `F`'s component map, in file order.
-///
-/// A key of `F`'s table is parsed by its row's `parse`; the findings it reports are placed below
-/// `at/<key>` (`at` is the object's path in the file). A row whose value has no typed key (an
-/// entity's dynamic keys) keeps the JSON as a dynamic entry. A key `is_custom` accepts is a
-/// custom component, kept as written. Any other key is kept for write-back and reported as an
-/// `UnrecognizedComponent`, graded by the slice's reading (`LoadContext::grade`).
-pub fn parse_component_map<'a, F: Family>(
-    entries: &IndexMap<String, RawJson<'a>>,
-    within: JsonSlice<'a>,
-    at: &JsonPath,
-    mode: ConvertMode,
-    is_custom: fn(&str) -> bool,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> ComponentMap<F::Component> {
-    let table = table::<F>();
-    let mut map = ComponentMap::new();
-    for (key, raw) in entries {
-        let slice = within.nested(raw).unwrap_or(JsonSlice {
-            text: raw.as_str(),
-            offset: within.offset,
-        });
-        let json = || crate::json::from_str_jsonc::<Value>(slice.text).unwrap_or(Value::NULL);
-        let entry = Entry {
-            key,
-            slice,
-            at,
-            mode,
-            is_custom,
-        };
-        entry.place(table, json, cx, &mut map, d);
-    }
-    map
 }
 
 /// What a family says of a key of its `components` object before the rows read it
@@ -518,7 +322,7 @@ pub enum KeyGate {
 }
 
 /// Reads a `components` object at `node` into family `F`'s component map, in file order, on
-/// the new reader: what [`parse_component_map`] does with the raw slices of the typed door,
+/// the new reader: what the old `parse_component_map` did with the raw slices,
 /// from the node's members (each read by its row's `parse`, which is
 /// [`read_component`] for a converted component, from the member's text), its findings told
 /// to `read` below the node's path, the unknown members the rows keep in its table. A

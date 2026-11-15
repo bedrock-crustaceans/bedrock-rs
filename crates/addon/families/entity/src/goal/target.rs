@@ -55,7 +55,7 @@ pub struct AvoidBlock {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -147,7 +147,7 @@ pub struct AvoidMobType {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -212,7 +212,7 @@ pub struct DefendTrustedTarget {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 

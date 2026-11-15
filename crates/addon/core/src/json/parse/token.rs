@@ -139,7 +139,7 @@ pub(super) fn scan_name(text: &str, token: &Token) -> String {
     }
 }
 
-/// The scanner of a text: facet-json's `Scanner` over the door's lexer.
+/// The scanner of a text: facet-json's `Scanner` over the parser's lexer.
 pub(super) struct Scanner<'t> {
     text: &'t str,
     bytes: &'t [u8],
@@ -286,7 +286,7 @@ impl<'t> Scanner<'t> {
         match self.bytes.get(end) {
             Some(&byte) => {
                 // The byte that is no part of the literal may start a string with a bad
-                // escape: the door tells the fault on the whole string.
+                // escape: the fault is told on the whole string.
                 let len = if byte == b'"' && string_end(self.bytes, end).is_err() {
                     loose_len(self.bytes, end)
                 } else {
@@ -349,7 +349,7 @@ fn loose_len(bytes: &[u8], at: usize) -> usize {
 }
 
 /// How facet-json's scanner hints a number token, with an integer past 64 bits spelt as the
-/// real token the door gives facet in its place.
+/// real token the old door gave facet in its place.
 fn hint_of(token: &[u8]) -> Hint {
     if is_wide_integer(token) || token.iter().any(|byte| matches!(byte, b'.' | b'e' | b'E')) {
         Hint::Float
@@ -362,7 +362,7 @@ fn hint_of(token: &[u8]) -> Hint {
 
 /// The number `token` (at `start`) spells, and what a reader may have to be told of it.
 ///
-/// An integer past 64 bits is the double it spells (what the door's `respell` makes of it),
+/// An integer past 64 bits is the double it spells (what the old door's `respell` made of it),
 /// a token no double holds an infinity. Every other integer is `i64` or `u64` and every
 /// other token an `f64`, as facet-json reads them.
 fn number(token: &[u8], start: usize) -> Result<(Lit<'static>, Option<NumberKind>), Fault> {

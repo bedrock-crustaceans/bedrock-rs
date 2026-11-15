@@ -62,7 +62,7 @@ pub struct MemoryMoveToPosition {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check; written back
     /// from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -459,7 +459,7 @@ pub struct MemoryJumpToBlock {
     pub target_blockpos_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -505,7 +505,7 @@ pub struct MemoryPrepareRamAttack {
     pub target_position_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -567,7 +567,7 @@ pub struct MemoryRamAttack {
     pub ram_position_memory: Option<String>,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 

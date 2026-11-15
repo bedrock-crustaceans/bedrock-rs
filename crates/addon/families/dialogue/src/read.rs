@@ -237,10 +237,10 @@ impl Reader<'_> {
         let prepared = Prepared::new(bytes).ok();
         let parsed = match prepared.as_ref().map(Prepared::as_str) {
             // Of a member written twice the last stands.
-            Some(text) => bedrock_addon_core::json::from_str_jsonc::<Value>(
-                &bedrock_addon_core::json::last_wins(text),
-            )
-            .map_err(|error| error.to_string()),
+            Some(text) => {
+                bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+                    .map_err(|error| error.kind.to_string())
+            }
             None => Err("not UTF-8 JSON within the nesting limit".to_owned()),
         };
         let root = match parsed {

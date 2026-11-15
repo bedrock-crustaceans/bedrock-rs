@@ -36,9 +36,8 @@ fn text(path: &Path) -> String {
 fn atlas(files: &[PathBuf]) -> BTreeMap<String, Value> {
     let mut items = BTreeMap::new();
     for file in files {
-        let json =
-            bedrock_addon::json::from_str_jsonc::<Value>(text(file).trim_start_matches('\u{feff}'))
-                .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
+        let json = bedrock_addon::json::from_str_jsonc(text(file).trim_start_matches('\u{feff}'))
+            .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
         let data = json
             .as_object()
             .and_then(|root| root.get("texture_data"))
@@ -186,8 +185,7 @@ fn cross_check(split: &Side, flattened: &Side) -> Outcome {
 
 /// No texture name of a pre-split file names an atlas element itself.
 fn assert_names_no_element(file: &str) {
-    let json =
-        bedrock_addon::json::from_str_jsonc::<Value>(file.trim_start_matches('\u{feff}')).unwrap();
+    let json = bedrock_addon::json::from_str_jsonc(file.trim_start_matches('\u{feff}')).unwrap();
     for (key, entry) in json.as_object().unwrap() {
         let Some(entry) = entry.as_object() else {
             continue;

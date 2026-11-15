@@ -2,7 +2,7 @@
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 #[cfg(any(feature = "item", feature = "block"))]
-use bedrock_addon_core::json::{self, Value};
+use bedrock_addon_core::json::{self};
 #[cfg(any(feature = "item", feature = "block"))]
 use bedrock_addon_core::schema::{FromJson, read_value};
 
@@ -46,7 +46,7 @@ fn told(lints: bool, resolve: for<'a, 'b, 'c> fn(&'a LinkCx<'b>, &'c mut Finding
 /// `text` read as a `T`.
 #[cfg(any(feature = "item", feature = "block"))]
 fn read<T: FromJson>(text: &str) -> Option<T> {
-    read_value(&json::from_str_jsonc::<Value>(text).ok()?)
+    read_value(&json::from_str_jsonc(text).ok()?)
 }
 
 #[cfg(feature = "item")]

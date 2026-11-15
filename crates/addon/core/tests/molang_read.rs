@@ -40,7 +40,7 @@ fn reader_matrix() -> Value {
         "/tests/fixtures/molang/reader_matrix.json"
     );
     let text = std::fs::read_to_string(path).expect("the reader matrix fixture");
-    from_str_jsonc::<Value>(&text).expect("the fixture is JSON")
+    from_str_jsonc(&text).expect("the fixture is JSON")
 }
 
 fn text(value: &Value) -> &str {
@@ -237,7 +237,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 ));
             }
             let Some(json) = json else { continue };
-            let value = from_str_jsonc::<Value>(json).unwrap();
+            let value = from_str_jsonc(json).unwrap();
             let read_result = molang::read(&value, reader, context);
             // The crate's reader gives a number beyond `f32` as the largest finite float, where
             // molang's `MolangValueRepr::read` gives the infinity.
@@ -301,7 +301,7 @@ fn a_list_read_from_a_value_equals_the_typed_list() {
         r#""v.x""#,
         r#"[1, "q.x", [2, false], []]"#,
     ] {
-        let value = from_str_jsonc::<Value>(json).unwrap();
+        let value = from_str_jsonc(json).unwrap();
         let read_result = molang::read_list(&value, RawVersion(9)).unwrap();
         let mut typed: Option<MolangList> = read_value(&from_str_jsonc(json).unwrap()).unwrap();
         if let Some(list) = &mut typed {
@@ -309,7 +309,7 @@ fn a_list_read_from_a_value_equals_the_typed_list() {
         }
         assert_eq!(read_result, typed, "{json}");
     }
-    let nested = from_str_jsonc::<Value>(r#"["v.x", ["q.y"]]"#).unwrap();
+    let nested = from_str_jsonc(r#"["v.x", ["q.y"]]"#).unwrap();
     assert_eq!(
         molang::read_list(&nested, RawVersion(9)).unwrap(),
         Some(MolangList::Many(vec![
@@ -328,7 +328,7 @@ fn a_list_rejects_objects_and_null_elements() {
         (r#"[1, {"a": 1}]"#, JsonType::Object),
         ("[1, null]", JsonType::Null),
     ] {
-        let value = from_str_jsonc::<Value>(json).unwrap();
+        let value = from_str_jsonc(json).unwrap();
         assert_eq!(
             molang::read_list(&value, RawVersion(9)),
             Err(ReprError::UnsupportedType {
@@ -354,7 +354,7 @@ fn write_gives_back_the_form_that_was_read() {
         r#"{"expression": "1 + 2", "version": 42}"#,
         r#"{"expression": "v.x", "version": -1}"#,
     ] {
-        let value = from_str_jsonc::<Value>(json).unwrap();
+        let value = from_str_jsonc(json).unwrap();
         let Ok(ReadField::Value(read)) =
             molang::read(&value, ReaderKind::LenientVersioned, RawVersion(6))
         else {
@@ -378,7 +378,7 @@ fn write_gives_back_the_form_that_was_read() {
 /// The text of `json` read as a Molang constant and written back, through `molang::write`
 /// (a `Value`) and through the typed writer; the two must agree.
 fn rewritten(json: &str) -> String {
-    let value = from_str_jsonc::<Value>(json).unwrap();
+    let value = from_str_jsonc(json).unwrap();
     let Ok(ReadField::Value(read)) =
         molang::read(&value, ReaderKind::LenientVersioned, RawVersion(6))
     else {
@@ -389,7 +389,7 @@ fn rewritten(json: &str) -> String {
     let typed = bedrock_addon_core::json::to_json(&read).unwrap();
     assert_eq!(by_value, typed, "{json}: both writers give one text");
     // Whatever the text, it reads back as the same constant.
-    let again = from_str_jsonc::<Value>(typed.trim_end()).unwrap();
+    let again = from_str_jsonc(typed.trim_end()).unwrap();
     assert_eq!(
         molang::read(&again, ReaderKind::LenientVersioned, RawVersion(6)),
         Ok(ReadField::Value(read)),
@@ -513,7 +513,7 @@ fn the_json_writer_keeps_each_form() {
         ])),
     };
     let text = bedrock_addon_core::json::to_json(&fields).unwrap();
-    let value = from_str_jsonc::<Value>(&text).unwrap();
+    let value = from_str_jsonc(&text).unwrap();
     let object = value.as_object().unwrap();
     assert_eq!(
         molang::json_scalar(object.get("number").unwrap()),
@@ -552,7 +552,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float() {
         ("3.4028235677973366e38", f32::MAX),
         ("340282366920938463463374607431768211456", f32::MAX),
     ] {
-        let value = bedrock_addon_core::json::from_str::<Value>(json).unwrap();
+        let value = bedrock_addon_core::json::from_str(json).unwrap();
         for (name, reader) in READERS {
             let scalar = molang::json_scalar(&value);
             let read = molang::read(&value, reader, context);
@@ -587,7 +587,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float() {
         "0",
         "-2.5",
     ] {
-        let value = bedrock_addon_core::json::from_str::<Value>(json).unwrap();
+        let value = bedrock_addon_core::json::from_str(json).unwrap();
         for (name, reader) in READERS {
             // The strict reader is molang's, unchanged: it refuses the shortest text of the
             // largest float, which as a double is a little above it.
@@ -606,7 +606,7 @@ fn a_number_beyond_f32_is_read_as_the_largest_finite_float() {
         }
     }
     // A list read from a value clamps each element alike, and what was read is written.
-    let value = bedrock_addon_core::json::from_str::<Value>("[1e39, [-1e999, 2]]").unwrap();
+    let value = bedrock_addon_core::json::from_str("[1e39, [-1e999, 2]]").unwrap();
     let list = molang::read_list(&value, context).unwrap().unwrap();
     assert_eq!(
         list,

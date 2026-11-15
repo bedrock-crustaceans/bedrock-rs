@@ -172,7 +172,7 @@ impl Family for BiomeFamily {
     /// its only root member; it is read so the document is rejected as below the floor.
     // The game reports "no parser available for version 1.12.0" for such a file.
     fn payload_version(payload: JsonSlice<'_>) -> Option<FormatVersionInput> {
-        let root = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok()?;
+        let root = bedrock_addon_core::json::from_str_jsonc(payload.text).ok()?;
         let members = root.as_object()?;
         if members.len() != 1 || members.contains_key("minecraft:biome") {
             return None;
@@ -470,10 +470,8 @@ fn floor_hint(parsed: &mut Parsed<BiomeFamily>, text: &str) {
 /// experimental format from 1.13.0 (with the surface sentence when the 1.20.60-era surface
 /// components are used).
 fn hint(text: &str, version: FormatVersion) -> Option<Code> {
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
-        &bedrock_addon_core::json::last_wins(text),
-    )
-    .ok()?;
+    let root = bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+        .ok()?;
     let root = root.as_object()?;
     let biome = root.get("minecraft:biome");
     if biome.is_none() && root.len() == 1 {

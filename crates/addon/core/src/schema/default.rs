@@ -48,7 +48,7 @@ where
         }
     }
     let written = crate::json::to_json(&default).map_err(DefaultFault::Unwritten)?;
-    let again: T = crate::json::from_str_jsonc::<crate::json::Value>(&written)
+    let again: T = crate::json::from_str_jsonc(&written)
         .ok()
         .and_then(|json| super::read_value(&json))
         .ok_or(DefaultFault::WrittenUnread)?;
@@ -73,7 +73,7 @@ where
     let written = crate::json::to_json(&T::default()).map_err(DefaultFault::Unwritten)?;
     let empty = crate::json::Value::from(facet_value::VObject::new());
     let reads = |json: &crate::json::Value| super::read_value::<T>(json).is_some();
-    let written = crate::json::from_str_jsonc::<crate::json::Value>(&written).ok();
+    let written = crate::json::from_str_jsonc(&written).ok();
     if reads(&empty) || written.as_ref().is_some_and(reads) {
         return Err(DefaultFault::ReadsWithoutRequired);
     }
@@ -116,7 +116,7 @@ mod tests {
         priority: Option<i32>,
         #[facet(default = 0.5)]
         speed: f32,
-        #[facet(skip, rename = "\u{0}seen")]
+        #[facet(skip)]
         seen: bool,
     }
 
@@ -125,7 +125,7 @@ mod tests {
     #[derive(Debug, PartialEq, Facet)]
     struct Unkept {
         level: i32,
-        #[facet(skip, rename = "\u{0}seen")]
+        #[facet(skip)]
         seen: bool,
     }
 
@@ -138,7 +138,7 @@ mod tests {
         }
     }
 
-    /// The empty object reads as the default, as the door read a struct of no member; a `level`
+    /// The empty object reads as the default, as facet-json read a struct of no member; a `level`
     /// member is read, and the skipped field is its own default.
     impl FromJson for Unkept {
         fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {

@@ -226,7 +226,7 @@ fn a_file_is_read_by_the_struct_of_its_version_and_upgrades_to_what_parse_gives(
         assert_eq!(any.version().written, written);
         // An older struct writes its own version's document back; the newest its typed value.
         let rewritten: Value =
-            bedrock_addon::json::from_str_jsonc::<Value>(&any.to_json().unwrap()).unwrap();
+            bedrock_addon::json::from_str_jsonc(&any.to_json().unwrap()).unwrap();
         let expected = if text == LATEST { LATEST_WRITTEN } else { text };
         assert_eq!(rewritten, json(expected));
         let parsed = SoundDefinitions::parse(
@@ -301,8 +301,7 @@ fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
     // `json` is the JSON that was read: integer `2`, the `null`, the unknown-free entries.
     assert_eq!(*latest.json(), json(LATEST));
     // What is written is the typed value: the distances as floats, the `null` as its reading.
-    let rewritten: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(&latest.to_json().unwrap()).unwrap();
+    let rewritten: Value = bedrock_addon::json::from_str_jsonc(&latest.to_json().unwrap()).unwrap();
     assert_eq!(rewritten, json(LATEST_WRITTEN));
     let text = latest.to_json().unwrap();
     assert!(text.contains("\"min_distance\": 2.0,"), "{text}");
@@ -317,8 +316,7 @@ fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
     );
     // ... and what it writes is that document's typed value: the `null` distance and the
     // string flag as their readings.
-    let rewritten: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(&legacy.to_json().unwrap()).unwrap();
+    let rewritten: Value = bedrock_addon::json::from_str_jsonc(&legacy.to_json().unwrap()).unwrap();
     assert_eq!(
         rewritten,
         json(

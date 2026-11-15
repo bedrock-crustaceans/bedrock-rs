@@ -22,7 +22,7 @@ fn language_messages() -> Value {
         "/tests/fixtures/molang/language_messages.json"
     );
     let text = std::fs::read_to_string(path).expect("the language message fixture");
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("the fixture is JSON")
+    bedrock_addon_core::json::from_str_jsonc(&text).expect("the fixture is JSON")
 }
 
 fn text(value: &Value) -> &str {

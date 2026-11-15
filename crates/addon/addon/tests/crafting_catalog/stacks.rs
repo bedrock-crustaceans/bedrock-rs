@@ -81,8 +81,7 @@ pub fn vanilla(name: &str) -> Spec {
 
 /// The entries of `merge/items.json`: the name and the `menu_category` JSON, if any.
 pub fn registry_items() -> Vec<(String, Option<String>)> {
-    let value: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(&fixture("merge/items.json")).unwrap();
+    let value: Value = bedrock_addon::json::from_str_jsonc(&fixture("merge/items.json")).unwrap();
     value
         .as_object()
         .unwrap()

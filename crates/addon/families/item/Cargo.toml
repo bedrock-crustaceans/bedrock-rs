@@ -28,6 +28,5 @@ nbtx = { workspace = true, optional = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
-facet-json = { workspace = true }
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../../test_support" }

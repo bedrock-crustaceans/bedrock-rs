@@ -60,10 +60,7 @@ fn a_flattened_struct_reads_its_members_at_the_parent_level() {
     assert_eq!(outer.slots.flag, Some(true));
     assert_eq!(outer.slots.count, Some(3));
     assert!(matches!(outer.slots.script, Some(Molang::Expr(_))));
-    assert_eq!(
-        outer.slots.mev,
-        Some(from_str_jsonc::<Value>("[1, 2]").unwrap())
-    );
+    assert_eq!(outer.slots.mev, Some(from_str_jsonc("[1, 2]").unwrap()));
     assert_eq!(outer.slots.inner, Some(Inner { a: Some(1) }));
 }
 
@@ -87,7 +84,7 @@ fn a_flattened_structs_unknown_members_are_found_below_it() {
     assert!(outer.is_some());
     assert_eq!(
         told,
-        // RED CELL (orchestrator to decide): the door's walk told them in the order of the
+        // RED CELL (orchestrator to decide): the old walk told them in the order of the
         // file, `inner/bogus` then `nope`; the reader tells the owner's own unknown member before
         // the flattened struct, which reads its members after the owner's.
         [

@@ -254,10 +254,8 @@ fn identify<'b>(
         .map_err(|_| invalid("not UTF-8 JSON within the nesting limit".to_owned()))?;
     // The identifier is read from the copy of a doubled member that stands, as the parse
     // reads it.
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
-        &bedrock_addon_core::json::last_wins(text),
-    )
-    .map_err(|e| invalid(e.to_string()))?;
+    let root = bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+        .map_err(|e| invalid(e.kind.to_string()))?;
     let one = |code: Code| {
         let mut d = Diagnostics::default();
         d.push(Diagnostic::of(code));

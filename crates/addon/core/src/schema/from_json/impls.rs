@@ -346,7 +346,7 @@ impl<T: FromJson> FromJson for Vec<T> {
 }
 
 /// An array of exactly `N` elements, each read as `T`; another length is a wrong type. An
-/// unknown member inside an element is told and not kept, as the door's walk cannot reach
+/// unknown member inside an element is told and not kept, as the old walk could not reach
 /// into a fixed array to keep it.
 impl<T: FromJson, const N: usize> FromJson for [T; N] {
     const EXPECTED: Option<Expected> = Some(Expected::Array);
@@ -376,7 +376,7 @@ impl<T: FromJson, const N: usize> FromJson for [T; N] {
 }
 
 /// The boxed value (a recursive type holds itself in a `Box`). An unknown member inside is
-/// told and not kept, as the door's walk cannot reach it.
+/// told and not kept, as the old walk could not reach it.
 impl<T: FromJson> FromJson for Box<T> {
     const EXPECTED: Option<Expected> = T::EXPECTED;
     const HOLDS_NULL: bool = T::HOLDS_NULL;
@@ -426,9 +426,9 @@ impl<K: crate::id::Kind> MapKey for crate::id::Id<K> {
 
 /// The entries of an object, each value read as `V` at its member's path, in file order. A
 /// failed value fails the map (every value is still read and told); a value read as absent (a
-/// scalar its profile refuses, under [`Passes::AfterRead`](crate::json::kit::Passes::AfterRead) with `DefaultAndTell`: the door's pre-pass
-/// blanks it) is left out and the rest kept. An unknown member inside a value is told and not
-/// kept, as the door's walk cannot reach it, unless the field that holds the map says
+/// scalar its profile refuses, under [`Passes::AfterRead`](crate::json::kit::Passes::AfterRead) with `DefaultAndTell`: the old pre-pass
+/// blanked it) is left out and the rest kept. An unknown member inside a value is told and not
+/// kept, as the old walk could not reach it, unless the field that holds the map says
 /// `schema::unknown = "keep"`: its values' unknown members are then kept in the document's table
 /// at the value's path, `map/<key>`, and written back there.
 fn map_entries<K: MapKey, V>(

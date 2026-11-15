@@ -1,7 +1,7 @@
-//! `FromJson` for core's leaf types, each telling what the typed door tells for the same input:
-//! identifiers, format versions, the Molang values, ranges, filters and event triggers, and the
-//! kept-member types. A leaf read through its facet proxy is refused there as a wrong type at
-//! its member, whatever the proxy's reason; these say the same.
+//! `FromJson` for core's leaf types, each telling what facet-json's typed read told for the
+//! same input: identifiers, format versions, the Molang values, ranges, filters and event
+//! triggers, and the kept-member types. A leaf read through its facet proxy is refused there as
+//! a wrong type at its member, whatever the proxy's reason; these say the same.
 
 use std::sync::Arc;
 
@@ -39,7 +39,7 @@ pub fn read_later<T: Default>(_: &Node<'_>, _: &mut Read<'_>) -> Option<T> {
 
 /// The value `node` holds converted by `convert`, or the wrong type its member is told when the
 /// conversion refuses it: the read of a leaf behind `#[facet(proxy = json::Value)]` and a
-/// `TryFrom<json::Value>`, as the door reads it. The value is cloned for the conversion; a
+/// `TryFrom<json::Value>`, as facet-json read it. The value is cloned for the conversion; a
 /// leaf that converts from a reference reads by [`from_value_ref`].
 ///
 /// ```
@@ -279,7 +279,7 @@ impl FromJson for MolangSource {
 
 /// One value (a number as its finite `f32`, a bool, a string) or an array of them, at any
 /// depth; an object, a `null` element and a number not finite as an `f32` are a wrong type at
-/// the member, as the door's list proxy refuses the whole.
+/// the member, as the old list proxy refused the whole.
 impl FromJson for MolangList {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
         from_value_ref(node, read, list)

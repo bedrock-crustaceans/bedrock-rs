@@ -39,7 +39,7 @@ fn round_trip<T: Content + Debug + PartialEq>(rest: &str) -> String {
 /// The keys of the object `key` of the written document `text`, in order.
 fn payload_keys(text: &str, key: &str) -> Vec<String> {
     let json: Value =
-        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("the written text is JSON");
+        bedrock_addon_core::json::from_str_jsonc(text).expect("the written text is JSON");
     let root = json.as_object().expect("an object");
     let root_keys: Vec<&str> = root.iter().map(|(k, _)| k.as_str()).collect();
     assert_eq!(root_keys, ["format_version", key], "the envelope");

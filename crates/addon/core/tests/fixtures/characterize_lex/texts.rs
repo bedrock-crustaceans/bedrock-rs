@@ -1,6 +1,6 @@
 // The hostile texts of the lexer characterization, shared by `tests/characterize_lex.rs` and
 // the crate's own `json::characterize_lex` (for the scanners that are not public). Each is run
-// through every scanner of the door that the fold of phase 7 touches; the expected lines are
+// through every scanner of the old door that the fold of phase 7 touches; the expected lines are
 // what the scanners answer at main cbcf47859.
 
 /// The texts, short enough to print whole.

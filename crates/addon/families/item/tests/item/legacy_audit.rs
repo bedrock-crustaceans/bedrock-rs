@@ -583,8 +583,7 @@ fn rarity_written(version: &str, value: &str) -> String {
     };
     let written = document.to_json().expect("written");
     let value: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
-            .unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&written).unwrap();
     let rarity = value.as_object().and_then(|root| {
         root.get("minecraft:item")?
             .as_object()?

@@ -43,9 +43,7 @@ pub fn read_json(bytes: &[u8]) -> Result<Value, ReadError> {
     // `TooDeep` (`json::Prepared` would say `NotUtf8`).
     check_depth(bytes, MAX_JSON_DEPTH)?;
     let text = std::str::from_utf8(bytes)?;
-    Ok(crate::json::from_str_jsonc::<Value>(
-        &crate::json::last_wins(text),
-    )?)
+    Ok(crate::json::from_str_jsonc(&crate::json::last_wins(text))?)
 }
 
 /// Moves `found` into `into`, each finding at `origin`'s pack and file.

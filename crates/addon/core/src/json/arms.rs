@@ -129,7 +129,7 @@ fn scalar_narrowing(
 fn key_shape(arm: &ObjectArm, key: &str) -> Option<&'static Shape> {
     fn in_fields(fields: &'static [Field], key: &str) -> Option<&'static Shape> {
         match find_field(fields, key) {
-            Lookup::Field(_, field) => Some(field.shape()),
+            Lookup::Field(field) => Some(field.shape()),
             Lookup::Flattened(..) => fields
                 .iter()
                 .filter(|f| f.is_flattened() && !f.should_skip_deserializing())
@@ -151,7 +151,7 @@ pub(crate) enum Scalar<'v> {
     U64(u64),
     /// A negative integer token.
     I64,
-    /// A real token, or an integer token past 64 bits: the door reads that as the double it
+    /// A real token, or an integer token past 64 bits: the parser reads that as the double it
     /// spells (`json/read.rs`).
     F64,
     /// A string.
@@ -178,7 +178,7 @@ impl<'v> Scalar<'v> {
         } else if number.to_i64().is_some() {
             Self::I64
         } else {
-            // An integer past 64 bits: no text read through the door gives one.
+            // An integer past 64 bits: no text read by the parser gives one.
             Self::F64
         })
     }
@@ -419,17 +419,16 @@ fn is_unit_enum(shape: &'static Shape) -> bool {
 
 /// Where a JSON key goes among a struct's fields.
 pub(crate) enum Lookup {
-    /// To the field at this index.
-    Field(usize, &'static Field),
-    /// Into the flattened field at this index: a struct one of whose fields takes the key, or
-    /// a map.
-    Flattened(usize, &'static Field),
+    /// To this field.
+    Field(&'static Field),
+    /// Into this flattened field: a struct one of whose fields takes the key, or a map.
+    Flattened(&'static Field),
     /// Nowhere.
     Unknown,
 }
 
 pub(crate) fn find_field(fields: &'static [Field], key: &str) -> Lookup {
-    for (index, field) in fields.iter().enumerate() {
+    for field in fields {
         if field.should_skip_deserializing() {
             continue;
         }
@@ -440,12 +439,12 @@ pub(crate) fn find_field(fields: &'static [Field], key: &str) -> Lookup {
                     .is_some_and(|inner| !matches!(find_field(inner, key), Lookup::Unknown)),
             };
             if takes {
-                return Lookup::Flattened(index, field);
+                return Lookup::Flattened(field);
             }
             continue;
         }
         if field.effective_name() == key || field.alias == Some(key) {
-            return Lookup::Field(index, field);
+            return Lookup::Field(field);
         }
     }
     Lookup::Unknown

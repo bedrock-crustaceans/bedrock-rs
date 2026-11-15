@@ -50,11 +50,11 @@ pub fn text_of(bytes: &[u8]) -> Result<Text<'_>, Box<Diagnostic>> {
     check_depth(bytes, MAX_JSON_DEPTH).map_err(|_| malformed("nesting too deep".to_owned()))?;
     let text = std::str::from_utf8(bytes).map_err(|e| malformed(e.to_string()))?;
     // `Json::Reader::parse` of the whole text first: a syntax error anywhere drops the file,
-    // in the words of the door's reader.
+    // in the words of the parser's fault.
     // Of a key written twice, the first place and the last value, as the walker of the game's
     // schema reads an object.
     parse(text, Options::winner(Winner::LastInPlace))
-        .map_err(|fault| malformed(fault.to_error().to_string()))
+        .map_err(|fault| malformed(fault.kind.to_string()))
 }
 
 /// A `format_version` as written, as a schema's `SemVersion` node reads it.

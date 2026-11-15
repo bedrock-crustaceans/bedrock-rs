@@ -353,8 +353,8 @@ fn read_json(bytes: &[u8]) -> Result<Value, ReadJsonError> {
     check_depth(bytes, MAX_JSON_DEPTH)?;
     let text = std::str::from_utf8(bytes)?;
     // Of a member written twice the last stands.
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&bedrock_addon_core::json::last_wins(text))
-        .map_err(|error| ReadJsonError::NotJson(error.to_string()))
+    bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+        .map_err(|error| ReadJsonError::NotJson(error.kind.to_string()))
 }
 
 /// Why bytes are no JSON value; the display is the reader's message that vanilla's text names.

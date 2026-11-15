@@ -73,7 +73,7 @@ pub fn variants(bytes: &[u8]) -> Vec<(&'static str, Vec<u8>)> {
     let Ok(text) = std::str::from_utf8(bytes) else {
         return out;
     };
-    let Ok(value) = ba::json::from_str_jsonc::<Value>(text) else {
+    let Ok(value) = ba::json::from_str_jsonc(text) else {
         return out;
     };
     let depths: [(&'static str, &dyn Fn(usize) -> bool); 5] = [

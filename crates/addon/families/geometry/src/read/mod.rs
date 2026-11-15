@@ -94,7 +94,7 @@ fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a
     // The game parses the whole text with its JSON reader first: a syntax error anywhere drops
     // the file.
     if let Err(fault) = parse(text, Options::default()) {
-        return malformed(fault.to_error().to_string());
+        return malformed(fault.kind.to_string());
     }
     // Of a member written twice the last one stands, whole and at its place:
     // the walk and the version peek read the text without the earlier copies.

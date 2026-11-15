@@ -230,7 +230,7 @@ fn picks_legacy(text: &str) -> bool {
 
 /// Whether the text is the JSON value `null`.
 fn is_null(text: &str) -> bool {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null())
+    bedrock_addon_core::json::from_str_jsonc(text).is_ok_and(|v| v.is_null())
 }
 
 /// The legacy parse of the whole document at 0.0.0, for a `format_version` that is no string

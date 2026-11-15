@@ -56,7 +56,7 @@ pub(super) fn read(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<TradeTable> {
-    let Ok(root) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
+    let Ok(root) = bedrock_addon_core::json::from_str_jsonc(payload.text) else {
         d.push(Diagnostic::of(builders::syntax("the document is not JSON")).at(at.clone()));
         return None;
     };

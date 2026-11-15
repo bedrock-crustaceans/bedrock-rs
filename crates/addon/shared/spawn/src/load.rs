@@ -152,7 +152,7 @@ pub fn load_file<T>(
     let text = prepared.as_str();
     // A JSON syntax error: vanilla's parser returns an empty document without a message, and no
     // closing line; this crate rejects it with the reader's finding, from the family's load.
-    let syntax_error = match bedrock_addon_core::json::from_str_jsonc::<Value>(text) {
+    let syntax_error = match bedrock_addon_core::json::from_str_jsonc(text) {
         Ok(root) if root.as_object().is_none() && !root.is_null() => {
             return (None, reject(not_an_object(&root), true));
         }

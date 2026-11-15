@@ -427,11 +427,20 @@ fn place(diagnostics: &mut Diagnostics, document: JsonSlice<'_>) {
     let found = std::mem::take(diagnostics);
     for mut finding in found {
         if finding.location.span.is_none() && !finding.location.json_path.is_empty() {
-            finding.location.span =
-                bedrock_addon_core::json::span_at(document, &finding.location.json_path);
+            finding.location.span = span_at(document, &finding.location.json_path);
         }
         diagnostics.push(finding);
     }
+}
+
+/// The span of the value at `path` of `document`, by its parse tree; `None` when the text is no
+/// JSON or holds no such value.
+fn span_at(document: JsonSlice<'_>, path: &JsonPath) -> Option<Span> {
+    use bedrock_addon_core::json::parse::{Options, parse_slice};
+    parse_slice(document, Options::default())
+        .ok()?
+        .spans
+        .at(path)
 }
 
 /// The rejection of a file that is no text the reader takes: not UTF-8, or nested too deep.
@@ -477,7 +486,7 @@ fn parse_file<F: Family, T>(
         for member in [F::PAYLOAD_KEY, "attribs", "extension_point"] {
             at.push(member);
         }
-        (name, bedrock_addon_core::json::span_at(document, &at))
+        (name, span_at(document, &at))
     });
     let outcome = finish(parsed, cx);
     let mut diagnostics = outcome.diagnostics;

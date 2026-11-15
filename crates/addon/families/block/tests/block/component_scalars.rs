@@ -2,8 +2,8 @@
 //! reader), a 1.26.20 one and a 1.26.60 one (the strict reader) from every JSON type at their
 //! scalar places. Each line pins what the load says (code, severity, path, span) and, when the
 //! block loads, the component written back. The members were strict wrappers and the scalar
-//! shorthands were checked by hand; this table is what they read, and the door's scalar
-//! pre-pass reads them the same under the slice's `Reading`.
+//! shorthands were checked by hand; this table is what they read, and the scalar
+//! rules of the slice's `Reading` read them the same.
 
 use super::common::{ALLOW_LISTED, document, load, newest_shape};
 use bedrock_addon_core::load::{LoadContext, LoadOptions};

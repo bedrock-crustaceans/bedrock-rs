@@ -8,9 +8,9 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 
 | Key | Value | Kind | Read by |
 | --- | --- | --- | --- |
-| `since_format` | `"1.21.60"` | stored in the `Shape` | the JSON door, through `Field::get_attr(Some("schema"), "since_format")` |
-| `since_engine` | `"1.20.0"` | stored | the door |
-| `unknown` | `"keep"`, `"report"`, `"reject"` or `"ignore"` | stored | the door |
+| `since_format` | `"1.21.60"` | stored in the `Shape` | `#[derive(Schema)]`; the `Shape` keeps it, `Field::get_attr(Some("schema"), "since_format")` |
+| `since_engine` | `"1.20.0"` | stored | `#[derive(Schema)]` |
+| `unknown` | `"keep"`, `"report"`, `"reject"` or `"ignore"` | stored | `#[derive(Schema)]` |
 | `fallback` | an expression | compile-time | `#[derive(Schema)]` |
 | `min`, `max`, `above`, `below` | a number, or the name of another field | compile-time | `#[derive(Schema)]` |
 | `molang` | a `MolangFieldSpec` path | compile-time | `#[derive(Schema)]` |

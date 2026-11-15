@@ -365,7 +365,7 @@ fn typed_read(slice: JsonSlice<'_>) -> Result<Typed, (String, String, (usize, us
         read_document::<Typed>(&Node::parsed(&parsed, JsonPath::new()), &mut read)
     };
     // A value the read built is the read's (a converted scalar is told and the value kept, as
-    // the door's typed read kept it); else the first error.
+    // the old typed read kept it); else the first error.
     match (value, d.iter().find(|f| f.severity >= Severity::Error)) {
         (Some(value), _) => Ok(value),
         (None, Some(error)) => {
@@ -395,7 +395,7 @@ fn generated_untyped_documents_read_as_their_references() {
         let text = &pair.written;
         let expected: Value =
             from_str_jsonc(&pair.reference).unwrap_or_else(|e| panic!("`{}`: {e}", pair.reference));
-        let read = from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("`{text}`: {e}"));
+        let read = from_str_jsonc(text).unwrap_or_else(|e| panic!("`{text}`: {e}"));
         assert_eq!(read, expected, "`{text}`");
         // `Value` holds 1 and 1.0 equal: the written text tells an integer from a real.
         assert_eq!(to_json(&read).ok(), to_json(&expected).ok(), "`{text}`");
@@ -417,17 +417,17 @@ fn generated_untyped_documents_read_as_their_references() {
             "`{text}`"
         );
         if !comments {
-            assert_eq!(from_str::<Value>(text).unwrap(), expected, "`{text}`");
+            assert_eq!(from_str(text).unwrap(), expected, "`{text}`");
         }
         let cleaned = last_wins(text);
-        let _ = from_str_jsonc::<Value>(&cleaned).unwrap_or_else(|e| panic!("`{cleaned}`: {e}"));
+        let _ = from_str_jsonc(&cleaned).unwrap_or_else(|e| panic!("`{cleaned}`: {e}"));
         let _ = probe_envelope(JsonSlice::new(text));
         // No string but where a string token stands.
         let strings = tokens.iter().filter(|t| t.starts_with('"')).count();
         let colons = tokens.iter().filter(|t| *t == ":").count();
         assert!(count_strings(&read) <= strings - colons, "`{text}`");
         if let Ok(written) = to_json(&read) {
-            let again = from_str_jsonc::<Value>(&written).unwrap();
+            let again = from_str_jsonc(&written).unwrap();
             assert_eq!(again, read, "`{text}` written as {written}");
             assert_eq!(to_json(&again).unwrap(), written, "`{text}`");
         } else {
@@ -530,7 +530,7 @@ fn a_megabyte_of_wide_integers_is_read_in_linear_time() {
             assert!(scan(text.as_bytes(), true).unwrap().root_end.unwrap() > 0);
         }),
         ("wide integers, the typed read", &|text| {
-            let value = from_str_jsonc::<Value>(text).unwrap();
+            let value = from_str_jsonc(text).unwrap();
             assert!(!read_value::<Vec<f64>>(&value).unwrap().is_empty());
         }),
         ("wide integers, the slices of the elements", &|text| {
@@ -580,7 +580,7 @@ fn an_integer_of_a_million_digits_is_read_in_linear_time() {
     // A long run of zeros before a small number is no wide integer, and as cheap.
     let zeros = |digits: usize| format!("[{}7]", "0".repeat(digits));
     let steps: [Step<'_>; 1] = [("a million leading zeros", &|text| {
-        let read: Vec<u8> = read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap();
+        let read: Vec<u8> = read_value(&from_str_jsonc(text).unwrap()).unwrap();
         assert_eq!(read[0], 7);
     })];
     cost::assert_each_linear_at(1_000_000, zeros, &steps);

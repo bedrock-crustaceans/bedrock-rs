@@ -164,7 +164,7 @@ fn check_occurrences(
     mut parse: impl FnMut(File<'_>) -> Result<(Members, Diagnostics), Diagnostics>,
 ) -> Checked {
     let text = std::fs::read_to_string(pairs).unwrap();
-    let document: Value = bedrock_addon::json::from_str_jsonc::<Value>(&text).unwrap();
+    let document: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
     let mut cache: BTreeMap<PathBuf, Result<Members, Vec<String>>> = BTreeMap::new();
     let (mut checked, mut keys, mut foreign) = (0, 0, 0);
     let mut matched = Vec::new();

@@ -43,11 +43,11 @@ pub struct AnimationController {
     pub states: IndexMap<String, State>,
     /// Not JSON: the file's `format_version` was below 1.17.30, so vanilla lower-cases every
     /// transition expression (string literals included) before compiling it.
-    #[facet(skip, rename = "\u{0}lowercase_transitions")]
+    #[facet(skip)]
     pub lowercase_transitions: bool,
     /// Not JSON: the file's `format_version` was below 1.18.10, so the initial state's
     /// `on_entry` events do not fire when the controller starts.
-    #[facet(skip, rename = "\u{0}legacy_event_skipping")]
+    #[facet(skip)]
     pub legacy_event_skipping: bool,
 }
 

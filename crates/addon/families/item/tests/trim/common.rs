@@ -3,14 +3,14 @@
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
 
 use bedrock_addon_core::id::{ItemId, TrimMaterialId, TrimPatternId};
-use bedrock_addon_core::json::{Value, from_str_jsonc};
+use bedrock_addon_core::json::from_str_jsonc;
 use bedrock_addon_core::schema::{FromJson, Schema, read_value};
 use bedrock_addon_family_item::trim::{MaterialEntry, PatternEntry, TrimData};
 use facet::Facet;
 
 /// `text` read as a `T`.
 fn read<T: FromJson>(text: &str) -> T {
-    read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap()
+    read_value(&from_str_jsonc(text).unwrap()).unwrap()
 }
 
 /// `table/tr01_vanilla_table.json`: the tables, in build order.

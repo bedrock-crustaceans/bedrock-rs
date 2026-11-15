@@ -15,7 +15,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::kit::{Node, Read as KitRead};
 use bedrock_addon_core::json::parse::{
-    Fault, Options, elements_of, members_of, parse, parse_bytes, parse_slice,
+    Fault, FaultKind, Options, elements_of, members_of, parse, parse_bytes, parse_slice,
 };
 use bedrock_addon_core::json::{
     ClampPlan, EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, UnsafeText, Value, Width,
@@ -26,11 +26,9 @@ use bedrock_addon_core::json::{
 use bedrock_addon_core::schema::{FromJson, Schema, read_document, read_value};
 use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
-use facet_format::DeserializeErrorKind;
-use facet_json::DeserializeError;
 use indexmap::IndexMap;
 
-/// The stack of the thread the cases of the door run on.
+/// The stack of the thread the cases of the reader run on.
 const SMALL_STACK: usize = 1024 * 1024;
 
 /// How a reader ended.
@@ -66,7 +64,7 @@ fn depth_of(value: &Value) -> (usize, &Value) {
     }
 }
 
-fn read_of(result: Result<Value, DeserializeError>) -> Read {
+fn read_of(result: Result<Value, Fault>) -> Read {
     match result {
         Ok(value) => {
             let (depth, bottom) = depth_of(&value);
@@ -80,20 +78,13 @@ fn read_of(result: Result<Value, DeserializeError>) -> Read {
     }
 }
 
-fn refusal_of(error: &DeserializeError) -> Read {
-    match (&error.kind, error.span) {
-        (DeserializeErrorKind::UnexpectedChar { expected, .. }, Some(span))
-            if expected.starts_with("at most") =>
-        {
-            Read::TooDeep(span.offset as usize)
+fn refusal_of(fault: &Fault) -> Read {
+    match &fault.kind {
+        FaultKind::UnexpectedChar { expected, .. } if expected.starts_with("at most") => {
+            Read::TooDeep(fault.span.offset as usize)
         }
-        _ => Read::Other(format!("{error:?}")),
+        _ => Read::Other(format!("{fault:?}")),
     }
-}
-
-/// The refusal of a fault of the parser.
-fn fault_of(fault: &Fault) -> Read {
-    refusal_of(&fault.to_error())
 }
 
 /// A struct with one level of its own above an untyped member.
@@ -121,21 +112,21 @@ type Reader = (&'static str, Gives, fn(&str) -> Read);
 const READERS: &[Reader] = &[
     ("from_str", Gives::Value, |text| {
         // Plain JSON has no comments: white space of their length keeps the offsets.
-        read_of(from_str::<Value>(&text.replace("/**/", "    ")))
+        read_of(from_str(&text.replace("/**/", "    ")))
     }),
     ("from_str_jsonc", Gives::Value, |text| {
-        read_of(from_str_jsonc::<Value>(text))
+        read_of(from_str_jsonc(text))
     }),
     ("parse", Gives::Value, |text| {
         match parse(text, Options::default()) {
             Ok(parsed) => read_of(Ok(parsed.value)),
-            Err(fault) => fault_of(&fault),
+            Err(fault) => refusal_of(&fault),
         }
     }),
     ("parse_bytes", Gives::Value, |text| {
         match parse_bytes(text.as_bytes(), Options::default()) {
             Ok(value) => read_of(Ok(value)),
-            Err(fault) => fault_of(&fault),
+            Err(fault) => refusal_of(&fault),
         }
     }),
     (
@@ -148,7 +139,7 @@ const READERS: &[Reader] = &[
             bytes.extend_from_slice(text.as_bytes());
             let read = match parse_bytes(&bytes, Options::default()) {
                 Ok(value) => read_of(Ok(value)),
-                Err(fault) => fault_of(&fault),
+                Err(fault) => refusal_of(&fault),
             };
             match read {
                 Read::TooDeep(offset) => Read::TooDeep(offset - before),
@@ -161,7 +152,7 @@ const READERS: &[Reader] = &[
         Gives::Value,
         |text| match parse_slice(JsonSlice::new(text), Options::default()) {
             Ok(parsed) => read_of(Ok(parsed.value)),
-            Err(fault) => fault_of(&fault),
+            Err(fault) => refusal_of(&fault),
         },
     ),
     ("members_of and elements_of", Gives::Value, |text| {
@@ -173,13 +164,13 @@ const READERS: &[Reader] = &[
             elements_of(slice).map(|elements| elements.first().copied())
         };
         match first {
-            Some(Some(inner)) => match read_of(from_str_jsonc::<Value>(inner.text)) {
+            Some(Some(inner)) => match read_of(from_str_jsonc(inner.text)) {
                 Read::Value(depth) => Read::Value(depth + 1),
                 other => other,
             },
             Some(None) => Read::Text,
             None => match parse(text, Options::default()) {
-                Err(fault) => fault_of(&fault),
+                Err(fault) => refusal_of(&fault),
                 Ok(_) => Read::Other("no members".to_owned()),
             },
         }
@@ -195,7 +186,7 @@ const READERS: &[Reader] = &[
             };
             let before = r#"{"raw": "#;
             let document = format!(r#"{before}{inner}, "unknown": {inner}}}"#);
-            match from_str_jsonc::<Value>(&document) {
+            match from_str_jsonc(&document) {
                 Ok(json) => match read_value::<Holder>(&json) {
                     Some(holder) => {
                         let raw = holder.raw.unwrap_or(Value::NULL);
@@ -224,7 +215,7 @@ const READERS: &[Reader] = &[
             Some((depth, bottom)) if bottom.as_number().is_some() => Read::Value(depth + 1),
             other => Read::Other(format!("{other:?}")),
         };
-        let json = match from_str_jsonc::<Value>(text) {
+        let json = match from_str_jsonc(text) {
             Ok(json) => json,
             Err(error) => return refusal_of(&error),
         };
@@ -242,9 +233,7 @@ const READERS: &[Reader] = &[
     }),
     ("probe_envelope", Gives::Text, |text| {
         match probe_envelope(JsonSlice::new(text)) {
-            Err(bedrock_addon_core::json::EnvelopeError::Syntax(fault)) => {
-                refusal_of(&fault.to_error())
-            }
+            Err(bedrock_addon_core::json::EnvelopeError::Syntax(fault)) => refusal_of(&fault),
             // A root that is no object is the envelope's own refusal.
             Ok(_) | Err(_) => Read::Text,
         }
@@ -280,7 +269,7 @@ const READERS: &[Reader] = &[
                 &JsonPath::new(),
                 &mut d,
             );
-            let Ok(mut value) = from_str_jsonc::<Value>(text) else {
+            let Ok(mut value) = from_str_jsonc(text) else {
                 return Read::Text;
             };
             let _ = clamp_non_finite(&mut value, Some(slice));
@@ -293,7 +282,7 @@ const READERS: &[Reader] = &[
                 return Read::Other("a copy differs".to_owned());
             }
             match to_json(&value) {
-                Ok(written) => read_of(from_str_jsonc::<Value>(&written)),
+                Ok(written) => read_of(from_str_jsonc(&written)),
                 Err(error) => Read::Other(format!("{error:?}")),
             }
         },
@@ -354,7 +343,7 @@ const SHAPES: &[Shape] = &[
         nest(levels, |level| mixed(level + 1))
     }),
     ("arrays with a comment at every level", |levels| {
-        // The door reads a copy of a text with comments: the same read, over the copy.
+        // The reader reads a copy of a text with comments: the same read, over the copy.
         let (text, last) = nest(levels, |_| "[/**/");
         (text, last)
     }),
@@ -412,7 +401,7 @@ const ENTRIES: &[&str] = &[
 /// `text` read as `T` by the document reading: the value, or how the read ended, and the
 /// findings.
 fn by_document<T: FromJson>(text: &str) -> Result<(T, Diagnostics), Read> {
-    let parsed = parse(text, Options::default()).map_err(|fault| fault_of(&fault))?;
+    let parsed = parse(text, Options::default()).map_err(|fault| refusal_of(&fault))?;
     let mut d = Diagnostics::default();
     let value = {
         let mut read = KitRead::new(Reading::OWN, &mut d);
@@ -431,9 +420,9 @@ fn through<T>(entry: usize, text: &'static str) -> Result<T, Read>
 where
     T: FromJson + Facet<'static> + Clone + PartialEq,
 {
-    let refused = |error: DeserializeError| refusal_of(&error);
+    let refused = |fault: Fault| refusal_of(&fault);
     let read_as = |text: &str| -> Result<T, Read> {
-        let json = from_str_jsonc::<Value>(text).map_err(refused)?;
+        let json = from_str_jsonc(text).map_err(refused)?;
         read_value::<T>(&json).ok_or_else(|| Read::Other("does not read".to_owned()))
     };
     match entry {
@@ -441,7 +430,7 @@ where
         1 => by_document::<T>(text).map(|(value, _)| value),
         2 => {
             let (value, d) = by_document::<T>(text)?;
-            let json = from_str_jsonc::<Value>(text).map_err(refused)?;
+            let json = from_str_jsonc(text).map_err(refused)?;
             let _ = null_members_of_shape(T::SHAPE, &json);
             let unknown = d
                 .iter()
@@ -900,7 +889,7 @@ fn a_value_nested_past_the_limit_is_refused_by_the_writer() {
             assert_eq!(check_depth(text.as_bytes(), MAX_JSON_DEPTH), Ok(()));
             assert!(check_depth(text.as_bytes(), MAX_JSON_DEPTH - 1).is_err());
             let text = to_json(&arrays(MAX_JSON_DEPTH)).unwrap();
-            assert_eq!(read_of(from_str_jsonc::<Value>(&text)), Read::Value(128));
+            assert_eq!(read_of(from_str_jsonc(&text)), Read::Value(128));
         })
         .unwrap()
         .join()
@@ -923,7 +912,7 @@ fn a_value_is_spelt_by_facet_json_to_the_limit_on_a_megabyte_of_stack() {
                 );
             }
             let (text, _) = nest(MAX_JSON_DEPTH, mixed);
-            let value = from_str_jsonc::<Value>(&text).unwrap();
+            let value = from_str_jsonc(&text).unwrap();
             let spelt = to_facet_json(&value).unwrap();
             assert_eq!(spelt, text);
             for levels in [MAX_JSON_DEPTH + 1, MAX_JSON_DEPTH + 2, 1000] {
@@ -938,7 +927,7 @@ fn a_value_is_spelt_by_facet_json_to_the_limit_on_a_megabyte_of_stack() {
             }
             // A scalar has no level, and a wide value is not a deep one.
             assert_eq!(to_facet_json(&Value::from(7u64)).unwrap(), "7");
-            let wide = from_str_jsonc::<Value>(r#"{"a": [1, [2], {"b": []}], "c": {"d": 1.0}}"#);
+            let wide = from_str_jsonc(r#"{"a": [1, [2], {"b": []}], "c": {"d": 1.0}}"#);
             assert_eq!(
                 to_facet_json(&wide.unwrap()).unwrap(),
                 r#"{"a":[1,[2],{"b":[]}],"c":{"d":1}}"#

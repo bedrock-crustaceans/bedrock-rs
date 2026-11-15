@@ -166,7 +166,7 @@ pub fn probe_envelope(document: JsonSlice<'_>) -> Result<RootProbe<'_>, Envelope
 
 /// Where a typed read of `slice` placed `fault`: the fault's own span, but the whole slice for
 /// a text that ends where the root value had to begin (a blank text) or where the root object
-/// waits for a key (after its `{` or a comma): there the door's read named no member.
+/// waits for a key (after its `{` or a comma): there the old facet-json read named no member.
 pub(crate) fn slice_fault_span(fault: &Fault, slice: JsonSlice<'_>) -> Span {
     let whole = fault.span.len == 0
         && fault.is_end_of_input()

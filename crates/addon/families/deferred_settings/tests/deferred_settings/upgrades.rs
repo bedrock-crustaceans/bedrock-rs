@@ -28,7 +28,7 @@ fn text(value: &Value) -> String {
 }
 
 fn parsed(text: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(text).unwrap()
 }
 
 /// Runs the step `S` on `input`.

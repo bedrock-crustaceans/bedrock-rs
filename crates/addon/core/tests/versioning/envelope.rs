@@ -1490,7 +1490,7 @@ fn read_as_absent(diagnostics: &Diagnostics) -> Vec<String> {
         .collect()
 }
 
-/// The same through `parse_component`: a `null` optional member of a component rejects the
+/// The same through `read_component`: a `null` optional member of a component rejects the
 /// document of a `MinecraftDocumentInput` family; a bare member written as `null` is absent
 /// for a `JsonCpp` family (it takes the struct's default), where the first run's kind refuses
 /// the `null` as a value of the wrong type.

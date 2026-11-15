@@ -1,36 +1,26 @@
-//! The public part of the thin helpers over facet-json and facet-value: the untyped value, the
-//! scalar shape ([`ScalarShape`]) and its error ([`StrictError`]), the nesting limit ([`MAX_JSON_DEPTH`]),
+//! The public part of the JSON helpers over facet-value: the untyped value, the scalar shape
+//! ([`ScalarShape`]) and its error ([`StrictError`]), the nesting limit ([`MAX_JSON_DEPTH`]),
 //! the envelope of a versioned document ([`RootProbe`], [`EnvelopeVersion`],
-//! [`probe_envelope`]), the write style and the encode error. Parsing is facet's; the crate
-//! adds no JSON tree of its own.
+//! [`probe_envelope`]), the write style and the encode error.
 //!
 //! The rest is internal to the crate family (hidden from the documentation, outside `SemVer`).
 //! Its rules:
-//! - no module but `read` calls a facet-json parser: its `from_str_jsonc` and siblings scan the
-//!   text first and refuse a string escape outside RFC 8259 (facet decodes `"\é"` out of
-//!   bounds), nesting past `MAX_JSON_DEPTH`, and give facet nothing after the root value; an
-//!   integer token too large for 64 bits is read as the double it spells, as vanilla's readers
-//!   read it (facet alone makes it a string, or refuses the file past 128 bits);
-//! - before every parse, `blank_bom` (facet rejects a BOM, vanilla skips it; blanked, the
-//!   spans stay offsets into the file as written) and `check_depth`
-//!   with `MAX_JSON_DEPTH` (facet has no nesting limit and overflows the stack); an untyped
-//!   `Value` is read by the door itself, on the same stack at any depth, and a typed target
-//!   by facet on a stack the door sizes by the depth of the text;
-//! - typed structs are deserialised from text with the jsonc entry points, a slice at a time
-//!   through `JsonSlice` and `parse_at`, which report failures at file offsets with the JSON
-//!   member names; a modern document's root through `probe_envelope`;
-//! - where vanilla rejects a value of the wrong JSON type, the slice's `Reading` (the scalar
-//!   pre-pass, `parse_with_rules`); the strict wrappers `StrictInt`, `StrictFloat`,
-//!   `StrictBool`, `StrictString` remain where a core gap keeps them (`strict`'s module doc
-//!   lists them);
-//! - unknown members through `unknown_members` / `keep_unknown_members`, kept in a
-//!   document's `Unknown` table for the structs marked with `document::Extra`, and written
-//!   back by `merge_unknown` / `write_json_with`; every `#[facet(skip)]` field is renamed
-//!   `"\u{0}<name>"`, since facet binds a member to a skipped field of its name (see
-//!   `Extra`'s "Skipped fields");
-//! - writing through `write_json` / `to_json`, and a `Value` as facet-json itself spells it
-//!   through `to_facet_json`: no other module calls a facet-json writer, as none calls a
-//!   parser (its writers call themselves for each level of a value).
+//! - every text is read by [`parse`]: a `Value` and the spans of its parts, or the [`Fault`](parse::Fault)
+//!   of its first syntax error (`from_str_jsonc` and `from_str` are its value alone). It
+//!   refuses a string escape outside RFC 8259 and nesting past `MAX_JSON_DEPTH`, reads an
+//!   integer token too large for 64 bits as the double it spells, as vanilla's readers read
+//!   it, and stops at the end of the root value; without a call of itself for each level;
+//! - before a parse of bytes, `blank_bom` (vanilla skips a BOM; blanked, the spans stay
+//!   offsets into the file as written) and `check_depth` with `MAX_JSON_DEPTH`;
+//! - typed values are read from the parsed value by the reader (`schema::FromJson`, the
+//!   derive's `Schema`, through `kit`'s `Node` and `Read`), under the slice's `Reading`, which
+//!   says where vanilla rejects a value of the wrong JSON type; a modern document's root
+//!   through `probe_envelope`;
+//! - unknown members are told and kept by the reader in a document's `Unknown` table for the
+//!   structs marked with `document::Extra`, and written back by `merge_unknown` /
+//!   `write_json_with`;
+//! - writing through `write_json` / `to_json`, and a `Value` on one line through
+//!   `to_facet_json`; no module calls a facet-json reader or writer.
 
 // hidden: API not yet reviewed
 pub(crate) mod arms;
@@ -58,18 +48,13 @@ mod null;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub mod parse;
-mod path;
 mod prepared;
 mod read; // the only caller of facet-json's parsers
 mod scalar;
-// hidden: API not yet reviewed
-#[doc(hidden)]
-pub mod signed_zero;
 mod slice;
 mod stack;
 mod strict;
 mod text;
-mod walk;
 mod write;
 
 // hidden: API not yet reviewed
@@ -90,8 +75,8 @@ pub use finite_bytes::FiniteBytes;
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use null::{
-    NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members_of_shape, nulls_read, parse_at_null_absent,
-    reject_nulls, remove_null_members, tell_null_members,
+    NULL_MEMBER_READ_AS_ABSENT, NullRule, null_members_of_shape, remove_null_members,
+    tell_null_members,
 };
 pub use prepared::{PrepareError, Prepared};
 // hidden: API not yet reviewed
@@ -101,36 +86,25 @@ pub use lex::{Scanned, UnsafeText, scan};
 #[doc(hidden)]
 pub use read::{
     DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, TRAILING_CONTENT, document_json_refusal,
-    from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc, trailing_content,
-    trailing_content_finding,
+    from_str, from_str_jsonc, trailing_content, trailing_content_finding,
 };
 pub use scalar::{
-    BeyondWidth, Declared, JsonType, Refusal, RefusedScalar, Respelt, ScalarFailure, ScalarRead,
-    ScalarRules, ScalarShape, Scalars, StrictError, StrictIntType, Token, Verdict, judge,
-    parse_with_rules,
+    BeyondWidth, Declared, JsonType, Refusal, Respelt, ScalarRules, ScalarShape, Scalars,
+    StrictError, StrictIntType, Token, Verdict, judge,
 };
 // hidden: API not yet reviewed
 #[doc(hidden)]
-pub use slice::{JsonSlice, SliceError, parse_at, span_at, span_reached};
+pub use slice::JsonSlice;
 // Hidden: what still holds a wrapper is listed, with the gap it waits on, in `strict`'s
 // module doc.
 #[doc(hidden)]
-pub use strict::{
-    ReaderMode, StrictBool, StrictFloat, StrictFloatType, StrictInt, StrictString, with_reader_mode,
-};
+pub use strict::StrictBool;
 pub use text::MAX_JSON_DEPTH;
 // hidden: API not yet reviewed
 pub(crate) use stack::with_stack_for;
 #[doc(hidden)]
 pub use text::{TooDeep, blank_bom, check_depth, strip_bom};
-pub(crate) use walk::door_unknown_members;
 pub(crate) use write::levels_of;
-// hidden: API not yet reviewed
-#[doc(hidden)]
-pub use walk::{
-    keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
-    too_deep_to_walk, unknown_members,
-};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use kit::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
@@ -138,8 +112,8 @@ pub use write::{Precedence, merge_unknown, merge_unknown_with};
 // hidden: API not yet reviewed
 #[doc(hidden)]
 pub use write::{
-    UNKNOWN_MEMBER_NOT_WRITTEN, to_facet_json, to_facet_json_signed, to_json, write_json,
-    write_json_with, write_json_with_precedence,
+    UNKNOWN_MEMBER_NOT_WRITTEN, to_facet_json, to_json, write_json, write_json_with,
+    write_json_with_precedence,
 };
 
 /// An untyped JSON value: opaque members (`events`, `extra`, raw layers) are held as this.

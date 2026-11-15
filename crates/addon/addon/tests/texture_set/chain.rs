@@ -169,8 +169,7 @@ fn a_file_without_the_payload_misses_a_required_child() {
 /// reports nothing.
 #[test]
 fn the_step_keeps_the_color_and_invents_no_mers() {
-    let input: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"color": "stone"}"#).unwrap();
+    let input: Value = bedrock_addon::json::from_str_jsonc(r#"{"color": "stone"}"#).unwrap();
     let out = step_output::<v1_16_100::TextureSet>(&input, Run::default(), &Checks::default())
         .expect("the step runs");
     let payload = out.payload.as_object().expect("the payload is an object");
@@ -248,7 +247,7 @@ fn a_set_is_written_back_to_the_same_set() {
         let first = parse(&text);
         let written = first.to_json().unwrap();
         // The strict re-read: the written text is plain JSON.
-        let value: Value = bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap();
+        let value: Value = bedrock_addon::json::from_str_jsonc(&written).unwrap();
         let root = value.as_object().unwrap();
         assert_eq!(
             root.get("format_version")
@@ -303,7 +302,7 @@ fn a_layer_the_set_does_not_hold_is_not_written() {
             .as_str(),
         "#AABBCCDD"
     );
-    let mer: Value = bedrock_addon::json::from_str_jsonc::<Value>("[0, 255, 0]").unwrap();
+    let mer: Value = bedrock_addon::json::from_str_jsonc("[0, 255, 0]").unwrap();
     assert_eq!(payload.get("metalness_emissive_roughness"), Some(&mer));
     // The members come in the schema's order.
     let keys: Vec<&str> = payload.iter().map(|(key, _)| key.as_str()).collect();

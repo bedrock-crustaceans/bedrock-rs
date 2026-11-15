@@ -180,7 +180,7 @@ fn beta_allow_off_hand(
     d: &mut Diagnostics,
 ) -> Option<Component> {
     let mut component = value::<AllowOffHand>(slice, cx, d)?;
-    let written = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text)
+    let written = bedrock_addon_core::json::from_str_jsonc(slice.text)
         .ok()
         .and_then(|json| json.as_object().map(|object| object.contains_key("value")));
     if let (Component::AllowOffHand(c), Some(false)) = (&mut component, written) {

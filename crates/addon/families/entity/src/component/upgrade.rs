@@ -258,7 +258,7 @@ mod tests {
         let read = |suffix: &str| {
             let text = std::fs::read_to_string(format!("{dir}{name}.{suffix}.json"))
                 .unwrap_or_else(|e| panic!("{name}.{suffix}: {e}"));
-            bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("valid JSON")
+            bedrock_addon_core::json::from_str_jsonc(&text).expect("valid JSON")
         };
         let (before, after) = (read("before"), read("after"));
         let before = before.as_object().expect("an object");

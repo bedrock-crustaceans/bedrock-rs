@@ -368,9 +368,7 @@ pub mod v1_0_0 {
                         cx.load,
                         &mut found,
                     ),
-                    _ => from_str_jsonc::<Value>(slice.text)
-                        .ok()
-                        .map(Component::Unknown),
+                    _ => from_str_jsonc(slice.text).ok().map(Component::Unknown),
                 };
                 for mut finding in found {
                     let mut path = cx.at.clone();

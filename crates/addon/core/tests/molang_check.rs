@@ -8,7 +8,7 @@ use std::sync::Arc;
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
-use bedrock_addon_core::json::{Value, from_str_jsonc};
+use bedrock_addon_core::json::from_str_jsonc;
 use bedrock_addon_core::molang::{
     self, Admission, BLOCK_STATE_QUERIES, CompileCache, DiagCode, EmptyRule, ExperimentMask,
     LanguageMessage, Molang, MolangCheck, MolangContext, MolangFailure, MolangFieldSpec,
@@ -746,7 +746,7 @@ fn toy_document_molang(this: &mut ToyDocument, visitor: &mut MolangVisitor<'_>) 
 #[test]
 fn check_fields_returns_the_fields_that_did_not_pass() {
     let mut document: ToyDocument = read_value(
-        &from_str_jsonc::<Value>(
+        &from_str_jsonc(
             r#"{"condition": "q.is_baby", "scripts": ["v.x = 1;", "v.y = ;"], "data": [1, "1 +"]}"#,
         )
         .unwrap(),

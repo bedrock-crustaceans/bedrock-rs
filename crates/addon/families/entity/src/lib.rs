@@ -4,7 +4,7 @@
 //! The reader: every typed part (the payload's shell, the description, a property, the scripts,
 //! the brain, each component and goal) derives `Schema` and is read by its derived `FromJson`
 //! (`read.rs`, `component/parse.rs`, `goal/check.rs`); a component or goal at its typed version
-//! strictly, by the typed door's profile, one converted from an older document under
+//! strictly, by the first-failure profile, one converted from an older document under
 //! `DefaultAndTell` with the recovery of its legacy reader (`json::kit::Recovery`). What stays
 //! by hand is the entity's own: the fix-ups before a read (`Typed::shorthand`, `prepare`, the
 //! goals' `lenient_shape`), the leaf reads of the goals' closed name sets and sound names, the
@@ -79,7 +79,7 @@ pub(crate) use versions::STRICT_SLICES;
 /// What every slice reads by, the unknown mask aside ([`Family::reading`]): a `null` member is
 /// absent (rule N1), and a scalar is read strictly (the cereal readers' rule: a number beyond
 /// its float's width is refused). The typed reads of the components and goals, which run
-/// outside the door, read by the same rules.
+/// outside the slice's read, read by the same rules.
 pub(crate) const READING: Reading = Reading::NULL_ABSENT.strict();
 
 /// What the typed reads of the entity's own structs read by (a definition's members, its

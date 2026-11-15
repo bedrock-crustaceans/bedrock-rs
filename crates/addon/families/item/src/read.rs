@@ -201,7 +201,7 @@ pub(crate) fn json_path_texts(d: &mut Diagnostics, text: &str, cx: &LoadContext)
     if cx.source == DocumentSource::Mcb {
         return;
     }
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(text).ok();
+    let root = bedrock_addon_core::json::from_str_jsonc(text).ok();
     let payload_not_object = root
         .as_ref()
         .and_then(Value::as_object)
@@ -283,7 +283,7 @@ const NUMERIC_VERSION: &str =
 /// the game's document parse re-reads a version that is no string, and the writer writes a
 /// string. Told where it is, an information.
 pub(crate) fn numeric_version(text: &str) -> Option<Diagnostic> {
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(text).ok()?;
+    let root = bedrock_addon_core::json::from_str_jsonc(text).ok()?;
     let version = root.as_object()?.get("format_version")?;
     version.as_number()?;
     let at = JsonPath::new().child("format_version");

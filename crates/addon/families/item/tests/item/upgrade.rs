@@ -7,8 +7,8 @@ use std::fmt::Debug;
 
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentRef, CustomComponent};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::json::parse::{Options, parse as parse_text};
-use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct};
@@ -690,10 +690,8 @@ fn deviation_i18_custom_components_from_the_list_are_also_keyed() {
     let list = document.deprecated.custom_components_v1.clone().unwrap();
     assert_eq!(
         list,
-        bedrock_addon_core::json::from_str_jsonc::<Value>(
-            r#"[{"name": "demo:shake", "data": {}}]"#
-        )
-        .unwrap()
+        bedrock_addon_core::json::from_str_jsonc(r#"[{"name": "demo:shake", "data": {}}]"#)
+            .unwrap()
     );
 }
 

@@ -64,8 +64,8 @@ pub(super) fn read_root(bytes: &[u8], findings: &mut Vec<Diagnostic>) -> Result<
     })?;
     let text = std::str::from_utf8(stripped)?;
     // Of a member written twice the last stands, as in jsoncpp's map.
-    let mut root = bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
-        .map_err(|error| RootError::Json(error.to_string()))?;
+    let mut root = bedrock_addon_core::json::from_str_jsonc(&last_wins(text))
+        .map_err(|error| RootError::Json(error.kind.to_string()))?;
     if let Some(mut found) =
         bedrock_addon_core::json::trailing_content_finding(JsonSlice::new(text))
     {

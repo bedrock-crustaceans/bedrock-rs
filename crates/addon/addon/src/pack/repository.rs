@@ -347,12 +347,7 @@ fn parse_list(
         Err(fault) => {
             // The text parse refused it: its error words the failure.
             let blank = text.trim().is_empty();
-            let code = bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
-                &fault.to_error().kind,
-                false,
-                blank,
-            );
-            return Err(reject(code, JsonPath::new(), Some(fault.span)));
+            return Err(reject(fault.code(blank), JsonPath::new(), Some(fault.span)));
         }
     };
     let mut told = Diagnostics::default();

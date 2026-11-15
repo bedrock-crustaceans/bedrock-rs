@@ -64,8 +64,7 @@ fn u01_identity_1_16_100() {
 
 /// The payload member of a fog file's text, as a JSON value.
 fn payload_of(text: &str) -> bedrock_addon::json::Value {
-    let root = bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(text)
-        .unwrap_or_else(|e| panic!("{e}: {text}"));
+    let root = bedrock_addon::json::from_str_jsonc(text).unwrap_or_else(|e| panic!("{e}: {text}"));
     root.as_object()
         .and_then(|root| root.get("minecraft:fog_settings"))
         .unwrap_or_else(|| panic!("no payload: {text}"))

@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Node, Profile, Read};
-use bedrock_addon_core::json::parse::Options;
+use bedrock_addon_core::json::parse::{Fault, Options};
 use bedrock_addon_core::json::{
     MAX_JSON_DEPTH, Scalars, TooDeep, Value, check_depth, last_wins, strip_bom,
 };
@@ -57,8 +57,8 @@ pub enum ContentsError {
 #[derive(Debug, thiserror::Error)]
 pub enum ContentsJsonError {
     /// The text is not JSON.
-    #[error(transparent)]
-    Syntax(#[from] facet_json::DeserializeError),
+    #[error("{}", .0.kind)]
+    Syntax(#[from] Fault),
     /// The JSON is not a contents table: the first member that does not read, where it is.
     #[error("the value at `{path}` is not what a contents table holds")]
     Shape {
@@ -79,8 +79,7 @@ impl ContentsJson {
         // they are.
         let parsed: Result<Value, _> = match std::str::from_utf8(bytes) {
             Ok(text) => bedrock_addon_core::json::from_str_jsonc(&last_wins(text)),
-            Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default())
-                .map_err(|fault| fault.to_error()),
+            Err(_) => bedrock_addon_core::json::parse::parse_bytes(bytes, Options::default()),
         };
         let json = parsed.map_err(|error| ContentsError::Json(Box::new(error.into())))?;
         let mut told = Diagnostics::default();

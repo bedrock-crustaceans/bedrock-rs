@@ -336,9 +336,7 @@ mod format_version {
 
     /// `text` read as a `Held`: its `version` member by `FormatVersion`'s own read.
     fn held(text: &str) -> Result<Held, ()> {
-        let value =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-                .map_err(|_| ())?;
+        let value = bedrock_addon_core::json::from_str_jsonc(text).map_err(|_| ())?;
         let member = value
             .as_object()
             .and_then(|object| object.get("version"))

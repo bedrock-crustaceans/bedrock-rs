@@ -13,7 +13,6 @@
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Condition, SpawnRules};
-use bedrock_addon::json::Value;
 
 use super::common::{context, experiment, fixture, loads, rejected, round_trip, standard};
 use super::groups::load_group;
@@ -207,7 +206,7 @@ fn the_drop_4_spawn_rules_load_and_round_trip() {
             document.diagnostics()
         );
         let written = round_trip::<SpawnRules>(document.value(), "spawn_rules/x.json", &context());
-        let value = |t: &str| bedrock_addon::json::from_str_jsonc::<Value>(t).unwrap();
+        let value = |t: &str| bedrock_addon::json::from_str_jsonc(t).unwrap();
         assert_eq!(value(&written), value(&text), "{name}");
     }
     let frostbite = loads(&fixture("spawn", "drop4/frostbite.json"), &context());

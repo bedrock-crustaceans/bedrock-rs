@@ -13,4 +13,3 @@ workspace = true
 bedrock_addon_core = { path = "../core" }
 # `value`: the typed value read and written as a family member.
 facet = { workspace = true }
-facet-json = { workspace = true }

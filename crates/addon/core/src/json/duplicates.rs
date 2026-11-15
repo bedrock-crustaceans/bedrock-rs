@@ -208,7 +208,7 @@ impl<'t, 'w> Scan<'t, 'w> {
         let key = self.string()?;
         let raw = &self.text[key.clone()];
         let name = if raw.contains('\\') {
-            Cow::Owned(crate::json::from_str::<String>(raw).ok()?)
+            Cow::Owned(crate::json::parse::string_literal(raw)?)
         } else {
             Cow::Borrowed(&raw[1..raw.len() - 1])
         };

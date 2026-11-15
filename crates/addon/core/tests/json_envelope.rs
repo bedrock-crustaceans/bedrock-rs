@@ -134,7 +134,7 @@ fn comments_inside_the_payload_stay_in_its_slice() {
 
 /// What the probe says of a root that is no object, and where: facet-json's words for a text
 /// read as a map (an array is read as a list of pairs; an empty one is a type mismatch over the
-/// whole slice), pinned as the door has them. A syntax error of the text wins.
+/// whole slice), pinned as the old reader had them. A syntax error of the text wins.
 #[test]
 fn a_root_that_is_not_an_object_is_refused_in_the_door_s_words() {
     const SCALAR: &str =

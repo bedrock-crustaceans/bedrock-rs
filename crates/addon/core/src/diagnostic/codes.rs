@@ -2031,7 +2031,7 @@ pub static MIN_ENGINE_VERSION_CAP_FORMAT_VERSION1: CodeDef<0> = CodeDef::new(
     "min_engine_version of a format 1 manifest is capped to 1.12.0",
 );
 
-// ---- the game's lines core raises on a family's behalf: the door and the schema tree ----
+// ---- the game's lines core raises on a family's behalf: the parser and the schema tree ----
 
 /// The Minecraft Document reader (`RapidJSON`) refused the text: a number too big for a double,
 /// content after the root value, or another of its errors. The argument is the reader's message;

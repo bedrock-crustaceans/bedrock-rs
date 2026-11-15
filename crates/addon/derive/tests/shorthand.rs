@@ -197,7 +197,6 @@ where
         offset: 30,
     };
     let mut cx = LoadContext::detached();
-    cx.scalar_rules = rules;
     cx.null_rule = null;
     // The slice's reading the rules and the null rule stand for.
     let null = match null {

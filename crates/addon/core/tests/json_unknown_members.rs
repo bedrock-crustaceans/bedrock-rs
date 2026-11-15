@@ -14,8 +14,7 @@ use facet::Facet;
 /// `text` read as `T` by the crate's typed reader (`schema::read_value`); `Err` when it does
 /// not read.
 fn typed<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Result<T, ()> {
-    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-        .map_err(|_| ())?;
+    let value = bedrock_addon_core::json::from_str_jsonc(text).map_err(|_| ())?;
     bedrock_addon_core::schema::read_value::<T>(&value).ok_or(())
 }
 

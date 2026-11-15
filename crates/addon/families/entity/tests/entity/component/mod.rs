@@ -103,7 +103,7 @@ where
 /// The value as JSON, written the way documents are.
 pub fn write<T: for<'a> facet::Facet<'a>>(value: &T) -> Value {
     let text = to_json(value).expect("writes");
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("the writer's JSON reads back")
+    bedrock_addon_core::json::from_str_jsonc(&text).expect("the writer's JSON reads back")
 }
 
 /// [`write`] with the unknown members a read kept (paths below the value).

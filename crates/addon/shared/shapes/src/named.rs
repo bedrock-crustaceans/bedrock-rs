@@ -243,9 +243,8 @@ mod tests {
     where
         NamedCondition<N>: bedrock_addon_core::schema::FromJson,
     {
-        let value =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-                .unwrap_or_else(|error| panic!("{text}: {error}"));
+        let value = bedrock_addon_core::json::from_str_jsonc(text)
+            .unwrap_or_else(|error| panic!("{text}: {error}"));
         bedrock_addon_core::schema::read_value(&value).unwrap_or_else(|| panic!("{text}"))
     }
 

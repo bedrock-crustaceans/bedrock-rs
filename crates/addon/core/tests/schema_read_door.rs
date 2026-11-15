@@ -1,12 +1,12 @@
-//! The reader (`versioning::read_payload`, the derived `FromJson`) against the door it replaced
-//! (`versioning::parse_payload`, facet-json's typed read and its passes, now deleted): one struct
-//! per member type, every token of a grid, under every reading. The door's outcomes are frozen
+//! The reader (`versioning::read_payload`, the derived `FromJson`) against the old door it
+//! replaced (its `parse_payload`, facet-json's typed read and its passes, now deleted): one struct
+//! per member type, every token of a grid, under every reading. The old door's outcomes are frozen
 //! in `schema_read_door.pins`, one line per cell: `key<TAB>read` where the two agreed,
 //! `key<TAB>read<TAB>door` where they differed. Each test holds the reader to the pinned `read`,
 //! and every pinned difference must be one the reader makes on purpose (`explained`, the
 //! documents' rules): codes, severities and paths (spans aside: the reader spans every
 //! finding's value) and the value read. Set `BEDROCK_DOOR_PINS=<dir>` to write each test's cells
-//! (the reader's outcome, the pinned door's) to `<dir>/<test>` instead.
+//! (the reader's outcome, the pinned old door's) to `<dir>/<test>` instead.
 
 use std::collections::HashMap;
 use std::fmt::Write as _;
@@ -190,8 +190,6 @@ fn context(reading: Reading) -> LoadContext {
     let mut load = LoadContext::detached();
     load.reading = reading;
     load.null_rule = reading.null_rule();
-    load.scalar_rules = reading.scalar_rules();
-    load.keeps_unknown = reading.keeps_unknown;
     load
 }
 
@@ -248,7 +246,7 @@ fn frozen() -> &'static HashMap<&'static str, (&'static str, Option<&'static str
 }
 
 /// The cell `key` of `test`: the reader's outcome `read` must be the pinned one; returns the
-/// door's outcome as pinned. Under `BEDROCK_DOOR_PINS` the cell is written to that directory
+/// old door's outcome as pinned. Under `BEDROCK_DOOR_PINS` the cell is written to that directory
 /// instead.
 fn cell(test: &str, key: &str, read: &str) -> String {
     let pinned = frozen().get(key).copied();
@@ -275,7 +273,7 @@ fn cell(test: &str, key: &str, read: &str) -> String {
     door.to_owned()
 }
 
-/// The door's paths as the reader names them: a wrong type at the member whose value has it
+/// The old door's paths as the reader names them: a wrong type at the member whose value has it
 /// (facet named the element or member inside it where it stopped: `v/0`, `v/1`, `v/a`), an
 /// integer out of its member's range at the member (facet named the owner).
 fn at_the_member(door: &str) -> String {
@@ -292,10 +290,10 @@ fn at_the_member(door: &str) -> String {
     out.replace("core/invalid_value p]", "core/invalid_value p/v]")
 }
 
-/// The probes whose member the door's paths name a step inside of (an array or an object
+/// The probes whose member the old door's paths name a step inside of (an array or an object
 /// given to a scalar, an identifier, a Molang value, a format version or an untagged enum of
 /// scalars), or whose owner it names (an integer out of range): the ones [`at_the_member`]
-/// applies to. Every other probe is held to the door's paths as they are.
+/// applies to. Every other probe is held to the old door's paths as they are.
 const COLLAPSED: &[&str] = &[
     "OptBool",
     "OptF32",
@@ -311,8 +309,8 @@ const COLLAPSED: &[&str] = &[
     "ReqU8",
 ];
 
-/// Why the reader tells `read` where the door tells `door`, when it is one of the differences
-/// it makes on purpose.
+/// Why the reader tells `read` where the old door told `door`, when it is one of the
+/// differences it makes on purpose.
 fn explained(probe: &str, token: &str, door: &str, read: &str) -> Option<&'static str> {
     if COLLAPSED.contains(&probe) && at_the_member(door) == read {
         return Some("the member's path");
@@ -373,7 +371,7 @@ struct Several {
     list: Option<Vec<Inner>>,
 }
 
-/// Documents of several members, each with more than one finding: the order of the door's
+/// Documents of several members, each with more than one finding: the order of the old door's
 /// passes (the first failure alone; else the `null` errors alone; else the members read as
 /// absent, the unknown members, the scalars read as another value).
 const DOCUMENTS: &[&str] = &[
@@ -462,7 +460,7 @@ struct Req {
     m: IndexMap<String, u8>,
 }
 
-/// A map one of whose values its profile refuses: under `DefaultAndTell` the door's pre-pass
+/// A map one of whose values its profile refuses: under `DefaultAndTell` the old door's pre-pass
 /// leaves that entry out and keeps the others (an information at it); every other reading
 /// fails the map.
 #[test]
@@ -492,7 +490,7 @@ fn a_map_with_a_refused_value_reads_as_the_door_reads_it() {
     );
 }
 
-/// A format version written as a number is read as the door reads it, by the number's text:
+/// A format version written as a number is read as the old door read it, by the number's text:
 /// `1.20` is version 1.20.0, not the 1.2.0 the double prints as.
 #[test]
 fn a_format_version_written_as_a_number_reads_as_the_door_reads_it() {

@@ -461,12 +461,10 @@ fn s22_vanilla_upgrade_table() {
     // The vanilla upgrade-table data file, for the comparison (not a load test):
     // ten names placed in water, one in lava, nine without restrictions, fifty on the ground,
     // and the water / lava override.
-    let table: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&fixture(
-            "spawn",
-            "s22_vanilla_upgrade_table.json",
-        ))
-        .unwrap();
+    let table: bedrock_addon_core::json::Value = bedrock_addon_core::json::from_str_jsonc(
+        &fixture("spawn", "s22_vanilla_upgrade_table.json"),
+    )
+    .unwrap();
     let table = table.as_object().unwrap();
     let count = |key: &str| {
         table

@@ -373,9 +373,7 @@ mod tests {
 
     #[test]
     fn tame_mount_items_default_to_the_empty_object() {
-        let empty =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>("{}")
-                .expect("parses");
+        let empty = bedrock_addon_core::json::from_str_jsonc("{}").expect("parses");
         let feed = bedrock_addon_core::schema::read_value::<FeedItem>(&empty).expect("reads");
         assert_eq!(FeedItem::default(), feed);
         let reject = bedrock_addon_core::schema::read_value::<RejectItem>(&empty).expect("reads");

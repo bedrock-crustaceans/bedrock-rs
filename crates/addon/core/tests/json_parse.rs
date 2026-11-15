@@ -198,7 +198,7 @@ struct Tally {
 
 impl Tally {
     /// Compares the readers on `text`, the parser at its default (every copy of a key kept, as
-    /// the door reads them).
+    /// the old door read them).
     fn agree(&mut self, text: &str) {
         self.texts += 1;
         let door = door(text);
@@ -1322,7 +1322,7 @@ fn random_documents_with_repeated_keys_read_as_the_door_reads_them_under_every_r
 fn a_rule_that_keeps_the_members_of_the_top_objects_reads_as_the_door_chain_reads_it() {
     // Keep in the root and its members, last wins below: a copy that is merged into the first
     // holds objects that last wins has read. (Keep below last wins below Keep is the one
-    // arrangement the parser does not read as the door chain does; see `NOTES-parser.md`.)
+    // arrangement the parser does not read as the old door chain did; see `NOTES-parser.md`.)
     let rule = |path: &JsonPath| {
         if path.len() <= 1 {
             Winner::Keep
@@ -1725,7 +1725,7 @@ fn the_numbers_the_value_does_not_hold_as_written_are_noted_with_their_token() {
             zero("copy/y", "-0"),
         ]
     );
-    // The value holds what the door holds: infinities, the double of a wide integer, `-0` as
+    // The value holds what the old door held: infinities, the double of a wide integer, `-0` as
     // the integer 0 and `-0.0` as a float.
     let wide_value = parsed
         .value
@@ -1895,7 +1895,7 @@ fn a_text_of_the_greatest_depth_is_read_on_a_small_stack() {
 }
 
 /// The release timings of the notes: set `BEDROCK_PARSE_TIMINGS` and run with `--release
-/// --no-capture`. The door and the parser on the same 2 MB documents.
+/// --no-capture`. The old door and the parser on the same 2 MB documents.
 #[test]
 fn timings_against_the_door() {
     if std::env::var("BEDROCK_PARSE_TIMINGS").is_err() {

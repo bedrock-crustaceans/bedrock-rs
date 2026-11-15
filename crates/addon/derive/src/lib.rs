@@ -236,7 +236,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   variants: `impl Schema` (empty `FIELDS`; `check` and the Molang walk of the active
 ///   variant's fields at the enum's own path, a newtype's value as the enum's; every
 ///   variant's trigger members, a shared one once), `impl MolangFields`, and `impl FromJson`
-///   (the arm the typed door
+///   (the arm the reader
 ///   chooses: an object by its keys, an array the first list arm, a scalar the first arm its
 ///   profile takes). No `Default` and no getters: no variant is the default one;
 /// - on an internally tagged enum (`#[facet(tag = "type")]`) and an externally tagged one

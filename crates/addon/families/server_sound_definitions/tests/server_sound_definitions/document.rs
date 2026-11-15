@@ -51,11 +51,9 @@ fn the_document_writes_back_what_it_read() {
     // Nothing the author did not write is written.
     let minimal = loads(&file(CLICK)).to_json().unwrap();
     let json: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&minimal)
-            .unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&minimal).unwrap();
     let expected: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&file(CLICK))
-            .unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&file(CLICK)).unwrap();
     assert_eq!(json, expected);
 }
 

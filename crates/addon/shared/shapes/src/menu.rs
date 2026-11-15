@@ -26,7 +26,7 @@ pub struct MenuCategory {
     /// Hidden from commands such as `/give` (JSON `is_hidden_in_commands`; a boolean only).
     pub is_hidden_in_commands: Option<StrictBool>,
     /// Unknown members.
-    #[facet(skip, rename = "\u{0}extra")]
+    #[facet(skip)]
     pub extra: Extra,
 }
 

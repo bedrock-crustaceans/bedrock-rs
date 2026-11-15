@@ -172,15 +172,9 @@ fn the_drop_4_rules_round_trip_to_the_capture() {
         if compact != capture {
             // Not byte for byte: the same JSON value, members in the struct's order.
             let as_written: bedrock_addon_core::json::Value =
-                bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
-                    &compact,
-                )
-                .expect("JSON");
+                bedrock_addon_core::json::from_str_jsonc(&compact).expect("JSON");
             let as_captured: bedrock_addon_core::json::Value =
-                bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
-                    &capture,
-                )
-                .expect("JSON");
+                bedrock_addon_core::json::from_str_jsonc(&capture).expect("JSON");
             assert_eq!(as_written, as_captured, "{name}");
             reordered.push(name);
         }

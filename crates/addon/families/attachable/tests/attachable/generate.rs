@@ -138,7 +138,7 @@ impl Canon {
         Self::Real(value.to_bits())
     }
 
-    /// The canonical form of a JSON text, read through the door every loader reads through
+    /// The canonical form of a JSON text, read by the parser every loader reads by
     /// (`json::from_str_jsonc`), so a number is the number the loaders see: an integer token
     /// beyond 64 bits is the real it spells, not a string of its digits.
     pub fn of_text(text: &str) -> Self {

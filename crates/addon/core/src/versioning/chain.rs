@@ -27,8 +27,9 @@
 /// # use bedrock_addon_core::version::FormatVersion;
 /// use bedrock_addon_core::versioning::{
 ///     ComponentTable, Family, Loaded, NoComponents, ParseCx, Upgrade, UpgradeCx, VersionStruct,
-///     Versioned, load, parse_payload, write_payload,
+///     Versioned, load, read_payload, write_payload,
 /// };
+/// use bedrock_addon_core::schema::Schema;
 /// use facet::Facet;
 ///
 /// /// The family.
@@ -38,10 +39,10 @@
 ///     use super::*;
 ///
 ///     /// 1.0.0: `{ "level": n }`.
-///     #[derive(Facet)]
+///     #[derive(Facet, Schema)]
 ///     pub struct V1 {
 ///         pub level: u8,
-///         #[facet(skip, rename = "\u{0}extra")]
+///         #[facet(skip)]
 ///         pub extra: Extra,
 ///     }
 ///
@@ -52,15 +53,14 @@
 ///             V1_0_0(V1),
 ///             V1_1_0(super::GlowDoc),
 ///         }
-///         molang = none;
 ///     }
 /// }
 ///
 /// /// 1.1.0, the newest: `{ "brightness": n }`.
-/// #[derive(Facet)]
+/// #[derive(Facet, Schema)]
 /// pub struct GlowDoc {
 ///     pub brightness: u8,
-///     #[facet(skip, rename = "\u{0}extra")]
+///     #[facet(skip)]
 ///     pub extra: Extra,
 /// }
 ///
@@ -72,7 +72,7 @@
 /// }
 /// impl VersionStruct for history::V1 {
 ///     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-///         parse_payload(payload, cx, d)
+///         read_payload(payload, cx, d)
 ///     }
 ///     fn write(&self) -> Result<Value, EncodeError> {
 ///         write_payload(self)
@@ -80,7 +80,7 @@
 /// }
 /// impl VersionStruct for GlowDoc {
 ///     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-///         parse_payload(payload, cx, d)
+///         read_payload(payload, cx, d)
 ///     }
 ///     fn write(&self) -> Result<Value, EncodeError> {
 ///         write_payload(self)

@@ -99,8 +99,7 @@ pub fn same_value(
 /// Whether two JSON texts hold the same JSON ([`same_value`]).
 pub fn same_json(a: &str, b: &str) -> bool {
     let read = |text: &str| {
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-            .unwrap_or_else(|e| panic!("{text}: {e}"))
+        bedrock_addon_core::json::from_str_jsonc(text).unwrap_or_else(|e| panic!("{text}: {e}"))
     };
     same_value(&read(a), &read(b))
 }

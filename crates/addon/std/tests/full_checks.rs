@@ -123,7 +123,7 @@ fn count_written<T: Content>(document: &T, found: &mut Filters) {
     match document.to_json() {
         Ok(text) => {
             let value: Value =
-                bedrock_addon::json::from_str_jsonc::<Value>(&text).expect("a written document");
+                bedrock_addon::json::from_str_jsonc(&text).expect("a written document");
             tests_of(&value, &mut found.used);
         }
         Err(_) => found.unwritten += 1,
@@ -499,7 +499,7 @@ fn a_world_without_a_base_game_version_gets_every_slice_of_client_install_b() {
 /// occurrence's path), as `(pack type folder, family) → count`.
 fn occurrences_by_family(pairs: &Path) -> BTreeMap<(String, String), usize> {
     let text = std::fs::read_to_string(pairs).unwrap();
-    let document: Value = bedrock_addon::json::from_str_jsonc::<Value>(&text).unwrap();
+    let document: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
     let mut families = BTreeMap::new();
     let pairs = document.as_object().unwrap().get("pairs").unwrap();
     for pair in pairs.as_array().unwrap() {
@@ -789,8 +789,8 @@ fn every_behavior_entity_molang_occurrence_loads_with_its_text_and_version() {
             .map_err(|rejected| rejected.diagnostics)?;
         let diagnostics = document.diagnostics().clone();
         let written = document.to_json().expect("the entity writes itself");
-        let written: Value = bedrock_addon::json::from_str_jsonc::<Value>(&written)
-            .expect("the written entity is JSON");
+        let written: Value =
+            bedrock_addon::json::from_str_jsonc(&written).expect("the written entity is JSON");
         let mut entity = document.into_value();
         let mut members = pairs::Members::new();
         pairs::members(&mut entity, Some("minecraft:entity"), &mut members);

@@ -200,7 +200,7 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     // twice (also two keys the fold made equal) the last value stands.
     let text = match parse(&folded.text, Options::winner(Winner::Last)) {
         Ok(text) => text,
-        Err(fault) => return malformed(fault.to_error().to_string()),
+        Err(fault) => return malformed(fault.kind.to_string()),
     };
 
     let mut diagnostics = Diagnostics::default();

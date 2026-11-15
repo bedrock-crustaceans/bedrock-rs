@@ -975,8 +975,6 @@ fn shared_descriptors_report_their_own_findings() {
 // `blocks/red_concrete_double_slab.block.json`, copied unchanged.
 #[test]
 fn a_vanilla_1_26_50_block_with_instrument_sound_rewrites_byte_stable() {
-    use bedrock_addon_core::json::Value;
-
     let input = super::common::fixture("vanilla/red_concrete_double_slab.block.json");
     let mut cx = bedrock_addon_core::load::LoadContext::for_pack(
         &bedrock_addon_core::load::LoadOptions::default(),
@@ -997,7 +995,7 @@ fn a_vanilla_1_26_50_block_with_instrument_sound_rewrites_byte_stable() {
     assert_eq!(second.value(), first.value());
     let rewritten = second.to_json().unwrap();
     assert_eq!(rewritten, written, "write, parse, write is byte-stable");
-    let read = |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
+    let read = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).unwrap();
     assert_eq!(
         sorted(&read(&written)),
         sorted(&read(&input)),

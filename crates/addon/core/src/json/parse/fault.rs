@@ -1,8 +1,4 @@
-//! What [`parse`](super::parse) refuses a text for, in the words and at the span the door
-//! (`from_str_jsonc::<Value>` over facet-json) refuses it with.
-
-use facet_format::DeserializeErrorKind;
-use facet_json::DeserializeError;
+//! What [`parse`](super::parse) refuses a text for: the words and the span of each fault.
 
 use crate::diagnostic::{Code, Span, builders, codes};
 
@@ -19,10 +15,9 @@ pub(super) const TOKEN: &str = "valid JSON token";
 
 /// The first syntax fault of a text: where it is and what it is.
 ///
-/// The faults are the door's: the same span (a byte range of the text, rebased by the offset of
-/// a [`JsonSlice`](crate::json::JsonSlice) when the text is one) and the same words as the
-/// error facet-json gives (`DeserializeError` carries them: `From<Fault>`), so a finding told
-/// from one is told from the other.
+/// The span is a byte range of the text, rebased by the offset of a
+/// [`JsonSlice`](crate::json::JsonSlice) when the text is one; the words are those the crate
+/// family has always told for the fault (facet-json's, from when it read the text).
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("{kind} (at byte {}, {} long)", span.offset, span.len)]
 pub struct Fault {
@@ -32,7 +27,7 @@ pub struct Fault {
     pub kind: FaultKind,
 }
 
-/// What a [`Fault`] is. The variants are the shapes of syntax error the door tells; the
+/// What a [`Fault`] is. The variants are the shapes of syntax error the parser tells; the
 /// strings are facet-json's own words for what was wanted.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
@@ -85,13 +80,6 @@ impl Fault {
         self
     }
 
-    /// The error facet-json gives for the same fault: its words and its kind, which
-    /// `code_for_deserialize_error_kind` maps to a code.
-    #[must_use]
-    pub fn to_error(&self) -> DeserializeError {
-        self.clone().into()
-    }
-
     /// Whether the text ended before the grammar was done: the one fault a reader may take
     /// for an empty document when the text was blank.
     pub fn is_end_of_input(&self) -> bool {
@@ -121,38 +109,4 @@ pub(super) fn span_of(offset: usize, len: usize) -> Span {
 /// `n` as a `u32`, saturating.
 pub(super) fn to_u32(n: usize) -> u32 {
     u32::try_from(n).unwrap_or(u32::MAX)
-}
-
-/// The error facet-json gives for the same fault: the one a door caller already maps to a
-/// finding.
-impl From<Fault> for DeserializeError {
-    fn from(fault: Fault) -> Self {
-        let kind = match fault.kind {
-            FaultKind::UnexpectedChar { ch, expected } => {
-                DeserializeErrorKind::UnexpectedChar { ch, expected }
-            }
-            FaultKind::UnexpectedEof { expected } => {
-                DeserializeErrorKind::UnexpectedEof { expected }
-            }
-            FaultKind::UnexpectedToken { got, expected } => DeserializeErrorKind::UnexpectedToken {
-                got: got.into(),
-                expected,
-            },
-            FaultKind::InvalidUtf8 => DeserializeErrorKind::InvalidUtf8 {
-                context: [0; 16],
-                context_len: 0,
-            },
-            FaultKind::TextTooLong => DeserializeErrorKind::InvalidValue {
-                message: "the text is longer than a span can address".into(),
-            },
-        };
-        DeserializeError {
-            span: Some(facet::Span::new(
-                fault.span.offset as usize,
-                fault.span.len as usize,
-            )),
-            path: None,
-            kind,
-        }
-    }
 }

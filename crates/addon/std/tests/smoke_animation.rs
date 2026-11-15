@@ -289,8 +289,7 @@ fn every_animation_molang_occurrence_loads_with_its_text_and_version() {
     let pairs = skip!(game_files::MOLANG_PAIRS);
     let install_b = skip!(game_files::CLIENT_INSTALL_B);
     let text = std::fs::read_to_string(pairs).unwrap();
-    let pairs_document: Value =
-        bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&text).unwrap();
+    let pairs_document: Value = bedrock_addon::json::from_str_jsonc(&text).unwrap();
     let mut cache: BTreeMap<PathBuf, Option<Members>> = BTreeMap::new();
     let (mut checked, mut archived, mut keys) = (0, 0, 0);
     let mut failures = Vec::new();

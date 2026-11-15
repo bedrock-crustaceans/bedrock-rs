@@ -60,11 +60,11 @@ pub struct Geometry {
     pub bones: Option<Vec<Bone>>,
     /// `__legacy`: what an upgraded file older than 1.12.0 carried that the newest schema has
     /// no member for. Empty for a file written at 1.12.0 or later, and then not written.
-    #[facet(skip, rename = "\u{0}legacy")]
+    #[facet(skip)]
     pub legacy: GeometryLegacy,
     /// The geometries this one inherits bones from (`legacy.parent` and its parents), filled
     /// when a pack stack is loaded. Never read from a file and never written.
-    #[facet(skip, opaque, rename = "\u{0}inherited")]
+    #[facet(skip, opaque)]
     pub inherited: Option<Arc<Inherited>>,
 }
 
@@ -150,7 +150,7 @@ pub struct Bone {
     /// `texture_meshes`.
     pub texture_meshes: Option<Vec<TextureMesh>>,
     /// `__legacy`: members of a file older than 1.12.0; empty otherwise, and then not written.
-    #[facet(skip, rename = "\u{0}legacy")]
+    #[facet(skip)]
     pub legacy: BoneLegacy,
 }
 

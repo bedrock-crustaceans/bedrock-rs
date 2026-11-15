@@ -11,12 +11,12 @@
 use std::collections::HashMap;
 use std::ops::Range;
 
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use super::Value;
 use super::lex::{Kind, Lexer, Rules};
-use super::slice::{JsonSlice, parse_at};
+use super::parse::{elements_of, members_of};
+use super::slice::JsonSlice;
 use crate::diagnostic::Kind as DiagnosticKind;
 use crate::diagnostic::{Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Span};
 use crate::molang::beyond_f32_warning;
@@ -620,8 +620,7 @@ impl Walk<'_> {
         }
         *member_from = Some(from);
         if token.contains('\\') {
-            self.path
-                .push(&crate::json::from_str::<String>(token).ok()?);
+            self.path.push(&crate::json::parse::string_literal(token)?);
         } else {
             self.path.push(token.get(1..token.len().checked_sub(1)?)?);
         }
@@ -779,8 +778,8 @@ fn wide_numbers<'v>(
 
 /// The members of an object or the elements of an array, each as its text.
 enum Members<'a> {
-    Object(IndexMap<String, RawJson<'a>>),
-    Array(Vec<RawJson<'a>>),
+    Object(IndexMap<String, JsonSlice<'a>>),
+    Array(Vec<JsonSlice<'a>>),
 }
 
 /// Finds the number tokens of `wide` (numbers below the value of `slice`, which all share
@@ -810,12 +809,8 @@ fn locate<'a>(
         return;
     }
     let members = match wide.first().and_then(|number| number.segment(level)) {
-        Some(JsonPathSegment::Key(_)) => parse_at::<IndexMap<String, RawJson<'a>>>(slice)
-            .ok()
-            .map(Members::Object),
-        Some(JsonPathSegment::Index(_)) => {
-            parse_at::<Vec<RawJson<'a>>>(slice).ok().map(Members::Array)
-        }
+        Some(JsonPathSegment::Key(_)) => members_of(slice).map(Members::Object),
+        Some(JsonPathSegment::Index(_)) => elements_of(slice).map(Members::Array),
         None => None,
     };
     let Some(members) = members else { return };
@@ -829,12 +824,12 @@ fn locate<'a>(
         {
             end += 1;
         }
-        let raw = match (&members, segment) {
+        let child = match (&members, segment) {
             (Members::Object(members), Some(JsonPathSegment::Key(key))) => members.get(key),
             (Members::Array(elements), Some(JsonPathSegment::Index(index))) => elements.get(index),
             _ => None,
         };
-        if let Some(child) = raw.and_then(|raw| slice.nested(raw))
+        if let Some(&child) = child
             && let Some(below) = wide.get(start..end)
         {
             locate(child, below, level + 1, first + start, tokens);

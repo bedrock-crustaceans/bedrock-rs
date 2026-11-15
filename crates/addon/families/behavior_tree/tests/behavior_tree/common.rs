@@ -480,10 +480,9 @@ pub fn dump_registry(registry: &Registry<BehaviorTree>) -> Value {
 
 /// The registry equals fixture `name`'s `expected.json`.
 pub fn assert_registry(name: &str, registry: &Registry<BehaviorTree>) {
-    let expected: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture_text(
-        &format!("{name}/expected.json"),
-    ))
-    .unwrap_or_else(|e| panic!("{name}/expected.json: {e}"));
+    let expected: Value =
+        bedrock_addon_core::json::from_str_jsonc(&fixture_text(&format!("{name}/expected.json")))
+            .unwrap_or_else(|e| panic!("{name}/expected.json: {e}"));
     let entries = expected.as_object().expect("an object by tree name").len();
     assert_eq!(
         registry.len(),
@@ -569,7 +568,7 @@ pub fn read_findings(toml: &str) -> Vec<Finding> {
             .unwrap_or_else(|| panic!("`{line}` before the first [[diagnostic]]"));
         // A TOML basic string has JSON's escapes.
         let string = || -> String {
-            let json = bedrock_addon_core::json::from_str_jsonc::<Value>(value)
+            let json = bedrock_addon_core::json::from_str_jsonc(value)
                 .unwrap_or_else(|e| panic!("`{line}`: {e}"));
             bedrock_addon_core::schema::read_value::<String>(&json)
                 .unwrap_or_else(|| panic!("`{line}`: not a string"))

@@ -1,9 +1,9 @@
 //! The text readers (`json::parse` and the entry points over it): a string escape outside
 //! RFC 8259, nesting past the limit and what follows the root value are refused or never read,
-//! as the door to facet-json refused them (facet-json 0.50.0-rc.7 decoded `"\é"` from a `&str`
-//! by reading a string from the middle of a character: undefined behaviour, an abort in a debug
-//! build). The tests of the unsafe classes still run their case in a child process and look at
-//! how it ended.
+//! as the old reader over facet-json refused them (facet-json 0.50.0-rc.7 decoded `"\é"` from
+//! a `&str` by reading a string from the middle of a character: undefined behaviour, an abort
+//! in a debug build). The tests of the unsafe classes still run their case in a child process
+//! and look at how it ended.
 
 use std::fmt::Write as _;
 use std::process::{Command, Stdio};
@@ -60,7 +60,7 @@ const READERS: &[Reader] = &[
         probe_envelope(JsonSlice::new(text)).is_err()
     }),
     ("read_value into a map of values", |text| {
-        from_str_jsonc::<Value>(text)
+        from_str_jsonc(text)
             .ok()
             .and_then(|json| read_value::<IndexMap<String, Value>>(&json))
             .is_none()
@@ -191,7 +191,7 @@ fn every_unsafe_class_is_malformed_input_through_every_entry_point() {
         for document in documents(content) {
             let envelope = probe_envelope(JsonSlice::new(&document)).unwrap_err();
             assert!(envelope.message().contains("escape"), "{class}");
-            assert!(from_str_jsonc::<Value>(&document).is_err(), "{class}");
+            assert!(from_str_jsonc(&document).is_err(), "{class}");
             for error in errors(&document) {
                 assert!(malformed(&error).contains("escape"), "{class}: {error:?}");
                 let span = error.span;
@@ -263,16 +263,15 @@ fn faults_facet_reports_safely_stay_its_own() {
     }
 }
 
-/// The fixture facet reads as `q` is refused by the door; raw control characters in a string stay
+/// The fixture facet reads as `q` is refused by the parser; raw control characters in a string stay
 /// accepted.
 #[test]
 fn the_escapes_fixture_is_refused_and_raw_control_characters_are_kept() {
     let text = String::from_utf8(fixture("escapes.json")).unwrap();
     assert!(malformed(&fault(&text)).contains("'q'"));
-    let kept: Vec<String> = read_value(
-        &from_str_jsonc::<Value>("[\"line\nbreak\", \"tab\there\", \"\u{1}\"]").unwrap(),
-    )
-    .unwrap();
+    let kept: Vec<String> =
+        read_value(&from_str_jsonc("[\"line\nbreak\", \"tab\there\", \"\u{1}\"]").unwrap())
+            .unwrap();
     assert_eq!(kept, ["line\nbreak", "tab\there", "\u{1}"]);
 }
 
@@ -287,7 +286,7 @@ fn every_escape_of_rfc_8259_decodes_as_before() {
         "\0", "\\u0041", "\\é", "x\\",
     ];
     let strings = |value: Value| -> Vec<String> { read_value(&value).expect("strings") };
-    assert_eq!(strings(from_str_jsonc::<Value>(text).unwrap()), expected);
+    assert_eq!(strings(from_str_jsonc(text).unwrap()), expected);
     let plain = parse(text, Options::default().without_comments()).unwrap();
     assert_eq!(strings(plain.value), expected);
     assert_eq!(
@@ -316,7 +315,7 @@ fn escaped_keys_and_raw_slices_are_read_as_before() {
 #[test]
 fn comments_are_not_strings() {
     let text = "// C:\\path \"\\q\n{ /* \"\\é */ \"a\": 1 } // \\";
-    let map: IndexMap<String, u32> = read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap();
+    let map: IndexMap<String, u32> = read_value(&from_str_jsonc(text).unwrap()).unwrap();
     assert_eq!(map["a"], 1);
     // Plain JSON has no comments: the parser stops on the `/`, as before.
     assert!(matches!(
@@ -438,8 +437,7 @@ fn content_after_the_root_never_reaches_facet() {
         " \u{0}",
     ] {
         let text = format!(r#"{{"a": "b\n"}}{tail}"#);
-        let map: IndexMap<String, String> =
-            read_value(&from_str_jsonc::<Value>(&text).unwrap()).unwrap();
+        let map: IndexMap<String, String> = read_value(&from_str_jsonc(&text).unwrap()).unwrap();
         assert_eq!(map["a"], "b\n", "`{tail}`");
         let envelope = probe_envelope(JsonSlice::new(&text)).unwrap();
         assert_eq!(envelope.payload("a").unwrap().text, r#""b\n""#);
@@ -450,7 +448,7 @@ fn content_after_the_root_never_reaches_facet() {
 #[test]
 fn nesting_past_the_limit_is_refused_before_facet() {
     let nested = |levels: usize| format!("{}{}", "[".repeat(levels), "]".repeat(levels));
-    assert!(from_str_jsonc::<Value>(&nested(MAX_JSON_DEPTH)).is_ok());
+    assert!(from_str_jsonc(&nested(MAX_JSON_DEPTH)).is_ok());
     let deep = nested(MAX_JSON_DEPTH + 1);
     assert_eq!(
         scan(deep.as_bytes(), true),
@@ -469,7 +467,7 @@ fn nesting_past_the_limit_is_refused_before_facet() {
     assert!(parse_bytes(abyss.as_bytes(), Options::default()).is_err());
     // Brackets in strings and comments are not nesting.
     let flat = format!("[\"{}\" /* {} */]", "[".repeat(500), "{".repeat(500));
-    assert!(from_str_jsonc::<Value>(&flat).is_ok());
+    assert!(from_str_jsonc(&flat).is_ok());
 }
 
 // --- the order of faults (reviews/CORE-ESC minors 2, 4, 5) -----------------------------------
@@ -579,14 +577,14 @@ fn a_comment_that_never_ends_after_the_root_is_content() {
         trailing_content("{} /* open \n"),
         Some(Span { offset: 3, len: 7 })
     );
-    assert!(from_str_jsonc::<Value>("{} /* open").is_ok());
-    assert!(from_str_jsonc::<Value>("{ /* open").is_err());
+    assert!(from_str_jsonc("{} /* open").is_ok());
+    assert!(from_str_jsonc("{ /* open").is_err());
 }
 
-/// A `/*` that never ends inside the root value is the door's to report, in the parser's own
+/// A `/*` that never ends inside the root value is the parser's to report, in the parser's own
 /// words, at the comment: facet-json rc.7 forgets that a text has comments once it has
 /// restored (an untagged enum) and read 512 events on, and then calls the slash an
-/// unexpected character. Near or far, every door says the
+/// unexpected character. Near or far, every entry point says the
 /// same.
 #[test]
 fn a_comment_that_never_ends_inside_the_root_is_reported_the_same_near_and_far() {
@@ -671,7 +669,7 @@ fn a_comment_after_an_untagged_enum_is_still_a_comment() {
         second: Some(Untagged::List(vec![1, 2])),
         last: Some("x".to_owned()),
     };
-    let typed = |text: &str| read_value::<Holder>(&from_str_jsonc::<Value>(text).unwrap());
+    let typed = |text: &str| read_value::<Holder>(&from_str_jsonc(text).unwrap());
     assert_eq!(typed(text), Some(expected));
     // The same beside an integer beyond 64 bits (the read over the respelt copy).
     let wide = "{\"first\": /* c */ 18446744073709551616 // c\n, \"second\": {\"a\": 1, /* c */ \

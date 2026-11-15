@@ -639,8 +639,7 @@ mod tests {
     /// animate entries and a sensor with `n` triggers; one reference in four names nothing.
     fn entity(n: usize) -> Entity {
         use bedrock_addon_core::id::EntityId;
-        let json =
-            |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("json");
+        let json = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).expect("json");
         let mut entity = Entity::new(EntityId::parse("demo:pet"));
         let name = |i: usize| {
             if i % 4 == 3 {

@@ -8,7 +8,7 @@ use bedrock_addon::families::material::{
     KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, MaterialList,
     SamplerState, StencilFace, Variant, VertexField,
 };
-use bedrock_addon::json::{EncodeError, Value};
+use bedrock_addon::json::EncodeError;
 use bedrock_addon::version::SemVersion;
 
 use crate::common::{Rewrites, parse_at, parse_list, rendered, rewrites_at};
@@ -432,8 +432,7 @@ fn sprinkle(rng: &mut Rng, def: &mut MaterialDef) {
     }
     if rng.chance(5) {
         let value = ["true", "null", "{}", "5"][rng.below(4)];
-        def.is_animated_texture =
-            Some(bedrock_addon::json::from_str_jsonc::<Value>(value).unwrap());
+        def.is_animated_texture = Some(bedrock_addon::json::from_str_jsonc(value).unwrap());
     }
     if rng.chance(8) {
         def.key_rules = Some(KeyRules::Legacy);
@@ -443,7 +442,7 @@ fn sprinkle(rng: &mut Rng, def: &mut MaterialDef) {
         let value = ["\"s\"", "null", "[]", "5"][rng.below(4)];
         def.extra.insert(
             key.to_owned(),
-            bedrock_addon::json::from_str_jsonc::<Value>(value).unwrap(),
+            bedrock_addon::json::from_str_jsonc(value).unwrap(),
         );
     }
 }
@@ -536,7 +535,7 @@ fn every_built_value_is_written_as_text_that_reads_back_equal_or_is_refused() {
             let key = rng.pick(&["n", "materials", "vertexShader"]);
             value.extra.insert(
                 key.to_owned(),
-                bedrock_addon::json::from_str_jsonc::<Value>(stray).unwrap(),
+                bedrock_addon::json::from_str_jsonc(stray).unwrap(),
             );
         }
         match value.to_json() {

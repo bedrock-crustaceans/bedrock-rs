@@ -163,7 +163,7 @@ mod tests {
     fn a_tip_of_an_object_of_other_members_is_told_at_the_list() {
         use super::{Written, element_path, written_as};
         use crate::families::loading_messages::{LoadingMessage, LoadingMessages, MessageList};
-        let written = crate::json::from_str_jsonc::<crate::json::Value>(
+        let written = crate::json::from_str_jsonc(
             r#"{"beginner_loading_messages": {"b": "tips.b", "a": "tips.a"}}"#,
         )
         .expect("JSON");

@@ -965,7 +965,7 @@ mod tests {
             r#"{{"add": {{"component_groups": [{}]}}}}"#,
             named.join(",")
         );
-        let event = bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("json");
+        let event = bedrock_addon_core::json::from_str_jsonc(&text).expect("json");
         (groups, event)
     }
 
@@ -996,7 +996,7 @@ mod tests {
     /// `set_property`, then `sequence`, `first_valid` and `randomize`, whatever the document's.
     #[test]
     fn set_property_expressions_are_collected_sequence_first_valid_randomize() {
-        let node = bedrock_addon_core::json::from_str_jsonc::<Value>(
+        let node = bedrock_addon_core::json::from_str_jsonc(
             r#"{
                 "randomize": [{"set_property": {"demo:r": "q.r"}}],
                 "first_valid": [{"set_property": {"demo:f": "q.f"}}],

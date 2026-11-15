@@ -17,7 +17,7 @@ use super::{
     SERVER_NET_MODULE, ServerNet, net,
 };
 
-/// `value` as JSON text in the default style. The door's writer refuses a value nested past
+/// `value` as JSON text in the default style. Core's writer refuses a value nested past
 /// the depth a reader takes (`Unrepresentable::TooDeep`, at the place that is too deep), so
 /// no writer here makes a file its reader refuses whole (F6).
 fn text(value: VObject) -> Result<String, EncodeError> {

@@ -46,8 +46,8 @@ fn every_loading_fixture_round_trips_value_for_value() {
 fn a_vanilla_file_is_written_back_with_its_members() {
     // a copy of retail 1.26.45 `vanilla_1.26.30/recipes/sulfur.json`
     let written = round_trip("sulfur.json", &fixture("shaped_1_26_30_sulfur.json"));
-    let value: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&written).unwrap();
-    let original: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(
+    let value: Value = bedrock_addon_core::json::from_str_jsonc(&written).unwrap();
+    let original: Value = bedrock_addon_core::json::from_str_jsonc(
         &String::from_utf8(fixture("shaped_1_26_30_sulfur.json")).unwrap(),
     )
     .unwrap();

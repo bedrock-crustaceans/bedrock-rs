@@ -113,7 +113,7 @@ fn a_deep_text_is_scanned_to_the_limit_and_left_alone_beyond_it() {
     }
 }
 
-/// The fault a reader reports for `text` as a family reads it (`last_wins`, then the door),
+/// The fault a reader reports for `text` as a family reads it (`last_wins`, then the parser),
 /// and the text it read.
 fn fault_after_last_wins(text: &str) -> (Fault, String) {
     let cleaned = last_wins(text).into_owned();
@@ -186,7 +186,7 @@ fn a_syntax_fault_in_a_copy_that_loses_is_the_document_s_fault() {
         );
         // Kept members of a family's exception are no exception to this.
         let kept = last_wins_except(text, &["k"]).into_owned();
-        assert!(from_str_jsonc::<Value>(&kept).is_err(), "`{text}`");
+        assert!(from_str_jsonc(&kept).is_err(), "`{text}`");
     }
 }
 
@@ -278,9 +278,9 @@ fn no_fault_of_a_generated_text_is_lost_to_last_wins() {
                 text.insert_str(at, &doubled);
             }
         }
-        let written = from_str_jsonc::<Value>(&text);
+        let written = from_str_jsonc(&text);
         let cleaned = last_wins(&text);
-        let read = from_str_jsonc::<Value>(&cleaned);
+        let read = from_str_jsonc(&cleaned);
         match (&written, &read) {
             (Err(written), Err(read)) => {
                 assert_eq!(
@@ -342,7 +342,7 @@ fn a_well_formed_copy_that_loses_still_loses_in_silence() {
     ] {
         assert_eq!(value(&cleaned(text)), value(last), "`{text}`");
         assert_eq!(
-            from_str_jsonc::<Value>(&last_wins(text)).unwrap(),
+            from_str_jsonc(&last_wins(text)).unwrap(),
             value(last),
             "`{text}`"
         );

@@ -782,7 +782,7 @@ mod tests {
     fn is_int_refuses_the_lowest_i32_written_as_a_real() {
         use bedrock_addon_core::json::{Coerce, Coercing, IsIntRule, WideInt};
         let profile = Coercing::new(IsIntRule::Integral, WideInt::LowWord);
-        let value = |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
+        let value = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).unwrap();
         for text in [
             "2.0",
             "-3",

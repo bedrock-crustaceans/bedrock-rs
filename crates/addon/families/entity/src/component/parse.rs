@@ -3,7 +3,7 @@
 //!
 //! Both reads are the reader's (`FromJson`, member by member). A document at or above a
 //! component's typed version is read strictly: the first member of the wrong type is an error
-//! and the component is dropped, as the typed door read it; a value outside its range is an
+//! and the component is dropped, as facet-json read it; a value outside its range is an
 //! error of the component's check. A component converted from an older document's JSON
 //! (`ConvertMode::Lenient`, the lenient conversion) keeps going: a bad member is an information
 //! and takes its default ([`Recovery`]), and only a value that is not an object drops the
@@ -317,7 +317,7 @@ pub(crate) fn read_prepared<T: Typed>(
     let written = found
         .iter()
         .any(wrapped)
-        .then(|| bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text).ok())
+        .then(|| bedrock_addon_core::json::from_str_jsonc(slice.text).ok())
         .flatten();
     let kept = found.take_unknown();
     for told in found.into_told() {
@@ -462,7 +462,7 @@ fn read_component<T: Typed>(
 }
 
 /// Reads `T` from `parsed`, from its text when `as_written`: strictly, the first failure an
-/// error that drops it, as the typed door read; in the lenient conversion every value that does
+/// error that drops it, as facet-json read; in the lenient conversion every value that does
 /// not read takes its default and is told (`recovery`: what a failed value gives up), as the
 /// crate's own information. The entity's scalar and null rules at every slice, whatever the
 /// context says, its structs keeping their unknown members ([`TYPED_READING`](crate::TYPED_READING));

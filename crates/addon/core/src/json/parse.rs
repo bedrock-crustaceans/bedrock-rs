@@ -1,5 +1,5 @@
-//! The door's text parser: one pass over a JSON(C) text that gives the [`Value`] and a tree of
-//! spans ([`Spans`]), with the door's policies as [`Options`] and not as rewrites of the text.
+//! The text parser: one pass over a JSON(C) text that gives the [`Value`] and a tree of
+//! spans ([`Spans`]), with the reading policies as [`Options`] and not as rewrites of the text.
 //!
 //! It reads what `from_str_jsonc::<Value>` reads, the same value for every text it takes and the
 //! same refusal ([`Fault`]: the span and the words of facet-json's error) for every text it
@@ -7,11 +7,11 @@
 //! [`Parsed::trailing`] says where it lies). The dialect is JSON with `//` and `/* */`
 //! comments, trailing commas, the white space of RFC 8259, strings with the escapes of
 //! RFC 8259 only, and nesting no deeper than [`MAX_JSON_DEPTH`]. A byte order mark is no white
-//! space here, as it is none to the door: blank it first (`blank_bom`).
+//! space here: blank it first (`blank_bom`).
 //!
-//! # What the door did with text rewrites, and what this does
+//! # What the old door did with text rewrites, and what this does
 //!
-//! - A key written twice (`Options::duplicates`): the door blanked the copies that do not
+//! - A key written twice (`Options::duplicates`): the old door blanked the copies that do not
 //!   stand (`blank_repeats`) so one copy reached facet; here the copy that stands is decided
 //!   while parsing. `Winner::Last` leaves the member where its last copy stands, `First` where
 //!   its first stands, and `Keep` reads every copy as facet-value does (two objects merge member
@@ -23,10 +23,10 @@
 //!   that must clamp a number at a member of another width finds the token with
 //!   [`Spans::at`].
 //! - Spans are made as the text is read, so a finding at any path costs its path, not the text
-//!   ([`Spans::at`] is [`span_at`](crate::json::span_at) over the tree).
+//!   ([`Spans::at`] walks the tree, not the text).
 //!
 //! The parse runs on one stack frame however deep the text is; the open containers are in a
-//! list, no more than the 128 levels the door allows.
+//! list, no more than the 128 levels `MAX_JSON_DEPTH` allows.
 
 mod fault;
 mod spans;
@@ -44,7 +44,7 @@ use fault::{ESCAPE, SHALLOWER, UNICODE_ESCAPE, to_u32};
 use spans::{Edge, Node};
 use token::{Lit, Mat, Scanner, Tk};
 
-use super::lex::{Kind, Lexer, Marks, Rules, UnsafeText, scan_tokens};
+use super::lex::{Kind, Lexer, Rules, UnsafeText, scan_tokens};
 use super::slice::JsonSlice;
 use super::text::MAX_JSON_DEPTH;
 use super::{Value, Winner};
@@ -177,12 +177,12 @@ pub fn parse_slice<'t>(slice: JsonSlice<'t>, options: Options<'_>) -> Result<Par
 ///
 /// # Errors
 ///
-/// The [`Fault`] of the first syntax error, as `from_slice_jsonc::<Value>` tells it.
+/// The [`Fault`] of the first syntax error, as [`parse`] tells it.
 pub fn parse_bytes(bytes: &[u8], options: Options<'_>) -> Result<Value, Fault> {
     if let Ok(text) = std::str::from_utf8(bytes) {
         return parse(text, options).map(|parsed| parsed.value);
     }
-    let scanned = scan_tokens(bytes, options.comments, &mut Marks::default());
+    let scanned = scan_tokens(bytes, options.comments);
     let root = match scanned {
         Ok(scanned) => scanned
             .root_end
@@ -294,7 +294,7 @@ fn text_outside_comments(bytes: &[u8], comments: bool) -> Result<String, Fault> 
 }
 
 /// The text a JSON string literal spells, its escapes decoded; `None` when `token` is no string
-/// literal (what `from_str::<String>` read for a token already cut from a text).
+/// literal.
 #[must_use]
 pub fn string_literal(token: &str) -> Option<String> {
     let parsed = parse(token, Options::default()).ok()?;
@@ -585,7 +585,7 @@ impl<'t, 'o> Parser<'t, 'o> {
 
     /// The colon after a key: the token is read, not materialized.
     fn expect_colon(&mut self) -> Result<(), Fault> {
-        // A block comment without its end here is told as the door tells it: the text before
+        // A block comment without its end here is told as facet-json told it: the text before
         // it ends where the colon belongs, one byte at the comment's slash.
         let colon = self.scanner.take(b':').map_err(|fault| match fault.kind {
             FaultKind::UnexpectedEof { .. } => Fault::new(

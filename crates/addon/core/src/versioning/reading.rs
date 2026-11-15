@@ -3,8 +3,8 @@
 //! before a struct is selected, is in `Family::ENVELOPE` ([`Envelope`](super::Envelope)).
 //!
 //! A [`MemberFailure`] grades a member that fails to read (`json::kit::Read`, through
-//! `schema::grade`) or to check (a derived `Schema::check`, `schema::SchemaCx`); the old typed
-//! door's scalar pre-pass honours it too ([`Reading::scalar_rules`]).
+//! `schema::grade`) or to check (a derived `Schema::check`, `schema::SchemaCx`); the scalar
+//! rules carry it too ([`Reading::scalar_rules`]).
 
 use super::{Family, StructIndex};
 use crate::diagnostic::{Class, Severity};
@@ -33,7 +33,8 @@ pub enum NullHandling {
     /// The member is absent ([`NullRule::Absent`]).
     Absent,
     /// As [`Absent`](Self::Absent), and nothing is told: jsoncpp's `asFloat(default)` and its
-    /// kin take the default for a `null` without a word (the sound files). No old-door rule.
+    /// kin take the default for a `null` without a word (the sound files). The old reader had
+    /// no such rule.
     AbsentSilently,
     /// The framework applies no rule: the family's hand-written reader takes `null` as it
     /// does (a `FirstRun` family, a legacy slice, an MCB source).
@@ -47,7 +48,7 @@ pub enum NullHandling {
 }
 
 impl NullHandling {
-    /// The null rule the context carries into `parse_payload` and `parse_component`.
+    /// The null rule the context carries into `read_payload` and `read_component`.
     pub const fn rule(self) -> Option<NullRule> {
         match self {
             Self::Rejected => Some(NullRule::Rejected),

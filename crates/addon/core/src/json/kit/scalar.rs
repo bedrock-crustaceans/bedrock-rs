@@ -1,6 +1,6 @@
 //! [`Read::scalar`]: a scalar read by the member of a declared type under every
-//! [`Scalars`] profile and [`BeyondWidth`] rule, telling what the typed door tells for the same
-//! token.
+//! [`Scalars`] profile and [`BeyondWidth`] rule, telling what facet-json's typed read told for the
+//! same token.
 
 use std::borrow::Cow;
 
@@ -85,7 +85,7 @@ impl Read<'_> {
     /// The scalar `node` holds, as a member of the type `declared` reads it under the reading's
     /// [`scalars`](crate::versioning::Reading::scalars) profile and its
     /// [`beyond_width`](crate::versioning::Reading::beyond_width) rule ([`judge`]), telling what
-    /// the typed door tells for the same token:
+    /// facet-json's typed read told for the same token:
     ///
     /// - [`Scalars::Strict`], [`Scalars::NonStrict`]: the token the
     ///   profile reads (kept, or respelt: `257` is `1` to the non-strict `u8` reader), or a
@@ -375,7 +375,7 @@ impl Read<'_> {
     }
 
     /// Tells that `node`'s token was read converted across JSON types: in [`Pass::Misread`]
-    /// under [`Passes::AfterRead`](super::Passes::AfterRead) (the door's misread wrong type), a
+    /// under [`Passes::AfterRead`](super::Passes::AfterRead) (the old read's misread wrong type), a
     /// wrong type otherwise. The member keeps the value read.
     fn converted(&mut self, node: &Node<'_>, declared: Declared) {
         if self.profile.defers() {
@@ -388,24 +388,24 @@ impl Read<'_> {
 
     /// Tells a scalar token the reading's profile refuses where a value that `expected` was
     /// read: a wrong type, or under [`Passes::AfterRead`](super::Passes::AfterRead) with `DefaultAndTell` a member (not an array
-    /// element) read as absent, as the door's scalar pre-pass reads it; the owner takes it as
+    /// element) read as absent, as the old scalar pre-pass read it; the owner takes it as
     /// absent ([`take_defaulted`](Self::take_defaulted)).
     // the derived reads' protocol (an untagged enum's scalar no arm takes)
     pub(crate) fn refused_scalar(&mut self, node: &Node<'_>, expected: Expected) {
         if self.stopped {
             return;
         }
-        // The door's pre-pass blanks a struct's member and a map's value, but a map's `null`
-        // stays for the null rule.
+        // The old pre-pass blanked a struct's member and a map's value, but a map's `null`
+        // stayed for the null rule.
         let member = node.path.last_key().is_some() && !(self.map_value && node.value.is_null());
         let defaults = self.reading.scalar_rules().default_and_tell;
-        // The door's pre-pass blanks it; a read that recovers otherwise fails the value.
+        // The old pre-pass blanked it; a read that recovers otherwise fails the value.
         let blanked = self.profile.recovery == super::Recovery::Member;
         if self.profile.defers() && defaults && member && blanked {
             if node.value.is_null()
                 && self.reading.null == crate::versioning::NullHandling::Rejected
             {
-                // The pre-pass blanks the member, and the door's null rule still finds the
+                // The old pre-pass blanked the member, and the null rule still finds the
                 // `null` where the struct reads a value: a null error, in its pass.
                 self.null_error(node);
             } else {
@@ -430,7 +430,7 @@ impl Read<'_> {
         self.defer(Pass::Null, finding);
     }
 
-    /// Tells the misreading `kind` at `node`, as the door tells it ([`Misread::finding`]),
+    /// Tells the misreading `kind` at `node`, as the old read told it ([`Misread::finding`]),
     /// spanning the token, in [`Pass::Misread`].
     fn misread(&mut self, node: &Node<'_>, kind: Misreading) {
         let mut finding = Misread {

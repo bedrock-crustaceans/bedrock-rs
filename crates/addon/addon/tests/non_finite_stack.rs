@@ -375,10 +375,10 @@ fn findings<S: bedrock_addon::pack::Side>(
 #[test]
 fn an_infinity_in_a_held_value_is_found() {
     let finite: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"a": [1, {"b": 1.5e300}]}"#).unwrap();
+        bedrock_addon::json::from_str_jsonc(r#"{"a": [1, {"b": 1.5e300}]}"#).unwrap();
     assert_eq!(infinity_in(&finite), None);
     let infinite: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"a": [1, {"b": -1e999}]}"#).unwrap();
+        bedrock_addon::json::from_str_jsonc(r#"{"a": [1, {"b": -1e999}]}"#).unwrap();
     assert_eq!(infinity_in(&infinite).as_deref(), Some("/a/1/b"));
 }
 

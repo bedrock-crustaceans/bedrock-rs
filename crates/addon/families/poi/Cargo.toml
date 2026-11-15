@@ -20,4 +20,3 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 bedrock_addon_test_support = { path = "../../test_support" }
-facet-json = { workspace = true }

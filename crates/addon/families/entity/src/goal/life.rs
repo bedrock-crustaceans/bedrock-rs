@@ -59,7 +59,7 @@ pub struct Celebrate {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -114,7 +114,7 @@ pub struct CelebrateSurvive {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -210,7 +210,7 @@ pub struct Dig {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -255,7 +255,7 @@ pub struct Emerge {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -380,7 +380,7 @@ pub struct HoldGround {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -531,7 +531,7 @@ pub struct LayEgg {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -906,7 +906,7 @@ pub struct RandomSearchAndDig {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1368,7 +1368,7 @@ pub struct TimerFlag1 {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1419,7 +1419,7 @@ pub struct TimerFlag2 {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1470,7 +1470,7 @@ pub struct TimerFlag3 {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1534,7 +1534,7 @@ pub struct Work {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1614,7 +1614,7 @@ pub struct WorkComposter {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 

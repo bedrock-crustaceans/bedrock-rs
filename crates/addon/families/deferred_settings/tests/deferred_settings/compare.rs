@@ -2,7 +2,7 @@
 //! written document against its input with (FAMILY-NOTES, wave 4: "write-back is checked as
 //! authored").
 //!
-//! Both texts are read through the door the loaders read through (`bedrock_addon_core::json`), so a
+//! Both texts are read by the parser the loaders read by (`bedrock_addon_core::json`), so a
 //! number is the number a loader sees: numbers are compared as numbers, each with its kind (an
 //! integer or a real), and a quoted string never equals a number. Each number keeps the token
 //! it was written as: where two numbers are equal and of one kind, their tokens are compared
@@ -59,7 +59,7 @@ impl Json {
     /// value, as every loader does.
     #[track_caller]
     pub fn of_text(text: &str) -> Self {
-        let value: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(text)
+        let value: Value = bedrock_addon_core::json::from_str_jsonc(text)
             .unwrap_or_else(|e| panic!("no JSON: {e}\n{text}"));
         Self::of(&value, text, &mut JsonPath::new())
     }

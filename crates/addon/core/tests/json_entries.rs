@@ -1,7 +1,7 @@
 //! Per-entry isolation on the reader: the members of a map whose entries fail one by one are the
 //! slices of the text the parse gives (`json::parse::members_of`), each entry is read from its
 //! own slice, and a failure is told at file offsets with its JSON path. (What `json_slice.rs`
-//! pinned of the door's `parse_at` over `RawJson` entries; the door told a failure at the
+//! pinned of the old door's `parse_at` over `RawJson` entries; it told a failure at the
 //! member's key, the reader tells it at the member's value.)
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity, Span};

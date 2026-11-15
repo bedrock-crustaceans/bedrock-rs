@@ -13,7 +13,7 @@ pub struct Holder<T> {
 
 /// Reads `json` as a `T` member.
 pub fn read<T: FromJson>(json: &str) -> Option<T> {
-    read_value::<T>(&from_str_jsonc::<Value>(json).ok()?)
+    read_value::<T>(&from_str_jsonc(json).ok()?)
 }
 
 /// Writes `value` as one line of JSON.
@@ -29,7 +29,7 @@ pub fn compact<'f, T: Facet<'f>>(value: &T) -> String {
 
 /// `json` re-written as one line, so two texts compare without whitespace.
 pub fn normalised(json: &str) -> String {
-    let value: Value = from_str_jsonc::<Value>(json).expect("valid JSON");
+    let value: Value = from_str_jsonc(json).expect("valid JSON");
     compact(&value)
 }
 

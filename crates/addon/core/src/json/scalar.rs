@@ -1,8 +1,7 @@
 //! How a scalar token is read against the declared type of the member that takes it: the
 //! profiles a slice reads its scalars by ([`Scalars`]), what a number beyond the width of its
 //! type does ([`BeyondWidth`]), the scalar shapes a hand-written proxy reads ([`ScalarShape`],
-//! [`JsonType`], [`StrictError`]), and the pre-pass that reads a slice by them ([`judge`],
-//! [`parse_with_rules`]).
+//! [`JsonType`], [`StrictError`]), and the judgement of a token by them ([`judge`]).
 
 use facet::Facet;
 
@@ -11,8 +10,8 @@ use facet::Facet;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Scalars {
-    /// The strict readers, as the strict wrappers read (`StrictInt`, `StrictFloat`,
-    /// `StrictBool`, `StrictString`): an integer member takes an integer token in its range
+    /// The strict readers, as the strict wrappers read (`StrictBool` is the one left): an
+    /// integer member takes an integer token in its range
     /// (a real token is a type error, integral or not; one out of range too), a float member
     /// an integer or real token finite in its width, a bool member `true` or `false`, a
     /// string member a string. Every other token is a type error.
@@ -148,16 +147,6 @@ pub struct ScalarRules {
     /// Whether a member whose scalar is refused takes its default and the reader tells it (an
     /// information at the scalar), instead of failing the read there.
     pub default_and_tell: bool,
-    /// Whether a `null` read as a struct (a struct of defaults, which facet makes of it) is
-    /// told in [`ScalarRead::told`] as a misread of another JSON type. `true` in every rule set
-    /// the crate builds, today's reading. A family whose null rule reports that `null` itself
-    /// (`NullRule::Rejected` through `reject_nulls`, or its own walk) turns it off, so the told
-    /// list holds only what its rule does not tell, and can be pushed whole.
-    ///
-    /// The decision whether every slice should tell it, and so whether the option can go, is
-    /// left to the family uptake: until then a family that left the told list unread for this
-    /// one entry keeps its findings by turning it off.
-    pub tells_null_struct: bool,
 }
 
 impl ScalarRules {
@@ -167,7 +156,6 @@ impl ScalarRules {
         scalars: Scalars::ConvertAndTell,
         beyond_width: BeyondWidth::ClampAndTell,
         default_and_tell: false,
-        tells_null_struct: true,
     };
 
     /// The rules with the profile `scalars`.
@@ -190,17 +178,6 @@ impl ScalarRules {
     pub const fn with_default_and_tell(self, default_and_tell: bool) -> Self {
         Self {
             default_and_tell,
-            ..self
-        }
-    }
-}
-
-impl ScalarRules {
-    /// The rules with a `null` read as a struct told, or left to the slice's null rule.
-    #[must_use]
-    pub const fn with_tells_null_struct(self, tells_null_struct: bool) -> Self {
-        Self {
-            tells_null_struct,
             ..self
         }
     }
@@ -261,8 +238,8 @@ impl Declared {
     }
 }
 
-/// A JSON scalar token, as the door reads it: an integer token that fits 64 bits is `UInt` (not
-/// negative) or `Int`, every other number (a real, an integer past 64 bits, which the door reads
+/// A JSON scalar token, as the parser reads it: an integer token that fits 64 bits is `UInt` (not
+/// negative) or `Int`, every other number (a real, an integer past 64 bits, which the parser reads
 /// as the double it spells) is `Real`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
@@ -556,462 +533,13 @@ fn convert_and_tell(declared: Declared, token: Token<'_>) -> Verdict {
     }
 }
 
-/// A typed read under a slice's scalar rules ([`parse_with_rules`]).
-#[derive(Debug)]
-pub struct ScalarRead<T> {
-    /// The value read.
-    pub value: T,
-    /// What is told of its scalars, in document order (paths from the root of the slice): each
-    /// conversion across JSON types ([`Verdict::Converted`]), each number beyond its float
-    /// ([`Verdict::BeyondFloat`]) and each refused member defaulted
-    /// ([`ScalarRules::default_and_tell`]). The caller places them after the read, where the
-    /// post-hoc misread walk told them.
-    pub told: Vec<super::Misread>,
-    /// The value of the text the pre-pass judged, for the caller's walk of the unknown members:
-    /// under [`NullRule::Absent`](super::NullRule::Absent) without the members read as absent
-    /// (as `remove_null_members` leaves it), else as written; `None` for a text that is no JSON.
-    pub json: Option<super::Value>,
-    /// The members read as absent under [`NullRule::Absent`](super::NullRule::Absent), in
-    /// document order (paths from the root of the slice, for `tell_null_members`); empty under
-    /// another rule.
-    pub absent: Vec<crate::diagnostic::JsonPath>,
-}
-
-/// Why [`parse_with_rules`] read no value.
-#[derive(Debug)]
-pub enum ScalarFailure {
-    /// The typed read failed: facet's own refusal, or the one it gives the token the pre-pass
-    /// handed it for a refused scalar (a type error at that scalar, with its span, as a strict
-    /// wrapper's refusal is).
-    Read(super::SliceError),
-    /// A scalar of an untagged enum none of whose scalar arms takes it, and no fault before it
-    /// in document order: refused before the typed read, a type error at the enum
-    /// ([`Misread::finding`](super::Misread::finding), which has no span), with the scalar's
-    /// place in the file beside it ([`RefusedScalar::span`]).
-    Refused(RefusedScalar),
-}
-
-/// The scalar of an untagged enum no arm takes ([`ScalarFailure::Refused`]): what the misread
-/// tells, and where the scalar is.
-///
-/// It reads as its [`Misread`](super::Misread) (`refused.path`, `refused.finding(at)`), so a
-/// caller written for the misread alone reads it unchanged;
-/// [`spanned_finding`](Self::spanned_finding) is that finding with the span.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RefusedScalar {
-    /// The type error at the enum, its path from the root of the slice.
-    pub misread: super::Misread,
-    /// The scalar's place in the file (the slice's offsets); `None` only where the path cannot
-    /// be found in the text again.
-    pub span: Option<crate::diagnostic::Span>,
-}
-
-impl RefusedScalar {
-    /// [`Misread::finding`](super::Misread::finding) at `at`, spanning the scalar.
-    #[must_use]
-    pub fn spanned_finding(
-        &self,
-        at: &crate::diagnostic::JsonPath,
-    ) -> crate::diagnostic::Diagnostic {
-        let mut finding = self.misread.finding(at);
-        finding.location.span = self.span;
-        finding
-    }
-}
-
-/// The misread, for the family readers that tell it as a [`Misread`](super::Misread); core
-/// reads the field.
-impl std::ops::Deref for RefusedScalar {
-    type Target = super::Misread;
-
-    fn deref(&self) -> &Self::Target {
-        &self.misread
-    }
-}
-
-/// Reads `slice` as `T` under `null` (the slice's null rule) and `rules`: the scalar pre-pass.
-///
-/// Before facet reads the text, every scalar of it is judged against its member's declared type
-/// ([`judge`]), on the value of the text with the members `null` reads as absent left out:
-/// - a scalar read as another token ([`Verdict::Respell`]) is handed facet as that token, at
-///   its own offset and span;
-/// - a refused scalar ([`Verdict::Refused`]) is handed facet as a token of a type its member
-///   never takes, so that the typed read fails there as a strict wrapper's does; or, under
-///   [`ScalarRules::default_and_tell`], its member is read as left out and told;
-/// - a scalar of an untagged enum is read by the arm the rules choose; one no arm takes is
-///   [`ScalarFailure::Refused`] and nothing is read, unless a scalar before it in document order
-///   fails the typed read, which then fails there as it would without the enum;
-/// - what is converted or clamped is told ([`ScalarRead::told`]).
-///
-/// Under [`Scalars::ConvertAndTell`] nothing is respelt or refused: facet reads the text as
-/// written (rule N1 aside) and the pre-pass tells what the post-hoc misread walk told. A text
-/// that is no JSON is the typed read's to report.
-///
-/// A flattened struct's (`#[facet(flatten)]`) members are judged as the struct's own, at their
-/// paths (the flattened field adds no step). A flattened map's entries are facet's. Members
-/// behind a proxy (the strict wrappers) judge themselves.
-///
-/// # Errors
-///
-/// [`ScalarFailure`], as above.
-pub fn parse_with_rules<'a, T: facet::Facet<'a>>(
-    slice: super::JsonSlice<'a>,
-    null: Option<super::NullRule>,
-    rules: ScalarRules,
-) -> Result<ScalarRead<T>, ScalarFailure> {
-    use super::read::Plan;
-    use super::{Misread, Misreading, Value};
-    use crate::diagnostic::JsonPath;
-    use facet_format::ScalarValue;
-
-    let Ok(json) = super::from_str_jsonc::<Value>(slice.text) else {
-        // Not JSON: the typed read reports it.
-        let value = super::slice::parse_planned::<T>(slice, &Plan::default())
-            .map_err(ScalarFailure::Read)?;
-        return Ok(ScalarRead {
-            value,
-            told: Vec::new(),
-            json: None,
-            absent: Vec::new(),
-        });
-    };
-    let mut json = json;
-    let mut plan = Plan::default();
-    if null == Some(super::NullRule::Absent) {
-        plan.absent = super::null::member_paths(T::SHAPE, &json);
-        super::null::remove_members(&mut json, &plan.absent);
-    }
-    let walked = super::walk::Walk::new(T::SHAPE, &json).scalars(rules).run();
-    let mut told = Vec::new();
-    let tell = |path: &JsonPath, kind| Misread {
-        path: path.clone(),
-        kind,
-    };
-    // Whether a scalar before the one at hand fails the typed read there (a poisoned token, an
-    // array where a scalar belongs), and the first scalar no arm of its enum takes.
-    let mut faulted = false;
-    let mut refused_arm = None;
-    for call in &walked.scalars {
-        if call.list.is_some() {
-            // facet refuses the array itself; `wrapper_place` moves its finding.
-            faulted = true;
-            continue;
-        }
-        match call.verdict {
-            Verdict::Keep => {}
-            // A `null` read as a struct is the one conversion with no declared scalar type.
-            Verdict::Converted if call.declared.is_none() && !rules.tells_null_struct => {}
-            Verdict::Converted => told.push(tell(&call.path, Misreading::WrongType)),
-            Verdict::BeyondFloat => told.push(tell(&call.path, Misreading::BeyondFloat)),
-            Verdict::Respell(respelt) => plan.fixes.push((call.path.clone(), event(respelt))),
-            Verdict::Refused(_) => {
-                let member = call.path.last_key().is_some();
-                if rules.default_and_tell && member {
-                    plan.blank.push(call.path.clone());
-                    told.push(tell(&call.path, Misreading::Defaulted));
-                } else if call.arm {
-                    let misread = tell(&call.path, Misreading::WrongType);
-                    let span = super::span_at(slice, &misread.path);
-                    let misread = RefusedScalar { misread, span };
-                    if !faulted {
-                        return Err(ScalarFailure::Refused(misread));
-                    }
-                    // A fault comes first: the typed read fails there, and nothing after it
-                    // is read.
-                    refused_arm = Some(misread);
-                    break;
-                } else {
-                    faulted = true;
-                    // The poison is a real token facet reads. Where an untagged enum's object
-                    // arms share the member's key with fields of different scalar types, facet
-                    // narrows the arms by it: an arm whose field takes the poison is read, and
-                    // the refusal is lost (`{"k": "7"}` with arms `{k: u8}` and `{k: bool}` reads
-                    // the bool arm as `false`; `json_scalars` pins it).
-                    let poison = match call.declared {
-                        // A number is no bool to a bool member.
-                        Some(Declared::Bool) => ScalarValue::U64(2),
-                        // A bool is no number and no string to any other.
-                        _ => ScalarValue::Bool(false),
-                    };
-                    plan.fixes.push((call.path.clone(), poison));
-                }
-            }
-        }
-    }
-    let read = super::slice::parse_planned::<T>(slice, &plan)
-        .map_err(|error| ScalarFailure::Read(wrapper_place(error, slice, &walked.scalars)));
-    if let Some(misread) = refused_arm {
-        // Were the earlier fault read after all, the arm is still refused.
-        return Err(read.err().unwrap_or(ScalarFailure::Refused(misread)));
-    }
-    let value = read?;
-    let absent = plan.absent;
-    Ok(ScalarRead {
-        value,
-        told,
-        json: Some(json),
-        absent,
-    })
-}
-
-/// `error` at the place a strict wrapper's refusal has it, when facet refused an array where a
-/// scalar belongs at that array's `[` (`calls` names each such array): a wrapper reads the array
-/// through its untagged scalar proxy and fails at the last element, at the closing bracket (at
-/// index 0 of an empty array).
-fn wrapper_place(
-    mut error: super::SliceError,
-    slice: super::JsonSlice<'_>,
-    calls: &[super::walk::ScalarCall],
-) -> super::SliceError {
-    let Some(len) = calls
-        .iter()
-        .find_map(|call| call.list.filter(|_| call.path == error.path))
-    else {
-        return error;
-    };
-    let Some(array) = super::span_at(slice, &error.path) else {
-        return error;
-    };
-    if error.span.offset != array.offset || array.len == 0 {
-        return error;
-    }
-    error.path.push_index(len.saturating_sub(1));
-    error.span = crate::diagnostic::Span {
-        offset: array.offset + array.len - 1,
-        len: 1,
-    };
-    error
-}
-
-/// The parser event of a respelt token.
-fn event(respelt: Respelt) -> facet_format::ScalarValue<'static> {
-    use facet_format::ScalarValue;
-    match respelt {
-        Respelt::Bool(b) => ScalarValue::Bool(b),
-        Respelt::UInt(u) => ScalarValue::U64(u),
-        Respelt::Int(i) => ScalarValue::I64(i),
-        Respelt::Real(x) => ScalarValue::F64(x),
-    }
-}
-
-#[cfg(test)]
-#[allow(dead_code, reason = "the test types are read, not looked at")]
-mod tests {
-    use super::*;
-    use crate::json::walk::{ScalarCall, Walk};
-    use crate::json::{Misreading, Value, from_str, keep_members};
-    use facet::Facet;
-    use indexmap::IndexMap;
-
-    #[derive(Debug, Facet)]
-    struct Plain {
-        #[facet(default)]
-        int: i32,
-        #[facet(default)]
-        small: u8,
-        #[facet(default)]
-        float: f32,
-        #[facet(default)]
-        flag: bool,
-        #[facet(default)]
-        name: String,
-        #[facet(default)]
-        maybe: Option<u8>,
-        #[facet(default)]
-        list: Vec<u16>,
-        #[facet(default)]
-        map: IndexMap<String, bool>,
-        #[facet(default)]
-        inner: Option<Inner>,
-        #[facet(default)]
-        any: Value,
-    }
-
-    #[derive(Debug, Default, Facet)]
-    struct Inner {
-        #[facet(default)]
-        depth: f64,
-    }
-
-    #[derive(Debug, Facet)]
-    #[facet(untagged)]
-    #[repr(u8)]
-    enum Shorthand {
-        Enabled(bool),
-        Params(Params),
-    }
-
-    #[derive(Debug, Facet)]
-    struct Params {
-        resistance: f32,
-    }
-
-    #[derive(Debug, Facet)]
-    #[facet(untagged)]
-    #[repr(u8)]
-    enum CountOrName {
-        Count(u8),
-        Name(String),
-    }
-
-    #[derive(Debug, Facet)]
-    struct Arms {
-        #[facet(default)]
-        shorthand: Option<Shorthand>,
-        #[facet(default)]
-        count_or_name: Option<CountOrName>,
-    }
-
-    fn calls<'f, T: Facet<'f>>(text: &str, rules: ScalarRules) -> Vec<(String, Verdict, bool)> {
-        let json: Value = from_str(text).unwrap();
-        Walk::new(T::SHAPE, &json)
-            .scalars(rules)
-            .run()
-            .scalars
-            .into_iter()
-            .map(
-                |ScalarCall {
-                     path, verdict, arm, ..
-                 }| (path.to_string(), verdict, arm),
-            )
-            .collect()
-    }
-
-    const STRICT: ScalarRules = ScalarRules::PLAIN
-        .with_scalars(Scalars::Strict)
-        .with_beyond_width(BeyondWidth::Error);
-
-    const WRONG: Verdict = Verdict::Refused(Refusal::WrongType);
-
-    #[test]
-    fn the_walk_judges_every_scalar_of_a_member_in_document_order() {
-        let text = r#"{"name": 5, "int": 1.5, "small": 256, "float": 1e39, "flag": 1,
-            "maybe": null, "list": [1, "2", null], "map": {"a": true, "b": "no"},
-            "inner": {"depth": "deep"}, "any": {"int": "x"}}"#;
-        assert_eq!(
-            calls::<Plain>(text, STRICT),
-            [
-                ("name".to_owned(), WRONG, false),
-                ("int".to_owned(), WRONG, false),
-                (
-                    "small".to_owned(),
-                    Verdict::Refused(Refusal::OutOfRange),
-                    false
-                ),
-                (
-                    "float".to_owned(),
-                    Verdict::Refused(Refusal::BeyondWidth),
-                    false
-                ),
-                ("flag".to_owned(), WRONG, false),
-                ("list/1".to_owned(), WRONG, false),
-                ("list/2".to_owned(), WRONG, false),
-                ("map/b".to_owned(), WRONG, false),
-                ("inner/depth".to_owned(), WRONG, false),
-            ]
-        );
-        // The same members under the plain reading: told where the misread walk tells, the
-        // rest facet's.
-        assert_eq!(
-            calls::<Plain>(text, ScalarRules::PLAIN),
-            [
-                ("name".to_owned(), Verdict::Converted, false),
-                ("float".to_owned(), Verdict::BeyondFloat, false),
-                ("flag".to_owned(), Verdict::Converted, false),
-                ("list/1".to_owned(), Verdict::Converted, false),
-                ("list/2".to_owned(), Verdict::Converted, false),
-                ("map/b".to_owned(), Verdict::Converted, false),
-                ("inner/depth".to_owned(), Verdict::Converted, false),
-            ]
-        );
-    }
-
-    #[test]
-    fn a_scalar_no_arm_takes_is_refused_at_the_enum_under_the_strict_rule() {
-        let refused_at = |text: &str| calls::<Arms>(text, STRICT);
-        assert_eq!(
-            refused_at(r#"{"shorthand": 5}"#),
-            [("shorthand".to_owned(), WRONG, true)]
-        );
-        assert_eq!(
-            refused_at(r#"{"shorthand": "true"}"#),
-            [("shorthand".to_owned(), WRONG, true)]
-        );
-        assert!(refused_at(r#"{"shorthand": true}"#).is_empty());
-        // Inside the object arm, its members are judged as any member.
-        assert_eq!(
-            refused_at(r#"{"shorthand": {"resistance": "3"}}"#),
-            [("shorthand/resistance".to_owned(), WRONG, false)]
-        );
-        // The first arm that takes the token: `7` is a count, `"x"` a name, `true` neither.
-        assert!(refused_at(r#"{"count_or_name": 7}"#).is_empty());
-        assert!(refused_at(r#"{"count_or_name": "x"}"#).is_empty());
-        assert_eq!(
-            refused_at(r#"{"count_or_name": true}"#),
-            [("count_or_name".to_owned(), WRONG, true)]
-        );
-        assert_eq!(
-            refused_at(r#"{"count_or_name": 300}"#),
-            [("count_or_name".to_owned(), WRONG, true)]
-        );
-    }
-
-    /// The plain reading tells what the misread walk of the value facet read tells, the arm
-    /// of an untagged enum chosen as facet chose it: the two agree over every input facet reads.
-    #[test]
-    fn the_plain_reading_tells_what_the_typed_misread_walk_tells() {
-        for text in [
-            r#"{"name": 5, "int": 1e1, "float": "2", "flag": "true", "list": [1, "2"]}"#,
-            r#"{"map": {"a": "true"}, "inner": {"depth": 7}, "maybe": "3"}"#,
-            r#"{"float": 1e39, "inner": {"depth": "1"}, "name": "ok"}"#,
-            r#"{"int": null, "name": null, "inner": null}"#,
-        ] {
-            told_as_the_typed_walk::<Plain>(text);
-        }
-        for text in [
-            r#"{"count_or_name": 7}"#,
-            r#"{"count_or_name": "7"}"#,
-            r#"{"count_or_name": "x"}"#,
-            r#"{"shorthand": "true"}"#,
-            r#"{"shorthand": true}"#,
-            r#"{"shorthand": {"resistance": "3"}}"#,
-        ] {
-            told_as_the_typed_walk::<Arms>(text);
-        }
-    }
-
-    fn told_as_the_typed_walk<T: for<'f> Facet<'f> + std::fmt::Debug>(text: &str) {
-        let Ok(read) = from_str::<T>(text) else {
-            panic!("facet refuses {text}");
-        };
-        let json: Value = from_str(text).unwrap();
-        let typed: Vec<(String, Verdict)> =
-            keep_members(&read, &json, &mut crate::document::Unknown::new())
-                .1
-                .into_iter()
-                .map(|misread| {
-                    let verdict = match misread.kind {
-                        Misreading::WrongType => Verdict::Converted,
-                        Misreading::BeyondFloat => Verdict::BeyondFloat,
-                        other => panic!("the misread walk tells no {other:?}"),
-                    };
-                    (misread.path.to_string(), verdict)
-                })
-                .collect();
-        let prepass: Vec<(String, Verdict)> = calls::<T>(text, ScalarRules::PLAIN)
-            .into_iter()
-            .map(|(path, verdict, _)| (path, verdict))
-            .collect();
-        assert_eq!(prepass, typed, "{text}: {read:?}");
-    }
-}
-
-/// The integer types a [`StrictInt`](super::StrictInt) holds: `i8` to `i64` and `u8` to `u64`.
+/// The integer types of `i8` to `i64` and `u8` to `u64`: a bound for a reader that takes any
+/// of them.
 ///
 /// The set is closed: the trait cannot be implemented outside this crate.
 ///
 /// ```compile_fail,E0277
-/// use bedrock_addon_core::json::{ScalarShape, StrictIntType};
+/// use bedrock_addon_core::json::StrictIntType;
 ///
 /// #[derive(Clone, Copy)]
 /// struct Mine(u8);
@@ -1023,100 +551,19 @@ mod tests {
 ///     type Error = ();
 ///     fn try_from(_: i64) -> Result<Self, ()> { Err(()) }
 /// }
-/// impl StrictIntType for Mine {
-///     fn to_shape(self) -> ScalarShape { ScalarShape::Null }
-///     fn from_non_strict(_: &ScalarShape) -> Option<Self> { None }
-/// }
+/// impl StrictIntType for Mine {}
 /// ```
-pub trait StrictIntType: sealed::Sealed + Copy + TryFrom<u64> + TryFrom<i64> {
-    /// The written form: `UInt` for a non-negative value, `Int` for a negative one.
-    fn to_shape(self) -> ScalarShape;
+pub trait StrictIntType: sealed::Sealed + Copy + TryFrom<u64> + TryFrom<i64> {}
 
-    /// The non-strict readers' value of `shape` ([`ReaderMode::NonStrict`](super::ReaderMode::NonStrict)): the low bits of an
-    /// integer token (`ldrb`, `ldr w`, `ldr x` of the token's 64 bits), a bool as `0` or `1`,
-    /// a real as the truncation toward zero that `fcvtzs` / `fcvtzu` gives (saturating), a
-    /// negative real as the negated truncation of its magnitude. `None` for the other types.
-    fn from_non_strict(shape: &ScalarShape) -> Option<Self>;
-}
-
-/// The seal of [`StrictIntType`] and `StrictFloatType`: private to `json`, so no type outside
-/// this crate has it.
+/// The seal of [`StrictIntType`]: private to `json`, so no type outside this crate has it.
 pub(super) mod sealed {
     pub trait Sealed {}
 }
 
 macro_rules! strict_int_types {
-    ($($t:ty => $real:ident),*) => {$(
+    ($($t:ty),*) => {$(
         impl sealed::Sealed for $t {}
-        impl StrictIntType for $t {
-            fn to_shape(self) -> ScalarShape {
-                // Every value of these types fits `u64` or, when negative, `i64`; the `Null`
-                // arm is never taken.
-                match (u64::try_from(self), i64::try_from(self)) {
-                    (Ok(u), _) => ScalarShape::UInt(u),
-                    (Err(_), Ok(i)) => ScalarShape::Int(i),
-                    (Err(_), Err(_)) => ScalarShape::Null,
-                }
-            }
-
-            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)] // the low bits are the reading
-            fn from_non_strict(shape: &ScalarShape) -> Option<Self> {
-                let bits = match shape {
-                    ScalarShape::Bool(b) => u64::from(*b),
-                    ScalarShape::UInt(u) => *u,
-                    ScalarShape::Int(i) => *i as u64,
-                    ScalarShape::Number(x) => $real(*x),
-                    ScalarShape::Null | ScalarShape::String(_) => return None,
-                };
-                Some(bits as $t)
-            }
-        }
+        impl StrictIntType for $t {}
     )*};
 }
-strict_int_types!(
-    i8 => real_as_i32, i16 => real_as_i32, i32 => real_as_i32, i64 => real_as_i64,
-    u8 => real_as_i32, u16 => real_as_i32, u32 => real_as_u32, u64 => real_as_u64
-);
-
-// The non-strict readers' reals: `x >= 0` is the saturating truncation toward zero, `x < 0`
-// the negated truncation of `-x`. The 8 and 16 bit readers go through the signed 32 bit
-// conversion.
-
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn real_as_i32(x: f64) -> u64 {
-    let v = if x >= 0.0 {
-        x as i32
-    } else {
-        (-x as i32).wrapping_neg()
-    };
-    u64::from(v as u32)
-}
-
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn real_as_u32(x: f64) -> u64 {
-    let v = if x >= 0.0 {
-        x as u32
-    } else {
-        (-x as u32).wrapping_neg()
-    };
-    u64::from(v)
-}
-
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn real_as_i64(x: f64) -> u64 {
-    let v = if x >= 0.0 {
-        x as i64
-    } else {
-        (-x as i64).wrapping_neg()
-    };
-    v as u64
-}
-
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-fn real_as_u64(x: f64) -> u64 {
-    if x >= 0.0 {
-        x as u64
-    } else {
-        (-x as u64).wrapping_neg()
-    }
-}
+strict_int_types!(i8, i16, i32, i64, u8, u16, u32, u64);

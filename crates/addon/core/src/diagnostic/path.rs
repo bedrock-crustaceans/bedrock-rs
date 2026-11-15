@@ -38,7 +38,7 @@ impl JsonPath {
     }
 
     /// Continues the path with every segment of `other` (a path relative to this one, such as
-    /// `SliceError::path` below a component key).
+    /// the path of a read inside a component's slice, below a component key).
     pub fn append(&mut self, other: &JsonPath) {
         self.segments.extend(other.segments.iter().cloned());
     }

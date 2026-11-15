@@ -247,7 +247,7 @@ mod tests {
     use super::*;
 
     fn json(text: &str) -> Value {
-        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("valid JSON")
+        bedrock_addon_core::json::from_str_jsonc(text).expect("valid JSON")
     }
 
     fn upgraded(text: &str) -> (Value, Upgraded, Diagnostics) {

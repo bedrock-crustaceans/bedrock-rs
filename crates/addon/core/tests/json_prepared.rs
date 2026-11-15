@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 
 use bedrock_addon_core::json::{
-    MAX_JSON_DEPTH, PrepareError, Prepared, TooDeep, Value, from_str_jsonc, strip_bom,
+    MAX_JSON_DEPTH, PrepareError, Prepared, TooDeep, from_str_jsonc, strip_bom,
 };
 
 const BOM: &[u8] = b"\xEF\xBB\xBF";
@@ -99,7 +99,7 @@ fn blank_or_null(bytes: &[u8]) -> bool {
     let Ok(text) = std::str::from_utf8(strip_bom(bytes)) else {
         return false;
     };
-    let null = |text: &str| from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null());
+    let null = |text: &str| from_str_jsonc(text).is_ok_and(|v| v.is_null());
     null(text) || null(&format!("{text}\nnull"))
 }
 

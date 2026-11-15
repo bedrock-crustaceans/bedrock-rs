@@ -18,11 +18,11 @@ use indexmap::IndexMap;
 struct Marked {
     #[facet(default)]
     level: u8,
-    #[facet(skip, rename = "\u{0}converted")]
+    #[facet(skip)]
     converted: bool,
-    #[facet(skip, rename = "\u{0}side")]
+    #[facet(skip)]
     side: IndexMap<String, Value>,
-    #[facet(skip, rename = "\u{0}extra")]
+    #[facet(skip)]
     extra: Extra,
 }
 

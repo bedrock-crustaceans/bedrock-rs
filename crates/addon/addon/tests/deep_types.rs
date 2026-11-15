@@ -4,7 +4,7 @@
 //! and a block's legacy event (`DeprecatedDefinitionEvent`, itself in a list).
 //!
 //! facet reads them by a call of itself for each level: 55 KiB a level for the first in a
-//! debug build, which overflowed a megabyte at 19 levels. The door gives the read its stack.
+//! debug build, which overflowed a megabyte at 19 levels. The reader gives the read its stack.
 //! Its own binary: an overflow aborts the process.
 
 #![cfg(all(feature = "script", feature = "block"))]
@@ -12,7 +12,7 @@
 use bedrock_addon::families::block::component::DeprecatedDefinitionEvent;
 use bedrock_addon::families::script::meta::TypeDescriptor;
 use bedrock_addon::families::script::meta::model::script::RawTypeDesc;
-use bedrock_addon::json::{MAX_JSON_DEPTH, Value, check_depth, from_str_jsonc, to_json};
+use bedrock_addon::json::{MAX_JSON_DEPTH, check_depth, from_str_jsonc, to_json};
 
 /// The stack of the reading thread: half the default of a spawned thread.
 const SMALL_STACK: usize = 1024 * 1024;
@@ -57,7 +57,7 @@ fn event(levels: usize) -> String {
 
 /// `text` read as a `T`: the JSON reads, then the type does.
 fn read_as<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Option<T> {
-    bedrock_addon_core::schema::read_value(&from_str_jsonc::<Value>(text).ok()?)
+    bedrock_addon_core::schema::read_value(&from_str_jsonc(text).ok()?)
 }
 
 #[test]
@@ -117,8 +117,8 @@ fn a_level_past_the_limit_is_an_error_for_both() {
     for levels in [MAX_JSON_DEPTH + 1, 1000, 100_000] {
         let refused = on_a_small_stack(move || {
             let (descriptor, event) = (descriptor(levels), event(levels));
-            let descriptor = from_str_jsonc::<Value>(&descriptor).err();
-            let event = from_str_jsonc::<Value>(&event).err();
+            let descriptor = from_str_jsonc(&descriptor).err();
+            let event = from_str_jsonc(&event).err();
             [descriptor, event].map(|error| error.map(|error| error.to_string()))
         });
         for error in refused {

@@ -6,7 +6,6 @@ use bedrock_addon::document::Content;
 use bedrock_addon::families::blocks_json::{
     BLOCKS_JSON_DEFAULT_VERSION, BLOCKS_JSON_MAX_FORMAT_VERSION, BlocksJson,
 };
-use bedrock_addon::json::Value;
 use bedrock_addon::load::LoadContext;
 use bedrock_addon::storage::PackPath;
 use bedrock_addon::version::FormatVersion;
@@ -301,7 +300,7 @@ fn an_array_version_reads_its_elements_as_jsoncpp_does() {
         (r#"[1, "21", 40]"#, FormatVersion::new(1, 1, 0)),
     ] {
         let file = BlocksJson {
-            format_version: Some(bedrock_addon::json::from_str_jsonc::<Value>(array).unwrap()),
+            format_version: Some(bedrock_addon::json::from_str_jsonc(array).unwrap()),
             ..BlocksJson::default()
         };
         assert_eq!(file.effective_version(), effective, "{array}");
@@ -312,7 +311,7 @@ fn an_array_version_reads_its_elements_as_jsoncpp_does() {
 fn the_file_type_tells_its_effective_version() {
     let version = |json: &str| {
         BlocksJson {
-            format_version: Some(bedrock_addon::json::from_str_jsonc::<Value>(json).unwrap()),
+            format_version: Some(bedrock_addon::json::from_str_jsonc(json).unwrap()),
             ..BlocksJson::default()
         }
         .effective_version()

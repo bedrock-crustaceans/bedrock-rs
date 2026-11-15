@@ -39,7 +39,7 @@ fn version(major: u16, minor: u16, patch: u16) -> FormatVersion {
 /// The written text's `format_version`.
 fn written_version(item: &Item) -> String {
     let text = item.to_json().unwrap();
-    let value: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap();
+    let value: Value = bedrock_addon_core::json::from_str_jsonc(&text).unwrap();
     value.as_object().unwrap()["format_version"]
         .as_string()
         .unwrap()

@@ -16,7 +16,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_family_script = { path = "../script" }
 bytes = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
 uuid = { workspace = true }

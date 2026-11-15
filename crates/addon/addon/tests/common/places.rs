@@ -241,7 +241,7 @@ pub fn without(text: &str, node: &Node) -> Option<String> {
 }
 
 pub fn parse(text: &str) -> Option<Value> {
-    bedrock_addon::json::from_str_jsonc::<Value>(text).ok()
+    bedrock_addon::json::from_str_jsonc(text).ok()
 }
 
 /// The value of `json` at `path`.

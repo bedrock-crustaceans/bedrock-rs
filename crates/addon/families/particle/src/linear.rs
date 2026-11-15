@@ -44,7 +44,7 @@ pub(crate) fn assert_reads_linear_at<O>(
 
 /// `text` as a JSON value: what a reader is handed.
 pub(crate) fn value(text: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("the test's JSON")
+    bedrock_addon_core::json::from_str_jsonc(text).expect("the test's JSON")
 }
 
 /// An object of `count` members `"<prefix><i>": <entry>`.

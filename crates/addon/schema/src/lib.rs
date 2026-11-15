@@ -3,7 +3,7 @@
 //! A typed document struct states its per-field facts as facet extension attributes in one
 //! namespace, `#[facet(schema::fallback = 1.0, schema::min = 0.0)]`, beside facet's own
 //! `default`, `rename_all` and `flatten`. facet's derive checks every key by name. Three keys
-//! are stored in the `Shape`, for the JSON door while it reads the text; the others are
+//! are stored in the `Shape`, for the reader while it reads the text; the others are
 //! compile-time only, read from the tokens by `#[derive(Schema)]`.
 //!
 //! The hand-written hooks form one grid, a field's or a struct's, at the read or at the check:
@@ -140,7 +140,7 @@ facet::define_attr_grammar! {
         Missing(arbitrary),
         /// `invalid = CODE` (compile-time): the code a value the member's type refuses (an
         /// unknown name, a number out of range) is told under at the member. On an enum with
-        /// data it is the code of a value that names no variant, told as the typed door tells a
+        /// data it is the code of a value that names no variant, told as facet-json told a
         /// variant lookup: at the member the value belongs to (a list's elements at the list),
         /// over the value. Internally tagged: a tag that names none; externally tagged: a name
         /// that is none, and a `null`, bool or number, which none can be; untagged: a negative

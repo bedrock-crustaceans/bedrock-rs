@@ -35,7 +35,7 @@
 //! - a helper that reports one of several sentences takes a `&'static CodeDef<0>`, and a
 //!   reader that takes a sentence takes [`CodeDef::template`].
 //!
-//! A finding no family owns (the door, the envelope, the kit, the builders, the link pass) is
+//! A finding no family owns (the parser, the envelope, the kit, the builders, the link pass) is
 //! a definition of [`codes`](super::codes), the core's: one generic definition per kind of
 //! finding, and a `_WORDED` one taking the game's sentence whole for a site whose sentence has
 //! no definition of its own yet.

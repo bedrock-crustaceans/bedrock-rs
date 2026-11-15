@@ -1,8 +1,7 @@
-//! The door rule: `bedrock_addon_core::json::read` is the only module of the crate
-//! family that calls a facet-json parser, so no text reaches facet without the scan that
-//! refuses what facet cannot read safely; and `json::write` the only one that calls a
+//! The door rule: no module of the crate family calls a facet-json parser, since
+//! `json::parse` reads every text; and `json::write` is the only one that calls a
 //! facet-json writer, which writes a value by a call of itself for each level and
-//! has no limit either. This test reads the sources and fails for any other use of
+//! has no limit. This test reads the sources and fails for any other use of
 //! `facet_json` than the names below.
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
@@ -19,16 +18,12 @@ const ROOTS: &[&str] = &[
     "storage/src",
 ];
 
-/// The module that may call the parsers.
-const DOOR: &str = "core/src/json/read.rs";
-
 /// The module that may call the writers (`to_facet_json`), and the one whose tests measure
 /// the stack facet takes when it is called without the door.
 const OTHER_DOORS: &[&str] = &["core/src/json/write.rs", "core/src/json/stack.rs"];
 
-/// What any module may name of facet-json: the raw slice type and the error type. Neither
-/// reads or writes text.
-const ALLOWED: &[&str] = &["RawJson", "DeserializeError"];
+/// What any module may name of facet-json: nothing, since no module reads a text with it.
+const ALLOWED: &[&str] = &[];
 
 /// facet-json's owned reads (`from_str`, `from_str_jsonc`, rc.7) lend a `Cow<'_, str>` member
 /// the text they are given: a `Cow<'static, str>`, or the `Cow<'a, str>` of a `Foo<'a>` read
@@ -347,7 +342,7 @@ fn crates_dir() -> PathBuf {
 }
 
 #[test]
-fn only_the_door_calls_a_facet_json_parser() {
+fn no_module_calls_a_facet_json_parser() {
     let crates = crates_dir();
     let mut files = Vec::new();
     for root in ROOTS {
@@ -356,16 +351,11 @@ fn only_the_door_calls_a_facet_json_parser() {
     files.sort();
     assert!(files.len() > 300, "the scan found {} files", files.len());
     let mut found = Vec::new();
-    let mut door_calls = 0;
     for file in &files {
         let relative = file.strip_prefix(&crates).unwrap().to_str().unwrap();
         let relative = relative.replace('\\', "/");
         let code = code_of(&std::fs::read_to_string(file).unwrap());
         let offenders = offenders(&code);
-        if relative == DOOR {
-            door_calls = offenders.len();
-            continue;
-        }
         if OTHER_DOORS.contains(&relative.as_str()) {
             continue;
         }
@@ -374,14 +364,9 @@ fn only_the_door_calls_a_facet_json_parser() {
         }
     }
     assert!(
-        door_calls >= 3,
-        "the door calls {door_calls} parsers: the scan sees none"
-    );
-    assert!(
         found.is_empty(),
-        "{} uses of facet-json outside `json::read` and `json::write` (call \
-         `json::from_str_jsonc` and its siblings, which scan the text first, or \
-         `json::to_facet_json`, which bounds the depth):\n{}",
+        "{} uses of facet-json outside `json::write` (read a text with `json::parse`, \
+         or write a value with `json::to_facet_json`, which bounds the depth):\n{}",
         found.len(),
         found.join("\n")
     );
@@ -410,7 +395,7 @@ fn the_scan_sees_each_form_of_a_use() {
     );
     assert_eq!(
         hits("use facet_json::{RawJson, from_str_jsonc};"),
-        ["facet_json::from_str_jsonc"]
+        ["facet_json::RawJson", "facet_json::from_str_jsonc"]
     );
     assert_eq!(
         hits("facet_json\n    ::from_slice(b)"),
@@ -422,7 +407,10 @@ fn the_scan_sees_each_form_of_a_use() {
         hits("facet_json::JsonParser::<true>::new(b)"),
         ["facet_json::JsonParser"]
     );
-    assert!(hits("use facet_json::{DeserializeError, RawJson};").is_empty());
+    assert_eq!(
+        hits("use facet_json::{DeserializeError, RawJson};"),
+        ["facet_json::DeserializeError", "facet_json::RawJson"]
+    );
     assert_eq!(hits("facet_json::to_string(&v)"), ["facet_json::to_string"]);
     assert!(hits("my_facet_json::from_str(x)").is_empty());
     assert!(hits(&code_of("/// see `facet_json::from_str`\nfn f() {}")).is_empty());

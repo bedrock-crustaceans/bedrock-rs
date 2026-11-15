@@ -83,7 +83,7 @@ fn bake(name: &str) -> Value {
     )))
     .unwrap();
     let text = to_json_text(&bytes).unwrap_or_else(|e| panic!("{name}: {e:?}"));
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(&text).unwrap()
 }
 
 #[test]
@@ -130,6 +130,6 @@ fn the_1_26_50_bake_is_the_decoded_fixture() {
         "vanilla_1_26_50/crafting_item_catalog.decoded.json",
     ))
     .unwrap();
-    let twin: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&twin).unwrap();
+    let twin: Value = bedrock_addon_core::json::from_str_jsonc(&twin).unwrap();
     assert_eq!(bake("vanilla_1.26.50"), twin);
 }

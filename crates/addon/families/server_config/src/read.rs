@@ -316,19 +316,13 @@ pub(super) fn with_root(
         // `first_wins` follows brackets and keys, not the grammar: a copy it blanked may
         // hold the text's syntax fault. The server's reader reads the whole text, so the
         // text as written is read once more, and its fault is the file's.
-        sink.malformed(
-            facet_json::DeserializeError::from(fault.clone()).to_string(),
-            Some(fault.span),
-        );
+        sink.malformed(fault.kind.to_string(), Some(fault.span));
         return false;
     }
     let root = JsonSlice::new(&clean);
     // The whole root is read once, so that every slice of it read later is known to parse.
     if let Err(fault) = parse_slice(root, Options::default()) {
-        sink.malformed(
-            facet_json::DeserializeError::from(fault.clone()).to_string(),
-            Some(fault.span),
-        );
+        sink.malformed(fault.kind.to_string(), Some(fault.span));
         return false;
     }
     if let Some(mut finding) = json::trailing_content_finding(root) {

@@ -879,7 +879,7 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     for _ in 0..125 {
         deep_extra.push(']');
     }
-    let value: Value = bedrock_addon::json::from_str_jsonc::<Value>(&deep_extra).unwrap();
+    let value: Value = bedrock_addon::json::from_str_jsonc(&deep_extra).unwrap();
     let with_extra = |value: Value| {
         let mut document = loaded(&tree_text("t", r#"{"minecraft:consume_item": {}}"#));
         document
@@ -900,7 +900,7 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     // 4 levels down to the body, and 125 more
     refused_document(&with_extra(value));
     let value: Value =
-        bedrock_addon::json::from_str_jsonc::<Value>(&deep_extra[1..deep_extra.len() - 1]).unwrap();
+        bedrock_addon::json::from_str_jsonc(&deep_extra[1..deep_extra.len() - 1]).unwrap();
     assert!(with_extra(value).to_json().is_ok());
     // and far past the limit, quickly and without a deep stack
     let started = std::time::Instant::now();

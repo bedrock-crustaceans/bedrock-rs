@@ -141,10 +141,10 @@ impl<'d> Reader<'d> {
         let cleaned = bedrock_addon_core::json::last_wins(text);
         let text: &str = &cleaned;
         // `Json::Reader::parse(…, collectComments = false)`: comments are accepted.
-        let document = match bedrock_addon_core::json::from_str_jsonc::<Value>(text) {
+        let document = match bedrock_addon_core::json::from_str_jsonc(text) {
             Ok(document) => document,
             Err(error) => {
-                let message = error.to_string();
+                let message = error.kind.to_string();
                 // `parse error:\n%s` with the reader's messages (Error, `LogArea::Ai`); the
                 // file is skipped.
                 self.read.push(

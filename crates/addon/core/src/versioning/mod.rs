@@ -9,7 +9,7 @@
 //! - [`load`] is the whole pipeline of one file: envelope, version selection, parse (with the
 //!   Molang pass 1), upgrade to the newest struct, generic and family validation.
 //! - [`RangeModel`] turns a chain's versions into version ranges; [`select`] picks a struct.
-//! - [`parse_component_map`], [`parse_component`] and [`validate_components`] are the
+//! - [`read_component_map_by`], [`read_component`] and [`validate_components`] are the
 //!   per-component halves: one component at a time from its slice, and the
 //!   `released` / `requires` / deprecation / `supersedes` / area checks on the newest struct.
 //! - [`Legacy`] is the struct of an older era whose payload is one type in every era; its steps
@@ -45,15 +45,15 @@ pub mod __macro;
 
 pub use component::{
     ComponentSection, KeyGate, check_experimental_fields, check_fields_released,
-    check_fields_since_engine, parse_component, parse_component_map, read_component,
-    read_component_map_by, read_component_with, read_slice, read_slice_with, validate_components,
+    check_fields_since_engine, read_component, read_component_map_by, read_component_with,
+    read_slice, read_slice_with, validate_components,
 };
 pub use document::{
     DocumentRead, OpenBeta, beta_refused, parse_document, parse_document_as_written,
 };
 pub use file::BelowFloor;
 pub use legacy::{Legacy, LegacyPayload, LegacyStep};
-pub use payload::{parse_payload, read_payload, read_payload_with, write_payload};
+pub use payload::{read_payload, read_payload_with, write_payload};
 pub use pipeline::{
     Parsed, file_version, finish, finish_file, load, load_file, member_version, no_parser_version,
     parse_as_written, parse_file_as_written,
@@ -96,9 +96,9 @@ pub trait Upgrade: Versioned + Sized {
 /// One struct of a chain as the chain parses and writes it: the payload (or, on the raw-text
 /// path, the whole document) as written in the struct's era.
 ///
-/// Most structs parse with [`parse_payload`] and write with [`write_payload`]; a struct that
+/// Most structs parse with [`read_payload`] and write with [`write_payload`]; a struct that
 /// holds components keeps them as raw slices while it parses and builds its component map with
-/// [`parse_component_map`].
+/// [`read_component_map_by`].
 pub trait VersionStruct: Versioned + MolangFields + Sized {
     /// Parses `payload`; `None` when the struct cannot be built (the reason is in `d`).
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self>;
@@ -129,7 +129,7 @@ impl<T: Versioned> Versioned for Box<T> {
 }
 
 /// A boxed struct, for a chain that holds a large struct on the heap between the frames of the
-/// load: read as `T` (the door walks `T`'s shape, not a pointer's), then boxed; written as `T`.
+/// load: read as `T` (the reader walks `T`'s shape, not a pointer's), then boxed; written as `T`.
 impl<T: VersionStruct> VersionStruct for Box<T> {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         T::parse(payload, cx, d).map(Box::new)

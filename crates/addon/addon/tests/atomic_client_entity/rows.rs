@@ -285,9 +285,7 @@ fn s01_full() {
     assert_eq!((min, max), ([-0.25, 0.0, -0.25], [0.25, 0.5, 0.25]));
     // Value round trip: the members with a presence of their own keep their empty forms.
     let written = round_trip(&document, |text| atomic(text, &cx()));
-    let json = |text: &str| {
-        bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(text).unwrap()
-    };
+    let json = |text: &str| bedrock_addon::json::from_str_jsonc(text).unwrap();
     assert_eq!(json(&written), json(&text));
 }
 

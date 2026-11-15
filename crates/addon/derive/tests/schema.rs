@@ -804,8 +804,7 @@ const CORE_VALUES: &str = r#"{
 
 fn core_values() -> CoreValues {
     let value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(CORE_VALUES)
-            .expect("the document is JSON");
+        bedrock_addon_core::json::from_str_jsonc(CORE_VALUES).expect("the document is JSON");
     bedrock_addon_core::schema::read_value(&value).expect("the document reads")
 }
 
@@ -1112,10 +1111,8 @@ pub struct NestedSpecs {
 #[test]
 fn molang_on_a_nested_walk_sets_that_walks_default_spec() {
     let mut nested: NestedSpecs = bedrock_addon_core::schema::read_value(
-        &bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
-            r#"{"item": {"tags": "q.any_tag('a')"}}"#,
-        )
-        .expect("the document is JSON"),
+        &bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
+            .expect("the document is JSON"),
     )
     .expect("the document reads");
     nested.tagged_boss = Some(boss());
@@ -1154,10 +1151,8 @@ pub struct RootSpec {
 #[test]
 fn molang_on_a_struct_is_the_default_spec_of_the_walk_below_it() {
     let mut root: RootSpec = bedrock_addon_core::schema::read_value(
-        &bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
-            r#"{"item": {"tags": "q.any_tag('a')"}}"#,
-        )
-        .expect("the document is JSON"),
+        &bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
+            .expect("the document is JSON"),
     )
     .expect("the document reads");
     root.boss = Some(boss());
@@ -2025,7 +2020,7 @@ pub enum Coded {
     Box { size: u8 },
 }
 
-/// The same enum without the key: the door's wrong type.
+/// The same enum without the key: the reader's wrong type.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(tag = "type")]
 #[repr(u8)]
@@ -2108,7 +2103,7 @@ mod invalid {
             document(r#"{"keyed": {"type": "ring"}}"#),
             ["core/invalid_enum_value keyed"]
         );
-        // Without the key it is the door's wrong type.
+        // Without the key it is the reader's wrong type.
         assert_eq!(
             document(r#"{"plain": {"type": "ring"}}"#),
             ["core/invalid_type plain"]

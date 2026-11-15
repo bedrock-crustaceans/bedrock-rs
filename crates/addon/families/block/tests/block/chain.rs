@@ -209,12 +209,10 @@ fn parse_as_written_keeps_the_old_struct_and_upgrade_gives_the_parse_result() {
     assert!(matches!(written.value(), BlockHistory::V1_16_0(_)));
     assert_eq!(written.parsed_version(), FormatVersion::new(1, 16, 0));
     // Written in its own version, unchanged.
-    let own: bedrock_addon_core::json::Value = bedrock_addon_core::json::from_str_jsonc::<
-        bedrock_addon_core::json::Value,
-    >(&written.to_json().unwrap())
-    .unwrap();
+    let own: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str_jsonc(&written.to_json().unwrap()).unwrap();
     let input: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text).unwrap();
+        bedrock_addon_core::json::from_str_jsonc(&text).unwrap();
     assert_eq!(own, input);
     let upgraded = history::upgrade(written, &cx).expect("upgrades");
     let parsed = Block::parse(&path, text.as_bytes(), &cx).expect("loads");

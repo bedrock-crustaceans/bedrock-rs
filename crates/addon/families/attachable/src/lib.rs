@@ -418,8 +418,7 @@ pub(crate) fn root_of(bytes: &[u8]) -> Option<Value> {
     // Of a member written twice the last stands, whole. An untyped read of the text
     // as written merges two objects of one key, so the peek reads the cleaned text, as the
     // load does.
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&bedrock_addon_core::json::last_wins(text))
-        .ok()
+    bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text)).ok()
 }
 
 // ---- the collection ----------------------------------------------------------------------

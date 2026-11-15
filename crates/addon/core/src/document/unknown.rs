@@ -11,7 +11,7 @@ use crate::json::Value;
 /// by the path of the JSON object that holds it, kept so that a written document has them
 /// again. Empty for most documents, and then it allocates nothing.
 ///
-/// The read fills it: every member the door's walk finds unknown in an object whose struct
+/// The read fills it: every member the reader finds unknown in an object whose struct
 /// keeps them, and every member a hand reader keeps. The writer looks up the object it opens
 /// by its path and writes that object's unknown members after its known ones, in document
 /// order. An upgrade step that moves an object moves its members with it

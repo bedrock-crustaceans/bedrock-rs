@@ -469,7 +469,7 @@ fn a_value_the_loader_refuses_or_reads_differently_is_refused() {
     let mut object = flat_file(vec![]);
     object.extra.insert(
         "y".to_owned(),
-        bedrock_addon_core::json::from_str_jsonc::<Value>("{}").unwrap(),
+        bedrock_addon_core::json::from_str_jsonc("{}").unwrap(),
     );
     assert_eq!(refused(&object), "");
     // Key rules on a variant body: nothing writes them, nothing reads them back.
@@ -666,7 +666,7 @@ fn a_list_entry_that_would_read_back_differently_is_refused() {
     let mut hidden = ListEntry::default();
     hidden.extra.insert(
         "+defines".to_owned(),
-        bedrock_addon_core::json::from_str_jsonc::<Value>("[\"A\"]").unwrap(),
+        bedrock_addon_core::json::from_str_jsonc("[\"A\"]").unwrap(),
     );
     match list(hidden).to_json() {
         Err(EncodeError::NotRepresentable { at, .. }) => assert_eq!(at.to_string(), "1"),

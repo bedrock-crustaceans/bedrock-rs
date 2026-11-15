@@ -150,8 +150,7 @@ pub fn fixture(name: &str) -> Vec<(String, String)> {
     );
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let json: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text)
-            .unwrap_or_else(|e| panic!("{path}: {e}"));
+        bedrock_addon_core::json::from_str_jsonc(&text).unwrap_or_else(|e| panic!("{path}: {e}"));
     json.as_object()
         .expect("a fixture is an object")
         .iter()

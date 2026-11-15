@@ -73,9 +73,8 @@ fn is_blank(bytes: &[u8]) -> bool {
         return false;
     };
     let text = prepared.as_str();
-    let null = |text: &str| {
-        bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null())
-    };
+    let null =
+        |text: &str| bedrock_addon_core::json::from_str_jsonc(text).is_ok_and(|v| v.is_null());
     // A trailing line comment ends at the added newline.
     null(text) || null(&format!("{text}\nnull"))
 }
@@ -103,10 +102,8 @@ fn read_root(bytes: &[u8]) -> Result<VObject, RootError> {
     let prepared = Prepared::new(bytes)?;
     let text = prepared.as_str();
     // of a member written twice the last stands.
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(
-        &bedrock_addon_core::json::last_wins(text),
-    )
-    .map_err(|e| RootError::Json(e.to_string()))?;
+    let root = bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text))
+        .map_err(|e| RootError::Json(e.kind.to_string()))?;
     match root.as_object() {
         Some(object) => Ok(object.clone()),
         None => Err(RootError::NotObject),

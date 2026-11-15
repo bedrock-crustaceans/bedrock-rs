@@ -11,7 +11,7 @@ fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
 }
 
 fn input(json: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(json).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(json).unwrap()
 }
 
 #[test]

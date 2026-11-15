@@ -24,10 +24,8 @@ test-cost = []
 [dependencies]
 thiserror = { workspace = true }
 facet = { workspace = true, features = ["reflect"] } # the writer walks values with `Peek`
-facet-json = { workspace = true }
-facet-format = { workspace = true } # facet-json does not re-export its error kind, `DeserializeErrorKind`; the writer is a `FormatSerializer`
+facet-format = { workspace = true } # the writer is a `FormatSerializer`
 facet-value = { workspace = true }
-facet-path = { workspace = true } # `parse_at` maps facet's path to JSON names
 indexmap = { workspace = true }
 bytes = { workspace = true }
 uuid = { workspace = true }
@@ -42,7 +40,7 @@ bedrock_addon_vanilla = { path = "../vanilla" }
 # No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
 # to size (`json::MAX_JSON_DEPTH`).
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-stacker = { workspace = true } # facet reads a typed target by a call of itself for each level; this gives that read the stack the text's depth can take, on the thread that reads (no `Send` bound, no thread)
+stacker = { workspace = true } # the reader and the writer walk a value by a call of themselves for each level; this gives the walk the stack the depth can take, on the thread that walks (no `Send` bound, no thread)
 
 [dev-dependencies]
 # The integration tests reach `test_cost` through the library, with the feature on.
@@ -53,3 +51,6 @@ bedrock_addon_derive = { path = "../derive" }
 # The tests' helpers (a dev-only cycle: test_support depends on core). Only `tests/` may use
 # it: a unit test in `src` is built in a second core whose types are not test_support's.
 bedrock_addon_test_support = { path = "../test_support" }
+# `tests/json_parse.rs` alone: facet-json's reading of each text is the oracle the parser is
+# held to.
+facet-json = { workspace = true }

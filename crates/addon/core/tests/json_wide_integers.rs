@@ -48,7 +48,7 @@ fn read_as<T: FromJson>(text: &str, reading: Reading) -> Result<T, (Code, JsonPa
     }
 }
 
-/// The first error the plain read of `[token]` as `T` tells, value or not: what the door's
+/// The first error the plain read of `[token]` as `T` tells, value or not: what the old
 /// passes told of a member that read the token as another value.
 fn refused<T: FromJson>(token: &str) -> Option<(Code, JsonPath)> {
     let text = format!("[{token}]");
@@ -350,7 +350,7 @@ fn an_integer_within_64_bits_reads_as_before() {
         let exact_value = i64::try_from(exact)
             .map_or_else(|_| Value::from(u64::try_from(exact).unwrap()), Value::from);
         assert_eq!(
-            from_str_jsonc::<Value>(&text).unwrap(),
+            from_str_jsonc(&text).unwrap(),
             Value::from(facet_value::VArray::from_iter([exact_value])),
             "`{token}`"
         );
@@ -441,8 +441,8 @@ fn four_of(value: &Value) -> [f64; 4] {
 #[test]
 fn every_entry_point_reads_a_wide_integer_as_its_double() {
     let (text, expected) = wide_document();
-    assert_eq!(four_of(&from_str::<Value>(&text).unwrap()), expected);
-    assert_eq!(four_of(&from_str_jsonc::<Value>(&text).unwrap()), expected);
+    assert_eq!(four_of(&from_str(&text).unwrap()), expected);
+    assert_eq!(four_of(&from_str_jsonc(&text).unwrap()), expected);
     assert_eq!(
         four_of(&parse(&text, Options::default()).unwrap().value),
         expected
@@ -473,25 +473,19 @@ fn every_entry_point_reads_a_wide_integer_as_its_double() {
         decimal(50),
         decimal(50)
     );
-    assert_eq!(
-        four_of(&from_str_jsonc::<Value>(&commented).unwrap()),
-        expected
-    );
+    assert_eq!(four_of(&from_str_jsonc(&commented).unwrap()), expected);
     // Plain JSON has no comments, with a wide integer as without one.
-    assert!(from_str::<Value>(&commented).is_err());
-    assert!(from_str::<Value>(&format!("/* c */ {text}")).is_err());
-    assert!(from_str::<Value>("/* c */ [1]").is_err());
-    let plain = from_str::<Value>(&format!("{text} tail")).unwrap();
+    assert!(from_str(&commented).is_err());
+    assert!(from_str(&format!("/* c */ {text}")).is_err());
+    assert!(from_str("/* c */ [1]").is_err());
+    let plain = from_str(&format!("{text} tail")).unwrap();
     assert_eq!(four_of(&plain), expected);
     // The duplicate cleaner leaves the tokens alone, and its text reads the same.
     let doubled = text.replacen("{\"a\"", "{\"a\": 1, \"a\"", 1);
     let cleaned = last_wins(&doubled);
     assert!(matches!(cleaned, Cow::Owned(_)));
     assert!(cleaned.contains("18446744073709551616"));
-    assert_eq!(
-        four_of(&from_str_jsonc::<Value>(&cleaned).unwrap()),
-        expected
-    );
+    assert_eq!(four_of(&from_str_jsonc(&cleaned).unwrap()), expected);
 }
 
 /// An integer wider than 128 bits anywhere in a file does not end the envelope probe.
@@ -711,5 +705,5 @@ fn a_wide_integer_is_written_as_the_shortest_decimal_of_its_double() {
     // Beyond the range of a double: infinity, which has no JSON form, as `1e999` has none.
     let value: Value = from_str_jsonc(&format!("[{}]", decimal(400))).unwrap();
     assert!(to_json(&value).is_err());
-    assert!(to_json(&from_str_jsonc::<Value>("[1e999]").unwrap()).is_err());
+    assert!(to_json(&from_str_jsonc("[1e999]").unwrap()).is_err());
 }

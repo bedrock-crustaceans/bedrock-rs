@@ -4,7 +4,7 @@
 //! - [`diagnostics`]: findings as lines and by code.
 //! - [`document`]: the outcome of a document read, loaded or refused, and its round trip.
 //! - [`fixture`]: the `tests/fixtures` folder a package's tests read, from its manifest directory.
-//! - [`json`](mod@json): test JSON, read through the door, with comments or strictly.
+//! - [`json`](mod@json): test JSON, read by the parser, with comments or strictly.
 //! - [`package`]: what a package's test files include from outside the package.
 //! - [`value`]: a shared-type value read from JSON text, written back and compared.
 //! - [`write_back`]: a document written back as the JSON value it was read from.

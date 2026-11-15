@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn a_kept_root_is_left_out_of_equality() {
         let text = r#"{"serialize_name": "p", "localization_name": "p", "skins": [5]}"#;
-        let root = bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("JSON");
+        let root = bedrock_addon_core::json::from_str_jsonc(text).expect("JSON");
         let loaded = SkinPack::from_value(&root, &mut Diagnostics::default());
         assert_eq!(*loaded.written, Some(root.clone()));
         let built = SkinPack {
@@ -123,7 +123,7 @@ mod tests {
                 r#"{{ "serialize_name": "p", "localization_name": "p", "skins": [{}, 5] }}"#,
                 skins.join(",")
             );
-            let root = bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("JSON");
+            let root = bedrock_addon_core::json::from_str_jsonc(&text).expect("JSON");
             let pack = SkinPack::from_value(&root, &mut Diagnostics::default());
             assert!(pack.written.is_some(), "the root is not kept");
             pack

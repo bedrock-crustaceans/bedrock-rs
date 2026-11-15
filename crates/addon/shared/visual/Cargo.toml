@@ -24,5 +24,4 @@ indexmap = { workspace = true }
 
 
 [dev-dependencies]
-facet-json = { workspace = true }
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }

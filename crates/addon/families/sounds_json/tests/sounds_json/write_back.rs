@@ -54,8 +54,7 @@ fn a_single_sounds_json_writes_back_what_its_author_wrote() {
             .expect("the file loads");
         assert_eq!(*document.json(), json(text), "{text}");
         let written: Value =
-            bedrock_addon_core::json::from_str_jsonc::<Value>(&document.to_json().unwrap())
-                .unwrap();
+            bedrock_addon_core::json::from_str_jsonc(&document.to_json().unwrap()).unwrap();
         assert_eq!(written, json(text), "{text}");
     }
     // The typed read is still the transformed copy's: the pack's version on a keyed entity,

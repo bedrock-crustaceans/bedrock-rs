@@ -2,7 +2,7 @@
 //! legacy one (the non-strict reader) from every JSON type at each of its scalar places: the
 //! shorthand and `explosion_resistance`. Each line pins what the load says (code, severity,
 //! path, span) and, when the block loads, the component written back. The component's members
-//! are plain and read by the door's scalar pre-pass under the slice's `Reading`; they were
+//! are plain and read by the scalar rules of the slice's `Reading`; they were
 //! strict wrappers, and this table is what they read.
 
 use super::common::{context, document, load, newest_shape};

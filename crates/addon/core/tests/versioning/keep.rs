@@ -1,4 +1,4 @@
-//! Which unknown members the door keeps in the document's table: a struct marked with
+//! Which unknown members the reader keeps in the document's table: a struct marked with
 //! `extra: Extra`, or stating `schema::unknown = "keep"` (on itself or on the field that holds
 //! it), keeps them; under a slice whose `Reading::keeps_unknown` is set every other struct
 //! does too, unless it states `report`, `reject` or `ignore`. One not kept is told by the word
@@ -305,7 +305,7 @@ fn stable(loaded: &Loaded<ReadingKeeps>) -> &Payload {
     }
 }
 
-/// Pin, a question for the diagnostics table: the door tells a member its struct reports
+/// Pin, a question for the diagnostics table: the reader tells a member its struct reports
 /// (`schema::unknown = "report"`, or nothing under a reading that does not keep) with the code
 /// of a kept one, `UnrecognizedField`, though the member is not kept; a hand reader's kit tells
 /// the same `Report` as `MemberNotKept`. Today's disposition, pinned, not decided.
@@ -331,7 +331,7 @@ fn pin_the_door_tells_a_reported_member_as_it_tells_a_kept_one() {
     }
 }
 
-/// The door tells every unknown member at the reading's grade of an unknown member, whatever
+/// The reader tells every unknown member at the reading's grade of an unknown member, whatever
 /// its struct does with it (kept, reported, rejected or ignored): a strict slice grades them
 /// to an error where they are raised, with no lift after the parse. Read here outside the
 /// load, with the reading set to the strict mask, every line is an error.

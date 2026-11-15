@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn a_pattern_names_each_element_of_a_list_or_the_member_itself() {
-        let json = bedrock_addon_core::json::from_str_jsonc::<Value>(
+        let json = bedrock_addon_core::json::from_str_jsonc(
             r#"{"a": [{"b": [1, 2]}, {"b": 3}, 4], "c": {"d": 5}}"#,
         )
         .expect("json");

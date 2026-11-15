@@ -48,7 +48,7 @@ pub struct AdmireItem {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -260,7 +260,7 @@ pub struct DropItemFor {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -335,12 +335,12 @@ pub struct EatBlock {
     /// Read by the lenient conversion of a document older than the goal's typed version:
     /// a rejected `success_chance` is then a warning and the member takes its default.
     /// Not written.
-    #[facet(skip, rename = "\u{0}converted")]
+    #[facet(skip)]
     pub converted: bool,
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -451,7 +451,7 @@ pub struct GoAndGiveItemsToNoteblock {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -510,7 +510,7 @@ pub struct GoAndGiveItemsToOwner {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -638,7 +638,7 @@ pub struct PickupItems {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -715,7 +715,7 @@ pub struct PlaceBlock {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -859,7 +859,7 @@ pub struct TakeBlock {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -925,7 +925,7 @@ pub struct TakeFlower {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 

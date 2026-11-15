@@ -205,7 +205,7 @@ pub struct DelayedAttack {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -518,7 +518,7 @@ pub struct KnockbackRoar {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -643,7 +643,7 @@ pub struct MeleeAttack {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -753,7 +753,7 @@ pub struct MeleeBoxAttack {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -880,7 +880,7 @@ pub struct RamAttack {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1235,7 +1235,7 @@ pub struct StompAttack {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 
@@ -1448,7 +1448,7 @@ pub struct UseKineticWeapon {
     /// The legacy `condition`s of the goal's triggers, read for the Molang check;
     /// written back from each trigger's `extra`.
     #[doc(hidden)]
-    #[facet(skip, rename = "\u{0}legacy_conditions")]
+    #[facet(skip)]
     pub legacy_conditions: LegacyConditions,
 }
 

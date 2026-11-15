@@ -13,7 +13,6 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::{
     Document, Merge, Merged, Origin, RawLayer, Rejected, VersionInfo,
 };
-use bedrock_addon_core::json::Value;
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackPath, PackRef, PackSide, PackType};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
 use indexmap::IndexMap;
@@ -173,7 +172,7 @@ fn a_strategy_can_release_an_entry_and_report() {
 
 #[test]
 fn raw_layers_merge_before_parsing() {
-    let json = |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
+    let json = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).unwrap();
     let walk = vec![
         Ok(RawLayer::new(origin(1), json(r#"{"a": "1a"}"#))),
         Ok(RawLayer::new(origin(0), json(r#"{"b": "0b"}"#))),

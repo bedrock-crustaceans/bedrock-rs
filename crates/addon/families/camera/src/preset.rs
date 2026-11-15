@@ -109,7 +109,7 @@ pub struct CameraPreset {
     /// preset has no [`starting_rot`](Self::starting_rot). It is a member of the camera presets
     /// packet and of no JSON document (the key `apply_inherited_starting_rotation` is an unknown
     /// member). `false` for a preset read at 1.26.50 or later.
-    #[facet(skip, rename = "\u{0}apply_inherited_starting_rotation")]
+    #[facet(skip)]
     pub apply_inherited_starting_rotation: bool,
 }
 

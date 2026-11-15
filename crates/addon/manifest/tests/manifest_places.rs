@@ -42,7 +42,7 @@ fn dependency_texts(bytes: &[u8], legacy: bool) -> DependencyTexts {
     // The text as the manifest reader takes it: of a member written twice the last stands.
     let bytes = strip_bom(bytes);
     let parsed: Option<Value> = match std::str::from_utf8(bytes) {
-        Ok(text) => from_str_jsonc::<Value>(&last_wins(text)).ok(),
+        Ok(text) => from_str_jsonc(&last_wins(text)).ok(),
         Err(_) => parse_bytes(bytes, Options::default()).ok(),
     };
     let Some(root) = parsed else {

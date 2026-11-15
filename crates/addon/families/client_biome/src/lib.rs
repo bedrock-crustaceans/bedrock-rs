@@ -54,7 +54,7 @@ use bedrock_addon_core::document::{
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::id::kind;
 use bedrock_addon_core::json::kit::Read;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -467,7 +467,7 @@ fn reword(parsed: &mut Parsed<ClientBiomeFamily>, text: &str, path: &str) {
             _ if diagnostic.is(&core_codes::DOCUMENT_JSON)
                 && scanned_version(text).is_some_and(|version| version < MODERN) =>
             {
-                let code = if bedrock_addon_core::json::from_str_jsonc::<Value>(text).is_ok() {
+                let code = if bedrock_addon_core::json::from_str_jsonc(text).is_ok() {
                     codes::LEGACY_ROOT.with([path])
                 } else {
                     let message = diagnostic.syntax_message().unwrap_or_default();

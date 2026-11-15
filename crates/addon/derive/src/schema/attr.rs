@@ -841,8 +841,8 @@ pub(crate) fn is_untagged(attrs: &[Attribute]) -> bool {
 }
 
 /// What a variant of an untagged enum declares: facet's `rename_all` (its members' names), and
-/// a checked `schema::unknown` (stored, the door's), which only a struct variant (`named`)
-/// takes: the door reads the word on the object's arm alone. An error for any other
+/// a checked `schema::unknown` (stored, the reader's), which only a struct variant (`named`)
+/// takes: the reader reads the word on the object's arm alone. An error for any other
 /// `schema::` key.
 pub(crate) fn untagged_variant(
     attrs: &[Attribute],

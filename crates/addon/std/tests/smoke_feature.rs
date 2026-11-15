@@ -227,8 +227,7 @@ fn molang_pairs_feature_molang_loads_with_its_text_and_version() {
         let mut members = pairs::Members::new();
         // The pointers start at the payload key, which names the type.
         let root: bedrock_addon::json::Value =
-            bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(file.text)
-                .expect("JSON");
+            bedrock_addon::json::from_str_jsonc(file.text).expect("JSON");
         let key = root
             .as_object()
             .and_then(|o| o.keys().find(|k| *k != "format_version").cloned())

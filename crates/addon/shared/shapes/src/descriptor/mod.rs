@@ -96,10 +96,7 @@ mod tests {
     #[test]
     fn a_block_descriptor_visits_its_tags_under_the_walks_default_spec() {
         let spec = MolangFieldSpec::KEPT.tags();
-        let json = |text: &str| {
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
-                .expect("JSON")
-        };
+        let json = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).expect("JSON");
         let mut tags = BlockDescriptor::from(json(r#"{"tags": "query.any_tag('stone')"}"#));
         assert_eq!(
             fields_of(&mut tags, &spec),

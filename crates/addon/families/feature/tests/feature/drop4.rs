@@ -211,10 +211,8 @@ fn the_drop_4_snap_features_round_trip() {
     let written = compact(&ice, &base_game());
     assert_ne!(written, expected, "now byte for byte: tighten this test");
     let written: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
-            .expect("JSON");
+        bedrock_addon_core::json::from_str_jsonc(&written).expect("JSON");
     let expected: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&expected)
-            .expect("JSON");
+        bedrock_addon_core::json::from_str_jsonc(&expected).expect("JSON");
     assert_eq!(written, expected);
 }

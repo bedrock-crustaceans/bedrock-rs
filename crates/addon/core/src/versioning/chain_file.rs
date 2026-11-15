@@ -110,7 +110,7 @@ pub fn upgrade<F: Family>(
 /// The identity of a payload whose identifier is its own member `key` (not in a
 /// `description`).
 pub fn identity(payload: JsonSlice<'_>, key: &str) -> Identity {
-    let identifier = crate::json::from_str_jsonc::<Value>(payload.text)
+    let identifier = crate::json::from_str_jsonc(payload.text)
         .ok()
         .and_then(|value| {
             Some(

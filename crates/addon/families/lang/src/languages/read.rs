@@ -96,7 +96,7 @@ fn root(bytes: &[u8]) -> Result<Value, Box<Diagnostic>> {
     bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(
         prepared.as_str(),
     ))
-    .map_err(|error| malformed(error.to_string()))
+    .map_err(|error| malformed(error.kind.to_string()))
 }
 
 /// The elements vanilla iterates of a root, each with its path: the elements of an array; the

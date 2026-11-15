@@ -228,7 +228,7 @@ pub struct SoundDefinition {
     /// as written (the typed list holds its reading).
     pub extra: UnknownMembers,
     /// The members the definition was read with.
-    #[facet(skip, rename = "\u{0}read")]
+    #[facet(skip)]
     pub(crate) read: Present,
 }
 
@@ -316,7 +316,7 @@ pub enum SoundEntryForm {
 pub struct SoundEntry {
     /// How the entry is written. The two forms differ in one default:
     /// [`interruptible`](Self::interruptible).
-    #[facet(skip, rename = "\u{0}form")]
+    #[facet(skip)]
     pub form: SoundEntryForm,
     /// `name`: the path of the audio file without its extension, which the client appends
     /// (`.fsb`, `.ogg`, `.wav`) when the sound is first played.
@@ -348,7 +348,7 @@ pub struct SoundEntry {
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members an object entry was read with.
-    #[facet(skip, rename = "\u{0}read")]
+    #[facet(skip)]
     pub(crate) read: Present,
 }
 
@@ -405,7 +405,7 @@ pub struct ExternalEventParameter {
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members the parameter was read with.
-    #[facet(skip, rename = "\u{0}read")]
+    #[facet(skip)]
     pub(crate) read: Present,
 }
 
@@ -446,7 +446,7 @@ pub struct SoundAction {
     /// The members the client does not read.
     pub extra: UnknownMembers,
     /// The members the action was read with.
-    #[facet(skip, rename = "\u{0}read")]
+    #[facet(skip)]
     pub(crate) read: Present,
 }
 
@@ -836,8 +836,7 @@ mod tests {
         let empty = SoundDefinitions::from_json(Value::NULL);
         let written =
             bedrock_addon_core::json::to_json(&empty.to_value().expect("written")).expect("text");
-        let json =
-            |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("JSON");
+        let json = |text: &str| bedrock_addon_core::json::from_str_jsonc(text).expect("JSON");
         assert_eq!(json(&written), json(r#"{"format_version": "1.26.50"}"#));
         let path = PackPath::new("sounds/sound_definitions.json").expect("a pack path");
         let again = SoundDefinitions::parse(&path, written.as_bytes(), &LoadContext::detached())

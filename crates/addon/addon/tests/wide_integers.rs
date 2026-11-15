@@ -1,4 +1,4 @@
-//! An integer too large for 64 bits is the double it spells, in every family (core's door):
+//! An integer too large for 64 bits is the double it spells, in every family (core's parser):
 //! Vanilla's readers read it so. It is never a string (a texture name, a sound
 //! name, a string written back in quotes), and a file that has one loads, whatever its size:
 //! the family finds there what it finds for the real number of that value.

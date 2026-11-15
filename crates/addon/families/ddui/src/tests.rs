@@ -13,7 +13,7 @@ use super::{UiFile, combine};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::{Content, Contribution, Document, Origin};
 use bedrock_addon_core::id::Id;
-use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::test_cost::{assert_linear_timed_at, timed};
 use bedrock_addon_core::version::FormatVersion;
 
@@ -116,10 +116,9 @@ fn declaring(identifier: &str, first: usize, count: usize) -> UiRoot {
     let points = (first..first + count)
         .map(|i| {
             let mut point = Control::new(Component::ExtensionPoint);
-            point.attribs = bedrock_addon_core::json::from_str_jsonc::<Value>(&format!(
-                r#"{{"name": "demo:p{i}"}}"#
-            ))
-            .ok();
+            point.attribs =
+                bedrock_addon_core::json::from_str_jsonc(&format!(r#"{{"name": "demo:p{i}"}}"#))
+                    .ok();
             point
         })
         .collect();

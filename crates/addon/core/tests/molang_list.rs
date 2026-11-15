@@ -1,9 +1,7 @@
 //! `MolangList`, the value-or-array Molang field: `Option<MolangList>` reads `null`
 //! as no expression, a scalar as `One`, an array as `Many`, element by element.
 
-use bedrock_addon_core::json::{
-    EncodeError, Indent, Value, WriteStyle, from_str_jsonc, write_json,
-};
+use bedrock_addon_core::json::{EncodeError, Indent, WriteStyle, from_str_jsonc, write_json};
 use bedrock_addon_core::molang::{Molang, MolangList, MolangSource};
 use bedrock_addon_core::schema::read_value;
 
@@ -13,7 +11,7 @@ use bedrock_addon_core::schema::read_value;
     reason = "the outer `None` is a refusal, the inner one the field's absence"
 )]
 fn read(json: &str) -> Option<Option<MolangList>> {
-    read_value::<Option<MolangList>>(&from_str_jsonc::<Value>(json).unwrap())
+    read_value::<Option<MolangList>>(&from_str_jsonc(json).unwrap())
 }
 
 fn list(json: &str) -> Option<MolangList> {

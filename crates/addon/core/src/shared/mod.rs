@@ -17,8 +17,8 @@ pub mod read;
 
 pub use event::EventTrigger;
 pub use filter::{Filter, FilterGroup, FilterScalar, FilterSubject, FilterTest};
+pub(crate) use range::unread_range_members;
 pub use range::{FloatRange, IntRange, Range, RangeEnd, RangeForm, Resolve};
-pub(crate) use range::{is_range, unread_range_members};
 pub use read::{ShapeError, ShapeErrorKind};
 
 use crate::diagnostic::{

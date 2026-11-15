@@ -44,11 +44,9 @@ fn cam23_the_seven_vanilla_camera_documents_parse_without_a_finding() {
         assert_eq!(again.to_json().unwrap(), written, "{name}");
         // Every component key of the file is written back: none is lost on the way.
         let json: bedrock_addon_core::json::Value =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text)
-                .unwrap();
+            bedrock_addon_core::json::from_str_jsonc(&text).unwrap();
         let rewritten: bedrock_addon_core::json::Value =
-            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
-                .unwrap();
+            bedrock_addon_core::json::from_str_jsonc(&written).unwrap();
         let components = |value: &bedrock_addon_core::json::Value| -> Vec<String> {
             value
                 .as_object()

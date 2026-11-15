@@ -358,7 +358,7 @@ fn refuse_what_the_format_refuses<S: VersionStruct>(payload: &Value) -> Result<(
     let mut cx = bedrock_addon_core::load::LoadContext::detached();
     cx.is_base_game_pack = true;
     cx.null_rule = None;
-    // A member written `null` is absent for this read, as the door's read without a null rule
+    // A member written `null` is absent for this read, as the old read without a null rule
     // took it: the component is read, and the members it does not bind are told.
     cx.reading = cx.reading.with_null(NullHandling::Absent);
     let mut at = bedrock_addon_core::diagnostic::JsonPath::new();

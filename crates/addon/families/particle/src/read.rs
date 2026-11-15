@@ -1168,8 +1168,8 @@ pub(crate) fn known(key: &str) -> bool {
 /// `text` as the JSON value the readers take. Every number token is a number in it: the
 /// crate's JSON reader reads an integer literal too long for 64 bits as the double it spells
 /// (nothing else needs to inspect the text first).
-pub(crate) fn value_of(text: &str) -> Result<Value, facet_json::DeserializeError> {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text)
+pub(crate) fn value_of(text: &str) -> Result<Value, bedrock_addon_core::json::parse::Fault> {
+    bedrock_addon_core::json::from_str_jsonc(text)
 }
 
 /// The text of a version struct as JSON; a finding and `None` when it is none.

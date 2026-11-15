@@ -525,7 +525,7 @@ impl FormatVersionInput {
     /// numbers).
     fn from_fragment(fragment: &str) -> Option<(Self, String)> {
         if fragment.starts_with('"') || fragment.starts_with('[') {
-            let json = crate::json::from_str_jsonc::<Value>(fragment).ok()?;
+            let json = crate::json::from_str_jsonc(fragment).ok()?;
             let input = Self::from_json(&json)?;
             let written = match (json.as_string(), input.version) {
                 (Some(text), _) => text.as_str().to_owned(),

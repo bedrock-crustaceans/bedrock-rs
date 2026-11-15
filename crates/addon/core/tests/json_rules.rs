@@ -1,5 +1,5 @@
 //! One test per row of the table of how the game's jsoncpp reader differs from the crate's text
-//! reader (`json::parse`, the facet-json door's rules kept) and typed reader, each over its
+//! reader (`json::parse`, facet-json's rules kept) and typed reader, each over its
 //! fixture in `tests/fixtures/json/`. A test asserts what the crate does with the input and, for
 //! a recorded deviation, what vanilla does instead (in the test's comment and name).
 //!

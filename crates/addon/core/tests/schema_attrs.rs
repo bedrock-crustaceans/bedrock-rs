@@ -1,6 +1,6 @@
 //! The `schema::` keys a struct states are checked by facet's derive, and the three stored ones
 //! (`since_format`, `since_engine`, `unknown`) are read back from the `Shape` the way the
-//! JSON door reads them. A facet bump that changes how an extension attribute is stored fails
+//! reader reads them. A facet bump that changes how an extension attribute is stored fails
 //! here first.
 
 use bedrock_addon_core::schema;

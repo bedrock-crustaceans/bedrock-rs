@@ -6,7 +6,7 @@
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
-use bedrock_addon_core::json::{Value, from_str_jsonc};
+use bedrock_addon_core::json::from_str_jsonc;
 use bedrock_addon_core::molang::{
     self, ExperimentMask, Molang, MolangContext, MolangFieldMut, MolangFieldSpec, MolangFields,
     MolangList, MolangSource, MolangVersion, MolangVersionSource, MolangVisitor, RawVersion,
@@ -70,7 +70,7 @@ fn toy_document_molang(this: &mut ToyDocument, visitor: &mut MolangVisitor<'_>) 
 }
 
 fn toy(json: &str) -> ToyDocument {
-    read_value(&from_str_jsonc::<Value>(json).expect("the toy document is JSON"))
+    read_value(&from_str_jsonc(json).expect("the toy document is JSON"))
         .expect("the toy document reads")
 }
 
@@ -276,7 +276,7 @@ fn not_checked_is_silent_without_expressions() {
         visitor.field("values", &CONDITION, &mut this.values);
     }
     let mut document: OnlyConstants =
-        read_value(&from_str_jsonc::<Value>(r#"{"values": [1, 2.5, false]}"#).unwrap()).unwrap();
+        read_value(&from_str_jsonc(r#"{"values": [1, 2.5, false]}"#).unwrap()).unwrap();
     let mut diagnostics = Diagnostics::default();
     assert_eq!(
         molang::not_checked(&mut document, &base(), &mut diagnostics),

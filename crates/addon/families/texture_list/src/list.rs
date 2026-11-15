@@ -14,7 +14,7 @@ use bedrock_addon_core::diagnostic::{
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
 use bedrock_addon_core::json::jsoncpp::lenient::{root_end, skip_trivia, string_end};
-use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, strip_bom, write_json};
+use bedrock_addon_core::json::{EncodeError, WriteStyle, strip_bom, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_shared_shapes::texture::files::{PackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
@@ -101,7 +101,7 @@ fn value_at(text: &str, at: usize) -> Option<(usize, Element)> {
             Element::Text(bedrock_addon_core::json::parse::string_literal(slice)?),
         ));
     }
-    bedrock_addon_core::json::from_str_jsonc::<Value>(slice).ok()?;
+    bedrock_addon_core::json::from_str_jsonc(slice).ok()?;
     Some((end, Element::Other))
 }
 

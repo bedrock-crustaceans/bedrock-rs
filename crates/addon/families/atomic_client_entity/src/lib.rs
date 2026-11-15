@@ -24,7 +24,7 @@ use bedrock_addon_core::id::{
     TexturePath,
 };
 use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
+    EncodeError, JsonSlice, PrepareError, Prepared, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
@@ -466,7 +466,7 @@ fn place(found: Diagnostics, origin: &Origin) -> Diagnostics {
 /// only the payload fails "exactly two members" before the missing version is looked at.
 fn member_count(text: &str) -> Option<Diagnostic> {
     let cleaned = last_wins(text);
-    let root = bedrock_addon_core::json::from_str_jsonc::<Value>(&cleaned).ok()?;
+    let root = bedrock_addon_core::json::from_str_jsonc(&cleaned).ok()?;
     let root = root.as_object()?;
     (root.get("format_version").is_none() && root.len() != 2).then(|| {
         Diagnostic::of(&core_codes::DOCUMENT_MEMBER_COUNT).detail(DiagnosticDetail::Syntax(

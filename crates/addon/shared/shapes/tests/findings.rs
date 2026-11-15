@@ -21,7 +21,7 @@ fn path(segments: &[&str]) -> JsonPath {
 
 /// The JSON text as a `Value`.
 fn value(json: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(json).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(json).unwrap()
 }
 
 /// The read error of `T` for `json`.

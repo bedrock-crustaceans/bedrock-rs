@@ -140,8 +140,8 @@ pub(super) fn read_json(bytes: &[u8]) -> Result<Value, ReadJsonError> {
         // `new` never refuses an empty text.
         PrepareError::Empty => ReadJsonError::NotJson(PrepareError::Empty.to_string()),
     })?;
-    bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(prepared.as_str()))
-        .map_err(|error| ReadJsonError::NotJson(error.to_string()))
+    bedrock_addon_core::json::from_str_jsonc(&last_wins(prepared.as_str()))
+        .map_err(|error| ReadJsonError::NotJson(error.kind.to_string()))
 }
 
 /// Why bytes are no JSON value; the display is the message a finding carries.

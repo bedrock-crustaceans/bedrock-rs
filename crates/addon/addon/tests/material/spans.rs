@@ -34,7 +34,7 @@ fn text_of<'a>(finding: &Diagnostic, text: &'a str) -> Option<&'a str> {
 /// The value `finding`'s path names in `text`, when the text has one there.
 fn named(finding: &Diagnostic, text: &str) -> Option<Value> {
     let text = text.trim_start_matches('\u{feff}');
-    let mut value = bedrock_addon::json::from_str_jsonc::<Value>(text).ok()?;
+    let mut value = bedrock_addon::json::from_str_jsonc(text).ok()?;
     for segment in finding.location.json_path.segments() {
         value = match segment {
             JsonPathSegment::Key(key) => value.as_object()?.get(key)?.clone(),
@@ -72,7 +72,7 @@ fn spanned(packs: &[Files<'_>]) -> Vec<Spanned> {
                         covered.unwrap_or_else(|| panic!("{finding:#?} has no span in {text}"));
                     // A number past the doubles has no value to compare: its token is pinned
                     // by the tests themselves.
-                    if let Ok(read) = bedrock_addon::json::from_str_jsonc::<Value>(covered)
+                    if let Ok(read) = bedrock_addon::json::from_str_jsonc(covered)
                         && !covered.contains("e999")
                     {
                         assert_eq!(read, value, "{path} in {text}");
@@ -288,7 +288,7 @@ fn a_file_read_on_its_own_has_its_spans_counted_from_the_start_of_the_file() {
         let value = named(finding, &text).expect("the path names a value");
         let covered = text_of(finding, &text).expect("a span");
         assert_eq!(
-            bedrock_addon::json::from_str_jsonc::<Value>(covered).unwrap(),
+            bedrock_addon::json::from_str_jsonc(covered).unwrap(),
             value,
             "{finding:#?}"
         );

@@ -349,7 +349,7 @@ fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
             .into_iter()
             .map(|(pointer, member)| (pointer.to_ascii_lowercase(), member))
             .collect();
-        let root: Value = bedrock_addon::json::from_str_jsonc::<Value>(file.text).expect("JSON");
+        let root: Value = bedrock_addon::json::from_str_jsonc(file.text).expect("JSON");
         let mut leaves_of = Vec::new();
         leaves(&root, "", "", &mut leaves_of);
         for (written_at, loaded_at, written) in leaves_of {

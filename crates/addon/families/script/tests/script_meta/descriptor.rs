@@ -7,8 +7,7 @@ use bedrock_addon_family_script::meta::{
 };
 
 fn raw(json: &str) -> RawTypeDesc {
-    let value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(json).unwrap();
+    let value = bedrock_addon_core::json::from_str_jsonc(json).unwrap();
     bedrock_addon_core::schema::read_value(&value).unwrap()
 }
 

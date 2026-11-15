@@ -1,12 +1,12 @@
 //! The reader's components (`versioning::read_component`, `read_component_map_by`) against the
-//! door's (`parse_component`, `parse_component_map`, now deleted): one row per payload shape (a
+//! old door's (`parse_component`, `parse_component_map`, now deleted): one row per payload shape (a
 //! `shorthand = scalar` row of a one-member struct, of an untagged enum, of a transparent
-//! newtype, plain rows), every token of a grid, under every reading. The door's outcomes of the
+//! newtype, plain rows), every token of a grid, under every reading. The old door's outcomes of the
 //! grid and of the component maps are frozen in `schema_read_components.pins`, one line per
 //! cell: `key<TAB>read` where the two agreed, `key<TAB>read<TAB>door` where they differed (each
-//! such difference one the reader makes by rule, checked while the door ran: a finding at the
+//! such difference one the reader makes by rule, checked while the old door ran: a finding at the
 //! member whose value it is about where facet named a step inside it or the owner, class P; one
-//! finding where the door told the same one twice, a `null` given to an untagged enum). The
+//! finding where the old door told the same one twice, a `null` given to an untagged enum). The
 //! tests hold the reader to the pinned `read`; `BEDROCK_DOOR_PINS=<dir>` writes each test's
 //! cells to `<dir>/<test>` instead of checking them.
 
@@ -223,8 +223,6 @@ fn context(reading: Reading) -> LoadContext {
     let mut load = LoadContext::detached();
     load.reading = reading;
     load.null_rule = reading.null_rule();
-    load.scalar_rules = reading.scalar_rules();
-    load.keeps_unknown = reading.keeps_unknown;
     load
 }
 
@@ -265,7 +263,7 @@ fn frozen() -> &'static HashMap<&'static str, (&'static str, Option<&'static str
 }
 
 /// The cell `key` of `test`: the reader's outcome `read` must be the pinned one. Under
-/// `BEDROCK_DOOR_PINS` the cell (with the pinned door's outcome) is written to that directory
+/// `BEDROCK_DOOR_PINS` the cell (with the pinned old door's outcome) is written to that directory
 /// instead.
 fn cell(test: &str, key: &str, read: &str) {
     let pinned = frozen().get(key).copied();
@@ -410,9 +408,9 @@ fn map_outcome(map: &ComponentMap<Part>, d: &Diagnostics) -> String {
     format!("{} {}", entries.join(", "), outcome(Some(&()), d))
 }
 
-/// A component whose JSON is of the wrong kind for its type's root is the door's malformed
+/// A component whose JSON is of the wrong kind for its type's root is facet-json's malformed
 /// input: `core/syntax`, "unexpected token", an error at the component spanning its text, in
-/// the door's words.
+/// facet-json's words.
 #[test]
 #[allow(
     clippy::too_many_lines,
@@ -525,7 +523,7 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
     }
 }
 
-/// A bare array given to a shorthand's unit enum is the door's malformed input whatever the
+/// A bare array given to a shorthand's unit enum is facet-json's malformed input whatever the
 /// slice's scalar rule says: facet's enum read takes a name or an object.
 #[test]
 fn an_array_given_to_a_shorthand_unit_enum_is_the_door_s_syntax_error() {
@@ -620,7 +618,7 @@ fn a_slice_reads_as_a_component_without_a_shorthand() {
         told[0].starts_with("Error core/invalid_type Some(Span"),
         "{told:?}"
     );
-    // A value of the wrong JSON kind for the root is the door's syntax error, as a component's.
+    // A value of the wrong JSON kind for the root is facet-json's syntax error, as a component's.
     let (value, told) = read("[1]");
     assert_eq!(value, None);
     assert!(

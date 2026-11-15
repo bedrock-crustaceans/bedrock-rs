@@ -224,8 +224,8 @@ enum NotAnObject {
     #[error("not UTF-8")]
     NotUtf8,
     /// The text is not JSON: the reader's own error.
-    #[error("{0}")]
-    Syntax(Box<facet_json::DeserializeError>),
+    #[error("{}", .0.kind)]
+    Syntax(Box<bedrock_addon_core::json::parse::Fault>),
     /// The text is JSON and its root is another value than an object.
     #[error("the root is not an object")]
     Root,
@@ -241,7 +241,7 @@ fn parse(bytes: &[u8]) -> Result<VObject, NotAnObject> {
         PrepareError::NotUtf8(_) | PrepareError::Empty => NotAnObject::NotUtf8,
     })?;
     let text = prepared.as_str();
-    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(&last_wins(text))
+    let json = bedrock_addon_core::json::from_str_jsonc(&last_wins(text))
         .map_err(|error| NotAnObject::Syntax(Box::new(error)))?;
     match json.as_object() {
         Some(object) => Ok(object.clone()),

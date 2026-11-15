@@ -122,7 +122,7 @@ fn scan(entries: fs::ReadDir, pack_type: PackType, found: &mut HashMap<(Uuid, Pa
         let Ok(text) = fs::read_to_string(&manifest) else {
             continue;
         };
-        let Ok(value) = bedrock_addon::json::from_str_jsonc::<Value>(&text) else {
+        let Ok(value) = bedrock_addon::json::from_str_jsonc(&text) else {
             continue;
         };
         let header_uuid = value

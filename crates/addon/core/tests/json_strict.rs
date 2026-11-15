@@ -1,12 +1,12 @@
 //! `StrictBool`, the one strict wrapper left: a bool whatever the slice's scalar rule says, a
 //! `true` or `false` token and nothing else.
 
-use bedrock_addon_core::json::{StrictBool, Value, from_str_jsonc};
+use bedrock_addon_core::json::{StrictBool, from_str_jsonc};
 use bedrock_addon_core::schema::read_value;
 
 /// `json` read as the field.
 fn read(json: &str) -> Option<StrictBool> {
-    read_value::<StrictBool>(&from_str_jsonc::<Value>(json).unwrap())
+    read_value::<StrictBool>(&from_str_jsonc(json).unwrap())
 }
 
 const SHAPES: [&str; 6] = ["1", "1.0", "\"-64\"", "true", "null", "3000000000"];

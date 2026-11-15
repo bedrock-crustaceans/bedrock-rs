@@ -20,7 +20,6 @@ bedrock_addon_core = { path = "../../core" }
 bedrock_addon_manifest = { path = "../../manifest" }
 bytes = { workspace = true }
 facet = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
 oxc_parser = { workspace = true, optional = true }

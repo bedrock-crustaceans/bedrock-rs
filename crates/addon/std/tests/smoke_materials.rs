@@ -314,9 +314,8 @@ fn assert_written_as_authored(root: &Path, source: &str) -> (usize, usize) {
             let written = written.unwrap_or_else(|error| panic!("{}: {error}", path.display()));
             let text = String::from_utf8(bytes).expect("UTF-8");
             let text = text.strip_prefix('\u{feff}').unwrap_or(&text);
-            let input = bedrock_addon::json::from_str_jsonc::<Value>(text).expect("the input");
-            let output =
-                bedrock_addon::json::from_str_jsonc::<Value>(&written).expect("the output");
+            let input = bedrock_addon::json::from_str_jsonc(text).expect("the input");
+            let output = bedrock_addon::json::from_str_jsonc(&written).expect("the output");
             let (mut before, mut after) = (String::new(), String::new());
             canonical(&input, &mut before);
             canonical(&output, &mut after);

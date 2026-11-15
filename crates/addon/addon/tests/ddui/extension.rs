@@ -167,10 +167,7 @@ fn a_control_that_is_no_extension_point_declares_nothing_with_its_name() {
         named,
         [(Component::FormButton, None), (Component::Visibility, None)]
     );
-    let attribs = bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(
-        r#"{"name": "demo:built"}"#,
-    )
-    .ok();
+    let attribs = bedrock_addon::json::from_str_jsonc(r#"{"name": "demo:built"}"#).ok();
     for component in Component::ALL {
         let mut control = Control::new(component);
         control.attribs.clone_from(&attribs);
@@ -186,10 +183,7 @@ fn a_control_that_is_no_extension_point_declares_nothing_with_its_name() {
 #[test]
 fn extension_points_follow_the_tree_as_built() {
     let mut named = Control::new(Component::ExtensionPoint);
-    named.attribs = bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(
-        r#"{"name": "demo:built"}"#,
-    )
-    .ok();
+    named.attribs = bedrock_addon::json::from_str_jsonc(r#"{"name": "demo:built"}"#).ok();
     assert!(named.attribs.is_some());
     let root = UiRoot::new(
         bedrock_addon::id::UiRootId::parse("demo:built"),

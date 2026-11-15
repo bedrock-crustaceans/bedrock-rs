@@ -36,8 +36,7 @@ where
     S: Upgrade + VersionStruct,
     S::Next: VersionStruct,
 {
-    let root: Value =
-        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("fixture JSON");
+    let root: Value = bedrock_addon_core::json::from_str_jsonc(text).expect("fixture JSON");
     let written = root
         .as_object()
         .and_then(|o| o.get("format_version"))
@@ -91,10 +90,9 @@ where
     S::Next: VersionStruct,
 {
     let before = fixture(&format!("upgrade/{name}.before.json"));
-    let after: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture(&format!(
-        "upgrade/{name}.after.json"
-    )))
-    .expect("after JSON");
+    let after: Value =
+        bedrock_addon_core::json::from_str_jsonc(&fixture(&format!("upgrade/{name}.after.json")))
+            .expect("after JSON");
     let (out, d) = step::<S>(&before, cx);
     assert_eq!(
         bedrock_addon_core::json::to_json(&out).unwrap(),
@@ -633,7 +631,7 @@ fn s13_1_26_0_conversion() {
         &allow_listed(),
         Some(FormatVersion::new(1, 20, 10)),
     );
-    let after: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture(
+    let after: Value = bedrock_addon_core::json::from_str_jsonc(&fixture(
         "upgrade/s13_unit_cube_below_1_20_60.after.json",
     ))
     .unwrap();

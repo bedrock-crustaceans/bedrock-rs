@@ -17,7 +17,7 @@ use crate::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
 use crate::document::VersionInfo;
-use crate::json::{EnvelopeVersion, JsonSlice, RootProbe, Value, probe_envelope};
+use crate::json::{EnvelopeVersion, JsonSlice, RootProbe, probe_envelope};
 use crate::load::LoadContext;
 use crate::molang::{MolangContext, MolangFields, not_checked};
 use crate::pack_identity::PackPath;
@@ -544,7 +544,7 @@ pub fn file_version(document: JsonSlice<'_>) -> Option<FormatVersion> {
 /// the envelope's), for `Family::payload_version` (entity: `minecraft:entity.format_version`).
 /// `None` when absent or unreadable.
 pub fn member_version(payload: JsonSlice<'_>, key: &str) -> Option<FormatVersionInput> {
-    let json = crate::json::from_str_jsonc::<Value>(payload.text).ok()?;
+    let json = crate::json::from_str_jsonc(payload.text).ok()?;
     FormatVersionInput::from_json(json.as_object()?.get(key)?)
 }
 
@@ -568,7 +568,7 @@ pub(super) fn unsupported(written: &str, at: JsonPath) -> Diagnostic {
 
 /// The default identity: `description.identifier` and `description.runtime_identifier`.
 pub(super) fn description_identity(payload: JsonSlice<'_>) -> Identity {
-    let root = crate::json::from_str_jsonc::<Value>(payload.text).ok();
+    let root = crate::json::from_str_jsonc(payload.text).ok();
     let description = root
         .as_ref()
         .and_then(|root| root.as_object()?.get("description"));
@@ -630,21 +630,18 @@ impl Run {
             StructIndex::Stable(i) => versions.get(i).copied().unwrap_or(F::FLOOR),
             StructIndex::Beta => BETA_VERSION,
         };
-        // The selected slice's reading: its null rule, its scalar rules and the reading itself
-        // (which grades an unknown member) ride on the context into `parse_payload` and
-        // `parse_component` (a rule the caller's context carries does not leak in; an MCB
-        // source is read by the binary reader, so by default it has no null rule), and so does
-        // whether a component that fails to read is fatal.
+        // The selected slice's reading (its null rule, its scalar rules, whether it keeps
+        // unknown members, how it grades one) rides on the context into `read_payload` and
+        // `read_component` (a reading the caller's context carries does not leak in; an MCB
+        // source is read by the binary reader, so by default it has no null rule), and so
+        // does whether a component that fails to read is fatal. The null rule rides on its
+        // own too, for the readers that apply it by hand (item's components).
         let reading = super::reading::slice_reading::<F>(index, cx.source);
         let rule = reading.null_rule();
         let strict_components = reading.components_fatal;
-        let scalar_rules = reading.scalar_rules();
-        let keeps_unknown = reading.keeps_unknown;
         let scoped;
         let load = if cx.null_rule == rule
             && cx.strict_components == strict_components
-            && cx.scalar_rules == scalar_rules
-            && cx.keeps_unknown == keeps_unknown
             && cx.reading == reading
         {
             cx
@@ -652,8 +649,6 @@ impl Run {
             let mut with_rule = cx.clone();
             with_rule.null_rule = rule;
             with_rule.strict_components = strict_components;
-            with_rule.scalar_rules = scalar_rules;
-            with_rule.keeps_unknown = keeps_unknown;
             with_rule.reading = reading;
             scoped = with_rule;
             &scoped
@@ -998,7 +993,7 @@ fn written_text(version: &EnvelopeVersion) -> String {
 
 /// Whether the object `payload` has the member `key` (any value).
 fn has_member(payload: JsonSlice<'_>, key: &str) -> bool {
-    crate::json::from_str_jsonc::<Value>(payload.text).is_ok_and(|root| {
+    crate::json::from_str_jsonc(payload.text).is_ok_and(|root| {
         root.as_object()
             .is_some_and(|members| members.contains_key(key))
     })
@@ -1006,7 +1001,7 @@ fn has_member(payload: JsonSlice<'_>, key: &str) -> bool {
 
 /// An empty document (`EmptyDocument`): nothing but whitespace and comments, or `null`.
 fn is_blank(text: &str) -> bool {
-    let null = |text: &str| crate::json::from_str_jsonc::<Value>(text).is_ok_and(|v| v.is_null());
+    let null = |text: &str| crate::json::from_str_jsonc(text).is_ok_and(|v| v.is_null());
     // A trailing line comment ends at the added newline.
     null(text) || null(&format!("{text}\nnull"))
 }

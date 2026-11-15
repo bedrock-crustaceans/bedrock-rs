@@ -896,8 +896,8 @@ fn struct_value(index: usize, at: &TokenStream) -> TokenStream {
     }}
 }
 
-/// The read of an untagged enum with data: the arm the door chooses (`derive_support::untagged_arm`),
-/// then that variant's payload.
+/// The read of an untagged enum with data: the arm the reader chooses
+/// (`derive_support::untagged_arm`), then that variant's payload.
 pub(super) fn untagged_read(
     target: &Target,
     invalid: Option<&(syn::Expr, proc_macro2::Span)>,

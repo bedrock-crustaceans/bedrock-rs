@@ -38,7 +38,7 @@ fn members(payload: &Value, key: &str) -> Vec<Option<Value>> {
 /// keeps each member (an absent `last_used` stays absent), and the names keep their order.
 #[test]
 fn the_v1_21_100_step_keeps_every_member_of_every_element() {
-    let input = bedrock_addon::json::from_str_jsonc::<Value>(TWO_ENTRIES).expect("the input");
+    let input = bedrock_addon::json::from_str_jsonc(TWO_ENTRIES).expect("the input");
     let checks = Checks::default();
     let output = step_output::<v1_21_100::SavedSettings>(&input, Run::default(), &checks)
         .expect("the step runs");

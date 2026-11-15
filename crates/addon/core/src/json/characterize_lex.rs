@@ -1,4 +1,4 @@
-//! The crate-private half of `tests/characterize_lex.rs`: the scanners of the door that are
+//! The crate-private half of `tests/characterize_lex.rs`: the scanners of the parser that are
 //! not public, over the same hostile texts, compared with
 //! `tests/fixtures/characterize_lex/private.txt` (what they answered before the fold onto
 //! `json::lex`). A line changes only in the commit that changes the behaviour on purpose.
@@ -6,20 +6,6 @@
 use std::fmt::Write as _;
 
 include!("../../tests/fixtures/characterize_lex/texts.rs");
-
-/// The path `path_at` names at each offset of `text` where it differs from the offset before.
-fn paths(text: &str) -> String {
-    let mut out = String::new();
-    let mut last = None;
-    for offset in (0..=text.len()).filter(|&offset| text.is_char_boundary(offset)) {
-        let path = super::path::path_at(text, offset).to_string();
-        if last.as_ref() != Some(&path) {
-            let _ = write!(out, " {offset}:{path:?}");
-            last = Some(path);
-        }
-    }
-    out
-}
 
 fn characterize(name: &str, text: &str, out: &mut String) {
     let _ = writeln!(out, "## {name}");
@@ -33,19 +19,6 @@ fn characterize(name: &str, text: &str, out: &mut String) {
         "first_beyond_double  {:?}",
         super::clamp_text::first_beyond_double(text)
     );
-    let _ = writeln!(
-        out,
-        "has_empty_array      {:?}",
-        super::slice::has_empty_array(text)
-    );
-    let _ = writeln!(
-        out,
-        "array_of_comments    {:?}",
-        super::slice::has_array_of_comments(text)
-    );
-    if text.len() <= 200 {
-        let _ = writeln!(out, "path_at             {}", paths(text));
-    }
 }
 
 #[test]

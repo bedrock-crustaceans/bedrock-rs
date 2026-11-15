@@ -1732,8 +1732,7 @@ fn the_base_and_permutation_reject_their_keys() {
 fn fixture_multi_block_5_is_the_helpers_loot_table() {
     let rendered = render(&gtest("multi_block-5"), "minecraft:stone", &[]);
     let json: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&rendered)
-            .expect("JSON");
+        bedrock_addon_core::json::from_str_jsonc(&rendered).expect("JSON");
     let pools = json
         .as_object()
         .and_then(|o| o.get("pools"))

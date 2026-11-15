@@ -23,5 +23,4 @@ uuid = { workspace = true }
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../../test_support" }
 # The tests read their expected-diagnostics fixtures and build maps by hand.
-facet-json = { workspace = true }
 indexmap = { workspace = true }

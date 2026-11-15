@@ -25,7 +25,6 @@ brarchive = { workspace = true }
 bytes = { workspace = true }
 thiserror = { workspace = true }
 facet = { workspace = true }
-facet-json = { workspace = true }   # the type `DeserializeError` only: reads go through core's door
 zip = { workspace = true, optional = true }
 aes = { workspace = true, optional = true }
 cfb8 = { workspace = true, optional = true }

@@ -27,7 +27,7 @@ pub struct AimAssistPreset {
     pub hand_settings: Option<AimAssistCategoryId>,
     /// The `format_version` the document was read at, 1.21.50 or later; the struct is
     /// written back at it (not a JSON member of the payload).
-    #[facet(skip, rename = "\u{0}source_format_version")]
+    #[facet(skip)]
     pub source_format_version: FormatVersion,
 }
 

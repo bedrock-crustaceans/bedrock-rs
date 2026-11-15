@@ -496,7 +496,7 @@ fn read_components(
 
 /// A JSON value from its text.
 fn read_value(text: &str) -> Option<Value> {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text).ok()
+    bedrock_addon_core::json::from_str_jsonc(text).ok()
 }
 
 /// A member a step or the legacy reader reads as its fallback because it has another JSON

@@ -356,7 +356,7 @@ mod tests {
     use crate::json::{from_str, to_json};
 
     fn json(text: &str) -> Value {
-        from_str::<Value>(text).expect("a fragment of the test")
+        from_str(text).expect("a fragment of the test")
     }
 
     fn map(text: &str) -> IndexMap<String, Value> {

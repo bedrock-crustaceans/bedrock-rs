@@ -5,7 +5,6 @@ pub mod fork;
 pub mod lenient;
 
 use std::str::Utf8Error;
-use std::sync::Arc;
 
 use super::parse::{Fault, Options, parse};
 use super::{MAX_JSON_DEPTH, TooDeep, Value, Winner, check_depth, strip_bom};
@@ -30,20 +29,8 @@ pub enum ReadError {
     #[error(transparent)]
     Utf8(#[from] Utf8Error),
     /// The text is no JSON.
-    #[error(transparent)]
-    Syntax(Arc<facet_json::DeserializeError>),
-}
-
-impl From<Fault> for ReadError {
-    fn from(fault: Fault) -> Self {
-        facet_json::DeserializeError::from(fault).into()
-    }
-}
-
-impl From<facet_json::DeserializeError> for ReadError {
-    fn from(error: facet_json::DeserializeError) -> Self {
-        Self::Syntax(Arc::new(error))
-    }
+    #[error("{}", .0.kind)]
+    Syntax(#[from] Fault),
 }
 
 /// The member `key` of an object when it is present and not null.
@@ -118,7 +105,7 @@ mod tests {
     fn the_two_as_int_copies_and_their_one_difference() {
         use super::fork::as_int as fork;
         use super::lenient::as_int as texture;
-        let json = |text: &str| super::super::from_str_jsonc::<Value>(text).unwrap();
+        let json = |text: &str| super::super::from_str_jsonc(text).unwrap();
         let wide = (u64::MAX - 1).to_string();
         for (text, low_word, zero) in [
             ("7", 7, 7),

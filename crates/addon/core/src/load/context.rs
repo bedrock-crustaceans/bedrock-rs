@@ -68,21 +68,10 @@ pub struct LoadContext {
     #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
     pub molang: Option<Arc<crate::molang::MolangCheck>>,
     /// The null rule of the document being read: set by the versioning load from the slice's
-    /// `Family::reading`, read by `versioning::parse_payload` and `parse_component`; `None`
+    /// `Family::reading`; `None`
     /// (each read takes `null` as it does) outside a versioned load and for a family of the
     /// first run's input kind.
     pub null_rule: Option<crate::json::NullRule>,
-    /// How the scalars of the document being read are read: set by the versioning load from
-    /// the slice's `Family::reading` (`Reading::scalar_rules`), read by
-    /// `versioning::parse_payload` and `parse_component` (the scalar pre-pass,
-    /// `json::parse_with_rules`); [`ScalarRules::PLAIN`](crate::json::ScalarRules::PLAIN)
-    /// outside a versioned load.
-    pub scalar_rules: crate::json::ScalarRules,
-    /// Whether the unknown members of the document's structs are kept in its table where a
-    /// struct does not say otherwise: set by the versioning load from the slice's
-    /// `Family::reading` (`Reading::keeps_unknown`), read by `versioning::parse_payload` and
-    /// `parse_component`; `false` outside a versioned load.
-    pub keeps_unknown: bool,
     /// The reading of the slice being parsed, which grades its findings
     /// ([`grade`](Self::grade)): set by the versioning load from the slice's `Family::reading`
     /// for the parse of the struct alone (not its upgrade steps or its checks), and
@@ -90,7 +79,7 @@ pub struct LoadContext {
     /// is a warning.
     pub reading: crate::versioning::Reading,
     /// Whether the document is read by a cereal slice of a Minecraft Document family (the
-    /// slice's null rule is N2, whatever the source): `parse_component` then rejects the
+    /// slice's null rule is N2, whatever the source): a component read then rejects the
     /// document for a component whose typed read fails (a type error) or whose required member
     /// is missing, under both of the game's log masks. Set by the versioning
     /// load from `Reading::components_fatal`; `false` outside it, for `JsonCpp` slices and for a family's hand-written slices.
@@ -139,8 +128,6 @@ impl fmt::Debug for LoadContext {
         debug.field("molang", &present(self.molang.is_some()));
         debug
             .field("null_rule", &self.null_rule)
-            .field("scalar_rules", &self.scalar_rules)
-            .field("keeps_unknown", &self.keeps_unknown)
             .field("reading", &self.reading)
             .field("strict_components", &self.strict_components)
             .field("document_format", &self.document_format)
@@ -231,8 +218,6 @@ impl LoadContext {
             #[cfg(feature = "molang")]
             molang: options.molang.clone(),
             null_rule: None,
-            scalar_rules: crate::json::ScalarRules::PLAIN,
-            keeps_unknown: false,
             reading: crate::versioning::Reading::OWN,
             strict_components: false,
             document_format: None,

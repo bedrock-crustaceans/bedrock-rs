@@ -71,7 +71,7 @@ fn a_list_of_block_names_is_no_row_of_the_descriptor_table() {
 }
 
 fn json(text: &str) -> Value {
-    bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("json")
+    bedrock_addon_core::json::from_str_jsonc(text).expect("json")
 }
 
 /// What `pattern` names below `text`: each path and value.

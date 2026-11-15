@@ -122,7 +122,7 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     }
 }
 
-/// The `ShorthandRows` impl: the payload of every `shorthand = scalar` row, for the door's
+/// The `ShorthandRows` impl: the payload of every `shorthand = scalar` row, for the reader's
 /// read of a bare scalar (none in a `from_only` enum, whose variants have no rows).
 fn shorthand_rows(enum_ident: &Ident, typed: &[Typed]) -> TokenStream {
     let payloads = typed.iter().filter_map(|t| {

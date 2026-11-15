@@ -85,11 +85,11 @@ pub struct Bound {
 /// tells a member by ([`Read::unknown`](crate::json::kit::Read::unknown),
 /// [`unknown_member`](crate::json::kit::Read::unknown_member)), at the read's unknown severity.
 ///
-/// The JSON door (`versioning::parse_payload`, `parse_component`) reads the word from the
+/// The reader (`versioning::read_payload`, `read_component`) reads the word from the
 /// struct's `Shape` (or a variant's, for its fields) and from the field that holds the
 /// object, which comes first. A struct keeps its unknown members when it is marked with
 /// `extra: Extra`, says `keep`, or says nothing under a reading that keeps them
-/// (`Reading::keeps_unknown`). The door tells a kept member and one of a struct that says
+/// (`Reading::keeps_unknown`). The reader tells a kept member and one of a struct that says
 /// `report` (or nothing) as `UnrecognizedField`, the game's line for an unknown member.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -103,7 +103,7 @@ pub enum UnknownRule {
     /// (`MemberNotKept`). No word says it; a hand reader tells a member so.
     NotKept,
     /// Kept and written back, and told nothing: the game does not log it and the document keeps
-    /// it (the derived read only; the door tells it as `Keep`).
+    /// it (the derived read only; the old typed read told it as `Keep`).
     Silent,
     /// Refused (`DroppedField`, at the slice's unknown severity).
     Reject,

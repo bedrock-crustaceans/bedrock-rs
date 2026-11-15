@@ -30,14 +30,14 @@ pub const VERSIONS: &[FormatVersion] = &[
 /// `MalformedInput` error at the root: the family's loader reads the text first and
 /// never comes here with one, a caller of a struct's `parse` can.
 fn document(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Value> {
-    match bedrock_addon_core::json::from_str_jsonc::<Value>(&bedrock_addon_core::json::last_wins(
+    match bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(
         payload.text,
     )) {
         Ok(document) => Some(document),
         Err(error) => {
             d.push(
                 bedrock_addon_core::diagnostic::Diagnostic::error(
-                    bedrock_addon_core::diagnostic::builders::syntax(error.to_string()),
+                    bedrock_addon_core::diagnostic::builders::syntax(error.kind.to_string()),
                 )
                 .at(cx.at.clone()),
             );

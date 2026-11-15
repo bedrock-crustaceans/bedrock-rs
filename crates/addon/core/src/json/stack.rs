@@ -9,7 +9,7 @@
 //! main thread where the type is unkind. A stack that overflows is no error a caller can
 //! handle: the process ends.
 //!
-//! So the door asks how deep the text nests, which its scan knows before facet reads a byte,
+//! So the reader asks how deep the text nests, which its parse knows before the read starts,
 //! and gives the read the stack that depth can take. Two sizes, both by the depth:
 //!
 //! - what the thread must have left for the read to run where it is ([`to_stay`]): two to
@@ -27,11 +27,6 @@
 //! - a host that cannot map the stack (an address-space limit, strict overcommit, a 32-bit
 //!   address space that is full): `stacker` panics there. The stack made for a text at the
 //!   limit is 65 MiB of address space; pages are taken as they are touched.
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "this module is the JSON door: the one caller of facet-json"
-)]
 
 /// Whether the crate is built without optimisation, as far as it can tell: with debug
 /// assertions (the `dev` and `test` profiles), or at `opt-level` 0 (`build.rs`). facet is
@@ -116,39 +111,39 @@ mod tests {
     use indexmap::IndexMap;
 
     use super::to_stay;
+    use crate::diagnostic::{Diagnostics, JsonPath};
     use crate::json::Value;
+    use crate::json::kit::{Node, Read};
+    use crate::json::parse::{Options, parse};
+    use crate::schema::{FromJson, Schema};
+    use crate::versioning::Reading;
 
     /// A struct with an untyped member.
-    #[derive(Facet)]
+    #[derive(Debug, PartialEq, Facet, Schema)]
     struct Sidecar {
-        #[facet(default)]
         a: Option<Value>,
     }
 
     /// A struct that holds itself in a list (`DeprecatedDefinitionEvent`'s shape).
-    #[derive(Facet)]
+    #[derive(Debug, PartialEq, Facet, Schema)]
     struct Tree {
-        #[facet(default)]
         a: Option<Vec<Tree>>,
     }
 
     /// A struct that holds itself in a map.
-    #[derive(Facet)]
+    #[derive(Debug, PartialEq, Facet, Schema)]
     struct Named {
-        #[facet(default)]
         a: Option<IndexMap<String, Option<Named>>>,
     }
 
-    /// A struct that holds itself in a box (`RawTypeDesc`'s shape): the costliest a level of
-    /// the types the crates have.
-    #[derive(Facet)]
+    /// A struct that holds itself in a box (`RawTypeDesc`'s shape).
+    #[derive(Debug, PartialEq, Facet, Schema)]
     struct Chain {
-        #[facet(default)]
         a: Option<Box<Chain>>,
     }
 
     /// An untagged enum that holds itself in a list (`molang::list::ListForm`'s shape).
-    #[derive(Facet)]
+    #[derive(Debug, PartialEq, Facet, Schema)]
     #[facet(untagged)]
     #[repr(u8)]
     #[allow(dead_code, reason = "read, never looked at")]
@@ -159,16 +154,13 @@ mod tests {
 
     /// An untagged enum, a box and a struct for each level: no type of the crates, the
     /// costliest shape found.
-    #[derive(Facet)]
+    #[derive(Debug, PartialEq, Facet, Schema)]
     #[facet(untagged)]
     #[repr(u8)]
     #[allow(dead_code, reason = "read, never looked at")]
     enum Either {
         Many(Vec<Either>),
-        One {
-            #[facet(default)]
-            a: Option<Box<Either>>,
-        },
+        One { a: Option<Box<Either>> },
     }
 
     /// `open` `levels` times around `bottom`, closed.
@@ -200,18 +192,23 @@ mod tests {
         }
     }
 
-    /// Whether facet reads `T` from `text`, called as the door calls it but on the stack
-    /// there is.
-    fn reads<T: for<'f> Facet<'f>>(text: &str) -> bool {
-        facet_json::from_str_jsonc::<T>(text).is_ok()
+    /// Whether the reader reads `T` from `text`, called without `with_stack_for`: on the
+    /// stack there is.
+    fn reads<T: FromJson>(text: &str) -> bool {
+        let Ok(parsed) = parse(text, Options::default()) else {
+            return false;
+        };
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::OWN, &mut found);
+        T::from_json(&Node::parsed(&parsed, JsonPath::new()), &mut read).is_some()
     }
 
-    /// A walk of facet's by name: the share of [`to_stay`] its thread is given, as a
+    /// A walk of the reader's by name: the share of [`to_stay`] its thread is given, as a
     /// divisor and a multiplier, and whether the walk of a text or value `levels` deep ends
     /// well.
     type Walk = (&'static str, (usize, usize), fn(usize) -> bool);
 
-    /// The walks the door lets run on a thread's own stack, each on half of what it asks
+    /// The walks `with_stack_for` lets run on a thread's own stack, each on half of what it asks
     /// the thread to have left: a margin of two in the build the test is built in. The
     /// last is no type of the crates: it has three quarters.
     const WALKS: &[Walk] = &[
@@ -233,12 +230,6 @@ mod tests {
             (1, 2),
             |levels| reads::<Lists>(&nest(levels, |_| "[", "7")),
         ),
-        ("a value written by facet-json", (1, 2), |levels| {
-            let Ok(value) = crate::json::from_str_jsonc::<Value>(&nest(levels, mixed, "7")) else {
-                return false;
-            };
-            facet_json::to_string(&value).is_ok()
-        }),
         (
             "an untagged enum, a box and a struct a level",
             (3, 4),
@@ -247,7 +238,7 @@ mod tests {
     ];
 
     /// The child of the test below: one walk at one depth, on a thread with its share of
-    /// the stack the door asks a thread to have left. Without the variable it is no child.
+    /// the stack the reader asks a thread to have left. Without the variable it is no child.
     #[test]
     #[ignore = "no test of its own: the child process of the test below, which runs it with --ignored"]
     fn child() {

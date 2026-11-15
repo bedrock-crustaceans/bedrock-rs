@@ -1,6 +1,6 @@
 //! A JSON map level given an array (`[]`, which facet would read
 //! as an empty map) is an `InvalidType` at that level, in every family that has a map level
-//! read through core's `parse_at`. One test per family with a map level; the families without
+//! read by the typed reader. One test per family with a map level; the families without
 //! one are listed below.
 
 use bedrock_addon::diagnostic::{Diagnostic, Diagnostics, Kind};
@@ -415,7 +415,7 @@ fn geometry_item_display_transforms_that_are_an_array_are_a_type_error() {
     );
 }
 
-// `parse_at`; its map levels refuse an array all the same: the root, the wrapper's `materials`
+// The material file's map levels refuse an array all the same: the root, the wrapper's `materials`
 // (no object, so no wrapper and no material) and a material's own value.
 #[cfg(feature = "material")]
 #[test]

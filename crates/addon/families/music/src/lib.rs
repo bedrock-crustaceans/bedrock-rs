@@ -155,7 +155,7 @@ pub struct MusicDefinition {
     /// object, as written.
     pub extra: UnknownMembers,
     /// The members the definition was read with.
-    #[facet(skip, rename = "\u{0}read")]
+    #[facet(skip)]
     pub(crate) read: Present,
 }
 

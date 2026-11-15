@@ -1,6 +1,5 @@
 //! Write-back (Value level) and the writer's `format_version`.
 
-use bedrock_addon::json::Value;
 use bedrock_addon::pack::settings::{SavedSettings, SettingValue, Settings};
 use bedrock_addon::version::FormatVersion;
 use indexmap::IndexMap;
@@ -67,7 +66,7 @@ fn a_vanilla_written_file_reads_back_unchanged() {
     let text = String::from_utf8(fixture("ps01_v1_21_100_upgrade.before.json")).unwrap();
     let loaded = parse_text(WORLD, &text).unwrap();
     let written = loaded.to_json().unwrap();
-    let as_json = |text: &str| bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap();
+    let as_json = |text: &str| bedrock_addon::json::from_str_jsonc(text).unwrap();
     assert_eq!(as_json(&written), as_json(&text));
 }
 

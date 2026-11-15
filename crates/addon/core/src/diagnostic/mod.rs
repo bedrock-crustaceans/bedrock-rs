@@ -10,7 +10,6 @@ mod def;
 mod deprecated;
 mod detail;
 mod event;
-mod facet;
 mod list;
 mod location;
 mod moves;
@@ -23,9 +22,6 @@ pub mod validator;
 pub use def::{Class, Code, CodeDef, CodeMeta, Disposition, Kind, sentence};
 pub use deprecated::ENUM_VALUE_DEPRECATED;
 pub use event::EVENT_BOTH_RANDOMIZE_AND_SEQUENCE;
-// hidden: reader plumbing: maps the facet error kinds to codes for the crate family's readers
-#[doc(hidden)]
-pub use facet::code_for_deserialize_error_kind;
 
 pub use detail::{DiagnosticDetail, NotFoundHint, ReferenceHint, ShadowReason};
 pub use list::{Diagnostics, Told};

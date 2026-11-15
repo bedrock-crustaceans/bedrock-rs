@@ -97,7 +97,7 @@ fn the_door_order_stops_at_the_first_failure_in_file_order() {
 #[test]
 fn unknown_members_are_told_after_the_read_in_the_door_order_and_where_met_as_read() {
     let text = r#"{"zz": 1, "level": "x"}"#;
-    // The door tells only its failure.
+    // The first-failure profile tells only its failure.
     assert_eq!(door::<Lamp>(text).1, ["Error root/level core/invalid_type"]);
     assert_eq!(
         as_read::<Lamp>(text).1,
@@ -107,7 +107,7 @@ fn unknown_members_are_told_after_the_read_in_the_door_order_and_where_met_as_re
         ]
     );
     let text = r#"{"level": 1, "zz": 1, "lit": "true"}"#;
-    // Converted, then told after the unknown member, as the door's passes run.
+    // Converted, then told after the unknown member, as the first-failure profile's passes run.
     assert_eq!(
         door::<Lamp>(text).1,
         [
@@ -121,7 +121,7 @@ fn unknown_members_are_told_after_the_read_in_the_door_order_and_where_met_as_re
 struct Marked {
     #[facet(schema::fallback = 0)]
     v: Option<u8>,
-    #[facet(skip, rename = "\u{0}extra")]
+    #[facet(skip)]
     extra: Extra,
 }
 
@@ -406,7 +406,7 @@ fn an_internally_tagged_enum_reads_the_variant_its_tag_names() {
         Some(Shape::Circle { radius: 2 })
     );
     assert_eq!(door::<Shape>(r#"{"type": "point"}"#).0, Some(Shape::Point));
-    // As the door tells it (schema_read_door's every_kind_of_member grid): a wrong type at
+    // As facet-json told it (schema_read_door's every_kind_of_member grid): a wrong type at
     // the enum's object.
     assert_eq!(
         door::<Shape>(r#"{"type": "square"}"#).1,
@@ -592,7 +592,7 @@ fn an_unknown_member_of_a_component_struct_is_an_unrecognized_component_and_not_
         told,
         ["Error root/minecraft:swim core/unrecognized_component"]
     );
-    // The door's order tells it after the read, as it tells any unknown member.
+    // The first-failure profile tells it after the read, as any unknown member.
     let (_, told) = door::<Components>(r#"{"minecraft:swim": {}}"#);
     assert_eq!(
         told,
@@ -678,7 +678,7 @@ fn deep_text(levels: usize) -> String {
 
 /// A payload nested to the parser's limit takes the derived read more stack than a thread of
 /// 384 KiB has (some 4 KiB a level here, unoptimised): the read makes the stack it needs, as
-/// the typed door's did.
+/// the old typed read did.
 #[test]
 fn a_payload_as_deep_as_the_parser_takes_reads_on_a_small_thread() {
     use crate::load::LoadContext;
@@ -717,7 +717,7 @@ struct Keeper {
 }
 
 /// The members a read keeps go to the table only when it reads: a document that fails keeps
-/// nothing, as the door's read absorbs its kept members only after a typed read that worked.
+/// nothing, as the old read absorbed its kept members only after a typed read that worked.
 #[test]
 fn a_read_that_fails_keeps_no_unknown_member() {
     for profile in [Profile::FIRST_FAILURE, Profile::EVERY_FAILURE] {
@@ -840,7 +840,7 @@ fn an_option_field_read_by_its_function_reads_null_by_the_null_rule() {
             "Error root/shade core/invalid_type"
         ]
     );
-    // The door's null pass, as for any `Option` member.
+    // The first-failure profile's null pass, as for any `Option` member.
     let (_, told) = read_as::<Shaded>(text, Reading::DOCUMENT, Profile::FIRST_FAILURE);
     assert_eq!(
         told,
@@ -857,8 +857,8 @@ struct Pairs {
     pair: Option<[Plain; 1]>,
 }
 
-/// A struct inside a fixed array tells its unknown members and keeps none: the door's walk
-/// cannot reach into a fixed array to keep them.
+/// A struct inside a fixed array tells its unknown members and keeps none: the old walk
+/// could not reach into a fixed array to keep them.
 #[test]
 fn a_struct_in_a_fixed_array_keeps_no_unknown_member() {
     let text = r#"{"pair": [{"c": 3}]}"#;
@@ -1284,8 +1284,8 @@ fn a_read_of_the_first_failure_only_goes_on_to_tell_the_nulls_and_the_unknown_me
 
 #[test]
 fn a_read_of_the_first_failure_only_tells_a_refused_null_only_of_a_read_that_stands() {
-    // The door's null pass is of a document that read: after a failure the unknown members are
-    // told and the `null` is not.
+    // The first-failure null pass is of a document that read: after a failure the
+    // unknown members are told and the `null` is not.
     let text = r#"{"a": "x", "b": 1, "zz": 1, "n": null}"#;
     let (value, told) = read_as::<Trio>(text, Reading::DOCUMENT, Profile::FIRST_THEN_PASSES);
     assert_eq!(value, None);
