@@ -15,10 +15,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
 facet = { workspace = true }
-facet-json = { workspace = true }
 facet-value = { workspace = true }
 indexmap = { workspace = true }
 
 [dev-dependencies]
+facet-json = { workspace = true }
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../../test_support" }

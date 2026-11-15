@@ -10,10 +10,11 @@ mod attr;
 mod read;
 mod ty;
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    Data, DataEnum, DeriveInput, Error, Expr, Fields, Ident, Lit, Member, Result, Type, Visibility,
+    Data, DataEnum, DeriveInput, Error, Expr, Fields, GenericParam, Generics, Ident, Lit, Member,
+    Result, Type, Visibility,
 };
 
 use self::attr::{BoundDecl, ContainerAttrs, FieldAttrs, LimitDecl, Op, Place};
@@ -27,11 +28,14 @@ fn core() -> TokenStream {
 /// Expands the derive, or every error found.
 pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     let mut errors = Vec::new();
-    if !input.generics.params.is_empty() {
-        errors.push(Error::new_spanned(
-            &input.generics,
-            "`#[derive(Schema)]` takes no generic parameters",
-        ));
+    for param in &input.generics.params {
+        if !matches!(param, GenericParam::Type(_)) {
+            errors.push(Error::new_spanned(
+                param,
+                "`#[derive(Schema)]` takes type parameters only: a lifetime or a const parameter \
+                 has no JSON form",
+            ));
+        }
     }
     let out = match &input.data {
         Data::Struct(data) => derive_struct(input, &data.fields, &mut errors),
@@ -49,6 +53,97 @@ pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
     }) {
         Some(error) => Err(error),
         None => Ok(out),
+    }
+}
+
+/// The type a derive emits impls for: its name and its type parameters. Each impl bounds every
+/// parameter by the trait the impl needs of the types the fields hold (`FromJson` for the read,
+/// `SchemaFields` for the check, `MolangFields` for the Molang walk), so a field `data: T` or
+/// `items: Vec<T>` walks as `T` does.
+pub(super) struct Target<'a> {
+    pub ident: &'a Ident,
+    pub generics: &'a Generics,
+}
+
+impl Target<'_> {
+    /// The type with its parameters: `Weighted<T>`.
+    pub(super) fn ty(&self) -> TokenStream {
+        let ident = self.ident;
+        let (_, ty, _) = self.generics.split_for_impl();
+        quote!(#ident #ty)
+    }
+
+    /// Whether the type has parameters.
+    pub(super) fn is_generic(&self) -> bool {
+        !self.generics.params.is_empty()
+    }
+
+    /// The header of an impl of `trait_path` for the type, each type parameter bounded by
+    /// `bound` (none: unbounded): `impl<T: Bound> Trait for Name<T> where ..`.
+    pub(super) fn impl_for(
+        &self,
+        trait_path: &TokenStream,
+        bound: Option<&TokenStream>,
+    ) -> TokenStream {
+        self.impl_where(trait_path, bound, None)
+    }
+
+    /// [`impl_for`](Self::impl_for) with one more predicate in the where clause (`predicate`:
+    /// `Self::ty(): Facet<'static>`, as tokens), when the type has parameters.
+    pub(super) fn impl_where(
+        &self,
+        trait_path: &TokenStream,
+        bound: Option<&TokenStream>,
+        predicate: Option<&TokenStream>,
+    ) -> TokenStream {
+        let (mut generics, ty) = self.bounded(bound);
+        if let Some(predicate) = predicate.filter(|_| self.is_generic()) {
+            let predicate: syn::WherePredicate = syn::parse_quote!(#predicate);
+            generics.make_where_clause().predicates.push(predicate);
+        }
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #trait_path for #ty #where_clause)
+    }
+
+    /// The headers of the `Schema` impl (its parameters `SchemaFields`: the check and the trigger
+    /// list walk into them) and the `MolangFields` one (its parameters `MolangFields`).
+    pub(super) fn walk_impls(&self) -> (TokenStream, TokenStream) {
+        let core = core();
+        (
+            self.impl_for(
+                &quote!(#core::schema::Schema),
+                Some(&quote!(#core::schema::SchemaFields)),
+            ),
+            self.impl_for(
+                &quote!(#core::molang::MolangFields),
+                Some(&quote!(#core::molang::MolangFields)),
+            ),
+        )
+    }
+
+    /// The header of an inherent impl: `impl<T> Name<T> where ..`.
+    pub(super) fn inherent(&self) -> TokenStream {
+        let (generics, ty) = self.bounded(None);
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #ty #where_clause)
+    }
+
+    /// The parameters and where clause a function nested in an impl repeats (it sees none of
+    /// the impl's), each type parameter bounded by `bound`: `(<T: Bound>, where ..)`.
+    pub(super) fn fn_generics(&self, bound: &TokenStream) -> (TokenStream, TokenStream) {
+        let (generics, _) = self.bounded(Some(bound));
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        (quote!(#impl_generics), quote!(#where_clause))
+    }
+
+    fn bounded(&self, bound: Option<&TokenStream>) -> (Generics, TokenStream) {
+        let mut generics = self.generics.clone();
+        if let Some(bound) = bound {
+            for param in generics.type_params_mut() {
+                param.bounds.push(syn::parse_quote!(#bound));
+            }
+        }
+        (generics, self.ty())
     }
 }
 
@@ -83,7 +178,12 @@ impl FieldInfo<'_> {
     /// The element type of a `[T; N]` or `Vec<T>` field (below its `Option`): a bound on such a
     /// field is the bound of each element.
     fn element_ty(&self) -> Option<&Type> {
-        ty::elements(self.value_ty())
+        ty::elements(self.value_ty()).or_else(|| ty::map_values(self.value_ty()))
+    }
+
+    /// Whether the field is a map: a bound on it is the bound of each value, at the value's key.
+    fn is_map(&self) -> bool {
+        ty::map_values(self.value_ty()).is_some()
     }
 
     fn required(&self) -> bool {
@@ -273,7 +373,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
 
     let core = core();
     let ident = &input.ident;
-    let from_json = read::struct_read(ident, fields, &container, &infos);
+    let target = Target {
+        ident,
+        generics: &input.generics,
+    };
+    let from_json = read::struct_read(&target, fields, &container, &infos);
     let rows = infos.iter().map(|info| field_row(info));
     let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
         infos
@@ -291,21 +395,30 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
     } else {
         quote!(#(#molang)*)
     };
-    let triggers = trigger_calls(&infos);
+    let mut triggers = trigger_calls(&infos);
+    if container.trigger {
+        // The struct is a trigger itself: its own path, before its fields'.
+        triggers.insert(
+            0,
+            quote!(out.push(::std::borrow::ToOwned::to_owned(prefix));),
+        );
+    }
     let unknown = container.unknown.as_ref().map(|word| {
         let rule = unknown_option(Some(word));
         quote!(const UNKNOWN: ::core::option::Option<#core::schema::UnknownRule> = #rule;)
     });
+    // The empty object's test names the type: a generic one has no type to name.
     let default = (!infos.iter().any(FieldInfo::required)).then(|| {
-        let test = default_test(ident, !container.transparent);
-        let default = default_impl(ident, fields, &infos);
+        let test = (!target.is_generic()).then(|| default_test(ident, !container.transparent));
+        let default = default_impl(&target, fields, &infos);
         quote!(#default #test)
     });
-    let getters = getters(ident, &infos);
+    let getters = getters(&target, &infos);
+    let (schema_impl, molang_impl) = target.walk_impls();
 
     quote! {
         #[automatically_derived]
-        impl #core::schema::Schema for #ident {
+        #schema_impl {
             const FIELDS: &'static [#core::schema::FieldRow] = &[#(#rows),*];
             #unknown
 
@@ -322,7 +435,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         }
 
         #[automatically_derived]
-        impl #core::molang::MolangFields for #ident {
+        #molang_impl {
             #[allow(unused_variables)]
             fn visit_molang(&mut self, visitor: &mut #core::molang::MolangVisitor<'_>) {
                 #molang
@@ -352,6 +465,45 @@ fn trigger_calls(infos: &[FieldInfo]) -> Vec<TokenStream> {
             }
         })
         .collect()
+}
+
+/// The refusals of a field's bound rules: a code for a side the field has no bound on, `kept`
+/// with nothing to keep, a key rule on a field that is no map.
+fn validate_bound_rules(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let low = side_bound(info, true).is_some();
+    let high = side_bound(info, false).is_some();
+    for (given, present, word) in [
+        (&attrs.low_code, low, "a low bound (`min` or `above`)"),
+        (&attrs.high_code, high, "a high bound (`max` or `below`)"),
+    ] {
+        if let Some((_, span)) = given
+            && !present
+        {
+            errors.push(Error::new(
+                *span,
+                format!("this code is what a broken bound is told as: the field needs {word}"),
+            ));
+        }
+    }
+    if let Some(span) = attrs.kept
+        && !(low || high || attrs.key_with.is_some())
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::kept` says the game keeps a value that breaks a bound (or a key that \
+             breaks `schema::key_with`): the field states neither",
+        ));
+    }
+    if let Some((_, span)) = &attrs.key_with
+        && !info.is_map()
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::key_with` is the rule of a map's keys: an `IndexMap`, `HashMap` or \
+             `BTreeMap` field (or an `Option` of one)",
+        ));
+    }
 }
 
 /// The forced declarations of one field.
@@ -405,6 +557,7 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
              `Vec` or map of them)",
         ));
     }
+    validate_bound_rules(info, errors);
     match (&attrs.molang, &attrs.molang_with) {
         (Some(_), Some((_, span))) => errors.push(Error::new(
             *span,
@@ -687,8 +840,50 @@ fn side_apply(info: &FieldInfo, low: Option<&BoundDecl>, high: Option<&BoundDecl
     }
 }
 
+/// What a field says its broken bounds are told as (`schema::low_code`, `high_code`, `kept`):
+/// the static of the rules, and the call that tells a broken bound `found` (an expression), with
+/// `__side` and `__resettable` in scope. No rules: no static, `cx.found`.
+fn bound_rules(info: &FieldInfo) -> (TokenStream, impl Fn(&TokenStream) -> TokenStream + use<>) {
+    let core = core();
+    let attrs = &info.attrs;
+    let ruled = attrs.low_code.is_some() || attrs.high_code.is_some() || attrs.kept.is_some();
+    let maker = |maker: &Option<(Expr, Span)>| {
+        maker.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |(expr, _)| {
+                quote!(::core::option::Option::Some(|| -> #core::diagnostic::Code { #expr }))
+            },
+        )
+    };
+    let statics = if ruled {
+        let (low, high) = (maker(&attrs.low_code), maker(&attrs.high_code));
+        let kept = attrs.kept.is_some();
+        quote! {
+            static __BOUND: #core::schema::BoundRules = #core::schema::BoundRules {
+                low: #low,
+                high: #high,
+                kept: #kept,
+            };
+        }
+    } else {
+        TokenStream::new()
+    };
+    let call = move |found: &TokenStream| {
+        if ruled {
+            quote!(cx.found_by(#found, __side, &__BOUND, __resettable))
+        } else {
+            quote!(cx.found(#found, __resettable))
+        }
+    };
+    (statics, call)
+}
+
 /// A field's range, as an expression that is whether the value broke it: one finding,
 /// whichever side the value broke; `None` where the field states no bound.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one emission for each shape a bound applies to: a number, a list, a map"
+)]
 fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
     if info.attrs.bounds.is_empty() {
         return None;
@@ -728,11 +923,60 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
         bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) || own_reset(info).is_some()
     };
     let (low_resettable, high_resettable) = (resettable(low), resettable(high));
+    // What the field says its broken bounds are told as: its codes, and whether the game keeps
+    // the value; `cx.found` otherwise.
+    let (rules, found_call) = bound_rules(info);
     let value = if info.option.is_some() {
         quote!(#access)
     } else {
         quote!(::core::option::Option::Some(#access))
     };
+    if info.is_map() {
+        // The bound of each value: every one outside is told, at its key.
+        let map = if info.option.is_some() {
+            quote!(#access.as_ref())
+        } else {
+            quote!(::core::option::Option::Some(&#access))
+        };
+        let found = found_call(&quote!(__found));
+        return Some(quote! {{
+            #rules
+            let __sides = #core::schema::Sides::<#value_ty> {
+                low: #low_limit,
+                low_exclusive: #low_exclusive,
+                high: #high_limit,
+                high_exclusive: #high_exclusive,
+            };
+            let mut __outside = ::std::vec::Vec::new();
+            if let ::core::option::Option::Some(__map) = #map {
+                for (__key, __value) in __map.iter() {
+                    for (__end, __number) in #core::schema::Bounded::numbers(__value) {
+                        let __number = #number;
+                        if let ::core::option::Option::Some(__side) = __sides.broken(__number) {
+                            __outside.push((
+                                ::std::string::ToString::to_string(__key),
+                                __side,
+                                __sides.found(__end, __number),
+                            ));
+                            break;
+                        }
+                    }
+                }
+            }
+            let __broken = !__outside.is_empty();
+            for (__key, __side, __found) in __outside {
+                let __resettable = match __side {
+                    #core::schema::Side::Low => #low_resettable,
+                    #core::schema::Side::High => #high_resettable,
+                };
+                cx.enter(&__key);
+                let __verdict = #found;
+                cx.leave();
+                #apply
+            }
+            __broken
+        }});
+    }
     if elements.is_some() {
         // The bound of each element: the first one outside is the one finding, at its index.
         let list = if info.option.is_some() {
@@ -740,7 +984,9 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
         } else {
             quote!(::core::option::Option::Some(&#access))
         };
+        let found = found_call(&quote!(__found.clone()));
         return Some(quote! {{
+            #rules
             let __sides = #core::schema::Sides::<#value_ty> {
                 low: #low_limit,
                 low_exclusive: #low_exclusive,
@@ -762,14 +1008,16 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
                     #core::schema::Side::High => #high_resettable,
                 };
                 cx.enter_index(*__index);
-                let __verdict = cx.found(__found.clone(), __resettable);
+                let __verdict = #found;
                 cx.leave();
                 #apply
             }
             __first.is_some()
         }});
     }
+    let found = found_call(&quote!(__sides.found(__end, __number)));
     Some(quote! {{
+        #rules
         let __sides = #core::schema::Sides::<#value_ty> {
             low: #low_limit,
             low_exclusive: #low_exclusive,
@@ -786,7 +1034,7 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
                         #core::schema::Side::Low => #low_resettable,
                         #core::schema::Side::High => #high_resettable,
                     };
-                    let __verdict = cx.found(__sides.found(__end, __number), __resettable);
+                    let __verdict = #found;
                     #apply
                     break;
                 }
@@ -856,6 +1104,35 @@ fn field_len(info: &FieldInfo) -> Option<TokenStream> {
     })
 }
 
+/// A map field's key rule (`schema::key_with`): each key the rule refuses is one finding at the
+/// member of that name, graded as a broken bound is (kept where the field says `schema::kept`).
+fn field_keys(info: &FieldInfo) -> TokenStream {
+    let Some((rule, _)) = &info.attrs.key_with else {
+        return TokenStream::new();
+    };
+    let access = &info.access;
+    let kept = info.attrs.kept.is_some();
+    let map = if info.option.is_some() {
+        quote!(#access.as_ref())
+    } else {
+        quote!(::core::option::Option::Some(&#access))
+    };
+    quote! {
+        if let ::core::option::Option::Some(__map) = #map {
+            let __refused: ::std::vec::Vec<(::std::string::String, _)> = __map
+                .keys()
+                .filter_map(|__key| {
+                    let __name = ::std::string::ToString::to_string(__key);
+                    (#rule)(&__name).map(|__code| (__name, __code))
+                })
+                .collect();
+            for (__name, __code) in __refused {
+                cx.key(&__name, __code, #kept);
+            }
+        }
+    }
+}
+
 /// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
 /// its bounds (unless one names another field), its length bounds, `lowercase` (the ASCII
 /// lower-casing the game applies in silence), then the walk into it, or the field's
@@ -894,6 +1171,7 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
             quote!(#access.make_ascii_lowercase();)
         }
     });
+    let keys = field_keys(info);
     let walk = match &info.attrs.check_with {
         Some((with, _)) if info.option.is_some() => quote! {
             if let ::core::option::Option::Some(__value) = &mut #access {
@@ -903,7 +1181,10 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
         Some((with, _)) => quote!((#with)(&mut #access, cx);),
         None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
     };
-    at_field(info, quote!(#since_engine #bounds #len #lowercase #walk))
+    at_field(
+        info,
+        quote!(#since_engine #bounds #len #keys #lowercase #walk),
+    )
 }
 
 /// A field's cross-field bounds, which run after every field's own check, so they compare with
@@ -983,7 +1264,7 @@ fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
 
 /// `impl Default`: an `Option` field `None`, a plain field its facet `default`, a `skip`
 /// field its type's `Default`.
-fn default_impl(ident: &Ident, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
+fn default_impl(target: &Target, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
     let value = |member: &Member| -> TokenStream {
         let info = infos.iter().find(|info| info.member == *member);
         match info {
@@ -1024,9 +1305,13 @@ fn default_impl(ident: &Ident, fields: &Fields, infos: &[FieldInfo]) -> TokenStr
         }
         Fields::Unit => quote!(Self),
     };
+    let header = target.impl_for(
+        &quote!(::core::default::Default),
+        Some(&quote!(::core::default::Default)),
+    );
     quote! {
         #[automatically_derived]
-        impl ::core::default::Default for #ident {
+        #header {
             fn default() -> Self {
                 #body
             }
@@ -1035,7 +1320,7 @@ fn default_impl(ident: &Ident, fields: &Fields, infos: &[FieldInfo]) -> TokenStr
 }
 
 /// A getter per named `Option` field with a `schema::fallback`.
-fn getters(ident: &Ident, infos: &[FieldInfo]) -> TokenStream {
+fn getters(target: &Target, infos: &[FieldInfo]) -> TokenStream {
     let getters: Vec<TokenStream> = infos
         .iter()
         .filter_map(|info| {
@@ -1070,9 +1355,10 @@ fn getters(ident: &Ident, infos: &[FieldInfo]) -> TokenStream {
     if getters.is_empty() {
         return TokenStream::new();
     }
+    let header = target.inherent();
     quote! {
         #[automatically_derived]
-        impl #ident {
+        #header {
             #(#getters)*
         }
     }
@@ -1090,6 +1376,13 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         return derive_tagged(input, data, attr::tag_of(&input.attrs).as_deref(), errors);
     }
     let container = ContainerAttrs::read(&input.attrs, Place::Enum, errors);
+    if let Some(param) = input.generics.params.first() {
+        errors.push(Error::new_spanned(
+            param,
+            "a string enum has no type parameters: its variants hold nothing a parameter could \
+             stand for",
+        ));
+    }
     let mut variants = Vec::new();
     for variant in &data.variants {
         let rename = attr::variant_rename(&variant.attrs, errors);
@@ -1280,7 +1573,11 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
         ));
     }
     let variants = untagged_variants(data, errors);
-    let impls = untagged_impls(&input.ident, &variants, None);
+    let target = Target {
+        ident: &input.ident,
+        generics: &input.generics,
+    };
+    let impls = untagged_impls(&target, &variants, None);
     let reads: Vec<read::ReadVariant> = data
         .variants
         .iter()
@@ -1299,7 +1596,7 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
             })
         })
         .collect();
-    let from_json = read::untagged_read(&input.ident, &reads);
+    let from_json = read::untagged_read(&target, container.invalid.as_ref(), &reads);
     quote!(#impls #from_json)
 }
 
@@ -1380,7 +1677,11 @@ fn derive_tagged(
         });
     }
     let steps = tag.is_none().then(|| json_names.clone());
-    let impls = untagged_impls(&input.ident, &variants, steps.as_deref());
+    let target = Target {
+        ident: &input.ident,
+        generics: &input.generics,
+    };
+    let impls = untagged_impls(&target, &variants, steps.as_deref());
     let reads: Vec<read::ReadVariant> = data
         .variants
         .iter()
@@ -1398,8 +1699,8 @@ fn derive_tagged(
         })
         .collect();
     let from_json = match tag {
-        Some(tag) => read::tagged_read(&input.ident, tag, &reads),
-        None => read::external_read(&input.ident, &reads),
+        Some(tag) => read::tagged_read(&target, tag, container.invalid.as_ref(), &reads),
+        None => read::external_read(&target, container.invalid.as_ref(), &reads),
     };
     quote!(#impls #from_json)
 }
@@ -1469,7 +1770,7 @@ fn untagged_variants<'a>(data: &'a DataEnum, errors: &mut Vec<Error>) -> Vec<Var
 /// The impls of an untagged enum over its read `variants`; with `steps`, each variant's
 /// fields one key down, under its name (an externally tagged enum).
 fn untagged_impls(
-    ident: &Ident,
+    target: &Target,
     variants: &[VariantInfo],
     steps: Option<&[String]>,
 ) -> TokenStream {
@@ -1529,9 +1830,11 @@ fn untagged_impls(
         })
         .collect();
 
+    let (schema_impl, molang_impl) = target.walk_impls();
+    let inherent = target.inherent();
     quote! {
         #[automatically_derived]
-        impl #core::schema::Schema for #ident {
+        #schema_impl {
             /// An untagged enum is no one object: its rows are per variant (`VARIANT_FIELDS`).
             const FIELDS: &'static [#core::schema::FieldRow] = &[];
 
@@ -1560,7 +1863,7 @@ fn untagged_impls(
         }
 
         #[automatically_derived]
-        impl #core::molang::MolangFields for #ident {
+        #molang_impl {
             #[allow(unused_variables)]
             fn visit_molang(&mut self, visitor: &mut #core::molang::MolangVisitor<'_>) {
                 match self {
@@ -1570,7 +1873,7 @@ fn untagged_impls(
         }
 
         #[automatically_derived]
-        impl #ident {
+        #inherent {
             /// The rows of each variant's fields, by variant, in declaration order: a newtype's
             /// one row has no JSON key (its value is the enum's), a unit's none.
             pub const VARIANT_FIELDS: &'static [(&'static str, &'static [#core::schema::FieldRow])] =

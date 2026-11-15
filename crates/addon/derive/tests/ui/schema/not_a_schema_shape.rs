@@ -12,6 +12,11 @@ enum Shape {
 }
 
 #[derive(Facet, Schema)]
+struct Fixed<const N: usize> {
+    value: [u8; N],
+}
+
+#[derive(Facet, Schema)]
 struct Generic<T> {
     value: T,
 }

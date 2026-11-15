@@ -1,37 +1,36 @@
 //! Feature types that place other features: aggregates, sequences, weighted and conditional
 //! choices, layouts, searches and filters.
 
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::id::FeatureId;
+use bedrock_addon_core::json::{StrictError, Value};
+use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema, SchemaCx};
 use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VArray;
 
 use super::Description;
-use super::Rules;
 use super::codes;
-use super::molang::{WORLD_GEN, Walk, walk};
-use super::validate::Check;
+use super::molang::{WORLD_GEN, refers};
 use super::values::{JsonInt, pair, weight_of, weight_value};
-use bedrock_addon_core::diagnostic::Code;
-use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{StrictError, Value};
-use bedrock_addon_core::molang::{Molang, MolangVisitor};
-use bedrock_addon_core::versioning::ValidateCx;
 
 /// `minecraft:aggregate_feature`: places every listed feature at the same position, until the
 /// early-out rule stops it.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AggregateFeature {
     /// JSON `description`.
     pub description: Description,
     /// The features to place, in order; at least one (JSON `features`).
+    #[facet(schema::min_len = 1)]
     pub features: Vec<FeatureId>,
     /// When to stop (JSON `early_out`); absent is `none`.
     pub early_out: Option<EarlyOut>,
 }
 
 /// `aggregate_feature.early_out`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -47,20 +46,22 @@ pub enum EarlyOut {
 
 /// `minecraft:sequence_feature`: places the listed features in order, each at the position the
 /// previous one ended at, stopping at the first failure.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct SequenceFeature {
     /// JSON `description`.
     pub description: Description,
     /// The features to place, in order; at least one (JSON `features`).
+    #[facet(schema::min_len = 1)]
     pub features: Vec<FeatureId>,
 }
 
 /// `minecraft:weighted_random_feature`: places one of the listed features, picked by weight.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct WeightedRandomFeature {
     /// JSON `description`.
     pub description: Description,
     /// The features and their weights; at least one (JSON `features`).
+    #[facet(schema::min_len = 1)]
     pub features: Vec<WeightedFeature>,
 }
 
@@ -103,7 +104,7 @@ impl From<&WeightedFeature> for Value {
 
 /// `minecraft:conditional_list`: places the features of the list whose condition holds, until
 /// its `early_out_scheme` ends the list.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ConditionalListFeature {
     /// JSON `description`.
     pub description: Description,
@@ -111,21 +112,23 @@ pub struct ConditionalListFeature {
     pub conditional_features: Vec<ConditionalFeature>,
     /// What counts as the end of the list (JSON `early_out_scheme`); absent (or `null`) is
     /// `none`, the constructor's value (`EarlyOutScheme::default()`).
+    #[facet(schema::check_with = early_out_scheme)]
     pub early_out_scheme: Option<EarlyOutScheme>,
 }
 
 /// One entry of `conditional_list.conditional_features`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ConditionalFeature {
     /// The feature to place (JSON `places_feature`).
     pub places_feature: FeatureId,
     /// A Molang expression over the `world_gen` queries (JSON `condition`); absent always
     /// places (the schema's help text says "If omitted, always places.").
+    #[facet(schema::molang = WORLD_GEN)]
     pub condition: Option<Molang>,
 }
 
 /// `conditional_list.early_out_scheme`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -141,27 +144,33 @@ pub enum EarlyOutScheme {
 }
 
 /// `minecraft:rect_layout` (base-game packs only): lays features out in rectangles.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RectLayoutFeature {
     /// JSON `description`.
     pub description: Description,
     /// The share of the area left empty, below 1 (JSON `ratio_of_empty_space`).
+    #[facet(
+        schema::below = 1.0,
+        schema::high_code = Code::from(&codes::EMPTY_SPACE),
+        schema::kept
+    )]
     pub ratio_of_empty_space: Option<f32>,
     /// The features and their areas (JSON `feature_areas`).
     pub feature_areas: Vec<FeatureArea>,
 }
 
 /// One entry of `rect_layout.feature_areas`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct FeatureArea {
     /// The feature (JSON `feature`).
     pub feature: FeatureId,
     /// Its area, `[x, z]` (JSON `area_dimensions`).
+    #[facet(schema::min_len = 2, schema::max_len = 2)]
     pub area_dimensions: Vec<JsonInt>,
 }
 
 /// `minecraft:scan_surface` (base-game packs only): places a feature on every surface column.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ScanSurfaceFeature {
     /// JSON `description`.
     pub description: Description,
@@ -170,7 +179,7 @@ pub struct ScanSurfaceFeature {
 }
 
 /// `minecraft:search_feature`: sweeps a volume for positions where a feature places.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct SearchFeature {
     /// JSON `description`.
     pub description: Description,
@@ -182,20 +191,23 @@ pub struct SearchFeature {
     pub search_axis: SearchAxis,
     /// How many placements must succeed, at least one (JSON `required_successes`); absent
     /// is 1.
+    #[facet(schema::min = 1)]
     pub required_successes: Option<JsonInt>,
 }
 
 /// `search_feature.search_volume`: two corners, `[x, y, z]` each.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct SearchVolume {
     /// JSON `min`.
+    #[facet(schema::min_len = 3, schema::max_len = 3)]
     pub min: Vec<JsonInt>,
     /// JSON `max`.
+    #[facet(schema::min_len = 3, schema::max_len = 3)]
     pub max: Vec<JsonInt>,
 }
 
 /// `search_feature.search_axis`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum SearchAxis {
@@ -220,7 +232,7 @@ pub enum SearchAxis {
 }
 
 /// `minecraft:surface_relative_threshold_feature`: places a feature only below the surface.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct SurfaceRelativeThresholdFeature {
     /// JSON `description`.
     pub description: Description,
@@ -233,36 +245,45 @@ pub struct SurfaceRelativeThresholdFeature {
 
 /// `minecraft:height_difference_filter_feature` (engine 1.26.30): places a feature where the
 /// terrain around it rises or falls within bounds.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::rule = no_height_difference)]
 pub struct HeightDifferenceFilterFeature {
     /// JSON `description`.
     pub description: Description,
     /// The feature to place (JSON `places_feature`).
     pub places_feature: FeatureId,
     /// JSON `min_required_upward_height_diff` (≥ 0).
+    #[facet(schema::min = 0)]
     pub min_required_upward_height_diff: Option<JsonInt>,
     /// JSON `min_required_downward_height_diff` (≥ 0).
+    #[facet(schema::min = 0)]
     pub min_required_downward_height_diff: Option<JsonInt>,
     /// JSON `max_allowed_upward_height_diff` (≥ 0).
+    #[facet(schema::min = 0)]
     pub max_allowed_upward_height_diff: Option<JsonInt>,
     /// JSON `max_allowed_downward_height_diff` (≥ 0).
+    #[facet(schema::min = 0)]
     pub max_allowed_downward_height_diff: Option<JsonInt>,
     /// The radius searched (JSON `search_radius`, ≥ 0).
+    #[facet(schema::min = 0)]
     pub search_radius: JsonInt,
 }
 
-// The lists after `+`: the members that name a feature.
-walk!(fields AggregateFeature {} + { "features" => features });
-walk!(fields SequenceFeature {} + { "features" => features });
-walk!(fields WeightedRandomFeature {} + { "features" => features });
-walk!(fields ConditionalListFeature { "conditional_features" => conditional_features });
-walk!(fields RectLayoutFeature {} + { "feature_areas" => feature_areas });
-walk!(fields ScanSurfaceFeature {} + { "scan_surface_feature" => scan_surface_feature });
-walk!(fields SearchFeature {} + { "places_feature" => places_feature });
-walk!(fields SurfaceRelativeThresholdFeature {} + { "feature_to_place" => feature_to_place });
+refers!(AggregateFeature { "features" => features });
+refers!(SequenceFeature { "features" => features });
+refers!(WeightedRandomFeature { "features" => features });
+refers!(ConditionalListFeature { "conditional_features" => conditional_features });
+refers!(RectLayoutFeature { "feature_areas" => feature_areas });
+refers!(ScanSurfaceFeature { "scan_surface_feature" => scan_surface_feature });
+refers!(SearchFeature { "places_feature" => places_feature });
+refers!(SurfaceRelativeThresholdFeature { "feature_to_place" => feature_to_place });
 // `height_difference_filter_feature.places_feature` is looked up when the feature is placed
 // no reference of the link pass.
-walk!(fields HeightDifferenceFilterFeature {});
+refers!(HeightDifferenceFilterFeature {});
+
+bedrock_addon_core::from_json_via_value!(WeightedFeature);
+bedrock_addon_core::impl_schema_leaf!(WeightedFeature);
+bedrock_addon_core::impl_no_molang!(WeightedFeature);
 
 impl super::molang::Refer for WeightedFeature {
     fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
@@ -283,108 +304,36 @@ impl super::molang::Refer for FeatureArea {
     }
 }
 
-impl Walk for ConditionalFeature {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        v.field("condition", &WORLD_GEN, &mut self.condition);
-    }
-}
-
-impl Rules for AggregateFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.check_len("features", Some(self.features.len()), 1, None);
-    }
-}
-
-impl Rules for SequenceFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.check_len("features", Some(self.features.len()), 1, None);
-    }
-}
-
-impl Rules for WeightedRandomFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.check_len("features", Some(self.features.len()), 1, None);
-    }
-}
-
 /// The engine that adds `early_out_scheme: none`.
 const EARLY_OUT_NONE_ENGINE: bedrock_addon_core::version::FormatVersion = known::V1_26_50;
 
-// Any pack may use the type (it is not internal).
-impl Rules for ConditionalListFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        // The enum has two values before engine 1.26.50; the 1.26.50 schema adds `none`.
-        if self.early_out_scheme == Some(EarlyOutScheme::None)
-            && check.load.engine_version < EARLY_OUT_NONE_ENGINE
-        {
-            check.error("early_out_scheme", Code::from(&core_codes::INVALID_VALUE));
-        }
+/// The enum has two values before engine 1.26.50; the 1.26.50 schema adds `none`.
+fn early_out_scheme(scheme: &mut EarlyOutScheme, cx: &mut SchemaCx<'_>) {
+    if *scheme == EarlyOutScheme::None
+        && cx
+            .engine_version()
+            .is_some_and(|engine| engine < EARLY_OUT_NONE_ENGINE)
+    {
+        cx.error("", Code::from(&core_codes::INVALID_VALUE));
     }
 }
-
-impl Rules for RectLayoutFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        // The client logs this at level 3 and keeps the value: a kept error.
-        if self.ratio_of_empty_space.is_some_and(|r| r >= 1.0) {
-            check.kept("ratio_of_empty_space", Code::from(&codes::EMPTY_SPACE));
-        }
-        check.each("feature_areas", &self.feature_areas, |check, area| {
-            check.check_len(
-                "area_dimensions",
-                Some(area.area_dimensions.len()),
-                2,
-                Some(2),
-            );
-        });
-    }
-}
-
-impl Rules for ScanSurfaceFeature {}
-
-impl Rules for SearchFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.nested("search_volume", |check| {
-            check.check_len("min", Some(self.search_volume.min.len()), 3, Some(3));
-            check.check_len("max", Some(self.search_volume.max.len()), 3, Some(3));
-        });
-        check.int_min("required_successes", self.required_successes, 1);
-    }
-}
-
-impl Rules for SurfaceRelativeThresholdFeature {}
 
 /// The engine that adds `height_difference_filter_feature`.
 pub(crate) const HEIGHT_DIFFERENCE_ENGINE: bedrock_addon_core::version::FormatVersion =
     known::V1_26_30;
 
-impl Rules for HeightDifferenceFilterFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        let diffs = [
-            (
-                "min_required_upward_height_diff",
-                self.min_required_upward_height_diff,
-            ),
-            (
-                "min_required_downward_height_diff",
-                self.min_required_downward_height_diff,
-            ),
-            (
-                "max_allowed_upward_height_diff",
-                self.max_allowed_upward_height_diff,
-            ),
-            (
-                "max_allowed_downward_height_diff",
-                self.max_allowed_downward_height_diff,
-            ),
-        ];
-        for (key, value) in diffs {
-            check.int_min(key, value, 0);
-        }
-        check.int_min("search_radius", Some(self.search_radius), 0);
-        // Logged at level 3 while the feature stays registered: a kept error. The client
-        // checks this only when no bound is set, and fails nothing.
-        if diffs.iter().all(|(_, value)| value.is_none()) {
-            check.kept("", Code::from(&codes::NO_HEIGHT_DIFFERENCES));
-        }
+/// Logged at level 3 while the feature stays registered: a kept error. The client checks this
+/// only when no bound is set, and fails nothing.
+fn no_height_difference(filter: &mut HeightDifferenceFilterFeature, cx: &mut SchemaCx<'_>) {
+    let none = [
+        filter.min_required_upward_height_diff,
+        filter.min_required_downward_height_diff,
+        filter.max_allowed_upward_height_diff,
+        filter.max_allowed_downward_height_diff,
+    ]
+    .iter()
+    .all(Option::is_none);
+    if none {
+        cx.kept("", Code::from(&codes::NO_HEIGHT_DIFFERENCES));
     }
 }

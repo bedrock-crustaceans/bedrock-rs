@@ -29,6 +29,24 @@ mod walk;
 #[doc(inline)]
 pub use bedrock_addon_schema::*;
 
+/// The grammar's dispatcher for a key on a generic type. facet routes the keys of a generic type
+/// through `@const` arms, which the grammar macro has for few kinds of key; its fallback for
+/// the others calls `$crate::__attr!`, and the `$crate` the grammar macro writes is facet's, so
+/// the key is "unknown" there. The static forms name no type parameter, so a generic type takes
+/// them as a plain one does: the marker is dropped. (This name, explicit, wins over the glob's.)
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __schema_attr {
+    (@const $($rest:tt)*) => {
+        $crate::__private::grammar_attr!($($rest)*)
+    };
+    ($($rest:tt)*) => {
+        $crate::__private::grammar_attr!($($rest)*)
+    };
+}
+#[doc(hidden)]
+pub use crate::__schema_attr as __attr;
+
 // hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use component::find_row;
@@ -37,7 +55,7 @@ pub use component::{
     ComponentRow, Shorthand, ShorthandRows, ShorthandShape, misshapen_shorthand_rows,
     shorthand_shape,
 };
-pub use cx::{SchemaCx, TreeWording, Verdict};
+pub use cx::{BoundRules, SchemaCx, TreeWording, Verdict};
 // hidden: emitted by the schema derive
 #[doc(hidden)]
 pub use from_json::derived as derive_support;

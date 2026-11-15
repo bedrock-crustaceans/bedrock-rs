@@ -283,6 +283,9 @@ pub struct MemberRules {
     pub missing: Option<&'static CodeDef<0>>,
     /// The code of a value the member's type refuses.
     pub invalid: Option<&'static CodeDef<0>>,
+    /// The code of a negative whole number given to an unsigned integer member, in place of the
+    /// wrong type the strict profiles tell and the invalid value the converting one does.
+    pub negative: Option<&'static CodeDef<0>>,
     /// A number beyond the member's float reads as its largest finite value of that sign.
     pub finite: bool,
 }
@@ -293,6 +296,7 @@ impl MemberRules {
         wrong_type: None,
         missing: None,
         invalid: None,
+        negative: None,
         finite: false,
     };
 }
@@ -304,6 +308,8 @@ pub struct Slot<T> {
     state: State<T>,
     /// The field's rules for its member (`schema::wrong_type` ..), when it states any.
     rules: Option<&'static MemberRules>,
+    /// How many steps the path of the member read has.
+    depth: usize,
 }
 
 impl<T> Default for Slot<T> {
@@ -311,6 +317,7 @@ impl<T> Default for Slot<T> {
         Self {
             state: State::Absent,
             rules: None,
+            depth: 0,
         }
     }
 }
@@ -328,6 +335,7 @@ impl<T> Slot<T> {
         Self {
             state: State::Absent,
             rules: Some(rules),
+            depth: 0,
         }
     }
 
@@ -347,6 +355,7 @@ impl<T> Slot<T> {
             read.restore_member_rules(saved);
         }
         read.set_field_unknown(saved);
+        self.depth = node.path().len();
         self.state = match value {
             Some(value) => State::Read(value),
             None if read.take_defaulted() => State::Defaulted,
@@ -386,7 +395,7 @@ impl<T> Slot<T> {
             State::Read(value) => Some(value),
             State::Absent | State::Null | State::Defaulted | State::Kept(_) => None,
             State::Failed => {
-                *ok &= read.member_failure().resets;
+                *ok &= read.resets_at(self.depth);
                 None
             }
         }
@@ -425,6 +434,7 @@ impl<T> Slot<T> {
         let mut inner = Self {
             state: State::Absent,
             rules: self.rules,
+            depth: node.path().len(),
         };
         inner.read_option_with(node, &mut attempt, unknown, kind, with);
         self.state = match inner.state {
@@ -452,7 +462,7 @@ impl<T> Slot<T> {
         match self.state {
             State::Read(value) => Some(value),
             State::Absent | State::Null | State::Defaulted | State::Kept(_) => Some(default()),
-            State::Failed if read.member_failure().resets => Some(default()),
+            State::Failed if read.resets_at(self.depth) => Some(default()),
             State::Failed => {
                 *ok = false;
                 None
@@ -485,6 +495,7 @@ impl<T> Slot<T> {
         if !node.value().is_null() {
             return self.read(node, read, unknown);
         }
+        self.depth = node.path().len();
         self.state = if super::impls::null::<T>(node, read) {
             State::Null
         } else {
@@ -508,6 +519,7 @@ impl<T> Slot<T> {
         if !node.value().is_null() {
             return self.read_with(node, read, unknown, with);
         }
+        self.depth = node.path().len();
         self.state = if super::impls::null_of(kind.expected, kind.holds_null, node, read) {
             State::Null
         } else {
@@ -575,18 +587,42 @@ pub fn since_engine(read: &mut Read<'_>, node: &Node<'_>, since: FormatVersion) 
 
 /// The read of a list field that states how it reads (`schema::iterated`, `schema::elements`):
 /// iterated as jsoncpp iterates a value when `iterated` ([`read_iterated`](super::read_iterated)),
-/// a failed element doing `failure`.
+/// a failed element doing `failure`. With `skip` (`schema::skip_code`) an element that fails to
+/// read is read as an attempt and, when it fails, given up whole: its own findings are not told,
+/// the one `skip` makes is, at the element, graded as a failed member is and failing nothing
+/// (pair it with [`ElementFailure::Drop`](super::ElementFailure::Drop)).
 pub fn list<E: FromJson>(
     node: &Node<'_>,
     read: &mut Read<'_>,
     iterated: bool,
     failure: super::ElementFailure,
+    skip: Option<fn() -> Code>,
 ) -> Option<Vec<E>> {
+    let element = move |element: &Node<'_>, read: &mut Read<'_>| match skip {
+        None => E::from_json(element, read),
+        Some(code) => skipping(element, read, code),
+    };
     if iterated {
-        super::read_iterated(node, read, failure, E::from_json)
+        super::read_iterated(node, read, failure, element)
     } else {
-        super::read_list(node, read, failure, E::from_json)
+        super::read_list(node, read, failure, element)
     }
+}
+
+/// The element `node` as `E`, or, when it fails to read, the one finding `code` makes in place
+/// of its own ([`Read::skipped`]).
+fn skipping<E: FromJson>(node: &Node<'_>, read: &mut Read<'_>, code: fn() -> Code) -> Option<E> {
+    if read.stopped() {
+        return None;
+    }
+    let mut attempt = read.fork();
+    let value = E::from_json(node, &mut attempt);
+    if value.is_some() {
+        read.commit(attempt);
+    } else {
+        read.skipped(node, code());
+    }
+    value
 }
 
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.
@@ -619,7 +655,7 @@ pub fn unit_enum<T>(
     if let Some(text) = value.as_string() {
         let found = from_name(text.as_str());
         if found.is_none() {
-            read.refuse(node, Code::from(&core_codes::INVALID_ENUM_VALUE));
+            read.refuse(node, read.invalid_enum_code());
         }
         return found;
     }
@@ -632,12 +668,12 @@ pub fn unit_enum<T>(
             .object(node)
             .and_then(|members| members.iter().next().map(|(_, member)| member));
         match first {
-            Some(member) => read.refuse(&member, Code::from(&core_codes::INVALID_ENUM_VALUE)),
+            Some(member) => read.refuse(&member, read.invalid_enum_code()),
             None => read.wrong_type(node),
         }
         return None;
     }
-    read.refuse(node, Code::from(&core_codes::INVALID_ENUM_VALUE));
+    read.refuse(node, read.invalid_enum_code());
     None
 }
 
@@ -654,11 +690,15 @@ pub enum Arm {
 /// (`json::walk`'s mirror of facet's untagged read, under the reading's scalar profile): an
 /// object by its keys, an array the first list arm, a scalar the first arm that takes it. A
 /// scalar no arm takes, or a value of a kind no arm reads, is a wrong type at the enum; with
-/// `quiet` (an enum with a `schema::otherwise` arm, which takes it) nothing is told.
+/// `quiet` (an enum with a `schema::otherwise` arm, which takes it) nothing is told. An enum
+/// with `schema::invalid` (`invalid`) tells a negative whole number no arm takes (an unsigned
+/// arm refuses it) under that code, as a value the enum refuses; a number beyond an arm's width
+/// is a wrong type still.
 pub fn untagged_arm<T: Facet<'static>>(
     node: &Node<'_>,
     read: &mut Read<'_>,
     quiet: bool,
+    invalid: Option<&'static CodeDef<0>>,
 ) -> Option<Arm> {
     if read.stopped() {
         return None;
@@ -676,7 +716,12 @@ pub fn untagged_arm<T: Facet<'static>>(
             // A scalar the profile refuses for every arm: as a refused scalar member is.
             ScalarArm::Refused => {
                 if !quiet {
-                    read.refused_scalar(node, Expected::Number);
+                    match invalid {
+                        Some(code) if matches!(token, Token::Int(_)) => {
+                            read.refuse_variant(node, code);
+                        }
+                        _ => read.refused_scalar(node, Expected::Number),
+                    }
                 }
                 return None;
             }
@@ -724,10 +769,19 @@ pub fn tagged<'v>(
 }
 
 /// Tells that the tag of an internally tagged enum names no variant, as the door tells it: a
-/// wrong type at the enum's object.
-pub fn unknown_tag(object: Object<'_>, read: &mut Read<'_>, tag: &'static str) {
+/// wrong type at the enum's object; under the enum's `schema::invalid` (`invalid`), that code, at
+/// the member the object belongs to.
+pub fn unknown_tag(
+    object: Object<'_>,
+    read: &mut Read<'_>,
+    tag: &'static str,
+    invalid: Option<&'static CodeDef<0>>,
+) {
     let _ = tag;
-    read.wrong_type(object.node());
+    match invalid {
+        Some(code) => read.refuse_variant(object.node(), code),
+        None => read.wrong_type(object.node()),
+    }
     object.close(read);
 }
 
@@ -742,13 +796,26 @@ pub enum External<'v> {
 }
 
 /// The variant of an externally tagged enum `node` names ([`External`]); a value of another
-/// kind, or an object of no or several members, is a wrong type.
-pub fn external<'v>(node: &Node<'v>, read: &mut Read<'_>) -> Option<External<'v>> {
+/// kind, or an object of no or several members, is a wrong type. Under the enum's
+/// `schema::invalid` (`invalid`) a `null`, a bool or a number is a value that names no variant,
+/// told under that code.
+pub fn external<'v>(
+    node: &Node<'v>,
+    read: &mut Read<'_>,
+    invalid: Option<&'static CodeDef<0>>,
+) -> Option<External<'v>> {
     if read.stopped() {
         return None;
     }
     if let Some(text) = node.value().as_string() {
         return Some(External::Unit(text.as_str().to_owned()));
+    }
+    let value = node.value();
+    if let Some(code) = invalid
+        && (value.is_null() || value.is_bool() || value.is_number())
+    {
+        read.refuse_variant(node, code);
+        return None;
     }
     let members = read.object(node)?;
     let mut iter = members.iter();
@@ -760,7 +827,11 @@ pub fn external<'v>(node: &Node<'v>, read: &mut Read<'_>) -> Option<External<'v>
 }
 
 /// Tells that an externally tagged enum's value names no variant: an invalid enum value at
-/// `node` (the string, or the payload of the member whose key names none).
-pub fn unknown_variant(node: &Node<'_>, read: &mut Read<'_>) {
-    read.refuse(node, Code::from(&core_codes::INVALID_ENUM_VALUE));
+/// `node` (the string, or the payload of the member whose key names none); under the enum's
+/// `schema::invalid` (`invalid`), that code, at the member the value belongs to.
+pub fn unknown_variant(node: &Node<'_>, read: &mut Read<'_>, invalid: Option<&'static CodeDef<0>>) {
+    match invalid {
+        Some(code) => read.refuse_variant(node, code),
+        None => read.refuse(node, read.invalid_enum_code()),
+    }
 }

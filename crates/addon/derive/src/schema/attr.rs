@@ -192,18 +192,31 @@ pub(crate) struct FieldAttrs {
     pub lowercase: Option<Span>,
     /// `schema::required`: an `Option` field the document must write.
     pub required: Option<Span>,
-    /// The read's codes: `schema::wrong_type`, `schema::missing`, `schema::invalid`.
+    /// The read's codes: `schema::wrong_type`, `schema::missing`, `schema::invalid`,
+    /// `schema::negative`.
     pub wrong_type: Option<(Expr, Span)>,
     pub missing: Option<(Expr, Span)>,
     pub invalid: Option<(Expr, Span)>,
+    pub negative: Option<(Expr, Span)>,
     /// `schema::finite`: a float beyond its width reads as its largest finite value.
     pub finite: Option<Span>,
+    /// `schema::low_code`, `schema::high_code`: what a value outside the field's low or high
+    /// bound is told as, an expression of type `Code`, made when it is told.
+    pub low_code: Option<(Expr, Span)>,
+    pub high_code: Option<(Expr, Span)>,
+    /// `schema::kept`: the game logs a value outside the field's bounds and keeps it.
+    pub kept: Option<Span>,
+    /// `schema::key_with = path`: the rule of a map's keys, `fn(&str) -> Option<Code>`.
+    pub key_with: Option<(Expr, Span)>,
     /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
     pub iterated: Option<Span>,
     /// `schema::elements`: `true` for `"drop"`, `false` for `"fail"`.
     pub elements: Option<(bool, Span)>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
+    /// `schema::skip_code`: what a list element left out is told as, in place of its own
+    /// findings, an expression of type `Code`.
+    pub skip_code: Option<(Expr, Span)>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -223,8 +236,12 @@ pub(crate) struct ContainerAttrs {
     pub string_only: bool,
     /// `schema::rule = path`: a rule across the fields of the struct.
     pub rule: Option<(Expr, Span)>,
+    /// `schema::trigger`: the struct is an event trigger itself.
+    pub trigger: bool,
     /// `schema::molang = SPEC` on a struct: the default spec of the Molang walk below it.
     pub molang: Option<(Expr, Span)>,
+    /// `schema::invalid = CODE` on an enum with data: the code of a value that names no variant.
+    pub invalid: Option<(Expr, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -253,10 +270,16 @@ const FIELD_KEYS: &[&str] = &[
     "iterated",
     "elements",
     "or_kept",
+    "low_code",
+    "high_code",
+    "kept",
+    "key_with",
+    "skip_code",
+    "negative",
 ];
 const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order", "string_only"];
-/// The one key of a struct alone.
-const STRUCT_KEYS: &[&str] = &["rule"];
+/// The keys of a struct alone.
+const STRUCT_KEYS: &[&str] = &["rule", "trigger"];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -317,6 +340,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
                 format!("a variant takes no `schema::{key}`: it is a struct's key")
             }
             Place::Struct if key == "molang" => continue,
+            Place::Untagged | Place::Tagged if key == "invalid" => continue,
             Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
             }
@@ -557,7 +581,8 @@ impl FieldAttrs {
                         once(&mut out.unknown, word, &key, span, errors);
                     }
                     "fallback" | "molang" | "molang_with" | "read_with" | "check_with"
-                    | "wrong_type" | "missing" | "invalid" => {
+                    | "wrong_type" | "missing" | "invalid" | "low_code" | "high_code"
+                    | "key_with" | "skip_code" | "negative" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -566,6 +591,11 @@ impl FieldAttrs {
                             "wrong_type" => &mut out.wrong_type,
                             "missing" => &mut out.missing,
                             "invalid" => &mut out.invalid,
+                            "negative" => &mut out.negative,
+                            "low_code" => &mut out.low_code,
+                            "high_code" => &mut out.high_code,
+                            "key_with" => &mut out.key_with,
+                            "skip_code" => &mut out.skip_code,
                             "check_with" => &mut out.check_with,
                             _ => &mut out.read_with,
                         };
@@ -587,6 +617,7 @@ impl FieldAttrs {
                     "foreign_event" => once(&mut out.foreign_event, span, &key, span, errors),
                     "lowercase" => once(&mut out.lowercase, span, &key, span, errors),
                     "required" => once(&mut out.required, span, &key, span, errors),
+                    "kept" => once(&mut out.kept, span, &key, span, errors),
                     "finite" => once(&mut out.finite, span, &key, span, errors),
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
                     "elements" => {
@@ -655,15 +686,25 @@ impl FieldAttrs {
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
             .or_else(|| {
-                [&self.wrong_type, &self.missing, &self.invalid]
-                    .into_iter()
-                    .find_map(|code| code.as_ref().map(|(_, s)| *s))
+                [
+                    &self.wrong_type,
+                    &self.missing,
+                    &self.invalid,
+                    &self.negative,
+                ]
+                .into_iter()
+                .find_map(|code| code.as_ref().map(|(_, s)| *s))
             })
             .or(self.finite)
             .or(self.iterated)
             .or_else(|| self.elements.map(|(_, s)| s))
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.low_code.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.high_code.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.key_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.skip_code.as_ref().map(|(_, s)| *s))
+            .or(self.kept)
             .or_else(|| self.min_len.as_ref().map(|(_, s)| *s))
             .or_else(|| self.max_len.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
@@ -675,6 +716,7 @@ impl FieldAttrs {
 
 impl ContainerAttrs {
     /// Reads a struct's or enum's attributes.
+    #[allow(clippy::too_many_lines, reason = "one arm per container key")]
     pub(crate) fn read(attrs: &[Attribute], place: Place, errors: &mut Vec<Error>) -> Self {
         let entries = entries(attrs);
         placement(&entries, place, errors);
@@ -721,12 +763,27 @@ impl ContainerAttrs {
                         errors,
                     );
                 }),
+                Some("trigger") if place == Place::Struct => {
+                    out.trigger = true;
+                    Ok(())
+                }
                 Some("molang") if place == Place::Struct => {
                     value_expr(entry, "molang").map(|expr| {
                         once(
                             &mut out.molang,
                             (expr, entry.span),
                             "molang",
+                            entry.span,
+                            errors,
+                        );
+                    })
+                }
+                Some("invalid") if matches!(place, Place::Untagged | Place::Tagged) => {
+                    value_expr(entry, "invalid").map(|expr| {
+                        once(
+                            &mut out.invalid,
+                            (expr, entry.span),
+                            "invalid",
                             entry.span,
                             errors,
                         );

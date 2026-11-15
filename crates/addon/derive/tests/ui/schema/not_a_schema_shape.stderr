@@ -10,8 +10,8 @@ error: a variant of a tagged enum holds one value or named members: a tuple of s
 11 |     Data(i32, i32),
    |         ^^^^^^^^^^
 
-error: `#[derive(Schema)]` takes no generic parameters
-  --> tests/ui/schema/not_a_schema_shape.rs:15:15
+error: `#[derive(Schema)]` takes type parameters only: a lifetime or a const parameter has no JSON form
+  --> tests/ui/schema/not_a_schema_shape.rs:15:14
    |
-15 | struct Generic<T> {
-   |               ^^^
+15 | struct Fixed<const N: usize> {
+   |              ^^^^^^^^^^^^^^

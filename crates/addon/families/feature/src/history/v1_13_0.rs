@@ -4,19 +4,17 @@
 use facet::Facet;
 
 use crate::family::HistoryJson;
-use crate::molang::{SCATTER_LEGACY, Walk, member};
-use crate::read::{parse_strict, parse_strict_with};
-use crate::scatter::walk_params;
-use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock};
+use crate::molang::{DESCRIPTOR_TAGS, SCATTER_LEGACY};
+use crate::{self as latest, BlockList, Description, JsonInt, PlacesBlock, strict_struct};
+use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::{EncodeError, Value};
+use bedrock_addon_core::molang::{Molang, MolangSlot, MolangVisitor, Step};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{
-    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
-};
+use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, VersionStruct};
 use bedrock_addon_shared_scatter::{
     CoordinateEvalOrder, CoordinateRange, ScatterChance, ScatterParams,
 };
@@ -29,7 +27,7 @@ pub(crate) const VERSION: FormatVersion = FormatVersion::new(1, 13, 0);
 
 /// `minecraft:scatter_feature` below format 1.21.10: the scatter parameters at the root
 /// (the legacy schema).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ScatterFeature {
     /// JSON `description`.
     pub description: Description,
@@ -38,45 +36,49 @@ pub struct ScatterFeature {
     /// JSON `project_input_to_floor`.
     pub project_input_to_floor: Option<bool>,
     /// JSON `iterations` (required).
+    #[facet(schema::molang = SCATTER_LEGACY)]
     pub iterations: Molang,
     /// JSON `scatter_chance`.
+    #[facet(schema::molang_with = walk_legacy_chance)]
     pub scatter_chance: Option<ScatterChance>,
     /// JSON `coordinate_eval_order`.
     pub coordinate_eval_order: Option<CoordinateEvalOrder>,
     /// JSON `x` (not required by this schema).
+    #[facet(schema::molang_with = walk_legacy_coordinate)]
     pub x: Option<CoordinateRange>,
     /// JSON `y`.
+    #[facet(schema::molang_with = walk_legacy_coordinate)]
     pub y: Option<CoordinateRange>,
     /// JSON `z`.
+    #[facet(schema::molang_with = walk_legacy_coordinate)]
     pub z: Option<CoordinateRange>,
 }
 
-impl Versioned for ScatterFeature {
-    const VERSION: FormatVersion = VERSION;
-}
+strict_struct!(ScatterFeature, VERSION);
 
-impl VersionStruct for ScatterFeature {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let feature: Self = parse_strict(payload, cx, d)?;
-        // The parameters are at the root of this shape.
-        crate::scatter::beyond_f32_findings(payload, &[], &cx.at, d);
-        Some(feature)
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(self)
+/// The Molang of a root `scatter_chance` that is a percentage, at the member: the legacy
+/// schema's spec.
+fn walk_legacy_chance(chance: &mut Option<ScatterChance>, visitor: &mut MolangVisitor<'_>) {
+    if let Some(ScatterChance::Percent(chance)) = chance {
+        chance.visit_slot(&SCATTER_LEGACY, visitor);
     }
 }
 
-impl MolangFields for ScatterFeature {
-    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-        walk_params(
-            v,
-            &SCATTER_LEGACY,
-            &mut self.iterations,
-            &mut self.scatter_chance,
-            [("x", &mut self.x), ("y", &mut self.y), ("z", &mut self.z)],
-        );
+/// The Molang of a root coordinate: the expression at the member, the extent's bounds below it.
+fn walk_legacy_coordinate(
+    coordinate: &mut Option<CoordinateRange>,
+    visitor: &mut MolangVisitor<'_>,
+) {
+    match coordinate {
+        None => {}
+        Some(CoordinateRange::Single(value)) => value.visit_slot(&SCATTER_LEGACY, visitor),
+        Some(CoordinateRange::Object(range)) => {
+            visitor.enter(Step::Key("extent"));
+            for (index, bound) in range.extent.iter_mut().enumerate() {
+                visitor.field(index, &SCATTER_LEGACY, bound);
+            }
+            visitor.leave();
+        }
     }
 }
 
@@ -105,11 +107,13 @@ impl Upgrade for ScatterFeature {
 // ---- single_block_feature ----------------------------------------------------------------------
 
 /// `minecraft:single_block_feature` below format 1.21.40.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct SingleBlockFeature {
     /// JSON `description`.
     pub description: Description,
     /// The block to place, a descriptor (JSON `places_block`).
+    #[facet(schema::read_with = not_an_array)]
     pub places_block: Option<BlockDescriptor>,
     /// JSON `enforce_placement_rules`.
     pub enforce_placement_rules: bool,
@@ -122,7 +126,7 @@ pub struct SingleBlockFeature {
 }
 
 /// `may_attach_to` below format 1.21.40: no `diagonal`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AttachConditions {
     /// JSON `min_sides_must_attach`.
     pub min_sides_must_attach: Option<JsonInt>,
@@ -146,53 +150,16 @@ pub struct AttachConditions {
     pub sides: Option<BlockList>,
 }
 
-impl Versioned for SingleBlockFeature {
-    const VERSION: FormatVersion = VERSION;
-}
+strict_struct!(SingleBlockFeature, VERSION);
 
-impl VersionStruct for SingleBlockFeature {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        // The descriptor member has no array option in this schema: the client says "unknown
-        // child schema option type.  Allowed types: %s".
-        let array = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text)
-            .ok()
-            .and_then(|json| json.as_object()?.get("places_block").cloned())
-            .is_some_and(|value| value.is_array());
-        if array {
-            d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(cx.at.child("places_block")));
-            return None;
-        }
-        parse_strict(payload, cx, d)
+/// The descriptor member has no array option in this schema: the client says "unknown child
+/// schema option type.  Allowed types: %s".
+fn not_an_array(node: &Node<'_>, read: &mut Read<'_>) -> Option<BlockDescriptor> {
+    if node.value().is_array() {
+        read.refuse(node, Code::from(&core_codes::INVALID_TYPE));
+        return None;
     }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(self)
-    }
-}
-
-impl Walk for AttachConditions {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        for (key, list) in [
-            ("top", &mut self.top),
-            ("bottom", &mut self.bottom),
-            ("north", &mut self.north),
-            ("east", &mut self.east),
-            ("south", &mut self.south),
-            ("west", &mut self.west),
-            ("all", &mut self.all),
-            ("sides", &mut self.sides),
-        ] {
-            member(v, key, list);
-        }
-    }
-}
-
-impl MolangFields for SingleBlockFeature {
-    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-        member(v, "places_block", &mut self.places_block);
-        member(v, "may_attach_to", &mut self.may_attach_to);
-        member(v, "may_replace", &mut self.may_replace);
-    }
+    BlockDescriptor::from_json(node, read)
 }
 
 /// The upgrade step: `places_block` becomes `PlacesBlock::Descriptor` unchanged; `may_attach_to`
@@ -232,7 +199,8 @@ impl Upgrade for SingleBlockFeature {
 /// `minecraft:snap_to_surface_feature` below format 1.26.50:
 /// the search range is named `vertical_search_range`; every other member, `wall` and
 /// `allow_non_air_placement` included, is the same as in the newest schema.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct SnapToSurfaceFeature {
     /// JSON `description`.
     pub description: Description,
@@ -241,6 +209,7 @@ pub struct SnapToSurfaceFeature {
     /// How far it searches for the surface (JSON `vertical_search_range`).
     pub vertical_search_range: JsonInt,
     /// JSON `surface`.
+    #[facet(schema::invalid = crate::codes::SNAP_SURFACE)]
     pub surface: Option<latest::Surface>,
     /// JSON `allow_air_placement`.
     pub allow_air_placement: Option<bool>,
@@ -254,29 +223,7 @@ pub struct SnapToSurfaceFeature {
     pub embed_in_surface: Option<bool>,
 }
 
-impl Versioned for SnapToSurfaceFeature {
-    const VERSION: FormatVersion = VERSION;
-}
-
-impl VersionStruct for SnapToSurfaceFeature {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_strict_with(payload, cx, d, &[crate::structure::SNAP_SURFACE])
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(self)
-    }
-}
-
-impl MolangFields for SnapToSurfaceFeature {
-    fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-        member(
-            v,
-            "allowed_surface_blocks",
-            &mut self.allowed_surface_blocks,
-        );
-    }
-}
+strict_struct!(SnapToSurfaceFeature, VERSION);
 
 /// The upgrade step: `vertical_search_range` is renamed `search_range`, its value unchanged; every
 /// other member keeps its value (an absent `allow_non_air_placement` stays absent).

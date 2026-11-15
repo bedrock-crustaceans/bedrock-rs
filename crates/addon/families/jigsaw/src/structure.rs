@@ -2,6 +2,7 @@
 
 use super::validate::validate_detached;
 use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::{JigsawStructureId, TemplatePoolId};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
@@ -145,8 +146,8 @@ pub enum LiquidSettings {
 ///
 /// JSON: `{"type": "constant", "value": anchor}` or `{"type": "uniform", "min": anchor, "max":
 /// anchor}`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 pub enum HeightProvider {
     /// Uniformly between `min` and `max` (JSON `uniform`).
@@ -167,11 +168,9 @@ pub enum HeightProvider {
     },
 }
 
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(HeightProvider);
-
 /// A height as an offset from an anchor: an object with exactly one member.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
+#[facet(schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 pub enum VerticalAnchor {
     /// An absolute height (JSON `{"absolute": n}`).
@@ -190,8 +189,8 @@ pub enum VerticalAnchor {
 
 /// Padding at the top and bottom of the world (`dimension_padding`): one number for both, or
 /// `{"top", "bottom"}` (each default 0).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(untagged)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(untagged, schema::invalid = core_codes::INVALID_VALUE)]
 #[repr(u8)]
 pub enum DimensionPadding {
     /// The same padding at the top and the bottom (JSON a number).
@@ -202,16 +201,13 @@ pub enum DimensionPadding {
     // `an_untagged_struct_variant_writes_a_none_field_as_null`.
     Range {
         /// Blocks kept free at the top (JSON `top`, default 0).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none)]
         top: Option<u32>,
         /// Blocks kept free at the bottom (JSON `bottom`, default 0).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none)]
         bottom: Option<u32>,
     },
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(DimensionPadding);
 
 /// How far a structure's pieces may be from its start (`max_distance_from_center`).
 ///
@@ -239,7 +235,7 @@ pub enum MaxDistanceFromCenter {
 
 /// A pool alias (`pool_aliases[]`): which template pool stands in for an alias name. Vanilla
 /// binds no `type` member; the alternative is the first whose required members are present.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum PoolAlias {
@@ -269,11 +265,8 @@ pub enum PoolAlias {
     },
 }
 
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(PoolAlias);
-
 /// An alias inside a `random_group` alias: direct or random, never a group.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum GroupedPoolAlias {
@@ -297,10 +290,9 @@ pub enum GroupedPoolAlias {
 }
 
 /// A weighted item (`{"weight", "data"}`), both members required.
-// No `schema::unknown` word of its own: facet refuses an extension attribute on a generic
-// container, so each field holding a list of these says it (the word reaches the first object
-// through the list).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+// No `schema::unknown` word of its own: each field holding a list of these says it (the word is
+// every element's object's).
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Weighted<T> {
     /// The item's weight (JSON `weight`).
     pub weight: u32,
@@ -413,21 +405,3 @@ impl StructureDescription {
         StructureDescription { identifier }
     }
 }
-
-// The tagged data enums walk nothing (the derive takes no tagged enum with data): their
-// bounds and members are checked by hand (`read.rs`). The untagged ones without bounds
-// walk nothing either.
-bedrock_addon_core::impl_schema_leaf!(
-    HeightProvider,
-    VerticalAnchor,
-    DimensionPadding,
-    PoolAlias,
-    GroupedPoolAlias
-);
-bedrock_addon_core::impl_no_molang!(
-    HeightProvider,
-    VerticalAnchor,
-    DimensionPadding,
-    PoolAlias,
-    GroupedPoolAlias
-);

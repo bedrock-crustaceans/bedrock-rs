@@ -206,6 +206,39 @@ fn f17_no_height_difference_is_warned_and_the_feature_loads() {
 }
 
 #[test]
+fn a_rect_layout_with_no_room_left_is_a_kept_error_and_loads() {
+    let layout = |ratio: &str| {
+        doc(
+            "1.13.0",
+            "rect_layout",
+            &format!(
+                r#""ratio_of_empty_space": {ratio}, "feature_areas": [{{"feature": "demo:a", "area_dimensions": [4, 4]}}]"#
+            ),
+        )
+    };
+    let document = loads(&layout("1.0"), &base_game());
+    kept_at(
+        document.diagnostics(),
+        "feature/empty_space",
+        "ratio_of_empty_space",
+    );
+    assert!(has_text(
+        document.diagnostics(),
+        "100% or above empty space is nonsensical for this feature."
+    ));
+    let Feature::RectLayout(placed) = document.value() else {
+        panic!("not a rect layout");
+    };
+    assert_eq!(placed.ratio_of_empty_space, Some(1.0));
+    assert!(
+        !loads(&layout("0.5"), &base_game())
+            .diagnostics()
+            .iter()
+            .any(|f| f.code.id() == "feature/empty_space")
+    );
+}
+
+#[test]
 fn f17_a_missing_places_feature_loads_and_is_reported_at_placement() {
     // Vanilla logs "`height_difference_filter_feature` could not find feature
     // `places_feature`." in `place` (20 W2: run); loading reports nothing about it.

@@ -1,19 +1,18 @@
-//! Parsing a feature payload the way vanilla's strict schema validates it: typed from its slice
-//! of the text, and every unknown member, wrong type or missing required member rejects the
+//! Reading a feature payload the way vanilla's strict schema validates it: member by member on
+//! core's reader, and every unknown member, wrong type or missing required member rejects the
 //! file: the client validates with unknown children not allowed. And the loader stage before
 //! it: the identifier the file claims, the gates of its feature type, and the load, parse and
 //! upgrade of one file by the family of its payload key.
 
-use facet::Facet;
-
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
+    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
-use bedrock_addon_core::json::{
-    JsonSlice, NullRule, ScalarFailure, SliceError, Value, parse_with_rules, unknown_members,
-};
-use bedrock_addon_core::versioning::ParseCx;
+use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Profile, Texts, Versions};
+use bedrock_addon_core::schema::FromJson;
+use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
 
 use crate::codes;
 use crate::family::{Fam, FeatureType, TypeFn, V1_13_0, with_type};
@@ -39,98 +38,45 @@ pub(crate) fn last_key(path: &JsonPath) -> String {
     }
 }
 
-/// `UnrecognizedField` (error) with vanilla's text, for the member at `at`.
-pub(crate) fn not_valid_here(at: JsonPath) -> Diagnostic {
-    let key = last_key(&at);
-    Diagnostic::of(core_codes::CHILD_NOT_VALID.with([key]))
-        .severity(Severity::Error)
-        .at(at)
-}
-
 /// `MissingRequiredField` (error) with vanilla's text, for the member at `at`.
 pub(crate) fn required_child(at: JsonPath) -> Diagnostic {
     let key = last_key(&at);
     Diagnostic::of(core_codes::REQUIRED_CHILD.with([key])).at(at)
 }
 
-/// Parses `T` from `payload` strictly: a failed typed parse is one error at the failing member
-/// (an unknown enum name is `InvalidValue`, as vanilla's enum nodes reject it), and every member
-/// the struct does not take is an `UnrecognizedField` error. `None` when anything failed.
-pub(crate) fn parse_strict<'a, T: Facet<'a>>(
-    payload: JsonSlice<'a>,
+/// The older client's words for what the kit finds: a missing member by name, an unknown one
+/// as "not valid here", and an enum name that is none of its values as an invalid value (or the
+/// text of the member's setter where it says `schema::invalid`).
+const TEXTS: Texts = Texts {
+    missing_named: Some(&core_codes::REQUIRED_CHILD),
+    unknown_named: Some(&core_codes::CHILD_NOT_VALID),
+    invalid_enum: Some(&core_codes::INVALID_VALUE),
+    ..Texts::CODES
+};
+
+/// Reads `T` from `payload` as the client's schema validator reads it: member by member, and a
+/// failed member, an unknown member or a missing required one rejects the file. What the file
+/// tells is the client's: the first failure alone (the schema stops at it), then the members
+/// read as absent for their `null`, then every unknown member, also beside a failure ("child
+/// '%s' not valid here."): [`Profile::FIRST_THEN_PASSES`], at the error severity whatever the
+/// unknown mask says.
+pub(crate) fn strict<T: FromJson>(
+    payload: JsonSlice<'_>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    parse_strict_with(payload, cx, d, &[])
-}
-
-/// [`parse_strict`] with the setters' texts for members whose value is a name: an unknown name
-/// of the member `key` is the definition beside it (vanilla's "Bad value for …" messages).
-pub(crate) fn parse_strict_with<'a, T: Facet<'a>>(
-    payload: JsonSlice<'a>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-    texts: &[(&str, &'static CodeDef<0>)],
-) -> Option<T> {
-    // The null rule of the selected version, which the family declares (`ENVELOPE.input` is
-    // `JsonCpp`): under rule N1 a member written as `null` is absent.
-    let absent = cx.load.null_rule == Some(NullRule::Absent);
-    // The scalars are read by the family's reading (`family::READING`), the strict rule.
-    let null = absent.then_some(NullRule::Absent);
-    let parsed = match parse_with_rules::<T>(payload, null, crate::family::READING.scalar_rules()) {
-        Ok(read) => {
-            for told in &read.told {
-                d.push(told.finding(&cx.at));
-            }
-            Some(read.value)
-        }
-        // A scalar no arm of an untagged enum takes: a type error at the enum.
-        Err(ScalarFailure::Refused(misread)) => {
-            d.push(misread.spanned_finding(&cx.at));
-            None
-        }
-        Err(ScalarFailure::Read(error)) => {
-            let mut finding = slice_error(error, &cx.at);
-            if finding.code.is(&core_codes::INVALID_VALUE) {
-                let key = last_key(&finding.location.json_path);
-                if let Some((_, message)) = texts.iter().find(|(k, _)| *k == key) {
-                    finding.code = Code::from(*message);
-                }
-            }
-            d.push(finding);
-            None
-        }
-    };
-    // Vanilla's validation reports every unknown member, also beside another failure.
-    if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) {
-        if absent {
-            // The members read as absent, which the write-back writes as their defaults
-            // told here once, the only N1 read of a feature payload.
-            let found = bedrock_addon_core::json::null_members(T::SHAPE, &json);
-            bedrock_addon_core::json::tell_null_members(&found, &cx.at, d);
-        }
-        let unknown = unknown_members(T::SHAPE, &json);
-        for (path, _) in &unknown {
-            d.push(not_valid_here(cx.at.join(path)));
-        }
-        if !unknown.is_empty() {
-            return None;
-        }
-    }
-    parsed
-}
-
-/// The finding of a failed typed parse of `slice`, at `base` followed by the failing member.
-fn slice_error(error: SliceError, base: &JsonPath) -> Diagnostic {
-    error.into_diagnostic(base, |code, error| {
-        let at = || base.join(error.relative_path());
-        match code.id() {
-            // The client's enum members reject an unknown name as a value.
-            "core/invalid_enum_value" => Code::from(&core_codes::INVALID_VALUE),
-            "core/missing_required_field" => core_codes::REQUIRED_CHILD.with([last_key(&at())]),
-            "core/unrecognized_field" => core_codes::CHILD_NOT_VALID.with([last_key(&at())]),
-            _ => code,
-        }
+    read_payload_with(payload, cx, d, |read| {
+        // The engine gate is the derived check's (`Family::validate`): it judges the upgraded
+        // value, which every format reaches, and the game's own engine, which the read does not
+        // know. The read of the newest struct would tell the same member a second time.
+        let versions = Versions {
+            engine: None,
+            ..read.known_versions()
+        };
+        read.profile(Profile::FIRST_THEN_PASSES)
+            .texts(TEXTS)
+            .unknown_severity(Severity::Error)
+            .versions(versions)
     })
 }
 

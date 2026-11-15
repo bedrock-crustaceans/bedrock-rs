@@ -582,3 +582,59 @@ fn every_kind_of_member_reads_as_the_door_reads_it() {
         "--- unexplained ---\n{unexplained}--- end ---"
     );
 }
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Probe {
+    shape: Option<Shape>,
+    shapes: Option<Vec<Shape>>,
+    either: Option<Either>,
+    eithers: Option<Vec<Either>>,
+    outer: Option<Outer>,
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "t")]
+#[repr(u8)]
+enum Outer {
+    #[facet(rename = "a")]
+    A {
+        shape: Option<Shape>,
+        either: Option<Either>,
+        shapes: Option<Vec<Shape>>,
+    },
+}
+
+#[test]
+fn probe_tags() {
+    for text in [
+        r#"{"shape": {"type":"ring"}}"#,
+        r#"{"shapes": [{"type":"ring"}]}"#,
+        r#"{"either": 5}"#,
+        r#"{"either": null}"#,
+        r#"{"either": true}"#,
+        r#"{"either": "zz"}"#,
+        r#"{"either": {"zz": 1}}"#,
+        r#"{"either": []}"#,
+        r#"{"eithers": [5]}"#,
+        r#"{"outer": {"t": "a", "shape": {"type":"ring"}}}"#,
+        r#"{"outer": {"t": "a", "shapes": [{"type":"ring"}]}}"#,
+        r#"{"outer": {"t": "a", "either": 5}}"#,
+        r#"{"outer": {"t": "a", "either": null}}"#,
+        r#"{"outer": {"t": "a", "either": "zz"}}"#,
+        r#"{"outer": {"t": "zz"}}"#,
+    ] {
+        for (name, reading) in [
+            ("doc", Reading::DOCUMENT),
+            ("null_absent", Reading::NULL_ABSENT),
+        ] {
+            let load = context(reading);
+            let mut d = Diagnostics::default();
+            let v: Option<Probe> = parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let door = outcome(v.as_ref(), &d);
+            let mut d = Diagnostics::default();
+            let v: Option<Probe> = read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let read = outcome(v.as_ref(), &d);
+            eprintln!("{name} {text}\n  door {door}\n  read {read}");
+        }
+    }
+}

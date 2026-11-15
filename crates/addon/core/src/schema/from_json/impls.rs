@@ -194,17 +194,18 @@ pub enum ElementFailure {
 }
 
 impl ElementFailure {
-    /// Whether a failed element is left out of its list under `read`.
-    fn drops(self, read: &Read<'_>) -> bool {
+    /// Whether a failed element of the list at `node` is left out of it under `read`.
+    fn drops(self, read: &Read<'_>, node: &Node<'_>) -> bool {
         match self {
             Self::Drop => true,
             Self::FailList => false,
             Self::ByReading => {
-                !read.telling().stops()
+                (!read.telling().first_alone()
                     && matches!(
                         read.reading().on_member_failure,
                         MemberFailure::DropElement | MemberFailure::DropOwner
-                    )
+                    ))
+                    || read.defaults_drop(node, true)
             }
         }
     }
@@ -265,7 +266,7 @@ pub fn read_list<T>(
     // The indices of the elements kept, once one is left out.
     let mut kept: Option<Vec<usize>> = None;
     let mut failed = false;
-    let drops = failure.drops(read);
+    let drops = failure.drops(read, node);
     for (index, at) in elements.iter().enumerate() {
         if read.stopped() {
             return None;
@@ -321,7 +322,7 @@ pub fn read_iterated<T>(
     let members = read.object(node)?;
     let mut values: Vec<(&str, Node<'_>)> = members.iter().collect();
     values.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
-    let drops = failure.drops(read);
+    let drops = failure.drops(read, node);
     let mut out = Vec::with_capacity(values.len());
     let mut failed = false;
     for (_, at) in values {
@@ -431,7 +432,9 @@ impl<K: crate::id::Kind> MapKey for crate::id::Id<K> {
 /// failed value fails the map (every value is still read and told); a value read as absent (a
 /// scalar its profile refuses, under [`Passes::AfterRead`](crate::json::kit::Passes::AfterRead) with `DefaultAndTell`: the door's pre-pass
 /// blanks it) is left out and the rest kept. An unknown member inside a value is told and not
-/// kept, as the door's walk cannot reach it.
+/// kept, as the door's walk cannot reach it, unless the field that holds the map says
+/// `schema::unknown = "keep"`: its values' unknown members are then kept in the document's table
+/// at the value's path, `map/<key>`, and written back there.
 fn map_entries<K: MapKey, V>(
     node: &Node<'_>,
     read: &mut Read<'_>,
@@ -442,6 +445,8 @@ fn map_entries<K: MapKey, V>(
         return None;
     }
     let members = read.object(node)?;
+    let keeps = read.field_unknown() == Some(crate::schema::UnknownRule::Keep);
+    let drops = read.defaults_drop(node, false);
     let mut failed = false;
     for (key, member) in members.iter() {
         if read.stopped() {
@@ -452,10 +457,14 @@ fn map_entries<K: MapKey, V>(
             failed = true;
             continue;
         };
-        let value = read.unkeepable(|read| read.in_map_value(true, |read| entry(&member, read)));
+        let value = if keeps {
+            read.in_map_value(true, |read| entry(&member, read))
+        } else {
+            read.unkeepable(|read| read.in_map_value(true, |read| entry(&member, read)))
+        };
         match value {
             Some(value) => put(key, value),
-            None if read.take_defaulted() => {}
+            None if read.take_defaulted() || drops => {}
             None => failed = true,
         }
     }

@@ -2,9 +2,10 @@
 //! one variant per feature type, is declared by its rows in `family.rs`.
 
 use bedrock_addon_core::id::FeatureId;
+use bedrock_addon_core::schema::Schema;
 
 /// A feature's `description`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct Description {
     /// The feature's identifier, `namespace:name` (JSON `identifier`). References to the
     /// feature use it; the file's name and folder do not matter.

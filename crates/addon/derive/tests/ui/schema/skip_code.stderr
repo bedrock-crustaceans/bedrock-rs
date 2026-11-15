@@ -1,0 +1,17 @@
+error: `schema::skip_code` is what an element left out is told as: the list says `schema::elements = "drop"`
+  --> tests/ui/schema/skip_code.rs:11:13
+   |
+11 |     #[facet(schema::skip_code = skipped())]
+   |             ^^^^^^
+
+error: `schema::skip_code` is what an element left out is told as: the list says `schema::elements = "drop"`
+  --> tests/ui/schema/skip_code.rs:13:40
+   |
+13 |     #[facet(schema::elements = "fail", schema::skip_code = skipped())]
+   |                                        ^^^^^^
+
+error: `schema::iterated` and `schema::elements` read a list: a `Vec` field (or an `Option` of one)
+  --> tests/ui/schema/skip_code.rs:15:13
+   |
+15 |     #[facet(schema::elements = "drop", schema::skip_code = skipped())]
+   |             ^^^^^^

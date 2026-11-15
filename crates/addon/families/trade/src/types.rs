@@ -1,6 +1,7 @@
 //! The trade-table types, their inherent items, and the constructor of a trade item from its
 //! identifier.
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::schema::{self, Schema};
@@ -67,7 +68,7 @@ pub struct Trade {
     pub reward_exp: Option<bool>,
     /// The trade's weight when a group picks `num_to_select` trades (JSON `weight`, default 1,
     /// at least 1). It has no effect in a group that picks every trade.
-    #[facet(schema::fallback = 1)]
+    #[facet(schema::fallback = 1, schema::min = 1)]
     pub weight: Option<i32>,
 }
 
@@ -75,7 +76,7 @@ pub struct Trade {
 /// from at random when the trade is generated.
 ///
 /// JSON: an item object, or `{"choice": [item, …]}`. The form is kept for writing.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 #[allow(
@@ -93,9 +94,6 @@ pub enum ItemList {
     /// A bare item object: a list of one.
     Item(TradeItem),
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(ItemList);
 
 /// One item of a trade.
 ///
@@ -131,35 +129,37 @@ pub struct TradeItem {
 ///
 /// JSON: a whole number (`3`: exactly three) or `{"min"?: n, "max"?: n}`, each bound at least 1
 /// and 1 when absent (`{"max": 2}` is one or two). The form is kept for writing.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
-#[facet(untagged)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
+// A negative whole number has no arm, and is the game's `min(1)` line, not a wrong type.
+#[facet(untagged, schema::invalid = core_codes::INVALID_VALUE)]
 #[repr(u8)]
 #[doc(alias = "Trade Quantity")]
 pub enum Quantity {
     /// A whole number: exactly that many.
-    Exact(u32),
+    Exact(#[facet(schema::min = 1)] u32),
     /// `{"min", "max"}`: between the two, inclusive.
     // The writer writes a `None` field of an untagged enum's struct variant as `null`, which
     // a struct leaves out (pinned in core's `json_write`,
     // `an_untagged_struct_variant_writes_a_none_field_as_null`): the two skips keep an absent
     // bound absent.
+    #[facet(schema::unknown = "report")]
     Range {
         /// The least (JSON `min`, default 1).
-        #[facet(skip_serializing_if = Option::is_none)]
+        #[facet(
+            skip_serializing_if = Option::is_none,
+            schema::min = 1,
+            schema::negative = core_codes::INVALID_VALUE
+        )]
         min: Option<u32>,
         /// The most (JSON `max`, default 1).
-        #[facet(skip_serializing_if = Option::is_none)]
+        #[facet(
+            skip_serializing_if = Option::is_none,
+            schema::min = 1,
+            schema::negative = core_codes::INVALID_VALUE
+        )]
         max: Option<u32>,
     },
 }
-
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(Quantity);
-
-// The two forms of an entry and of a quantity: leaves of the derived walks (an untagged enum
-// holds no derived bound, trigger or Molang member).
-bedrock_addon_core::impl_schema_leaf!(ItemList, Quantity);
-bedrock_addon_core::impl_no_molang!(ItemList, Quantity);
 
 impl ItemList {
     /// The items of the entry: the `choice` list, or the one bare item.

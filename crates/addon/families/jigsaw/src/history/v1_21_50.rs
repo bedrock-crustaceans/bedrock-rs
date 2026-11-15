@@ -17,6 +17,7 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 pub struct MetadataRegistry {
     /// The metadata of each structure element, by its metadata key in decimal (JSON
     /// `metadata`).
+    #[facet(schema::unknown = "keep")]
     pub metadata: IndexMap<String, StructureMetadata>,
 }
 

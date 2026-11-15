@@ -3,6 +3,10 @@
 //! pack (`minecraft:jigsaw`, `minecraft:template_pool`, `minecraft:structure_set`,
 //! `minecraft:processor_list`, each one struct at format 1.21.20) and the binary metadata cache
 //! `worldgen/metadata/*.dat`, loaded together as the `Jigsaw` group.
+//!
+//! The JSON documents are read by the derived reader (`versioning::read_payload`): every type,
+//! the tagged and untagged enums and the generic `Weighted<T>` included, derives `Schema`; no
+//! hand reader is left.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

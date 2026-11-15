@@ -45,6 +45,19 @@ pub(crate) fn elements(ty: &Type) -> Option<&Type> {
     }
 }
 
+/// `V` of an `IndexMap<K, V>`, `HashMap<K, V>` or `BTreeMap<K, V>`: the values a bound on the
+/// field applies to.
+pub(crate) fn map_values(ty: &Type) -> Option<&Type> {
+    match last(ty)? {
+        (name, args)
+            if matches!(name.as_str(), "IndexMap" | "HashMap" | "BTreeMap") && args.len() >= 2 =>
+        {
+            Some(args[1])
+        }
+        _ => None,
+    }
+}
+
 /// The type below every `Option`, `Vec`, `Box` and map (`IndexMap`, `HashMap`, `BTreeMap`: the
 /// value type) around it.
 pub(crate) fn innermost(ty: &Type) -> &Type {

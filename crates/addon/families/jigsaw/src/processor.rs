@@ -2,6 +2,7 @@
 
 use super::validate::validate_detached;
 use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::{BlockId, LootTablePath, ProcessorListId};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
@@ -32,8 +33,8 @@ pub struct ProcessorListDescription {
 }
 
 /// One processor, by its `processor_type`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "processor_type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "processor_type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Processor {
@@ -69,12 +70,9 @@ pub enum Processor {
     },
 }
 
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(Processor);
-
 /// The processor a `minecraft:capped` processor limits: any processor type but `capped`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "processor_type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "processor_type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum CappedDelegate {
@@ -103,7 +101,7 @@ pub enum CappedDelegate {
 
 /// An integer drawn per use (`limit`): a number, `{"type": "constant", "value"}` or
 /// `{"type": "uniform", "min_inclusive", "max_inclusive"}`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum IntProvider {
@@ -164,8 +162,8 @@ pub struct ProcessorRule {
 }
 
 /// A test on a block, by its `predicate_type`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "predicate_type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "predicate_type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum BlockPredicate {
@@ -187,6 +185,7 @@ pub enum BlockPredicate {
         /// The block (JSON `block`).
         block: BlockId,
         /// The chance, 0 to 1 (JSON `probability`).
+        #[facet(schema::min = 0.0, schema::max = 1.0)]
         probability: f32,
     },
     /// The block has a tag (JSON `minecraft:tag_match`).
@@ -211,16 +210,14 @@ pub enum BlockPredicate {
         /// The block and states (JSON `block_state`).
         block_state: BlockSpecifier,
         /// The chance, 0 to 1 (JSON `probability`).
+        #[facet(schema::min = 0.0, schema::max = 1.0)]
         probability: f32,
     },
 }
 
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(BlockPredicate);
-
 /// A test on a block's position, by its `predicate_type`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "predicate_type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "predicate_type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PositionPredicate {
@@ -234,25 +231,22 @@ pub enum PositionPredicate {
     #[facet(schema::unknown = "keep")]
     AxisAlignedLinearPos {
         /// The chance at `min_dist`, in `[0, 1)` (JSON `min_chance`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none, schema::min = 0.0, schema::below = 1.0)]
         min_chance: Option<f32>,
         /// The chance at `max_dist`, in `[0, 1)` (JSON `max_chance`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none, schema::min = 0.0, schema::below = 1.0)]
         max_chance: Option<f32>,
         /// The distance where the chance is `min_chance`, 0 or more (JSON `min_dist`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none, schema::min = 0)]
         min_dist: Option<i32>,
         /// The distance where the chance is `max_chance`, 0 or more (JSON `max_dist`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none, schema::min = 0)]
         max_dist: Option<i32>,
         /// The axis (JSON `axis`, default `y`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none)]
         axis: Option<Axis>,
     },
 }
-
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(PositionPredicate);
 
 /// An axis (`axis`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
@@ -269,8 +263,8 @@ pub enum Axis {
 }
 
 /// What a placed block's block entity receives, by its `type`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum BlockEntityModifier {
@@ -286,9 +280,6 @@ pub enum BlockEntityModifier {
         loot_table: LootTablePath,
     },
 }
-
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(BlockEntityModifier);
 
 impl ProcessorList {
     /// A list without processors.
@@ -343,24 +334,6 @@ impl PositionPredicate {
         }
     }
 }
-
-// The data enums walk nothing: their bounds and members are checked by hand (`read.rs`).
-bedrock_addon_core::impl_schema_leaf!(
-    Processor,
-    CappedDelegate,
-    IntProvider,
-    BlockPredicate,
-    PositionPredicate,
-    BlockEntityModifier
-);
-bedrock_addon_core::impl_no_molang!(
-    Processor,
-    CappedDelegate,
-    IntProvider,
-    BlockPredicate,
-    PositionPredicate,
-    BlockEntityModifier
-);
 
 #[cfg(test)]
 mod validate_tests {

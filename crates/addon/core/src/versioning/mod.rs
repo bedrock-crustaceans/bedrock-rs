@@ -60,7 +60,7 @@ pub use pipeline::{
 };
 pub use range::{ChainError, Selection, check_chain, ranges, select, select_versions};
 pub use reading::{
-    BeyondWidth, MemberFailure, NullHandling, Reading, Scalars, Strings, UnknownMask,
+    BeyondWidth, Choices, MemberFailure, NullHandling, Reading, Scalars, Strings, UnknownMask,
 };
 pub use single::Single;
 pub use write::write_envelope;

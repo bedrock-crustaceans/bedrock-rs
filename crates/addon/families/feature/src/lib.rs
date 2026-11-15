@@ -1,6 +1,14 @@
 //! Features: `features/**/*.json` of a behaviour pack and the app's `definitions/features`
 //! (one struct per feature type, gathered in [`Feature`]). A document is `{"format_version",
 //! "minecraft:<type>": {…}}`; each payload key is a feature type with its own schema and chain.
+//!
+//! Every type derives `Schema`: core's reader reads its document member by member, and the
+//! derived check is the family's validate stage (the bounds, lengths and engine gates the types
+//! state as `schema::` attributes, worded as the game's older schema tree words them). What is
+//! not one attribute on one field stays a small function named by `schema::rule` or
+//! `schema::check_with` beside its type: the rules that read two members, or the engine or the
+//! format. The leaf types with a syntax of their own (`JsonInt`, the block and chance lists, the
+//! weighted entries) read and check themselves.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -52,7 +60,6 @@ mod scatter;
 mod structure;
 mod tree;
 mod types;
-mod validate;
 mod values;
 
 #[cfg(test)]
@@ -80,7 +87,7 @@ use read::{DuplicateText, FileSource, parse_file, parse_file_as_written, upgrade
 
 #[cfg(test)]
 use family::{KEYS, TypeFn, with_type};
-pub(crate) use family::{Rules, V1_13_0, strict_struct};
+pub(crate) use family::{V1_13_0, strict_struct};
 
 pub use family::Feature;
 pub use types::Description;

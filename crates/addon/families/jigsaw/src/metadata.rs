@@ -41,6 +41,7 @@ impl std::fmt::Debug for JigsawMetadata {
 pub struct MetadataRegistry {
     /// The metadata of each structure element, by the element's 64-bit metadata key written in
     /// decimal (JSON `metadata`).
+    #[facet(schema::unknown = "keep")]
     pub metadata: IndexMap<String, StructureMetadata>,
 }
 

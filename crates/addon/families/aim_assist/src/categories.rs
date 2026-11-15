@@ -3,10 +3,16 @@
 
 use indexmap::IndexMap;
 
+use bedrock_addon_core::diagnostic::cereal::INVALID_NUMERIC_VALUE_TEXT;
+use bedrock_addon_core::diagnostic::{Code, codes};
 use bedrock_addon_core::id::AimAssistCategoryId;
 use bedrock_addon_core::schema::{self, Schema};
 
-use super::read::{priority, priority_map};
+/// What a priority below 0 is told as: cereal's "invalid numeric value"; one above 100 is the
+/// range's own line (the bound's).
+fn negative_priority() -> Code {
+    codes::INVALID_VALUE_WORDED.with([INVALID_NUMERIC_VALUE_TEXT])
+}
 
 /// An aim-assist categories file (`minecraft:aim_assist_categories`, in
 /// `aim_assist/categories/`), format 1.21.50.
@@ -36,25 +42,35 @@ pub struct AimAssistCategory {
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Priorities {
     /// The priority of each entity, by identifier (JSON `entities`).
-    #[facet(schema::read_with = priority_map)]
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative_priority())]
     pub entities: Option<IndexMap<String, i32>>,
     /// The priority of each block, by identifier (JSON `blocks`).
-    #[facet(schema::read_with = priority_map)]
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative_priority())]
     pub blocks: Option<IndexMap<String, i32>>,
     /// The priority of each block tag (JSON `block_tags`).
-    #[facet(schema::read_with = priority_map)]
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative_priority())]
     pub block_tags: Option<IndexMap<String, i32>>,
     /// The priority of each entity type family (JSON `entity_type_families`).
-    #[facet(schema::read_with = priority_map)]
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative_priority())]
     pub entity_type_families: Option<IndexMap<String, i32>>,
     /// The priority of an entity without an entry (JSON `entity_default`; see
     /// [`Priorities::entity_default`], 1 when the document leaves it out, what the game uses at
     /// run time).
-    #[facet(schema::fallback = 1, schema::read_with = priority)]
+    #[facet(
+        schema::fallback = 1,
+        schema::min = 0,
+        schema::max = 100,
+        schema::low_code = negative_priority()
+    )]
     pub entity_default: Option<i32>,
     /// The priority of a block without an entry (JSON `block_default`; see
     /// [`Priorities::block_default`], 1 when the document leaves it out).
-    #[facet(schema::fallback = 1, schema::read_with = priority)]
+    #[facet(
+        schema::fallback = 1,
+        schema::min = 0,
+        schema::max = 100,
+        schema::low_code = negative_priority()
+    )]
     pub block_default: Option<i32>,
 }
 

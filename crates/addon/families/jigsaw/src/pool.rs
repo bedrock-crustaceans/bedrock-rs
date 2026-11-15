@@ -2,6 +2,7 @@
 
 use super::validate::validate_detached;
 use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::{FeatureId, ProcessorListId, StructureId, TemplatePoolId};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
@@ -44,8 +45,8 @@ pub struct TemplatePoolElement {
 }
 
 /// What a template pool entry places, by its `element_type`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
-#[facet(tag = "element_type")]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "element_type", schema::invalid = core_codes::INVALID_ENUM_VALUE)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PoolElement {
@@ -61,10 +62,10 @@ pub enum PoolElement {
         /// (JSON `location`).
         location: StructureId,
         /// The processor list applied to the template (JSON `processors`, default `""`: none).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none)]
         processors: Option<ProcessorListId>,
         /// How the template follows the terrain (JSON `projection`, default `rigid`).
-        #[facet(default, skip_serializing_if = Option::is_none)]
+        #[facet(skip_serializing_if = Option::is_none)]
         projection: Option<Projection>,
     },
     /// A feature (JSON `minecraft:feature_pool_element`, engine 1.26.20).
@@ -75,9 +76,6 @@ pub enum PoolElement {
         feature: FeatureId,
     },
 }
-
-// bridge: a tagged facet enum without the Schema derive; converted with its family
-bedrock_addon_core::from_json_via_facet!(PoolElement);
 
 /// How a template follows the terrain (`projection`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
@@ -149,7 +147,3 @@ impl PoolElement {
         }
     }
 }
-
-// The data enums walk nothing: their bounds and members are checked by hand (`read.rs`).
-bedrock_addon_core::impl_schema_leaf!(PoolElement);
-bedrock_addon_core::impl_no_molang!(PoolElement);

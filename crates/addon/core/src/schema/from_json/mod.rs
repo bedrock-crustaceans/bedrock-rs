@@ -135,6 +135,7 @@ pub fn read_document<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Optio
     let levels = crate::json::levels_of(node.value()).unwrap_or(crate::json::MAX_JSON_DEPTH);
     // The table the read keeps into is its own until the value is read.
     let before = read.findings_mut().take_unknown();
+    read.set_root(node);
     let value = crate::json::with_stack_for(levels, || T::from_json(node, read));
     read.finish();
     let kept = std::mem::replace(read.findings_mut().unknown_mut(), before);

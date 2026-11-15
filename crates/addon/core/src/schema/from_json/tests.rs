@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use super::FromJson;
 use crate::diagnostic::{Diagnostics, JsonPath};
 use crate::document::Extra;
-use crate::json::kit::{Node, Profile, Read, Texts};
+use crate::json::kit::{Node, Profile, Read, Recovery, Texts};
 use crate::json::{JsonSlice, Value, from_str_jsonc};
 use crate::schema::{self, Schema};
 use crate::versioning::{MemberFailure, NullHandling, Reading, Scalars};
@@ -1160,4 +1160,278 @@ fn a_member_read_from_a_version_on_is_judged_by_the_document_s_versions() {
         })
     );
     assert_eq!(told, ["Info new core/field_since_engine"]);
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
+#[repr(u8)]
+enum Burn {
+    Slow,
+    Fast,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Wick {
+    size: u8,
+    burn: Option<Burn>,
+}
+
+#[test]
+fn the_texts_name_the_codes_of_a_missing_member_an_unknown_one_and_a_bad_enum_name() {
+    use crate::diagnostic::Severity;
+    use crate::diagnostic::codes;
+    let json: Value = from_str_jsonc(r#"{"burn": "never", "zz": 1}"#).unwrap();
+    let node = Node::new(&json, JsonPath::of_keys(["root"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN, &mut found)
+        .unknown_severity(Severity::Error)
+        .texts(Texts {
+            missing_named: Some(&codes::REQUIRED_CHILD),
+            unknown_named: Some(&codes::CHILD_NOT_VALID),
+            invalid_enum: Some(&codes::INVALID_VALUE),
+            ..Texts::CODES
+        });
+    assert!(Wick::from_json(&node, &mut read).is_none());
+    read.finish();
+    let told: Vec<String> = found
+        .iter()
+        .map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code))
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "Error root/burn invalid value",
+            "Error root/zz child 'zz' not valid here.",
+            "Error root/size Required child size not found",
+        ]
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Trio {
+    a: u8,
+    b: u8,
+    n: Option<u8>,
+}
+
+#[test]
+fn a_read_of_the_first_failure_only_goes_on_to_tell_the_nulls_and_the_unknown_members() {
+    let text = r#"{"a": "x", "b": "y", "zz": 1, "n": null}"#;
+    let (value, told) = read_as::<Trio>(text, Reading::NULL_ABSENT, Profile::FIRST_THEN_PASSES);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        [
+            "Error root/a core/invalid_type",
+            "Info root/n core/value_rewritten",
+            "Warning root/zz core/unrecognized_field",
+        ],
+        "the second failure is not told, the passes are"
+    );
+    // The first failure's read stops there and tells it alone.
+    let (_, told) = read_as::<Trio>(text, Reading::NULL_ABSENT, Profile::FIRST_FAILURE);
+    assert_eq!(told, ["Error root/a core/invalid_type"]);
+    // Every failure tells both.
+    let (_, told) = read_as::<Trio>(text, Reading::NULL_ABSENT, Profile::EVERY_FAILURE);
+    assert_eq!(told.len(), 4, "{told:?}");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Gauge {
+    a: f32,
+    b: u8,
+}
+
+#[test]
+fn a_read_of_the_first_failure_only_tells_a_clamped_number_of_a_read_that_stands() {
+    // A number beyond its float is clamped and told (a pass of its own); a failure elsewhere
+    // takes the note away.
+    let reading = Reading::NULL_ABSENT;
+    let (value, told) = read_as::<Gauge>(
+        r#"{"a": 1e39, "b": 1}"#,
+        reading,
+        Profile::FIRST_THEN_PASSES,
+    );
+    assert_eq!(told, ["Info root/a core/beyond_float_member"]);
+    assert!(value.is_some());
+    let (value, told) = read_as::<Gauge>(
+        r#"{"a": 1e39, "b": "y"}"#,
+        reading,
+        Profile::FIRST_THEN_PASSES,
+    );
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/b core/invalid_type"]);
+}
+
+/// [`read_as`] through the root read ([`read_document`](crate::schema::read_document)), with
+/// `texts`.
+fn read_root<T: FromJson>(
+    text: &str,
+    reading: Reading,
+    profile: Profile,
+    texts: Texts,
+) -> (Option<T>, Vec<String>) {
+    let json: Value = from_str_jsonc(text).expect("JSON");
+    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(reading, &mut found)
+        .profile(profile)
+        .texts(texts)
+        .range_members();
+    let value = crate::schema::read_document::<T>(&node, &mut read);
+    let told = found
+        .iter()
+        .map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code.id()))
+        .collect();
+    (value, told)
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Taper {
+    #[facet(default = 1)]
+    length: u8,
+    lit: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Torch {
+    wick: Option<Taper>,
+    #[facet(default)]
+    wicks: Vec<Taper>,
+    sizes: Option<IndexMap<String, u8>>,
+    #[facet(default = 2)]
+    count: u8,
+}
+
+const DEFAULTED: Texts = Texts {
+    defaulted: Some(&crate::diagnostic::codes::INVALID_VALUE),
+    ..Texts::CODES
+};
+
+const LENIENT: Reading = Reading::NULL_ABSENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+
+#[test]
+fn the_value_recovery_gives_up_the_innermost_value_that_fails() {
+    let text = r#"{"wick": {"length": "x", "lit": true}, "wicks": [{"length": 3}, 4, {"lit": 1}], "sizes": {"a": 1, "b": "big"}, "count": 3}"#;
+    let profile = Profile::EVERY_FAILURE.with_recovery(Recovery::Value);
+    let (torch, told) = read_root::<Torch>(text, LENIENT, profile, DEFAULTED);
+    let torch = torch.expect("read");
+    assert_eq!(
+        torch.wick,
+        Some(Taper {
+            length: 1,
+            lit: Some(true)
+        })
+    );
+    assert_eq!(
+        torch.wicks,
+        [
+            Taper {
+                length: 3,
+                lit: None
+            },
+            Taper {
+                length: 1,
+                lit: None
+            }
+        ]
+    );
+    assert_eq!(torch.sizes.map(|sizes| sizes.len()), Some(1));
+    assert_eq!(torch.count, 3);
+    assert_eq!(
+        told,
+        [
+            "Info root/wick/length core/invalid_value",
+            "Info root/wicks/1 core/invalid_value",
+            "Info root/wicks/2/lit core/invalid_value",
+            "Info root/sizes/b core/invalid_value",
+        ]
+    );
+}
+
+#[test]
+fn the_top_level_recovery_gives_up_a_member_or_element_whole_and_tells_it_dropped() {
+    let text = r#"{"wick": {"length": "x", "lit": 1}, "wicks": [{"length": 3}, {"lit": 1, "length": "y"}], "sizes": {"b": "big"}, "count": "z"}"#;
+    let profile = Profile::EVERY_FAILURE.with_recovery(Recovery::TopLevel);
+    let (torch, told) = read_root::<Torch>(text, LENIENT, profile, DEFAULTED);
+    let torch = torch.expect("read");
+    assert_eq!(torch.wick, None);
+    assert_eq!(
+        torch.wicks,
+        [Taper {
+            length: 3,
+            lit: None
+        }]
+    );
+    assert_eq!(torch.sizes, None);
+    assert_eq!(torch.count, 2);
+    assert_eq!(
+        told,
+        [
+            // The first failure of each, the second one of `wick` not told.
+            "Info root/wick/length core/invalid_value",
+            "Info root/wick core/dropped_field",
+            "Info root/wicks/1/lit core/invalid_value",
+            "Info root/wicks/1 core/dropped_field",
+            "Info root/sizes/b core/invalid_value",
+            "Info root/sizes core/dropped_field",
+            "Info root/count core/invalid_value",
+        ]
+    );
+    // Without the texts each failure keeps its own code.
+    let (_, told) = read_root::<Torch>(text, LENIENT, profile, Texts::CODES);
+    assert_eq!(told[0], "Info root/wick/length core/invalid_type");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Needs {
+    name: String,
+}
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Holds {
+    #[facet(default)]
+    needs: Vec<Needs>,
+}
+
+#[test]
+fn a_defaulted_missing_member_is_told_at_the_object_that_lacks_it() {
+    let profile = Profile::EVERY_FAILURE.with_recovery(Recovery::Value);
+    let (holds, told) = read_root::<Holds>(
+        r#"{"needs": [{}, {"name": "a"}]}"#,
+        LENIENT,
+        profile,
+        DEFAULTED,
+    );
+    assert_eq!(holds.map(|holds| holds.needs.len()), Some(1));
+    assert_eq!(told, ["Info root/needs/0 core/invalid_value"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Spread {
+    width: Option<crate::shared::FloatRange>,
+    depth: Option<crate::shared::IntRange>,
+}
+
+#[test]
+fn a_read_that_asks_tells_the_members_a_range_does_not_read() {
+    let (spread, told) = read_root::<Spread>(
+        r#"{"width": {"min": 1, "a": 2}, "depth": [1, 2, 3]}"#,
+        Reading::NULL_ABSENT,
+        Profile::FIRST_FAILURE,
+        Texts::CODES,
+    );
+    assert!(spread.is_some());
+    assert_eq!(
+        told,
+        [
+            "Warning root/width/a core/unrecognized_field",
+            "Warning root/depth/2 core/unrecognized_field",
+        ]
+    );
+    // A read that does not ask tells none.
+    let (_, told) = read_as::<Spread>(
+        r#"{"width": {"min": 1, "a": 2}}"#,
+        Reading::NULL_ABSENT,
+        Profile::FIRST_FAILURE,
+    );
+    assert!(told.is_empty(), "{told:?}");
 }

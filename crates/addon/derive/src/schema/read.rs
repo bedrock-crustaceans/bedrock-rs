@@ -10,7 +10,7 @@ use syn::spanned::Spanned;
 use syn::{DataEnum, Error, Fields, Ident, Member, Type, Variant};
 
 use super::attr::{ContainerAttrs, FieldAttrs};
-use super::{FieldInfo, core, json_name, ty, unknown_option};
+use super::{FieldInfo, Target, core, json_name, ty, unknown_option};
 
 /// The paths the emitted read names.
 struct Paths {
@@ -125,7 +125,10 @@ pub(super) fn knows(infos: &[FieldInfo]) -> TokenStream {
 /// is no `Option`.
 pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     let attrs = &info.attrs;
-    let list_key = attrs.iterated.or(attrs.elements.map(|(_, span)| span));
+    let list_key = attrs
+        .iterated
+        .or(attrs.elements.map(|(_, span)| span))
+        .or(attrs.skip_code.as_ref().map(|(_, span)| *span));
     let held = info.option.unwrap_or(info.ty);
     if let Some(span) = list_key {
         if ty::name(held).is_none_or(|name| name != "Vec") {
@@ -142,6 +145,15 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             ));
         }
     }
+    if let Some((_, span)) = &attrs.skip_code
+        && !matches!(attrs.elements, Some((true, _)))
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::skip_code` is what an element left out is told as: the list says \
+             `schema::elements = \"drop\"`",
+        ));
+    }
     if let Some((_, span)) = attrs.or_kept
         && (info.option.is_none() || attrs.flatten)
     {
@@ -150,10 +162,15 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
         ));
     }
-    let ruled = [&attrs.wrong_type, &attrs.missing, &attrs.invalid]
-        .into_iter()
-        .find_map(|code| code.as_ref().map(|(_, span)| *span))
-        .or(attrs.finite);
+    let ruled = [
+        &attrs.wrong_type,
+        &attrs.missing,
+        &attrs.invalid,
+        &attrs.negative,
+    ]
+    .into_iter()
+    .find_map(|code| code.as_ref().map(|(_, span)| *span))
+    .or(attrs.finite);
     if let Some(span) = ruled.filter(|_| attrs.flatten || !taken(info)) {
         errors.push(Error::new(
             span,
@@ -296,6 +313,13 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
                 Some((false, _)) => quote!(FailList),
                 None => quote!(ByReading),
             };
+            let skip = info.attrs.skip_code.as_ref().map_or_else(
+                || quote!(::core::option::Option::None),
+                |(code, _)| {
+                    let core = core();
+                    quote!(::core::option::Option::Some(|| -> #core::diagnostic::Code { #code }))
+                },
+            );
             quote! {
                 |__node: &#node<'_>, __read: &mut #read<'_>| {
                     #reader::list::<#element>(
@@ -303,6 +327,7 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
                         __read,
                         #iterated,
                         ::bedrock_addon_core::schema::ElementFailure::#failure,
+                        #skip,
                     )
                 }
             }
@@ -352,6 +377,7 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
     if attrs.wrong_type.is_none()
         && attrs.missing.is_none()
         && attrs.invalid.is_none()
+        && attrs.negative.is_none()
         && attrs.finite.is_none()
     {
         return None;
@@ -363,10 +389,11 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
             |(expr, _)| quote!(::core::option::Option::Some(&#expr)),
         )
     };
-    let (wrong_type, missing, invalid) = (
+    let (wrong_type, missing, invalid, negative) = (
         code(&attrs.wrong_type),
         code(&attrs.missing),
         code(&attrs.invalid),
+        code(&attrs.negative),
     );
     let finite = attrs.finite.is_some();
     Some(quote! {
@@ -374,6 +401,7 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
             wrong_type: #wrong_type,
             missing: #missing,
             invalid: #invalid,
+            negative: #negative,
             finite: #finite,
         }
     })
@@ -501,7 +529,7 @@ fn fields_body(
 /// The read of a struct: `FromJson` (the object, then its fields) and `Fields`; a transparent
 /// newtype reads as its one field.
 pub(super) fn struct_read(
-    ident: &Ident,
+    target: &Target,
     fields: &Fields,
     container: &ContainerAttrs,
     infos: &[FieldInfo],
@@ -515,6 +543,10 @@ pub(super) fn struct_read(
         expected,
         ..
     } = paths();
+    let ident = target.ident;
+    let bound = quote!(#from_json);
+    let from_json_impl = target.impl_for(&from_json, Some(&bound));
+    let fields_impl = target.impl_for(&fields_trait, Some(&bound));
     if container.transparent {
         let Some(info) = infos.first() else {
             return TokenStream::new();
@@ -542,7 +574,7 @@ pub(super) fn struct_read(
         };
         return quote! {
             #[automatically_derived]
-            impl #from_json for #ident {
+            #from_json_impl {
                 #kind
 
                 fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
@@ -561,7 +593,7 @@ pub(super) fn struct_read(
     );
     quote! {
         #[automatically_derived]
-        impl #from_json for #ident {
+        #from_json_impl {
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Object);
 
@@ -579,7 +611,7 @@ pub(super) fn struct_read(
         }
 
         #[automatically_derived]
-        impl #fields_trait for #ident {
+        #fields_impl {
             fn knows(__key: &str) -> bool {
                 #knows
             }
@@ -657,8 +689,16 @@ fn payload<'a>(variant: &ReadVariant<'a>) -> Payload<'a> {
 
 /// The local function that reads struct variant `index` of `ident` from an object (a variant
 /// has no `Fields` impl, so its `knows` is a closure).
-fn variant_fn(ident: &Ident, index: usize, variant: &ReadVariant) -> TokenStream {
-    let Paths { read, object, .. } = paths();
+fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStream {
+    let Paths {
+        read,
+        object,
+        from_json,
+        ..
+    } = paths();
+    let ident = target.ident;
+    let ty = target.ty();
+    let (generics, where_clause) = target.fn_generics(&from_json);
     let v = &variant.variant.ident;
     let name = format_ident!("__variant_{index}");
     let knows = knows(variant.fields);
@@ -671,12 +711,12 @@ fn variant_fn(ident: &Ident, index: usize, variant: &ReadVariant) -> TokenStream
     );
     quote! {
         #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
-        fn #name(
+        fn #name #generics(
             __object: &#object<'_>,
             __read: &mut #read<'_>,
             __unknown: bool,
             __tag: ::core::option::Option<&'static str>,
-        ) -> ::core::option::Option<#ident> {
+        ) -> ::core::option::Option<#ty> #where_clause {
             #body
         }
     }
@@ -709,7 +749,11 @@ fn struct_value(index: usize, at: &TokenStream) -> TokenStream {
 
 /// The read of an untagged enum with data: the arm the door chooses (`derive_support::untagged_arm`),
 /// then that variant's payload.
-pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStream {
+pub(super) fn untagged_read(
+    target: &Target,
+    invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    variants: &[ReadVariant],
+) -> TokenStream {
     let Paths {
         node,
         read,
@@ -717,11 +761,20 @@ pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
         reader,
         ..
     } = paths();
+    let core = core();
+    let invalid = invalid_code(invalid);
     let fns = variants
         .iter()
         .enumerate()
         .filter(|(_, v)| matches!(payload(v), Payload::Struct))
-        .map(|(index, v)| variant_fn(ident, index, v));
+        .map(|(index, v)| variant_fn(target, index, v));
+    // The arm is chosen from the enum's shape, which only an enum facet describes does.
+    let ty = target.ty();
+    let header = target.impl_where(
+        &from_json,
+        Some(&from_json),
+        Some(&quote!(#ty: #core::__private::Facet<'static>)),
+    );
     let units: Vec<(usize, &ReadVariant)> = variants
         .iter()
         .enumerate()
@@ -767,10 +820,10 @@ pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
     );
     quote! {
         #[automatically_derived]
-        impl #from_json for #ident {
+        #header {
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                let __arm = #reader::untagged_arm::<Self>(__node, __read, #quiet);
+                let __arm = #reader::untagged_arm::<Self>(__node, __read, #quiet, #invalid);
                 let __value = match __arm {
                     ::core::option::Option::Some(#reader::Arm::Unit) => match #reader::unit_arm(__node, &[#(#unit_names),*]) {
                         #(#unit_arms)*
@@ -795,7 +848,12 @@ pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
 
 /// The read of an internally tagged enum (`tag = ".."`): the variant its tag member names, its
 /// members beside the tag.
-pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) -> TokenStream {
+pub(super) fn tagged_read(
+    target: &Target,
+    tag: &str,
+    invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    variants: &[ReadVariant],
+) -> TokenStream {
     let Paths {
         node,
         read,
@@ -805,11 +863,13 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
         expected,
         ..
     } = paths();
+    let invalid = invalid_code(invalid);
     let fns = variants
         .iter()
         .enumerate()
         .filter(|(_, v)| matches!(payload(v), Payload::Struct | Payload::Unit))
-        .map(|(index, v)| variant_fn(ident, index, v));
+        .map(|(index, v)| variant_fn(target, index, v));
+    let header = target.impl_for(&from_json, Some(&from_json));
     let arms = variants.iter().enumerate().map(|(index, v)| {
         let json = &v.name;
         let name = &v.variant.ident;
@@ -827,7 +887,7 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
     });
     quote! {
         #[automatically_derived]
-        impl #from_json for #ident {
+        #header {
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Object);
 
@@ -837,7 +897,7 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
                 let __value = match __name.as_str() {
                     #(#arms)*
                     _ => {
-                        #reader::unknown_tag(__object, __read, #tag);
+                        #reader::unknown_tag(__object, __read, #tag, #invalid);
                         return ::core::option::Option::None;
                     }
                 };
@@ -850,7 +910,11 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
 
 /// The read of an externally tagged enum: a unit variant by its name, a variant with data as
 /// `{name: payload}`.
-pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStream {
+pub(super) fn external_read(
+    target: &Target,
+    invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    variants: &[ReadVariant],
+) -> TokenStream {
     let Paths {
         node,
         read,
@@ -858,11 +922,13 @@ pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
         reader,
         ..
     } = paths();
+    let invalid = invalid_code(invalid);
     let fns = variants
         .iter()
         .enumerate()
         .filter(|(_, v)| matches!(payload(v), Payload::Struct))
-        .map(|(index, v)| variant_fn(ident, index, v));
+        .map(|(index, v)| variant_fn(target, index, v));
+    let header = target.impl_for(&from_json, Some(&from_json));
     let unit_arms = variants
         .iter()
         .filter(|v| matches!(payload(v), Payload::Unit))
@@ -890,21 +956,21 @@ pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
         });
     quote! {
         #[automatically_derived]
-        impl #from_json for #ident {
+        #header {
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                match #reader::external(__node, __read)? {
+                match #reader::external(__node, __read, #invalid)? {
                     #reader::External::Unit(__name) => match __name.as_str() {
                         #(#unit_arms)*
                         _ => {
-                            #reader::unknown_variant(__node, __read);
+                            #reader::unknown_variant(__node, __read, #invalid);
                             ::core::option::Option::None
                         }
                     },
                     #reader::External::Payload(__name, __payload) => match __name.as_str() {
                         #(#payload_arms)*
                         _ => {
-                            #reader::unknown_variant(&__payload, __read);
+                            #reader::unknown_variant(&__payload, __read, #invalid);
                             ::core::option::Option::None
                         }
                     },
@@ -912,6 +978,15 @@ pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
             }
         }
     }
+}
+
+/// The code of a value that names no variant (the enum's `schema::invalid`): `Some(&CODE)`, or
+/// `None` for the read's own words.
+fn invalid_code(invalid: Option<&(syn::Expr, proc_macro2::Span)>) -> TokenStream {
+    invalid.map_or_else(
+        || quote!(::core::option::Option::None),
+        |(code, _)| quote!(::core::option::Option::Some(&#code)),
+    )
 }
 
 /// The JSON name of a variant of a tagged enum: its `rename`, else the enum's `rename_all`.

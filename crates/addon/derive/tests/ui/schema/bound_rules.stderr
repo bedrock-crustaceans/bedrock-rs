@@ -1,0 +1,23 @@
+error: this code is what a broken bound is told as: the field needs a low bound (`min` or `above`)
+  --> tests/ui/schema/bound_rules.rs:15:13
+   |
+15 |     #[facet(schema::low_code = low())]
+   |             ^^^^^^
+
+error: this code is what a broken bound is told as: the field needs a low bound (`min` or `above`)
+  --> tests/ui/schema/bound_rules.rs:17:30
+   |
+17 |     #[facet(schema::max = 5, schema::low_code = low())]
+   |                              ^^^^^^
+
+error: `schema::kept` says the game keeps a value that breaks a bound (or a key that breaks `schema::key_with`): the field states neither
+  --> tests/ui/schema/bound_rules.rs:19:13
+   |
+19 |     #[facet(schema::kept)]
+   |             ^^^^^^
+
+error: `schema::key_with` is the rule of a map's keys: an `IndexMap`, `HashMap` or `BTreeMap` field (or an `Option` of one)
+  --> tests/ui/schema/bound_rules.rs:21:13
+   |
+21 |     #[facet(schema::key_with = refuse)]
+   |             ^^^^^^

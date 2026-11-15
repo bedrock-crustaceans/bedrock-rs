@@ -7,7 +7,7 @@ use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::FromJson;
-use bedrock_addon_core::versioning::{BeyondWidth, Reading, Scalars};
+use bedrock_addon_core::versioning::{BeyondWidth, Choices, Reading, Scalars};
 use bedrock_addon_shared_scatter::{CoordinateRange, ScatterChance, ScatterFraction};
 
 const KEEPING: Reading = Reading::DOCUMENT
@@ -15,7 +15,9 @@ const KEEPING: Reading = Reading::DOCUMENT
     .with_beyond_width(BeyondWidth::Error)
     .with_keeps_unknown(true);
 
-const NOT_KEEPING: Reading = KEEPING.with_keeps_unknown(false);
+const NOT_KEEPING: Reading = KEEPING
+    .with_keeps_unknown(false)
+    .with_choices(Choices::Whole);
 
 /// Reads `text` as `T` under `reading`: the value and each finding as `severity path code`.
 fn read<T: FromJson>(text: &str, reading: Reading) -> (Option<T>, Vec<String>) {

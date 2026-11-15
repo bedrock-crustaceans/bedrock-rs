@@ -65,6 +65,22 @@ pub struct TreeWording {
     pub range_max: &'static CodeDef<3>,
 }
 
+/// What a field says of its broken bounds (`schema::low_code`, `schema::high_code`,
+/// `schema::kept`): the code a value below the low bound or past the high one is told under, in
+/// place of the context's own wording, and whether the game logs the line and keeps the value.
+// hidden: emitted by the schema derive
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct BoundRules {
+    /// The code of a value outside the low bound (`min`, `above`), made when it is told.
+    pub low: Option<fn() -> Code>,
+    /// The code of a value outside the high bound (`max`, `below`), made when it is told.
+    pub high: Option<fn() -> Code>,
+    /// The game logs the line and goes on with the value ([`SchemaCx::kept`]): nothing fails or
+    /// resets.
+    pub kept: bool,
+}
+
 /// What a check run by the validate stage knows about the pack and the file.
 #[derive(Clone, Copy, Debug)]
 struct Loaded<'d> {
@@ -261,17 +277,21 @@ impl<'d> SchemaCx<'d> {
     /// (a default, a fallback, `None`, the other member); a required field has none, so under
     /// `DefaultAndTell` it fails its owner at that rule's severity instead of being accepted.
     pub fn range(&mut self, range: NumericRange, resettable: bool) -> Verdict {
+        let code = self.range_code(range);
+        self.broken(code, resettable)
+    }
+
+    fn range_code(&self, range: NumericRange) -> Code {
         let one_sided = range.min.is_none() || range.max.is_none();
         let text = match self.one_sided_text {
             Some(on) if one_sided => on,
             _ => self.range_text,
         };
-        let code = if text {
+        if text {
             range.code()
         } else {
             Code::from(&codes::INVALID_VALUE)
-        };
-        self.broken(code, resettable)
+        }
     }
 
     /// The member at the current path has a number outside its field's bounds: [`range`](Self::range)
@@ -279,16 +299,56 @@ impl<'d> SchemaCx<'d> {
     /// limits, which the older schema tree's wording ([`with_tree_wording`](Self::with_tree_wording))
     /// needs.
     pub fn found(&mut self, found: Found, resettable: bool) -> Verdict {
+        let code = self.found_code(found);
+        self.broken(code, resettable)
+    }
+
+    /// The code [`found`](Self::found) tells a broken bound under.
+    fn found_code(&self, found: Found) -> Code {
         let Some(tree) = self.tree else {
-            return self.range(found.range, resettable);
+            return self.range_code(found.range);
         };
         let line = match found.end {
             End::Only => &codes::OUTSIDE_RANGE,
             End::Min => tree.range_min,
             End::Max => tree.range_max,
         };
-        let code = line.with([found.value, found.low, found.high]);
+        line.with([found.value, found.low, found.high])
+    }
+
+    /// [`found`](Self::found) for a field that states what its broken bounds are told as
+    /// (`rules`): the code of the `side` the value broke where the field names one, else the
+    /// context's own; a kept bound is logged and nothing fails.
+    pub fn found_by(
+        &mut self,
+        found: Found,
+        side: super::Side,
+        rules: &BoundRules,
+        resettable: bool,
+    ) -> Verdict {
+        let own = match side {
+            super::Side::Low => rules.low,
+            super::Side::High => rules.high,
+        };
+        let code = own.map_or_else(|| self.found_code(found), |code| code());
+        if rules.kept {
+            self.kept("", code);
+            return Verdict::Keep;
+        }
         self.broken(code, resettable)
+    }
+
+    /// The key `key` of the map at the current path breaks the field's key rule
+    /// (`schema::key_with`): `code` at the member of that name, graded as a broken bound is, or
+    /// logged and kept where the rule is `kept`.
+    pub fn key(&mut self, key: &str, code: Code, kept: bool) {
+        if kept {
+            self.kept(key, code);
+            return;
+        }
+        self.enter(key);
+        self.broken(code, false);
+        self.leave();
     }
 
     /// A number a rule holds is outside `[min, max]` (a side left `None` is no limit): the

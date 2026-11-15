@@ -4,21 +4,18 @@
 use facet::Facet;
 
 use super::Description;
-use super::codes;
-use super::molang::{WORLD_GEN, Walk};
-use super::validate::Check;
+use super::molang::WORLD_GEN;
 use super::values::{CarverRange, JsonInt};
-use super::{Rules, V1_13_0, strict_struct};
-use bedrock_addon_core::diagnostic::{Code, Severity};
-use bedrock_addon_core::molang::{Molang, MolangFields, MolangVisitor};
-use bedrock_addon_core::versioning::ValidateCx;
+use super::{V1_13_0, strict_struct};
+use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// Declares one carver struct with the common members (and `replace_air_with` where given).
 macro_rules! carver {
     ($(#[$meta:meta])* $name:ident { $($(#[$extra_meta:meta])* $extra:ident),* }) => {
         $(#[$meta])*
-        #[derive(Clone, Debug, PartialEq, Facet)]
+        #[derive(Clone, Debug, PartialEq, Facet, Schema)]
         pub struct $name {
             /// JSON `description`.
             pub description: Description,
@@ -26,8 +23,10 @@ macro_rules! carver {
             pub fill_with: Option<BlockSpecifier>,
             /// A Molang expression over the `world_gen` queries scaling the tunnel width (JSON
             /// `width_modifier`).
+            #[facet(schema::molang = WORLD_GEN)]
             pub width_modifier: Option<Molang>,
             /// One in how many chunks is skipped, at least 1 (JSON `skip_carve_chance`).
+            #[facet(schema::min = 1)]
             pub skip_carve_chance: Option<JsonInt>,
             /// JSON `height_limit`.
             pub height_limit: Option<JsonInt>,
@@ -47,18 +46,6 @@ macro_rules! carver {
 
         strict_struct!($name, V1_13_0);
 
-        impl Walk for $name {
-            fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-                v.field("width_modifier", &WORLD_GEN, &mut self.width_modifier);
-            }
-        }
-
-        impl MolangFields for $name {
-            fn visit_molang(&mut self, v: &mut MolangVisitor<'_>) {
-                self.walk(v);
-            }
-        }
-
         // The blocks a carver names.
         impl super::molang::Refer for $name {
             fn refer<'a>(&'a self, out: &mut super::molang::References<'a>) {
@@ -66,47 +53,7 @@ macro_rules! carver {
                 $( out.member(stringify!($extra), &self.$extra); )*
             }
         }
-
-        impl Rules for $name {
-            fn rules(&mut self, check: &mut ValidateCx<'_>) {
-                if let Some(block) = &self.fill_with {
-                    let at = check.path("fill_with");
-                    check.diagnostics.extend(block.check(&at, Severity::Warning));
-                }
-                $(
-                    if let Some(block) = &self.$extra {
-                        let at = check.path(stringify!($extra));
-                        check.diagnostics.extend(block.check(&at, Severity::Warning));
-                    }
-                )*
-                check.int_min("skip_carve_chance", self.skip_carve_chance, 1);
-                for (key, range) in [
-                    ("y_scale", &self.y_scale),
-                    ("horizontal_radius_multiplier", &self.horizontal_radius_multiplier),
-                    ("vertical_radius_multiplier", &self.vertical_radius_multiplier),
-                    ("floor_level", &self.floor_level),
-                ] {
-                    range_rules(check, key, range.as_ref());
-                }
-            }
-        }
     };
-}
-
-/// A carver float range: its own finding, or vanilla's text for an unparsed array. The array
-/// is an error that refuses the feature: the client logs "Float range array was not parsed",
-/// the range then fails its validation, and a failed member fails the whole schema.
-fn range_rules(check: &mut ValidateCx<'_>, key: &str, range: Option<&CarverRange>) {
-    match range {
-        Some(CarverRange::Range(range)) => {
-            let at = check.path(key);
-            check.diagnostics.extend(range.check(&at));
-        }
-        Some(CarverRange::Unparsed(_)) => {
-            check.error(key, Code::from(&codes::FLOAT_RANGE_ARRAY));
-        }
-        None => {}
-    }
 }
 
 carver!(

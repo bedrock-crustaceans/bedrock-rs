@@ -78,7 +78,9 @@ use indexmap::IndexMap;
 use super::parse::{Parsed, SpanNode};
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, Span};
+use crate::diagnostic::{
+    Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity, Span,
+};
 use crate::versioning::{NullHandling, Reading, Scalars};
 
 // hidden: API not yet reviewed
@@ -505,7 +507,10 @@ pub enum Disposition {
 impl Disposition {
     /// The code of an unknown member told under this disposition: the disposition's own line,
     /// or the family's text given whole.
-    fn code(self, texts: Texts) -> Code {
+    fn code(self, texts: Texts, key: &str) -> Code {
+        if let (Self::Keep, Some(code)) = (self, texts.unknown_named) {
+            return code.with([key.to_owned()]);
+        }
         if let (Self::Keep, Some(code)) = (self, texts.unknown_code) {
             return code.into();
         }
@@ -612,6 +617,24 @@ pub struct Texts {
     /// of [`wrong_type`](Self::wrong_type): `crafting_catalog` words it as vanilla's
     /// `MalformedInput` naming both.
     pub wrong_kind: Option<WrongKind>,
+    /// The code of a missing required member, made from the member's key (`"Required child %s
+    /// not found"`), in place of [`missing`](Self::missing): the client's older schema tree words
+    /// it with the name.
+    pub missing_named: Option<&'static CodeDef<1>>,
+    /// The code an unknown member told as an `UnrecognizedField` ([`Disposition::Keep`]) is told
+    /// under, made from the member's key (`"child '%s' not valid here."`), in place of
+    /// [`unknown_code`](Self::unknown_code) and [`unknown`](Self::unknown). Its severity is the
+    /// read's ([`Read::unknown_severity`]), which the family sets to an error where its game
+    /// rejects whatever the unknown mask says.
+    pub unknown_named: Option<&'static CodeDef<1>>,
+    /// The code of an enum name that is none of its values, in place of
+    /// [`INVALID_ENUM_VALUE`](core_codes::INVALID_ENUM_VALUE).
+    pub invalid_enum: Option<&'static CodeDef<0>>,
+    /// The code every failure is told under where the reading defaults what failed
+    /// (`DefaultAndTell`), in place of its own: a lenient conversion that tells each value it
+    /// gives up with one line of its own. A missing member is then told at the object that
+    /// lacks it, the innermost value the file has there.
+    pub defaulted: Option<&'static CodeDef<0>>,
 }
 
 impl Texts {
@@ -622,6 +645,10 @@ impl Texts {
         unknown: None,
         unknown_code: None,
         wrong_kind: None,
+        missing_named: None,
+        unknown_named: None,
+        invalid_enum: None,
+        defaulted: None,
     };
 }
 
@@ -655,6 +682,8 @@ pub struct Profile {
     pub unknown: UnknownAt,
     /// When the findings that fail nothing are told.
     pub passes: Passes,
+    /// What takes its default when a value fails under `DefaultAndTell`.
+    pub recovery: Recovery,
 }
 
 /// How many failures a read tells ([`Profile::failures`]).
@@ -670,6 +699,13 @@ pub enum Failures {
     /// and tells the next one; under `DropElement` and `DropOwner` a failed element leaves its
     /// list.
     Every,
+    /// The first failure alone, as under [`First`](Self::First) (an error whatever the reading
+    /// says, a failed list element fails the list), but the read goes on past it: every later
+    /// member is read, and what fails nothing is told as if none had failed: the unknown members
+    /// and the nulls read as absent, by [`Passes::AfterRead`]; a scalar read as another value
+    /// ([`Pass::Misread`]) only of a read that did not fail. A schema validator that stops at its
+    /// first error and still checks the document's members against it: the older client's.
+    FirstOnly,
 }
 
 /// The order a struct reads the members of its object in ([`Profile::members`]).
@@ -724,6 +760,7 @@ impl Profile {
         members: MemberOrder::File,
         unknown: UnknownAt::WhereMet,
         passes: Passes::AfterRead,
+        recovery: Recovery::Member,
     };
     /// Every failure and every finding where the read meets it, in file order: a game reader
     /// that binds every member and tells each failure. [`Read::new`]'s.
@@ -732,6 +769,7 @@ impl Profile {
         members: MemberOrder::File,
         unknown: UnknownAt::WhereMet,
         passes: Passes::WhereMet,
+        recovery: Recovery::Member,
     };
     /// As [`EVERY_FAILURE`](Self::EVERY_FAILURE), an object's unknown members told before its
     /// members.
@@ -764,10 +802,35 @@ impl Profile {
         Self { passes, ..self }
     }
 
+    /// The profile giving up `recovery` when a value fails under `DefaultAndTell`.
+    #[must_use]
+    pub const fn with_recovery(self, recovery: Recovery) -> Self {
+        Self { recovery, ..self }
+    }
+
+    /// A schema validator's read: the first failure alone, then the nulls read as absent, the
+    /// unknown members told beside it and the rest of what fails nothing
+    /// ([`Failures::FirstOnly`], [`Passes::AfterRead`]).
+    pub const FIRST_THEN_PASSES: Self = Self {
+        failures: Failures::FirstOnly,
+        members: MemberOrder::File,
+        unknown: UnknownAt::WhereMet,
+        passes: Passes::AfterRead,
+        recovery: Recovery::Member,
+    };
+
     /// Whether the read stops at its first failure ([`Failures::First`]).
     #[must_use]
     pub const fn stops(self) -> bool {
         matches!(self.failures, Failures::First)
+    }
+
+    /// Whether the first failure is the only one told ([`Failures::First`] and
+    /// [`Failures::FirstOnly`]): it is an error whatever the reading says, and a failed list
+    /// element fails the list.
+    #[must_use]
+    pub const fn first_alone(self) -> bool {
+        matches!(self.failures, Failures::First | Failures::FirstOnly)
     }
 
     /// Whether the findings that fail nothing wait for the end of the read
@@ -776,6 +839,25 @@ impl Profile {
     pub const fn defers(self) -> bool {
         matches!(self.passes, Passes::AfterRead)
     }
+}
+
+/// What a read under `DefaultAndTell` gives up when a value fails ([`Profile::recovery`]), as
+/// the game's lenient reader of the document does.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Recovery {
+    /// The failed member takes its default; a failed list element or map value fails its list
+    /// or map, whose member then takes its default.
+    Member,
+    /// The innermost value that fails: a member takes its default, a list's element or a
+    /// map's entry is left out. A legacy reader that reads member by member at every level.
+    Value,
+    /// A member of the root, or an element of a list the root holds, whole: what fails below
+    /// one fails it, and it takes its default or is left out of its list. The first failure
+    /// below one is the only one told of it, and one told below it is followed by the
+    /// member or element told dropped ([`DROPPED_FIELD`](core_codes::DROPPED_FIELD), an
+    /// information). A legacy reader that reads the root's members one by one, each whole.
+    TopLevel,
 }
 
 /// The pass a finding told after the read belongs to ([`Passes::AfterRead`]), in the order the
@@ -843,6 +925,8 @@ pub struct Read<'d> {
     profile: Profile,
     /// The read met its first failure under [`Failures::First`].
     stopped: bool,
+    /// The read told its first failure under [`Failures::FirstOnly`], which is the only one.
+    told_first: bool,
     /// The findings of the passes after the read, under [`Passes::AfterRead`].
     deferred: Vec<(Pass, Diagnostic)>,
     /// The last scalar read was a member read as absent ([`Passes::AfterRead`] under
@@ -862,6 +946,15 @@ pub struct Read<'d> {
     /// The load the document is read in, for a read that hands a part of it to another reader
     /// (a component map's rows): [`load`](Self::load).
     load: Option<&'d crate::load::LoadContext>,
+    /// How many steps the path of the root read has ([`Recovery::TopLevel`]'s members and
+    /// elements are one below it).
+    root: usize,
+    /// The member or element of the root the last failure told was in, under
+    /// [`Recovery::TopLevel`].
+    told_unit: Option<JsonPath>,
+    /// The members of a range's object form that it does not read are told
+    /// ([`range_members`](Self::range_members)).
+    range_members: bool,
 }
 
 impl<'d> Read<'d> {
@@ -878,6 +971,7 @@ impl<'d> Read<'d> {
             failed: false,
             profile: Profile::EVERY_FAILURE,
             stopped: false,
+            told_first: false,
             deferred: Vec::new(),
             defaulted: false,
             field_unknown: None,
@@ -885,6 +979,9 @@ impl<'d> Read<'d> {
             map_value: false,
             member: None,
             load: None,
+            root: 0,
+            told_unit: None,
+            range_members: false,
         }
     }
 
@@ -968,6 +1065,7 @@ impl<'d> Read<'d> {
             profile: self.profile,
             // A fork of a read that has stopped reads nothing either.
             stopped: self.stopped,
+            told_first: self.told_first,
             deferred: Vec::new(),
             defaulted: false,
             field_unknown: self.field_unknown,
@@ -975,6 +1073,9 @@ impl<'d> Read<'d> {
             map_value: self.map_value,
             member: self.member,
             load: self.load,
+            root: self.root,
+            told_unit: self.told_unit.clone(),
+            range_members: self.range_members,
         }
     }
 
@@ -986,8 +1087,10 @@ impl<'d> Read<'d> {
             findings,
             failed,
             stopped,
+            told_first,
             deferred,
             defaulted,
+            told_unit,
             ..
         } = fork;
         let findings = match findings {
@@ -998,8 +1101,12 @@ impl<'d> Read<'d> {
         self.findings.get().append(findings);
         self.deferred.extend(deferred);
         self.failed |= failed;
+        self.told_first |= told_first;
         self.stopped |= stopped;
         self.defaulted |= defaulted;
+        if told_unit.is_some() {
+            self.told_unit = told_unit;
+        }
     }
 
     /// Takes `fork`'s findings and what it defers as this read's own, and nothing else: an
@@ -1047,6 +1154,12 @@ impl<'d> Read<'d> {
             if nulls && pass != Pass::Null {
                 break;
             }
+            // A read that went on past its first failure tells a converted scalar of a
+            // document that read alone.
+            if pass == Pass::Misread && self.profile.failures == Failures::FirstOnly && self.failed
+            {
+                continue;
+            }
             self.push(finding);
         }
     }
@@ -1060,11 +1173,20 @@ impl<'d> Read<'d> {
     /// [`on_member_failure`](Reading::on_member_failure) graded ([`schema::grade`](crate::schema::grade))
     /// under [`Failures::Every`], an error that fails the owner under [`Failures::First`].
     pub fn member_failure(&self) -> crate::schema::Grading {
-        if self.profile.stops() {
+        if self.profile.first_alone() {
             crate::schema::grade(crate::versioning::MemberFailure::Refuse)
         } else {
             crate::schema::grade(self.reading.on_member_failure)
         }
+    }
+
+    /// The code of an enum name that is none of the enum's values: the family's
+    /// ([`Texts::invalid_enum`]), else [`INVALID_ENUM_VALUE`](core_codes::INVALID_ENUM_VALUE).
+    // the derived reads' protocol
+    pub(crate) fn invalid_enum_code(&self) -> Code {
+        self.texts
+            .invalid_enum
+            .map_or_else(|| Code::from(&core_codes::INVALID_ENUM_VALUE), Code::from)
     }
 
     /// Whether the last scalar read was a member read as absent ([`Passes::AfterRead`] under
@@ -1146,6 +1268,72 @@ impl<'d> Read<'d> {
     // the derived reads' protocol
     pub(crate) fn keepable(&self) -> bool {
         self.unkeepable == 0
+    }
+
+    /// The read telling the members of a range's object form that the range does not read
+    /// (`{"min": 1, "a": 2}`), and the elements of a list form past its two ends, each as an
+    /// unknown member of its struct's word `report` (told, not kept): a family whose game
+    /// reader tells them.
+    #[must_use]
+    pub fn range_members(mut self) -> Self {
+        self.range_members = true;
+        self
+    }
+
+    /// Whether the read tells the members a range does not read ([`range_members`](Self::range_members)).
+    pub fn tells_range_members(&self) -> bool {
+        self.range_members
+    }
+
+    /// Marks `node` as the root of the read: [`Recovery::TopLevel`]'s members and elements
+    /// are one step below it.
+    // the root read's protocol
+    pub(crate) fn set_root(&mut self, node: &Node<'_>) {
+        self.root = node.path.len();
+    }
+
+    /// Whether a failed member at a path of `depth` steps takes its default: the reading's
+    /// grading ([`member_failure`](Self::member_failure)), and under [`Recovery::TopLevel`]
+    /// only a member of the root.
+    // the derived reads' protocol
+    pub(crate) fn resets_at(&self, depth: usize) -> bool {
+        self.member_failure().resets
+            && (self.profile.recovery != Recovery::TopLevel || depth == self.root + 1)
+    }
+
+    /// Whether the reading defaults a failed value (`DefaultAndTell`), which the read does not
+    /// stop at.
+    fn defaults(&self) -> bool {
+        self.member_failure().resets
+    }
+
+    /// Whether a failed element of the list or a failed value of the map at `node` is left out
+    /// under `DefaultAndTell`: under [`Recovery::Value`], and under [`Recovery::TopLevel`] for
+    /// a list that is a member of the root.
+    // the containers' protocol
+    pub(crate) fn defaults_drop(&self, node: &Node<'_>, list: bool) -> bool {
+        self.defaults()
+            && match self.profile.recovery {
+                Recovery::Member => false,
+                Recovery::Value => true,
+                Recovery::TopLevel => list && node.path.len() == self.root + 1,
+            }
+    }
+
+    /// The member or element of the root `path` is in ([`Recovery::TopLevel`]): the root's
+    /// member, or the element of a list there; `None` for the root itself.
+    fn unit_of(&self, path: &JsonPath) -> Option<JsonPath> {
+        let steps: Vec<JsonPathSegment<'_>> = path.segments().collect();
+        let member = steps.get(self.root)?;
+        let mut unit = JsonPath::new();
+        for step in &steps[..self.root] {
+            push_step(&mut unit, *step);
+        }
+        push_step(&mut unit, *member);
+        if let Some(JsonPathSegment::Index(index)) = steps.get(self.root + 1) {
+            unit.push_index(*index);
+        }
+        Some(unit)
     }
 
     /// The read with `texts` for its findings.
@@ -1346,11 +1534,42 @@ impl<'d> Read<'d> {
             return;
         }
         let grading = self.member_failure();
+        self.failed |= grading.fails_owner;
+        if self.silent_failure() {
+            return;
+        }
+        let code = match self.texts.defaulted {
+            Some(defaulted) if grading.resets => Code::from(defaulted),
+            _ => code,
+        };
+        let dropped = if grading.resets && self.profile.recovery == Recovery::TopLevel {
+            let unit = self.unit_of(&path);
+            if unit.is_some() && unit == self.told_unit {
+                // A failure of the member or element whose first failure is told.
+                return;
+            }
+            self.told_unit.clone_from(&unit);
+            unit.filter(|unit| unit.len() < path.len())
+        } else {
+            None
+        };
         let mut finding = Diagnostic::error(code).severity(grading.severity).at(path);
         finding.location.span = span;
-        self.failed |= grading.fails_owner;
         self.push(finding);
+        if let Some(unit) = dropped {
+            // The member or element goes whole for the value inside it: told at it too.
+            self.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(unit));
+        }
         self.stopped = self.profile.stops();
+    }
+
+    /// Whether a failure is the one a [`Failures::FirstOnly`] read already told: it fails its
+    /// owner and is not told. Marks the first.
+    fn silent_failure(&mut self) -> bool {
+        if self.profile.failures != Failures::FirstOnly {
+            return false;
+        }
+        std::mem::replace(&mut self.told_first, true)
     }
 
     /// Tells that `node` holds a value its member refuses, with `code` (`INVALID_VALUE`, an
@@ -1381,6 +1600,36 @@ impl<'d> Read<'d> {
         self.fail(code, node.path.clone(), node.span());
     }
 
+    /// Tells that `node` is a value its enum has no variant for, under `code` (the enum's
+    /// `schema::invalid`), graded as every failed member is: as the typed door tells a variant
+    /// lookup, at the member the value belongs to (a list's elements at the list's path), over
+    /// the value.
+    // the derived reads' protocol
+    pub(crate) fn refuse_variant(&mut self, node: &Node<'_>, code: &'static CodeDef<0>) {
+        let mut at = node.path.clone();
+        while at
+            .segments()
+            .last()
+            .is_some_and(|step| matches!(step, JsonPathSegment::Index(_)))
+        {
+            at.pop();
+        }
+        self.fail(Code::from(code), at, node.span());
+    }
+
+    /// Tells that the element `node` could not be read and is left out, with `code` in place of
+    /// its own findings (`schema::skip_code`): graded as a failed member is, at the element, over
+    /// its value.
+    // the derived reads' protocol
+    pub(crate) fn skipped(&mut self, node: &Node<'_>, code: Code) {
+        let grading = self.member_failure();
+        let mut finding = Diagnostic::error(code)
+            .severity(grading.severity)
+            .at(node.path.clone());
+        finding.location.span = node.span();
+        self.push(finding);
+    }
+
     /// Tells `finding` as a failed member, at its own path, span and code, graded as
     /// [`refuse`](Self::refuse) grades: for a reader that builds the finding itself (the bridge
     /// to facet's read, a leaf's own detail).
@@ -1388,9 +1637,16 @@ impl<'d> Read<'d> {
         if self.stopped {
             return;
         }
+        if self.defaults() {
+            let span = finding.location.span;
+            return self.fail(finding.code, finding.location.json_path, span);
+        }
         let grading = self.member_failure();
         let finding = finding.severity(grading.severity);
         self.failed |= grading.fails_owner;
+        if self.silent_failure() {
+            return;
+        }
         self.push(finding);
         self.stopped = self.profile.stops();
     }
@@ -1617,16 +1873,27 @@ impl<'d> Read<'d> {
     /// Tells that the member `key` of `members` is required and missing, with `code` (a
     /// field's `schema::missing`).
     pub(crate) fn missing_member_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
-        self.fail(code, members.node.path.child(key), members.node.span());
+        self.fail(code, self.missing_at(members, key), members.node.span());
+    }
+
+    /// Where a missing member `key` of `members` is told: at it, or at the object that lacks it
+    /// where the read words a defaulted failure as one ([`Texts::defaulted`]).
+    fn missing_at(&self, members: &Members<'_>, key: &str) -> JsonPath {
+        if self.texts.defaulted.is_some() && self.defaults() {
+            members.node.path.clone()
+        } else {
+            members.node.path.child(key)
+        }
     }
 
     /// Tells that the member `key` of `members` is required and missing.
     fn missing(&mut self, members: &Members<'_>, key: &str) {
-        let code = self.texts.missing.map_or_else(
-            || Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-            |text| core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
-        );
-        self.fail(code, members.node.path.child(key), members.node.span());
+        let code = match (self.texts.missing_named, self.texts.missing) {
+            (Some(named), _) => named.with([key.to_owned()]),
+            (None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
+            (None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+        };
+        self.fail(code, self.missing_at(members, key), members.node.span());
     }
 
     /// Tells every member of `members` that `known` does not name, in file order, under
@@ -1697,7 +1964,7 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error x member read and not kept", "Error identifier wrong JSON type"]);
     /// ```
     pub fn unknown_member(&mut self, node: &Node<'_>, disposition: Disposition) {
-        let code = disposition.code(self.texts);
+        let code = disposition.code(self.texts, node.path.last_key().unwrap_or_default());
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
@@ -1735,7 +2002,7 @@ impl<'d> Read<'d> {
             UnknownRule::Ignore => Disposition::Ignore,
             UnknownRule::Component => Disposition::Component,
         };
-        let code = disposition.code(self.texts);
+        let code = disposition.code(self.texts, node.path.last_key().unwrap_or_default());
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
@@ -1873,6 +2140,14 @@ impl<'d> Read<'d> {
             self.wrong_kind(node, Expected::Number);
         }
         read
+    }
+}
+
+/// `path` with `step` after it.
+fn push_step(path: &mut JsonPath, step: JsonPathSegment<'_>) {
+    match step {
+        JsonPathSegment::Key(key) => path.push(key),
+        JsonPathSegment::Index(index) => path.push_index(index),
     }
 }
 

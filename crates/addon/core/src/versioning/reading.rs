@@ -82,6 +82,21 @@ pub enum Strings {
     AsString,
 }
 
+/// How a member that is one of several JSON forms (a leaf of a shared type: `scatter_chance`,
+/// a scatter coordinate) is read ([`Reading::choices`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Choices {
+    /// The form it is is read member by member, by the slice's own rules for each: a struct form
+    /// is a struct whose members are read and whose unknown ones are the slice's (kept where
+    /// it keeps them), a number beyond its float is refused where it stands. A feature rule's.
+    ByMember,
+    /// The game's conversion of the whole member: a struct form with a member it does not take
+    /// is no form of it, a wrong type at the member, and a number beyond its float is read as
+    /// the largest finite float of its sign and told. The scatter feature's.
+    Whole,
+}
+
 /// What a member that fails to read does to what holds it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -124,6 +139,10 @@ pub struct Reading {
     /// How a string member reads a value of another JSON type. Not in the reading tables:
     /// `ByScalars` in every profile, and no versioned slice reads otherwise.
     pub strings: Strings,
+    /// How a member that is one of several JSON forms is read. Not in the reading tables:
+    /// `ByMember` in every profile, and only a slice of a family that shares such a leaf with
+    /// another says `Whole`.
+    pub choices: Choices,
 }
 
 impl Reading {
@@ -141,6 +160,7 @@ impl Reading {
         components_fatal: true,
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
+        choices: Choices::ByMember,
     };
     /// The `JsonCpp` families (entity, features, the legacy item): a `null` member is
     /// absent, an unknown member a warning.
@@ -153,6 +173,7 @@ impl Reading {
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
+        choices: Choices::ByMember,
     };
     /// A slice whose reader is the family's own (`FirstRun`, a hand-written legacy slice):
     /// no null rule, an unknown member a warning.
@@ -165,6 +186,7 @@ impl Reading {
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
         strings: Strings::ByScalars,
+        choices: Choices::ByMember,
     };
     /// The reading with `null` read as `null`.
     #[must_use]
@@ -218,6 +240,12 @@ impl Reading {
         Self { strings, ..self }
     }
 
+    /// The reading with the members that are one of several forms read as `choices`.
+    #[must_use]
+    pub const fn with_choices(self, choices: Choices) -> Self {
+        Self { choices, ..self }
+    }
+
     /// The reading with a failed member doing `failure`.
     #[must_use]
     pub const fn with_on_member_failure(self, failure: MemberFailure) -> Self {
@@ -265,6 +293,14 @@ mod tests {
     fn the_unknown_mask_gives_the_severity_of_an_unknown_member() {
         assert_eq!(UnknownMask::Error.severity(), Severity::Error);
         assert_eq!(UnknownMask::Warn.severity(), Severity::Warning);
+    }
+
+    #[test]
+    fn a_profile_reads_its_choice_members_by_member_and_a_slice_may_say_whole() {
+        for reading in [Reading::DOCUMENT, Reading::NULL_ABSENT, Reading::OWN] {
+            assert_eq!(reading.choices, Choices::ByMember);
+            assert_eq!(reading.with_choices(Choices::Whole).choices, Choices::Whole);
+        }
     }
 
     #[test]

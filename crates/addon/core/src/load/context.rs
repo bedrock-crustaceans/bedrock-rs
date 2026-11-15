@@ -95,6 +95,11 @@ pub struct LoadContext {
     /// is missing, under both of the game's log masks. Set by the versioning
     /// load from `Reading::components_fatal`; `false` outside it, for `JsonCpp` slices and for a family's hand-written slices.
     pub strict_components: bool,
+    /// The format version the document being read is written at, for a part read apart from
+    /// its document (a component, `versioning::read_component`): set by
+    /// `versioning::read_component_map` from the read's versions, so a member of a component
+    /// `schema::since_format` a later version is an unknown one; `None` outside it.
+    pub document_format: Option<FormatVersion>,
     /// What the document's bytes were before the loader read them: JSON text, or a
     /// binary `\x7FMCB` document the stack turned into text. The game reads an MCB as a
     /// binary input: no null rule, no JSON size check, and the item loader's MCB path meets the
@@ -138,6 +143,7 @@ impl fmt::Debug for LoadContext {
             .field("keeps_unknown", &self.keeps_unknown)
             .field("reading", &self.reading)
             .field("strict_components", &self.strict_components)
+            .field("document_format", &self.document_format)
             .field("source", &self.source)
             .field("max_json_document_bytes", &self.max_json_document_bytes)
             .field("built_ins", &present(self.built_ins.is_some()))
@@ -229,6 +235,7 @@ impl LoadContext {
             keeps_unknown: false,
             reading: crate::versioning::Reading::OWN,
             strict_components: false,
+            document_format: None,
             source: DocumentSource::Json,
             max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,
             built_ins: options.built_ins.clone(),

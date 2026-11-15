@@ -180,6 +180,23 @@ fn an_event_trigger_field_is_a_trigger_member() {
     assert_eq!(Boss::triggers(), ["on_x"]);
 }
 
+/// A struct that is an event trigger itself (an entity's `on_hurt` component).
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::trigger)]
+struct OnHurt {
+    #[facet(default = String::new())]
+    event: String,
+    on_x: Option<EventTrigger>,
+}
+
+#[test]
+fn a_struct_marked_trigger_is_its_own_trigger_member_before_its_fields() {
+    assert_eq!(OnHurt::triggers(), ["", "on_x"]);
+    let mut out = Vec::new();
+    OnHurt::trigger_members("minecraft:on_hurt", &mut out);
+    assert_eq!(out, ["minecraft:on_hurt", "minecraft:on_hurt.on_x"]);
+}
+
 #[test]
 fn a_struct_with_no_required_field_gets_default_and_getters_answer_the_fallback() {
     let door = BreakDoor::default();
@@ -1716,4 +1733,730 @@ fn leaves_with_findings_of_their_own_are_told_only_where_the_family_opts_in() {
     assert_eq!(cx.unknown_severity(), Severity::Error);
     let cx = cx.with_leaf_findings(true);
     assert!(cx.leaf_findings());
+}
+
+// ---- the derive on a generic type -------------------------------------------------------------
+
+/// A generic type with keys of every kind: a marker, a string, a number, a field name.
+#[derive(Facet)]
+pub struct Keyed<T> {
+    #[facet(schema::since_format = "1.20.0", schema::min = 1)]
+    pub a: Option<u8>,
+    #[facet(schema::required, schema::unknown = "keep")]
+    pub b: Option<u8>,
+    pub data: T,
+}
+
+/// facet routes the keys of a generic type through arms the grammar's macro writes for few kinds
+/// of key, and its fallback for the others resolves to facet's own macro: every key but a
+/// few was "unknown attribute" on a generic type until core's `schema::__attr` took the marker off.
+#[test]
+fn a_key_of_every_kind_is_the_grammars_on_a_generic_type() {
+    let Type::User(UserType::Struct(st)) = <Keyed<u8>>::SHAPE.ty else {
+        panic!("a struct");
+    };
+    let has = |field: usize, key: &str| st.fields[field].has_attr(Some("schema"), key);
+    assert!(has(0, "since_format") && has(0, "min"));
+    assert!(has(1, "required") && has(1, "unknown"));
+}
+
+/// `{"weight", "data"}`, the weight bound to 1 or more.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Weighted<T> {
+    #[facet(schema::min = 1)]
+    pub weight: u32,
+    pub data: T,
+}
+
+/// A value and the triggers a list of it holds.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Slots<T> {
+    pub on_fill: Option<EventTrigger>,
+    pub items: Vec<T>,
+    pub extra: Option<T>,
+}
+
+/// A struct nothing is required of, so it has a `Default`.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Maybe<T> {
+    pub value: Option<T>,
+}
+
+/// A transparent newtype around its parameter.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(transparent)]
+pub struct Wrapped<T>(pub T);
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(untagged)]
+#[repr(u8)]
+pub enum OneOf<A, B> {
+    Left(A),
+    Right(B),
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "kind")]
+#[repr(u8)]
+pub enum Tagged<T> {
+    #[facet(rename = "one")]
+    One { value: T },
+    #[facet(rename = "none")]
+    None,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[repr(u8)]
+pub enum External<T> {
+    #[facet(rename = "wrap")]
+    Wrap(T),
+    #[facet(rename = "plain")]
+    Plain,
+}
+
+/// A derive on a generic type: each impl bounds the type parameters by what the fields' types
+/// need (`FromJson` for the read, `SchemaFields` for the check and the trigger list,
+/// `MolangFields` for the Molang walk).
+mod generics {
+    use super::{External, Maybe, OneOf, Slots, Tagged, Weighted, Wrapped};
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx};
+    use bedrock_addon_core::versioning::Reading;
+
+    fn read<T: FromJson>(text: &str) -> (Option<T>, Diagnostics) {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        let value = {
+            let mut reader = Read::new(Reading::DOCUMENT, &mut found);
+            T::from_json(&Node::new(&json, JsonPath::new()), &mut reader)
+        };
+        (value, found)
+    }
+
+    fn told(found: &Diagnostics) -> Vec<String> {
+        found
+            .iter()
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
+            .collect()
+    }
+
+    #[test]
+    fn a_generic_struct_reads_its_parameter_as_its_field() {
+        let (value, found) = read::<Weighted<String>>(r#"{"weight": 3, "data": "x"}"#);
+        assert_eq!(
+            value,
+            Some(Weighted {
+                weight: 3,
+                data: "x".to_owned()
+            })
+        );
+        assert!(found.is_empty());
+        // The parameter's own findings are told at its member.
+        let (value, found) = read::<Weighted<u8>>(r#"{"weight": 3, "data": "x"}"#);
+        assert_eq!(value, None);
+        assert_eq!(told(&found), ["core/invalid_type data"]);
+        // A list of them: the instantiation is the list's.
+        let (value, _) = read::<Vec<Weighted<Vec<u8>>>>(
+            r#"[{"weight": 1, "data": [1, 2]}, {"weight": 2, "data": []}]"#,
+        );
+        assert_eq!(value.map(|list| list.len()), Some(2));
+    }
+
+    #[test]
+    fn a_generic_struct_names_what_is_missing_and_what_is_unknown() {
+        let (value, found) = read::<Weighted<u8>>(r#"{"weight": 3, "zz": 1}"#);
+        assert_eq!(value, None);
+        let told = told(&found);
+        assert!(
+            told.iter()
+                .any(|t| t.starts_with("core/unrecognized_field")),
+            "{told:?}"
+        );
+        assert!(
+            told.iter()
+                .any(|t| t.starts_with("core/missing_required_field")),
+            "{told:?}"
+        );
+    }
+
+    #[test]
+    fn a_generic_struct_checks_its_bounds_and_walks_into_its_parameter() {
+        let mut value = Weighted {
+            weight: 0,
+            data: Weighted {
+                weight: 0,
+                data: 1u8,
+            },
+        };
+        let mut out = Diagnostics::default();
+        let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out);
+        value.check(&mut cx);
+        assert_eq!(
+            told(&out),
+            [
+                "core/invalid_value weight",
+                "core/invalid_value data/weight"
+            ]
+        );
+    }
+
+    #[test]
+    fn a_generic_struct_lists_the_triggers_of_its_parameter() {
+        assert_eq!(Slots::<u8>::triggers(), ["on_fill"]);
+        assert_eq!(Weighted::<Slots<u8>>::triggers(), ["data.on_fill"]);
+        assert_eq!(
+            Slots::<Slots<u8>>::triggers(),
+            ["on_fill", "items[].on_fill", "extra.on_fill"]
+        );
+    }
+
+    #[test]
+    fn a_generic_struct_with_nothing_required_has_a_default() {
+        assert_eq!(Maybe::<u8>::default(), Maybe { value: None });
+        let (value, _) = read::<Maybe<u8>>("{}");
+        assert_eq!(value, Some(Maybe::default()));
+    }
+
+    #[test]
+    fn a_generic_transparent_newtype_reads_as_its_parameter() {
+        let (value, found) = read::<Wrapped<u8>>("7");
+        assert_eq!(value, Some(Wrapped(7)));
+        assert!(found.is_empty());
+    }
+
+    #[test]
+    fn a_generic_untagged_enum_takes_the_arm_the_value_fits() {
+        let (value, _) = read::<OneOf<bool, String>>("true");
+        assert_eq!(value, Some(OneOf::Left(true)));
+        let (value, _) = read::<OneOf<bool, String>>(r#""x""#);
+        assert_eq!(value, Some(OneOf::Right("x".to_owned())));
+    }
+
+    #[test]
+    fn a_generic_tagged_enum_reads_its_variant_beside_the_tag() {
+        let (value, _) = read::<Tagged<u8>>(r#"{"kind": "one", "value": 4}"#);
+        assert_eq!(value, Some(Tagged::One { value: 4 }));
+        let (value, _) = read::<Tagged<u8>>(r#"{"kind": "none"}"#);
+        assert_eq!(value, Some(Tagged::None));
+    }
+
+    #[test]
+    fn a_generic_externally_tagged_enum_reads_its_payload() {
+        let (value, _) = read::<External<u8>>(r#"{"wrap": 4}"#);
+        assert_eq!(value, Some(External::Wrap(4)));
+        let (value, _) = read::<External<u8>>(r#""plain""#);
+        assert_eq!(value, Some(External::Plain));
+    }
+}
+
+// ---- a value that names no variant: the enum's own code ---------------------------------------
+
+/// An internally tagged enum that tells a tag naming no variant as an enum value.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "type", schema::invalid = codes::INVALID_ENUM_VALUE)]
+#[repr(u8)]
+pub enum Coded {
+    #[facet(rename = "dot")]
+    Dot,
+    #[facet(rename = "box")]
+    Box { size: u8 },
+}
+
+/// The same enum without the key: the door's wrong type.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "type")]
+#[repr(u8)]
+pub enum Uncoded {
+    #[facet(rename = "dot")]
+    Dot,
+    #[facet(rename = "box")]
+    Box { size: u8 },
+}
+
+/// An externally tagged enum that tells every value naming no variant as an enum value.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::invalid = codes::INVALID_ENUM_VALUE)]
+#[repr(u8)]
+pub enum Vertical {
+    #[facet(rename = "absolute")]
+    Absolute(i32),
+    #[facet(rename = "above_bedrock")]
+    AboveBedrock(i32),
+}
+
+/// An untagged enum that tells a whole number no arm takes as an invalid value.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(untagged, schema::invalid = codes::INVALID_VALUE)]
+#[repr(u8)]
+pub enum Amount {
+    Exact(u32),
+    Range { min: Option<u32> },
+}
+
+/// A document that needs its anchor: a `null` there is no `Option`'s.
+#[derive(Debug, PartialEq, Facet, Schema)]
+pub struct Anchored {
+    anchor: Vertical,
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+pub struct Holds {
+    keyed: Option<Coded>,
+    keyed_list: Option<Vec<Coded>>,
+    plain: Option<Uncoded>,
+    anchor: Option<Vertical>,
+    anchors: Option<Vec<Vertical>>,
+    count: Option<Amount>,
+}
+
+mod invalid {
+    use super::{Anchored, Holds};
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::FromJson;
+    use bedrock_addon_core::versioning::{Reading, Scalars};
+
+    /// What `text` read as a `T` under `reading` tells, `code path`.
+    fn told_as<T: FromJson>(reading: Reading, text: &str) -> Vec<String> {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        {
+            let mut read = Read::new(reading, &mut found);
+            T::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+        }
+        found
+            .iter()
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
+            .collect()
+    }
+
+    fn told(reading: Reading, text: &str) -> Vec<String> {
+        told_as::<Holds>(reading, text)
+    }
+
+    fn document(text: &str) -> Vec<String> {
+        told(Reading::DOCUMENT, text)
+    }
+
+    #[test]
+    fn a_tag_that_names_no_variant_is_the_enums_code_at_its_member() {
+        assert_eq!(
+            document(r#"{"keyed": {"type": "ring"}}"#),
+            ["core/invalid_enum_value keyed"]
+        );
+        // Without the key it is the door's wrong type.
+        assert_eq!(
+            document(r#"{"plain": {"type": "ring"}}"#),
+            ["core/invalid_type plain"]
+        );
+        // A missing or non-string tag is still a missing member (at the tag).
+        assert_eq!(
+            document(r#"{"keyed": {"size": 1}}"#),
+            ["core/missing_required_field keyed/type"]
+        );
+    }
+
+    #[test]
+    fn the_code_of_a_list_element_is_told_at_the_list_as_the_door_tells_it() {
+        assert_eq!(
+            document(r#"{"keyed_list": [{"type": "dot"}, {"type": "ring"}]}"#),
+            ["core/invalid_enum_value keyed_list"]
+        );
+    }
+
+    #[test]
+    fn a_scalar_given_to_an_externally_tagged_enum_names_no_variant() {
+        assert_eq!(
+            told_as::<Anchored>(Reading::DOCUMENT, r#"{"anchor": null}"#),
+            ["core/invalid_enum_value anchor"]
+        );
+        for scalar in ["5", "true", r#""relative""#] {
+            assert_eq!(
+                document(&format!(r#"{{"anchor": {scalar}}}"#)),
+                ["core/invalid_enum_value anchor"],
+                "{scalar}"
+            );
+        }
+        assert_eq!(
+            document(r#"{"anchor": {"relative": 1}}"#),
+            ["core/invalid_enum_value anchor/relative"]
+        );
+        // An array, or an object of several members, is the wrong type it is.
+        assert_eq!(document(r#"{"anchor": []}"#), ["core/invalid_type anchor"]);
+        assert_eq!(
+            document(r#"{"anchor": {"absolute": 1, "above_bedrock": 2}}"#),
+            ["core/invalid_type anchor"]
+        );
+        assert_eq!(
+            document(r#"{"anchors": [{"absolute": 1}, 7]}"#),
+            ["core/invalid_enum_value anchors"]
+        );
+    }
+
+    #[test]
+    fn a_negative_whole_number_no_arm_takes_is_the_enums_code() {
+        let strict = Reading::DOCUMENT.with_scalars(Scalars::Strict);
+        assert_eq!(
+            told(strict, r#"{"count": -1}"#),
+            ["core/invalid_value count"]
+        );
+        // A real, a string, a bool and a number beyond the arm's width are the wrong type they
+        // are.
+        for token in ["0.5", r#""3""#, "true", "4294967296"] {
+            assert_eq!(
+                told(strict, &format!(r#"{{"count": {token}}}"#)),
+                ["core/invalid_type count"],
+                "{token}"
+            );
+        }
+        assert!(told(strict, r#"{"count": 3}"#).is_empty());
+    }
+}
+
+// ---- the unknown members of a map's values ----------------------------------------------------
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Entry {
+    level: Option<u8>,
+}
+
+/// Two maps of the same structs: one says `keep`, the other nothing.
+#[derive(Debug, PartialEq, Facet, Schema)]
+pub struct Registry {
+    #[facet(schema::unknown = "keep")]
+    kept: Option<IndexMap<String, Entry>>,
+    told: Option<IndexMap<String, Entry>>,
+}
+
+mod map_values {
+    use super::Registry;
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::FromJson;
+    use bedrock_addon_core::versioning::Reading;
+
+    /// `(findings, kept members)` of `text` read as a `Registry`.
+    fn read(text: &str) -> (Vec<String>, Vec<String>) {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        {
+            let mut read = Read::new(Reading::DOCUMENT, &mut found);
+            Registry::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+        }
+        let told = found
+            .iter()
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
+            .collect();
+        let kept = found
+            .unknown()
+            .iter()
+            .map(|(at, key, value)| format!("{at}/{key}={value:?}"))
+            .collect();
+        (told, kept)
+    }
+
+    #[test]
+    fn a_map_field_that_says_keep_keeps_its_values_unknown_members_at_their_path() {
+        let (told, kept) = read(r#"{"kept": {"a": {"level": 1, "zz": 5}, "b": {"yy": null}}}"#);
+        assert_eq!(
+            told,
+            [
+                "core/unrecognized_field kept/a/zz",
+                "core/unrecognized_field kept/b/yy"
+            ]
+        );
+        assert_eq!(kept, ["kept/a/zz=5", "kept/b/yy=null"]);
+    }
+
+    #[test]
+    fn a_map_field_that_says_nothing_tells_them_and_keeps_none() {
+        let (told, kept) = read(r#"{"told": {"a": {"level": 1, "zz": 5}}}"#);
+        assert_eq!(told, ["core/unrecognized_field told/a/zz"]);
+        assert!(kept.is_empty(), "{kept:?}");
+    }
+}
+
+// ---- a bound's own code and kept, the bounds of a map's values, a map's key rule --------------
+
+fn negative() -> bedrock_addon_core::diagnostic::Code {
+    codes::INVALID_VALUE_WORDED.with(["negative"])
+}
+
+fn refuse_dots(key: &str) -> Option<bedrock_addon_core::diagnostic::Code> {
+    key.contains('.')
+        .then(|| bedrock_addon_core::diagnostic::Code::from(&codes::INVALID_VALUE))
+}
+
+/// A priority: 0 to 100, a value below 0 told as its own line and the game keeping a value of 1
+/// or more.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Priorities {
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative())]
+    pub each: Option<IndexMap<String, i32>>,
+    #[facet(schema::min = 0, schema::max = 100, schema::low_code = negative(), schema::fallback = 1)]
+    pub default: Option<i32>,
+    /// Below 1, told as a kept error.
+    #[facet(schema::below = 1.0, schema::high_code = negative(), schema::kept)]
+    pub ratio: Option<f32>,
+    #[facet(schema::key_with = refuse_dots)]
+    pub names: Option<IndexMap<String, u8>>,
+    #[facet(schema::key_with = refuse_dots, schema::kept)]
+    pub tags: Option<IndexMap<String, u8>>,
+}
+
+fn priorities() -> Priorities {
+    Priorities {
+        each: None,
+        default: None,
+        ratio: None,
+        names: None,
+        tags: None,
+    }
+}
+
+mod bound_rules {
+    use super::{Priorities, priorities};
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+    use bedrock_addon_core::schema::{Schema, SchemaCx};
+    use bedrock_addon_core::versioning::{MemberFailure, Reading};
+    use indexmap::IndexMap;
+
+    fn told(value: &mut Priorities, failure: MemberFailure) -> Vec<String> {
+        let mut out = Diagnostics::default();
+        let reading = Reading::DOCUMENT.with_on_member_failure(failure);
+        let mut cx = SchemaCx::new(reading, JsonPath::new(), &mut out).with_range_text(true);
+        value.check(&mut cx);
+        out.iter()
+            .map(|d| {
+                format!(
+                    "{:?}{} {} {}",
+                    d.severity,
+                    if d.kept { " kept" } else { "" },
+                    d.code.id(),
+                    d.location.json_path
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn each_end_of_a_bound_is_told_under_its_own_code_or_the_contexts() {
+        let mut value = Priorities {
+            default: Some(-1),
+            ..priorities()
+        };
+        assert_eq!(
+            told(&mut value, MemberFailure::Refuse),
+            ["Error core/invalid_value_worded default"]
+        );
+        // The high end has no code of its own: the range's.
+        value.default = Some(101);
+        assert_eq!(
+            told(&mut value, MemberFailure::Refuse),
+            ["Error core/outside_accepted_range default"]
+        );
+        value.default = Some(100);
+        assert!(told(&mut value, MemberFailure::Refuse).is_empty());
+    }
+
+    #[test]
+    fn the_bounds_of_a_map_apply_to_each_value_at_its_key() {
+        let mut value = Priorities {
+            each: Some(IndexMap::from([
+                ("a".to_owned(), -1),
+                ("b".to_owned(), 5),
+                ("c".to_owned(), 200),
+                ("d".to_owned(), -2),
+            ])),
+            ..priorities()
+        };
+        assert_eq!(
+            told(&mut value, MemberFailure::Refuse),
+            [
+                "Error core/invalid_value_worded each/a",
+                "Error core/outside_accepted_range each/c",
+                "Error core/invalid_value_worded each/d",
+            ]
+        );
+        // Under DefaultAndTell the field takes its reset, as a list's does.
+        assert_eq!(
+            told(&mut value, MemberFailure::DefaultAndTell).len(),
+            3,
+            "every value is told"
+        );
+        assert_eq!(value.each, None);
+    }
+
+    #[test]
+    fn a_kept_bound_is_a_kept_error_that_fails_and_resets_nothing() {
+        let mut value = Priorities {
+            ratio: Some(1.5),
+            ..priorities()
+        };
+        assert_eq!(
+            told(&mut value, MemberFailure::DefaultAndTell),
+            ["Error kept core/invalid_value_worded ratio"]
+        );
+        assert_eq!(value.ratio, Some(1.5));
+        let mut out = Diagnostics::default();
+        let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out);
+        value.check(&mut cx);
+        assert!(!cx.failed());
+        assert!(out.iter().all(|d| d.severity == Severity::Error));
+    }
+
+    #[test]
+    fn a_key_the_rule_refuses_is_one_finding_at_the_member_of_that_name() {
+        let mut value = Priorities {
+            names: Some(IndexMap::from([
+                ("ok".to_owned(), 1),
+                ("a.b".to_owned(), 2),
+                ("c.d".to_owned(), 3),
+            ])),
+            tags: Some(IndexMap::from([("x.y".to_owned(), 1)])),
+            ..priorities()
+        };
+        assert_eq!(
+            told(&mut value, MemberFailure::Refuse),
+            [
+                "Error core/invalid_value names/a.b",
+                "Error core/invalid_value names/c.d",
+                "Error kept core/invalid_value tags/x.y",
+            ]
+        );
+    }
+}
+
+// ---- a list element left out, told as a code of the list's own --------------------------------
+
+fn section_skipped() -> bedrock_addon_core::diagnostic::Code {
+    bedrock_addon_core::diagnostic::Code::from(&codes::INVALID_VALUE)
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Section {
+    name: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Credits {
+    #[facet(schema::elements = "drop", schema::skip_code = section_skipped())]
+    skipped: Vec<Section>,
+    #[facet(schema::elements = "drop")]
+    dropped: Vec<Section>,
+}
+
+mod skip_code {
+    use super::{Credits, Section};
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Profile, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::FromJson;
+    use bedrock_addon_core::versioning::{MemberFailure, Reading};
+
+    fn read(text: &str, failure: MemberFailure) -> (Option<Credits>, Vec<String>) {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        let value = {
+            let reading = Reading::DOCUMENT.with_on_member_failure(failure);
+            let mut read = Read::new(reading, &mut found).profile(Profile::EVERY_FAILURE);
+            Credits::from_json(&Node::new(&json, JsonPath::new()), &mut read)
+        };
+        let told = found
+            .iter()
+            .map(|d| format!("{:?} {} {}", d.severity, d.location.json_path, d.code.id()))
+            .collect();
+        (value, told)
+    }
+
+    const TEXT: &str = r#"{"skipped": [{"name": "a"}, 5, {"name": [1]}, {"name": "b"}],
+        "dropped": [{"name": "a"}, 5, {"name": "b"}]}"#;
+
+    fn names(sections: &[Section]) -> Vec<&str> {
+        sections
+            .iter()
+            .map(|section| section.name.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn an_element_that_fails_is_left_out_and_told_as_the_lists_code_alone() {
+        let (value, told) = read(TEXT, MemberFailure::Refuse);
+        let value = value.expect("a list that skips fails nothing");
+        assert_eq!(names(&value.skipped), ["a", "b"]);
+        assert_eq!(names(&value.dropped), ["a", "b"]);
+        assert_eq!(
+            told,
+            [
+                "Error skipped/1 core/invalid_value",
+                "Error skipped/2 core/invalid_value",
+                // The list that only drops tells the element's own finding.
+                "Error dropped/1 core/invalid_type",
+            ]
+        );
+    }
+
+    #[test]
+    fn the_code_is_graded_as_a_failed_member_is() {
+        let (value, told) = read(TEXT, MemberFailure::DefaultAndTell);
+        assert!(value.is_some());
+        assert_eq!(told[0], "Info skipped/1 core/invalid_value");
+    }
+}
+
+// ---- a negative number given to an unsigned member ---------------------------------------------
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Quota {
+    #[facet(schema::negative = codes::INVALID_VALUE)]
+    min: Option<u32>,
+    max: Option<u32>,
+}
+
+mod negative {
+    use super::Quota;
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::FromJson;
+    use bedrock_addon_core::versioning::{Reading, Scalars};
+
+    fn told(reading: Reading, text: &str) -> Vec<String> {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        {
+            let mut read = Read::new(reading, &mut found);
+            Quota::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+        }
+        found
+            .iter()
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
+            .collect()
+    }
+
+    #[test]
+    fn a_negative_whole_number_is_the_members_code_under_the_strict_and_the_converting_profile() {
+        let strict = Reading::DOCUMENT.with_scalars(Scalars::Strict);
+        for reading in [Reading::DOCUMENT, strict] {
+            assert_eq!(told(reading, r#"{"min": -1}"#), ["core/invalid_value min"]);
+            // The member's own rule for any other value.
+            assert_eq!(told(reading, r#"{"min": 1.5}"#), ["core/invalid_type min"]);
+        }
+        // A member without the key: the profile's own words (a wrong type under the strict
+        // one, an invalid value under the converting one).
+        assert_eq!(told(strict, r#"{"max": -1}"#), ["core/invalid_type max"]);
+        assert_eq!(
+            told(Reading::DOCUMENT, r#"{"max": -1}"#),
+            ["core/invalid_value max"]
+        );
+        // A number beyond the width is no negative one.
+        assert_eq!(
+            told(strict, r#"{"min": 4294967296}"#),
+            ["core/invalid_type min"]
+        );
+    }
 }

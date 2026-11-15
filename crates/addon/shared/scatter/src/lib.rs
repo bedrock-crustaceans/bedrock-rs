@@ -15,6 +15,7 @@ use bedrock_addon_core::molang::{
     beyond_f32_warning,
 };
 use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::versioning::Choices;
 
 /// `distribution`: the positions a rule scatters its feature to.
 ///
@@ -284,13 +285,12 @@ impl FromJson for CoordinateRange {
 }
 
 /// Whether the reading takes the two choice members as the game's conversion of the whole
-/// member does (the typed form below): a reading that keeps no unknown member has nowhere to
-/// keep one of a struct form, so a struct form with a member it does not take is no form of the
-/// member, and a number beyond `f32` is clamped and told, as the scatter feature reads them.
-/// A reading that keeps them (a feature rule's) reads the struct form member by member, a number
-/// beyond its width refused where it stands.
+/// member does (the typed form below): a struct form with a member it does not take is no form
+/// of the member, and a number beyond `f32` is clamped and told, as the scatter feature reads
+/// them ([`Choices::Whole`]). A reading that takes them by member (a feature rule's) reads the
+/// struct form member by member, a number beyond its width refused where it stands.
 fn converts(read: &Read<'_>) -> bool {
-    !read.reading().keeps_unknown
+    read.reading().choices == Choices::Whole
 }
 
 /// The member `node` read by `convert`, the conversion of the whole member (a refusal is a wrong

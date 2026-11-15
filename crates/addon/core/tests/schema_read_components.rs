@@ -10,10 +10,10 @@ use std::fmt::Write as _;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::ComponentMap;
-use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::kit::{Node, Read, Versions};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, ConvertMode, Family, Loaded, MemberFailure, NoStable, Reading,
@@ -102,6 +102,14 @@ pub struct Blast {
     pub mode: Explode,
 }
 
+/// A member a later format adds.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Gated {
+    pub old: Option<u8>,
+    #[facet(schema::since_format = "1.21.0")]
+    pub new: Option<u8>,
+}
+
 /// Two members, no shorthand.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Pair {
@@ -126,6 +134,8 @@ pub enum Part {
     Blast(Blast),
     #[component(name = "minecraft:pair", parse = read_component::<Pair, Part>)]
     Pair(Pair),
+    #[component(name = "minecraft:gated", parse = read_component::<Gated, Part>)]
+    Gated(Gated),
     Unknown(Value),
 }
 
@@ -262,10 +272,6 @@ fn outcome_of<T: std::fmt::Debug>(value: Option<&T>, d: &Diagnostics) -> Outcome
 /// reader's rules:
 /// - a finding at the member whose value it is about, where facet named a step inside it (a
 ///   key of an object given to a number) or the owner (an integer out of its range): class P;
-/// - a wrong type where facet told a value of another JSON kind as its malformed input
-///   (`core/syntax`, "unexpected token"), which the door's components do for a value given to
-///   a struct, a transparent scalar or a shorthand's member: the reader words every wrong JSON
-///   kind alike;
 /// - one finding where the door told the same one twice (a `null` given to an untagged enum).
 fn explained(door: &Outcome, read: &Outcome) -> bool {
     let mut told = door.told.clone();
@@ -277,8 +283,7 @@ fn explained(door: &Outcome, read: &Outcome) -> bool {
             let path = read.path == door.path
                 || door.path.starts_with(&read.path)
                 || (door.path.is_empty() && !read.path.contains('/'));
-            let code = door.code == read.code
-                || (door.code == "core/syntax" && read.code == "core/invalid_type");
+            let code = door.code == read.code;
             door.severity == read.severity && path && code
         })
 }
@@ -378,4 +383,156 @@ fn a_component_map_reads_as_the_door_reads_it() {
 fn map_outcome(map: &ComponentMap<Part>, d: &Diagnostics) -> String {
     let entries: Vec<String> = map.iter().map(|entry| format!("{entry:?}")).collect();
     format!("{} {}", entries.join(", "), outcome(Some(&()), d))
+}
+
+/// A component whose JSON is of the wrong kind for its type's root is the door's malformed
+/// input: `core/syntax`, "unexpected token", an error at the component spanning its text, in
+/// the door's words.
+#[test]
+fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
+    let told = |d: &Diagnostics| -> Vec<(Severity, String, String, bool, String)> {
+        d.iter()
+            .map(|f| {
+                (
+                    f.severity,
+                    f.code.id().to_owned(),
+                    f.location.json_path.to_string(),
+                    f.location.span.is_some(),
+                    f.code.to_string(),
+                )
+            })
+            .collect()
+    };
+    let cases: [(&str, &str, &str); 9] = [
+        (
+            "pair",
+            "[1]",
+            "unexpected token: got sequence start, expected struct start",
+        ),
+        (
+            "pair",
+            "null",
+            "unexpected token: got scalar, expected struct start",
+        ),
+        (
+            "pair",
+            "5",
+            "unexpected token: got scalar, expected struct start",
+        ),
+        (
+            "friction",
+            "[1]",
+            "unexpected token: got sequence start, expected scalar value",
+        ),
+        (
+            "friction",
+            "{}",
+            "unexpected token: got node without argument, expected scalar value or node with argument",
+        ),
+        (
+            "damage",
+            "[1]",
+            "unexpected token: got sequence start, expected scalar value",
+        ),
+        (
+            "count",
+            "[]",
+            "unexpected token: got sequence start, expected scalar value",
+        ),
+        (
+            "maybe",
+            "[1]",
+            "unexpected token: got sequence start, expected scalar value",
+        ),
+        (
+            "damage",
+            "[1, 2]",
+            "unexpected token: got sequence start, expected scalar value",
+        ),
+    ];
+    let cx = context(Reading::DOCUMENT);
+    for (row, token, text) in cases {
+        let slice = JsonSlice::new(token);
+        let (mut door, mut read) = (Diagnostics::default(), Diagnostics::default());
+        match row {
+            "pair" => {
+                parse_component::<Pair, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Pair, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+            "friction" => {
+                parse_component::<Friction, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Friction, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+            "damage" => {
+                parse_component::<Damage, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Damage, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+            "count" => {
+                parse_component::<Count, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Count, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+            _ => {
+                parse_component::<Maybe, Part>(slice, ConvertMode::Strict, &cx, &mut door);
+                read_component::<Maybe, Part>(slice, ConvertMode::Strict, &cx, &mut read);
+            }
+        }
+        let want = vec![(
+            Severity::Error,
+            "core/syntax".to_owned(),
+            String::new(),
+            true,
+            text.to_owned(),
+        )];
+        assert_eq!(told(&door), want, "the door, {row} {token}");
+        assert_eq!(told(&read), want, "the reader, {row} {token}");
+    }
+}
+
+/// A member `schema::since_format` a later version is an unknown member of its component in a
+/// document written at an earlier one (the component map knows the document's format).
+#[test]
+fn a_member_since_a_format_is_unknown_in_a_component_of_an_older_document() {
+    let text = r#"{"minecraft:gated": {"old": 1, "new": 2}}"#;
+    let cx = context(Reading::DOCUMENT);
+    let parsed = bedrock_addon_core::json::parse::parse(
+        text,
+        bedrock_addon_core::json::parse::Options::default(),
+    )
+    .expect("a text");
+    let at = JsonPath::of_keys(["components"]);
+    let read_at = |format: Option<FormatVersion>| {
+        let mut d = Diagnostics::default();
+        let map = {
+            let mut read = Read::new(Reading::DOCUMENT, &mut d)
+                .load(&cx)
+                .versions(Versions {
+                    format,
+                    engine: None,
+                });
+            read_component_map::<Shelf>(
+                &Node::parsed(&parsed, at.clone()),
+                &mut read,
+                ConvertMode::Strict,
+                is_custom,
+            )
+        };
+        let told: Vec<String> = d
+            .iter()
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
+            .collect();
+        (format!("{:?}", map.unwrap_or_default()), told)
+    };
+    let (older, told) = read_at(Some(FormatVersion::new(1, 20, 0)));
+    assert_eq!(
+        told,
+        ["core/unrecognized_field components/minecraft:gated/new"]
+    );
+    assert!(older.contains("new: None"), "{older}");
+    let (newer, told) = read_at(Some(FormatVersion::new(1, 21, 0)));
+    assert!(told.is_empty(), "{told:?}");
+    assert!(newer.contains("new: Some(2)"), "{newer}");
+    // A read that knows no format reads every member.
+    let (unknown, told) = read_at(None);
+    assert!(told.is_empty(), "{told:?}");
+    assert!(unknown.contains("new: Some(2)"), "{unknown}");
 }

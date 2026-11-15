@@ -179,6 +179,7 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
         unknown: Some(crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT),
         unknown_code: None,
         wrong_kind: None,
+        ..Texts::CODES
     });
     let members = read.object(&root).expect("an object");
     read.unknown(&members, &["a"], Disposition::Keep);

@@ -107,6 +107,11 @@ where
 /// A row with `shorthand = scalar` whose payload is a struct of one member reads a payload
 /// that is no object as that member, as `parse_component` does: by the slice's scalar and null
 /// rules, its findings at the component, spanning the text as written.
+///
+/// A component whose JSON is of the wrong kind for its type's root (an array or a scalar for a
+/// struct, an array for a scalar or a one-member shorthand) is told as the typed door tells it,
+/// `core/syntax` ("unexpected token: got X, expected Y") at the component: the oracle
+/// `a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error` pins the words.
 pub fn read_component<T, C>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
@@ -133,7 +138,7 @@ where
         return None;
     };
     let versions = Versions {
-        format: None,
+        format: cx.document_format,
         engine: Some(
             cx.min_engine_version
                 .as_ref()
@@ -149,7 +154,12 @@ where
             .load(cx)
             .versions(versions)
     };
-    if let Some(key) = shorthand_member::<T, C>(slice) {
+    let shorthand = shorthand_member::<T, C>(slice);
+    if let Some(finding) = door_syntax::<T>(&parsed.value, shorthand, cx, span_of(slice)) {
+        d.push(finding);
+        return None;
+    }
+    if let Some(key) = shorthand {
         // The bare scalar is the member `key` of the object form; what is told of it is told
         // at the component, spanning the text.
         let mut object = facet_value::VObject::new();
@@ -171,11 +181,93 @@ where
     }
     let node = Node::parsed(&parsed, JsonPath::new());
     let mut read = reader(d);
-    if let Some(finding) = super::payload::no_object::<T>(&node, &read) {
-        read.push(finding);
-        return None;
-    }
     crate::schema::read_document::<T>(&node, &mut read).map(Into::into)
+}
+
+/// The finding of a component whose JSON is of another kind than its type's root, told as the
+/// typed door told it: `core/syntax`, "unexpected token: got X, expected Y", the malformed input
+/// of facet's own read, where the reader's wrong type names no member. It is told when:
+///
+/// - `T` is a struct (`T::EXPECTED` an object) and the value is no object, `null` included;
+/// - `T` reads a scalar (a transparent newtype) and the value is an array, or an empty object
+///   (an object with a member is told at the member: a wrong type);
+/// - the row is a one-member shorthand (`member` is the member's key) of a scalar member and
+///   the value is an array.
+///
+/// An array given to a scalar is a refused scalar under `DefaultAndTell` (the component is kept
+/// with the member's default and the refusal told), and a wrong type at its first element under
+/// strict scalars, not this.
+fn door_syntax<T: crate::schema::FromJson + for<'a> Facet<'a>>(
+    value: &Value,
+    member: Option<&str>,
+    cx: &LoadContext,
+    span: crate::diagnostic::Span,
+) -> Option<Diagnostic> {
+    use crate::json::kit::Expected;
+    // A strict scalar reads an array through its elements (a wrong type at the first), and a
+    // refused scalar under `DefaultAndTell` is the scalar rule's.
+    let refused = cx.reading.on_member_failure == super::MemberFailure::DefaultAndTell
+        || cx.reading.scalars == super::Scalars::Strict;
+    let scalar = match member {
+        Some(key) => member_is_scalar(<T as Facet<'static>>::SHAPE, key),
+        None => matches!(
+            T::EXPECTED,
+            Some(Expected::Number | Expected::Bool | Expected::String)
+        ),
+    };
+    let (got, expected) = if member.is_none() && T::EXPECTED == Some(Expected::Object) {
+        if value.is_object() {
+            return None;
+        }
+        let got = if value.is_array() {
+            "sequence start"
+        } else {
+            "scalar"
+        };
+        (got, "struct start")
+    } else if scalar && value.is_array() && !refused {
+        ("sequence start", "scalar value")
+    } else if scalar
+        && member.is_none()
+        && value
+            .as_object()
+            .is_some_and(facet_value::VObject::is_empty)
+    {
+        (
+            "node without argument",
+            "scalar value or node with argument",
+        )
+    } else {
+        return None;
+    };
+    let mut finding = Diagnostic::of(crate::diagnostic::builders::syntax(format!(
+        "unexpected token: got {got}, expected {expected}"
+    )))
+    .at(JsonPath::new());
+    finding.location.span = Some(span);
+    Some(finding)
+}
+
+/// Whether the member `key` of the struct `shape` is a scalar, an `Option` or a transparent
+/// wrapper of one: what facet reads as one token.
+fn member_is_scalar(shape: &'static facet::Shape, key: &str) -> bool {
+    let facet::Type::User(facet::UserType::Struct(st)) = shape.ty else {
+        return false;
+    };
+    let Some(field) = st.fields.iter().find(|f| f.effective_name() == key) else {
+        return false;
+    };
+    let mut shape = field.shape();
+    loop {
+        shape = match shape.def {
+            facet::Def::Option(option) => option.t(),
+            _ => match shape.inner {
+                Some(inner) if shape.is_transparent() => inner,
+                _ => break,
+            },
+        };
+    }
+    shape.effective_proxy(None).is_some() || matches!(shape.def, facet::Def::Scalar)
 }
 
 /// The member a bare scalar of `slice` stands for: `T` is the payload of a `shorthand =
@@ -355,6 +447,18 @@ pub fn read_component_map<F: Family>(
         cx.reading = read.reading();
         detached = cx;
         &detached
+    };
+    // A member `schema::since_format` a later version than the document's is no member of its
+    // component: the rows read knowing the document's format.
+    let format = read.known_versions().format;
+    let versioned;
+    let cx = if format.is_some() && cx.document_format != format {
+        let mut cx = cx.clone();
+        cx.document_format = format;
+        versioned = cx;
+        &versioned
+    } else {
+        cx
     };
     let table = table::<F>();
     let mut map = ComponentMap::new();

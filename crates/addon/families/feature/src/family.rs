@@ -6,14 +6,15 @@
 use std::convert::Infallible;
 use std::marker::PhantomData;
 
-use crate::{blocks, carver, history, placement, scatter, structure, tree};
+use crate::{blocks, carver, codes, history, placement, scatter, structure, tree};
 use bedrock_addon_core::id::FeatureId;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::schema::{Schema, SchemaCx, TreeWording};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BeyondWidth, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents, Reading,
-    Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
+    BeyondWidth, Choices, Envelope, Family, InputKind, Loaded, MissingVersion, NoComponents,
+    Reading, Scalars, StructIndex, ValidateCx, VersionChain, VersionStruct,
 };
 
 /// Format 1.13.0, the initial release (`[1.13.0, 1.21.10)`) and the floor of every feature
@@ -24,15 +25,25 @@ use bedrock_addon_core::versioning::{
 pub(crate) const V1_13_0: FormatVersion = FormatVersion::new(1, 13, 0);
 
 /// The reading of every slice of every feature type, which the payload's reader takes
-/// (`read::parse_strict_with`): the jsoncpp input's profile (rule N1, unknown members warned,
+/// (`read::strict`): the jsoncpp input's profile (rule N1, unknown members warned,
 /// lenient), with the strict scalars the types' members are read by: a member takes only a
-/// token of its own type and a number beyond its float's width is a type error.
+/// token of its own type and a number beyond its float's width is a type error; the shared
+/// choice members are converted whole (a number beyond `f32` clamped and told).
 pub(crate) const READING: Reading = InputKind::JsonCpp
     .profile()
     .with_scalars(Scalars::Strict)
-    .with_beyond_width(BeyondWidth::Error);
+    .with_beyond_width(BeyondWidth::Error)
+    .with_choices(Choices::Whole);
 
-/// `impl Versioned + VersionStruct` for a struct that parses strictly and writes plainly.
+/// The wording of a broken bound: the older schema tree's, with the feature's own line for each
+/// end of a range.
+const TREE_WORDING: TreeWording = TreeWording {
+    range_min: &codes::RANGE_MIN_OUT_OF_RANGE,
+    range_max: &codes::RANGE_MAX_OUT_OF_RANGE,
+};
+
+/// `impl Versioned + VersionStruct` for a struct that parses strictly (`read::strict`) and
+/// writes plainly.
 macro_rules! strict_struct {
     ($ty:ty, $version:expr) => {
         impl ::bedrock_addon_core::versioning::Versioned for $ty {
@@ -45,7 +56,7 @@ macro_rules! strict_struct {
                 cx: &::bedrock_addon_core::versioning::ParseCx<'_>,
                 d: &mut ::bedrock_addon_core::diagnostic::Diagnostics,
             ) -> Option<Self> {
-                $crate::read::parse_strict(payload, cx, d)
+                $crate::read::strict(payload, cx, d)
             }
 
             fn write(
@@ -60,24 +71,9 @@ macro_rules! strict_struct {
 
 pub(crate) use strict_struct;
 
-/// A feature type's rules on a loaded value.
-pub(crate) trait Rules {
-    /// The type's schema rules on the loaded value, at the payload's path.
-    #[allow(unused_variables)]
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {}
-    /// The value in an older struct's layout and that struct's version, when the newest
-    /// struct's schema would reject it (an upgraded document the newest layout cannot hold, for
-    /// example a single block feature whose `places_block` is a `{tags}` descriptor, which has
-    /// no 1.21.40 form); `None` writes the newest struct. The older layout reads back to the
-    /// same value.
-    fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>> {
-        None
-    }
-}
-
 /// A feature type: its payload key, what its row says about it, its chain and its place in
 /// [`Feature`].
-pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
+pub(crate) trait FeatureType: Schema + VersionStruct + Send + Sync + 'static {
     /// The payload key, `minecraft:ore_feature`.
     const KEY: &'static str;
     /// Only base-game packs may use the type (the row's `internal`).
@@ -93,6 +89,12 @@ pub(crate) trait FeatureType: Rules + VersionStruct + Send + Sync + 'static {
     fn into_feature(self) -> Feature;
     /// A chain value as the public history enum.
     fn to_history(chain: Self::Chain) -> history::FeatureHistory;
+    /// The value in an older struct's layout and that struct's version, when the newest
+    /// struct's schema would reject it (an upgraded document the newest layout cannot hold, for
+    /// example a single block feature whose `places_block` is a `{tags}` descriptor, which has
+    /// no 1.21.40 form); `None` writes the newest struct. The older layout reads back to the
+    /// same value.
+    fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>>;
     /// The chain value a history value of this type holds; the value back otherwise.
     #[allow(
         clippy::result_large_err,
@@ -130,7 +132,7 @@ impl<T: FeatureType> Family for Fam<T> {
     const ENVELOPE: Envelope = Envelope {
         // The client reads a feature through a jsoncpp input: the version comes from the root
         // member, and rule N1 holds (a member written as `null` is absent);
-        // `read::parse_strict_with` reads under the selected version's rule.
+        // `read::strict` reads under the selected version's rule.
         input: InputKind::JsonCpp,
         // A block descriptor keeps the value of a state as written (a float is not a state's
         // type, and is told): a number no double holds is the largest finite one there, with a
@@ -146,9 +148,15 @@ impl<T: FeatureType> Family for Fam<T> {
         READING
     }
 
+    /// The type's rules on the loaded value are the derived check, in the validate stage: the
+    /// bounds and lengths, the members the engine has not got, and the findings of the leaf
+    /// types (a block descriptor of a wrong shape), worded as the game's older schema tree.
     fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
         if let Loaded::Stable(value) = v {
-            value.rules(cx);
+            let mut check = SchemaCx::for_validate(cx)
+                .with_leaf_findings(true)
+                .with_tree_wording(TREE_WORDING);
+            value.check(&mut check);
         }
     }
 }
@@ -183,7 +191,8 @@ macro_rules! feature_types {
                 $(, strict = $strict:expr)?
                 $(, internal = $internal:literal)?
                 $(, since_engine = $since:expr)?
-                $(, floor = $floor:expr)?;
+                $(, floor = $floor:expr)?
+                $(, older = $older:path)?;
         )*
     ) => {
         $(#[$enum_meta])*
@@ -225,6 +234,10 @@ macro_rules! feature_types {
                     feature_types!(@or $(Some($since))? ; None);
                 const FLOOR: FormatVersion = feature_types!(@or $($floor)? ; V1_13_0);
                 type Chain = $chain;
+
+                fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>> {
+                    feature_types!(@or $($older(self))? ; None)
+                }
 
                 fn into_feature(self) -> Feature {
                     Feature::$variant(self.into())
@@ -460,7 +473,8 @@ feature_types! {
         strict = V1_13_0, internal = true;
     /// `minecraft:scatter_feature`.
     Scatter(scatter::ScatterFeature) = "minecraft:scatter_feature",
-        ScatterHistory [V1_13_0(history::v1_13_0::ScatterFeature), V1_21_10(scatter::ScatterFeature)];
+        ScatterHistory [V1_13_0(history::v1_13_0::ScatterFeature), V1_21_10(scatter::ScatterFeature)],
+        older = scatter::older_form;
     /// `minecraft:sculk_patch_feature` (base-game packs only).
     SculkPatch(blocks::SculkPatchFeature) = "minecraft:sculk_patch_feature",
         SculkPatchHistory [V1_13_0(blocks::SculkPatchFeature)],
@@ -475,7 +489,8 @@ feature_types! {
         strict = V1_13_0;
     /// `minecraft:single_block_feature`.
     SingleBlock(blocks::SingleBlockFeature) = "minecraft:single_block_feature",
-        SingleBlockHistory [V1_13_0(history::v1_13_0::SingleBlockFeature), V1_21_40(blocks::SingleBlockFeature)];
+        SingleBlockHistory [V1_13_0(history::v1_13_0::SingleBlockFeature), V1_21_40(blocks::SingleBlockFeature)],
+        older = blocks::older_form;
     /// `minecraft:snap_to_surface_feature`.
     SnapToSurface(structure::SnapToSurfaceFeature) = "minecraft:snap_to_surface_feature",
         SnapToSurfaceHistory [V1_13_0(history::v1_13_0::SnapToSurfaceFeature), V1_26_50(structure::SnapToSurfaceFeature)];
@@ -509,14 +524,3 @@ feature_types! {
 // The tree's struct parses strictly and writes plainly; the chain's `Box<TreeFeature>` is it
 // through core's `Box` impls (read as the plain struct, then boxed).
 strict_struct!(tree::TreeFeature, V1_13_0);
-
-/// The rules of a boxed type are the type's.
-impl<T: Rules> Rules for Box<T> {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        (**self).rules(check);
-    }
-
-    fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>> {
-        (**self).older_form()
-    }
-}

@@ -4,7 +4,12 @@
 use facet::Facet;
 use facet_value::{VArray, VObject};
 
+use crate::codes;
+use bedrock_addon_core::diagnostic::Code;
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{JsonType, ScalarShape, StrictError, Value};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
+use bedrock_addon_core::schema::{Bounded, End, FromJson, SchemaCx, SchemaFields};
 use bedrock_addon_core::shared::FloatRange;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
@@ -75,6 +80,42 @@ impl From<i32> for JsonInt {
         JsonInt::new(value)
     }
 }
+
+/// An integer token, or a real token with an integral value inside the `int` range (which
+/// the token remembers); another number is an `i32`'s own refusal (a real with a fraction, or
+/// one beyond the range), as is any other value.
+impl FromJson for JsonInt {
+    const EXPECTED: Option<Expected> = Some(Expected::Number);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let token = node
+            .value()
+            .as_number()
+            .filter(|number| number.is_float())
+            .map(facet_value::VNumber::to_f64_lossy)
+            .filter(|x| x.fract() == 0.0)
+            .and_then(integral);
+        match token {
+            Some(value) => Some(JsonInt(value, IntToken::Real)),
+            None => i32::from_json(node, read).map(JsonInt::new),
+        }
+    }
+}
+
+/// A bound compares the integer, whatever token wrote it.
+impl Bounded for JsonInt {
+    type Number = i32;
+
+    fn numbers(&self) -> impl IntoIterator<Item = (End, i32)> {
+        [(End::Only, self.0)]
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(JsonInt);
+bedrock_addon_core::impl_no_molang!(JsonInt);
 
 /// `x` as an `i32` when it is integral and in range.
 #[allow(clippy::cast_possible_truncation)] // checked against the bounds first
@@ -181,6 +222,29 @@ impl From<&BlockList> for Value {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(BlockList);
+
+/// The descriptors are walked each at its member, or at its index in the array.
+impl SchemaFields for BlockList {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        match self {
+            Self::One(one) => one.check_fields(cx),
+            Self::Many(many) => many.check_fields(cx),
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl MolangFields for BlockList {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        match self {
+            Self::One(one) => one.visit_molang(visitor),
+            Self::Many(many) => many.visit_molang(visitor),
+        }
+    }
+}
+
 /// A chance: a ratio `numerator / denominator`, or a probability.
 ///
 /// JSON: `{"numerator": int, "denominator": int}` (`numerator ≥ 0`, `denominator ≥ 1`), or a
@@ -247,6 +311,25 @@ impl From<&Chance> for Value {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(Chance);
+bedrock_addon_core::impl_no_molang!(Chance);
+
+/// A ratio's `numerator` is at least 0 and its `denominator` at least 1.
+impl SchemaFields for Chance {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if let Self::Ratio {
+            numerator,
+            denominator,
+        } = *self
+        {
+            cx.within("numerator", numerator, Some(0), None);
+            cx.within("denominator", denominator, Some(1), None);
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
 /// One chance or an array of them (the simple canopy's `variation_chance`).
 ///
 /// JSON: a [`Chance`], or an array of them.
@@ -295,6 +378,21 @@ impl From<&ChanceList> for Value {
     }
 }
 
+bedrock_addon_core::from_json_via_value!(ChanceList);
+bedrock_addon_core::impl_no_molang!(ChanceList);
+
+/// Each chance is checked at its member, or at its index in the array.
+impl SchemaFields for ChanceList {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        match self {
+            Self::One(one) => one.check_fields(cx),
+            Self::Many(many) => many.check_fields(cx),
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
 /// A block with a weight: `[descriptor, weight]` (vanilla's weighted block lists).
 ///
 /// JSON: a two-element array, a block descriptor and a number.
@@ -326,6 +424,25 @@ impl From<&WeightedBlock> for Value {
         array.push(Value::from(&entry.block));
         array.push(float_value(entry.weight));
         Value::from(array)
+    }
+}
+
+bedrock_addon_core::from_json_via_value!(WeightedBlock);
+
+/// The block is the element at position 0.
+impl SchemaFields for WeightedBlock {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        cx.enter_index(0);
+        self.block.check_fields(cx);
+        cx.leave();
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl MolangFields for WeightedBlock {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visitor.nested(Step::Index(0), &mut self.block);
     }
 }
 
@@ -385,4 +502,21 @@ impl TryFrom<&CarverRange> for Value {
             CarverRange::Unparsed(value) => Ok(value.clone()),
         }
     }
+}
+
+bedrock_addon_core::from_json_via_value!(CarverRange);
+bedrock_addon_core::impl_no_molang!(CarverRange);
+
+/// A range tells its own finding; an array of another length than two is an error the
+/// client logs before it refuses the feature, which the member's parse then fails on
+/// ("Float range array was not parsed").
+impl SchemaFields for CarverRange {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        match self {
+            Self::Range(range) => range.check_fields(cx),
+            Self::Unparsed(_) => cx.error("", Code::from(&codes::FLOAT_RANGE_ARRAY)),
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
 }

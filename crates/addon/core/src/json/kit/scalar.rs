@@ -174,10 +174,29 @@ impl Read<'_> {
                 Some(as_written(token))
             }
             Verdict::Refused(_) => {
-                self.refused_scalar(node, expected(declared));
+                if !self.refuse_negative(node, declared, token) {
+                    self.refused_scalar(node, expected(declared));
+                }
                 None
             }
         }
+    }
+
+    /// Tells a negative whole number given to an unsigned integer member under the member's
+    /// `schema::negative` code, when it states one: `true` when told.
+    fn refuse_negative(&mut self, node: &Node<'_>, declared: Declared, token: Token<'_>) -> bool {
+        let (Declared::Int { signed: false, .. }, Token::Int(i)) = (declared, token) else {
+            return false;
+        };
+        let Some(code) = self
+            .member_rules(node)
+            .and_then(|rules| rules.negative)
+            .filter(|_| i < 0)
+        else {
+            return false;
+        };
+        self.refuse(node, Code::from(code));
+        true
     }
 
     /// Tells a token read as the other JSON type (a number as a bool, a bool as a number), when
@@ -231,7 +250,9 @@ impl Read<'_> {
                 if fits(value, bits, signed) {
                     Some(as_written(token))
                 } else {
-                    self.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+                    if !self.refuse_negative(node, declared, token) {
+                        self.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+                    }
                     None
                 }
             }
@@ -319,7 +340,9 @@ impl Read<'_> {
         // stays for the null rule.
         let member = node.path.last_key().is_some() && !(self.map_value && node.value.is_null());
         let defaults = self.reading.scalar_rules().default_and_tell;
-        if self.profile.defers() && defaults && member {
+        // The door's pre-pass blanks it; a read that recovers otherwise fails the value.
+        let blanked = self.profile.recovery == super::Recovery::Member;
+        if self.profile.defers() && defaults && member && blanked {
             if node.value.is_null()
                 && self.reading.null == crate::versioning::NullHandling::Rejected
             {

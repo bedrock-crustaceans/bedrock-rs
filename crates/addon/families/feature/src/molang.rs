@@ -1,13 +1,11 @@
-//! The walk over a feature's Molang fields: the expressions of world-generation members and the
-//! `tags` of every block descriptor. Each struct lists the members that can
-//! hold one; [`walk!`] writes the impls.
+//! The Molang specs of a feature's members (the expressions of world-generation members and the
+//! `tags` of every block descriptor, which the structs' `schema::molang` name), and the list of
+//! the references a feature makes to other definitions, for the link pass.
 
 use super::values::{BlockList, WeightedBlock};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::molang::{
-    MolangFieldSpec, MolangVersionSource, MolangVisitor, ReaderKind, Step,
-};
+use bedrock_addon_core::molang::{MolangFieldSpec, MolangVersionSource, ReaderKind};
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
 /// A descriptor's `tags`: the pack's Molang version, the `tags` query set; vanilla logs the
@@ -39,100 +37,21 @@ pub(crate) const SCATTER: MolangFieldSpec = MolangFieldSpec::KEPT
 /// whether the client instead refuses the feature for a text its parser rejects is not known.
 pub(crate) const SCATTER_LEGACY: MolangFieldSpec = SCATTER.reader(ReaderKind::SchemaValidated);
 
-/// A member that may hold Molang fields: block descriptors (their `tags`) or expressions.
-pub(crate) trait Walk {
-    /// Hands every Molang field of the value to `v`, at its path below the current one.
-    fn walk(&mut self, v: &mut MolangVisitor<'_>);
-}
-
-impl Walk for BlockDescriptor {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        if let BlockDescriptor::Tags { tags, .. } | BlockDescriptor::Mixed { tags, .. } = self {
-            v.field("tags", &DESCRIPTOR_TAGS, tags);
-        }
-    }
-}
-
-impl Walk for BlockList {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        match self {
-            BlockList::One(one) => one.walk(v),
-            BlockList::Many(many) => many.walk(v),
-        }
-    }
-}
-
-impl Walk for WeightedBlock {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        v.enter(Step::Index(0));
-        self.block.walk(v);
-        v.leave();
-    }
-}
-
-impl<T: Walk> Walk for Option<T> {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        if let Some(inner) = self {
-            inner.walk(v);
-        }
-    }
-}
-
-impl<T: Walk> Walk for Vec<T> {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        for (index, inner) in self.iter_mut().enumerate() {
-            v.enter(Step::Index(index));
-            inner.walk(v);
-            v.leave();
-        }
-    }
-}
-
-/// Steps into `key` and walks `value` there.
-pub(crate) fn member<T: Walk + ?Sized>(v: &mut MolangVisitor<'_>, key: &str, value: &mut T) {
-    v.enter(Step::Key(key));
-    value.walk(v);
-    v.leave();
-}
-
-/// `impl Walk` (and, with `molang`, `impl MolangFields`) for a struct, from the members that can
-/// hold Molang fields: `"json key" => field`. The same members are the ones that can hold a
-/// reference to a block; a second list, after `+`, has the members that hold a reference of
-/// another kind and no Molang field (`impl Refer`, for the link pass).
-macro_rules! walk {
+/// `impl Refer` for a struct, from the members that can hold a reference to another
+/// definition (a feature, a block, the blocks a tag expression matches): `"json key" => field`,
+/// in document order.
+macro_rules! refers {
     ($ty:ty { $($key:literal => $field:ident),* $(,)? }) => {
-        walk!($ty { $($key => $field),* } + {});
-    };
-    // The second list and the `Refer` impl
-    ($ty:ty { $($key:literal => $field:ident),* $(,)? } + { $($more_key:literal => $more:ident),* $(,)? }) => {
-        impl $crate::molang::Walk for $ty {
-            #[allow(unused_variables)]
-            fn walk(&mut self, v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>) {
-                $( $crate::molang::member(v, $key, &mut self.$field); )*
-            }
-        }
         impl $crate::molang::Refer for $ty {
             #[allow(unused_variables)]
             fn refer<'a>(&'a self, out: &mut $crate::molang::References<'a>) {
                 $( out.member($key, &self.$field); )*
-                $( out.member($more_key, &self.$more); )*
-            }
-        }
-    };
-    (fields $ty:ty { $($key:literal => $field:ident),* $(,)? }) => {
-        walk!(fields $ty { $($key => $field),* } + {});
-    };
-    (fields $ty:ty { $($key:literal => $field:ident),* $(,)? } + { $($more_key:literal => $more:ident),* $(,)? }) => {
-        walk!($ty { $($key => $field),* } + { $($more_key => $more),* });
-        impl ::bedrock_addon_core::molang::MolangFields for $ty {
-            fn visit_molang(&mut self, v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>) {
-                $crate::molang::Walk::walk(self, v);
             }
         }
     };
 }
 
-pub(crate) use walk;
+pub(crate) use refers;
 
 // ---- references, for the link pass -------------------------------------------------------------
 

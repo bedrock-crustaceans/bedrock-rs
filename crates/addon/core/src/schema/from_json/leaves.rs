@@ -145,8 +145,34 @@ crate::from_json_via_value!(
     crate::shared::FilterScalar,
     crate::shared::EventTrigger,
 );
-// bridge: a range reads its ends by its own integer and float rules
-crate::from_json_via_value!(ref impl<T: crate::shared::RangeEnd> crate::shared::Range<T>);
+/// A number, a list of two or an object of `min`/`max` (or `range_min`/`range_max`), its ends
+/// read by the range's own integer and float rules; another value is a wrong type. A read that
+/// tells them ([`Read::range_members`]) tells each member of the object form the range does not
+/// read, and each element of the list form past its two ends, as an unknown member of the
+/// word `report`: told, not kept (a range has no `extra`).
+impl<T: crate::shared::RangeEnd> FromJson for crate::shared::Range<T> {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        // bridge: a range reads its ends by its own integer and float rules
+        let range = from_value_ref(node, read, |value| Self::try_from(value))?;
+        if read.tells_range_members() {
+            let report = crate::schema::UnknownRule::Report;
+            if let Some(object) = node.value().as_object() {
+                let members = read.object(node)?;
+                for key in crate::shared::unread_range_members(object) {
+                    if let Some(member) = members.get(key) {
+                        read.unknown_by_rule(&member, report);
+                    }
+                }
+            } else if node.value().is_array() {
+                let elements = read.array(node)?;
+                for element in elements.iter().skip(2) {
+                    read.unknown_by_rule(&element, report);
+                }
+            }
+        }
+        Some(range)
+    }
+}
 
 /// A string, kept as written; any other value is a wrong type.
 impl<K: crate::id::Kind> FromJson for crate::id::Id<K> {

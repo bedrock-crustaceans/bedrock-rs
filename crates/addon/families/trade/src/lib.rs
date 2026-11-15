@@ -5,6 +5,11 @@
 //! `{"format_version"?, "tiers": [...]}`; `TradeTable` is the newest form (format 1.21.30), and
 //! older files (no `format_version`, or one below 1.21.30) are read by vanilla's legacy parser
 //! and upgraded when they load (`history`).
+//!
+//! The cereal slice is read by the derived reader (`versioning::read_payload_with`; the types,
+//! the quantity included, derive `Schema`). The legacy slice stays the hand-written parser of
+//! `history/read.rs`: its scalar conversions, dropped trades and groups and own lines are
+//! per-member rules the derive has no key for.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -31,8 +36,8 @@ use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     DocumentRead, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, ParseCx, Parsed, Reading, StructIndex, ValidateCx, VersionChain, VersionStruct,
-    finish, parse_as_written, write_envelope, write_payload,
+    NoComponents, ParseCx, Parsed, Reading, Scalars, StructIndex, ValidateCx, VersionChain,
+    VersionStruct, finish, parse_as_written, write_envelope, write_payload,
 };
 use history::{TradeFamily, TradeHistory, v0};
 use read::CEREAL;
@@ -74,7 +79,9 @@ impl Family for TradeFamily {
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {
             StructIndex::Stable(0) => Reading::OWN,
-            _ => Reading::DOCUMENT,
+            // The cereal slice's numbers and bools are strict: a string or a real for an integer
+            // is refused, never converted.
+            _ => Reading::DOCUMENT.with_scalars(Scalars::Strict),
         }
     }
 
@@ -305,7 +312,7 @@ mod reading_table {
                 below floor: UseFormatVersion
                 empty document: Error
                 0.0.0..=0.0.0 (0..=0): json Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Warn/reports/lenient/Refuse
-                1.21.30..=1.21.30 (1..=1): json Rejected/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/ConvertAndTell/ClampAndTell/Error/reports/fatal/Refuse
+                1.21.30..=1.21.30 (1..=1): json Rejected/Strict/ClampAndTell/Error/reports/fatal/Refuse, mcb Own/Strict/ClampAndTell/Error/reports/fatal/Refuse
             ",
         );
     }

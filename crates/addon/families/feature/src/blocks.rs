@@ -5,52 +5,56 @@ use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::Description;
+use super::V1_13_0;
 use super::codes;
-use super::molang::{Walk, walk};
-use super::read::parse_strict_with;
-use super::validate::Check;
+use super::molang::{DESCRIPTOR_TAGS, refers};
+use super::strict_struct;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
-use super::{Rules, V1_13_0};
-use bedrock_addon_core::diagnostic::{CodeDef, Diagnostics, Severity};
 use bedrock_addon_core::id::FeatureId;
-use bedrock_addon_core::json::{EncodeError, JsonSlice, JsonType, StrictError, Value};
-use bedrock_addon_core::molang::MolangVisitor;
+use bedrock_addon_core::json::{EncodeError, JsonType, StrictError, Value};
+use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::ValidateCx;
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_core::versioning::VersionStruct;
 use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
 // ---- ore --------------------------------------------------------------------------------------
 
 /// `minecraft:ore_feature`: a vein of blocks that replace what they may replace.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct OreFeature {
     /// JSON `description`.
     pub description: Description,
     /// How many blocks the vein has, at least one (JSON `count`).
+    #[facet(schema::min = 1)]
     pub count: JsonInt,
     /// The chance, in `[0, 1]`, that a block exposed to air is not placed (JSON
     /// `discard_chance_on_air_exposure`); absent is 0.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub discard_chance_on_air_exposure: Option<f32>,
     /// Which block replaces which; at least one rule (JSON `replace_rules`).
+    #[facet(schema::min_len = 1)]
     pub replace_rules: Option<Vec<ReplaceRule>>,
 }
 
 /// One entry of `ore_feature.replace_rules`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ReplaceRule {
     /// The block placed (JSON `places_block`).
     pub places_block: BlockDescriptor,
     /// The blocks it may replace, at least one; absent replaces any block (JSON
     /// `may_replace`).
+    #[facet(schema::min_len = 1)]
     pub may_replace: Option<Vec<BlockDescriptor>>,
 }
 
 // ---- single block -----------------------------------------------------------------------------
 
 /// `minecraft:single_block_feature`: one block, placed if the attach and replace rules allow it.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct SingleBlockFeature {
     /// JSON `description`.
     pub description: Description,
@@ -158,9 +162,10 @@ impl From<&PlacesBlock> for Value {
 }
 
 /// `may_attach_to` / `may_not_attach_to`: per side, the blocks the placed block may (not) touch.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AttachConditions {
     /// How many sides must attach, 1 to 4 (JSON `min_sides_must_attach`); absent is 4.
+    #[facet(schema::min = 1, schema::max = 4)]
     pub min_sides_must_attach: Option<JsonInt>,
     /// Whether the block turns to face what it attaches to (JSON `auto_rotate`); absent is
     /// `true`.
@@ -208,7 +213,8 @@ impl SingleBlockFeature {
 
 /// `minecraft:multi_block_feature` (engine 1.26.40, format 1.26.40): a multi-block, placed from
 /// its starting part.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct MultiBlockFeature {
     /// JSON `description`.
     pub description: Description,
@@ -227,13 +233,15 @@ pub struct MultiBlockFeature {
 // ---- multiface, fossil, geode ------------------------------------------------------------------
 
 /// `minecraft:multiface_feature`: a block that covers faces of neighbouring blocks and spreads.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct MultifaceFeature {
     /// JSON `description`.
     pub description: Description,
     /// The block (JSON `places_block`).
     pub places_block: BlockDescriptor,
     /// How far it searches, 1 to 64 (JSON `search_range`).
+    #[facet(schema::min = 1, schema::max = 64)]
     pub search_range: JsonInt,
     /// JSON `can_place_on_floor`.
     pub can_place_on_floor: bool,
@@ -242,13 +250,16 @@ pub struct MultifaceFeature {
     /// JSON `can_place_on_wall`.
     pub can_place_on_wall: bool,
     /// The chance, in `[0, 1]`, that it spreads (JSON `chance_of_spreading`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub chance_of_spreading: f32,
     /// The blocks it may be placed on, at least one (JSON `can_place_on`).
+    #[facet(schema::min_len = 1)]
     pub can_place_on: Option<Vec<BlockDescriptor>>,
 }
 
 /// `minecraft:fossil_feature`: a fossil structure with ore blocks.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct FossilFeature {
     /// JSON `description`.
     pub description: Description,
@@ -259,7 +270,8 @@ pub struct FossilFeature {
 }
 
 /// `minecraft:geode_feature`: a layered geode.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct GeodeFeature {
     /// JSON `description`.
     pub description: Description,
@@ -274,32 +286,44 @@ pub struct GeodeFeature {
     /// JSON `outer_layer`.
     pub outer_layer: BlockDescriptor,
     /// The blocks placed on the inner layer, at least one (JSON `inner_placements`).
+    #[facet(schema::min_len = 1)]
     pub inner_placements: Option<Vec<BlockDescriptor>>,
     /// 1 to 10 (JSON `min_outer_wall_distance`).
+    #[facet(schema::min = 1, schema::max = 10)]
     pub min_outer_wall_distance: JsonInt,
     /// 1 to 20 (JSON `max_outer_wall_distance`).
+    #[facet(schema::min = 1, schema::max = 20)]
     pub max_outer_wall_distance: JsonInt,
     /// 1 to 10 (JSON `min_distribution_points`).
+    #[facet(schema::min = 1, schema::max = 10)]
     pub min_distribution_points: JsonInt,
     /// 1 to 20 (JSON `max_distribution_points`).
+    #[facet(schema::min = 1, schema::max = 20)]
     pub max_distribution_points: JsonInt,
     /// 0 to 10 (JSON `min_point_offset`).
+    #[facet(schema::min = 0, schema::max = 10)]
     pub min_point_offset: JsonInt,
     /// 0 to 10 (JSON `max_point_offset`).
+    #[facet(schema::min = 0, schema::max = 10)]
     pub max_point_offset: JsonInt,
     /// JSON `max_radius`.
     pub max_radius: JsonInt,
     /// 0 to 10 (JSON `crack_point_offset`).
+    #[facet(schema::min = 0, schema::max = 10)]
     pub crack_point_offset: JsonInt,
     /// In `[0, 1]` (JSON `generate_crack_chance`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub generate_crack_chance: f32,
     /// In `[0, 5]` (JSON `base_crack_size`).
+    #[facet(schema::min = 0.0, schema::max = 5.0)]
     pub base_crack_size: f32,
     /// JSON `noise_multiplier`.
     pub noise_multiplier: f32,
     /// In `[0, 1]` (JSON `use_potential_placements_chance`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub use_potential_placements_chance: f32,
     /// In `[0, 1]` (JSON `use_alternate_layer0_chance`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub use_alternate_layer0_chance: f32,
     /// JSON `placements_require_layer0_alternate`.
     pub placements_require_layer0_alternate: bool,
@@ -310,19 +334,24 @@ pub struct GeodeFeature {
 // ---- growing plant -----------------------------------------------------------------------------
 
 /// `minecraft:growing_plant_feature`: a plant column of body blocks ending in a head block.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct GrowingPlantFeature {
     /// JSON `description`.
     pub description: Description,
     /// Heights and their weights, at least one (JSON `height_distribution`).
+    #[facet(schema::min_len = 1)]
     pub height_distribution: Vec<HeightWeight>,
     /// Which way it grows (JSON `growth_direction`).
+    #[facet(schema::invalid = codes::GROWTH_DIRECTION)]
     pub growth_direction: GrowthDirection,
     /// The age state of the head block (JSON `age`).
     pub age: Option<IntRange>,
     /// The body blocks and their weights, at least one (JSON `body_blocks`).
+    #[facet(schema::min_len = 1)]
     pub body_blocks: Vec<WeightedBlock>,
     /// The head blocks and their weights, at least one (JSON `head_blocks`).
+    #[facet(schema::min_len = 1)]
     pub head_blocks: Vec<WeightedBlock>,
     /// Whether it may grow in water (JSON `allow_water`); absent is `false`.
     pub allow_water: Option<bool>,
@@ -368,7 +397,7 @@ impl TryFrom<&HeightWeight> for Value {
 }
 
 /// `growing_plant_feature.growth_direction`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "UPPERCASE")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -383,22 +412,26 @@ pub enum GrowthDirection {
 
 /// `minecraft:partially_exposed_blob_feature`: a blob of blocks around the input position, with
 /// one face exposed.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct PartiallyExposedBlobFeature {
     /// JSON `description`.
     pub description: Description,
     /// 1 to 8 (JSON `placement_radius_around_floor`).
+    #[facet(schema::min = 1, schema::max = 8)]
     pub placement_radius_around_floor: JsonInt,
     /// In `[0, 1]` (JSON `placement_probability_per_valid_position`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub placement_probability_per_valid_position: f32,
     /// The exposed face (JSON `exposed_face`); absent is `up`.
+    #[facet(schema::invalid = codes::EXPOSED_FACE)]
     pub exposed_face: Option<ExposedFace>,
     /// The block (JSON `places_block`).
     pub places_block: BlockDescriptor,
 }
 
 /// `partially_exposed_blob_feature.exposed_face`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -412,7 +445,8 @@ pub enum ExposedFace {
 
 /// `minecraft:sculk_patch_feature` (base-game packs only): a sculk patch spread by charge
 /// cursors.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct SculkPatchFeature {
     /// JSON `description`.
     pub description: Description,
@@ -421,23 +455,30 @@ pub struct SculkPatchFeature {
     /// The block at the centre (JSON `central_block`).
     pub central_block: Option<BlockDescriptor>,
     /// In `[0, 1]` (JSON `central_block_placement_chance`).
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
     pub central_block_placement_chance: Option<f32>,
     /// 0 to 32 (JSON `cursor_count`).
+    #[facet(schema::min = 0, schema::max = 32)]
     pub cursor_count: JsonInt,
     /// 1 to 1000 (JSON `charge_amount`).
+    #[facet(schema::min = 1, schema::max = 1000)]
     pub charge_amount: JsonInt,
     /// 1 to 64 (JSON `spread_attempts`).
+    #[facet(schema::min = 1, schema::max = 64)]
     pub spread_attempts: JsonInt,
     /// 0 to 8 (JSON `growth_rounds`).
+    #[facet(schema::min = 0, schema::max = 8)]
     pub growth_rounds: JsonInt,
     /// 0 to 8 (JSON `spread_rounds`).
+    #[facet(schema::min = 0, schema::max = 8)]
     pub spread_rounds: JsonInt,
     /// JSON `extra_growth_chance`.
     pub extra_growth_chance: Option<IntRange>,
 }
 
 /// `minecraft:vegetation_patch_feature`: a patch of ground block with vegetation on it.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct VegetationPatchFeature {
     /// JSON `description`.
     pub description: Description,
@@ -448,6 +489,7 @@ pub struct VegetationPatchFeature {
     /// The vegetation placed on the patch (JSON `vegetation_feature`).
     pub vegetation_feature: FeatureId,
     /// Floor or ceiling (JSON `surface`); absent is `floor`.
+    #[facet(schema::invalid = codes::VEGETATION_SURFACE)]
     pub surface: Option<VegetationSurface>,
     /// JSON `depth`.
     pub depth: IntRange,
@@ -460,13 +502,14 @@ pub struct VegetationPatchFeature {
     /// JSON `horizontal_radius`.
     pub horizontal_radius: IntRange,
     /// At least 0 (JSON `extra_edge_column_chance`).
+    #[facet(schema::min = 0.0)]
     pub extra_edge_column_chance: Option<f32>,
     /// JSON `waterlogged`.
     pub waterlogged: Option<bool>,
 }
 
 /// `vegetation_patch_feature.surface`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -482,7 +525,8 @@ pub enum VegetationSurface {
 
 /// `minecraft:horizontal_tree_decoration_feature` (engine 1.26.40): a block on the side of a
 /// trunk (vanilla's shelf mushrooms).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct HorizontalTreeDecorationFeature {
     /// JSON `description`.
     pub description: Description,
@@ -496,7 +540,8 @@ pub struct HorizontalTreeDecorationFeature {
 
 /// `minecraft:multipart_block_column_feature` (format 1.26.40): a column of tip, frustum, middle
 /// and base blocks.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = DESCRIPTOR_TAGS)]
 pub struct MultipartBlockColumnFeature {
     /// JSON `description`.
     pub description: Description,
@@ -522,7 +567,7 @@ pub struct MultipartBlockColumnFeature {
 
 /// A value with a weight: `{"value", "weight"}` (`multipart_block_column_feature.weighted_heights`,
 /// `poplar_canopy.radius`).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct WeightedHeight {
     /// JSON `value`.
     pub value: Option<JsonInt>,
@@ -530,7 +575,7 @@ pub struct WeightedHeight {
     pub weight: Option<JsonInt>,
 }
 
-// ---- version structs, Molang walk, rules -------------------------------------------------------
+// ---- version structs, references, the older form ----------------------------------------------
 
 /// The format of `single_block_feature`'s newest schema.
 pub(crate) const SINGLE_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 21, 40);
@@ -539,57 +584,23 @@ pub(crate) const SINGLE_BLOCK_FORMAT: FormatVersion = FormatVersion::new(1, 21, 
 /// registered at this format.
 pub(crate) const MULTI_BLOCK_FORMAT: FormatVersion = known::V1_26_40;
 
-/// The setter texts of the named members of the block feature types.
-static GROWTH_DIRECTION: (&str, &CodeDef<0>) = ("growth_direction", &codes::GROWTH_DIRECTION);
-static EXPOSED_FACE: (&str, &CodeDef<0>) = ("exposed_face", &codes::EXPOSED_FACE);
-static VEGETATION_SURFACE: (&str, &CodeDef<0>) = ("surface", &codes::VEGETATION_SURFACE);
+/// The engine that adds `horizontal_tree_decoration_feature`.
+pub(crate) const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = known::V1_26_40;
 
-/// `impl Versioned + VersionStruct` with the setter texts of named members.
-macro_rules! named_struct {
-    ($ty:ty, $($text:expr),+) => {
-        impl Versioned for $ty {
-            const VERSION: FormatVersion = V1_13_0;
-        }
+strict_struct!(GrowingPlantFeature, V1_13_0);
+strict_struct!(PartiallyExposedBlobFeature, V1_13_0);
+strict_struct!(VegetationPatchFeature, V1_13_0);
+strict_struct!(SingleBlockFeature, SINGLE_BLOCK_FORMAT);
 
-        impl VersionStruct for $ty {
-            fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-                parse_strict_with(payload, cx, d, &[$($text),+])
-            }
-
-            fn write(&self) -> Result<Value, EncodeError> {
-                write_payload(self)
-            }
-        }
-    };
-}
-
-named_struct!(GrowingPlantFeature, GROWTH_DIRECTION);
-named_struct!(PartiallyExposedBlobFeature, EXPOSED_FACE);
-named_struct!(VegetationPatchFeature, VEGETATION_SURFACE);
-
-impl Versioned for SingleBlockFeature {
-    const VERSION: FormatVersion = SINGLE_BLOCK_FORMAT;
-}
-
-impl VersionStruct for SingleBlockFeature {
-    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        super::read::parse_strict(payload, cx, d)
-    }
-
-    fn write(&self) -> Result<Value, EncodeError> {
-        write_payload(self)
-    }
-}
-
-walk!(fields OreFeature { "replace_rules" => replace_rules });
-walk!(ReplaceRule { "places_block" => places_block, "may_replace" => may_replace });
-walk!(fields SingleBlockFeature {
+refers!(OreFeature { "replace_rules" => replace_rules });
+refers!(ReplaceRule { "places_block" => places_block, "may_replace" => may_replace });
+refers!(SingleBlockFeature {
     "places_block" => places_block,
     "may_attach_to" => may_attach_to,
     "may_not_attach_to" => may_not_attach_to,
     "may_replace" => may_replace,
 });
-walk!(AttachConditions {
+refers!(AttachConditions {
     "top" => top,
     "bottom" => bottom,
     "north" => north,
@@ -600,10 +611,10 @@ walk!(AttachConditions {
     "sides" => sides,
     "diagonal" => diagonal,
 });
-walk!(fields MultiBlockFeature { "places_block" => places_block, "may_replace" => may_replace });
-walk!(fields MultifaceFeature { "places_block" => places_block, "can_place_on" => can_place_on });
-walk!(fields FossilFeature { "ore_block" => ore_block });
-walk!(fields GeodeFeature {
+refers!(MultiBlockFeature { "places_block" => places_block, "may_replace" => may_replace });
+refers!(MultifaceFeature { "places_block" => places_block, "can_place_on" => can_place_on });
+refers!(FossilFeature { "ore_block" => ore_block });
+refers!(GeodeFeature {
     "filler" => filler,
     "inner_layer" => inner_layer,
     "alternate_inner_layer" => alternate_inner_layer,
@@ -611,19 +622,20 @@ walk!(fields GeodeFeature {
     "outer_layer" => outer_layer,
     "inner_placements" => inner_placements,
 });
-walk!(fields GrowingPlantFeature { "body_blocks" => body_blocks, "head_blocks" => head_blocks });
-walk!(fields PartiallyExposedBlobFeature { "places_block" => places_block });
-walk!(fields SculkPatchFeature {
+refers!(GrowingPlantFeature { "body_blocks" => body_blocks, "head_blocks" => head_blocks });
+refers!(PartiallyExposedBlobFeature { "places_block" => places_block });
+refers!(SculkPatchFeature {
     "can_place_sculk_patch_on" => can_place_sculk_patch_on,
     "central_block" => central_block,
 });
-// The list after `+`: the member that names a feature.
-walk!(fields VegetationPatchFeature {
+// The member after the blocks: the one that names a feature.
+refers!(VegetationPatchFeature {
     "replaceable_blocks" => replaceable_blocks,
     "ground_block" => ground_block,
-} + { "vegetation_feature" => vegetation_feature });
-walk!(fields HorizontalTreeDecorationFeature { "places_block" => places_block });
-walk!(fields MultipartBlockColumnFeature {
+    "vegetation_feature" => vegetation_feature,
+});
+refers!(HorizontalTreeDecorationFeature { "places_block" => places_block });
+refers!(MultipartBlockColumnFeature {
     "tip_block" => tip_block,
     "frustum_block" => frustum_block,
     "middle_block" => middle_block,
@@ -632,12 +644,48 @@ walk!(fields MultipartBlockColumnFeature {
     "may_replace" => may_replace,
 });
 
-impl Walk for PlacesBlock {
-    fn walk(&mut self, v: &mut MolangVisitor<'_>) {
-        if let PlacesBlock::Descriptor(descriptor) = self {
-            descriptor.walk(v);
+bedrock_addon_core::from_json_via_value!(PlacesBlock, HeightWeight);
+bedrock_addon_core::impl_no_molang!(HeightWeight);
+
+/// A specifier or descriptor is walked at the member; a weighted list's blocks at
+/// `places_block/<index>/block`.
+impl SchemaFields for PlacesBlock {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        match self {
+            Self::Specifier(specifier) => specifier.check_fields(cx),
+            Self::Descriptor(descriptor) => descriptor.check_fields(cx),
+            Self::Weighted(entries) => {
+                for (index, entry) in entries.iter_mut().enumerate() {
+                    cx.enter_index(index);
+                    cx.enter("block");
+                    entry.block.check_fields(cx);
+                    cx.leave();
+                    cx.leave();
+                }
+            }
         }
     }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl MolangFields for PlacesBlock {
+    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        if let Self::Descriptor(descriptor) = self {
+            descriptor.visit_molang(visitor);
+        }
+    }
+}
+
+/// The range is the element at position 0.
+impl SchemaFields for HeightWeight {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        cx.enter_index(0);
+        self.height.check_fields(cx);
+        cx.leave();
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
 }
 
 impl super::molang::Refer for PlacesBlock {
@@ -660,350 +708,45 @@ impl super::molang::Refer for WeightedSpecifier {
     }
 }
 
-impl Rules for OreFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.int_min("count", Some(self.count), 1);
-        check.check_float(
-            "discard_chance_on_air_exposure",
-            self.discard_chance_on_air_exposure,
-            0.0,
-            1.0,
-        );
-        if let Some(rules) = &self.replace_rules {
-            check.check_len("replace_rules", Some(rules.len()), 1, None);
-            check.each("replace_rules", rules, |check, rule| {
-                check.descriptor("places_block", Some(&rule.places_block));
-                // The array's minimum length is one.
-                check.check_len(
-                    "may_replace",
-                    rule.may_replace.as_ref().map(Vec::len),
-                    1,
-                    None,
-                );
-                check.descriptors("may_replace", rule.may_replace.as_deref());
-            });
-        }
+/// A descriptor `places_block` (an upgraded 1.13.0 document) has no 1.21.40 form: written at
+/// 1.13.0 when nothing of 1.21.40 is set, so it reads back unchanged.
+pub(crate) fn older_form(
+    feature: &SingleBlockFeature,
+) -> Option<Result<(FormatVersion, Value), EncodeError>> {
+    use crate::history::v1_13_0;
+    let Some(PlacesBlock::Descriptor(descriptor)) = &feature.places_block else {
+        return None;
+    };
+    let newer = feature.randomize_rotation.is_some()
+        || feature.may_not_attach_to.is_some()
+        || feature
+            .may_attach_to
+            .as_ref()
+            .is_some_and(|attach| attach.diagonal.is_some());
+    if newer {
+        return None;
     }
-}
-
-/// The attach-condition rules, at the current path.
-pub(super) fn attach_rules(check: &mut ValidateCx<'_>, conditions: &AttachConditions) {
-    check.check_int(
-        "min_sides_must_attach",
-        conditions.min_sides_must_attach,
-        1,
-        4,
-    );
-    for (key, list) in [
-        ("top", &conditions.top),
-        ("bottom", &conditions.bottom),
-        ("north", &conditions.north),
-        ("east", &conditions.east),
-        ("south", &conditions.south),
-        ("west", &conditions.west),
-        ("all", &conditions.all),
-        ("sides", &conditions.sides),
-        ("diagonal", &conditions.diagonal),
-    ] {
-        check.list(key, list.as_ref());
-    }
-}
-
-impl Rules for SingleBlockFeature {
-    /// A descriptor `places_block` (an upgraded 1.13.0 document) has no 1.21.40 form: written
-    /// at 1.13.0 when nothing of 1.21.40 is set, so it reads back unchanged.
-    fn older_form(&self) -> Option<Result<(FormatVersion, Value), EncodeError>> {
-        use crate::history::v1_13_0;
-        let Some(PlacesBlock::Descriptor(descriptor)) = &self.places_block else {
-            return None;
-        };
-        let newer = self.randomize_rotation.is_some()
-            || self.may_not_attach_to.is_some()
-            || self
-                .may_attach_to
-                .as_ref()
-                .is_some_and(|attach| attach.diagonal.is_some());
-        if newer {
-            return None;
-        }
-        let older = v1_13_0::SingleBlockFeature {
-            description: self.description.clone(),
-            places_block: Some(descriptor.clone()),
-            enforce_placement_rules: self.enforce_placement_rules,
-            enforce_survivability_rules: self.enforce_survivability_rules,
-            may_attach_to: self
-                .may_attach_to
-                .clone()
-                .map(|attach| v1_13_0::AttachConditions {
-                    min_sides_must_attach: attach.min_sides_must_attach,
-                    auto_rotate: attach.auto_rotate,
-                    top: attach.top,
-                    bottom: attach.bottom,
-                    north: attach.north,
-                    east: attach.east,
-                    south: attach.south,
-                    west: attach.west,
-                    all: attach.all,
-                    sides: attach.sides,
-                }),
-            may_replace: self.may_replace.clone(),
-        };
-        Some(older.write().map(|payload| (v1_13_0::VERSION, payload)))
-    }
-
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        match &self.places_block {
-            Some(PlacesBlock::Specifier(specifier)) => {
-                let at = check.path("places_block");
-                check
-                    .diagnostics
-                    .extend(specifier.check(&at, Severity::Warning));
-            }
-            Some(PlacesBlock::Descriptor(descriptor)) => {
-                check.descriptor("places_block", Some(descriptor));
-            }
-            Some(PlacesBlock::Weighted(entries)) => {
-                check.each("places_block", entries, |check, entry| {
-                    let at = check.path("block");
-                    check
-                        .diagnostics
-                        .extend(entry.block.check(&at, Severity::Warning));
-                });
-            }
-            None => {}
-        }
-        check.opt("may_attach_to", self.may_attach_to.as_ref(), attach_rules);
-        check.opt(
-            "may_not_attach_to",
-            self.may_not_attach_to.as_ref(),
-            attach_rules,
-        );
-        check.descriptors("may_replace", self.may_replace.as_deref());
-    }
-}
-
-impl Rules for MultiBlockFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptor("places_block", Some(&self.places_block));
-        check.descriptors("may_replace", self.may_replace.as_deref());
-    }
-}
-
-impl Rules for MultifaceFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptor("places_block", Some(&self.places_block));
-        check.check_int("search_range", Some(self.search_range), 1, 64);
-        check.check_float(
-            "chance_of_spreading",
-            Some(self.chance_of_spreading),
-            0.0,
-            1.0,
-        );
-        check.check_len(
-            "can_place_on",
-            self.can_place_on.as_ref().map(Vec::len),
-            1,
-            None,
-        );
-        check.descriptors("can_place_on", self.can_place_on.as_deref());
-    }
-}
-
-impl Rules for FossilFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptor("ore_block", Some(&self.ore_block));
-    }
-}
-
-impl Rules for GeodeFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        for (key, descriptor) in [
-            ("filler", &self.filler),
-            ("inner_layer", &self.inner_layer),
-            ("alternate_inner_layer", &self.alternate_inner_layer),
-            ("middle_layer", &self.middle_layer),
-            ("outer_layer", &self.outer_layer),
-        ] {
-            check.descriptor(key, Some(descriptor));
-        }
-        let placements = self.inner_placements.as_deref();
-        check.check_len("inner_placements", placements.map(<[_]>::len), 1, None);
-        check.descriptors("inner_placements", placements);
-        for (key, value, min, max) in [
-            (
-                "min_outer_wall_distance",
-                self.min_outer_wall_distance,
-                1,
-                10,
-            ),
-            (
-                "max_outer_wall_distance",
-                self.max_outer_wall_distance,
-                1,
-                20,
-            ),
-            (
-                "min_distribution_points",
-                self.min_distribution_points,
-                1,
-                10,
-            ),
-            (
-                "max_distribution_points",
-                self.max_distribution_points,
-                1,
-                20,
-            ),
-            ("min_point_offset", self.min_point_offset, 0, 10),
-            ("max_point_offset", self.max_point_offset, 0, 10),
-            ("crack_point_offset", self.crack_point_offset, 0, 10),
-        ] {
-            check.check_int(key, Some(value), min, max);
-        }
-        for (key, value, max) in [
-            ("generate_crack_chance", self.generate_crack_chance, 1.0),
-            ("base_crack_size", self.base_crack_size, 5.0),
-            (
-                "use_potential_placements_chance",
-                self.use_potential_placements_chance,
-                1.0,
-            ),
-            (
-                "use_alternate_layer0_chance",
-                self.use_alternate_layer0_chance,
-                1.0,
-            ),
-        ] {
-            check.check_float(key, Some(value), 0.0, max);
-        }
-    }
-}
-
-impl Rules for GrowingPlantFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.check_len(
-            "height_distribution",
-            Some(self.height_distribution.len()),
-            1,
-            None,
-        );
-        check.each(
-            "height_distribution",
-            &self.height_distribution,
-            |check, entry| {
-                let at = check.path("0");
-                check.diagnostics.extend(entry.height.check(&at));
-            },
-        );
-        check.range("age", self.age.as_ref(), i32::MIN, i32::MAX);
-        for (key, blocks) in [
-            ("body_blocks", &self.body_blocks),
-            ("head_blocks", &self.head_blocks),
-        ] {
-            check.check_len(key, Some(blocks.len()), 1, None);
-            check.each(key, blocks, |check, entry| {
-                check.descriptor("0", Some(&entry.block));
-            });
-        }
-    }
-}
-
-impl Rules for PartiallyExposedBlobFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.check_int(
-            "placement_radius_around_floor",
-            Some(self.placement_radius_around_floor),
-            1,
-            8,
-        );
-        check.check_float(
-            "placement_probability_per_valid_position",
-            Some(self.placement_probability_per_valid_position),
-            0.0,
-            1.0,
-        );
-        check.descriptor("places_block", Some(&self.places_block));
-    }
-}
-
-impl Rules for SculkPatchFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptors(
-            "can_place_sculk_patch_on",
-            Some(&self.can_place_sculk_patch_on),
-        );
-        check.descriptor("central_block", self.central_block.as_ref());
-        check.check_float(
-            "central_block_placement_chance",
-            self.central_block_placement_chance,
-            0.0,
-            1.0,
-        );
-        for (key, value, min, max) in [
-            ("cursor_count", self.cursor_count, 0, 32),
-            ("charge_amount", self.charge_amount, 1, 1000),
-            ("spread_attempts", self.spread_attempts, 1, 64),
-            ("growth_rounds", self.growth_rounds, 0, 8),
-            ("spread_rounds", self.spread_rounds, 0, 8),
-        ] {
-            check.check_int(key, Some(value), min, max);
-        }
-        check.range(
-            "extra_growth_chance",
-            self.extra_growth_chance.as_ref(),
-            i32::MIN,
-            i32::MAX,
-        );
-    }
-}
-
-impl Rules for VegetationPatchFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptors("replaceable_blocks", Some(&self.replaceable_blocks));
-        check.descriptor("ground_block", Some(&self.ground_block));
-        check.range("depth", Some(&self.depth), i32::MIN, i32::MAX);
-        check.range(
-            "horizontal_radius",
-            Some(&self.horizontal_radius),
-            i32::MIN,
-            i32::MAX,
-        );
-        check.check_float(
-            "extra_edge_column_chance",
-            self.extra_edge_column_chance,
-            0.0,
-            f32::MAX,
-        );
-    }
-}
-
-/// The engine that adds `horizontal_tree_decoration_feature`.
-pub(crate) const HORIZONTAL_TREE_DECORATION_ENGINE: FormatVersion = known::V1_26_40;
-
-impl Rules for HorizontalTreeDecorationFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        check.descriptor("places_block", Some(&self.places_block));
-    }
-}
-
-// Registered together with `multi_block_feature`: format floor and engine 1.26.40.
-impl Rules for MultipartBlockColumnFeature {
-    fn rules(&mut self, check: &mut ValidateCx<'_>) {
-        for (key, descriptor) in [
-            ("tip_block", &self.tip_block),
-            ("frustum_block", &self.frustum_block),
-            ("middle_block", &self.middle_block),
-            ("base_block", &self.base_block),
-        ] {
-            check.descriptor(key, Some(descriptor));
-        }
-        check.range(
-            "height_range",
-            self.height_range.as_ref(),
-            i32::MIN,
-            i32::MAX,
-        );
-        check.descriptors("may_place_on", self.may_place_on.as_deref());
-        check.descriptors("may_replace", self.may_replace.as_deref());
-    }
+    let older = v1_13_0::SingleBlockFeature {
+        description: feature.description.clone(),
+        places_block: Some(descriptor.clone()),
+        enforce_placement_rules: feature.enforce_placement_rules,
+        enforce_survivability_rules: feature.enforce_survivability_rules,
+        may_attach_to: feature
+            .may_attach_to
+            .clone()
+            .map(|attach| v1_13_0::AttachConditions {
+                min_sides_must_attach: attach.min_sides_must_attach,
+                auto_rotate: attach.auto_rotate,
+                top: attach.top,
+                bottom: attach.bottom,
+                north: attach.north,
+                east: attach.east,
+                south: attach.south,
+                west: attach.west,
+                all: attach.all,
+                sides: attach.sides,
+            }),
+        may_replace: feature.may_replace.clone(),
+    };
+    Some(older.write().map(|payload| (v1_13_0::VERSION, payload)))
 }

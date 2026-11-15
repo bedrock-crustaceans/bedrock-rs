@@ -1,33 +1,28 @@
-//! Reading the jigsaw documents: each struct typed from its slice of the text, then the bind
-//! constraints the game's parse checks.
+//! Reading the jigsaw documents: each struct read by the derived reader
+//! (`versioning::read_payload`; the types derive `Schema`), then the bind constraints the game's
+//! parse checks: the bounds the types state, and the few rules no attribute states (a file
+//! reference's length, an object `limit` of the other form, the block specifiers' findings).
 //!
 //! Every finding here is a parse finding: an error fails the file, as a parse error of the game does, and the
 //! loader then adds the family's "Failed to parse …" line.
-
-use facet::Facet;
-use facet_json::RawJson;
-use indexmap::IndexMap;
 
 use super::codes;
 use super::history::{MetadataFamily, MetadataHistory, v1_21_50};
 use super::{
     BlockEntityModifier, BlockPredicate, CappedDelegate, IntProvider, IntProviderType,
-    JigsawMetadata, JigsawStructure, MetadataRegistry, PoolElement, PositionPredicate, Processor,
-    ProcessorList, ProcessorRule, StructureSet, TemplatePool, V1_21_50,
+    JigsawMetadata, JigsawStructure, MetadataRegistry, PoolElement, Processor, ProcessorList,
+    ProcessorRule, StructureSet, TemplatePool, V1_21_50,
 };
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::document::{Document, Origin, Rejected, Unknown, VersionInfo};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, keep_unknown_members,
-    parse_with_rules, reject_nulls,
-};
+use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::schema::{self, Schema, SchemaCx};
+use bedrock_addon_core::schema::{Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
-    ParseCx, VersionStruct, Versioned, parse_payload, write_payload,
+    ParseCx, VersionStruct, Versioned, read_payload, write_payload,
 };
 use bedrock_addon_core::versioning::{Selection, select};
 
@@ -38,92 +33,6 @@ pub(crate) const V1_21_80: FormatVersion = FormatVersion::new(1, 21, 80);
 
 /// The longest `FileReference`.
 const MAX_FILE_REFERENCE: usize = 256;
-
-/// The text facet gives an internally tagged enum whose tag names no variant.
-const UNKNOWN_TAG: &str = "No variant found";
-
-/// Parses `T` from `payload`: the typed parse, its unknown members kept in the document's table
-/// by the path of the struct they belong to (each an `UnrecognizedField` at the slice's grade, a
-/// warning), and a failed parse as one error.
-/// An internally tagged enum's unknown tag is `InvalidEnumValue`, as vanilla's enum binds
-/// report it (facet calls it a type mismatch). `check` sees the JSON before the typed parse and
-/// returns `false` to refuse it (the type pre-check of an untagged member).
-fn parse_typed<'a, T: Facet<'a>>(
-    payload: JsonSlice<'a>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-    check: impl FnOnce(&Value, &mut Diagnostics) -> bool,
-) -> Option<T> {
-    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
-    if let Some(json) = &json
-        && !check(json, d)
-    {
-        return None;
-    }
-    // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
-    // its type a type error).
-    // A `null` read as a struct is the null rule's: `reject_nulls` tells it where the input
-    // rejects nulls, and elsewhere it reads as its defaults untold.
-    let rules = cx.load.scalar_rules.with_tells_null_struct(false);
-    match parse_with_rules::<T>(payload, cx.load.null_rule, rules) {
-        // A `null` where the struct reads a value is an
-        // `InvalidType` error that rejects the document.
-        Ok(ScalarRead { value, .. })
-            if cx.load.null_rule == Some(NullRule::Rejected)
-                && reject_nulls(&value, payload, &cx.at, d) =>
-        {
-            None
-        }
-        Ok(ScalarRead { value, told, .. }) => {
-            // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
-            for misread in told {
-                d.push(misread.finding(&cx.at));
-            }
-            if let Some(json) = &json {
-                let mut kept = Unknown::new();
-                for (path, _) in keep_unknown_members(&value, json, &mut kept) {
-                    // The game logs an unknown member at the content log's warning level and goes
-                    // on: the slice's grade of an unknown member.
-                    d.push(
-                        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                            .severity(cx.load.grade(Class::Unknown))
-                            .at(cx.at.join(&path)),
-                    );
-                }
-                d.unknown_mut().absorb(&cx.at, kept);
-            }
-            Some(value)
-        }
-        // A scalar no arm of an untagged enum takes (`-1` for `dimension_padding`'s integer) is
-        // reported as the typed read reports it, which is what the file was told before the
-        // pre-pass judged it. The refusal's own `spanned_finding` is not that: an
-        // `InvalidType` at the scalar where facet tells an `InvalidValue` at the payload, over
-        // all of it (`structure.dimension_padding -1` in `tests/jigsaw/scalars.rs`).
-        Err(ScalarFailure::Refused(misread)) => {
-            match bedrock_addon_core::json::parse_at::<T>(payload) {
-                Err(error) => d.push(read_failure(error, cx)),
-                Ok(_) => d.push(misread.finding(&cx.at)),
-            }
-            None
-        }
-        Err(ScalarFailure::Read(error)) => {
-            d.push(read_failure(error, cx));
-            None
-        }
-    }
-}
-
-/// The finding of a failed typed read: an internally tagged enum's unknown tag is
-/// `InvalidEnumValue`, as vanilla's enum binds report it (facet calls it a type mismatch).
-fn read_failure(error: bedrock_addon_core::json::SliceError, cx: &ParseCx<'_>) -> Diagnostic {
-    error.into_diagnostic(&cx.at, |code, error| {
-        if code.is(&core_codes::INVALID_TYPE) && error.describes(UNKNOWN_TAG) {
-            Code::from(&core_codes::INVALID_ENUM_VALUE)
-        } else {
-            code
-        }
-    })
-}
 
 /// The grade of an unknown member of a shared type the documents hold: the families read every
 /// slice under [`JSON_READING`](crate::JSON_READING), whose mask warns.
@@ -141,32 +50,6 @@ fn violation(path: JsonPath, d: &mut Diagnostics) {
     d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(path));
 }
 
-/// The member `key` of an object.
-fn member<'v>(object: &'v Value, key: &str) -> Option<&'v Value> {
-    object.as_object()?.get(key)
-}
-
-/// A member bound as `integer | object` must be one of the two: the untagged scalar arm is a
-/// plain integer, which facet would also fill from a string or a real.
-fn integer_or_object(value: Option<&Value>, at: JsonPath, d: &mut Diagnostics) -> bool {
-    let Some(value) = value else {
-        return true;
-    };
-    let integer = value
-        .as_number()
-        .is_some_and(facet_value::VNumber::is_integer);
-    if integer || value.is_object() {
-        return true;
-    }
-    d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at));
-    false
-}
-
-/// `v` is in `[min, max]`.
-fn within(v: f64, min: f64, max: f64) -> bool {
-    (min..=max).contains(&v)
-}
-
 // ---- minecraft:jigsaw ---------------------------------------------------------------------
 
 impl Versioned for JigsawStructure {
@@ -175,19 +58,7 @@ impl Versioned for JigsawStructure {
 
 impl VersionStruct for JigsawStructure {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut structure: Self = parse_typed(payload, cx, d, |json, d| {
-            let padding = integer_or_object(
-                member(json, "dimension_padding"),
-                cx.at.child("dimension_padding"),
-                d,
-            );
-            let distance = integer_or_object(
-                member(json, "max_distance_from_center"),
-                cx.at.child("max_distance_from_center"),
-                d,
-            );
-            padding && distance
-        })?;
+        let mut structure: Self = read_payload(payload, cx, d)?;
         structure.check(&cx.at, d);
         Some(structure)
     }
@@ -217,7 +88,7 @@ impl Versioned for TemplatePool {
 
 impl VersionStruct for TemplatePool {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut pool: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        let mut pool: Self = read_payload(payload, cx, d)?;
         pool.check(&cx.at, d);
         Some(pool)
     }
@@ -252,7 +123,7 @@ impl Versioned for StructureSet {
 
 impl VersionStruct for StructureSet {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut set: Self = parse_typed(payload, cx, d, |_, _| true)?;
+        let mut set: Self = read_payload(payload, cx, d)?;
         set.check(&cx.at, d);
         Some(set)
     }
@@ -278,15 +149,7 @@ impl Versioned for ProcessorList {
 
 impl VersionStruct for ProcessorList {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let list: Self = parse_typed(payload, cx, d, |json, d| {
-            let mut ok = true;
-            let processors = member(json, "processors").and_then(Value::as_array);
-            for (i, processor) in processors.into_iter().flatten().enumerate() {
-                let at = cx.at.child("processors").index(i).child("limit");
-                ok &= integer_or_object(member(processor, "limit"), at, d);
-            }
-            ok
-        })?;
+        let mut list: Self = read_payload(payload, cx, d)?;
         list.check(&cx.at, d);
         Some(list)
     }
@@ -297,8 +160,11 @@ impl VersionStruct for ProcessorList {
 }
 
 impl ProcessorList {
-    /// The bind constraints of every rule, and the block specifiers' findings.
-    fn check(&self, at: &JsonPath, d: &mut Diagnostics) {
+    /// The bind constraints (the probabilities, the chances and distances of the rules), then
+    /// the rules the bounds do not state: an object `limit` of the other form, a loot table too
+    /// long, the block specifiers' findings.
+    fn check(&mut self, at: &JsonPath, d: &mut Diagnostics) {
+        bounds(self, at, d);
         let processors = at.child("processors");
         for (i, processor) in self.processors.iter().enumerate() {
             let at = processors.index(i);
@@ -332,7 +198,7 @@ fn check_limit(limit: &IntProvider, at: &JsonPath, d: &mut Diagnostics) {
     }
 }
 
-/// The constraints of each rule of a `minecraft:rule` processor at `at`.
+/// The rules of each rule of a `minecraft:rule` processor at `at` that are no bound.
 fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
     for (i, rule) in rules.iter().enumerate() {
         let at = at.index(i);
@@ -340,29 +206,12 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
             ("input_predicate", &rule.input_predicate),
             ("location_predicate", &rule.location_predicate),
         ] {
-            if let Some(predicate) = predicate {
-                check_block_predicate(predicate, &at.child(key), d);
-            }
-        }
-        if let Some(PositionPredicate::AxisAlignedLinearPos {
-            min_chance,
-            max_chance,
-            min_dist,
-            max_dist,
-            ..
-        }) = &rule.position_predicate
-        {
-            let at = at.child("position_predicate");
-            // The chances are bound to `[0, 1)` and the distances to 0 or more.
-            for (key, chance) in [("min_chance", min_chance), ("max_chance", max_chance)] {
-                if chance.is_some_and(|c| !(0.0..1.0).contains(&c)) {
-                    violation(at.child(key), d);
-                }
-            }
-            for (key, distance) in [("min_dist", min_dist), ("max_dist", max_dist)] {
-                if distance.is_some_and(|v| v < 0) {
-                    violation(at.child(key), d);
-                }
+            if let Some(
+                BlockPredicate::BlockstateMatch { block_state, .. }
+                | BlockPredicate::RandomBlockstateMatch { block_state, .. },
+            ) = predicate
+            {
+                d.extend(block_state.check(&at.child(key).child("block_state"), UNKNOWN));
             }
         }
         if let Some(BlockEntityModifier::AppendLoot { loot_table, .. }) =
@@ -375,60 +224,7 @@ fn check_rules(rules: &[ProcessorRule], at: &JsonPath, d: &mut Diagnostics) {
     }
 }
 
-/// The constraints of a block predicate at `at`: `probability` in `[0, 1]`.
-fn check_block_predicate(predicate: &BlockPredicate, at: &JsonPath, d: &mut Diagnostics) {
-    let probability = |p: &f32, d: &mut Diagnostics| {
-        // The probability is bound to `[0, 1]`.
-        if !within(f64::from(*p), 0.0, 1.0) {
-            violation(at.child("probability"), d);
-        }
-    };
-    match predicate {
-        BlockPredicate::RandomBlockMatch { probability: p, .. } => probability(p, d),
-        BlockPredicate::BlockstateMatch { block_state, .. } => {
-            d.extend(block_state.check(&at.child("block_state"), UNKNOWN));
-        }
-        BlockPredicate::RandomBlockstateMatch {
-            block_state,
-            probability: p,
-            ..
-        } => {
-            probability(p, d);
-            d.extend(block_state.check(&at.child("block_state"), UNKNOWN));
-        }
-        _ => {}
-    }
-}
-
 // ---- the metadata registry (the typed model of the `.dat` body) ---------------------------
-
-/// What a registry payload is read into: its entries as raw slices, each parsed from its own
-/// slice so that the unknown members inside an entry are kept.
-#[derive(Facet)]
-#[facet(schema::unknown = "keep")]
-struct RegistryShell<'a> {
-    metadata: IndexMap<String, RawJson<'a>>,
-}
-
-/// The entries of a registry at `payload` (the payload's unknown members go to the table).
-fn parse_registry<T: for<'f> Facet<'f>>(
-    payload: JsonSlice<'_>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<IndexMap<String, T>> {
-    let shell: RegistryShell<'_> = parse_payload(payload, cx, d)?;
-    let mut entries = IndexMap::with_capacity(shell.metadata.len());
-    for (key, raw) in &shell.metadata {
-        let slice = payload.nested(raw)?;
-        let entry_cx = ParseCx {
-            at: cx.at.child("metadata").child(key),
-            ..cx.clone()
-        };
-        let entry: T = parse_typed(slice, &entry_cx, d, |_, _| true)?;
-        entries.insert(key.clone(), entry);
-    }
-    Some(entries)
-}
 
 impl Versioned for MetadataRegistry {
     const VERSION: FormatVersion = V1_21_80;
@@ -436,8 +232,7 @@ impl Versioned for MetadataRegistry {
 
 impl VersionStruct for MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let metadata = parse_registry(payload, cx, d)?;
-        Some(Self { metadata })
+        read_payload(payload, cx, d)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -447,8 +242,7 @@ impl VersionStruct for MetadataRegistry {
 
 impl VersionStruct for v1_21_50::MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let metadata = parse_registry(payload, cx, d)?;
-        Some(Self { metadata })
+        read_payload(payload, cx, d)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

@@ -198,3 +198,29 @@ fn an_engine_gated_member_newer_than_the_packs_min_engine_version_is_warned() {
     }));
     assert!(loads(&json, &cx()).diagnostics().is_empty());
 }
+
+/// The check judges a member by the engine on the value the document upgrades to, so the read
+/// of the newest struct, which knows the same member, leaves it alone.
+#[test]
+fn an_engine_gated_member_is_told_once_at_every_format() {
+    use bedrock_addon_core::version::MinEngineVersion;
+    for (format, search) in [
+        ("1.13.0", "vertical_search_range"),
+        ("1.26.50", "search_range"),
+    ] {
+        let json = doc(
+            format,
+            "snap_to_surface_feature",
+            &format!(r#""feature_to_snap": "demo:y", "{search}": 4, "embed_in_surface": true"#),
+        );
+        let mut old_pack = cx();
+        old_pack.min_engine_version = Some(MinEngineVersion::new(1, 26, 10));
+        let document = loads(&json, &old_pack);
+        let told = document
+            .diagnostics()
+            .iter()
+            .filter(|f| f.code.id() == "core/field_since_engine")
+            .count();
+        assert_eq!(told, 1, "format {format}: {:?}", document.diagnostics());
+    }
+}
