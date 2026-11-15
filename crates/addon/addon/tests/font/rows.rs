@@ -2,11 +2,6 @@
 //! of long lists. Parsing the font, scanning a character and drawing a text are no pack-file
 //! rules.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostic, DiagnosticDetail, Severity};
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::font::{
@@ -1215,7 +1210,7 @@ fn f17c_codes_are_read_as_strtol_reads_base_sixteen() {
     let code_point = |code: &str| {
         let text = format!(
             r#"[{{ "name": "n", "code": {} }}]"#,
-            facet_json::to_string(&code.to_owned()).unwrap()
+            bedrock_addon::json::to_facet_json(&bedrock_addon::json::Value::from(code)).unwrap()
         );
         emoticons(&text).emoticons[0].code_point()
     };

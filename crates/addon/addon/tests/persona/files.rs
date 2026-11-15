@@ -280,21 +280,21 @@ fn pg08_a_bone_whose_parent_is_hip_hangs_on_waist() {
 
 #[test]
 fn the_geometry_file_held_is_the_file_after_the_retarget_not_as_authored() {
-    use bedrock_addon::json::{Value, from_str};
+    use bedrock_addon::json::{Value, from_str_jsonc};
 
     let authored = r#"{ "format_version": "1.12.0", "geometry.hat": { "bones": [{ "name": "a", "parent": "hip", "pivot": [0, 1, 0] }, { "name": "hip", "parent": "root" }] } }"#;
     let pieces = with_geometry(&[("hat.geometry.json", authored)]);
     assert_eq!(found(&pieces), Vec::<String>::new());
     let held = &only(&pieces).geometry.as_ref().unwrap().json;
     // Not the author's file: the one bone parent `hip` is `waist`, and nothing else differs.
-    assert_ne!(*held, from_str::<Value>(authored).unwrap());
+    assert_ne!(*held, from_str_jsonc::<Value>(authored).unwrap());
     let retargeted = authored.replace(r#""parent": "hip""#, r#""parent": "waist""#);
-    assert_eq!(*held, from_str::<Value>(&retargeted).unwrap());
+    assert_eq!(*held, from_str_jsonc::<Value>(&retargeted).unwrap());
     // A file without such a parent is held as it was written.
     let pieces = with_geometry(&[("hat.geometry.json", &retargeted)]);
     assert_eq!(
         only(&pieces).geometry.as_ref().unwrap().json,
-        from_str::<Value>(&retargeted).unwrap()
+        from_str_jsonc::<Value>(&retargeted).unwrap()
     );
 }
 

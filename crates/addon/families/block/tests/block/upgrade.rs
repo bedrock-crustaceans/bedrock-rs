@@ -2,11 +2,6 @@
 //! `Upgrade::upgrade` on `upgrade/<name>.before.json` and compares the written result with
 //! `<name>.after.json`, then checks the findings by code (and text where the row quotes it).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Kind, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
@@ -41,7 +36,8 @@ where
     S: Upgrade + VersionStruct,
     S::Next: VersionStruct,
 {
-    let root: Value = facet_json::from_str(text).expect("fixture JSON");
+    let root: Value =
+        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("fixture JSON");
     let written = root
         .as_object()
         .and_then(|o| o.get("format_version"))
@@ -95,8 +91,10 @@ where
     S::Next: VersionStruct,
 {
     let before = fixture(&format!("upgrade/{name}.before.json"));
-    let after: Value =
-        facet_json::from_str(&fixture(&format!("upgrade/{name}.after.json"))).expect("after JSON");
+    let after: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture(&format!(
+        "upgrade/{name}.after.json"
+    )))
+    .expect("after JSON");
     let (out, d) = step::<S>(&before, cx);
     assert_eq!(
         bedrock_addon_core::json::to_json(&out).unwrap(),
@@ -635,8 +633,10 @@ fn s13_1_26_0_conversion() {
         &allow_listed(),
         Some(FormatVersion::new(1, 20, 10)),
     );
-    let after: Value =
-        facet_json::from_str(&fixture("upgrade/s13_unit_cube_below_1_20_60.after.json")).unwrap();
+    let after: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture(
+        "upgrade/s13_unit_cube_below_1_20_60.after.json",
+    ))
+    .unwrap();
     assert_eq!(
         bedrock_addon_core::json::to_json(&out).unwrap(),
         bedrock_addon_core::json::to_json(&after).unwrap()

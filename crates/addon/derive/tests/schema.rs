@@ -803,7 +803,10 @@ const CORE_VALUES: &str = r#"{
 }"#;
 
 fn core_values() -> CoreValues {
-    bedrock_addon_core::json::from_str_jsonc(CORE_VALUES).expect("the document reads")
+    let value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(CORE_VALUES)
+            .expect("the document is JSON");
+    bedrock_addon_core::schema::read_value(&value).expect("the document reads")
 }
 
 #[test]
@@ -1108,9 +1111,13 @@ pub struct NestedSpecs {
 
 #[test]
 fn molang_on_a_nested_walk_sets_that_walks_default_spec() {
-    let mut nested: NestedSpecs =
-        bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
-            .expect("the document reads");
+    let mut nested: NestedSpecs = bedrock_addon_core::schema::read_value(
+        &bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+            r#"{"item": {"tags": "q.any_tag('a')"}}"#,
+        )
+        .expect("the document is JSON"),
+    )
+    .expect("the document reads");
     nested.tagged_boss = Some(boss());
     nested.boss = Some(boss());
     let mut seen = Vec::new();
@@ -1146,9 +1153,13 @@ pub struct RootSpec {
 
 #[test]
 fn molang_on_a_struct_is_the_default_spec_of_the_walk_below_it() {
-    let mut root: RootSpec =
-        bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
-            .expect("the document reads");
+    let mut root: RootSpec = bedrock_addon_core::schema::read_value(
+        &bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+            r#"{"item": {"tags": "q.any_tag('a')"}}"#,
+        )
+        .expect("the document is JSON"),
+    )
+    .expect("the document reads");
     root.boss = Some(boss());
     root.plain = Some(Molang::Const(1.0));
     root.kept = Some(Molang::Const(2.0));

@@ -33,7 +33,7 @@ fn assert_linear<I, T>(what: &str, input: impl Fn(usize) -> I, step: impl Fn(&I)
 }
 
 fn value(text: &str) -> Value {
-    bedrock_addon_core::json::from_str::<Value>(text).unwrap()
+    bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap()
 }
 
 /// An object of `n` members `<prefix><i><suffix>: body`.

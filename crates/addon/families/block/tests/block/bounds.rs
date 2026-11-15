@@ -1,22 +1,36 @@
 //! Characterization of `Bounds` (`minecraft:random_offset`'s `range`), the pin the plan asks for
-//! before it could become core's `FloatRange`. Today it is a `{min, max}` object read by facet:
-//! a number or an array is refused, an end left out is 0 (the struct derives `Default`) and is
-//! written, `range_min`/`range_max` are no ends, and a reversed pair is kept as written.
-//! `FloatRange` reads all of those otherwise (a number, an array, `range_min`/`range_max`, a
-//! missing end it marks, a reversed pair it swaps), so `Bounds` stays.
+//! before it could become core's `FloatRange`. Today it is a `{min, max}` object, read by the
+//! component's reader: a number or an array is refused, an end left out is a missing required
+//! member (the component does not read), `range_min`/`range_max` are no ends, and a reversed
+//! pair is kept as written. `FloatRange` reads all of those otherwise (a number, an array,
+//! `range_min`/`range_max`, a missing end it marks, a reversed pair it swaps), so `Bounds` stays.
 //!
 //! This pins today's code, not the game: no capture of the game reading these forms is at
-//! hand. It reads `OffsetAxis` through facet directly, not through the block loader, so it
-//! pins neither what `read_component` reports for a refused `range` nor the findings of
-//! `random_offset` in `validate.rs` (`latest.rs` beside this file exercises some of those).
+//! hand. It reads the component through `read_component` as the block's row does, not through
+//! the block loader, so it pins none of the findings of `random_offset` in `validate.rs`
+//! (`latest.rs` beside this file exercises some of those).
 
-use bedrock_addon_core::json::{from_str_jsonc, to_json};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::json::{JsonSlice, from_str_jsonc, to_json};
+use bedrock_addon_core::schema::read_value;
 use bedrock_addon_core::shared::{FloatRange, RangeForm};
-use bedrock_addon_family_block::component::{Bounds, OffsetAxis};
+use bedrock_addon_core::versioning::{ConvertMode, read_component};
+use bedrock_addon_family_block::component::{BlockComponent, Bounds, OffsetAxis, RandomOffset};
 
-/// `range` read as the axis reads it.
+/// `range` read as the component reads its `x` axis.
 fn axis(range: &str) -> Option<OffsetAxis> {
-    from_str_jsonc::<OffsetAxis>(&format!(r#"{{"range": {range}}}"#)).ok()
+    let text = format!(r#"{{"x": {{"range": {range}}}}}"#);
+    let mut d = Diagnostics::default();
+    let read = read_component::<RandomOffset, BlockComponent>(
+        JsonSlice::new(&text),
+        ConvertMode::Strict,
+        &super::common::ucf(),
+        &mut d,
+    );
+    match read? {
+        BlockComponent::RandomOffset(offset) => offset.x,
+        _ => None,
+    }
 }
 
 /// The axis's `range`, read and then written on one line.
@@ -27,13 +41,7 @@ fn written(range: &str) -> String {
 
 /// `range` read as a `FloatRange` member would be.
 fn float_range(range: &str) -> Option<FloatRange> {
-    #[derive(facet::Facet)]
-    struct Holder {
-        range: FloatRange,
-    }
-    from_str_jsonc::<Holder>(&format!(r#"{{"range": {range}}}"#))
-        .ok()
-        .map(|holder| holder.range)
+    read_value::<FloatRange>(&from_str_jsonc(range).ok()?)
 }
 
 /// The ends `range` reads to as `Bounds`.
@@ -72,14 +80,10 @@ fn a_number_or_an_array_is_no_bounds() {
 }
 
 #[test]
-fn an_end_left_out_is_zero_and_written() {
-    assert_eq!(bounds(r#"{"min": 1}"#), Some((1.0, 0.0)));
-    assert_eq!(
-        written(r#"{"min": 1}"#),
-        r#"{"range":{"min":1.0,"max":0.0}}"#
-    );
-    assert_eq!(bounds(r#"{"max": 1}"#), Some((0.0, 1.0)));
-    assert_eq!(bounds("{}"), Some((0.0, 0.0)));
+fn an_end_left_out_is_a_missing_member() {
+    assert_eq!(bounds(r#"{"min": 1}"#), None);
+    assert_eq!(bounds(r#"{"max": 1}"#), None);
+    assert_eq!(bounds("{}"), None);
     // A FloatRange marks the end it was not given.
     let missing = float_range(r#"{"min": 1}"#).unwrap();
     assert!(missing.missing_max && !missing.missing_min);
@@ -88,7 +92,7 @@ fn an_end_left_out_is_zero_and_written() {
 #[test]
 fn range_min_and_range_max_are_no_ends() {
     let text = r#"{"range_min": 1, "range_max": 2}"#;
-    assert_eq!(bounds(text), Some((0.0, 0.0)));
+    assert_eq!(bounds(text), None);
     let range = float_range(text).unwrap();
     assert_eq!(
         (range.min, range.max, range.form),

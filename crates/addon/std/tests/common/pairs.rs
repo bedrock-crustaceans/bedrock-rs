@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use bedrock_addon::diagnostic::{Diagnostics, JsonPath, Severity};
-use bedrock_addon::json::{JsonSlice, Value, parse_at};
+use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadContext, LoadOptions};
 use bedrock_addon::molang::{MolangFieldMut, MolangFields, RawVersion, visit_fields};
 use bedrock_addon::pack::PackType;
@@ -164,7 +164,7 @@ fn check_occurrences(
     mut parse: impl FnMut(File<'_>) -> Result<(Members, Diagnostics), Diagnostics>,
 ) -> Checked {
     let text = std::fs::read_to_string(pairs).unwrap();
-    let document: Value = parse_at(JsonSlice::new(&text)).unwrap();
+    let document: Value = bedrock_addon::json::from_str_jsonc::<Value>(&text).unwrap();
     let mut cache: BTreeMap<PathBuf, Result<Members, Vec<String>>> = BTreeMap::new();
     let (mut checked, mut keys, mut foreign) = (0, 0, 0);
     let mut matched = Vec::new();

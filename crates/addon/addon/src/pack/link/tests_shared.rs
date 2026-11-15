@@ -1,7 +1,10 @@
 //! The resolvers of the shared descriptor types: every arm of each.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
-use bedrock_addon_core::json;
+#[cfg(any(feature = "item", feature = "block"))]
+use bedrock_addon_core::json::{self, Value};
+#[cfg(any(feature = "item", feature = "block"))]
+use bedrock_addon_core::schema::{FromJson, read_value};
 
 use super::support::{all_said, block, item, origin, set};
 use crate::pack::link::{Findings, LinkCx, LinkOptions, Member, States, link_with_rules};
@@ -40,6 +43,12 @@ fn told(lints: bool, resolve: for<'a, 'b, 'c> fn(&'a LinkCx<'b>, &'c mut Finding
     )
 }
 
+/// `text` read as a `T`.
+#[cfg(any(feature = "item", feature = "block"))]
+fn read<T: FromJson>(text: &str) -> Option<T> {
+    read_value(&json::from_str_jsonc::<Value>(text).ok()?)
+}
+
 #[cfg(feature = "item")]
 mod items {
     use bedrock_addon_shared_shapes::ItemDescriptor;
@@ -51,7 +60,7 @@ mod items {
         let origin = origin("entities/pet.json");
         let path = prefix();
         for (text, severity) in cases {
-            let descriptor: ItemDescriptor = json::from_str(text).expect("a descriptor");
+            let descriptor: ItemDescriptor = read(text).expect("a descriptor");
             let member = Member {
                 origin: &origin,
                 path: &path,
@@ -173,7 +182,7 @@ mod blocks {
         let origin = origin("entities/pet.json");
         let path = prefix();
         for (text, severity) in cases {
-            let descriptor: BlockDescriptor = json::from_str(text).expect("a descriptor");
+            let descriptor: BlockDescriptor = read(text).expect("a descriptor");
             // A row that grades a miss an error grades its states so.
             let states = if *severity == Severity::Error {
                 States::Error
@@ -368,7 +377,7 @@ mod blocks {
                     Severity::Warning,
                 ),
             ] {
-                let specifier: BlockSpecifier = json::from_str(text).expect("a specifier");
+                let specifier: BlockSpecifier = read(text).expect("a specifier");
                 let member = Member {
                     origin: &origin,
                     path: &path,

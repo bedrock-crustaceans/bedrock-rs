@@ -235,7 +235,8 @@ fn a_short_or_array_format_version_is_written_in_full_deviation() {
         assert!(!document.version().upgraded, "{spelled}");
         assert_eq!(document.format_version.to_string(), written, "{spelled}");
         let text = round_trip(&document, |text| attachable(text, &cx()));
-        let json: bedrock_addon::json::Value = bedrock_addon::json::from_str(&text).unwrap();
+        let json: bedrock_addon::json::Value =
+            bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&text).unwrap();
         let version = &json.as_object().unwrap()["format_version"];
         assert_eq!(
             version.as_string().map(facet_value::VString::as_str),

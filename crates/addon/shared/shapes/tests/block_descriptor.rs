@@ -174,7 +174,7 @@ fn block_specifier_has_no_tag_form() {
         r#"{"name": "a:b", "states": {"s": 1.5}}"#,
     ] {
         assert!(
-            read::<BlockSpecifier>(json).is_err(),
+            read::<BlockSpecifier>(json).is_none(),
             "{json} must be rejected"
         );
     }
@@ -189,7 +189,10 @@ fn state_value_reads_bool_int_and_string_only() {
         StateValue::String("1".into())
     );
     for json in ["1.0", "null", "[]", "{}", "3000000000"] {
-        assert!(read::<StateValue>(json).is_err(), "{json} must be rejected");
+        assert!(
+            read::<StateValue>(json).is_none(),
+            "{json} must be rejected"
+        );
     }
 }
 
@@ -211,7 +214,7 @@ mod walked_by_a_derived_check {
     use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
 
     /// `text` read as `T`.
-    fn read<T: for<'a> facet::Facet<'a>>(text: &str) -> T {
+    fn read<T: bedrock_addon_core::schema::FromJson>(text: &str) -> T {
         super::read(text).expect("JSON of the type")
     }
 

@@ -1,11 +1,6 @@
 //! The aim-assist chains, the step from 1.21.50, the history path and write-back (the Value
 //! level).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::LoadContext;
@@ -46,7 +41,7 @@ fn old_preset(entries: Option<&[&str]>) -> Value {
         let list: Vec<String> = entries.iter().map(|e| format!("\"{e}\"")).collect();
         format!(r#""exclusion_list": [{}], "#, list.join(","))
     });
-    facet_json::from_str(&format!(
+    bedrock_addon_core::json::from_str_jsonc::<Value>(&format!(
         r#"{{"format_version": "1.21.50", "minecraft:aim_assist_preset": {{{list}"identifier": "test:p", "liquid_targeting_list": ["minecraft:bucket"], "item_settings": {{"minecraft:iron_sword": "test:melee"}}, "default_item_settings": "test:default", "hand_settings": "test:empty_hand"}}}}"#
     ))
     .unwrap()
@@ -247,8 +242,8 @@ fn vanillas_aim_assist_files_are_written_back_member_for_member() {
     assert_eq!(again.to_json().unwrap(), written);
     let member = |value: &Value, key: &str| value.as_object().unwrap().get(key).unwrap().clone();
     let (a, b): (Value, Value) = (
-        facet_json::from_str(&written).unwrap(),
-        facet_json::from_str_jsonc(&text).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&written).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap(),
     );
     // The same members with the same values (the struct's member order, not the file's).
     let (a, b) = (
@@ -273,8 +268,8 @@ fn vanillas_aim_assist_files_are_written_back_member_for_member() {
     assert_eq!(again.value(), document.value());
     assert_eq!(again.to_json().unwrap(), written);
     let (a, b): (Value, Value) = (
-        facet_json::from_str(&written).unwrap(),
-        facet_json::from_str_jsonc(&text).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&written).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap(),
     );
     let names = |value: &Value| -> Vec<String> {
         at(value, "minecraft:aim_assist_categories/categories")

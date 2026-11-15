@@ -1,15 +1,34 @@
 //! `MolangList`, the value-or-array Molang field: `Option<MolangList>` reads `null`
 //! as no expression, a scalar as `One`, an array as `Many`, element by element.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
+use bedrock_addon_core::json::{
+    EncodeError, Indent, Value, WriteStyle, from_str_jsonc, write_json,
+};
 use bedrock_addon_core::molang::{Molang, MolangList, MolangSource};
+use bedrock_addon_core::schema::read_value;
+
+/// `json` read as the field: `None` (outer) when the field refuses it.
+#[allow(
+    clippy::option_option,
+    reason = "the outer `None` is a refusal, the inner one the field's absence"
+)]
+fn read(json: &str) -> Option<Option<MolangList>> {
+    read_value::<Option<MolangList>>(&from_str_jsonc::<Value>(json).unwrap())
+}
 
 fn list(json: &str) -> Option<MolangList> {
-    facet_json::from_str::<Option<MolangList>>(json).unwrap()
+    read(json).unwrap()
+}
+
+/// `value` written on one line.
+fn compact(value: &MolangList) -> Result<String, EncodeError> {
+    let mut out = Vec::new();
+    let style = WriteStyle {
+        indent: Indent::Compact,
+        trailing_newline: false,
+    };
+    write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap())
 }
 
 #[test]
@@ -49,7 +68,7 @@ fn an_array_is_read_element_by_element() {
 fn writes_back_the_form_it_read() {
     for json in ["1.5", "true", r#""q.x""#, r#"[1.5,"v.x",[2.5,false],[]]"#] {
         let value = list(json).unwrap();
-        assert_eq!(facet_json::to_string(&value).unwrap(), json);
+        assert_eq!(compact(&value).unwrap(), json);
     }
 }
 
@@ -63,15 +82,12 @@ fn objects_null_elements_and_non_finite_numbers_are_rejected() {
         "1e39",
         "[1e39]",
     ] {
-        assert!(
-            facet_json::from_str::<Option<MolangList>>(json).is_err(),
-            "{json}"
-        );
+        assert!(read(json).is_none(), "{json}");
     }
 }
 
 #[test]
 fn a_non_finite_constant_is_not_written() {
     let value = MolangList::Many(vec![MolangList::One(Molang::Const(f32::NAN))]);
-    assert!(facet_json::to_string(&value).is_err());
+    assert!(compact(&value).is_err());
 }

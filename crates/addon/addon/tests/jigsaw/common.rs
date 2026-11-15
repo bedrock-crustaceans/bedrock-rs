@@ -18,10 +18,6 @@
 //! (info ones included) one finding; `path` and `text` are compared when given.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -132,8 +128,11 @@ pub fn stack(packs: Vec<Pack>) -> PackStack<Behavior> {
 #[track_caller]
 pub fn load_fixture(name: &str) -> PackStack<Behavior> {
     let stack = stack(fixture_packs(name));
-    let expected: Value = facet_json::from_slice(&fixture(&format!("{name}/expected.json")))
-        .expect("expected.json is JSON");
+    let expected: Value = bedrock_addon::json::parse::parse_bytes(
+        &fixture(&format!("{name}/expected.json")),
+        bedrock_addon::json::parse::Options::default(),
+    )
+    .expect("expected.json is JSON");
     check_expected(name, stack.jigsaw(), &expected);
     stack
 }

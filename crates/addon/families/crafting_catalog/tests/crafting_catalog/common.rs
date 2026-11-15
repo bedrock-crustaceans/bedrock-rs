@@ -80,7 +80,9 @@ pub fn listed(d: &Diagnostics) -> Vec<(String, String, String)> {
 
 /// The `(code, severity, text)` rows of the expected-diagnostics fixture `path`.
 pub fn expected_list(path: &str) -> Vec<(String, String, String)> {
-    let value: facet_value::Value = facet_json::from_str(&fixture(path)).unwrap();
+    let value: facet_value::Value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&fixture(path))
+            .unwrap();
     value
         .as_array()
         .unwrap()

@@ -2,11 +2,6 @@
 //! cost of a long list. The tips no language translates wait for the link stage; the game's
 //! stage-list bug no file can cause.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::Severity;
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::loading_messages::{LoadingMessage, LoadingMessages, MessageList};
@@ -261,7 +256,7 @@ fn l4_every_list_the_game_asks_for_is_named_when_missing() {
     ] {
         let mut root = json(STAGES);
         root.as_object_mut().unwrap().remove(list.key());
-        let doc = parse(&facet_json::to_string(&root).unwrap());
+        let doc = parse(&bedrock_addon::json::to_facet_json(&root).unwrap());
         assert_eq!(
             texts(&doc),
             [(

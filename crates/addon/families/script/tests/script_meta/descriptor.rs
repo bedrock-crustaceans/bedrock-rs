@@ -1,18 +1,15 @@
 //! Type-descriptor lowering. The descriptors are
 //! written in the generator's shapes.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_family_script::meta::model::script::RawTypeDesc;
 use bedrock_addon_family_script::meta::{
     Errorability, MetaError, Prim, Privilege, TypeDescriptor, TypeKind, TypeOverlay,
 };
 
 fn raw(json: &str) -> RawTypeDesc {
-    facet_json::from_str(json).unwrap()
+    let value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(json).unwrap();
+    bedrock_addon_core::schema::read_value(&value).unwrap()
 }
 
 fn lower(json: &str) -> Result<TypeDescriptor, MetaError> {

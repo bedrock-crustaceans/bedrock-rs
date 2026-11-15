@@ -1,11 +1,6 @@
 //! For the block family: a member the author did not write is not written back, and one
 //! the author wrote at its default is.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it and serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadOptions};
 use bedrock_addon_core::pack_identity::PackType;
@@ -50,7 +45,7 @@ fn sorted(value: &Value) -> String {
         let inner: Vec<String> = array.iter().map(sorted).collect();
         format!("[{}]", inner.join(","))
     } else {
-        facet_json::to_string(value).unwrap()
+        bedrock_addon_core::json::to_facet_json(value).unwrap()
     }
 }
 
@@ -66,7 +61,7 @@ fn block(description: &str, components: &str) -> String {
 fn rewritten(input: &str) -> (String, String) {
     let document = loads(input, &everything());
     let written = document.to_json().unwrap();
-    let read = |text: &str| facet_json::from_str::<Value>(text).unwrap();
+    let read = |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
     (sorted(&read(&written)), sorted(&read(input)))
 }
 

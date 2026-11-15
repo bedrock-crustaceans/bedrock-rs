@@ -4,17 +4,16 @@
 //! `EncodeError::NotRepresentable`, and `WriteStyle` defaulting to two spaces and a trailing
 //! newline. `NotRepresentable` names the JSON path of the value it refused.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
-use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::{Extra, Unknown};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::parse::{Options, parse};
 use bedrock_addon_core::json::{
-    EncodeError, Indent, StrictFloat, StrictInt, Unrepresentable, Value, WriteStyle,
-    keep_unknown_members, to_json, write_json, write_json_with,
+    EncodeError, Indent, Unrepresentable, Value, WriteStyle, from_str_jsonc, to_json, write_json,
+    write_json_with,
 };
+use bedrock_addon_core::schema::{Schema, read_document, read_value};
+use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
 use indexmap::IndexMap;
 
@@ -84,12 +83,12 @@ fn write_style_defaults_to_two_spaces_and_a_trailing_newline() {
     );
 }
 
-#[derive(Debug, Default, Facet)]
+#[derive(Debug, PartialEq, Facet, Schema)]
 struct Point {
-    z: i32,
-    #[facet(rename = "minecraft:x")]
-    x: i32,
     #[facet(default)]
+    z: i32,
+    #[facet(default, rename = "minecraft:x")]
+    x: i32,
     label: Option<String>,
     #[facet(skip)]
     extra: Extra,
@@ -153,10 +152,12 @@ fn extra_members_follow_the_known_members_of_their_object() {
     );
 }
 
-#[derive(Debug, Default, Facet)]
+#[derive(Debug, PartialEq, Facet, Schema)]
 struct Nested {
+    #[facet(default)]
     points: Vec<Point>,
     first: Option<Point>,
+    #[facet(default)]
     map: IndexMap<String, u8>,
     #[facet(skip)]
     extra: Extra,
@@ -205,7 +206,7 @@ fn f32_values_read_back_to_the_same_value() {
         0.3,
     ];
     let text = compact(&values);
-    let back: Vec<f32> = facet_json::from_str(&text).unwrap();
+    let back: Vec<f32> = read_value(&from_str_jsonc(&text).unwrap()).unwrap();
     assert_eq!(back, values);
 }
 
@@ -214,41 +215,6 @@ fn f64_and_integers_are_written_as_their_json_type() {
     assert_eq!(compact(&vec![1.0f64, 0.1]), "[1.0,0.1]");
     assert_eq!(compact(&vec![u64::MAX]), "[18446744073709551615]");
     assert_eq!(compact(&vec![i64::MIN]), "[-9223372036854775808]");
-}
-
-#[test]
-fn strict_wrappers_write_their_value() {
-    assert_eq!(compact(&StrictFloat(0.1f32)), "0.1");
-    assert_eq!(compact(&StrictFloat(2.0f32)), "2.0");
-    assert_eq!(compact(&StrictInt(-64i32)), "-64");
-}
-
-/// A strict float behind a transparent newtype, as a component payload holds it.
-#[derive(Debug, Facet)]
-#[facet(transparent)]
-struct Transparent(StrictFloat<f32>);
-
-/// The newtype as a member, where it is not the root of the walk.
-#[derive(Debug, Facet)]
-struct HoldsTransparent {
-    friction: Transparent,
-    #[facet(default)]
-    optional: Option<Transparent>,
-}
-
-#[test]
-fn a_strict_f32_behind_a_transparent_newtype_is_written_shortest() {
-    // Written as its `f32`, as a struct field is, not widened to `0.4000000059604645`.
-    assert_eq!(compact(&Transparent(StrictFloat(0.4))), "0.4");
-    assert_eq!(compact(&Transparent(StrictFloat(2.0))), "2.0");
-    assert_eq!(
-        compact(&HoldsTransparent {
-            friction: Transparent(StrictFloat(0.1)),
-            optional: Some(Transparent(StrictFloat(0.3))),
-        }),
-        r#"{"friction":0.1,"optional":0.3}"#
-    );
-    assert_eq!(compact(&vec![Transparent(StrictFloat(0.6))]), "[0.6]");
 }
 
 /// A plain `f32` behind a transparent newtype, as a component payload holds it once its
@@ -261,11 +227,9 @@ struct PlainTransparent(f32);
 #[derive(Debug, Facet)]
 struct PlainFloats {
     member: f32,
-    #[facet(default)]
     optional: Option<f32>,
     list: Vec<f32>,
     newtype: PlainTransparent,
-    #[facet(default)]
     optional_newtype: Option<PlainTransparent>,
     wide: f64,
 }
@@ -293,7 +257,7 @@ fn a_declared_f32_is_written_shortest_wherever_it_is_held() {
 #[test]
 fn a_value_keeps_its_number_tags_and_member_order() {
     let value: Value =
-        facet_json::from_str(r#"{"b": 1.0, "a": [1, -0.0, 2.5e3], "c": "18446744073709551616"}"#)
+        from_str_jsonc(r#"{"b": 1.0, "a": [1, -0.0, 2.5e3], "c": "18446744073709551616"}"#)
             .unwrap();
     assert_eq!(
         compact(&value),
@@ -333,10 +297,6 @@ fn nan_and_infinities_are_not_representable() {
         not_representable(&Value::from(f64::NAN)),
         Unrepresentable::NaN
     );
-    assert_eq!(
-        not_representable(&StrictFloat(f32::INFINITY)),
-        Unrepresentable::Infinity
-    );
 }
 
 // A constant is written as the token an author writes, as a member, in a list and
@@ -365,8 +325,8 @@ fn a_molang_constant_is_written_as_its_shortest_token() {
         compact(&fields),
         r#"{"member":16,"list":[0,2.5],"maybe":-1,"flag":true}"#
     );
-    let back: Molang = facet_json::from_str("0.10000000149011612").unwrap();
-    assert!(matches!(back, Molang::Const(x) if x == 0.1));
+    let back: Option<Molang> = read_value(&from_str_jsonc("0.10000000149011612").unwrap());
+    assert!(matches!(back, Some(Molang::Const(x)) if x == 0.1));
 }
 
 #[test]
@@ -384,12 +344,14 @@ fn a_non_finite_molang_constant_is_refused() {
 fn a_document_round_trips_by_value_with_its_unknown_members() {
     let text =
         r#"{ "points": [{ "z": 1, "q": [1.0], "minecraft:x": 2 }], "map": { "k": 7 }, "w": {} }"#;
-    let json: Value = facet_json::from_str(text).unwrap();
-    let nested: Nested = facet_json::from_str(text).unwrap();
-    let mut unknown = Unknown::new();
-    keep_unknown_members(&nested, &json, &mut unknown);
-    let written = compact_with(&nested, &unknown);
-    let again: Value = facet_json::from_str(&written).unwrap();
+    let parsed = parse(text, Options::default()).unwrap();
+    let mut d = Diagnostics::default();
+    let nested: Nested = {
+        let mut read = Read::new(Reading::DOCUMENT, &mut d);
+        read_document(&Node::parsed(&parsed, JsonPath::new()), &mut read).unwrap()
+    };
+    let written = compact_with(&nested, d.unknown());
+    let again: Value = from_str_jsonc(&written).unwrap();
     assert_eq!(
         compact(&again),
         r#"{"points":[{"z":1,"minecraft:x":2,"q":[1.0]}],"map":{"k":7},"w":{}}"#
@@ -512,31 +474,6 @@ fn a_raw_number_keeps_its_kind() {
             .unwrap()
             .to_f64_lossy()
             .is_sign_negative()
-    );
-}
-
-/// `to_facet_json_signed` is `to_facet_json` (one line, a whole real as an integer) but for a
-/// real negative zero, which keeps its sign: `-0.0`. An integer `-0` is the integer 0.
-#[test]
-fn the_signed_facet_text_keeps_a_negative_zero_and_nothing_else() {
-    use bedrock_addon_core::json::{Value, from_str, to_facet_json, to_facet_json_signed};
-    let value: Value = from_str(
-        r#"{"a": -0.0, "b": [-0.0, -0, 0.0, 1.0, 2.5, "x\"y", null, true], "c": {"d": -0e0}}"#,
-    )
-    .unwrap();
-    assert_eq!(
-        to_facet_json(&value).unwrap(),
-        r#"{"a":0,"b":[0,0,0,1,2.5,"x\"y",null,true],"c":{"d":0}}"#
-    );
-    assert_eq!(
-        to_facet_json_signed(&value).unwrap(),
-        r#"{"a":-0.0,"b":[-0.0,0,0,1,2.5,"x\"y",null,true],"c":{"d":-0.0}}"#
-    );
-    // Without a negative zero the two are one text.
-    let plain: Value = from_str(r#"{"a": 1.0, "b": [0, 0.0, {"c": "d"}]}"#).unwrap();
-    assert_eq!(
-        to_facet_json_signed(&plain).unwrap(),
-        to_facet_json(&plain).unwrap()
     );
 }
 

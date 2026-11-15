@@ -8,11 +8,12 @@ use bedrock_addon_core::json::NullRule;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::load::{DocumentSource, Experiment};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, BetaPermission, ComponentTable, Envelope, EnvelopeCheck, ExperimentalField,
     Family, InputKind, LoadOutcome, Loaded, MissingVersion, ParseCx, Reading, StructIndex,
-    VersionStruct, Versioned, check_experimental_fields, file_version, load, parse_payload,
+    VersionStruct, Versioned, check_experimental_fields, file_version, load, read_payload,
     write_payload,
 };
 use facet::Facet;
@@ -227,18 +228,20 @@ impl Family for Stable {
 }
 
 /// The payload of a raw-path document.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RawPayload {
+    #[facet(default)]
     pub description: crate::toy::Description,
     #[facet(skip)]
     pub extra: Extra,
 }
 
 /// The root of a raw-path document: the struct is read from the whole text.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RawRoot {
+    #[facet(default)]
     pub format_version: String,
-    #[facet(rename = "minecraft:toy")]
+    #[facet(default, rename = "minecraft:toy")]
     pub toy: RawPayload,
     #[facet(skip)]
     pub extra: Extra,
@@ -254,7 +257,7 @@ impl VersionStruct for RawRoot {
         cx: &ParseCx<'_>,
         d: &mut bedrock_addon_core::diagnostic::Diagnostics,
     ) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
@@ -294,7 +297,7 @@ macro_rules! raw_family {
     };
 }
 
-raw_family!(Raw, raw, EnvelopeCheck::Never, none);
+raw_family!(Raw, raw, EnvelopeCheck::Never);
 raw_family!(
     RawBelow,
     raw_below,
@@ -1314,10 +1317,10 @@ fn a_root_member_outside_the_payload_stays_an_information_in_a_strict_slice() {
 
 /// A beta struct with one experiment-gated field, as the game's beta loader binds it: the
 /// test component's `experimental_flag` needs the test experiment.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct GatedBeta {
-    pub description: crate::toy::Description,
     #[facet(default)]
+    pub description: crate::toy::Description,
     pub components: Option<Value>,
     #[facet(skip)]
     pub extra: Extra,
@@ -1338,7 +1341,7 @@ impl VersionStruct for GatedBeta {
         cx: &ParseCx<'_>,
         d: &mut bedrock_addon_core::diagnostic::Diagnostics,
     ) -> Option<Self> {
-        let parsed: Self = parse_payload(payload, cx, d)?;
+        let parsed: Self = read_payload(payload, cx, d)?;
         let present = |name: &str| {
             let mut parts = name.split('.');
             let Some("components") = parts.next() else {
@@ -1356,10 +1359,6 @@ impl VersionStruct for GatedBeta {
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
     }
-}
-
-impl bedrock_addon_core::molang::MolangFields for GatedBeta {
-    fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
 }
 
 pub struct Gated;

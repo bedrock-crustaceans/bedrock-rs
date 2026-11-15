@@ -1,11 +1,6 @@
 //! The chain of `sounds/sound_definitions.json` (contiguity, struct selection, no floor and no
 //! ceiling), the three `Upgrade` steps, the history path and write-back (the raw Value level).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::Diagnostics;
 use bedrock_addon::document::{Content, Placed};
 use bedrock_addon::families::sound_definitions::SoundDefinitions;
@@ -230,7 +225,8 @@ fn a_file_is_read_by_the_struct_of_its_version_and_upgrades_to_what_parse_gives(
         assert_eq!(any.value().parsed_version(), struct_version);
         assert_eq!(any.version().written, written);
         // An older struct writes its own version's document back; the newest its typed value.
-        let rewritten: Value = facet_json::from_str(&any.to_json().unwrap()).unwrap();
+        let rewritten: Value =
+            bedrock_addon::json::from_str_jsonc::<Value>(&any.to_json().unwrap()).unwrap();
         let expected = if text == LATEST { LATEST_WRITTEN } else { text };
         assert_eq!(rewritten, json(expected));
         let parsed = SoundDefinitions::parse(
@@ -305,7 +301,8 @@ fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
     // `json` is the JSON that was read: integer `2`, the `null`, the unknown-free entries.
     assert_eq!(*latest.json(), json(LATEST));
     // What is written is the typed value: the distances as floats, the `null` as its reading.
-    let rewritten: Value = facet_json::from_str(&latest.to_json().unwrap()).unwrap();
+    let rewritten: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(&latest.to_json().unwrap()).unwrap();
     assert_eq!(rewritten, json(LATEST_WRITTEN));
     let text = latest.to_json().unwrap();
     assert!(text.contains("\"min_distance\": 2.0,"), "{text}");
@@ -320,7 +317,8 @@ fn sound_definitions_write_the_typed_value_of_the_upgraded_document() {
     );
     // ... and what it writes is that document's typed value: the `null` distance and the
     // string flag as their readings.
-    let rewritten: Value = facet_json::from_str(&legacy.to_json().unwrap()).unwrap();
+    let rewritten: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(&legacy.to_json().unwrap()).unwrap();
     assert_eq!(
         rewritten,
         json(

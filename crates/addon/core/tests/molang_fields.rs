@@ -1,21 +1,18 @@
 //! Pass 1 over a document's Molang fields (the first of the two Molang passes): a toy version
-//! struct deserialised by facet from text, walked through `MolangFields`; each field's reader check
+//! struct read from text, walked through `MolangFields`; each field's reader check
 //! and version source. Without the `molang` feature, `not_checked` stands in for the compile pass
 //! not compiling.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostics, JsonPath, Location, Phase, Severity, codes,
 };
+use bedrock_addon_core::json::{Value, from_str_jsonc};
 use bedrock_addon_core::molang::{
     self, ExperimentMask, Molang, MolangContext, MolangFieldMut, MolangFieldSpec, MolangFields,
     MolangList, MolangSource, MolangVersion, MolangVersionSource, MolangVisitor, RawVersion,
     ReaderKind, SourceForm,
 };
+use bedrock_addon_core::schema::{self, Schema, read_value};
 use bedrock_addon_core::version::{FormatVersionInput, MinEngineVersion, SemVersion};
 use indexmap::IndexMap;
 
@@ -38,44 +35,43 @@ const TAGS: MolangFieldSpec = MolangFieldSpec {
     ..MolangFieldSpec::DEFAULT
 };
 
-#[derive(Debug, facet::Facet)]
+#[derive(Debug, facet::Facet, Schema)]
+#[facet(schema::molang_with = toy_event_molang)]
 struct ToyEvent {
     condition: Molang,
 }
 
-impl MolangFields for ToyEvent {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("condition", &CONDITION, &mut self.condition);
-    }
+/// `ToyEvent`'s Molang walk.
+fn toy_event_molang(this: &mut ToyEvent, visitor: &mut MolangVisitor<'_>) {
+    visitor.field("condition", &CONDITION, &mut this.condition);
 }
 
-#[derive(Debug, facet::Facet)]
+#[derive(Debug, facet::Facet, Schema)]
+#[facet(schema::molang_with = toy_document_molang)]
 struct ToyDocument {
     condition: Molang,
     script: MolangSource,
     #[facet(default)]
     weights: Vec<Molang>,
-    #[facet(default)]
     data: Option<MolangList>,
     #[facet(default)]
     events: IndexMap<String, ToyEvent>,
-    #[facet(default)]
     tags: Option<MolangSource>,
 }
 
-impl MolangFields for ToyDocument {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("condition", &CONDITION, &mut self.condition);
-        visitor.field("script", &SCRIPT, &mut self.script);
-        visitor.field("weights", &WEIGHT, &mut self.weights);
-        visitor.field("data", &DATA, &mut self.data);
-        visitor.nested("events", &mut self.events);
-        visitor.field("tags", &TAGS, &mut self.tags);
-    }
+/// `ToyDocument`'s Molang walk.
+fn toy_document_molang(this: &mut ToyDocument, visitor: &mut MolangVisitor<'_>) {
+    visitor.field("condition", &CONDITION, &mut this.condition);
+    visitor.field("script", &SCRIPT, &mut this.script);
+    visitor.field("weights", &WEIGHT, &mut this.weights);
+    visitor.field("data", &DATA, &mut this.data);
+    visitor.nested("events", &mut this.events);
+    visitor.field("tags", &TAGS, &mut this.tags);
 }
 
 fn toy(json: &str) -> ToyDocument {
-    facet_json::from_str(json).expect("the toy document parses")
+    read_value(&from_str_jsonc::<Value>(json).expect("the toy document is JSON"))
+        .expect("the toy document reads")
 }
 
 /// A pack at 1.18.20 (6) holding a document of `format_version` 1.20.40 (10).
@@ -270,17 +266,17 @@ fn not_checked_names_the_number_of_expressions() {
 /// A document whose Molang fields hold only constants needs no check and gets no finding.
 #[test]
 fn not_checked_is_silent_without_expressions() {
-    #[derive(Debug, facet::Facet)]
+    #[derive(Debug, facet::Facet, Schema)]
+    #[facet(schema::molang_with = only_constants_molang)]
     struct OnlyConstants {
         values: Vec<Molang>,
     }
-    impl MolangFields for OnlyConstants {
-        fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-            visitor.field("values", &CONDITION, &mut self.values);
-        }
+    /// `OnlyConstants`'s Molang walk.
+    fn only_constants_molang(this: &mut OnlyConstants, visitor: &mut MolangVisitor<'_>) {
+        visitor.field("values", &CONDITION, &mut this.values);
     }
     let mut document: OnlyConstants =
-        facet_json::from_str(r#"{"values": [1, 2.5, false]}"#).unwrap();
+        read_value(&from_str_jsonc::<Value>(r#"{"values": [1, 2.5, false]}"#).unwrap()).unwrap();
     let mut diagnostics = Diagnostics::default();
     assert_eq!(
         molang::not_checked(&mut document, &base(), &mut diagnostics),

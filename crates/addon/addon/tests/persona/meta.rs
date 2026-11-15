@@ -1119,7 +1119,7 @@ fn the_texture_s_frame_count_is_the_game_s_reading_of_what_was_written() {
         source.texture = Some("hat".to_owned());
         source.extra.insert(
             "frames".to_owned(),
-            bedrock_addon::json::from_str::<bedrock_addon::json::Value>(frames).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(frames).unwrap(),
         );
         meta.texture_sources = Some(vec![source]);
         assert_eq!(meta.textures()[0].frames, read, "{frames}");

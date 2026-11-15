@@ -1,12 +1,8 @@
 //! Helpers for the shared-type tests: read a value from JSON text the way a family reads a
 //! member (the jsonc entry point), write it back, and compare at the value level.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "reads with facet-json's own jsonc entry points, as the shapes tests' copy it came from did: the door's would also respell integers beyond 64 bits and refuse bad escapes, deep nesting and trailing text, so it is another reader"
-)]
-
-use bedrock_addon_core::json::{Indent, Value, WriteStyle, write_json};
+use bedrock_addon_core::json::{Indent, Value, WriteStyle, from_str_jsonc, write_json};
+use bedrock_addon_core::schema::{FromJson, read_value};
 use facet::Facet;
 
 /// Wraps the value in `{ "v": … }`, the way a family holds a member.
@@ -16,9 +12,8 @@ pub struct Holder<T> {
 }
 
 /// Reads `json` as a `T` member.
-pub fn read<T: for<'a> Facet<'a>>(json: &str) -> Result<T, facet_json::DeserializeError> {
-    let text = format!(r#"{{ "v": {json} }}"#);
-    facet_json::from_str_borrowed_jsonc::<Holder<T>>(&text).map(|holder| holder.v)
+pub fn read<T: FromJson>(json: &str) -> Option<T> {
+    read_value::<T>(&from_str_jsonc::<Value>(json).ok()?)
 }
 
 /// Writes `value` as one line of JSON.
@@ -34,14 +29,14 @@ pub fn compact<'f, T: Facet<'f>>(value: &T) -> String {
 
 /// `json` re-written as one line, so two texts compare without whitespace.
 pub fn normalised(json: &str) -> String {
-    let value: Value = facet_json::from_str_jsonc(json).expect("valid JSON");
+    let value: Value = from_str_jsonc::<Value>(json).expect("valid JSON");
     compact(&value)
 }
 
 /// Reads `json`, requires the written value to be `json` itself (member order, number tags),
 /// and the written text to read back to an equal value.
-pub fn round_trip<T: for<'a> Facet<'a> + PartialEq + std::fmt::Debug>(json: &str) -> T {
-    let value: T = read(json).unwrap_or_else(|e| panic!("{json} does not read: {e}"));
+pub fn round_trip<T: FromJson + for<'a> Facet<'a> + PartialEq + std::fmt::Debug>(json: &str) -> T {
+    let value: T = read(json).unwrap_or_else(|| panic!("{json} does not read"));
     let written = compact(&value);
     assert_eq!(
         written,

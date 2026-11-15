@@ -2,11 +2,6 @@
 //! the value where it happened (`ShapeError.path`), and each descriptor's `check` reports every
 //! member kept in an `extra` as an `UnrecognizedField` finding at its full path.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::shared::ShapeError;
@@ -26,7 +21,7 @@ fn path(segments: &[&str]) -> JsonPath {
 
 /// The JSON text as a `Value`.
 fn value(json: &str) -> Value {
-    facet_json::from_str_jsonc(json).unwrap()
+    bedrock_addon_core::json::from_str_jsonc::<Value>(json).unwrap()
 }
 
 /// The read error of `T` for `json`.

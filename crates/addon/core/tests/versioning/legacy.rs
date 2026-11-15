@@ -5,10 +5,11 @@
 use bedrock_addon_core::diagnostic::Diagnostics;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     Family, Legacy, LegacyPayload, LegacyStep, Loaded, NoComponents, ParseCx, Upgrade, UpgradeCx,
-    VersionChain, VersionStruct, Versioned, parse_payload, write_payload,
+    VersionChain, VersionStruct, Versioned, read_payload, write_payload,
 };
 use facet::Facet;
 
@@ -23,14 +24,12 @@ const V130: FormatVersion = FormatVersion::new(1, 3, 0);
 pub struct Lamp;
 
 /// The payload of every older era: `level`, and `glow` from 1.1.0.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct LampPayload {
     #[facet(default)]
     pub level: u8,
-    #[facet(default)]
     pub glow: Option<u8>,
 }
-bedrock_addon_core::impl_no_molang!(LampPayload);
 
 impl LegacyPayload for LampPayload {
     fn parse(
@@ -39,7 +38,7 @@ impl LegacyPayload for LampPayload {
         cx: &ParseCx<'_>,
         d: &mut Diagnostics,
     ) -> Option<Self> {
-        let mut lamp: Self = parse_payload(payload, cx, d)?;
+        let mut lamp: Self = read_payload(payload, cx, d)?;
         if version < V110 {
             // 1.0.0 has no `glow`.
             lamp.glow = None;
@@ -57,11 +56,11 @@ impl LegacyPayload for LampPayload {
 }
 
 /// The newest struct, 1.3.0.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct LampDoc {
+    #[facet(default)]
     pub brightness: u8,
 }
-bedrock_addon_core::impl_no_molang!(LampDoc);
 
 impl Versioned for LampDoc {
     const VERSION: FormatVersion = V130;
@@ -69,7 +68,7 @@ impl Versioned for LampDoc {
 
 impl VersionStruct for LampDoc {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

@@ -1,4 +1,4 @@
-//! `shorthand = scalar` at the door: `versioning::parse_component` reads a bare scalar of a
+//! `shorthand = scalar`: `versioning::read_component` reads a bare scalar of a
 //! one-member payload as that member, and leaves an untagged enum's or a transparent newtype's
 //! read as it was; the shape test a family holds over its rows.
 
@@ -12,7 +12,8 @@ use bedrock_addon_core::schema::{
 };
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    ComponentTable, ConvertMode, Family, Loaded, NoStable, UpgradeCx, VersionChain, parse_component,
+    ComponentTable, ConvertMode, Family, Loaded, MemberFailure, NoStable, NullHandling, Reading,
+    UpgradeCx, VersionChain, read_component,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
@@ -53,14 +54,14 @@ impl Family for Toy {
 }
 
 /// `{"value": n}`, or `n`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Damage {
     #[facet(default)]
     pub value: i32,
 }
 
 /// `true`, `false` or `{"resistance": x}`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 pub enum Explode {
@@ -68,24 +69,24 @@ pub enum Explode {
     Params(Params),
 }
 
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Params {
     pub resistance: f32,
 }
 
 /// A bare number.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 #[facet(transparent)]
 pub struct Friction(pub f32);
 
 #[derive(Clone, Debug, PartialEq, Components)]
 #[component(family = Toy, unknown = Unknown)]
 pub enum Shorthands {
-    #[component(name = "minecraft:damage", shorthand = scalar, parse = parse_component::<Damage, Shorthands>)]
+    #[component(name = "minecraft:damage", shorthand = scalar, parse = read_component::<Damage, Shorthands>)]
     Damage(Damage),
-    #[component(name = "minecraft:explode", shorthand = scalar, parse = parse_component::<Explode, Shorthands>)]
+    #[component(name = "minecraft:explode", shorthand = scalar, parse = read_component::<Explode, Shorthands>)]
     Explode(Explode),
-    #[component(name = "minecraft:friction", shorthand = scalar, parse = parse_component::<Friction, Shorthands>)]
+    #[component(name = "minecraft:friction", shorthand = scalar, parse = read_component::<Friction, Shorthands>)]
     Friction(Friction),
     Unknown(Value),
 }
@@ -101,13 +102,13 @@ pub enum Plain {
 }
 
 /// `{"count": n}`, or `n`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Count {
     pub count: u8,
 }
 
 /// A payload of two members, which no bare scalar stands for.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Pair {
     pub a: i32,
     pub b: i32,
@@ -151,19 +152,19 @@ impl Family for Other {
 #[derive(Clone, Debug, PartialEq, Components)]
 #[component(family = Other, unknown = Unknown)]
 pub enum Misshapen {
-    #[component(name = "minecraft:count", shorthand = scalar, parse = parse_component::<Count, Misshapen>)]
+    #[component(name = "minecraft:count", shorthand = scalar, parse = read_component::<Count, Misshapen>)]
     Count(Count),
-    #[component(name = "minecraft:pair", shorthand = scalar, parse = parse_component::<Pair, Misshapen>)]
+    #[component(name = "minecraft:pair", shorthand = scalar, parse = read_component::<Pair, Misshapen>)]
     Pair(Pair),
-    #[component(name = "minecraft:blast", shorthand = scalar, parse = parse_component::<Blast, Misshapen>)]
+    #[component(name = "minecraft:blast", shorthand = scalar, parse = read_component::<Blast, Misshapen>)]
     Blast(Blast),
-    #[component(name = "minecraft:maybe", shorthand = scalar, parse = parse_component::<Maybe, Misshapen>)]
+    #[component(name = "minecraft:maybe", shorthand = scalar, parse = read_component::<Maybe, Misshapen>)]
     Maybe(Maybe),
     Unknown(Value),
 }
 
 /// `{"value": n}`, `{}` or `n`: a one-member payload whose member is optional.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Maybe {
     pub value: Option<i32>,
 }
@@ -174,7 +175,7 @@ type Told = (String, String, Severity, Option<Span>);
 /// `text` placed at offset 30 of a file, read as `T` of `C` under `rules`.
 fn read<T, C>(text: &str, rules: ScalarRules) -> (Option<C>, Vec<Told>)
 where
-    T: for<'a> Facet<'a> + Into<C>,
+    T: bedrock_addon_core::schema::FromJson + for<'a> Facet<'a> + Into<C>,
     C: ShorthandRows,
 {
     read_under::<T, C>(text, rules, None)
@@ -187,7 +188,7 @@ fn read_under<T, C>(
     null: Option<NullRule>,
 ) -> (Option<C>, Vec<Told>)
 where
-    T: for<'a> Facet<'a> + Into<C>,
+    T: bedrock_addon_core::schema::FromJson + for<'a> Facet<'a> + Into<C>,
     C: ShorthandRows,
 {
     let file = format!("{}{text}", " ".repeat(30));
@@ -198,8 +199,24 @@ where
     let mut cx = LoadContext::detached();
     cx.scalar_rules = rules;
     cx.null_rule = null;
+    // The slice's reading the rules and the null rule stand for.
+    let null = match null {
+        None => NullHandling::Own,
+        Some(NullRule::Absent) => NullHandling::Absent,
+        Some(_) => NullHandling::Rejected,
+    };
+    let failure = if rules.default_and_tell {
+        MemberFailure::DefaultAndTell
+    } else {
+        MemberFailure::Refuse
+    };
+    cx.reading = Reading::OWN
+        .with_scalars(rules.scalars)
+        .with_beyond_width(rules.beyond_width)
+        .with_null(null)
+        .with_on_member_failure(failure);
     let mut found = Diagnostics::default();
-    let value = parse_component::<T, C>(slice, ConvertMode::Strict, &cx, &mut found);
+    let value = read_component::<T, C>(slice, ConvertMode::Strict, &cx, &mut found);
     let told = found
         .iter()
         .map(|d| {
@@ -267,7 +284,7 @@ fn a_bare_scalar_of_a_one_member_payload_is_that_member() {
                 String::new(),
                 "core/invalid_type".to_owned(),
                 Severity::Error,
-                None
+                Some(at(30, 3))
             )]
         )
     );
@@ -303,13 +320,13 @@ fn an_untagged_enum_and_a_newtype_read_their_scalar_as_without_the_shorthand() {
 }
 
 /// `{"mode": …}`, or the mode bare: a one-member payload whose member is an untagged enum.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 pub struct Blast {
     pub mode: Explode,
 }
 
 #[test]
-fn a_bare_scalar_no_arm_of_the_member_takes_is_refused_at_the_component_without_a_span() {
+fn a_bare_scalar_no_arm_of_the_member_takes_is_refused_at_the_component() {
     let (value, told) = read::<Blast, Misshapen>(r#""no""#, STRICT);
     assert_eq!(value, None);
     assert_eq!(
@@ -318,9 +335,9 @@ fn a_bare_scalar_no_arm_of_the_member_takes_is_refused_at_the_component_without_
             String::new(),
             "core/invalid_type".to_owned(),
             Severity::Error,
-            None
+            Some(at(30, 4))
         )],
-        "a refusal is told at the component and, as every refusal at the door, without a span"
+        "a refusal is told at the component, spanning the scalar"
     );
     assert_eq!(
         read::<Blast, Misshapen>("true", STRICT).0,
@@ -339,7 +356,7 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
     let damage = |n| Some(Shorthands::Damage(Damage { value: n }));
     let rejected = Some(NullRule::Rejected);
     let absent = Some(NullRule::Absent);
-    // The object form, for the parity: the typed read fails at the member's key.
+    // The object form, for the parity: the typed read fails at the member's value.
     assert_eq!(
         read_under::<Damage, Shorthands>(r#"{"value": null}"#, STRICT, rejected),
         (
@@ -348,7 +365,7 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
                 "value",
                 "core/invalid_type",
                 Severity::Error,
-                Some(at(31, 7))
+                Some(at(40, 4))
             )]
         )
     );
@@ -356,7 +373,12 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
         read_under::<Damage, Shorthands>(r#"{"value": null}"#, STRICT, absent),
         (
             damage(0),
-            vec![told("value", "core/value_rewritten", Severity::Info, None)]
+            vec![told(
+                "value",
+                "core/value_rewritten",
+                Severity::Info,
+                Some(at(40, 4))
+            )]
         )
     );
     // The bare `null`: the same, at the component and spanning the text.
@@ -377,7 +399,12 @@ fn a_bare_null_follows_the_null_rule_as_the_object_form_does() {
         read_under::<Damage, Shorthands>("null", STRICT, absent),
         (
             damage(0),
-            vec![told("", "core/value_rewritten", Severity::Info, None)]
+            vec![told(
+                "",
+                "core/value_rewritten",
+                Severity::Info,
+                Some(at(30, 4))
+            )]
         ),
         "under `Absent` a bare null is the member left out"
     );
@@ -406,7 +433,12 @@ fn a_one_member_payload_whose_member_is_optional_reads_a_bare_scalar_and_a_bare_
         read_under::<Maybe, Misshapen>("null", STRICT, Some(NullRule::Absent)),
         (
             maybe(None),
-            vec![told("", "core/value_rewritten", Severity::Info, None)]
+            vec![told(
+                "",
+                "core/value_rewritten",
+                Severity::Info,
+                Some(at(30, 4))
+            )]
         )
     );
 }
@@ -419,6 +451,11 @@ fn under_default_and_tell_a_wrong_typed_bare_scalar_keeps_the_component_with_its
     // Told as the member's defaulted scalar is, at the component.
     assert_eq!(
         found,
-        [told("", "core/invalid_value", Severity::Info, None)]
+        [told(
+            "",
+            "core/invalid_value",
+            Severity::Info,
+            Some(at(30, 4))
+        )]
     );
 }

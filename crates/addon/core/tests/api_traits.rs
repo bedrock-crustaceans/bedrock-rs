@@ -8,9 +8,7 @@ use std::str::FromStr;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{Id, IdError, kind};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, StrictBool, StrictFloat, StrictInt, StrictString, Value, WriteStyle,
-};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, StrictBool, Value, WriteStyle};
 use bedrock_addon_core::load::{AppData, Experiment, Experiments, LoadOptions};
 use bedrock_addon_core::pack_identity::{PackPath, PathRejected};
 use bedrock_addon_core::versioning::testing::{Checks, FailureKind};
@@ -90,13 +88,7 @@ fn a_pack_path_parses_from_str_and_try_from() {
 
 #[test]
 fn the_strict_scalars_convert_from_their_inner_type() {
-    assert_eq!(StrictInt::from(3_i32), StrictInt(3));
-    assert_eq!(StrictFloat::from(1.5_f32), StrictFloat(1.5));
     assert_eq!(StrictBool::from(true), StrictBool(true));
-    assert_eq!(
-        StrictString::from("stone".to_owned()),
-        StrictString("stone".to_owned())
-    );
 }
 
 #[test]

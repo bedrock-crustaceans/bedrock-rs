@@ -98,8 +98,8 @@ fn an_int_range_takes_the_first_two_elements_of_a_longer_array() {
     // `IntRange::parseJson`: "an array of ≥ 2 → [a[0], a[1]]".
     let range: IntRange = read("[1, 2, 3]").unwrap();
     assert_eq!((range.min, range.max, range.form), (1, 2, RangeForm::Array));
-    assert!(read::<IntRange>("[1]").is_err());
-    assert!(read::<IntRange>("[]").is_err());
+    assert!(read::<IntRange>("[1]").is_none());
+    assert!(read::<IntRange>("[]").is_none());
 }
 
 #[test]
@@ -116,8 +116,8 @@ fn a_float_range_array_of_another_length_is_a_read_error_deviation() {
     // "Float range arrays should have 2 values.": vanilla logs it and keeps the member's
     // default; the crate's own reader fails with a read error, which the family reports as
     // `InvalidType`.
-    assert!(read::<FloatRange>("[1.0]").is_err());
-    assert!(read::<FloatRange>("[1.0, 2.0, 3.0]").is_err());
+    assert!(read::<FloatRange>("[1.0]").is_none());
+    assert!(read::<FloatRange>("[1.0, 2.0, 3.0]").is_none());
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn int_range_ends_are_strict_integers() {
         r#"{"min": "1"}"#,
         "3000000000",
     ] {
-        assert!(read::<IntRange>(json).is_err(), "{json} must be rejected");
+        assert!(read::<IntRange>(json).is_none(), "{json} must be rejected");
     }
 }
 
@@ -141,7 +141,10 @@ fn float_range_ends_take_integers_and_reals_only() {
     // An `f32` is written with its real tag, which every float reader takes.
     assert_eq!(compact(&range), "[1.0,2.0]");
     for json in ["\"1\"", "true", "[1, \"2\"]", "1e39", "null"] {
-        assert!(read::<FloatRange>(json).is_err(), "{json} must be rejected");
+        assert!(
+            read::<FloatRange>(json).is_none(),
+            "{json} must be rejected"
+        );
     }
 }
 

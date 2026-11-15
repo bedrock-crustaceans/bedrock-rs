@@ -20,16 +20,18 @@ fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
 
 /// `base` with `minecraft:dimension_bounds` `{min, max}`.
 fn with_bounds(base: &Value, min: i32, max: i32) -> Value {
-    let text = facet_json::to_string(base).unwrap().replace(
-        r#""components":{"#,
-        &format!(r#""components":{{"minecraft:dimension_bounds":{{"min":{min},"max":{max}}},"#),
-    );
-    facet_json::from_str(&text).unwrap()
+    let text = bedrock_addon_core::json::to_facet_json(base)
+        .unwrap()
+        .replace(
+            r#""components":{"#,
+            &format!(r#""components":{{"minecraft:dimension_bounds":{{"min":{min},"max":{max}}},"#),
+        );
+    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap()
 }
 
 /// The whole document the step reads: the dimension of `bounds`, if any.
 fn overworld_input(bounds: Option<(i32, i32)>) -> Value {
-    let base: Value = facet_json::from_str(
+    let base: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(
         r#"{"format_version": "1.21.60", "minecraft:dimension": {"description": {"identifier": "minecraft:overworld"}, "components": {"minecraft:generation": {"generator_type": "void"}}}}"#,
     )
     .unwrap();

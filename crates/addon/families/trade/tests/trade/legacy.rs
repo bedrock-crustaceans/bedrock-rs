@@ -140,8 +140,9 @@ fn t02_legacy_functions_and_filters_move_to_the_deprecated_side_cars() {
         (None, None)
     );
     assert!(item.legacy_functions.is_some() && item.legacy_filters.is_some());
-    let written: Value = facet_json::from_str(&document.to_json().unwrap()).unwrap();
-    let expected: Value = facet_json::from_str(
+    let written: Value =
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&document.to_json().unwrap()).unwrap();
+    let expected: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(
         r#"{"format_version":"1.20.30","tiers":[{"total_exp_required":0,"groups":[{"num_to_select":-1,"trades":[{
             "wants":[{"quantity":20,"item":"minecraft:wheat",
                 "functions":[{"function":"set_data","data":0}],

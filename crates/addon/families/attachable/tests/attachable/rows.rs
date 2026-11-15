@@ -7,11 +7,6 @@
 //! The files under `fixtures/item/attachable/vanilla/` are copied from the game's sample
 //! resource pack (1.26.50), `resource_pack/attachables/`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Diagnostics, Disposition, JsonPathSegment, Kind, Severity};
 use bedrock_addon_core::document::{Content, Placed};
 use bedrock_addon_core::id::AttachableId;
@@ -129,8 +124,9 @@ fn a04_1_26_0_latest() {
     assert!(condition.is_always());
     // Written back, it is the document that was read.
     let written = round_trip(&document, |text| attachable(text, &cx()));
-    let json =
-        |text: &str| -> bedrock_addon_core::json::Value { facet_json::from_str(text).unwrap() };
+    let json = |text: &str| -> bedrock_addon_core::json::Value {
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text).unwrap()
+    };
     assert_eq!(json(&written), json(&text));
 }
 

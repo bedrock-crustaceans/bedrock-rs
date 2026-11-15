@@ -2,11 +2,6 @@
 //! tests of the deliberate deviations from vanilla that this binary pins by name (each ends in
 //! `deviation`, or is a manifest rule's).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Code as C, Diagnostics, Severity};
 use bedrock_addon::document::{Document, Rejected};
 use bedrock_addon::json::Value;
@@ -43,7 +38,7 @@ fn members(payload: &Value, key: &str) -> Vec<Option<Value>> {
 /// keeps each member (an absent `last_used` stays absent), and the names keep their order.
 #[test]
 fn the_v1_21_100_step_keeps_every_member_of_every_element() {
-    let input = facet_json::from_str::<Value>(TWO_ENTRIES).expect("the input");
+    let input = bedrock_addon::json::from_str_jsonc::<Value>(TWO_ENTRIES).expect("the input");
     let checks = Checks::default();
     let output = step_output::<v1_21_100::SavedSettings>(&input, Run::default(), &checks)
         .expect("the step runs");

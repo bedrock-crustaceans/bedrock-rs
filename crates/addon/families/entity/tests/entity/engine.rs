@@ -149,7 +149,10 @@ fn the_pushable_upgrade_tests_documents() {
         let text = fixture(&format!("engine/{name}"));
         loads_and_round_trips(&name, &text);
         let (entity, _) = stable(&text, &cx());
-        let written: Value = facet_json::from_str(&entity.to_json().unwrap()).unwrap();
+        let written: Value = bedrock_addon_core::json::from_str_jsonc::<
+            bedrock_addon_core::json::Value,
+        >(&entity.to_json().unwrap())
+        .unwrap();
         let components = written
             .as_object()
             .and_then(|root| root.get("minecraft:entity"))

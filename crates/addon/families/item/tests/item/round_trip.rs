@@ -122,7 +122,12 @@ fn a_newest_format_document_reads_back_with_the_legacy_reading_it_had() {
     assert_eq!(short, long);
     assert_eq!(
         short.legacy.shared.get("minecraft:max_stack_size"),
-        Some(&bedrock_addon_core::json::from_str(r#"{"value": 16}"#).unwrap())
+        Some(
+            &bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+                r#"{"value": 16}"#
+            )
+            .unwrap()
+        )
     );
     // What the legacy reader computes from it is what it was.
     let timed = loads(
@@ -360,7 +365,8 @@ fn described(version: &str, description_members: &str) -> String {
 fn written_description(json: &str) -> String {
     let written = loads(json, &third_party()).to_json().unwrap();
     let value: bedrock_addon_core::json::Value =
-        bedrock_addon_core::json::from_str(&written).unwrap();
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
+            .unwrap();
     let description = &value.as_object().unwrap()["minecraft:item"]
         .as_object()
         .unwrap()["description"];
@@ -513,8 +519,10 @@ fn a_category_set_by_the_caller_is_written() {
     use bedrock_addon_shared_shapes::CreativeCategory;
 
     let description = |item: &Item| {
-        let value: bedrock_addon_core::json::Value =
-            bedrock_addon_core::json::from_str(&item.to_json().unwrap()).unwrap();
+        let value: bedrock_addon_core::json::Value = bedrock_addon_core::json::from_str_jsonc::<
+            bedrock_addon_core::json::Value,
+        >(&item.to_json().unwrap())
+        .unwrap();
         compact(
             &value.as_object().unwrap()["minecraft:item"]
                 .as_object()
@@ -590,7 +598,8 @@ fn an_unknown_side_car_member_beside_the_held_one_is_refused_not_dropped() {
     held.unknown_mut().put(
         &item_at,
         "__deprecated_components",
-        bedrock_addon_core::json::from_str(r#"{"zz": 1}"#).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(r#"{"zz": 1}"#)
+            .unwrap(),
     );
     match held.to_json() {
         Err(bedrock_addon_core::json::EncodeError::NotRepresentable { at, .. }) => {
@@ -608,7 +617,8 @@ fn an_unknown_side_car_member_beside_the_held_one_is_refused_not_dropped() {
     alone.unknown_mut().put(
         &item_at,
         "__deprecated_components",
-        bedrock_addon_core::json::from_str(r#"{"zz": 1}"#).unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(r#"{"zz": 1}"#)
+            .unwrap(),
     );
     assert!(refused_at(
         &alone.to_json(),
@@ -810,8 +820,10 @@ fn a_hand_built_item_without_a_registered_component_has_no_text_but_the_empty_on
     // Nothing at all: the legacy document.
     assert!(new().to_json().is_ok());
     let mut side_car = new();
-    side_car.deprecated.render_offsets =
-        Some(bedrock_addon_core::json::from_str(r#""tools""#).unwrap());
+    side_car.deprecated.render_offsets = Some(
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(r#""tools""#)
+            .unwrap(),
+    );
     assert!(
         refused_at_components(&side_car.to_json()),
         "{:?}",
@@ -820,7 +832,7 @@ fn a_hand_built_item_without_a_registered_component_has_no_text_but_the_empty_on
     let mut unknown = new();
     unknown.components.insert_unknown(
         "demo:what",
-        bedrock_addon_core::json::from_str("{}").unwrap(),
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>("{}").unwrap(),
     );
     assert!(
         refused_at_components(&unknown.to_json()),
@@ -832,7 +844,9 @@ fn a_hand_built_item_without_a_registered_component_has_no_text_but_the_empty_on
         .components
         .insert_custom(bedrock_addon_core::document::CustomComponent {
             name: "demo:shake".to_owned(),
-            parameters: bedrock_addon_core::json::from_str("{}").unwrap(),
+            parameters:
+                bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>("{}")
+                    .unwrap(),
             from_v1_list: false,
         });
     assert!(
@@ -1319,7 +1333,12 @@ fn an_item_without_a_text_that_reads_back_is_not_representable() {
     let mut item = Item::new(ItemId::parse("demo:new"));
     item.components
         .insert(bedrock_addon_family_item::component::UseModifiers::new(1.0));
-    item.events = Some(bedrock_addon_core::json::from_str(r#"{"demo:e": {}}"#).unwrap());
+    item.events = Some(
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+            r#"{"demo:e": {}}"#,
+        )
+        .unwrap(),
+    );
     assert!(
         refused_at(&item.to_json(), "minecraft:item/events"),
         "{:?}",

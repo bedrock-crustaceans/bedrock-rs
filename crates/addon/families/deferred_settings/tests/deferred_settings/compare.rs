@@ -9,7 +9,8 @@
 //! too, so that a number written in another spelling is seen and named.
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::json::{JsonSlice, Value, span_at};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{JsonSlice, Value};
 
 /// A number as a loader sees it, with the token it was written as.
 #[derive(Clone, Debug)]
@@ -58,7 +59,7 @@ impl Json {
     /// value, as every loader does.
     #[track_caller]
     pub fn of_text(text: &str) -> Self {
-        let value: Value = bedrock_addon_core::json::from_str(text)
+        let value: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(text)
             .unwrap_or_else(|e| panic!("no JSON: {e}\n{text}"));
         Self::of(&value, text, &mut JsonPath::new())
     }
@@ -102,7 +103,9 @@ impl Json {
             } else {
                 None
             };
-            let span = span_at(JsonSlice::new(text), path)
+            let span = parse_slice(JsonSlice::new(text), Options::default())
+                .ok()
+                .and_then(|parsed| parsed.spans.at(path))
                 .unwrap_or_else(|| panic!("no value at {path} in {text}"));
             let (from, len) = (span.offset as usize, span.len as usize);
             Self::Num(Number {

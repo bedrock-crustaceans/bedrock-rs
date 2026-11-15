@@ -3,11 +3,6 @@
 //! value; each built value is either written as text that reads back equal, or refused with
 //! `NotRepresentable`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::document::{Content, UnknownMembers};
 use bedrock_addon::families::material::{
     KeyRules, Listed, MaterialDef, MaterialFile, MaterialFileForm, MaterialKey, MaterialList,
@@ -437,7 +432,8 @@ fn sprinkle(rng: &mut Rng, def: &mut MaterialDef) {
     }
     if rng.chance(5) {
         let value = ["true", "null", "{}", "5"][rng.below(4)];
-        def.is_animated_texture = Some(facet_json::from_str::<Value>(value).unwrap());
+        def.is_animated_texture =
+            Some(bedrock_addon::json::from_str_jsonc::<Value>(value).unwrap());
     }
     if rng.chance(8) {
         def.key_rules = Some(KeyRules::Legacy);
@@ -447,7 +443,7 @@ fn sprinkle(rng: &mut Rng, def: &mut MaterialDef) {
         let value = ["\"s\"", "null", "[]", "5"][rng.below(4)];
         def.extra.insert(
             key.to_owned(),
-            facet_json::from_str::<Value>(value).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(value).unwrap(),
         );
     }
 }
@@ -540,7 +536,7 @@ fn every_built_value_is_written_as_text_that_reads_back_equal_or_is_refused() {
             let key = rng.pick(&["n", "materials", "vertexShader"]);
             value.extra.insert(
                 key.to_owned(),
-                facet_json::from_str::<Value>(stray).unwrap(),
+                bedrock_addon::json::from_str_jsonc::<Value>(stray).unwrap(),
             );
         }
         match value.to_json() {

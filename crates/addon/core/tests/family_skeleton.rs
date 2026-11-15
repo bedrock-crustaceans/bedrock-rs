@@ -10,21 +10,22 @@ use bedrock_addon_core::id::{BlockId, kind};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    Family, Loaded, NoComponents, ParseCx, VersionStruct, Versioned, load, parse_payload,
+    Family, Loaded, NoComponents, ParseCx, VersionStruct, Versioned, load, read_payload,
     write_payload,
 };
 use facet::Facet;
 
 /// `description` of a glint.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct GlintDescription {
     pub identifier: BlockId,
 }
 
 /// The one struct of the toy chain: `{ "description": {..}, "level": n }` at 1.0.0.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Glint {
     pub description: GlintDescription,
     pub level: u8,
@@ -36,7 +37,7 @@ impl Versioned for Glint {
 
 impl VersionStruct for Glint {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
@@ -55,7 +56,6 @@ mod by_macro {
         pub enum History {
             V1_0_0(Glint),
         }
-        molang = none;
     }
 
     impl Family for GlintChain {
@@ -396,7 +396,7 @@ pub struct Ember {
 }
 
 /// What `Ember` is read from and written as.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 struct EmberJson {
     heat: u8,
 }
@@ -407,7 +407,7 @@ impl Versioned for Ember {
 
 impl VersionStruct for Ember {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let json: EmberJson = parse_payload(payload, cx, d)?;
+        let json: EmberJson = read_payload(payload, cx, d)?;
         Some(Ember {
             heat: json.heat,
             read_at: cx.written.version,
@@ -661,7 +661,7 @@ impl Versioned for Cinder {
 
 impl VersionStruct for Cinder {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let json: EmberJson = parse_payload(payload, cx, d)?;
+        let json: EmberJson = read_payload(payload, cx, d)?;
         Some(Cinder { heat: json.heat })
     }
     fn write(&self) -> Result<Value, EncodeError> {
@@ -1131,7 +1131,7 @@ fn files_keys_each_copy_by_its_path_in_its_pack_and_the_top_pack_wins() {
 use bedrock_addon_core::versioning::{BETA_VERSION, BetaPermission};
 
 /// The stable struct of a toy family that also has a beta struct.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Flare {
     pub description: GlintDescription,
     pub level: u8,
@@ -1143,7 +1143,7 @@ impl Versioned for Flare {
 
 impl VersionStruct for Flare {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
@@ -1151,7 +1151,7 @@ impl VersionStruct for Flare {
 }
 
 /// The beta struct (`"format_version": "beta"`): another shape than the stable one.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct FlareBeta {
     pub description: GlintDescription,
     pub glow: bool,
@@ -1163,7 +1163,7 @@ impl Versioned for FlareBeta {
 
 impl VersionStruct for FlareBeta {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
@@ -1188,7 +1188,6 @@ bedrock_addon_core::version_chain! {
         V1_0_0(Flare),
     }
     beta = Beta(FlareBeta);
-    molang = none;
 }
 
 impl Family for FlareFamily {
@@ -1553,7 +1552,8 @@ fn impl_no_molang_states_a_struct_without_molang_fields() {
 // ---- Single and Molang ---------------------------------------------------------------------
 
 /// A one-version struct with a Molang field.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = beam_molang)]
 pub struct Beam {
     pub condition: bedrock_addon_core::molang::Molang,
 }
@@ -1564,21 +1564,20 @@ impl Versioned for Beam {
 
 impl VersionStruct for Beam {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
     }
 }
 
-impl bedrock_addon_core::molang::MolangFields for Beam {
-    fn visit_molang(&mut self, visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {
-        visitor.field(
-            "condition",
-            &bedrock_addon_core::molang::MolangFieldSpec::DEFAULT,
-            &mut self.condition,
-        );
-    }
+/// `Beam`'s Molang walk: its condition, by the default spec.
+fn beam_molang(beam: &mut Beam, visitor: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {
+    visitor.field(
+        "condition",
+        &bedrock_addon_core::molang::MolangFieldSpec::DEFAULT,
+        &mut beam.condition,
+    );
 }
 
 /// The beam family twice: by `version_chain!` and on `Single`.

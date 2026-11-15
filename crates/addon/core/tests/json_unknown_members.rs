@@ -11,6 +11,28 @@ use bedrock_addon_core::document::{Extra, UnknownMembers};
 use bedrock_addon_core::json::Value;
 use facet::Facet;
 
+/// `text` read as `T` by the crate's typed reader (`schema::read_value`); `Err` when it does
+/// not read.
+fn typed<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Result<T, ()> {
+    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+        .map_err(|_| ())?;
+    bedrock_addon_core::schema::read_value::<T>(&value).ok_or(())
+}
+
+/// `value` written on one line by the crate's writer.
+#[allow(dead_code, reason = "not every file writes")]
+fn compact_text<'f, T: facet::Facet<'f>>(
+    value: &T,
+) -> Result<String, bedrock_addon_core::json::EncodeError> {
+    let mut out = Vec::new();
+    let style = bedrock_addon_core::json::WriteStyle {
+        indent: bedrock_addon_core::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    bedrock_addon_core::json::write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 fn number(n: i64) -> Value {
     Value::from(n)
 }
@@ -59,17 +81,15 @@ fn removing_a_member_keeps_the_order_of_the_rest() {
 #[test]
 fn extra_is_a_transparent_map_for_facet() {
     assert!(UnknownMembers::SHAPE.is_transparent());
-    let extra: UnknownMembers = facet_json::from_str(r#"{ "z": 1, "a": [true] }"#).unwrap();
+    let extra: UnknownMembers = typed(r#"{ "z": 1, "a": [true] }"#).unwrap();
     let keys: Vec<&str> = extra.iter().map(|(k, _)| k).collect();
     assert_eq!(keys, ["z", "a"]);
-    assert_eq!(
-        facet_json::to_string(&extra).unwrap(),
-        r#"{"z":1,"a":[true]}"#
-    );
+    assert_eq!(compact_text(&extra).unwrap(), r#"{"z":1,"a":[true]}"#);
 }
 
-#[derive(Debug, Default, Facet)]
+#[derive(Debug, PartialEq, Facet, bedrock_addon_core::schema::Schema)]
 struct Keeps {
+    #[facet(default)]
     known: u32,
     #[facet(skip)]
     extra: UnknownMembers,
@@ -77,7 +97,7 @@ struct Keeps {
 
 #[test]
 fn a_skipped_extra_field_is_left_empty_by_the_deserialiser() {
-    let parsed: Keeps = facet_json::from_str(r#"{ "known": 1 }"#).unwrap();
+    let parsed: Keeps = typed(r#"{ "known": 1 }"#).unwrap();
     assert_eq!(parsed.known, 1);
     assert!(parsed.extra.is_empty());
 }

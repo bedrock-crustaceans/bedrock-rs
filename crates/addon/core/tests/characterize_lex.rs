@@ -10,10 +10,16 @@ use std::fmt::Write as _;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::json::jsoncpp::lenient;
+use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{
     ClampPlan, JsonSlice, Prepared, Value, Width, check_depth, clamp_non_finite, clamp_text,
-    clamp_tokens, from_str_jsonc, last_wins, last_wins_except, scan, span_at,
+    clamp_tokens, from_str_jsonc, last_wins, last_wins_except, scan,
 };
+
+/// The span of the value at `path` of `slice`: the parse tree's (`span_at` before the door went).
+fn span_at(slice: JsonSlice<'_>, path: &JsonPath) -> Option<bedrock_addon_core::diagnostic::Span> {
+    parse_slice(slice, Options::default()).ok()?.spans.at(path)
+}
 
 include!("fixtures/characterize_lex/texts.rs");
 

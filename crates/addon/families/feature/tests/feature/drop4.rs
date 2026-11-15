@@ -210,7 +210,11 @@ fn the_drop_4_snap_features_round_trip() {
         .replace(r#""vertical_search_range""#, r#""search_range""#);
     let written = compact(&ice, &base_game());
     assert_ne!(written, expected, "now byte for byte: tighten this test");
-    let written: bedrock_addon_core::json::Value = facet_json::from_str(&written).expect("JSON");
-    let expected: bedrock_addon_core::json::Value = facet_json::from_str(&expected).expect("JSON");
+    let written: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
+            .expect("JSON");
+    let expected: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&expected)
+            .expect("JSON");
     assert_eq!(written, expected);
 }

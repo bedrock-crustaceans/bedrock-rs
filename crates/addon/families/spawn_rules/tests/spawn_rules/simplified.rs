@@ -2,11 +2,6 @@
 //! `s10`–`s22`. The first five inputs are vanilla's
 //! unit-test documents (`ActorSpawnRuleDataLoaderUpgradeUnitTests`).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::version::ENGINE_VERSION;
 use bedrock_addon_family_spawn_rules::{Placement, SpawnRules};
@@ -467,7 +462,11 @@ fn s22_vanilla_upgrade_table() {
     // ten names placed in water, one in lava, nine without restrictions, fifty on the ground,
     // and the water / lava override.
     let table: bedrock_addon_core::json::Value =
-        facet_json::from_str(&fixture("spawn", "s22_vanilla_upgrade_table.json")).unwrap();
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&fixture(
+            "spawn",
+            "s22_vanilla_upgrade_table.json",
+        ))
+        .unwrap();
     let table = table.as_object().unwrap();
     let count = |key: &str| {
         table

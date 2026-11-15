@@ -2,11 +2,6 @@
 //! again to the same value, and written again to the same text; a member the author did not
 //! write is not written.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::JsonPath;
 use bedrock_addon::document::{Content, Document, Placed};
 use bedrock_addon::families::behavior_tree::{BehaviorTree, Node, Param};
@@ -884,7 +879,7 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     for _ in 0..125 {
         deep_extra.push(']');
     }
-    let value: Value = facet_json::from_str(&deep_extra).unwrap();
+    let value: Value = bedrock_addon::json::from_str_jsonc::<Value>(&deep_extra).unwrap();
     let with_extra = |value: Value| {
         let mut document = loaded(&tree_text("t", r#"{"minecraft:consume_item": {}}"#));
         document
@@ -904,7 +899,8 @@ fn a_tree_nested_past_the_readers_limit_is_not_written() {
     };
     // 4 levels down to the body, and 125 more
     refused_document(&with_extra(value));
-    let value: Value = facet_json::from_str(&deep_extra[1..deep_extra.len() - 1]).unwrap();
+    let value: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(&deep_extra[1..deep_extra.len() - 1]).unwrap();
     assert!(with_extra(value).to_json().is_ok());
     // and far past the limit, quickly and without a deep stack
     let started = std::time::Instant::now();

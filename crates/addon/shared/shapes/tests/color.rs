@@ -74,7 +74,7 @@ fn an_array_of_the_wrong_shape_is_refused() {
     );
     assert_eq!(error::<[u8; 3]>("[1, 2, 256]"), ShapeErrorKind::OutOfRange);
     assert_eq!(error::<[u8; 3]>("[1, 2, -1]"), ShapeErrorKind::OutOfRange);
-    assert!(read::<HexOr<[i32; 3]>>("[1, 2]").is_err());
+    assert!(read::<HexOr<[i32; 3]>>("[1, 2]").is_none());
 }
 
 #[test]

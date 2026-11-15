@@ -49,7 +49,9 @@ pub fn load_at(
 /// Loads `json` as `feature_rules/<name>.json`, where `<name>` is the part of the document's
 /// identifier after its last `:` (so the file-name check passes).
 pub fn load(json: &str, cx: &LoadContext) -> Result<Document<FeatureRule>, Rejected> {
-    let value: bedrock_addon_core::json::Value = facet_json::from_str(json).unwrap_or_default();
+    let value: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(json)
+            .unwrap_or_default();
     let identifier = value
         .as_object()
         .and_then(|o| o.get("minecraft:feature_rules"))

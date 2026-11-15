@@ -3,24 +3,28 @@
 //! `tests/fixtures/molang/reader_matrix.json`, run three ways that must agree:
 //!
 //! 1. molang's `MolangValueRepr::read` on the `JsonScalar` the row gives;
-//! 2. the crate's `molang::read` on the `facet_value::Value` facet-json parses from the row's text;
-//! 3. facet-json deserialising the typed field from the text (`Molang`, or `Option<MolangList>`
-//!    for the scalar-or-array reader), then pass 1 (reader check and context version).
+//! 2. the crate's `molang::read` on the `facet_value::Value` the crate parses from the row's text;
+//! 3. the crate's typed reader reading the field from the text (`Molang`, or
+//!    `Option<MolangList>` for the scalar-or-array reader), then pass 1 (reader check and
+//!    context version), as facet-json's typed read did before it.
 //!
 //! Way 2 differs from way 1 in one thing: a number beyond `f32` is the largest finite float, not
 //! the infinity. The typed path is narrower where the crate says so: a number not finite as an
-//! `f32` is rejected by facet under every reader, marked `"facet": "narrower"`.
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+//! `f32` is rejected under every reader, marked `"facet": "narrower"`.
 
 use bedrock_addon_core::diagnostic::codes;
 use std::sync::Arc;
 
-use bedrock_addon_core::diagnostic::{Code, code_for_deserialize_error_kind};
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::parse::{Options, parse};
+use bedrock_addon_core::json::{Value, from_str_jsonc};
 use bedrock_addon_core::molang::{
     self, JsonScalar, JsonType, Molang, MolangList, MolangSource, OtherJson, RawVersion, ReadField,
     ReaderKind, ReprError,
 };
+use bedrock_addon_core::schema::{FromJson, Schema, read_document, read_value};
+use bedrock_addon_core::versioning::Reading;
 
 const READERS: [(&str, ReaderKind); 5] = [
     ("strict", ReaderKind::StrictVersioned),
@@ -36,7 +40,7 @@ fn reader_matrix() -> Value {
         "/tests/fixtures/molang/reader_matrix.json"
     );
     let text = std::fs::read_to_string(path).expect("the reader matrix fixture");
-    facet_json::from_str::<Value>(&text).expect("the fixture is JSON")
+    from_str_jsonc::<Value>(&text).expect("the fixture is JSON")
 }
 
 fn text(value: &Value) -> &str {
@@ -140,19 +144,30 @@ fn same(left: &Result<ReadField, ReprError>, right: &Result<ReadField, ReprError
     }
 }
 
-#[derive(facet::Facet)]
+#[derive(facet::Facet, Schema)]
 struct ValueField {
     field: Molang,
 }
 
-#[derive(facet::Facet)]
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
 struct ListField {
     field: Option<MolangList>,
 }
 
-/// The code a facet rejection of a field becomes (the crate's facet-error table).
-fn rejection(error: &facet_json::DeserializeError) -> Code {
-    code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false)
+/// `text` read as `T` by a typed read (the first failure stops it): the value, or the code of
+/// its first error.
+fn typed_read<T: FromJson>(text: &str) -> Result<T, Code> {
+    let parsed = parse(text, Options::default()).expect("JSON");
+    let mut d = Diagnostics::default();
+    let value = {
+        let mut read = Read::new(Reading::OWN, &mut d).profile(Profile::FIRST_FAILURE);
+        read_document::<T>(&Node::parsed(&parsed, JsonPath::new()), &mut read)
+    };
+    match (value, d.iter().find(|f| f.severity >= Severity::Error)) {
+        (Some(value), None) => Ok(value),
+        (_, Some(error)) => Err(error.code.clone()),
+        (None, None) => panic!("`{text}` failed and told nothing"),
+    }
 }
 
 /// An object that lacks `expression` or `version`.
@@ -179,9 +194,7 @@ fn typed(
 ) -> Result<Result<ReadField, ReprError>, Box<Code>> {
     let text = format!(r#"{{"field": {json}}}"#);
     if reader == ReaderKind::ScalarOrArray {
-        let mut list = facet_json::from_str::<ListField>(&text)
-            .map_err(|e| Box::new(rejection(&e)))?
-            .field;
+        let mut list = typed_read::<ListField>(&text).map_err(Box::new)?.field;
         return Ok(match &mut list {
             None => Ok(ReadField::NoExpression),
             Some(list @ MolangList::Many(_)) => {
@@ -193,9 +206,7 @@ fn typed(
             }),
         });
     }
-    let mut value = facet_json::from_str::<ValueField>(&text)
-        .map_err(|e| Box::new(rejection(&e)))?
-        .field;
+    let mut value = typed_read::<ValueField>(&text).map_err(Box::new)?.field;
     Ok(molang::settle(&mut value, reader, context).map(|()| ReadField::Value(value)))
 }
 
@@ -226,7 +237,7 @@ fn the_reader_matrix_agrees_three_ways() {
                 ));
             }
             let Some(json) = json else { continue };
-            let value = facet_json::from_str::<Value>(json).unwrap();
+            let value = from_str_jsonc::<Value>(json).unwrap();
             let read_result = molang::read(&value, reader, context);
             // The crate's reader gives a number beyond `f32` as the largest finite float, where
             // molang's `MolangValueRepr::read` gives the infinity.
@@ -290,15 +301,15 @@ fn a_list_read_from_a_value_equals_the_typed_list() {
         r#""v.x""#,
         r#"[1, "q.x", [2, false], []]"#,
     ] {
-        let value = facet_json::from_str::<Value>(json).unwrap();
+        let value = from_str_jsonc::<Value>(json).unwrap();
         let read_result = molang::read_list(&value, RawVersion(9)).unwrap();
-        let mut typed = facet_json::from_str::<Option<MolangList>>(json).unwrap();
+        let mut typed: Option<MolangList> = read_value(&from_str_jsonc(json).unwrap()).unwrap();
         if let Some(list) = &mut typed {
             molang::settle_list(list, RawVersion(9)).unwrap();
         }
         assert_eq!(read_result, typed, "{json}");
     }
-    let nested = facet_json::from_str::<Value>(r#"["v.x", ["q.y"]]"#).unwrap();
+    let nested = from_str_jsonc::<Value>(r#"["v.x", ["q.y"]]"#).unwrap();
     assert_eq!(
         molang::read_list(&nested, RawVersion(9)).unwrap(),
         Some(MolangList::Many(vec![
@@ -317,7 +328,7 @@ fn a_list_rejects_objects_and_null_elements() {
         (r#"[1, {"a": 1}]"#, JsonType::Object),
         ("[1, null]", JsonType::Null),
     ] {
-        let value = facet_json::from_str::<Value>(json).unwrap();
+        let value = from_str_jsonc::<Value>(json).unwrap();
         assert_eq!(
             molang::read_list(&value, RawVersion(9)),
             Err(ReprError::UnsupportedType {
@@ -327,25 +338,6 @@ fn a_list_rejects_objects_and_null_elements() {
             "{json}"
         );
     }
-}
-
-/// An integer literal outside `i64` / `u64` reaches a `Value` as a string of its digits, so a
-/// hand-written parser reads it as a Molang string where vanilla reads a real (an accepted
-/// loss). The typed path agrees: facet-json hands molang's proxy the same string.
-#[test]
-fn an_integer_literal_past_64_bits_reads_as_a_string_from_a_value_deviation() {
-    let json = "99999999999999999999";
-    let value = facet_json::from_str::<Value>(json).unwrap();
-    assert_eq!(
-        molang::read(&value, ReaderKind::LenientVersioned, RawVersion(13)),
-        Ok(ReadField::Value(Molang::Expr(MolangSource::string(
-            json, 13
-        ))))
-    );
-    assert_eq!(
-        facet_json::from_str::<Molang>(json).ok(),
-        Some(Molang::Expr(MolangSource::string_without_context(json)))
-    );
 }
 
 /// Writing back gives the form that was read: an object stays an object, a
@@ -362,7 +354,7 @@ fn write_gives_back_the_form_that_was_read() {
         r#"{"expression": "1 + 2", "version": 42}"#,
         r#"{"expression": "v.x", "version": -1}"#,
     ] {
-        let value = facet_json::from_str::<Value>(json).unwrap();
+        let value = from_str_jsonc::<Value>(json).unwrap();
         let Ok(ReadField::Value(read)) =
             molang::read(&value, ReaderKind::LenientVersioned, RawVersion(6))
         else {
@@ -386,7 +378,7 @@ fn write_gives_back_the_form_that_was_read() {
 /// The text of `json` read as a Molang constant and written back, through `molang::write`
 /// (a `Value`) and through the typed writer; the two must agree.
 fn rewritten(json: &str) -> String {
-    let value = facet_json::from_str::<Value>(json).unwrap();
+    let value = from_str_jsonc::<Value>(json).unwrap();
     let Ok(ReadField::Value(read)) =
         molang::read(&value, ReaderKind::LenientVersioned, RawVersion(6))
     else {
@@ -397,7 +389,7 @@ fn rewritten(json: &str) -> String {
     let typed = bedrock_addon_core::json::to_json(&read).unwrap();
     assert_eq!(by_value, typed, "{json}: both writers give one text");
     // Whatever the text, it reads back as the same constant.
-    let again = facet_json::from_str::<Value>(typed.trim_end()).unwrap();
+    let again = from_str_jsonc::<Value>(typed.trim_end()).unwrap();
     assert_eq!(
         molang::read(&again, ReaderKind::LenientVersioned, RawVersion(6)),
         Ok(ReadField::Value(read)),
@@ -521,7 +513,7 @@ fn the_json_writer_keeps_each_form() {
         ])),
     };
     let text = bedrock_addon_core::json::to_json(&fields).unwrap();
-    let value = facet_json::from_str::<Value>(&text).unwrap();
+    let value = from_str_jsonc::<Value>(&text).unwrap();
     let object = value.as_object().unwrap();
     assert_eq!(
         molang::json_scalar(object.get("number").unwrap()),

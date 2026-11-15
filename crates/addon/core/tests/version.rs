@@ -17,6 +17,20 @@ use bedrock_addon_core::version::{
 };
 use bedrock_addon_test_support::json::strict as json;
 
+/// `value` written on one line by the crate's writer.
+#[allow(dead_code, reason = "not every file writes")]
+fn compact_text<'f, T: facet::Facet<'f>>(
+    value: &T,
+) -> Result<String, bedrock_addon_core::json::EncodeError> {
+    let mut out = Vec::new();
+    let style = bedrock_addon_core::json::WriteStyle {
+        indent: bedrock_addon_core::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    bedrock_addon_core::json::write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 fn sem(text: &str) -> SemVersion {
     SemVersion::parse(text).unwrap_or_else(|| panic!("{text:?} parses"))
 }
@@ -320,6 +334,19 @@ mod format_version {
         version: FormatVersion,
     }
 
+    /// `text` read as a `Held`: its `version` member by `FormatVersion`'s own read.
+    fn held(text: &str) -> Result<Held, ()> {
+        let value =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+                .map_err(|_| ())?;
+        let member = value
+            .as_object()
+            .and_then(|object| object.get("version"))
+            .ok_or(())?;
+        let version = bedrock_addon_core::schema::read_value::<FormatVersion>(member).ok_or(())?;
+        Ok(Held { version })
+    }
+
     #[test]
     fn a_format_version_is_written_as_its_string_form() {
         let mut out = Vec::new();
@@ -339,10 +366,10 @@ mod format_version {
 
     #[test]
     fn a_format_version_reads_its_string_form_back() {
-        let held: Held = facet_json::from_str(r#"{"version":"1.21.60"}"#).unwrap();
-        assert_eq!(held.version, fv(1, 21, 60));
-        assert!(facet_json::from_str::<Held>(r#"{"version":"beta"}"#).is_err());
-        assert!(facet_json::from_str::<Held>(r#"{"version":"one"}"#).is_err());
+        let read: Held = held(r#"{"version":"1.21.60"}"#).unwrap();
+        assert_eq!(read.version, fv(1, 21, 60));
+        assert!(held(r#"{"version":"beta"}"#).is_err());
+        assert!(held(r#"{"version":"one"}"#).is_err());
     }
 
     /// The member read is `SemVersion`'s: a partial version completes with zeros and a
@@ -351,14 +378,12 @@ mod format_version {
     #[test]
     fn a_format_version_member_completes_a_partial_version_and_drops_the_pre_release() {
         let read = |text: &str| -> FormatVersion {
-            facet_json::from_str::<Held>(&format!(r#"{{"version":"{text}"}}"#))
-                .unwrap()
-                .version
+            held(&format!(r#"{{"version":"{text}"}}"#)).unwrap().version
         };
         assert_eq!(read("1.21"), fv(1, 21, 0));
         assert_eq!(read("1"), fv(1, 0, 0));
         assert_eq!(read("1.21.60-beta.3"), fv(1, 21, 60));
-        assert!(facet_json::from_str::<Held>(r#"{"version":[1, 21, 60]}"#).is_err());
+        assert!(held(r#"{"version":[1, 21, 60]}"#).is_err());
         let refused = FormatVersion::try_from("one".to_owned()).unwrap_err();
         assert_eq!(refused.text, "one");
         assert_eq!(

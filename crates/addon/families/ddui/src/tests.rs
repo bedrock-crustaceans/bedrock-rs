@@ -116,9 +116,10 @@ fn declaring(identifier: &str, first: usize, count: usize) -> UiRoot {
     let points = (first..first + count)
         .map(|i| {
             let mut point = Control::new(Component::ExtensionPoint);
-            point.attribs =
-                bedrock_addon_core::json::from_str::<Value>(&format!(r#"{{"name": "demo:p{i}"}}"#))
-                    .ok();
+            point.attribs = bedrock_addon_core::json::from_str_jsonc::<Value>(&format!(
+                r#"{{"name": "demo:p{i}"}}"#
+            ))
+            .ok();
             point
         })
         .collect();

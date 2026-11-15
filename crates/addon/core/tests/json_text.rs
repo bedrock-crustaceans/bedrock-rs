@@ -1,8 +1,7 @@
 //! The pre-parse helpers: `strip_bom` and `check_depth`: the game skips a leading UTF-8 BOM, and a
 //! document nested deeper than the limit is refused before any parser sees it.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
+use bedrock_addon_core::json::parse::{Options, parse_bytes};
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, blank_bom, check_depth, strip_bom};
 
 #[test]
@@ -35,10 +34,10 @@ fn a_bom_and_comments_read_through_the_pre_parse_helpers() {
         env!("CARGO_MANIFEST_DIR")
     );
     let bytes = std::fs::read(path).unwrap();
-    assert!(facet_json::from_slice_borrowed_jsonc::<facet_value::Value>(&bytes).is_err());
+    assert!(parse_bytes(&bytes, Options::default()).is_err());
     let text = strip_bom(&bytes);
     assert_eq!(check_depth(text, MAX_JSON_DEPTH), Ok(()));
-    let value = facet_json::from_slice_borrowed_jsonc::<facet_value::Value>(text).unwrap();
+    let value = parse_bytes(text, Options::default()).unwrap();
     let object = value.as_object().unwrap();
     assert_eq!(
         object
@@ -103,9 +102,9 @@ fn check_depth_lets_unbalanced_closers_through_for_the_parser() {
     assert_eq!(check_depth(b"]]]{", 1), Ok(()));
 }
 
-/// The reason for the limit: facet-json has none, and a deep document overflows the stack.
-/// At 128 levels a parse of the text succeeds on a 2 MiB thread (the probe saw the overflow
-/// between 150 and 200 levels in a debug build).
+/// The reason for the limit: facet-json had none, and a deep document overflowed the stack
+/// (the probe saw the overflow between 150 and 200 levels in a debug build). At 128 levels a
+/// parse of the text succeeds on a 2 MiB thread.
 #[test]
 fn a_document_at_the_limit_parses_on_a_2_mib_thread() {
     let text = nested(MAX_JSON_DEPTH);
@@ -113,7 +112,7 @@ fn a_document_at_the_limit_parses_on_a_2_mib_thread() {
         .stack_size(2 * 1024 * 1024)
         .spawn(move || {
             check_depth(text.as_bytes(), MAX_JSON_DEPTH)
-                .map(|()| facet_json::from_str_borrowed_jsonc::<facet_value::Value>(&text).is_ok())
+                .map(|()| parse_bytes(text.as_bytes(), Options::default()).is_ok())
         })
         .unwrap()
         .join()

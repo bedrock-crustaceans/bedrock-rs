@@ -90,8 +90,8 @@ fn every_vanilla_poi_document_decodes_to_its_last_byte_as_its_decoded_twin() {
                 "poi/poi42_experimental_poi/poi/{kind}/{name}"
             )))
             .unwrap();
-            let decoded: Value = bedrock_addon_core::json::from_str(&text).unwrap();
-            let twin: Value = bedrock_addon_core::json::from_str(&twin).unwrap();
+            let decoded: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&text).unwrap();
+            let twin: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&twin).unwrap();
             assert_eq!(decoded, twin, "{kind}/{name}");
             count += 1;
         }

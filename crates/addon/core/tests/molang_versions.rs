@@ -31,7 +31,10 @@ fn reference_pairs() -> Option<Value> {
         );
         return None;
     };
-    Some(facet_json::from_str::<Value>(&text).expect("corpus_pairs.json is JSON"))
+    Some(
+        bedrock_addon_core::json::from_str_jsonc::<Value>(&text)
+            .expect("corpus_pairs.json is JSON"),
+    )
 }
 
 fn text<'a>(object: &'a facet_value::VObject, key: &str) -> Option<&'a str> {

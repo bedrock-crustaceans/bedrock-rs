@@ -16,6 +16,28 @@ use bedrock_addon_core::json::{
 use facet::Facet;
 use indexmap::IndexMap;
 
+/// `text` read as `T` by the crate's typed reader (`schema::read_value`); `Err` when it does
+/// not read.
+fn typed<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Result<T, ()> {
+    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+        .map_err(|_| ())?;
+    bedrock_addon_core::schema::read_value::<T>(&value).ok_or(())
+}
+
+/// `value` written on one line by the crate's writer.
+#[allow(dead_code, reason = "not every file writes")]
+fn compact_text<'f, T: facet::Facet<'f>>(
+    value: &T,
+) -> Result<String, bedrock_addon_core::json::EncodeError> {
+    let mut out = Vec::new();
+    let style = bedrock_addon_core::json::WriteStyle {
+        indent: bedrock_addon_core::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    bedrock_addon_core::json::write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 const COMPACT: WriteStyle = WriteStyle {
     indent: Indent::Compact,
     trailing_newline: false,
@@ -44,7 +66,6 @@ struct Tree {
     leaves: Vec<Leaf>,
     #[facet(default)]
     named: IndexMap<String, Leaf>,
-    #[facet(default)]
     inner: Option<Leaf>,
 }
 
@@ -120,12 +141,12 @@ fn a_row_of_a_key_the_object_holds_replaces_its_value_in_place_untold() {
 
 #[test]
 fn merge_puts_the_rows_into_a_value_as_the_writer_writes_them() {
-    let mut value: Value = facet_json::from_str(r#"{"a":{"b":[{"c":1}]},"d":2}"#).unwrap();
+    let mut value: Value = typed(r#"{"a":{"b":[{"c":1}]},"d":2}"#).unwrap();
     let mut unknown = Unknown::new();
     unknown.put(&path(&["a", "b"]).index(0), "e", Value::from(3i64));
     unknown.put(&path(&["gone"]), "f", Value::from(4i64));
     let told = merge_unknown(&mut value, &unknown);
-    let expected: Value = facet_json::from_str(r#"{"a":{"b":[{"c":1,"e":3}]},"d":2}"#).unwrap();
+    let expected: Value = typed(r#"{"a":{"b":[{"c":1,"e":3}]},"d":2}"#).unwrap();
     assert_eq!(value, expected);
     assert_eq!(told.len(), 1);
     assert_eq!(told[0].location.json_path.to_string(), "gone/f");
@@ -180,7 +201,7 @@ fn a_struct_variant_has_its_members_at_its_payload_object() {
 
 #[test]
 fn a_value_has_the_members_of_its_objects_by_path() {
-    let value: Value = facet_json::from_str(r#"{"a":{"b":[{"c":1}]},"d":2}"#).unwrap();
+    let value: Value = typed(r#"{"a":{"b":[{"c":1}]},"d":2}"#).unwrap();
     let mut unknown = Unknown::new();
     unknown.put(&path(&["a", "b"]).index(0), "e", Value::from(3i64));
     unknown.put(&JsonPath::new(), "f", Value::from(4i64));
@@ -226,23 +247,21 @@ fn under_known_wins_a_row_of_a_key_the_object_holds_is_left_out_untold() {
     unknown.put(&JsonPath::new(), "other", Value::from(2i64));
     unknown.put(&path(&["leaf"]), "size", Value::from(9i64));
     unknown.put(&path(&["gone"]), "f", Value::from(4i64));
-    let mut known: Value = facet_json::from_str(text).unwrap();
+    let mut known: Value = typed(text).unwrap();
     let told = merge_unknown_with(&mut known, &unknown, Precedence::KnownWins);
-    let expected: Value =
-        facet_json::from_str(r#"{"name":"tree","leaf":{"size":1},"other":2}"#).unwrap();
+    let expected: Value = typed(r#"{"name":"tree","leaf":{"size":1},"other":2}"#).unwrap();
     assert_eq!(known, expected);
     // A row whose object is gone is told under either precedence.
     assert_eq!(told.len(), 1, "{told:?}");
     assert_eq!(told[0].location.json_path.to_string(), "gone/f");
     // Today's rule, the default, is the unknown member's.
     assert_eq!(Precedence::default(), Precedence::UnknownWins);
-    let mut unknown_wins: Value = facet_json::from_str(text).unwrap();
+    let mut unknown_wins: Value = typed(text).unwrap();
     let again = merge_unknown_with(&mut unknown_wins, &unknown, Precedence::UnknownWins);
-    let mut plain: Value = facet_json::from_str(text).unwrap();
+    let mut plain: Value = typed(text).unwrap();
     assert_eq!(again, merge_unknown(&mut plain, &unknown));
     assert_eq!(unknown_wins, plain);
-    let expected: Value =
-        facet_json::from_str(r#"{"name":"again","leaf":{"size":9},"other":2}"#).unwrap();
+    let expected: Value = typed(r#"{"name":"again","leaf":{"size":9},"other":2}"#).unwrap();
     assert_eq!(plain, expected);
 }
 

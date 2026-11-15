@@ -12,10 +12,6 @@
 //! `tests/behavior_tree/stacks.rs`.
 
 #![allow(dead_code, reason = "each test module uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -484,8 +480,10 @@ pub fn dump_registry(registry: &Registry<BehaviorTree>) -> Value {
 
 /// The registry equals fixture `name`'s `expected.json`.
 pub fn assert_registry(name: &str, registry: &Registry<BehaviorTree>) {
-    let expected: Value = facet_json::from_str(&fixture_text(&format!("{name}/expected.json")))
-        .unwrap_or_else(|e| panic!("{name}/expected.json: {e}"));
+    let expected: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&fixture_text(
+        &format!("{name}/expected.json"),
+    ))
+    .unwrap_or_else(|e| panic!("{name}/expected.json: {e}"));
     let entries = expected.as_object().expect("an object by tree name").len();
     assert_eq!(
         registry.len(),
@@ -571,7 +569,10 @@ pub fn read_findings(toml: &str) -> Vec<Finding> {
             .unwrap_or_else(|| panic!("`{line}` before the first [[diagnostic]]"));
         // A TOML basic string has JSON's escapes.
         let string = || -> String {
-            facet_json::from_str(value).unwrap_or_else(|e| panic!("`{line}`: {e}"))
+            let json = bedrock_addon_core::json::from_str_jsonc::<Value>(value)
+                .unwrap_or_else(|e| panic!("`{line}`: {e}"));
+            bedrock_addon_core::schema::read_value::<String>(&json)
+                .unwrap_or_else(|| panic!("`{line}`: not a string"))
         };
         match key {
             "kind" => finding.kind = string(),

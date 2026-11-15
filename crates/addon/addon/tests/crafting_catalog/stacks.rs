@@ -1,11 +1,6 @@
 //! Stacks for the merge tests: packs with a catalogue file, the vanilla behaviour pack by its
 //! UUID and origin, and the item registry of `merge/items.json`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it and serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use std::sync::Arc;
 
 use bedrock_addon::diagnostic::{Diagnostic, Severity};
@@ -86,7 +81,8 @@ pub fn vanilla(name: &str) -> Spec {
 
 /// The entries of `merge/items.json`: the name and the `menu_category` JSON, if any.
 pub fn registry_items() -> Vec<(String, Option<String>)> {
-    let value: Value = facet_json::from_str(&fixture("merge/items.json")).unwrap();
+    let value: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(&fixture("merge/items.json")).unwrap();
     value
         .as_object()
         .unwrap()
@@ -96,7 +92,7 @@ pub fn registry_items() -> Vec<(String, Option<String>)> {
                 .as_object()
                 .unwrap()
                 .get("menu_category")
-                .map(|menu| facet_json::to_string(menu).unwrap());
+                .map(|menu| bedrock_addon::json::to_facet_json(menu).unwrap());
             (name.as_str().to_owned(), menu)
         })
         .collect()

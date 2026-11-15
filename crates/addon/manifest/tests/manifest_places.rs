@@ -3,10 +3,11 @@
 //! of the text (`dependency_texts`, core's until the reader kept the places) told the script
 //! stage is the oracle, kept here: over a spread of manifests the two agree.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types, missing_docs)]
+#![allow(missing_docs)]
 
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::json::{Value, from_slice_jsonc, from_str_jsonc, last_wins, strip_bom};
+use bedrock_addon_core::json::parse::{Options, parse_bytes};
+use bedrock_addon_core::json::{Value, from_str_jsonc, last_wins, strip_bom};
 use bedrock_addon_core::pack_identity::PackPath;
 use bedrock_addon_manifest::{
     CapabilityRegistry, Dependency, DependencyPlace, Manifest, ManifestFormat,
@@ -40,11 +41,11 @@ fn dependency_texts(bytes: &[u8], legacy: bool) -> DependencyTexts {
     let mut texts = DependencyTexts::default();
     // The text as the manifest reader takes it: of a member written twice the last stands.
     let bytes = strip_bom(bytes);
-    let parsed: Result<Value, _> = match std::str::from_utf8(bytes) {
-        Ok(text) => from_str_jsonc(&last_wins(text)),
-        Err(_) => from_slice_jsonc(bytes),
+    let parsed: Option<Value> = match std::str::from_utf8(bytes) {
+        Ok(text) => from_str_jsonc::<Value>(&last_wins(text)).ok(),
+        Err(_) => parse_bytes(bytes, Options::default()).ok(),
     };
-    let Ok(root) = parsed else {
+    let Some(root) = parsed else {
         return texts;
     };
     let Some(elements) = member(&root, "dependencies") else {

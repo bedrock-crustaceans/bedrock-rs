@@ -4,22 +4,22 @@
 //! The reference is the same document with each such integer replaced by the real token that
 //! spells its double (the shortest decimal; `1e999` beyond a double's range): the two read to
 //! equal values, or fail with the same finding at the same place of the author's text,
-//! through every entry point of the door.
-
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
-use std::borrow::Cow;
+//! through every entry point of the text reader and the typed reader.
 
 // The crate's one protocol for cost tests, and this binary's one lock.
 use bedrock_addon_core::test_cost as cost;
 
-use bedrock_addon_core::diagnostic::code_for_deserialize_error_kind;
-use bedrock_addon_core::json::{
-    JsonSlice, StrictFloat, StrictInt, StrictString, Value, from_slice_jsonc, from_str,
-    from_str_borrowed_jsonc, from_str_jsonc, last_wins, parse_at, probe_envelope, scan, to_json,
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::parse::{
+    Options, elements_of, members_of, parse, parse_bytes, parse_slice,
 };
+use bedrock_addon_core::json::{
+    JsonSlice, Value, from_str, from_str_jsonc, last_wins, probe_envelope, scan, to_json,
+};
+use bedrock_addon_core::schema::{Schema, read_document, read_value};
+use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 /// xorshift64*: a fixed sequence per seed.
@@ -184,7 +184,7 @@ const MEMBERS: &[&str] = &[
 ];
 
 /// A string or a number.
-#[derive(Debug, PartialEq, Facet)]
+#[derive(Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 enum Either {
@@ -193,42 +193,27 @@ enum Either {
 }
 
 /// A typed target with a member of every kind a pack document has.
-#[derive(Debug, PartialEq, Facet)]
-struct Typed<'a> {
-    #[facet(default)]
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Typed {
     double: Option<f64>,
-    #[facet(default)]
     float: Option<f32>,
-    #[facet(default)]
     signed: Option<i64>,
-    #[facet(default)]
     unsigned: Option<u64>,
-    #[facet(default)]
     small: Option<i32>,
-    #[facet(default)]
     text: Option<String>,
-    #[facet(default)]
-    borrowed: Option<Cow<'a, str>>,
-    #[facet(default)]
+    borrowed: Option<String>,
     either: Option<Either>,
-    #[facet(default)]
-    strict: Option<StrictFloat<f64>>,
-    #[facet(default)]
-    strict_float: Option<StrictFloat<f32>>,
-    #[facet(default)]
-    strict_int: Option<StrictInt<i64>>,
-    #[facet(default)]
-    strict_text: Option<StrictString>,
+    strict: Option<f64>,
+    strict_float: Option<f32>,
+    strict_int: Option<i64>,
+    strict_text: Option<String>,
     #[facet(default)]
     list: Vec<f64>,
-    #[facet(default)]
-    raw: Option<RawJson<'a>>,
+    raw: Option<Value>,
     #[facet(default)]
     map: IndexMap<String, f64>,
-    #[facet(default)]
     any: Option<Value>,
-    #[facet(default)]
-    nested: Option<Box<Typed<'a>>>,
+    nested: Option<Box<Typed>>,
 }
 
 /// The tokens of an object for [`Typed`]: most members get a value their type takes.
@@ -366,33 +351,33 @@ impl Pair {
     }
 }
 
-/// A failure in comparable form: the code, the path, the message and the span.
-fn failure(
-    error: &bedrock_addon_core::json::SliceError,
-) -> (String, String, String, (usize, usize)) {
-    let code =
-        code_for_deserialize_error_kind(&error.error.kind, error.error.path.is_some(), false);
-    (
-        format!("{code:?}"),
-        error.path.to_string(),
-        error.error.kind.to_string(),
-        (error.span.offset as usize, error.span.len as usize),
-    )
-}
-
-/// `typed` with its raw members read (its own, then its nested ones), so two documents
-/// compare by value.
-fn by_value(mut typed: Typed<'_>) -> (Typed<'_>, Vec<Option<Value>>) {
-    let read = |raw: RawJson<'_>| {
-        from_str_jsonc::<Value>(raw.as_str()).unwrap_or_else(|e| panic!("`{}`: {e}", raw.as_str()))
+/// What the plain typed read of `slice` as [`Typed`] gives: the value, or the first error as
+/// its code, its path and its span.
+#[allow(
+    clippy::type_complexity,
+    reason = "a value or a failure of three parts"
+)]
+fn typed_read(slice: JsonSlice<'_>) -> Result<Typed, (String, String, (usize, usize))> {
+    let parsed = parse_slice(slice, Options::default()).expect("JSON");
+    let mut d = Diagnostics::default();
+    let value = {
+        let mut read = Read::new(Reading::OWN, &mut d).profile(Profile::FIRST_FAILURE);
+        read_document::<Typed>(&Node::parsed(&parsed, JsonPath::new()), &mut read)
     };
-    let mut raws = vec![typed.raw.take().map(read)];
-    if let Some(nested) = typed.nested.take() {
-        let (nested, inner) = by_value(*nested);
-        typed.nested = Some(Box::new(nested));
-        raws.extend(inner);
+    // A value the read built is the read's (a converted scalar is told and the value kept, as
+    // the door's typed read kept it); else the first error.
+    match (value, d.iter().find(|f| f.severity >= Severity::Error)) {
+        (Some(value), _) => Ok(value),
+        (None, Some(error)) => {
+            let span = error.location.span.expect("a span");
+            Err((
+                format!("{:?}", error.code),
+                error.location.json_path.to_string(),
+                (span.offset as usize, span.len as usize),
+            ))
+        }
+        (None, None) => panic!("`{}` failed and told nothing", slice.text),
     }
-    (typed, raws)
 }
 
 /// For 6000 untyped documents: the written text and its reference read to equal values
@@ -408,24 +393,26 @@ fn generated_untyped_documents_read_as_their_references() {
         let comments = case % 3 != 0;
         let pair = Pair::of(&mut rng, &tokens, comments);
         let text = &pair.written;
-        let expected: Value = facet_json::from_str_jsonc(&pair.reference)
-            .unwrap_or_else(|e| panic!("`{}`: {e}", pair.reference));
+        let expected: Value =
+            from_str_jsonc(&pair.reference).unwrap_or_else(|e| panic!("`{}`: {e}", pair.reference));
         let read = from_str_jsonc::<Value>(text).unwrap_or_else(|e| panic!("`{text}`: {e}"));
         assert_eq!(read, expected, "`{text}`");
         // `Value` holds 1 and 1.0 equal: the written text tells an integer from a real.
         assert_eq!(to_json(&read).ok(), to_json(&expected).ok(), "`{text}`");
         assert_eq!(
-            from_str_borrowed_jsonc::<Value>(text).unwrap(),
+            parse(text, Options::default()).unwrap().value,
             expected,
             "`{text}`"
         );
         assert_eq!(
-            from_slice_jsonc::<Value>(text.as_bytes()).unwrap(),
+            parse_bytes(text.as_bytes(), Options::default()).unwrap(),
             expected,
             "`{text}`"
         );
         assert_eq!(
-            parse_at::<Value>(JsonSlice::new(text)).unwrap(),
+            parse_slice(JsonSlice::new(text), Options::default())
+                .unwrap()
+                .value,
             expected,
             "`{text}`"
         );
@@ -469,8 +456,8 @@ fn count_strings(value: &Value) -> usize {
 }
 
 /// For 6000 typed documents: the written text reads to the value its reference reads to, or
-/// fails with the same code, path and message at the span of the author's text that the
-/// reference's span stands for.
+/// fails with the same code and path at the span of the author's text that the reference's
+/// span stands for.
 #[test]
 fn generated_typed_documents_read_or_fail_as_their_references() {
     let mut rng = Rng(0x00B1_6157_5EED_0002);
@@ -480,60 +467,27 @@ fn generated_typed_documents_read_or_fail_as_their_references() {
         typed_tokens(&mut rng, 2, &mut tokens);
         let pair = Pair::of(&mut rng, &tokens, true);
         let text = &pair.written;
-        let crate_result = parse_at::<Typed<'_>>(JsonSlice::new(text));
-        let reference = parse_at::<Typed<'_>>(JsonSlice::new(&pair.reference));
+        let crate_result = typed_read(JsonSlice::new(text));
+        let reference = typed_read(JsonSlice::new(&pair.reference));
         match (crate_result, reference) {
             (Ok(crate_result), Ok(reference)) => {
-                if let Some(Cow::Borrowed(borrowed)) = crate_result.borrowed {
-                    let start = borrowed.as_ptr() as usize - text.as_ptr() as usize;
-                    assert_eq!(&text[start..start + borrowed.len()], borrowed);
-                }
-                assert_eq!(by_value(crate_result), by_value(reference), "`{text}`");
+                assert_eq!(crate_result, reference, "`{text}`");
                 read += 1;
             }
             (Err(crate_result), Err(reference)) => {
-                let (code, path, message, span) = failure(&reference);
-                let expected = (code, path, message, pair.written_span(span.0, span.1));
-                assert_eq!(failure(&crate_result), expected, "`{text}`");
-                failed += 1;
+                let (code, path, span) = reference;
+                let expected = (code, path, pair.written_span(span.0, span.1));
                 after_wide += usize::from(
                     pair.replaced
                         .first()
-                        .is_some_and(|(at, len, _)| at + len <= crate_result.span.offset as usize),
+                        .is_some_and(|(at, len, _)| at + len <= crate_result.2.0),
                 );
+                assert_eq!(crate_result, expected, "`{text}`");
+                failed += 1;
             }
-            (crate_result, reference) => panic!(
-                "`{text}`: {:?}, its reference {:?}",
-                crate_result.map_err(|e| failure(&e)),
-                reference.map_err(|e| failure(&e))
-            ),
-        }
-        // The owned and the borrowing read of the text agree, value or fault.
-        let owned = from_str_jsonc::<Typed<'static>>(text);
-        let borrowing = from_str_borrowed_jsonc::<Typed<'_>>(text);
-        match (owned, borrowing) {
-            (Ok(owned), Ok(borrowing)) => {
-                // A raw slice is the author's text in both.
-                let raw = |typed: &Typed<'_>| typed.raw.as_ref().map(|raw| raw.as_str().to_owned());
-                assert_eq!(raw(&owned), raw(&borrowing), "`{text}`");
-                if let Some(raw) = raw(&owned) {
-                    assert!(text.contains(&raw), "`{raw}` is part of `{text}`");
-                }
-                assert_eq!(by_value(owned), by_value(borrowing), "`{text}`");
+            (crate_result, reference) => {
+                panic!("`{text}`: {crate_result:?}, its reference {reference:?}")
             }
-            (Err(owned), Err(borrowing)) => {
-                assert_eq!(
-                    owned.kind.to_string(),
-                    borrowing.kind.to_string(),
-                    "`{text}`"
-                );
-                assert_eq!(owned.span, borrowing.span, "`{text}`");
-            }
-            (owned, borrowing) => panic!(
-                "`{text}`: owned {:?}, borrowing {:?}",
-                owned.map_err(|e| e.kind.to_string()),
-                borrowing.map_err(|e| e.kind.to_string())
-            ),
         }
     }
     assert!(
@@ -575,15 +529,16 @@ fn a_megabyte_of_wide_integers_is_read_in_linear_time() {
         ("wide integers, the scan", &|text| {
             assert!(scan(text.as_bytes(), true).unwrap().root_end.unwrap() > 0);
         }),
-        ("wide integers, the owned read", &|text| {
-            assert!(!from_str_jsonc::<Vec<f64>>(text).unwrap().is_empty());
+        ("wide integers, the typed read", &|text| {
+            let value = from_str_jsonc::<Value>(text).unwrap();
+            assert!(!read_value::<Vec<f64>>(&value).unwrap().is_empty());
         }),
-        ("wide integers, the borrowed read", &|text| {
-            let raw = from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(text).unwrap();
+        ("wide integers, the slices of the elements", &|text| {
+            let raw = elements_of(JsonSlice::new(text)).unwrap();
             assert!(!raw.is_empty());
         }),
         ("wide integers, the untyped read", &|text| {
-            let value = from_str_borrowed_jsonc::<Value>(text).unwrap();
+            let value = parse(text, Options::default()).unwrap().value;
             assert!(!value.as_array().unwrap().is_empty());
         }),
     ];
@@ -594,12 +549,12 @@ fn a_megabyte_of_wide_integers_is_read_in_linear_time() {
 /// value (infinity), skipped as an unread member, and held raw.
 #[test]
 fn an_integer_of_a_million_digits_is_read_in_linear_time() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Read {
         a: f64,
         b: u8,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Skipped {
         b: u8,
     }
@@ -609,24 +564,33 @@ fn an_integer_of_a_million_digits_is_read_in_linear_time() {
             assert!(scan(text.as_bytes(), true).unwrap().root_end.unwrap() > 0);
         }),
         ("a million digits, read", &|text| {
-            let read: Read = from_str_jsonc(text).unwrap();
+            let read: Read = plain(text).unwrap();
             assert_eq!(read.a, f64::NEG_INFINITY);
             assert_eq!(read.b, 1);
         }),
         ("a million digits, skipped", &|text| {
-            assert_eq!(from_str_jsonc::<Skipped>(text).unwrap().b, 1);
+            assert_eq!(plain::<Skipped>(text).unwrap().b, 1);
         }),
         ("a million digits, raw", &|text| {
-            let raw: IndexMap<String, RawJson<'_>> = from_str_borrowed_jsonc(text).unwrap();
-            assert!(raw["a"].as_str().len() > 1_000_000);
+            let raw = members_of(JsonSlice::new(text)).unwrap();
+            assert!(raw["a"].text.len() > 1_000_000);
         }),
     ];
     cost::assert_each_linear_at(1_000_000, document, &steps);
     // A long run of zeros before a small number is no wide integer, and as cheap.
     let zeros = |digits: usize| format!("[{}7]", "0".repeat(digits));
     let steps: [Step<'_>; 1] = [("a million leading zeros", &|text| {
-        let read: Vec<u8> = from_str_jsonc(text).unwrap();
+        let read: Vec<u8> = read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap();
         assert_eq!(read[0], 7);
     })];
     cost::assert_each_linear_at(1_000_000, zeros, &steps);
+}
+
+/// `text` read as `T` by the plain typed read (a number beyond its float read as an infinity),
+/// an unknown member let be.
+fn plain<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Option<T> {
+    let parsed = parse(text, Options::default()).ok()?;
+    let mut d = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN, &mut d).profile(Profile::FIRST_FAILURE);
+    read_document::<T>(&Node::parsed(&parsed, JsonPath::new()), &mut read)
 }

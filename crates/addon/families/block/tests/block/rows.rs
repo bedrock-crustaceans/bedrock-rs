@@ -3,11 +3,6 @@
 //! Findings are matched on their code, severity and path, and where the row (or the rule it
 //! names) gives vanilla's text, on that text exactly.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Kind, Severity};
 use bedrock_addon_core::molang::{Molang, MolangVersion, RawVersion};
 use bedrock_addon_core::version::FormatVersion;
@@ -641,10 +636,11 @@ fn format_1_26_30_stamp() {
             brief(block.diagnostics())
         );
         // Written back: the input with `format_version` unchanged.
-        let written: bedrock_addon_core::json::Value = facet_json::from_str(
-            &bedrock_addon_core::document::Content::to_json(block.value()).unwrap(),
-        )
-        .unwrap();
+        let written: bedrock_addon_core::json::Value =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+                &bedrock_addon_core::document::Content::to_json(block.value()).unwrap(),
+            )
+            .unwrap();
         assert_eq!(
             written.as_object().and_then(|o| o.get("format_version")),
             Some(&bedrock_addon_core::json::Value::from("1.26.30"))

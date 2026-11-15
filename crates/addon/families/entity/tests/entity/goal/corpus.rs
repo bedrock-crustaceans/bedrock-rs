@@ -78,7 +78,7 @@ fn every_vanilla_goal_reads_cleanly_and_round_trips() {
     for file in &files {
         let text = std::fs::read_to_string(file).expect("the file reads");
         let text = text.trim_start_matches('\u{feff}');
-        let Ok(document) = facet_json::from_str_jsonc::<Value>(text) else {
+        let Ok(document) = bedrock_addon_core::json::from_str_jsonc::<Value>(text) else {
             continue;
         };
         let Some(document) = document.as_object() else {
@@ -100,7 +100,7 @@ fn every_vanilla_goal_reads_cleanly_and_round_trips() {
             } else {
                 ConvertMode::Lenient
             };
-            let json = facet_json::to_string(&value).expect("the value writes");
+            let json = bedrock_addon_core::json::to_facet_json(&value).expect("the value writes");
             read += 1;
             let name = file
                 .file_name()

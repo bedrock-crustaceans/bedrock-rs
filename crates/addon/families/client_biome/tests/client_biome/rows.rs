@@ -1,10 +1,5 @@
 //! The upgrade path and the versions and validation of client biomes, one test per row.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Code, Kind, Severity};
 use bedrock_addon_core::document::{ComponentRef, Content, Document};
 use bedrock_addon_core::load::{BiomeRenderIdentifiers, LoadContext};
@@ -2022,7 +2017,7 @@ fn cb18_golden_output() {
                     lines,
                     "  {}{name} {}",
                     if synthesized { "+" } else { " " },
-                    facet_json::to_string(&json).unwrap()
+                    bedrock_addon_core::json::to_facet_json(&json).unwrap()
                 )
                 .unwrap();
             }

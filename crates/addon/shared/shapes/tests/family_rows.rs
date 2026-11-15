@@ -5,15 +5,11 @@
 //! dropping a bad entry, family defaults and constraints) is the family's and is not tested
 //! here.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::{JsonPath, Kind, Severity};
 use bedrock_addon_core::molang::SourceForm;
+use bedrock_addon_core::schema::{FromJson, Schema};
 use bedrock_addon_shared_shapes::{
     BlockDescriptor, BlockSpecifier, CreativeCategory, ItemDescriptor, MenuCategory,
 };
@@ -22,8 +18,8 @@ use facet::Facet;
 
 /// Reads a fixture the way a family reads its file, and requires the written value to equal the
 /// fixture.
-fn read_fixture<T: for<'a> Facet<'a>>(text: &str) -> T {
-    let value: T = facet_json::from_str_borrowed_jsonc(text).expect("the fixture reads");
+fn read_fixture<T: FromJson + for<'a> Facet<'a>>(text: &str) -> T {
+    let value: T = common::read(text).expect("the fixture reads");
     assert_eq!(compact(&value), normalised(text), "written form differs");
     value
 }
@@ -53,19 +49,19 @@ fn block_tags(descriptor: &BlockDescriptor) -> &str {
     }
 }
 
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 struct SpawnsOnBlockFilter {
     #[facet(rename = "minecraft:spawns_on_block_filter")]
     on: Vec<BlockDescriptor>,
 }
 
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 struct SpawnsOnBlockTags {
     #[facet(rename = "minecraft:spawns_on_block_filter")]
     on: BlockDescriptor,
 }
 
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 struct DescriptorKept {
     with_a_bad_entry: SpawnsOnBlockFilter,
     empty: SpawnsOnBlockFilter,
@@ -89,12 +85,12 @@ fn descriptor_kept(text: &str) {
 
 #[test]
 fn sg14_block_filters() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Above {
         blocks: BlockDescriptor,
         distance: u32,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         #[facet(rename = "minecraft:spawns_on_block_filter")]
         on: Vec<BlockDescriptor>,
@@ -135,12 +131,12 @@ fn sg50_tags_compile() {
 
 #[test]
 fn sg52_tags_shape_then_molang() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Above {
         blocks: Vec<BlockDescriptor>,
         distance: u32,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         #[facet(rename = "minecraft:spawns_above_block_filter")]
         above: Above,
@@ -176,7 +172,7 @@ fn s04_molang_version_from_format() {
 
 #[test]
 fn s09_descriptor_errors() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         shape: BlockDescriptor,
         name: BlockDescriptor,
@@ -207,16 +203,16 @@ fn s09o_block_descriptor_kept() {
 
 #[test]
 fn m05_descriptor_tags() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Repair {
         items: Vec<ItemDescriptor>,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Speed {
         block: BlockDescriptor,
         speed: u32,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         repair_items: Vec<Repair>,
         destroy_speeds: Vec<Speed>,
@@ -241,7 +237,7 @@ fn m05_descriptor_tags() {
 
 #[test]
 fn v08_menu_category() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         empty: MenuCategory,
         group_without_namespace: MenuCategory,
@@ -257,7 +253,7 @@ fn v08_menu_category() {
 
 #[test]
 fn m08_descriptor_tags() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         compiles: BlockDescriptor,
         outside_the_query_set: BlockDescriptor,
@@ -269,11 +265,11 @@ fn m08_descriptor_tags() {
 
 #[test]
 fn m06_bone_visibility_and_descriptors() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct PlacementCondition {
         block_filter: Vec<BlockDescriptor>,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         conditions: Vec<PlacementCondition>,
     }
@@ -292,12 +288,12 @@ fn m06_bone_visibility_and_descriptors() {
 
 #[test]
 fn jig12_predicates() {
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Predicate {
         predicate_type: String,
         block_state: BlockSpecifier,
     }
-    #[derive(Facet)]
+    #[derive(Facet, Schema)]
     struct Row {
         string: Predicate,
         object: Predicate,

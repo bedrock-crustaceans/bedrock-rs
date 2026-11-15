@@ -1,23 +1,20 @@
-//! The door to facet-json (`json/read.rs`): no text reaches its parsers unless its string
-//! escapes are RFC 8259's, its nesting is within the limit and nothing follows its root value.
-//!
-//! facet-json 0.50.0-rc.7 decodes `"\é"` from a `&str` by reading a string from the middle of
-//! a character: undefined behaviour, an abort in a debug build. An abort kills the test
-//! binary, so the tests of the unsafe classes run their case in a child process and look at
+//! The text readers (`json::parse` and the entry points over it): a string escape outside
+//! RFC 8259, nesting past the limit and what follows the root value are refused or never read,
+//! as the door to facet-json refused them (facet-json 0.50.0-rc.7 decoded `"\é"` from a `&str`
+//! by reading a string from the middle of a character: undefined behaviour, an abort in a debug
+//! build). The tests of the unsafe classes still run their case in a child process and look at
 //! how it ended.
-
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
 use std::fmt::Write as _;
 use std::process::{Command, Stdio};
 
-use bedrock_addon_core::diagnostic::{Span, code_for_deserialize_error_kind, codes};
+use bedrock_addon_core::diagnostic::{Span, codes};
+use bedrock_addon_core::json::parse::{Fault, FaultKind, Options, parse, parse_bytes, parse_slice};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Scanned, UnsafeText, Value, from_slice_jsonc, from_str,
-    from_str_borrowed_jsonc, from_str_jsonc, last_wins, parse_at, probe_envelope, scan,
-    trailing_content,
+    JsonSlice, MAX_JSON_DEPTH, Scanned, UnsafeText, Value, from_str_jsonc, last_wins,
+    probe_envelope, scan, trailing_content,
 };
-use facet_format::DeserializeErrorKind;
+use bedrock_addon_core::schema::{Schema, read_value};
 use indexmap::IndexMap;
 
 /// The contents of JSON strings that facet-json cannot decode safely or decodes wrongly, by
@@ -62,11 +59,14 @@ const READERS: &[Reader] = &[
     ("probe_envelope", |text| {
         probe_envelope(JsonSlice::new(text)).is_err()
     }),
-    ("parse_at into a map of strings", |text| {
-        parse_at::<IndexMap<String, Value>>(JsonSlice::new(text)).is_err()
+    ("read_value into a map of values", |text| {
+        from_str_jsonc::<Value>(text)
+            .ok()
+            .and_then(|json| read_value::<IndexMap<String, Value>>(&json))
+            .is_none()
     }),
-    ("parse_at into a value", |text| {
-        parse_at::<Value>(JsonSlice::new(text)).is_err()
+    ("parse_slice into a value", |text| {
+        parse_slice(JsonSlice::new(text), Options::default()).is_err()
     }),
     ("last_wins", |text| {
         matches!(last_wins(text), std::borrow::Cow::Borrowed(_))
@@ -133,12 +133,17 @@ fn fixture(name: &str) -> Vec<u8> {
 }
 
 /// The message of the `MalformedInput` a refused text is reported as.
-fn malformed(error: &facet_json::DeserializeError) -> String {
-    let code = code_for_deserialize_error_kind(&error.kind, error.path.is_some(), false);
+fn malformed(fault: &Fault) -> String {
+    let code = fault.code(false);
     match code.args_of(&codes::SYNTAX) {
         Some(message) => message[0].clone(),
         None => panic!("not core/syntax: {code:?}"),
     }
+}
+
+/// The fault of `text` as JSON with comments.
+fn fault(text: &str) -> Fault {
+    parse(text, Options::default()).unwrap_err()
 }
 
 /// The reviewer's reproducer, in this process: a `MalformedInput` that names the escape, on
@@ -168,33 +173,28 @@ fn a_backslash_before_a_non_ascii_character_is_malformed_input_at_its_span() {
 #[test]
 fn the_span_of_a_bad_escape_is_rebased_to_the_file() {
     let file = r#"    {"a": "\q"}"#;
-    let failure = parse_at::<Value>(JsonSlice {
-        text: &file[4..],
-        offset: 4,
-    })
+    let failure = parse_slice(
+        JsonSlice {
+            text: &file[4..],
+            offset: 4,
+        },
+        Options::default(),
+    )
     .unwrap_err();
     assert_eq!(failure.span, Span { offset: 11, len: 2 });
 }
 
-/// Every unsafe class is `MalformedInput` through each reader, in this process (after the
-/// scan nothing here reaches facet).
+/// Every unsafe class is `MalformedInput` through each reader, in this process.
 #[test]
 fn every_unsafe_class_is_malformed_input_through_every_entry_point() {
     for (class, content) in UNSAFE_STRINGS {
         for document in documents(content) {
             let envelope = probe_envelope(JsonSlice::new(&document)).unwrap_err();
             assert!(envelope.message().contains("escape"), "{class}");
-            let typed = parse_at::<IndexMap<String, Value>>(JsonSlice::new(&document)).unwrap_err();
-            assert!(malformed(&typed.error).contains("escape"), "{class}");
-            for error in [
-                from_str::<Value>(&document).unwrap_err(),
-                from_str_jsonc::<Value>(&document).unwrap_err(),
-                from_str_borrowed_jsonc::<Value>(&document).unwrap_err(),
-                from_slice_jsonc::<Value>(document.as_bytes()).unwrap_err(),
-            ] {
-                assert!(error.path.is_none(), "{class}: a parser-level error");
+            assert!(from_str_jsonc::<Value>(&document).is_err(), "{class}");
+            for error in errors(&document) {
                 assert!(malformed(&error).contains("escape"), "{class}: {error:?}");
-                let span = error.span.unwrap();
+                let span = error.span;
                 let bad = &document[span.offset as usize..(span.offset + span.len) as usize];
                 assert!(bad.starts_with('\\'), "{class}: the span is `{bad}`");
             }
@@ -204,7 +204,7 @@ fn every_unsafe_class_is_malformed_input_through_every_entry_point() {
 
 #[test]
 fn a_cut_unicode_escape_names_what_stands_in_its_place() {
-    let message = |text: &str| malformed(&from_str_jsonc::<Value>(text).unwrap_err());
+    let message = |text: &str| malformed(&fault(text));
     assert_eq!(
         message(r#""\u00g0""#),
         "unexpected character 'g', expected four hexadecimal digits after `\\u` (bad unicode \
@@ -233,11 +233,11 @@ fn a_cut_unicode_escape_names_what_stands_in_its_place() {
     );
 }
 
-/// What facet reports without a fault stays facet's to report: a string or a text that ends
-/// early, a backslash that ends the text, a surrogate without its pair.
+/// What the scan leaves to the parser it reports: a string or a text that ends early, a
+/// backslash that ends the text, a surrogate without its pair.
 #[test]
 fn faults_facet_reports_safely_stay_its_own() {
-    let kind = |text: &str| from_str_jsonc::<Value>(text).unwrap_err().kind;
+    let kind = |text: &str| fault(text).kind;
     for text in [
         r#"{"a": "b"#,
         r#"{"a": "b\"#,
@@ -247,7 +247,7 @@ fn faults_facet_reports_safely_stay_its_own() {
     ] {
         assert_eq!(scan(text.as_bytes(), true).map(|s| s.root_end), Ok(None));
         assert!(
-            matches!(kind(text), DeserializeErrorKind::UnexpectedEof { .. }),
+            matches!(kind(text), FaultKind::UnexpectedEof { .. }),
             "`{text}`"
         );
     }
@@ -259,10 +259,7 @@ fn faults_facet_reports_safely_stay_its_own() {
         r#"{"\ud83d": 1}"#,
     ] {
         assert!(scan(text.as_bytes(), true).is_ok(), "`{text}`");
-        assert!(
-            matches!(kind(text), DeserializeErrorKind::InvalidUtf8 { .. }),
-            "`{text}`"
-        );
+        assert!(matches!(kind(text), FaultKind::InvalidUtf8), "`{text}`");
     }
 }
 
@@ -271,8 +268,11 @@ fn faults_facet_reports_safely_stay_its_own() {
 #[test]
 fn the_escapes_fixture_is_refused_and_raw_control_characters_are_kept() {
     let text = String::from_utf8(fixture("escapes.json")).unwrap();
-    assert!(malformed(&from_str_jsonc::<Value>(&text).unwrap_err()).contains("'q'"));
-    let kept: Vec<String> = from_str_jsonc("[\"line\nbreak\", \"tab\there\", \"\u{1}\"]").unwrap();
+    assert!(malformed(&fault(&text)).contains("'q'"));
+    let kept: Vec<String> = read_value(
+        &from_str_jsonc::<Value>("[\"line\nbreak\", \"tab\there\", \"\u{1}\"]").unwrap(),
+    )
+    .unwrap();
     assert_eq!(kept, ["line\nbreak", "tab\there", "\u{1}"]);
 }
 
@@ -286,19 +286,16 @@ fn every_escape_of_rfc_8259_decodes_as_before() {
         "\"", "\\", "/", "\u{8}", "\u{c}", "\n", "\r", "\t", "é", "é", "é", "😀", "😀", "a\\\"b",
         "\0", "\\u0041", "\\é", "x\\",
     ];
-    let owned: Vec<String> = from_str_jsonc(text).unwrap();
-    assert_eq!(owned, expected);
-    let strict: Vec<String> = from_str(text).unwrap();
-    assert_eq!(strict, expected);
-    let borrowed: Vec<std::borrow::Cow<'_, str>> = from_str_borrowed_jsonc(text).unwrap();
-    assert_eq!(borrowed, expected);
-    let bytes: Vec<String> = from_slice_jsonc(text.as_bytes()).unwrap();
-    assert_eq!(bytes, expected);
-    let through_parse_at: Vec<String> = parse_at(JsonSlice::new(text)).unwrap();
-    assert_eq!(through_parse_at, expected);
-    // The door gives what facet gives.
-    let facet: Vec<String> = facet_json::from_str_jsonc(text).unwrap();
-    assert_eq!(facet, expected);
+    let strings = |value: Value| -> Vec<String> { read_value(&value).expect("strings") };
+    assert_eq!(strings(from_str_jsonc::<Value>(text).unwrap()), expected);
+    let plain = parse(text, Options::default().without_comments()).unwrap();
+    assert_eq!(strings(plain.value), expected);
+    assert_eq!(
+        strings(parse_bytes(text.as_bytes(), Options::default()).unwrap()),
+        expected
+    );
+    let sliced = parse_slice(JsonSlice::new(text), Options::default()).unwrap();
+    assert_eq!(strings(sliced.value), expected);
 }
 
 #[test]
@@ -310,7 +307,8 @@ fn escaped_keys_and_raw_slices_are_read_as_before() {
     let inner = envelope.payload("a\nb").unwrap();
     assert_eq!(inner.text, r#"{"c\"d": "\u0041"}"#);
     assert_eq!(inner.offset, 9);
-    let map: IndexMap<String, String> = parse_at(inner).unwrap();
+    let inner = parse_slice(inner, Options::default()).unwrap().value;
+    let map: IndexMap<String, String> = read_value(&inner).unwrap();
     assert_eq!(map["c\"d"], "A");
 }
 
@@ -318,44 +316,43 @@ fn escaped_keys_and_raw_slices_are_read_as_before() {
 #[test]
 fn comments_are_not_strings() {
     let text = "// C:\\path \"\\q\n{ /* \"\\é */ \"a\": 1 } // \\";
-    let map: IndexMap<String, u32> = from_str_jsonc(text).unwrap();
+    let map: IndexMap<String, u32> = read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap();
     assert_eq!(map["a"], 1);
-    // Plain JSON has no comments: facet stops on the `/`, as before.
+    // Plain JSON has no comments: the parser stops on the `/`, as before.
     assert!(matches!(
-        from_str::<Value>("// x\n1").unwrap_err().kind,
-        DeserializeErrorKind::UnexpectedChar { ch: '/', .. }
+        parse("// x\n1", Options::default().without_comments())
+            .unwrap_err()
+            .kind,
+        FaultKind::UnexpectedChar { ch: '/', .. }
     ));
 }
 
 /// Bytes that are not UTF-8: in a comment accepted, in a string an error on the string, as facet's
-/// byte entry point has it.
+/// byte entry point had it.
 #[test]
 fn bytes_that_are_not_utf8_read_as_facet_reads_them() {
     let comment = fixture("invalid_utf8_comment.json");
     assert!(std::str::from_utf8(&comment).is_err());
-    let value: Value = from_slice_jsonc(&comment).unwrap();
+    let value: Value = parse_bytes(&comment, Options::default()).unwrap();
     assert!(value.as_object().unwrap().get("a").is_some());
 
     let string = fixture("invalid_utf8_string.json");
-    let crate_error = from_slice_jsonc::<Value>(&string).unwrap_err();
-    let facet = facet_json::from_slice_jsonc::<Value>(&string).unwrap_err();
-    assert!(matches!(
-        crate_error.kind,
-        DeserializeErrorKind::InvalidUtf8 { .. }
-    ));
-    assert!(matches!(
-        facet.kind,
-        DeserializeErrorKind::InvalidUtf8 { .. }
-    ));
-    assert_eq!(crate_error.span, facet.span);
+    let error = parse_bytes(&string, Options::default()).unwrap_err();
+    assert!(matches!(error.kind, FaultKind::InvalidUtf8));
+    // On the string: from its opening quote to its closing one.
+    let (start, end) = (
+        error.span.offset as usize,
+        (error.span.offset + error.span.len) as usize,
+    );
+    assert_eq!((string[start], string[end - 1]), (b'"', b'"'));
 
-    let stray = from_slice_jsonc::<Value>(b"/* \xff */ [1, \xff]").unwrap_err();
+    let stray = parse_bytes(b"/* \xff */ [1, \xff]", Options::default()).unwrap_err();
     assert!(matches!(
         stray.kind,
-        DeserializeErrorKind::UnexpectedChar { ch: 'ÿ', .. }
+        FaultKind::UnexpectedChar { ch: 'ÿ', .. }
     ));
-    assert_eq!(stray.span.unwrap().offset, 12);
-    assert!(from_slice_jsonc::<Value>(b"/* \xff */ [\"\\\xc3\"]").is_err());
+    assert_eq!(stray.span.offset, 12);
+    assert!(parse_bytes(b"/* \xff */ [\"\\\xc3\"]", Options::default()).is_err());
 }
 
 // --- the scan --------------------------------------------------------------------------------
@@ -441,19 +438,13 @@ fn content_after_the_root_never_reaches_facet() {
         " \u{0}",
     ] {
         let text = format!(r#"{{"a": "b\n"}}{tail}"#);
-        let map: IndexMap<String, String> = from_str_jsonc(&text).unwrap();
-        assert_eq!(map["a"], "b\n", "`{tail}`");
-        let map: IndexMap<String, String> = parse_at(JsonSlice::new(&text)).unwrap();
+        let map: IndexMap<String, String> =
+            read_value(&from_str_jsonc::<Value>(&text).unwrap()).unwrap();
         assert_eq!(map["a"], "b\n", "`{tail}`");
         let envelope = probe_envelope(JsonSlice::new(&text)).unwrap();
         assert_eq!(envelope.payload("a").unwrap().text, r#""b\n""#);
-        assert!(from_slice_jsonc::<Value>(text.as_bytes()).is_ok());
+        assert!(parse_bytes(text.as_bytes(), Options::default()).is_ok());
     }
-    let text = r#"{"a": "x"} tail"#;
-    let error = from_str_jsonc::<IndexMap<String, u32>>(text).unwrap_err();
-    let facet = facet_json::from_str_jsonc::<IndexMap<String, u32>>(text).unwrap_err();
-    assert!(error.span.is_some());
-    assert_eq!(error.span, facet.span);
 }
 
 #[test]
@@ -467,15 +458,15 @@ fn nesting_past_the_limit_is_refused_before_facet() {
             offset: MAX_JSON_DEPTH
         })
     );
-    let error = from_str_jsonc::<Value>(&deep).unwrap_err();
+    let error = fault(&deep);
     assert_eq!(
         malformed(&error),
         "unexpected character '[', expected at most 128 levels of nested arrays and objects"
     );
     // Far past any stack: refused by the scan, in a mix of both brackets, never parsed.
     let abyss = "[{\"a\":".repeat(200_000);
-    assert!(parse_at::<Value>(JsonSlice::new(&abyss)).is_err());
-    assert!(from_slice_jsonc::<Value>(abyss.as_bytes()).is_err());
+    assert!(parse_slice(JsonSlice::new(&abyss), Options::default()).is_err());
+    assert!(parse_bytes(abyss.as_bytes(), Options::default()).is_err());
     // Brackets in strings and comments are not nesting.
     let flat = format!("[\"{}\" /* {} */]", "[".repeat(500), "{".repeat(500));
     assert!(from_str_jsonc::<Value>(&flat).is_ok());
@@ -483,13 +474,13 @@ fn nesting_past_the_limit_is_refused_before_facet() {
 
 // --- the order of faults (reviews/CORE-ESC minors 2, 4, 5) -----------------------------------
 
-/// The error of `text` through each entry point of the door.
-fn errors(text: &str) -> [facet_json::DeserializeError; 4] {
+/// The fault of `text` through each entry point of the parser.
+fn errors(text: &str) -> [Fault; 4] {
     [
-        from_str::<Value>(text).unwrap_err(),
-        from_str_jsonc::<Value>(text).unwrap_err(),
-        from_str_borrowed_jsonc::<Value>(text).unwrap_err(),
-        from_slice_jsonc::<Value>(text.as_bytes()).unwrap_err(),
+        parse(text, Options::default().without_comments()).unwrap_err(),
+        parse(text, Options::default()).unwrap_err(),
+        parse_slice(JsonSlice::new(text), Options::default()).unwrap_err(),
+        parse_bytes(text.as_bytes(), Options::default()).unwrap_err(),
     ]
 }
 
@@ -509,7 +500,7 @@ fn an_earlier_syntax_fault_is_reported_before_a_later_bad_escape() {
             .replace("\\q", "q")
             .replace("\\é", "é")
             .replace("\\u00g0", "g");
-        let expected = from_str_jsonc::<Value>(&repaired).unwrap_err();
+        let expected = parse(&repaired, Options::default()).unwrap_err();
         for error in errors(text) {
             let message = malformed(&error);
             assert!(!message.contains("escape"), "`{text}`: {message}");
@@ -517,8 +508,8 @@ fn an_earlier_syntax_fault_is_reported_before_a_later_bad_escape() {
             let expected_message =
                 malformed(&expected).replace(r#"String("q")"#, r#"String("\q")"#);
             assert_eq!(message, expected_message, "`{text}`");
-            let span = error.span.unwrap();
-            assert_eq!(span.offset, expected.span.unwrap().offset, "`{text}`");
+            let span = error.span;
+            assert_eq!(span.offset, expected.span.offset, "`{text}`");
             assert!(
                 span.offset as usize <= fault && fault < (span.offset + span.len.max(1)) as usize,
                 "`{text}`: {span:?} is not on byte {fault}"
@@ -529,7 +520,7 @@ fn an_earlier_syntax_fault_is_reported_before_a_later_bad_escape() {
     for text in [r#"["\q" 1 x]"#, r#"{"\q" 1}"#, r#"["a", "\q"} x"#] {
         for error in errors(text) {
             assert!(malformed(&error).contains("escape"), "`{text}`");
-            let span = error.span.unwrap();
+            let span = error.span;
             assert_eq!(&text[span.offset as usize..][..2], "\\q", "`{text}`");
         }
     }
@@ -545,14 +536,14 @@ fn an_earlier_syntax_fault_is_reported_before_nesting_past_the_limit() {
         for error in errors(text) {
             let message = malformed(&error);
             assert!(!message.contains("levels"), "{message}");
-            assert_eq!(error.span.unwrap().offset as usize, fault, "{message}");
+            assert_eq!(error.span.offset as usize, fault, "{message}");
         }
     }
     // Nothing wrong before the bracket past the limit: that is the fault.
     let deep = format!("[1, {}", "[".repeat(MAX_JSON_DEPTH + 10));
     for error in errors(&deep) {
         assert!(malformed(&error).contains("128 levels"));
-        assert_eq!(error.span.unwrap().offset as usize, 4 + MAX_JSON_DEPTH - 1);
+        assert_eq!(error.span.offset as usize, 4 + MAX_JSON_DEPTH - 1);
     }
 }
 
@@ -564,7 +555,7 @@ fn nesting_past_the_limit_names_the_bracket_it_stops_on() {
             malformed(&error),
             "unexpected character '{', expected at most 128 levels of nested arrays and objects"
         );
-        assert_eq!(error.span.unwrap().offset as usize, 5 * MAX_JSON_DEPTH);
+        assert_eq!(error.span.offset as usize, 5 * MAX_JSON_DEPTH);
     }
     let arrays = "[".repeat(MAX_JSON_DEPTH + 1);
     for error in errors(&arrays) {
@@ -601,9 +592,9 @@ fn a_comment_that_never_ends_after_the_root_is_content() {
 fn a_comment_that_never_ends_inside_the_root_is_reported_the_same_near_and_far() {
     let end_of_input = "unexpected end of input, expected in block comment";
     let near = "{\"first\": {\"name\": \"n\"}, /* open";
-    let error = from_str_jsonc::<Holder>(near).unwrap_err();
+    let error = fault(near);
     assert_eq!(malformed(&error), end_of_input);
-    assert_eq!(error.span, Some(facet::Span::new(25, 7)));
+    assert_eq!(error.span, Span { offset: 25, len: 7 });
     assert_eq!(
         scan(near.as_bytes(), true),
         Err(UnsafeText::UnterminatedComment { offset: 25, len: 7 })
@@ -618,40 +609,37 @@ fn a_comment_that_never_ends_inside_the_root_is_reported_the_same_near_and_far()
     }
     let comment = far.len() + 2;
     far.push_str(", /* open *");
-    let span = Some(facet::Span::new(comment, 9));
-    let error = from_str_jsonc::<Vec<Untagged>>(&far).unwrap_err();
-    assert_eq!(
-        (malformed(&error), error.span),
-        (end_of_input.to_owned(), span)
-    );
-    let error = from_str_borrowed_jsonc::<Vec<Untagged>>(&far).unwrap_err();
-    assert_eq!(
-        (malformed(&error), error.span),
-        (end_of_input.to_owned(), span)
-    );
-    let error = from_slice_jsonc::<Vec<Untagged>>(far.as_bytes()).unwrap_err();
-    assert_eq!(
-        (malformed(&error), error.span),
-        (end_of_input.to_owned(), span)
-    );
+    let span = Span {
+        offset: u32::try_from(comment).unwrap(),
+        len: 9,
+    };
+    for error in [
+        fault(&far),
+        parse_bytes(far.as_bytes(), Options::default()).unwrap_err(),
+    ] {
+        assert_eq!(
+            (malformed(&error), error.span),
+            (end_of_input.to_owned(), span)
+        );
+    }
 
     // Before the root value there is no value at all: the same report.
-    let error = from_str_jsonc::<Value>("  /* open").unwrap_err();
+    let error = fault("  /* open");
     assert_eq!(malformed(&error), end_of_input);
-    assert_eq!(error.span, Some(facet::Span::new(2, 7)));
+    assert_eq!(error.span, Span { offset: 2, len: 7 });
 
     // A syntax fault before the comment is the file's first fault, in the parser's words.
-    let error = from_str_jsonc::<Value>("{\"a\" 1, /* open").unwrap_err();
+    let error = fault("{\"a\" 1, /* open");
     assert_ne!(malformed(&error), end_of_input);
-    assert!(error.span.is_some_and(|span| (span.offset as usize) < 9));
+    assert!((error.span.offset as usize) < 9);
     // Past a bracket that closes another kind the parser has stopped: its report stands.
-    let error = from_str_jsonc::<Value>("[1} /* open").unwrap_err();
+    let error = fault("[1} /* open");
     assert_ne!(malformed(&error), end_of_input);
 }
 
 // --- facet-json's restore (reviews/CORE-ESC upstream note) -----------------------------------
 
-#[derive(Debug, PartialEq, facet::Facet)]
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 enum Untagged {
@@ -661,12 +649,10 @@ enum Untagged {
     Number(f64),
 }
 
-#[derive(Debug, PartialEq, facet::Facet)]
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
 struct Holder {
     first: Untagged,
-    #[facet(default)]
     second: Option<Untagged>,
-    #[facet(default)]
     last: Option<String>,
 }
 
@@ -685,21 +671,16 @@ fn a_comment_after_an_untagged_enum_is_still_a_comment() {
         second: Some(Untagged::List(vec![1, 2])),
         last: Some("x".to_owned()),
     };
-    assert_eq!(from_str_jsonc::<Holder>(text).unwrap(), expected);
-    assert_eq!(from_str_borrowed_jsonc::<Holder>(text).unwrap(), expected);
-    assert_eq!(
-        from_slice_jsonc::<Holder>(text.as_bytes()).unwrap(),
-        expected
-    );
-    assert_eq!(parse_at::<Holder>(JsonSlice::new(text)).unwrap(), expected);
+    let typed = |text: &str| read_value::<Holder>(&from_str_jsonc::<Value>(text).unwrap());
+    assert_eq!(typed(text), Some(expected));
     // The same beside an integer beyond 64 bits (the read over the respelt copy).
     let wide = "{\"first\": /* c */ 18446744073709551616 // c\n, \"second\": {\"a\": 1, /* c */ \
                 \"b\": 2} // c\n}";
-    let read = from_str_jsonc::<Holder>(wide).unwrap();
+    let read = typed(wide).unwrap();
     assert_eq!(read.first, Untagged::Number(18_446_744_073_709_551_616.0));
     assert_eq!(read.second, Some(Untagged::Pair { a: 1, b: 2 }));
     // Without comments a comment stays a syntax error.
-    assert!(from_str::<Holder>(text).is_err());
+    assert!(parse(text, Options::default().without_comments()).is_err());
 }
 
 /// The deserialiser reads events 512 at a time, so in a small document every event is read
@@ -738,25 +719,25 @@ fn a_comment_far_after_an_untagged_enum_is_still_a_comment() {
     }
     text.push_str("  1.5 // the last\n] // after the root\n");
     expected.push(Untagged::Number(1.5));
-    let read = |result: Result<Vec<Untagged>, facet_json::DeserializeError>| {
-        result.unwrap_or_else(|error| {
-            let at = error.span.map_or(0, |span| span.offset as usize);
+    let read = |text: &str| -> Vec<Untagged> {
+        let json = parse(text, Options::default()).unwrap_or_else(|fault| {
+            let at = fault.span.offset as usize;
             panic!(
-                "{error} at byte {at}: `{}`",
+                "{fault} at byte {at}: `{}`",
                 &text[at..(at + 40).min(text.len())]
             )
-        })
+        });
+        read_value(&json.value).expect("the list reads")
     };
-    assert_eq!(read(from_str_jsonc(&text)), expected);
-    assert_eq!(read(from_str_borrowed_jsonc(&text)), expected);
-    assert_eq!(read(from_slice_jsonc(text.as_bytes())), expected);
+    assert_eq!(read(&text), expected);
     assert_eq!(
-        parse_at::<Vec<Untagged>>(JsonSlice::new(&text)).unwrap(),
+        read_value::<Vec<Untagged>>(&parse_bytes(text.as_bytes(), Options::default()).unwrap())
+            .unwrap(),
         expected
     );
     // The same over the respelt copy of a text with an integer beyond 64 bits.
     let wide = text.replacen("1.5 // the last", "18446744073709551616 // the last", 1);
-    let read: Vec<Untagged> = from_str_jsonc(&wide).unwrap();
+    let read: Vec<Untagged> = read(&wide);
     assert_eq!(
         read.last(),
         Some(&Untagged::Number(18_446_744_073_709_551_616.0))

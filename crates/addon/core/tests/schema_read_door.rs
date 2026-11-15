@@ -1,11 +1,16 @@
-//! The new reader (`versioning::read_payload`, the derived `FromJson`) against today's door
-//! (`versioning::parse_payload`, facet-json's typed read and its passes): one struct per member
-//! type, every token of a grid, under every reading. Where the two tell the same codes,
-//! severities and paths (spans aside: the new reader spans every finding's value) and read the
-//! same value, nothing is said; every difference is a line of `DIFFERENCES`, the pinned list of
-//! what the new reader does otherwise and why.
+//! The reader (`versioning::read_payload`, the derived `FromJson`) against the door it replaced
+//! (`versioning::parse_payload`, facet-json's typed read and its passes, now deleted): one struct
+//! per member type, every token of a grid, under every reading. The door's outcomes are frozen
+//! in `schema_read_door.pins`, one line per cell: `key<TAB>read` where the two agreed,
+//! `key<TAB>read<TAB>door` where they differed. Each test holds the reader to the pinned `read`,
+//! and every pinned difference must be one the reader makes on purpose (`explained`, the
+//! documents' rules): codes, severities and paths (spans aside: the reader spans every
+//! finding's value) and the value read. Set `BEDROCK_DOOR_PINS=<dir>` to write each test's cells
+//! (the reader's outcome, the pinned door's) to `<dir>/<test>` instead.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
+use std::sync::OnceLock;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::BlockId;
@@ -17,7 +22,7 @@ use bedrock_addon_core::schema::{self, FromJson, Schema, derive_support};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
-    BeyondWidth, MemberFailure, ParseCx, Reading, Scalars, parse_payload, read_payload,
+    BeyondWidth, MemberFailure, ParseCx, Reading, Scalars, read_payload,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -85,16 +90,12 @@ impl FromJson for OptFormatVersion {
 macro_rules! probes {
     ($($kind:ident $name:ident: $ty:ty;)+) => {
         $(probes!(@struct $kind $name $ty);)+
-        /// Every probe of `token` under `reading`, as `(name, old, new)`.
-        fn every(reading: Reading, token: &str) -> Vec<(&'static str, String, String)> {
+        /// Every probe of `token` under `reading`, as `(name, outcome)`.
+        fn every(reading: Reading, token: &str) -> Vec<(&'static str, String)> {
             vec![
-                $((stringify!($name), old::<$name>(reading, token), new::<$name>(reading, token)),)+
-                ("OptMolang", old::<OptMolang>(reading, token), new::<OptMolang>(reading, token)),
-                (
-                    "OptFormatVersion",
-                    old::<OptFormatVersion>(reading, token),
-                    new::<OptFormatVersion>(reading, token),
-                ),
+                $((stringify!($name), new::<$name>(reading, token)),)+
+                ("OptMolang", new::<OptMolang>(reading, token)),
+                ("OptFormatVersion", new::<OptFormatVersion>(reading, token)),
             ]
         }
     };
@@ -223,20 +224,55 @@ fn outcome<T: std::fmt::Debug>(value: Option<&T>, d: &Diagnostics) -> String {
     format!("{value} [{}]", found.join("; "))
 }
 
-fn old<T: for<'a> Facet<'a> + std::fmt::Debug>(reading: Reading, token: &str) -> String {
-    let load = context(reading);
-    let text = format!(r#"{{"v": {token}}}"#);
-    let mut d = Diagnostics::default();
-    let value: Option<T> = parse_payload(JsonSlice::new(&text), &parse_cx(&load), &mut d);
-    outcome(value.as_ref(), &d)
-}
-
 fn new<T: FromJson + std::fmt::Debug>(reading: Reading, token: &str) -> String {
     let load = context(reading);
     let text = format!(r#"{{"v": {token}}}"#);
     let mut d = Diagnostics::default();
     let value: Option<T> = read_payload(JsonSlice::new(&text), &parse_cx(&load), &mut d);
     outcome(value.as_ref(), &d)
+}
+
+/// The frozen cells: key to `(read, door)`, `door` absent where it is `read`.
+fn frozen() -> &'static HashMap<&'static str, (&'static str, Option<&'static str>)> {
+    static FROZEN: OnceLock<HashMap<&'static str, (&'static str, Option<&'static str>)>> =
+        OnceLock::new();
+    FROZEN.get_or_init(|| {
+        include_str!("schema_read_door.pins")
+            .lines()
+            .filter_map(|line| {
+                let mut parts = line.split('\t');
+                Some((parts.next()?, (parts.next()?, parts.next())))
+            })
+            .collect()
+    })
+}
+
+/// The cell `key` of `test`: the reader's outcome `read` must be the pinned one; returns the
+/// door's outcome as pinned. Under `BEDROCK_DOOR_PINS` the cell is written to that directory
+/// instead.
+fn cell(test: &str, key: &str, read: &str) -> String {
+    let pinned = frozen().get(key).copied();
+    let door = pinned.map_or(read, |(pinned_read, door)| door.unwrap_or(pinned_read));
+    if let Ok(dir) = std::env::var("BEDROCK_DOOR_PINS") {
+        use std::io::Write as _;
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(std::path::Path::new(&dir).join(test))
+            .expect("the pin directory");
+        let line = if door == read {
+            format!("{key}\t{read}\n")
+        } else {
+            format!("{key}\t{read}\t{door}\n")
+        };
+        file.write_all(line.as_bytes()).expect("a pin line");
+        return door.to_owned();
+    }
+    let Some((pinned_read, _)) = pinned else {
+        panic!("no pin for {key}");
+    };
+    assert_eq!(read, pinned_read, "the reader at {key}");
+    door.to_owned()
 }
 
 /// The door's paths as the reader names them: a wrong type at the member whose value has it
@@ -295,7 +331,8 @@ fn the_reader_tells_what_the_door_tells_but_where_it_is_pinned_otherwise() {
     let mut counts: Vec<(&'static str, usize)> = Vec::new();
     for (name, reading) in readings() {
         for token in TOKENS {
-            for (probe, old, new) in every(reading, token) {
+            for (probe, new) in every(reading, token) {
+                let old = cell("grid", &format!("grid {name} {probe} {token}"), &new);
                 if old == new {
                     continue;
                 }
@@ -357,12 +394,9 @@ fn a_document_of_several_findings_tells_them_in_the_door_s_order() {
             let load = context(reading);
             let mut d = Diagnostics::default();
             let value: Option<Several> =
-                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
-            let door = outcome(value.as_ref(), &d);
-            let mut d = Diagnostics::default();
-            let value: Option<Several> =
                 read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
             let read = outcome(value.as_ref(), &d);
+            let door = cell("several", &format!("several {name} {text}"), &read);
             // An integer out of range at its member (`a`), where facet named the owner.
             let at_a = door.replace("core/invalid_value p]", "core/invalid_value p/a]");
             if door != read && at_the_member(&door) != read && at_a != read {
@@ -384,12 +418,9 @@ fn a_payload_that_is_no_object_is_the_door_s_syntax_error() {
             let load = context(reading);
             let mut d = Diagnostics::default();
             let value: Option<Several> =
-                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
-            let door = outcome(value.as_ref(), &d);
-            let mut d = Diagnostics::default();
-            let value: Option<Several> =
                 read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
             let read = outcome(value.as_ref(), &d);
+            let door = cell("no_object", &format!("no_object {name} {text}"), &read);
             if door != read {
                 let _ = writeln!(unexplained, "{name} {text}\n  door {door}\n  read {read}");
             }
@@ -447,12 +478,9 @@ fn a_map_with_a_refused_value_reads_as_the_door_reads_it() {
             let load = context(reading);
             let mut d = Diagnostics::default();
             let value: Option<Mapped> =
-                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
-            let door = outcome(value.as_ref(), &d);
-            let mut d = Diagnostics::default();
-            let value: Option<Mapped> =
                 read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
             let read = outcome(value.as_ref(), &d);
+            let door = cell("mapped", &format!("mapped {name} {text}"), &read);
             if door != read && at_the_member(&door) != read {
                 let _ = writeln!(unexplained, "{name} {text}\n  door {door}\n  read {read}");
             }
@@ -471,8 +499,8 @@ fn a_format_version_written_as_a_number_reads_as_the_door_reads_it() {
     let mut unexplained = String::new();
     for token in ["1.20", "1.2", "1.21", "2", "1.200", "1e2"] {
         let reading = Reading::DOCUMENT;
-        let door = old::<OptFormatVersion>(reading, token);
         let read = new::<OptFormatVersion>(reading, token);
+        let door = cell("format_version", &format!("format_version {token}"), &read);
         if door != read {
             let _ = writeln!(unexplained, "{token}\n  door {door}\n  read {read}");
         }
@@ -561,12 +589,9 @@ fn every_kind_of_member_reads_as_the_door_reads_it() {
             };
             let mut d = Diagnostics::default();
             let value: Option<Everything> =
-                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
-            let door = format!("{} kept [{}]", outcome(value.as_ref(), &d), kept(&d));
-            let mut d = Diagnostics::default();
-            let value: Option<Everything> =
                 read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
             let read = format!("{} kept [{}]", outcome(value.as_ref(), &d), kept(&d));
+            let door = cell("everything", &format!("everything {name} {text}"), &read);
             // An integer out of range at its member, where facet named the document; a `skip`
             // field is not read, where facet read it from the member of its name.
             let door = door
@@ -629,12 +654,9 @@ fn probe_tags() {
         ] {
             let load = context(reading);
             let mut d = Diagnostics::default();
-            let v: Option<Probe> = parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
-            let door = outcome(v.as_ref(), &d);
-            let mut d = Diagnostics::default();
             let v: Option<Probe> = read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
             let read = outcome(v.as_ref(), &d);
-            eprintln!("{name} {text}\n  door {door}\n  read {read}");
+            eprintln!("{name} {text}\n  read {read}");
         }
     }
 }

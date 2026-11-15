@@ -204,8 +204,8 @@ fn o5_numeric_subject_and_operator_read_by_vanillas_numbering_deviation() {
     let f: Filter = read(r#"{"test": "has_component", "subject": 0, "operator": 1}"#).unwrap();
     assert_eq!(test_of(&f).subject, Some(FilterSubject::Self_));
     assert_eq!(test_of(&f).operator.as_deref(), Some("!="));
-    assert!(read::<Filter>(r#"{"test": "is_family", "subject": 10}"#).is_err());
-    assert!(read::<Filter>(r#"{"test": "is_family", "operator": 7}"#).is_err());
+    assert!(read::<Filter>(r#"{"test": "is_family", "subject": 10}"#).is_none());
+    assert!(read::<Filter>(r#"{"test": "is_family", "operator": 7}"#).is_none());
 }
 
 #[test]
@@ -223,7 +223,7 @@ fn malformed_tests_are_read_errors() {
         r#""is_family""#,
         r#"{"all_of": 5}"#,
     ] {
-        assert!(read::<Filter>(json).is_err(), "{json} must be rejected");
+        assert!(read::<Filter>(json).is_none(), "{json} must be rejected");
     }
 }
 
@@ -233,7 +233,7 @@ fn filter_test_and_group_read_on_their_own() {
     assert_eq!(t.value, Some(FilterScalar::Bool(false)));
     let g: FilterGroup = round_trip(r#"{"none_of": {"test": "is_daytime"}}"#);
     assert!(g.none_of.is_some());
-    assert!(read::<FilterGroup>("[]").is_err());
+    assert!(read::<FilterGroup>("[]").is_none());
     assert_eq!(
         round_trip::<FilterSubject>(r#""damager""#),
         FilterSubject::Damager

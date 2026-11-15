@@ -6,11 +6,6 @@
 //! number; what was read is what is written. An integer token beyond 64 bits is the number
 //! it spells (core's reader), in each of those places.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::Molang;
@@ -106,7 +101,7 @@ fn a_named_script_beyond_f32_is_read_as_the_largest_finite_float_deviation() {
                 scripts.scale
             );
             // A number is written, not its digits as a string.
-            let json: Value = facet_json::from_str(&written).unwrap();
+            let json: Value = bedrock_addon_core::json::from_str_jsonc::<Value>(&written).unwrap();
             let scale = &json.as_object().unwrap()["minecraft:attachable"]
                 .as_object()
                 .unwrap()["description"]

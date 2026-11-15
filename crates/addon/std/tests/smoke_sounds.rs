@@ -10,11 +10,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_sounds`;
 //! without the variable every test skips.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 #[macro_use]
 mod common;
 #[path = "common/pairs.rs"]
@@ -360,7 +355,8 @@ fn client_install_b_sounds_load_and_every_name_resolves() {
     );
     if let Some(samples) = game_files::source(game_files::SAMPLE_PACKS) {
         let text = std::fs::read_to_string(samples.join("resource_pack/sounds.json")).unwrap();
-        let dump: bedrock_addon::json::Value = facet_json::from_str_jsonc(&text).unwrap();
+        let dump: bedrock_addon::json::Value =
+            bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&text).unwrap();
         assert_eq!(interactive(&dump), Some(true), "the merged dump has it");
     }
     let dangling = unresolved(&sounds);
@@ -586,8 +582,10 @@ fn every_event_key_of_vanillas_sounds_json_files_is_a_known_level_sound_event() 
     let mut unknown = Vec::new();
     for file in &files {
         let text = std::fs::read_to_string(file).unwrap();
-        let json: bedrock_addon::json::Value =
-            facet_json::from_str_jsonc(text.trim_start_matches('\u{feff}')).unwrap();
+        let json: bedrock_addon::json::Value = bedrock_addon::json::from_str_jsonc::<
+            bedrock_addon::json::Value,
+        >(text.trim_start_matches('\u{feff}'))
+        .unwrap();
         event_keys(&json, &mut keys);
         let document = SoundBindings::parse(
             &bedrock_addon::storage::PackPath::from_static("sounds.json"),

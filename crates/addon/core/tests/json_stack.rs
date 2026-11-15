@@ -11,17 +11,23 @@
 
 use std::process::{Command, Stdio};
 
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use bedrock_addon_core::json::kit::{Node, Read as KitRead};
+use bedrock_addon_core::json::parse::{
+    Fault, Options, elements_of, members_of, parse, parse_bytes, parse_slice,
+};
 use bedrock_addon_core::json::{
     ClampPlan, EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, UnsafeText, Value, Width,
-    WriteStyle, check_depth, clamp_non_finite, clamp_tokens, from_slice_jsonc, from_str,
-    from_str_borrowed_jsonc, from_str_jsonc, keep_unknown_members, last_wins, last_wins_except,
-    parse_at, probe_envelope, scan, span_at, to_facet_json, to_json, trailing_content,
-    unknown_members, write_json,
+    WriteStyle, check_depth, clamp_non_finite, clamp_tokens, from_str, from_str_jsonc, last_wins,
+    last_wins_except, null_members_of_shape, probe_envelope, scan, to_facet_json, to_json,
+    trailing_content, write_json,
 };
+use bedrock_addon_core::schema::{FromJson, Schema, read_document, read_value};
+use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
 use facet_format::DeserializeErrorKind;
-use facet_json::{DeserializeError, RawJson};
+use facet_json::DeserializeError;
 use indexmap::IndexMap;
 
 /// The stack of the thread the cases of the door run on.
@@ -85,11 +91,15 @@ fn refusal_of(error: &DeserializeError) -> Read {
     }
 }
 
-/// A struct with one level of its own above a raw member.
-#[derive(Debug, Facet)]
-struct Holder<'a> {
-    #[facet(default)]
-    raw: Option<RawJson<'a>>,
+/// The refusal of a fault of the parser.
+fn fault_of(fault: &Fault) -> Read {
+    refusal_of(&fault.to_error())
+}
+
+/// A struct with one level of its own above an untyped member.
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Holder {
+    raw: Option<Value>,
 }
 
 /// What a reader gives for a text within the limit and for one past it.
@@ -107,7 +117,7 @@ enum Gives {
 /// A reader by name.
 type Reader = (&'static str, Gives, fn(&str) -> Read);
 
-/// Every entry point of the door, and the readers built on it.
+/// Every entry point of the text reader, and the readers built on it.
 const READERS: &[Reader] = &[
     ("from_str", Gives::Value, |text| {
         // Plain JSON has no comments: white space of their length keeps the offsets.
@@ -116,77 +126,87 @@ const READERS: &[Reader] = &[
     ("from_str_jsonc", Gives::Value, |text| {
         read_of(from_str_jsonc::<Value>(text))
     }),
-    ("from_str_borrowed_jsonc", Gives::Value, |text| {
-        read_of(from_str_borrowed_jsonc::<Value>(text))
+    ("parse", Gives::Value, |text| {
+        match parse(text, Options::default()) {
+            Ok(parsed) => read_of(Ok(parsed.value)),
+            Err(fault) => fault_of(&fault),
+        }
     }),
-    ("from_slice_jsonc", Gives::Value, |text| {
-        read_of(from_slice_jsonc::<Value>(text.as_bytes()))
+    ("parse_bytes", Gives::Value, |text| {
+        match parse_bytes(text.as_bytes(), Options::default()) {
+            Ok(value) => read_of(Ok(value)),
+            Err(fault) => fault_of(&fault),
+        }
     }),
     (
-        "from_slice_jsonc of bytes that are no UTF-8",
+        "parse_bytes of bytes that are no UTF-8",
         Gives::Value,
         |text| {
             // A comment holds the byte: the text is read.
             let mut bytes = b"// \xFF\n".to_vec();
             let before = bytes.len();
             bytes.extend_from_slice(text.as_bytes());
-            match read_of(from_slice_jsonc::<Value>(&bytes)) {
+            let read = match parse_bytes(&bytes, Options::default()) {
+                Ok(value) => read_of(Ok(value)),
+                Err(fault) => fault_of(&fault),
+            };
+            match read {
                 Read::TooDeep(offset) => Read::TooDeep(offset - before),
                 other => other,
             }
         },
     ),
     (
-        "parse_at into a value",
+        "parse_slice into a value",
         Gives::Value,
-        |text| match parse_at::<Value>(JsonSlice::new(text)) {
-            Ok(value) => read_of(Ok(value)),
-            Err(error) => refusal_of(&error.error),
+        |text| match parse_slice(JsonSlice::new(text), Options::default()) {
+            Ok(parsed) => read_of(Ok(parsed.value)),
+            Err(fault) => fault_of(&fault),
         },
     ),
-    ("parse_at into raw members", Gives::Value, |text| {
-        // The root is the map's level: its members are raw slices of the text.
-        if !text.starts_with('{') {
-            return match parse_at::<Vec<RawJson<'_>>>(JsonSlice::new(text)) {
-                Ok(list) => list.first().map_or(Read::Text, |raw| {
-                    match read_of(from_str_jsonc::<Value>(raw.as_str())) {
-                        Read::Value(depth) => Read::Value(depth + 1),
-                        other => other,
-                    }
-                }),
-                Err(error) => refusal_of(&error.error),
-            };
-        }
-        match parse_at::<IndexMap<String, RawJson<'_>>>(JsonSlice::new(text)) {
-            Ok(map) => map.values().next().map_or(Read::Text, |raw| {
-                match read_of(from_str_jsonc::<Value>(raw.as_str())) {
-                    Read::Value(depth) => Read::Value(depth + 1),
-                    other => other,
-                }
-            }),
-            Err(error) => refusal_of(&error.error),
+    ("members_of and elements_of", Gives::Value, |text| {
+        // The root is the map's level: its members are slices of the text.
+        let slice = JsonSlice::new(text);
+        let first = if text.starts_with('{') {
+            members_of(slice).map(|members| members.values().next().copied())
+        } else {
+            elements_of(slice).map(|elements| elements.first().copied())
+        };
+        match first {
+            Some(Some(inner)) => match read_of(from_str_jsonc::<Value>(inner.text)) {
+                Read::Value(depth) => Read::Value(depth + 1),
+                other => other,
+            },
+            Some(None) => Read::Text,
+            None => match parse(text, Options::default()) {
+                Err(fault) => fault_of(&fault),
+                Ok(_) => Read::Other("no members".to_owned()),
+            },
         }
     }),
     (
-        "parse_at into a struct of raw members",
+        "read_value into a struct of an untyped member",
         Gives::Value,
         |text| {
             // The text's inner value as the struct's `raw` member and as a member it does not
-            // have (skipped): the struct is the level taken off.
+            // have: the struct is the level taken off.
             let Some(inner) = inner_of(text) else {
                 return Read::Other("no inner value".to_owned());
             };
             let before = r#"{"raw": "#;
             let document = format!(r#"{before}{inner}, "unknown": {inner}}}"#);
-            match parse_at::<Holder<'_>>(JsonSlice::new(&document)) {
-                Ok(holder) => {
-                    let raw = holder.raw.as_ref().map_or("", RawJson::as_str);
-                    match read_of(from_str_jsonc::<Value>(raw)) {
-                        Read::Value(depth) => Read::Value(depth + 1),
-                        other => other,
+            match from_str_jsonc::<Value>(&document) {
+                Ok(json) => match read_value::<Holder>(&json) {
+                    Some(holder) => {
+                        let raw = holder.raw.unwrap_or(Value::NULL);
+                        match read_of(Ok(raw)) {
+                            Read::Value(depth) => Read::Value(depth + 1),
+                            other => other,
+                        }
                     }
-                }
-                Err(error) => match refusal_of(&error.error) {
+                    None => Read::Other("does not read".to_owned()),
+                },
+                Err(error) => match refusal_of(&error) {
                     // The offset the bracket has in the text.
                     Read::TooDeep(offset) => {
                         let taken = inner.as_ptr() as usize - text.as_ptr() as usize;
@@ -198,21 +218,25 @@ const READERS: &[Reader] = &[
         },
     ),
     (TYPED, Gives::Value, |text| {
-        // facet reads the level of the list or map and, by a call of itself for each level,
-        // the value below it: the door gives it the stack for that.
+        // The reader reads the level of the list or map and, by a call of itself for each
+        // level, the value below it: `read_value` runs it on the stack the depth needs.
         let below = |value: Option<&Value>| match value.map(depth_of) {
             Some((depth, bottom)) if bottom.as_number().is_some() => Read::Value(depth + 1),
             other => Read::Other(format!("{other:?}")),
         };
+        let json = match from_str_jsonc::<Value>(text) {
+            Ok(json) => json,
+            Err(error) => return refusal_of(&error),
+        };
         if text.trim_start().starts_with('{') {
-            match parse_at::<IndexMap<String, Value>>(JsonSlice::new(text)) {
-                Ok(map) => below(map.values().next()),
-                Err(error) => refusal_of(&error.error),
+            match read_value::<IndexMap<String, Value>>(&json) {
+                Some(map) => below(map.values().next()),
+                None => Read::Other("does not read".to_owned()),
             }
         } else {
-            match parse_at::<Vec<Value>>(JsonSlice::new(text)) {
-                Ok(list) => below(list.first()),
-                Err(error) => refusal_of(&error.error),
+            match read_value::<Vec<Value>>(&json) {
+                Some(list) => below(list.first()),
+                None => Read::Other("does not read".to_owned()),
             }
         }
     }),
@@ -260,8 +284,10 @@ const READERS: &[Reader] = &[
                 return Read::Text;
             };
             let _ = clamp_non_finite(&mut value, Some(slice));
-            let _ = unknown_members(Value::SHAPE, &value);
-            let _ = span_at(slice, &JsonPath::new());
+            let _ = null_members_of_shape(Value::SHAPE, &value);
+            let _ = parse_slice(slice, Options::default())
+                .ok()
+                .and_then(|parsed| parsed.spans.at(&JsonPath::new()));
             let copy = value.clone();
             if copy != value {
                 return Read::Other("a copy differs".to_owned());
@@ -275,7 +301,7 @@ const READERS: &[Reader] = &[
 ];
 
 /// The reader whose target has a level of its own above the values.
-const TYPED: &str = "parse_at into a list or map of values";
+const TYPED: &str = "read_value into a list or map of values";
 
 /// `text` without its outermost bracket pair (and, for an object, its key).
 fn inner_of(text: &str) -> Option<&str> {
@@ -342,79 +368,87 @@ const SHAPES: &[Shape] = &[
 
 /// A struct with an untyped member: facet reads the member by a call of itself for each
 /// level of it.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Sidecar {
-    #[facet(default)]
     a: Option<Value>,
 }
 
 /// A struct that holds itself in a list: two levels of the text a turn.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Tree {
-    #[facet(default)]
     a: Option<Vec<Tree>>,
 }
 
 /// A struct that holds itself in a box: one level of the text a turn, and the most stack a
 /// level of the three (an option, a pointer and a struct).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Chain {
-    #[facet(default)]
     a: Option<Box<Chain>>,
 }
 
 /// A struct that holds itself in a map.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Named {
-    #[facet(default)]
     a: Option<IndexMap<String, Option<Named>>>,
 }
 
 /// An untagged enum that holds itself in a list and in a struct: a filter's shape.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 enum Either {
     Many(Vec<Either>),
-    One {
-        #[facet(default)]
-        a: Option<Box<Either>>,
-    },
+    One { a: Option<Box<Either>> },
 }
 
 /// The entry points a typed target is read through.
 const ENTRIES: &[&str] = &[
-    "parse_at",
-    "from_str_borrowed_jsonc",
-    "from_str_jsonc",
-    "from_str",
-    "from_slice_jsonc",
-    "parse_at and the walks beside it",
-    "parse_at, written and read again",
+    "read_value",
+    "read_document",
+    "read_document and the walks beside it",
+    "read_value, written and read again",
 ];
+
+/// `text` read as `T` by the document reading: the value, or how the read ended, and the
+/// findings.
+fn by_document<T: FromJson>(text: &str) -> Result<(T, Diagnostics), Read> {
+    let parsed = parse(text, Options::default()).map_err(|fault| fault_of(&fault))?;
+    let mut d = Diagnostics::default();
+    let value = {
+        let mut read = KitRead::new(Reading::OWN, &mut d);
+        read_document::<T>(&Node::parsed(&parsed, JsonPath::new()), &mut read)
+    };
+    match value {
+        Some(value) => Ok((value, d)),
+        None => Err(Read::Other(format!("does not read: {d:?}"))),
+    }
+}
 
 /// `T` from `text` through entry point `entry`. With the last but one, what a family runs
 /// beside the read is run too; with the last, the value is written and read again from what
 /// was written.
 fn through<T>(entry: usize, text: &'static str) -> Result<T, Read>
 where
-    T: Facet<'static> + Clone + PartialEq,
+    T: FromJson + Facet<'static> + Clone + PartialEq,
 {
     let refused = |error: DeserializeError| refusal_of(&error);
+    let read_as = |text: &str| -> Result<T, Read> {
+        let json = from_str_jsonc::<Value>(text).map_err(refused)?;
+        read_value::<T>(&json).ok_or_else(|| Read::Other("does not read".to_owned()))
+    };
     match entry {
-        0 => parse_at::<T>(JsonSlice::new(text)).map_err(|error| refusal_of(&error.error)),
-        1 => from_str_borrowed_jsonc::<T>(text).map_err(refused),
-        2 => from_str_jsonc::<T>(text).map_err(refused),
-        3 => from_str::<T>(text).map_err(refused),
-        4 => from_slice_jsonc::<T>(text.as_bytes()).map_err(refused),
-        5 => {
-            let value =
-                parse_at::<T>(JsonSlice::new(text)).map_err(|error| refusal_of(&error.error))?;
+        0 => read_as(text),
+        1 => by_document::<T>(text).map(|(value, _)| value),
+        2 => {
+            let (value, d) = by_document::<T>(text)?;
             let json = from_str_jsonc::<Value>(text).map_err(refused)?;
-            let mut kept = bedrock_addon_core::document::Unknown::new();
-            let unknown = keep_unknown_members(&value, &json, &mut kept);
-            if !unknown.is_empty() || !unknown_members(T::SHAPE, &json).is_empty() {
-                return Err(Read::Other(format!("unknown members: {unknown:?}")));
+            let _ = null_members_of_shape(T::SHAPE, &json);
+            let unknown = d
+                .iter()
+                .filter(|f| f.is(&core_codes::UNRECOGNIZED_FIELD))
+                .count();
+            if unknown > 0 {
+                return Err(Read::Other(format!("{unknown} unknown members")));
             }
             let copy = value.clone();
             if copy != value {
@@ -423,10 +457,9 @@ where
             Ok(copy)
         }
         _ => {
-            let value =
-                parse_at::<T>(JsonSlice::new(text)).map_err(|error| refusal_of(&error.error))?;
+            let value = read_as(text)?;
             let written = to_json(&value).map_err(|error| Read::Other(format!("{error:?}")))?;
-            let again = from_str_jsonc::<T>(&written).map_err(refused)?;
+            let again = read_as(&written)?;
             if again != value {
                 return Err(Read::Other("the value written reads as another".to_owned()));
             }
@@ -452,11 +485,11 @@ fn typed<T>(
     depth: fn(&T) -> usize,
 ) -> Typed
 where
-    T: Facet<'static> + Clone + PartialEq,
+    T: FromJson + Facet<'static> + Clone + PartialEq,
 {
     let (text, past) = nest(levels, open);
     let text = text.replacen('7', bottom(levels), 1);
-    // The borrowing readers of an owned target want a text that outlives it.
+    // The reads take a text that outlives the case.
     let kept: &'static str = Box::leak(text.clone().into_boxed_str());
     let ended = match through::<T>(entry, kept) {
         Ok(value) => Read::Value(depth(&value)),
@@ -712,15 +745,15 @@ fn the_slice_readers_read_a_text_nested_to_the_limit_on_a_megabyte_of_stack() {
     check(5..8);
 }
 
-/// A typed target is facet's to read, a call of itself for each level of the type and of an
-/// untyped value below it: the door runs it on a stack that holds the text.
+/// A typed target is the reader's to read, a call of itself for each level of the type and of
+/// an untyped value below it: the root read runs it on a stack that holds the text.
 #[test]
 fn a_list_or_map_of_values_is_read_to_the_limit_on_a_megabyte_of_stack() {
     assert_eq!(READERS[8].0, TYPED);
     check(8..9);
 }
 
-/// The typed targets facet reads by a call of itself for each level of the text: a struct
+/// The typed targets the reader reads by a call of itself for each level of the text: a struct
 /// with an untyped member, structs that hold themselves in a list, in a box, in a map, in an
 /// enum; through every entry point, read and written again.
 #[test]

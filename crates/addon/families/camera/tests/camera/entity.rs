@@ -1,10 +1,5 @@
 //! The camera entity rows: cam23 and cam24, with validation.md rule 7.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::document::Content;
 use bedrock_addon_family_camera::{LookMode, PlayerViewMode, Present, RotationSpace};
 
@@ -48,8 +43,12 @@ fn cam23_the_seven_vanilla_camera_documents_parse_without_a_finding() {
         assert_eq!(again.value(), document.value(), "{name}");
         assert_eq!(again.to_json().unwrap(), written, "{name}");
         // Every component key of the file is written back: none is lost on the way.
-        let json: bedrock_addon_core::json::Value = facet_json::from_str(&text).unwrap();
-        let rewritten: bedrock_addon_core::json::Value = facet_json::from_str(&written).unwrap();
+        let json: bedrock_addon_core::json::Value =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text)
+                .unwrap();
+        let rewritten: bedrock_addon_core::json::Value =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&written)
+                .unwrap();
         let components = |value: &bedrock_addon_core::json::Value| -> Vec<String> {
             value
                 .as_object()

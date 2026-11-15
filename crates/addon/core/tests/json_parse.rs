@@ -1,14 +1,23 @@
-//! The text parser (`json::parse`) against the door it replaced: facet-json's read of a text
-//! as a `Value` (`from_str_borrowed_jsonc::<Value>`, which still reads through the scan and
-//! facet's builder; `from_str_jsonc::<Value>` is `parse` itself now), with the text rewrites of
+//! The text parser (`json::parse`) against facet-json itself, the parser the crate's door to it
+//! read through before `json::parse` replaced it (the door is gone; facet-json stays a
+//! dev-dependency of this crate for this differential alone), with the text rewrites of
 //! `duplicates` around it.
 //!
-//! The door is the oracle. Every test feeds one text to both and requires the same value (the
-//! same keys in the same order, the same tag and bits for every number) or the same refusal (the
-//! span and the kind, in facet-json's words). The texts are real ones (every fixture of the
-//! add-on crates and, when `BEDROCK_ADDON_CORPUS` is set, every JSON file of the game's packs),
-//! the string literals of the pins of `json`, those and the files cut and cut again at every
-//! place and with a stray byte put in, and every spelling of a number up to a length.
+//! facet-json is the oracle where it can be asked: on a text the scan passes (no string escape
+//! outside RFC 8259, which facet-json rc.7 decodes out of bounds; no nesting past the limit) and
+//! that holds no integer beyond 64 bits (the door read those as doubles, facet-json as strings),
+//! cut at the end of its root value as the door cut it. There every test feeds the text to both
+//! and requires the same value (the same keys in the same order, the same tag and bits for every
+//! number) or the same refusal (the span and facet-json's words). A text the scan refuses the
+//! parser must refuse. The texts are real ones (every fixture of the add-on crates and, when
+//! `BEDROCK_ADDON_CORPUS` is set, every JSON file of the game's packs), the string literals of
+//! the pins of `json`, those and the files cut and cut again at every place and with a stray
+//! byte put in, and every spelling of a number up to a length.
+
+#![allow(
+    clippy::disallowed_methods,
+    reason = "facet-json's own reader is the oracle of the parser"
+)]
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -20,8 +29,8 @@ use bedrock_addon_core::json::parse::{
     Duplicates, Fault, NumberKind, Options, Parsed, SpanKind, parse, parse_slice,
 };
 use bedrock_addon_core::json::{
-    JsonSlice, Value, Winner, blank_repeats, first_wins, from_str_borrowed_jsonc, last_wins,
-    last_wins_except, span_at, span_reached, trailing_content,
+    JsonSlice, Value, Winner, blank_repeats, first_wins, last_wins, last_wins_except, scan,
+    trailing_content,
 };
 use bedrock_addon_test_support::corpus;
 
@@ -29,33 +38,71 @@ use bedrock_addon_test_support::corpus;
 // The two readers, and what makes them agree
 // ---------------------------------------------------------------------------------------------
 
-/// What a refusal says: where, and what facet-json names it.
+/// What a refusal says: where, and in what words.
 #[derive(Debug, PartialEq, Eq)]
 struct Refusal {
-    span: Option<(usize, usize)>,
-    kind: String,
+    span: (usize, usize),
     words: String,
 }
 
-fn door(text: &str) -> Result<Value, Refusal> {
-    from_str_borrowed_jsonc::<Value>(text).map_err(|error| Refusal {
-        span: error
-            .span
-            .map(|span| (span.offset as usize, span.len as usize)),
-        kind: format!("{:?}", error.kind),
-        words: error.kind.to_string(),
-    })
+/// Whether `text` may hold a number the door read otherwise than facet-json does: an integer
+/// token beyond 64 bits (the door read it as a double, facet-json as a string or a refusal) or a
+/// number beyond a double (the door read it as an infinity, facet-json refuses it). Told by the
+/// text, a run of 19 digits or more or an exponent of three digits, so a text that does not
+/// parse is told too; a text it takes for one by mistake is only left out of the comparison.
+fn has_wide_integer(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    let (mut run, mut after_e) = (0, false);
+    for &byte in bytes {
+        if byte.is_ascii_digit() {
+            run += 1;
+            if run >= 19 || (after_e && run >= 3) {
+                return true;
+            }
+        } else {
+            after_e = matches!(byte, b'e' | b'E') || (after_e && matches!(byte, b'+' | b'-'));
+            run = 0;
+        }
+    }
+    false
+}
+
+/// What the oracle says of `text`.
+enum Door {
+    /// facet-json's reading of the text (cut at the end of its root value).
+    Facet(Result<Value, Refusal>),
+    /// The scan refuses the text: no reader may read it.
+    Refused,
+    /// The text holds an integer beyond 64 bits: facet-json reads it otherwise.
+    Wide,
+}
+
+fn door(text: &str) -> Door {
+    let Ok(scanned) = scan(text.as_bytes(), true) else {
+        return Door::Refused;
+    };
+    if has_wide_integer(text) {
+        return Door::Wide;
+    }
+    let root = scanned
+        .root_end
+        .and_then(|end| text.get(..end))
+        .unwrap_or(text);
+    Door::Facet(
+        facet_json::from_str_borrowed_jsonc::<Value>(root).map_err(|error| Refusal {
+            span: error
+                .span
+                .map_or((0, 0), |span| (span.offset as usize, span.len as usize)),
+            words: error.kind.to_string(),
+        }),
+    )
 }
 
 fn refusal(fault: Fault) -> Refusal {
-    let words = fault.kind.to_string();
-    let error = facet_json::DeserializeError::from(fault);
+    let Fault { span, kind } = fault;
     Refusal {
-        span: error
-            .span
-            .map(|span| (span.offset as usize, span.len as usize)),
-        kind: format!("{:?}", error.kind),
-        words,
+        span: (span.offset as usize, span.len as usize),
+        words: kind.to_string(),
     }
 }
 
@@ -87,25 +134,28 @@ fn identical(a: &Value, b: &Value) -> bool {
         && a == b
 }
 
-/// The first line of the difference between the reader's answers for `text`, if they differ.
-fn difference(
-    text: &str,
-    door: &Result<Value, Refusal>,
-    ours: &Result<Parsed<'_>, Refusal>,
-) -> Option<String> {
+/// The first line of the difference between the reader's answers for `text`, if they differ:
+/// against facet-json where it is asked, else whether the parser refuses a text the scan refuses.
+fn difference(text: &str, door: &Door, ours: &Result<Parsed<'_>, Refusal>) -> Option<String> {
     match (door, ours) {
-        (Ok(door), Ok(ours)) if identical(door, &ours.value) => None,
-        (Ok(door), Ok(ours)) => Some(format!(
-            "{}: the door reads {door:?}, the parser {:?}",
+        (Door::Facet(Ok(door)), Ok(ours)) if identical(door, &ours.value) => None,
+        (Door::Facet(Ok(door)), Ok(ours)) => Some(format!(
+            "{}: facet-json reads {door:?}, the parser {:?}",
             shown(text),
             ours.value
         )),
-        (Err(door), Err(ours)) if door == ours => None,
-        (door, ours) => Some(format!(
-            "{}: the door answers {}, the parser {}",
+        (Door::Facet(Err(door)), Err(ours)) if door == ours => None,
+        (Door::Facet(door), ours) => Some(format!(
+            "{}: facet-json answers {}, the parser {}",
             shown(text),
             summary(door),
             summary(ours)
+        )),
+        (Door::Refused, Err(_)) | (Door::Wide, _) => None,
+        (Door::Refused, Ok(ours)) => Some(format!(
+            "{}: the scan refuses it, the parser reads {:?}",
+            shown(text),
+            ours.value
         )),
     }
 }
@@ -154,8 +204,9 @@ impl Tally {
         let door = door(text);
         let ours = ours(text, Options::default());
         match &door {
-            Ok(_) => self.accepted += 1,
-            Err(_) => self.refused += 1,
+            Door::Facet(Ok(_)) => self.accepted += 1,
+            Door::Facet(Err(_)) | Door::Refused => self.refused += 1,
+            Door::Wide => {}
         }
         if let Some(difference) = difference(text, &door, &ours) {
             self.differed.push(difference);
@@ -177,7 +228,7 @@ impl Tally {
         self.report(what);
         assert!(
             self.differed.is_empty(),
-            "the parser differs from the door on {} of {} texts of {what}; the first: \n{}",
+            "the parser differs from facet-json on {} of {} texts of {what}; the first: \n{}",
             self.differed.len(),
             self.texts,
             self.differed
@@ -735,7 +786,10 @@ fn what_follows_the_root_value_is_never_read_and_trailing_content_says_where_it_
         "[1]/**/",
     ] {
         let parsed = parse(text, Options::default()).unwrap();
-        assert!(identical(&door(text).unwrap(), &parsed.value), "{text:?}");
+        let Door::Facet(Ok(read)) = door(text) else {
+            panic!("facet-json reads {text:?}");
+        };
+        assert!(identical(&read, &parsed.value), "{text:?}");
         let door = trailing_content(text).map(|span| (span.offset, span.len));
         let ours = parsed.trailing.map(|span| (span.offset, span.len));
         assert_eq!(ours, door, "{text:?}");
@@ -1119,10 +1173,14 @@ fn the_first_copy_of_a_key_stands_as_first_wins_has_it() {
 /// texts (of a key written twice, the first place and the last value), each member again.
 fn in_place(text: &str) -> Option<Value> {
     use facet_json::RawJson;
-    let value = from_str_borrowed_jsonc::<Value>(text).ok()?;
+    // facet-json only on a text it can be asked of.
+    if !matches!(door(text), Door::Facet(Ok(_))) {
+        return None;
+    }
+    let value = facet_json::from_str_borrowed_jsonc::<Value>(text).ok()?;
     if value.is_object()
         && let Ok(members) =
-            from_str_borrowed_jsonc::<indexmap::IndexMap<String, RawJson<'_>>>(text)
+            facet_json::from_str_borrowed_jsonc::<indexmap::IndexMap<String, RawJson<'_>>>(text)
     {
         let mut object = facet_value::VObject::new();
         for (key, raw) in members {
@@ -1131,7 +1189,7 @@ fn in_place(text: &str) -> Option<Value> {
         return Some(Value::from(object));
     }
     if value.is_array()
-        && let Ok(elements) = from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(text)
+        && let Ok(elements) = facet_json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(text)
     {
         let elements: Option<Vec<Value>> =
             elements.iter().map(|raw| in_place(raw.as_ref())).collect();
@@ -1139,7 +1197,7 @@ fn in_place(text: &str) -> Option<Value> {
             elements?.into_iter().collect::<facet_value::VArray>(),
         ));
     }
-    from_str_borrowed_jsonc::<Value>(text).ok()
+    facet_json::from_str_borrowed_jsonc::<Value>(text).ok()
 }
 
 #[test]
@@ -1194,8 +1252,9 @@ fn compare_winner(tally: &mut Tally, text: &str, winner: Winner, blanked: &str) 
     let door = door(blanked);
     let ours = ours(text, Options::winner(winner));
     match &door {
-        Ok(_) => tally.accepted += 1,
-        Err(_) => tally.refused += 1,
+        Door::Facet(Ok(_)) => tally.accepted += 1,
+        Door::Facet(Err(_)) | Door::Refused => tally.refused += 1,
+        Door::Wide => {}
     }
     if let Some(difference) = difference(text, &door, &ours) {
         tally.differed.push(format!("{winner:?}: {difference}"));
@@ -1377,13 +1436,74 @@ fn paths_of(value: &Value, limit: usize) -> Vec<JsonPath> {
     paths
 }
 
-/// The spans of `text` at the paths of its value are what `span_at` and `span_reached` say of
-/// the text, the file offset of the slice added.
+/// The value one step below `slice`, as the door's `span_at` found it: facet-json's raw members
+/// (the last of a key) or raw elements of one level of the text, at file offsets.
+fn enter<'a>(slice: JsonSlice<'a>, segment: JsonPathSegment<'_>) -> Option<JsonSlice<'a>> {
+    use facet_json::RawJson;
+    let place = |raw: &str| {
+        let start = (raw.as_ptr() as usize).checked_sub(slice.text.as_ptr() as usize)?;
+        Some((start, raw.len()))
+    };
+    let (start, len) = match segment {
+        JsonPathSegment::Key(key) => {
+            let members = facet_json::from_str_borrowed_jsonc::<
+                indexmap::IndexMap<String, RawJson<'_>>,
+            >(slice.text)
+            .ok()?;
+            place(members.get(key)?.as_str())?
+        }
+        JsonPathSegment::Index(index) => {
+            let elements =
+                facet_json::from_str_borrowed_jsonc::<Vec<RawJson<'_>>>(slice.text).ok()?;
+            place(elements.get(index)?.as_str())?
+        }
+    };
+    Some(JsonSlice {
+        text: slice.text.get(start..start + len)?,
+        offset: slice.offset + start,
+    })
+}
+
+/// The whole of `slice` as a span of the file.
+fn whole(slice: JsonSlice<'_>) -> Span {
+    Span {
+        offset: u32::try_from(slice.offset).unwrap(),
+        len: u32::try_from(slice.text.len()).unwrap(),
+    }
+}
+
+/// The door's `span_at`: one read of the text for each step of the path.
+fn span_at(slice: JsonSlice<'_>, path: &JsonPath) -> Option<Span> {
+    let mut current = slice;
+    for step in path.segments() {
+        current = enter(current, step)?;
+    }
+    Some(whole(current))
+}
+
+/// The door's `span_reached`: as far down the path as the steps go.
+fn span_reached(slice: JsonSlice<'_>, path: &JsonPath) -> Span {
+    let mut current = slice;
+    for step in path.segments() {
+        match enter(current, step) {
+            Some(next) => current = next,
+            None => break,
+        }
+    }
+    whole(current)
+}
+
+/// The spans of `text` at the paths of its value are what the door's `span_at` and
+/// `span_reached` said of the text, the file offset of the slice added (for a text facet-json
+/// can be asked of).
 fn assert_spans_are_span_ats(text: &str, offset: usize, options: Options<'_>) -> usize {
     let slice = JsonSlice { text, offset };
     let Ok(parsed) = parse_slice(slice, options) else {
         return 0;
     };
+    if !matches!(door(text), Door::Facet(_)) {
+        return 0;
+    }
     // `span_at` takes the last copy of a key; where the first copy stands, it is asked of the
     // text in which the later copies are blank.
     let first;
@@ -1800,7 +1920,7 @@ fn timings_against_the_door() {
                 .unwrap_or_default()
         };
         let door = best(&|| {
-            std::hint::black_box(from_str_borrowed_jsonc::<Value>(text).unwrap());
+            std::hint::black_box(facet_json::from_str_borrowed_jsonc::<Value>(text).unwrap());
         });
         let ours = best(&|| {
             std::hint::black_box(parse(text, Options::default()).unwrap());
@@ -1849,14 +1969,17 @@ fn _shapes(_: Duplicates<'_>, _: Span, _: JsonPathSegment<'_>) {}
 /// The slices a raw member read of the old door gives, as text and file offset.
 fn old_members(text: &str) -> Option<Vec<(String, (String, usize))>> {
     let slice = JsonSlice::new(text);
-    let raw = bedrock_addon_core::json::parse_at::<
+    let Door::Facet(_) = door(text) else {
+        return None;
+    };
+    let raw = facet_json::from_str_borrowed_jsonc::<
         indexmap::IndexMap<String, facet_json::RawJson<'_>>,
-    >(slice)
+    >(text)
     .ok()?;
     Some(
-        raw.iter()
-            .filter_map(|(key, raw)| {
-                let nested = slice.nested(raw)?;
+        raw.keys()
+            .filter_map(|key| {
+                let nested = enter(slice, JsonPathSegment::Key(key))?;
                 Some((key.clone(), (nested.text.to_owned(), nested.offset)))
             })
             .collect(),
@@ -1879,6 +2002,10 @@ fn members_of_agrees_with_the_raw_members_of_the_door() {
         r#"{"a": 1"#,
         "",
     ] {
+        if matches!(door(text), Door::Wide) {
+            // facet-json reads such a number otherwise: no oracle.
+            continue;
+        }
         let ours =
             bedrock_addon_core::json::parse::members_of(JsonSlice::new(text)).map(|members| {
                 members
@@ -1918,7 +2045,7 @@ fn string_literal_decodes_what_the_door_reads_as_a_string() {
     for token in [r#""a""#, r#""a\nb""#, r#""é😀""#, r#""""#] {
         assert_eq!(
             string_literal(token),
-            bedrock_addon_core::json::from_str::<String>(token).ok(),
+            facet_json::from_str::<String>(token).ok(),
             "{token}"
         );
     }
@@ -1948,7 +2075,12 @@ fn a_scalar_shape_of_a_value_is_the_shape_the_door_reads_the_token_as() {
         "1e999",
     ] {
         let value = parse(token, Options::default()).unwrap().value;
-        let old = bedrock_addon_core::json::from_str_jsonc::<ScalarShape>(token).ok();
+        let old = if has_wide_integer(token) {
+            // The door read it as the double it spells, facet-json as a string.
+            ScalarShape::of(&value)
+        } else {
+            facet_json::from_str_jsonc::<ScalarShape>(token).ok()
+        };
         assert_eq!(ScalarShape::of(&value), old, "{token}");
     }
     for token in ["[1]", "{}"] {
@@ -1988,8 +2120,7 @@ fn bad_bytes(text: &str, places: usize) -> Vec<Vec<u8>> {
 }
 
 #[test]
-fn bytes_that_may_not_be_utf8_read_as_the_door_reads_them() {
-    use bedrock_addon_core::json::from_slice_jsonc;
+fn bytes_that_may_not_be_utf8_read_as_facet_json_reads_them() {
     use bedrock_addon_core::json::parse::parse_bytes;
     let mut seeds: Vec<String> = RULES.iter().map(|text| (*text).to_owned()).collect();
     seeds.extend([
@@ -2003,17 +2134,38 @@ fn bytes_that_may_not_be_utf8_read_as_the_door_reads_them() {
         cases.push(seed.as_bytes().to_vec());
         for bytes in cases {
             texts += 1;
-            let door = from_slice_jsonc::<Value>(&bytes).map_err(|error| Refusal {
-                span: error
-                    .span
-                    .map(|span| (span.offset as usize, span.len as usize)),
-                kind: format!("{:?}", error.kind),
-                words: error.kind.to_string(),
-            });
             let ours = parse_bytes(&bytes, Options::default()).map_err(refusal);
+            // facet-json's byte reader, on bytes the scan passes (cut at their root).
+            let door = match scan(&bytes, true) {
+                Err(_) => {
+                    if ours.is_ok() {
+                        differed.push(format!(
+                            "{:?}: the scan refuses it, parse_bytes reads it",
+                            String::from_utf8_lossy(&bytes)
+                        ));
+                    }
+                    continue;
+                }
+                Ok(scanned) => {
+                    let root = scanned.root_end.map_or(&bytes[..], |end| &bytes[..end]);
+                    if has_wide_integer(&String::from_utf8_lossy(root)) {
+                        continue;
+                    }
+                    facet_json::from_slice_jsonc::<Value>(root).map_err(|error| Refusal {
+                        span: error
+                            .span
+                            .map_or((0, 0), |span| (span.offset as usize, span.len as usize)),
+                        words: error.kind.to_string(),
+                    })
+                }
+            };
+            // Bytes that are no UTF-8 outside comments are refused before they are parsed (the
+            // door's rule, its first fault the first such byte): facet-json, which parses them,
+            // may name another fault first; both refuse.
+            let utf8 = std::str::from_utf8(&bytes).is_ok();
             let same = match (&door, &ours) {
                 (Ok(a), Ok(b)) => identical(a, b),
-                (Err(a), Err(b)) => a == b,
+                (Err(a), Err(b)) => a == b || !utf8,
                 _ => false,
             };
             if !same {
@@ -2029,15 +2181,14 @@ fn bytes_that_may_not_be_utf8_read_as_the_door_reads_them() {
     eprintln!("bytes: {texts} texts, {} differ", differed.len());
     assert!(
         differed.is_empty(),
-        "parse_bytes differs from from_slice_jsonc on {} of {texts} byte texts; the first:\n{}",
+        "parse_bytes differs from facet-json on {} of {texts} byte texts; the first:\n{}",
         differed.len(),
         differed[..differed.len().min(8)].join("\n")
     );
 }
 
 #[test]
-fn parse_options_without_comments_read_as_the_plain_door_reads() {
-    use bedrock_addon_core::json::from_str;
+fn parse_options_without_comments_read_as_facet_json_s_plain_reader() {
     let mut seeds: Vec<String> = RULES.iter().map(|text| (*text).to_owned()).collect();
     seeds.push("// x\n1".to_owned());
     seeds.push(r#"{"a": "// not a comment", "b": /* c */ 1}"#.to_owned());
@@ -2048,13 +2199,25 @@ fn parse_options_without_comments_read_as_the_plain_door_reads() {
     }
     let mut differed = Vec::new();
     for text in &texts {
-        let door = from_str::<Value>(text).map_err(|error| Refusal {
-            span: error
-                .span
-                .map(|span| (span.offset as usize, span.len as usize)),
-            kind: format!("{:?}", error.kind),
-            words: error.kind.to_string(),
-        });
+        // facet-json's plain reader, on a text the plain scan passes.
+        let door = match scan(text.as_bytes(), false) {
+            Err(_) => Door::Refused,
+            Ok(_) if has_wide_integer(text) => Door::Wide,
+            Ok(scanned) => {
+                let root = scanned
+                    .root_end
+                    .and_then(|end| text.get(..end))
+                    .unwrap_or(text);
+                Door::Facet(facet_json::from_str::<Value>(root).map_err(|error| {
+                    Refusal {
+                        span: error
+                            .span
+                            .map_or((0, 0), |span| (span.offset as usize, span.len as usize)),
+                        words: error.kind.to_string(),
+                    }
+                }))
+            }
+        };
         let ours = ours(text, Options::default().without_comments());
         if let Some(difference) = difference(text, &door, &ours) {
             differed.push(difference);
@@ -2063,7 +2226,7 @@ fn parse_options_without_comments_read_as_the_plain_door_reads() {
     eprintln!("plain: {} texts, {} differ", texts.len(), differed.len());
     assert!(
         differed.is_empty(),
-        "the parser without comments differs from the plain door on {} of {} texts; the first:\n{}",
+        "the parser without comments differs from facet-json's plain reader on {} of {} texts; the first:\n{}",
         differed.len(),
         texts.len(),
         differed[..differed.len().min(8)].join("\n")

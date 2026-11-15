@@ -10,11 +10,6 @@
 //! Spawn-rule documents the game's own unit tests feed its loader; `case-2.fmt.txt` and
 //! `case-4.fmt.txt` are format-string templates the tests fill before parsing.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::spawn_groups::SpawnGroup;
 use bedrock_addon::families::spawn_rules::{Condition, SpawnRules};
@@ -212,7 +207,7 @@ fn the_drop_4_spawn_rules_load_and_round_trip() {
             document.diagnostics()
         );
         let written = round_trip::<SpawnRules>(document.value(), "spawn_rules/x.json", &context());
-        let value = |t: &str| facet_json::from_str::<Value>(t).unwrap();
+        let value = |t: &str| bedrock_addon::json::from_str_jsonc::<Value>(t).unwrap();
         assert_eq!(value(&written), value(&text), "{name}");
     }
     let frostbite = loads(&fixture("spawn", "drop4/frostbite.json"), &context());

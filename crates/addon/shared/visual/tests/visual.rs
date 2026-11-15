@@ -2,15 +2,12 @@
 //! sees them: the name-or-condition entries, `scripts`, `spawn_egg`, the `Visuals` view, and
 //! `EngineVersionMerge` over the client-entity and attachable fixture rows.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_core::id::{RenderControllerId, TexturePath};
-use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::{Value, from_str_jsonc, to_facet_json};
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{FromJson, Schema, read_value};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::versioning::write_payload;
 use bedrock_addon_shared_visual::{
     AnimateEntry, Color, ControllerUse, EngineVersionMerge, HasVisuals, HeldItemScale, MergeStep,
     Scripts, ShadowReason, SharedDescription, SpawnEgg, VisualSlots, Visuals,
@@ -18,12 +15,17 @@ use bedrock_addon_shared_visual::{
 };
 use indexmap::IndexMap;
 
-fn parse<T: facet::Facet<'static>>(json: &str) -> T {
-    facet_json::from_str(json).unwrap_or_else(|error| panic!("{json} parses: {error}"))
+fn parse<T: FromJson>(json: &str) -> T {
+    read(json).unwrap_or_else(|| panic!("{json} parses"))
+}
+
+/// `json` read as a `T`, or `None` when the JSON or the type refuses it.
+fn read<T: FromJson>(json: &str) -> Option<T> {
+    read_value(&from_str_jsonc::<Value>(json).ok()?)
 }
 
 fn write<T: facet::Facet<'static>>(value: &T) -> String {
-    facet_json::to_string(value).unwrap()
+    to_facet_json(&write_payload(value).unwrap()).unwrap()
 }
 
 fn sem(text: &str) -> SemVersion {
@@ -44,10 +46,9 @@ fn expression(value: Option<&Molang>) -> Option<&str> {
 }
 
 /// A client entity's `description`, as a family declares it over the shared member set.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 struct Description {
     identifier: String,
-    #[facet(default)]
     min_engine_version: Option<Value>,
     #[facet(flatten, default)]
     slots: VisualSlots,
@@ -156,7 +157,7 @@ mod controller_use {
             r#"["controller.render.x"]"#,
         ] {
             assert!(
-                facet_json::from_str::<ControllerUse>(json).is_err(),
+                read::<ControllerUse>(json).is_none(),
                 "{json} is not an entry"
             );
         }
@@ -208,10 +209,7 @@ mod animate_entry {
     #[test]
     fn only_a_string_or_an_object_is_an_entry() {
         for json in ["5", "true", "null", "[]"] {
-            assert!(
-                facet_json::from_str::<AnimateEntry>(json).is_err(),
-                "{json}"
-            );
+            assert!(read::<AnimateEntry>(json).is_none(), "{json}");
         }
     }
 }
@@ -1142,7 +1140,7 @@ mod round_trip {
 
     /// Parses `json` (compact, members in declaration order) and requires it written back
     /// byte for byte.
-    fn round_trip<T: facet::Facet<'static>>(json: &str) {
+    fn round_trip<T: FromJson + facet::Facet<'static>>(json: &str) {
         let value: T = parse(json);
         assert_eq!(write(&value), json);
     }
@@ -1218,7 +1216,7 @@ mod strict_types {
 
     #[test]
     fn held_item_scale_is_a_number_or_molang() {
-        let read = |json: &str| facet_json::from_str::<HeldItemScale>(json);
+        let read = |json: &str| read::<HeldItemScale>(json);
         assert_eq!(read("2").unwrap(), HeldItemScale::Number(2.0));
         assert_eq!(read("0.5").unwrap(), HeldItemScale::Number(0.5));
         assert!(matches!(
@@ -1230,7 +1228,7 @@ mod strict_types {
             read("true").unwrap(),
             HeldItemScale::Molang(Molang::Bool(true))
         );
-        assert!(read("null").is_err());
+        assert!(read("null").is_none());
         for json in ["2.0", "0.5", r#""1 +""#, "false"] {
             let scale: HeldItemScale = parse(json);
             assert_eq!(write_back(&scale), json, "written back as read");

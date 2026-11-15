@@ -1,11 +1,6 @@
 //! Pass 2, the load-time compile check: field
 //! outcomes, allow-lists and operation sets, the cache, the empty-text rule, version sources that
 //! act in the compile, and the findings' codes, severities and paths.
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 #![cfg(feature = "molang")]
 
 use std::sync::Arc;
@@ -13,12 +8,14 @@ use std::sync::Arc;
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Severity, codes,
 };
+use bedrock_addon_core::json::{Value, from_str_jsonc};
 use bedrock_addon_core::molang::{
     self, Admission, BLOCK_STATE_QUERIES, CompileCache, DiagCode, EmptyRule, ExperimentMask,
     LanguageMessage, Molang, MolangCheck, MolangContext, MolangFailure, MolangFieldSpec,
-    MolangFields, MolangOutcome, MolangSource, MolangVersion, MolangVersionSource, MolangVisitor,
-    OpsRule, PROPERTY_DEFAULT_QUERIES, RawVersion, ReaderKind, Side,
+    MolangOutcome, MolangSource, MolangVersion, MolangVersionSource, MolangVisitor, OpsRule,
+    PROPERTY_DEFAULT_QUERIES, RawVersion, ReaderKind, Side,
 };
+use bedrock_addon_core::schema::{self, Schema, read_value};
 use bedrock_addon_core::version::{FormatVersionInput, MinEngineVersion};
 
 /// A pack at `major.minor.patch`, its documents at 1.21.0.
@@ -721,11 +718,11 @@ fn constants_need_no_compile() {
 
 // ---- the document walk ----
 
-#[derive(Debug, facet::Facet)]
+#[derive(Debug, facet::Facet, Schema)]
+#[facet(schema::molang_with = toy_document_molang)]
 struct ToyDocument {
     condition: Molang,
     scripts: Vec<MolangSource>,
-    #[facet(default)]
     data: Option<molang::MolangList>,
 }
 
@@ -739,18 +736,20 @@ const DATA: MolangFieldSpec = MolangFieldSpec {
     ..CEREAL
 };
 
-impl MolangFields for ToyDocument {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("condition", &CEREAL, &mut self.condition);
-        visitor.field("scripts", &SCRIPT, &mut self.scripts);
-        visitor.field("data", &DATA, &mut self.data);
-    }
+/// `ToyDocument`'s Molang walk.
+fn toy_document_molang(this: &mut ToyDocument, visitor: &mut MolangVisitor<'_>) {
+    visitor.field("condition", &CEREAL, &mut this.condition);
+    visitor.field("scripts", &SCRIPT, &mut this.scripts);
+    visitor.field("data", &DATA, &mut this.data);
 }
 
 #[test]
 fn check_fields_returns_the_fields_that_did_not_pass() {
-    let mut document: ToyDocument = facet_json::from_str(
-        r#"{"condition": "q.is_baby", "scripts": ["v.x = 1;", "v.y = ;"], "data": [1, "1 +"]}"#,
+    let mut document: ToyDocument = read_value(
+        &from_str_jsonc::<Value>(
+            r#"{"condition": "q.is_baby", "scripts": ["v.x = 1;", "v.y = ;"], "data": [1, "1 +"]}"#,
+        )
+        .unwrap(),
     )
     .unwrap();
     let cx = pack(1, 21, 100);

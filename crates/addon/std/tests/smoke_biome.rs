@@ -8,11 +8,6 @@
 //! Run with `BEDROCK_ADDON_CORPUS=<corpus> cargo nextest run -p bedrock_addon_std --test smoke_biome`;
 //! without the variable every test skips.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 #[macro_use]
 mod common;
 
@@ -300,8 +295,10 @@ fn molang_pairs_biome_height_ranges_load_with_their_text_and_version() {
     use bedrock_addon::json::Value;
     let client = skip!(game_files::CLIENT_INSTALL_B);
     let pairs_path = skip!(game_files::MOLANG_PAIRS);
-    let pairs: Value =
-        facet_json::from_str(&std::fs::read_to_string(pairs_path).unwrap()).expect("JSON");
+    let pairs: Value = bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(
+        &std::fs::read_to_string(pairs_path).unwrap(),
+    )
+    .expect("JSON");
     let mut driver = base_game_driver();
     let pack = driver
         .pack_dir(client.join("behavior_packs").join("vanilla"))

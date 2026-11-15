@@ -244,7 +244,10 @@ fn line(version: &str, key: &str, value: &str) -> String {
     let (loaded, diagnostics) = match load(&text, &allowlisted()) {
         Ok(document) => {
             let payload: bedrock_addon_core::json::Value =
-                bedrock_addon_core::json::from_str(&newest_payload(&document)).expect("JSON");
+                bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(
+                    &newest_payload(&document),
+                )
+                .expect("JSON");
             let written = payload
                 .as_object()
                 .and_then(|p| p.get("components"))

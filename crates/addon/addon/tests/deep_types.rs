@@ -12,7 +12,7 @@
 use bedrock_addon::families::block::component::DeprecatedDefinitionEvent;
 use bedrock_addon::families::script::meta::TypeDescriptor;
 use bedrock_addon::families::script::meta::model::script::RawTypeDesc;
-use bedrock_addon::json::{JsonSlice, MAX_JSON_DEPTH, check_depth, parse_at, to_json};
+use bedrock_addon::json::{MAX_JSON_DEPTH, Value, check_depth, from_str_jsonc, to_json};
 
 /// The stack of the reading thread: half the default of a spawned thread.
 const SMALL_STACK: usize = 1024 * 1024;
@@ -55,6 +55,11 @@ fn event(levels: usize) -> String {
     )
 }
 
+/// `text` read as a `T`: the JSON reads, then the type does.
+fn read_as<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Option<T> {
+    bedrock_addon_core::schema::read_value(&from_str_jsonc::<Value>(text).ok()?)
+}
+
 #[test]
 fn the_texts_nest_as_deep_as_asked() {
     for levels in [1, 2, 3, MAX_JSON_DEPTH, MAX_JSON_DEPTH + 1] {
@@ -70,10 +75,10 @@ fn a_type_descriptor_nested_to_the_limit_is_read_lowered_and_written() {
     for levels in [MAX_JSON_DEPTH - 1, MAX_JSON_DEPTH] {
         let depth = on_a_small_stack(move || {
             let text = descriptor(levels);
-            let raw: RawTypeDesc = parse_at(JsonSlice::new(&text)).expect("within the limit");
+            let raw: RawTypeDesc = read_as(&text).expect("within the limit");
             TypeDescriptor::lower(&raw).expect("a descriptor of optionals");
             let written = to_json(&raw).expect("every member has a spelling");
-            let again: RawTypeDesc = parse_at(JsonSlice::new(&written)).expect("what was written");
+            let again: RawTypeDesc = read_as(&written).expect("what was written");
             assert!(again == raw, "the descriptor written reads as another");
             let (mut at, mut depth) = (&raw, 1);
             while let Some(inner) = &at.optional_type {
@@ -91,11 +96,9 @@ fn a_legacy_event_nested_to_the_limit_is_read_and_written() {
     for levels in [MAX_JSON_DEPTH - 1, MAX_JSON_DEPTH] {
         let depth = on_a_small_stack(move || {
             let text = event(levels);
-            let read: DeprecatedDefinitionEvent =
-                parse_at(JsonSlice::new(&text)).expect("within the limit");
+            let read: DeprecatedDefinitionEvent = read_as(&text).expect("within the limit");
             let written = to_json(&read).expect("every member has a spelling");
-            let again: DeprecatedDefinitionEvent =
-                parse_at(JsonSlice::new(&written)).expect("what was written");
+            let again: DeprecatedDefinitionEvent = read_as(&written).expect("what was written");
             assert!(again == read, "the event written reads as another");
             let (mut at, mut depth) = (&read, 1);
             while let Some(inner) = at.sequence.first() {
@@ -114,9 +117,9 @@ fn a_level_past_the_limit_is_an_error_for_both() {
     for levels in [MAX_JSON_DEPTH + 1, 1000, 100_000] {
         let refused = on_a_small_stack(move || {
             let (descriptor, event) = (descriptor(levels), event(levels));
-            let descriptor = parse_at::<RawTypeDesc>(JsonSlice::new(&descriptor)).err();
-            let event = parse_at::<DeprecatedDefinitionEvent>(JsonSlice::new(&event)).err();
-            [descriptor, event].map(|error| error.map(|error| error.error.to_string()))
+            let descriptor = from_str_jsonc::<Value>(&descriptor).err();
+            let event = from_str_jsonc::<Value>(&event).err();
+            [descriptor, event].map(|error| error.map(|error| error.to_string()))
         });
         for error in refused {
             let error = error.expect("a text past the limit is refused");

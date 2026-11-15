@@ -67,7 +67,7 @@ fn a_vanilla_written_file_reads_back_unchanged() {
     let text = String::from_utf8(fixture("ps01_v1_21_100_upgrade.before.json")).unwrap();
     let loaded = parse_text(WORLD, &text).unwrap();
     let written = loaded.to_json().unwrap();
-    let as_json = |text: &str| bedrock_addon::json::from_str::<Value>(text).unwrap();
+    let as_json = |text: &str| bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap();
     assert_eq!(as_json(&written), as_json(&text));
 }
 

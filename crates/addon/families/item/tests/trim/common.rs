@@ -1,31 +1,34 @@
 //! The fixtures of the trim tests, read into plain rows.
 
 #![allow(dead_code, reason = "each test file uses part of the helpers")]
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
 
 use bedrock_addon_core::id::{ItemId, TrimMaterialId, TrimPatternId};
+use bedrock_addon_core::json::{Value, from_str_jsonc};
+use bedrock_addon_core::schema::{FromJson, Schema, read_value};
 use bedrock_addon_family_item::trim::{MaterialEntry, PatternEntry, TrimData};
 use facet::Facet;
 
+/// `text` read as a `T`.
+fn read<T: FromJson>(text: &str) -> T {
+    read_value(&from_str_jsonc::<Value>(text).unwrap()).unwrap()
+}
+
 /// `table/tr01_vanilla_table.json`: the tables, in build order.
-#[derive(Debug, Facet)]
+#[derive(Debug, Facet, Schema)]
 pub struct Table {
     pub patterns: Vec<PatternRow>,
     pub materials: Vec<MaterialRow>,
 }
 
 /// One pattern as text: `(pattern id, template item)`.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Facet, Schema)]
 pub struct PatternRow {
     pub pattern_id: String,
     pub item_name: String,
 }
 
 /// One material as text: `(material id, colour, ingredient item)`.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Facet, Schema)]
 pub struct MaterialRow {
     pub material_id: String,
     pub color: String,
@@ -39,10 +42,9 @@ pub fn item(text: &str) -> ItemId {
 
 /// The expected vanilla table.
 pub fn vanilla_table() -> Table {
-    facet_json::from_str(include_str!(
+    read(include_str!(
         "../../../../addon/tests/fixtures/item/trim/table/tr01_vanilla_table.json"
     ))
-    .unwrap()
 }
 
 /// The patterns of `data` as text, in its own order.
@@ -70,14 +72,14 @@ pub fn material_rows(data: &TrimData) -> Vec<MaterialRow> {
 /// `packet/pk01_trim_data.json`: a decoded `TrimDataPacket` payload, copied unchanged from
 /// chorus-kotlin's `files/trim_data.json` (its key names are that dump's; the member order
 /// is the wire order: "Item Name", "Pattern Id" and "Material Id", "Color", "Item Name").
-#[derive(Debug, Facet)]
+#[derive(Debug, Facet, Schema)]
 pub struct Payload {
     pub patterns: Vec<PayloadPattern>,
     pub materials: Vec<PayloadMaterial>,
 }
 
 /// One entry of the payload's "`TrimPattern` List".
-#[derive(Debug, Facet)]
+#[derive(Debug, Facet, Schema)]
 pub struct PayloadPattern {
     #[facet(rename = "itemName")]
     pub item_name: String,
@@ -86,7 +88,7 @@ pub struct PayloadPattern {
 }
 
 /// One entry of the payload's "`TrimMaterial` List".
-#[derive(Debug, Facet)]
+#[derive(Debug, Facet, Schema)]
 pub struct PayloadMaterial {
     #[facet(rename = "materialId")]
     pub material_id: String,
@@ -97,10 +99,9 @@ pub struct PayloadMaterial {
 
 /// The decoded payload, as the values `TrimData::from_packet` takes, in the payload's order.
 pub fn payload() -> (Vec<PatternEntry>, Vec<MaterialEntry>) {
-    let payload: Payload = facet_json::from_str(include_str!(
+    let payload: Payload = read(include_str!(
         "../../../../addon/tests/fixtures/item/trim/packet/pk01_trim_data.json"
-    ))
-    .unwrap();
+    ));
     let patterns = payload
         .patterns
         .iter()

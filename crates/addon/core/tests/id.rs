@@ -17,6 +17,28 @@ use bedrock_addon_core::id::{
     kind,
 };
 
+/// `text` read as `T` by the crate's typed reader (`schema::read_value`); `Err` when it does
+/// not read.
+fn typed<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Result<T, ()> {
+    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+        .map_err(|_| ())?;
+    bedrock_addon_core::schema::read_value::<T>(&value).ok_or(())
+}
+
+/// `value` written on one line by the crate's writer.
+#[allow(dead_code, reason = "not every file writes")]
+fn compact_text<'f, T: facet::Facet<'f>>(
+    value: &T,
+) -> Result<String, bedrock_addon_core::json::EncodeError> {
+    let mut out = Vec::new();
+    let style = bedrock_addon_core::json::WriteStyle {
+        indent: bedrock_addon_core::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    bedrock_addon_core::json::write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 fn hash_of<T: Hash>(value: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     value.hash(&mut hasher);
@@ -647,7 +669,7 @@ mod suffixes {
 mod in_a_document {
     use super::*;
 
-    #[derive(Debug, facet::Facet)]
+    #[derive(Debug, facet::Facet, bedrock_addon_core::schema::Schema)]
     struct Placer {
         block: BlockId,
         entity: Option<EntityId>,
@@ -656,19 +678,19 @@ mod in_a_document {
     #[test]
     fn a_json_string_reads_and_writes_back_as_written() {
         let text = r#"{"block":"stone","entity":"minecraft:pig<minecraft:entity_born>"}"#;
-        let placer: Placer = facet_json::from_str(text).unwrap();
+        let placer: Placer = typed(text).unwrap();
         assert_eq!(placer.block, BlockId::new("minecraft:stone").unwrap());
         assert_eq!(placer.block.as_str(), "stone");
         assert_eq!(
             placer.entity.as_ref().and_then(EntityId::event),
             Some("minecraft:entity_born")
         );
-        assert_eq!(facet_json::to_string(&placer).unwrap(), text);
+        assert_eq!(compact_text(&placer).unwrap(), text);
     }
 
     #[test]
     fn a_malformed_identifier_is_kept_not_rejected() {
-        let placer: Placer = facet_json::from_str(r#"{"block":"demo:bad block"}"#).unwrap();
+        let placer: Placer = typed(r#"{"block":"demo:bad block"}"#).unwrap();
         assert_eq!(placer.block.as_str(), "demo:bad block");
         assert!(!placer.block.is_well_formed());
         assert!(placer.entity.is_none());
@@ -677,10 +699,7 @@ mod in_a_document {
     #[test]
     fn a_json_value_other_than_a_string_is_rejected() {
         for text in [r#"{"block":5}"#, r#"{"block":true}"#, r#"{"block":null}"#] {
-            assert!(
-                facet_json::from_str::<Placer>(text).is_err(),
-                "{text} is no identifier"
-            );
+            assert!(typed::<Placer>(text).is_err(), "{text} is no identifier");
         }
     }
 }

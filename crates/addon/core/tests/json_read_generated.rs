@@ -1,22 +1,24 @@
-//! Generated inputs for the door to facet-json (`json/read.rs`), from fixed seeds: string
-//! contents over every byte after a backslash, cut escapes and random UTF-8, and whole
-//! documents with faults put in. Nothing here panics; a string that reads is the string a
-//! reference decoder of RFC 8259 gives; and a text the scan passes reads through the door
-//! exactly as facet reads it on its own. The cost of the scan is linear.
-//!
-//! facet is only ever called on a text the scan passed: an input it would decode out of
-//! bounds aborts the process and takes the test binary with it.
-
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
+//! Generated inputs for the text readers (`json::parse` and the entry points over it), from
+//! fixed seeds: string contents over every byte after a backslash, cut escapes and random
+//! UTF-8, and whole documents with faults put in. Nothing here panics; a string that reads is
+//! the string a reference decoder of RFC 8259 gives; every entry point reads a text as the
+//! others do, and what the scan finds after the root is what the parser did not read. The cost
+//! of the scan is linear. (The parser against facet-json itself is `json_parse.rs`.)
 
 // The crate's one protocol for cost tests, and this binary's one lock.
 use bedrock_addon_core::test_cost as cost;
 
+use bedrock_addon_core::json::parse::{Options, parse, parse_bytes, parse_slice};
 use bedrock_addon_core::json::{
-    JsonSlice, Value, from_slice_jsonc, from_str, from_str_borrowed_jsonc, from_str_jsonc,
-    last_wins, parse_at, probe_envelope, scan, trailing_content,
+    JsonSlice, Value, from_str, from_str_jsonc, last_wins, probe_envelope, scan, trailing_content,
 };
+use bedrock_addon_core::schema::read_value;
 use indexmap::IndexMap;
+
+/// `text` as a JSON string, by the typed read of a `String`.
+fn string_of(value: Option<Value>) -> Option<String> {
+    read_value::<String>(&value?)
+}
 
 /// xorshift64*: a fixed sequence per seed.
 struct Rng(u64);
@@ -265,13 +267,15 @@ fn generated_strings_read_as_the_reference_decodes_them_or_are_refused() {
             "`{document}`"
         );
         let read = [
-            from_str_jsonc::<String>(&document).ok(),
-            from_str::<String>(&document).ok(),
-            from_str_borrowed_jsonc::<std::borrow::Cow<'_, str>>(&document)
-                .ok()
-                .map(std::borrow::Cow::into_owned),
-            from_slice_jsonc::<String>(document.as_bytes()).ok(),
-            parse_at::<String>(JsonSlice::new(&document)).ok(),
+            string_of(from_str_jsonc::<Value>(&document).ok()),
+            string_of(from_str::<Value>(&document).ok()),
+            string_of(parse(&document, Options::default()).ok().map(|p| p.value)),
+            string_of(parse_bytes(document.as_bytes(), Options::default()).ok()),
+            string_of(
+                parse_slice(JsonSlice::new(&document), Options::default())
+                    .ok()
+                    .map(|p| p.value),
+            ),
             from_str_jsonc::<Value>(&document)
                 .ok()
                 .and_then(|v| Some(v.as_string()?.as_str().to_owned())),
@@ -290,7 +294,10 @@ fn generated_strings_read_as_the_reference_decodes_them_or_are_refused() {
             (format!("{{\"k\": \"{content}\"}}"), None),
             (format!("{{\"{content}\": \"v\"}}"), Some("v")),
         ] {
-            let map = parse_at::<IndexMap<String, String>>(JsonSlice::new(&nested));
+            let map = from_str_jsonc::<Value>(&nested)
+                .ok()
+                .and_then(|json| read_value::<IndexMap<String, String>>(&json))
+                .ok_or("refused");
             let envelope = probe_envelope(JsonSlice::new(&nested));
             let _ = last_wins(&nested);
             let _ = trailing_content(&nested);
@@ -338,7 +345,7 @@ fn generated_byte_strings_read_as_the_reference_decodes_them_or_are_refused() {
             expected == Expected::Refused,
             "`{shown}`"
         );
-        let got = from_slice_jsonc::<String>(&document).ok();
+        let got = string_of(parse_bytes(&document, Options::default()).ok());
         let wanted = match &expected {
             Expected::Reads(text) => Some(text.clone()),
             Expected::Refused | Expected::Fails => None,
@@ -521,19 +528,18 @@ fn has_a_wide_integer(text: &str) -> bool {
 }
 
 /// For 8000 documents: nothing panics; a text the scan refuses is an error through every
-/// reader; a text it passes reads through the door exactly as facet reads the whole text on
-/// its own (the cut at the root's end changes nothing, value or error); and the content the
-/// scan finds after the root is the content facet did not read. The few documents with an
-/// integer too large for 64 bits are left to their own test: there the door reads a double.
+/// reader; a text it passes reads through every entry point to one value or one fault; and the
+/// content the scan finds after the root is the content the parser did not read. The few
+/// documents with an integer too large for 64 bits are left to their own test.
 #[test]
-fn generated_documents_read_through_the_door_as_facet_reads_them() {
+fn generated_documents_read_through_every_entry_point_alike() {
     let mut rng = Rng(0x00C0_FFEE_5EED_0003);
     let (mut refused, mut read, mut failed, mut trailing, mut wide) = (0, 0, 0, 0, 0);
     for case in 0..8000 {
         let text = document(&mut rng, case);
-        let door = from_str_jsonc::<Value>(&text);
-        let at = parse_at::<Value>(JsonSlice::new(&text));
-        let bytes = from_slice_jsonc::<Value>(text.as_bytes());
+        let door = parse(&text, Options::default()).map(|parsed| parsed.value);
+        let at = parse_slice(JsonSlice::new(&text), Options::default()).map(|parsed| parsed.value);
+        let bytes = parse_bytes(text.as_bytes(), Options::default());
         let strict = from_str::<Value>(&text);
         let _ = probe_envelope(JsonSlice::new(&text));
         let _ = last_wins(&text);
@@ -550,33 +556,28 @@ fn generated_documents_read_through_the_door_as_facet_reads_them() {
             wide += 1;
             continue;
         }
-        // The scan passed it: facet may read it whole.
-        let facet = facet_json::from_str_jsonc::<Value>(&text);
-        match (&door, &facet) {
-            (Ok(door), Ok(facet)) => {
-                assert_eq!(door, facet, "`{text}`");
-                assert_eq!(at.as_ref().ok(), Some(facet), "`{text}`");
-                assert_eq!(bytes.as_ref().ok(), Some(facet), "`{text}`");
+        match &door {
+            Ok(door) => {
+                assert_eq!(at.as_ref().ok(), Some(door), "`{text}`");
+                assert_eq!(bytes.as_ref().ok(), Some(door), "`{text}`");
                 assert!(scanned.root_end.is_some(), "`{text}`");
                 read += 1;
             }
-            (Err(door), Err(facet)) => {
-                assert_eq!(door.span, facet.span, "`{text}`");
-                assert_eq!(door.kind.to_string(), facet.kind.to_string(), "`{text}`");
-                assert!(at.is_err() && bytes.is_err(), "`{text}`");
+            Err(door) => {
+                assert_eq!(at.as_ref().err(), Some(door), "`{text}`");
+                assert_eq!(bytes.as_ref().err(), Some(door), "`{text}`");
                 failed += 1;
             }
-            _ => panic!("`{text}`: the door {door:?}, facet {facet:?}"),
         }
         if scan(text.as_bytes(), false).is_ok() {
-            let facet = facet_json::from_str::<Value>(&text);
-            assert_eq!(strict.as_ref().ok(), facet.as_ref().ok(), "`{text}`");
+            let plain = parse(&text, Options::default().without_comments()).map(|p| p.value);
+            assert_eq!(strict.as_ref().ok(), plain.as_ref().ok(), "`{text}`");
         }
         assert_eq!(tail.is_some(), scanned.trailing.is_some(), "`{text}`");
-        if let (Some(end), Ok(facet)) = (scanned.root_end, &facet) {
+        if let (Some(end), Ok(door)) = (scanned.root_end, &door) {
             // The root alone is the same value: what follows was not read.
-            let root = facet_json::from_str_jsonc::<Value>(&text[..end]).unwrap();
-            assert_eq!(&root, facet, "`{text}`");
+            let root = from_str_jsonc::<Value>(&text[..end]).unwrap();
+            assert_eq!(&root, door, "`{text}`");
             trailing += usize::from(scanned.trailing.is_some());
         }
     }
@@ -616,35 +617,8 @@ fn the_scan_of_a_five_megabyte_document_is_linear() {
     });
 }
 
-/// The scan is a fraction of the parse it guards. Two times of one document compared under
-/// the lock of the cost tests, not a bound on growth: the scan takes about a tenth of
-/// facet's parse in a debug build (94 ms against 1 s for 5 MB) and is required to stay under
-/// half of it; the scan's time is the best of three, the parse's the one run.
-#[test]
-fn the_scan_is_a_fraction_of_the_parse_it_guards() {
-    let text = large_document(5);
-    let (scanned, (parsed, parse)) = cost::alone_for(|| {
-        let scanned = (0..3)
-            .map(|_| cost::time_of(|| scan(text.as_bytes(), true).unwrap()))
-            .min()
-            .unwrap();
-        let parsed = cost::timed(|| facet_json::from_str_jsonc::<Value>(&text).unwrap());
-        (scanned, parsed)
-    });
-    assert!(parsed.as_object().unwrap().len() > 10_000);
-    let share = scanned.as_secs_f64() / parse.as_secs_f64();
-    eprintln!(
-        "scan: {scanned:?} for {} bytes; facet's parse: {parse:?} (the scan is {share:.3} of it)",
-        text.len()
-    );
-    assert!(
-        share < 0.5,
-        "the scan took {scanned:?}, the parse {parse:?}: {share:.2} of it"
-    );
-}
-
-/// Bytes that are not UTF-8 are read in linear time too: facet's own byte reader validates
-/// the rest of a string for each of its characters, which the door does not use.
+/// Bytes that are not UTF-8 are read in linear time too: facet's own byte reader validated
+/// the rest of a string for each of its characters, which `parse_bytes` does not do.
 #[test]
 fn a_long_string_in_bytes_that_are_not_utf8_is_read_in_linear_time() {
     let document = |characters: usize| {
@@ -658,7 +632,8 @@ fn a_long_string_in_bytes_that_are_not_utf8_is_read_in_linear_time() {
         400_000,
         document,
         |(bytes, characters)| {
-            let strings: Vec<String> = from_slice_jsonc(bytes).unwrap();
+            let value = parse_bytes(bytes, Options::default()).unwrap();
+            let strings: Vec<String> = read_value(&value).unwrap();
             assert_eq!(strings[0].len(), 2 * characters + 1);
         },
     );
@@ -724,15 +699,15 @@ fn malformed_text_beside_a_wide_integer_fails_as_it_does_beside_any_number() {
             reference.insert_str(at, &format!(" {} ", stand_in(wide)));
         }
         assert_eq!(edited.len(), reference.len());
-        let door = from_str_jsonc::<Value>(&edited);
-        let at = parse_at::<Value>(JsonSlice::new(&edited));
-        let bytes = from_slice_jsonc::<Value>(edited.as_bytes());
+        let door = parse(&edited, Options::default()).map(|parsed| parsed.value);
+        let at = parse_slice(JsonSlice::new(&edited), Options::default());
+        let bytes = parse_bytes(edited.as_bytes(), Options::default());
         let _ = from_str::<Value>(&edited);
         let _ = probe_envelope(JsonSlice::new(&edited));
         let _ = last_wins(&edited);
         // The reference has no integer beyond 64 bits that the generator produced: the door reads
         // it as the tests above say.
-        let expected = from_str_jsonc::<Value>(&reference);
+        let expected = parse(&reference, Options::default()).map(|parsed| parsed.value);
         match (&door, &expected) {
             (Ok(_), Ok(_)) => {
                 assert!(at.is_ok() && bytes.is_ok(), "`{edited}`");
@@ -764,7 +739,12 @@ fn malformed_text_beside_a_wide_integer_fails_as_it_does_beside_any_number() {
 /// in the message.
 #[test]
 fn a_fault_before_a_wide_integer_names_the_author_s_characters() {
-    let message = |text: &str| from_str_jsonc::<Value>(text).unwrap_err().kind.to_string();
+    let message = |text: &str| {
+        parse(text, Options::default())
+            .unwrap_err()
+            .kind
+            .to_string()
+    };
     for (text, names) in [
         ("tru18446744073709551616", '1'),
         ("[nul99999999999999999999]", '9'),

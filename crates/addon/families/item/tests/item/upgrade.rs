@@ -7,6 +7,7 @@ use std::fmt::Debug;
 
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentRef, CustomComponent};
+use bedrock_addon_core::json::parse::{Options, parse as parse_text};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
@@ -18,8 +19,6 @@ use bedrock_addon_family_item::component::{
 use bedrock_addon_family_item::history::{self, Component, ItemDocument};
 use bedrock_addon_family_item::{Item, ItemFormat};
 use bedrock_addon_shared_shapes::CreativeCategory;
-use facet_json::RawJson;
-use indexmap::IndexMap;
 
 use super::common::*;
 
@@ -34,11 +33,16 @@ fn fixture(name: &str) -> String {
 
 /// The payload text and the version of a document.
 fn split(text: &str) -> (String, FormatVersion) {
-    let root: IndexMap<String, RawJson<'_>> = facet_json::from_str_borrowed_jsonc(text).unwrap();
-    let version: String = facet_json::from_str(root["format_version"].as_str()).unwrap();
+    let parsed = parse_text(text, Options::default()).unwrap();
+    let version = parsed.value.as_object().unwrap()["format_version"]
+        .as_string()
+        .unwrap()
+        .as_str()
+        .to_owned();
     let parts: Vec<u16> = version.split('.').map(|p| p.parse().unwrap()).collect();
+    let payload = parsed.spans.root().member("minecraft:item").unwrap();
     (
-        root["minecraft:item"].as_str().to_owned(),
+        payload.text().text.to_owned(),
         FormatVersion::new(parts[0], parts[1], parts[2]),
     )
 }
@@ -686,7 +690,10 @@ fn deviation_i18_custom_components_from_the_list_are_also_keyed() {
     let list = document.deprecated.custom_components_v1.clone().unwrap();
     assert_eq!(
         list,
-        facet_json::from_str::<Value>(r#"[{"name": "demo:shake", "data": {}}]"#).unwrap()
+        bedrock_addon_core::json::from_str_jsonc::<Value>(
+            r#"[{"name": "demo:shake", "data": {}}]"#
+        )
+        .unwrap()
     );
 }
 

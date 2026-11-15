@@ -1,11 +1,6 @@
 //! `scatter_feature`: the 1.21.10 move into `distribution`, the strict schema of both eras and
 //! the runtime scatter checks (fixtures f01–f03).
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon::diagnostic::{Kind, Severity};
 use bedrock_addon::document::Content;
 use bedrock_addon::families::feature::{Feature, ScatterFeature};
@@ -74,7 +69,8 @@ fn a_scatter_feature_and_a_feature_rule_hold_the_same_scatter_params() {
     assert_eq!(old.distribution.x, None);
     rule.distribution = Some(old.distribution);
     let written = rule.to_json().unwrap();
-    let value: bedrock_addon::json::Value = facet_json::from_str(&written).unwrap();
+    let value: bedrock_addon::json::Value =
+        bedrock_addon::json::from_str_jsonc::<bedrock_addon::json::Value>(&written).unwrap();
     let keys: Vec<&str> = value.as_object().unwrap()["minecraft:feature_rules"]
         .as_object()
         .unwrap()["distribution"]

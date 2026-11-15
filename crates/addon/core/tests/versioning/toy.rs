@@ -21,29 +21,32 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity,
 };
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent, Extra};
-use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::parse::{Options, members_of, parse_slice};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, from_str_jsonc};
 use bedrock_addon_core::load::{Experiment, LoadRequirement};
 use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangFields, MolangVersionSource, MolangVisitor,
 };
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::vanilla::ActorType;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ComponentSection, ComponentTable, ConvertMode, Family, Identity, Loaded, ParseCx,
-    Upgrade, UpgradeCx, ValidateCx, VersionStruct, Versioned, parse_component, parse_component_map,
-    parse_payload, write_payload,
+    BETA_VERSION, ComponentSection, ComponentTable, ConvertMode, Family, Identity, KeyGate, Loaded,
+    ParseCx, Upgrade, UpgradeCx, ValidateCx, VersionStruct, Versioned, read_component,
+    read_component_map_by, read_payload, write_payload,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 /// The family marker.
 pub struct Toy;
 
 /// `description`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Description {
+    #[facet(default)]
     pub identifier: String,
     #[facet(skip)]
     pub extra: Extra,
@@ -52,59 +55,68 @@ pub struct Description {
 // ---- components ----
 
 /// `toy:speed`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Speed {
+    #[facet(default)]
     pub value: f32,
     #[facet(skip)]
     pub extra: Extra,
 }
 
 /// `toy:glow`, which supersedes `toy:old_glow`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Glow {
+    #[facet(default)]
     pub level: u8,
 }
 
 /// `toy:old_glow`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct OldGlow {
+    #[facet(default)]
     pub level: u8,
 }
 
 /// `toy:gated`: released 1.2.0, unlocked earlier by Upcoming Creator Features.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Gated {
+    #[facet(default)]
     pub on: bool,
 }
 
 /// `toy:preview`: never released, needs the Upcoming Creator Features toggle.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Preview {
+    #[facet(default)]
     pub on: bool,
 }
 
 /// `toy:retired`: deprecated since 1.1.0.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Retired {
+    #[facet(default)]
     pub on: bool,
 }
 
 /// `toy:secret`: base-game packs only.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Secret {
+    #[facet(default)]
     pub on: bool,
 }
 
 /// `toy:marker`: inserted by a step; needs a toggle no test turns on, which a synthesized
 /// entry bypasses.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Marker {
+    #[facet(default)]
     pub on: bool,
 }
 
 /// `toy:fresh`: released 1.2.0 with nothing that unlocks it earlier (an empty `requires`).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Fresh {
+    #[facet(default)]
     pub on: bool,
 }
 
@@ -113,30 +125,28 @@ const DRAFT: LoadRequirement = LoadRequirement::Experiment(Experiment::TestExper
 
 /// `toy:light`: a component with a Molang field (`#[component(molang)]`), whose version is
 /// the document's.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = light_molang)]
 pub struct Light {
-    #[facet(default)]
     pub condition: Option<Molang>,
 }
 
-impl MolangFields for Light {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("condition", &CONDITION, &mut self.condition);
-    }
+/// `toy:light`'s Molang walk: its condition at the document's version.
+fn light_molang(light: &mut Light, visitor: &mut MolangVisitor<'_>) {
+    visitor.field("condition", &CONDITION, &mut light.condition);
 }
 
 /// `toy:needs`: a required member and no `Default`, so a missing `amount` is a missing required
 /// member, not the default.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Needs {
     pub amount: u8,
 }
 
 /// `toy:kept`: a component whose reader logs a content-log error and keeps the component and
 /// the document, as the game's particle reader does with "offset field required!".
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Kept {
-    #[facet(default)]
     pub offset: Option<f32>,
 }
 
@@ -147,7 +157,7 @@ fn parse_kept(
     cx: &bedrock_addon_core::load::LoadContext,
     d: &mut Diagnostics,
 ) -> Option<ToyComponent> {
-    let component = parse_component::<Kept, ToyComponent>(slice, mode, cx, d)?;
+    let component = read_component::<Kept, ToyComponent>(slice, mode, cx, d)?;
     if matches!(&component, ToyComponent::Kept(kept) if kept.offset.is_none()) {
         d.push_kept_error(Diagnostic::new(
             Code::from(&core_codes::MISSING_REQUIRED_FIELD),
@@ -160,42 +170,43 @@ fn parse_kept(
 }
 
 /// `toy:legacy`: released 1.2.0, earlier only for the legacy creator feature packs.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Legacy {
+    #[facet(default)]
     pub on: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Components)]
 #[component(family = Toy, custom = Custom, unknown = Unknown)]
 pub enum ToyComponent {
-    #[component(name = "toy:speed", parse = parse_component::<Speed, ToyComponent>)]
+    #[component(name = "toy:speed", parse = read_component::<Speed, ToyComponent>)]
     Speed(Speed),
-    #[component(name = "toy:glow", supersedes = "toy:old_glow", parse = parse_component::<Glow, ToyComponent>)]
+    #[component(name = "toy:glow", supersedes = "toy:old_glow", parse = read_component::<Glow, ToyComponent>)]
     Glow(Glow),
-    #[component(name = "toy:old_glow", parse = parse_component::<OldGlow, ToyComponent>)]
+    #[component(name = "toy:old_glow", parse = read_component::<OldGlow, ToyComponent>)]
     OldGlow(OldGlow),
-    #[component(name = "toy:gated", released = "1.2.0", requires = [UCF], parse = parse_component::<Gated, ToyComponent>)]
+    #[component(name = "toy:gated", released = "1.2.0", requires = [UCF], parse = read_component::<Gated, ToyComponent>)]
     Gated(Gated),
-    #[component(name = "toy:preview", requires = [UCF], parse = parse_component::<Preview, ToyComponent>)]
+    #[component(name = "toy:preview", requires = [UCF], parse = read_component::<Preview, ToyComponent>)]
     Preview(Preview),
-    #[component(name = "toy:retired", deprecated_since = "1.1.0", parse = parse_component::<Retired, ToyComponent>)]
+    #[component(name = "toy:retired", deprecated_since = "1.1.0", parse = read_component::<Retired, ToyComponent>)]
     Retired(Retired),
-    #[component(name = "toy:secret", area = Vanilla, parse = parse_component::<Secret, ToyComponent>)]
+    #[component(name = "toy:secret", area = Vanilla, parse = read_component::<Secret, ToyComponent>)]
     Secret(Secret),
-    #[component(name = "toy:marker", requires = [DRAFT], parse = parse_component::<Marker, ToyComponent>)]
+    #[component(name = "toy:marker", requires = [DRAFT], parse = read_component::<Marker, ToyComponent>)]
     Marker(Marker),
-    #[component(name = "toy:fresh", released = "1.2.0", parse = parse_component::<Fresh, ToyComponent>)]
+    #[component(name = "toy:fresh", released = "1.2.0", parse = read_component::<Fresh, ToyComponent>)]
     Fresh(Fresh),
     #[component(
         name = "toy:legacy",
         released = "1.2.0",
         requires = [LoadRequirement::LegacyCreatorFeatures],
-        parse = parse_component::<Legacy, ToyComponent>
+        parse = read_component::<Legacy, ToyComponent>
     )]
     Legacy(Legacy),
-    #[component(name = "toy:light", molang, parse = parse_component::<Light, ToyComponent>)]
+    #[component(name = "toy:light", molang, parse = read_component::<Light, ToyComponent>)]
     Light(Light),
-    #[component(name = "toy:needs", parse = parse_component::<Needs, ToyComponent>)]
+    #[component(name = "toy:needs", parse = read_component::<Needs, ToyComponent>)]
     Needs(Needs),
     #[component(name = "toy:kept", parse = parse_kept)]
     Kept(Kept),
@@ -208,24 +219,33 @@ fn is_custom(key: &str) -> bool {
     key.starts_with("demo:")
 }
 
-/// Parses the raw `components` object of a payload.
+/// The `components` member of `payload` as a slice of the file, when it has one.
+fn components_slice(payload: JsonSlice<'_>) -> Option<JsonSlice<'_>> {
+    members_of(payload)?.get("components").copied()
+}
+
+/// Reads the `components` object of a payload, each component by its row.
 fn components(
-    raw: &IndexMap<String, RawJson<'_>>,
     payload: JsonSlice<'_>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> ComponentMap<ToyComponent> {
     let mut at = cx.at.clone();
     at.push("components");
-    parse_component_map::<Toy>(
-        raw,
-        payload,
-        &at,
+    let Some(parsed) =
+        components_slice(payload).and_then(|slice| parse_slice(slice, Options::default()).ok())
+    else {
+        return ComponentMap::new();
+    };
+    let mut read = Read::new(cx.load.reading, d).load(cx.load);
+    read_component_map_by::<Toy>(
+        &Node::parsed(&parsed, at),
+        &mut read,
         ConvertMode::Strict,
         is_custom,
-        cx.load,
-        d,
+        |_| KeyGate::Read,
     )
+    .unwrap_or_default()
 }
 
 /// The components as JSON.
@@ -300,16 +320,14 @@ pub mod v1_0_0 {
         Unknown(Value),
     }
 
-    /// What `Toy` is parsed from: `components` as raw slices.
-    #[derive(Facet)]
-    struct Shell<'a> {
+    /// What `Toy` is parsed from: `components` read whole, each read by its row from its slice.
+    #[derive(Facet, Schema)]
+    struct Shell {
         description: Description,
-        #[facet(default)]
         old_speed: Option<f32>,
-        #[facet(default)]
         legacy_flag: Option<bool>,
         #[facet(default)]
-        components: IndexMap<String, RawJson<'a>>,
+        components: IndexMap<String, Value>,
         #[facet(skip)]
         extra: Extra,
     }
@@ -318,9 +336,7 @@ pub mod v1_0_0 {
     #[derive(Facet)]
     struct Written<'a> {
         description: &'a Description,
-        #[facet(default)]
         old_speed: Option<f32>,
-        #[facet(default)]
         legacy_flag: Option<bool>,
         #[facet(skip)]
         extra: Extra,
@@ -332,38 +348,40 @@ pub mod v1_0_0 {
 
     impl VersionStruct for Toy {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let shell: Shell<'_> = parse_payload(payload, cx, d)?;
+            let shell: Shell = read_payload(payload, cx, d)?;
             let mut components = IndexMap::new();
-            for (key, raw) in &shell.components {
-                let slice = payload.nested(raw)?;
+            let slices = components_slice(payload)
+                .and_then(members_of)
+                .unwrap_or_default();
+            for (key, slice) in slices {
                 let mut found = Diagnostics::default();
                 let value = match key.as_str() {
-                    "toy:speed" => parse_component::<Speed, Component>(
+                    "toy:speed" => read_component::<Speed, Component>(
                         slice,
                         ConvertMode::Strict,
                         cx.load,
                         &mut found,
                     ),
-                    "toy:old_glow" => parse_component::<OldGlow, Component>(
+                    "toy:old_glow" => read_component::<OldGlow, Component>(
                         slice,
                         ConvertMode::Strict,
                         cx.load,
                         &mut found,
                     ),
-                    _ => facet_json::from_str_jsonc::<Value>(slice.text)
+                    _ => from_str_jsonc::<Value>(slice.text)
                         .ok()
                         .map(Component::Unknown),
                 };
                 for mut finding in found {
                     let mut path = cx.at.clone();
                     path.push("components");
-                    path.push(key);
+                    path.push(&key);
                     path.append(&finding.location.json_path);
                     finding.location.json_path = path;
                     d.push(finding);
                 }
                 if let Some(value) = value {
-                    components.insert(key.clone(), value);
+                    components.insert(key, value);
                 }
             }
             Some(Toy {
@@ -451,18 +469,15 @@ pub mod v1_1_0 {
         pub extra: Extra,
     }
 
-    /// What `Toy` is parsed from: `components` as raw slices.
-    #[derive(Facet)]
-    struct Shell<'a> {
+    /// What `Toy` is parsed from: `components` read whole, then as a component map.
+    #[derive(Facet, Schema)]
+    struct Shell {
         description: Description,
-        #[facet(default)]
         speed: Option<f32>,
-        #[facet(default)]
         color: Option<String>,
-        #[facet(default)]
         note: Option<String>,
         #[facet(default)]
-        components: IndexMap<String, RawJson<'a>>,
+        components: IndexMap<String, Value>,
         #[facet(skip)]
         extra: Extra,
     }
@@ -471,10 +486,8 @@ pub mod v1_1_0 {
     #[derive(Facet)]
     struct Written<'a> {
         description: &'a Description,
-        #[facet(default)]
         speed: Option<f32>,
         color: &'a str,
-        #[facet(default)]
         note: Option<&'a str>,
         #[facet(skip)]
         extra: Extra,
@@ -486,9 +499,9 @@ pub mod v1_1_0 {
 
     impl VersionStruct for Toy {
         fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-            let shell: Shell<'_> = parse_payload(payload, cx, d)?;
+            let shell: Shell = read_payload(payload, cx, d)?;
             Some(Toy {
-                components: components(&shell.components, payload, cx, d),
+                components: components(payload, cx, d),
                 description: shell.description,
                 speed: shell.speed,
                 color: shell.color.unwrap_or_else(|| "red".to_owned()),
@@ -549,22 +562,24 @@ pub fn shout_color(color: &str) -> String {
 }
 
 /// `movement`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Movement {
+    #[facet(default)]
     pub speed: f32,
 }
 
 /// `__deprecated`: the side-car of `note`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Sidecar {
-    #[facet(default)]
     pub note: Option<String>,
 }
 
 /// `limits`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Limits {
+    #[facet(default)]
     pub min: i32,
+    #[facet(default)]
     pub max: i32,
 }
 
@@ -586,25 +601,19 @@ pub struct Toy120 {
 }
 
 /// What `Toy120` is parsed from.
-#[derive(Facet)]
-struct Shell120<'a> {
+#[derive(Facet, Schema)]
+struct Shell120 {
     description: Description,
-    #[facet(default)]
     movement: Option<Movement>,
-    #[facet(default)]
     color: Option<String>,
-    #[facet(default)]
     legacy: Option<bool>,
-    #[facet(default)]
     marker: Option<bool>,
-    #[facet(default, rename = "__deprecated")]
+    #[facet(rename = "__deprecated")]
     deprecated: Option<Sidecar>,
-    #[facet(default)]
     limits: Option<Limits>,
-    #[facet(default)]
     condition: Option<Molang>,
     #[facet(default)]
-    components: IndexMap<String, RawJson<'a>>,
+    components: IndexMap<String, Value>,
     #[facet(skip)]
     extra: Extra,
 }
@@ -613,16 +622,12 @@ struct Shell120<'a> {
 #[derive(Facet)]
 struct Written120<'a> {
     description: &'a Description,
-    #[facet(default)]
     movement: Option<&'a Movement>,
     color: &'a str,
-    #[facet(default)]
     legacy: Option<bool>,
-    #[facet(default)]
     marker: Option<bool>,
-    #[facet(default, rename = "__deprecated")]
+    #[facet(rename = "__deprecated")]
     deprecated: Option<&'a Sidecar>,
-    #[facet(default)]
     limits: Option<&'a Limits>,
     #[facet(skip)]
     extra: Extra,
@@ -634,9 +639,9 @@ impl Versioned for Toy120 {
 
 impl VersionStruct for Toy120 {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let shell: Shell120<'_> = parse_payload(payload, cx, d)?;
+        let shell: Shell120 = read_payload(payload, cx, d)?;
         Some(Toy120 {
-            components: components(&shell.components, payload, cx, d),
+            components: components(payload, cx, d),
             description: shell.description,
             movement: shell.movement,
             color: shell.color.unwrap_or_else(|| "RED".to_owned()),
@@ -683,10 +688,10 @@ impl MolangFields for Toy120 {
 }
 
 /// The beta struct.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ToyBeta {
-    pub description: Description,
     #[facet(default)]
+    pub description: Description,
     pub beta_only: Option<bool>,
     #[facet(skip)]
     pub extra: Extra,
@@ -698,15 +703,11 @@ impl Versioned for ToyBeta {
 
 impl VersionStruct for ToyBeta {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
     }
-}
-
-impl MolangFields for ToyBeta {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }
 
 pub mod history {

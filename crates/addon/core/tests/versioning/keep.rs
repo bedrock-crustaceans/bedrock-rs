@@ -13,10 +13,11 @@ use bedrock_addon_core::json::{
 };
 use bedrock_addon_core::load::{DocumentSource, LoadContext};
 use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
     ComponentTable, Family, LoadOutcome, Loaded, ParseCx, Reading, StructIndex, VersionStruct,
-    Versioned, load, parse_payload, write_payload,
+    Versioned, load, read_payload, write_payload,
 };
 use facet::Facet;
 use indexmap::IndexMap;
@@ -24,67 +25,55 @@ use indexmap::IndexMap;
 use crate::toy::ToyComponent;
 
 /// Marked with `extra: Extra`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Marked {
-    #[facet(default)]
     pub v: Option<u8>,
     #[facet(skip)]
     pub extra: Extra,
 }
 
 /// States `keep`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Keeps {
-    #[facet(default)]
     pub v: Option<u8>,
 }
 
 /// States nothing.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Plain {
-    #[facet(default)]
     pub v: Option<u8>,
 }
 
 /// States `report`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "report")]
 pub struct Reports {
-    #[facet(default)]
     pub v: Option<u8>,
 }
 
 /// States `reject`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "reject")]
 pub struct Rejects {
-    #[facet(default)]
     pub v: Option<u8>,
 }
 
 /// States `ignore`.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "ignore")]
 pub struct Ignores {
-    #[facet(default)]
     pub v: Option<u8>,
 }
 
 /// The payload: states nothing itself, so its own unknown members go by the reading.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Payload {
-    #[facet(default)]
     pub marked: Option<Marked>,
-    #[facet(default)]
     pub keeps: Option<Keeps>,
-    #[facet(default)]
     pub plain: Option<Plain>,
-    #[facet(default)]
     pub reports: Option<Reports>,
-    #[facet(default)]
     pub rejects: Option<Rejects>,
-    #[facet(default)]
     pub ignores: Option<Ignores>,
     /// `report` stated, under a reading that keeps.
     #[facet(default)]
@@ -93,10 +82,10 @@ pub struct Payload {
     #[facet(default)]
     pub map: IndexMap<String, Keeps>,
     /// The field states `keep` for the struct it holds.
-    #[facet(default, schema::unknown = "keep")]
+    #[facet(schema::unknown = "keep")]
     pub field_keeps: Option<Plain>,
     /// The field states `report` for a struct that keeps by its reading.
-    #[facet(default, schema::unknown = "report")]
+    #[facet(schema::unknown = "report")]
     pub field_reports: Option<Plain>,
 }
 
@@ -106,15 +95,11 @@ impl Versioned for Payload {
 
 impl VersionStruct for Payload {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        parse_payload(payload, cx, d)
+        read_payload(payload, cx, d)
     }
     fn write(&self) -> Result<Value, EncodeError> {
         write_payload(self)
     }
-}
-
-impl bedrock_addon_core::molang::MolangFields for Payload {
-    fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
 }
 
 macro_rules! keep_toy {
@@ -365,7 +350,7 @@ fn the_door_tells_every_unknown_member_at_the_reading_s_grade() {
         at: JsonPath::of_keys(["minecraft:toy"]),
     };
     let mut d = Diagnostics::default();
-    let payload: Option<Payload> = parse_payload(JsonSlice::new(PAYLOAD), &cx, &mut d);
+    let payload: Option<Payload> = read_payload(JsonSlice::new(PAYLOAD), &cx, &mut d);
     assert!(payload.is_some(), "{d:?}");
     let expected: Vec<String> = told_at(Severity::Warning)
         .into_iter()

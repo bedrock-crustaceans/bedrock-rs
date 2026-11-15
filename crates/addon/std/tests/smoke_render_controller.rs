@@ -308,7 +308,7 @@ fn leaves(
 fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
     use bedrock_addon::document::Content;
     use bedrock_addon::families::render_controller::{RenderControllerFile, fold_case};
-    use bedrock_addon::json::{JsonSlice, Value, parse_at};
+    use bedrock_addon::json::Value;
 
     let pairs_path = skip!(game_files::MOLANG_PAIRS);
     let install_b = skip!(game_files::CLIENT_INSTALL_B);
@@ -349,7 +349,7 @@ fn every_render_controller_molang_occurrence_loads_with_its_text_and_version() {
             .into_iter()
             .map(|(pointer, member)| (pointer.to_ascii_lowercase(), member))
             .collect();
-        let root: Value = parse_at(JsonSlice::new(file.text)).expect("JSON");
+        let root: Value = bedrock_addon::json::from_str_jsonc::<Value>(file.text).expect("JSON");
         let mut leaves_of = Vec::new();
         leaves(&root, "", "", &mut leaves_of);
         for (written_at, loaded_at, written) in leaves_of {

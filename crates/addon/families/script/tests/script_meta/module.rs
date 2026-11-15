@@ -2,11 +2,6 @@
 //!. The documents are hand-written in the
 //! generator's shapes, abbreviated.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it and serializes a value to compare it with the written text; not yet moved to the door"
-)]
-
 use bedrock_addon_family_script::meta::model::script::ConstValue;
 use bedrock_addon_family_script::meta::{MetaError, ModuleMetadata};
 
@@ -289,10 +284,11 @@ fn a_native_module_without_one_of_its_arrays_is_an_error() {
         "type_aliases",
         "dependencies",
     ] {
-        let value: facet_value::Value = facet_json::from_str(NATIVE).unwrap();
+        let value: facet_value::Value = bedrock_addon_core::json::from_str_jsonc(NATIVE).unwrap();
         let mut object = value.as_object().unwrap().clone();
         object.remove(member);
-        let text = facet_json::to_string(&facet_value::Value::from(object)).unwrap();
+        let text =
+            bedrock_addon_core::json::to_facet_json(&facet_value::Value::from(object)).unwrap();
         let error = parse(&text).unwrap_err();
         assert!(
             matches!(error, MetaError::MissingArray { member: m } if m == member),

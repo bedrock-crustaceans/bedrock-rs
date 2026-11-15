@@ -2,11 +2,6 @@
 //! every row document that loads, a stable rewrite, the members in vanilla's bind order, and
 //! no member the author left out; and the as-written parse
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use std::fmt::Debug;
 
 use bedrock_addon_core::document::{Content, JsonDocument};
@@ -43,7 +38,8 @@ fn round_trip<T: Content + Debug + PartialEq>(rest: &str) -> String {
 
 /// The keys of the object `key` of the written document `text`, in order.
 fn payload_keys(text: &str, key: &str) -> Vec<String> {
-    let json: Value = facet_json::from_str(text).expect("the written text is JSON");
+    let json: Value =
+        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("the written text is JSON");
     let root = json.as_object().expect("an object");
     let root_keys: Vec<&str> = root.iter().map(|(k, _)| k.as_str()).collect();
     assert_eq!(root_keys, ["format_version", key], "the envelope");

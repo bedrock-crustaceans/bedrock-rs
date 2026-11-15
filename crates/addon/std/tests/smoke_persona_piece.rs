@@ -298,7 +298,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
         let path = &piece.meta.origin().path;
         assert!(
             same(
-                &bedrock_addon::json::from_str::<Value>(&text).expect("JSON"),
+                &bedrock_addon::json::from_str_jsonc::<Value>(&text).expect("JSON"),
                 &json_of(&root, path)
             ),
             "{entry}: {path}"
@@ -309,7 +309,7 @@ fn builtin_pack_loads(entry: &str, data: &Path) {
             let path = &store.origin().path;
             assert!(
                 same(
-                    &bedrock_addon::json::from_str::<Value>(&text).expect("JSON"),
+                    &bedrock_addon::json::from_str_jsonc::<Value>(&text).expect("JSON"),
                     &json_of(&root, path)
                 ),
                 "{entry}: {path}"

@@ -1,11 +1,6 @@
 //! `MenuCategory` and `CreativeCategory`: the object round trips; the five
 //! category spellings; and the per-family constraints are not the type's.
 
-#![allow(
-    clippy::disallowed_methods,
-    clippy::disallowed_types,
-    reason = "tests read fixtures and call facet-json directly"
-)]
 use bedrock_addon_test_support::value as common;
 
 use bedrock_addon_core::diagnostic::JsonPath;
@@ -57,7 +52,7 @@ fn the_category_spellings() {
     }
     for json in [r#""Nature""#, r#""all""#, r#""undefined""#, "1", "null"] {
         assert!(
-            read::<CreativeCategory>(json).is_err(),
+            read::<CreativeCategory>(json).is_none(),
             "{json} must be rejected"
         );
     }
@@ -83,7 +78,7 @@ fn is_hidden_in_commands_takes_a_boolean_only() {
     for json in ["1", r#""true""#] {
         let text = format!(r#"{{"is_hidden_in_commands": {json}}}"#);
         assert!(
-            read::<MenuCategory>(&text).is_err(),
+            read::<MenuCategory>(&text).is_none(),
             "{json} must be rejected"
         );
     }
@@ -104,8 +99,8 @@ fn d7_the_family_constraints_are_not_the_types() {
 #[test]
 fn unknown_members_are_kept_by_the_family_walk() {
     let text = r#"{"category": "items", "note": 1}"#;
-    let m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
-    let value: Value = facet_json::from_str_jsonc(text).unwrap();
+    let m: MenuCategory = read(text).unwrap();
+    let value: Value = json::from_str_jsonc::<Value>(text).unwrap();
     let mut kept = Unknown::new();
     let unknown = json::keep_unknown_members(&m, &value, &mut kept);
     assert_eq!(unknown.len(), 1);
@@ -117,13 +112,13 @@ fn unknown_members_are_kept_by_the_family_walk() {
 #[test]
 fn a_member_named_extra_is_an_unknown_member() {
     let text = r#"{"category": "items", "extra": {"group": "x"}}"#;
-    let m: MenuCategory = facet_json::from_str_jsonc(text).unwrap();
+    let m: MenuCategory = read(text).unwrap();
     assert_eq!(
         compact(&m),
         r#"{"category":"items"}"#,
         "the member's object is not read into the side-car"
     );
-    let value: Value = facet_json::from_str_jsonc(text).unwrap();
+    let value: Value = json::from_str_jsonc::<Value>(text).unwrap();
     let mut kept = Unknown::new();
     let unknown = json::keep_unknown_members(&m, &value, &mut kept);
     assert_eq!(unknown.len(), 1);

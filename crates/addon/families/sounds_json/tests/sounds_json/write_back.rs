@@ -1,11 +1,6 @@
 //! A `sounds.json` file written back: what it read, and what its author wrote, at the Value
 //! level.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::document::{Content, Placed};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::LoadContext;
@@ -58,7 +53,9 @@ fn a_single_sounds_json_writes_back_what_its_author_wrote() {
         let document = SoundBindings::parse(&path("sounds.json"), text.as_bytes(), &cx)
             .expect("the file loads");
         assert_eq!(*document.json(), json(text), "{text}");
-        let written: Value = facet_json::from_str(&document.to_json().unwrap()).unwrap();
+        let written: Value =
+            bedrock_addon_core::json::from_str_jsonc::<Value>(&document.to_json().unwrap())
+                .unwrap();
         assert_eq!(written, json(text), "{text}");
     }
     // The typed read is still the transformed copy's: the pack's version on a keyed entity,

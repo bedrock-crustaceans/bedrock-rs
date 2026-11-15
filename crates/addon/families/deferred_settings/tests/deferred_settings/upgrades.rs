@@ -24,11 +24,11 @@ fn at<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
 
 /// `value` as JSON text.
 fn text(value: &Value) -> String {
-    facet_json::to_string(value).unwrap()
+    bedrock_addon_core::json::to_facet_json(value).unwrap()
 }
 
 fn parsed(text: &str) -> Value {
-    facet_json::from_str(text).unwrap()
+    bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap()
 }
 
 /// Runs the step `S` on `input`.

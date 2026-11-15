@@ -3,21 +3,21 @@
 
 use bedrock_addon_test_support::value as common;
 
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_shared_shapes::{NotTrue, TrueOnly};
 use common::{read, round_trip};
 use facet::Facet;
 
-#[derive(Debug, PartialEq, Facet)]
+#[derive(Debug, PartialEq, Facet, Schema)]
 struct Holder {
-    #[facet(default)]
     flag: Option<TrueOnly>,
 }
 
 #[test]
 fn true_is_the_one_value() {
     assert_eq!(round_trip::<TrueOnly>("true"), TrueOnly);
-    assert!(read::<TrueOnly>("false").is_err());
-    assert!(read::<TrueOnly>("1").is_err());
+    assert!(read::<TrueOnly>("false").is_none());
+    assert!(read::<TrueOnly>("1").is_none());
     assert_eq!(TrueOnly::try_from(false), Err(NotTrue));
     assert!(bool::from(TrueOnly));
 }

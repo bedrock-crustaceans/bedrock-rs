@@ -1,11 +1,10 @@
-//! `json::clamp_non_finite` and `json::span_at`: the one walk that replaces
+//! `json::clamp_non_finite` and the span of a value by its path (`Spans::at`): the one walk that replaces
 //! the numbers no double holds in a value kept as written, and the span of a value by its
 //! path.
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity, Span};
 use bedrock_addon_core::json::{
-    Clamped, JsonSlice, Value, clamp_non_finite, clamp_non_finite_warned, from_str_jsonc, span_at,
-    to_json,
+    Clamped, JsonSlice, Value, clamp_non_finite, clamp_non_finite_warned, from_str_jsonc, to_json,
 };
 
 fn path(steps: &[&str]) -> JsonPath {
@@ -215,6 +214,15 @@ fn a_number_below_and_after_a_deep_chain_has_its_own_path() {
 
 #[test]
 fn span_at_is_the_span_of_the_value_a_path_names() {
+    let span_at = |slice: JsonSlice<'_>, path: &JsonPath| {
+        bedrock_addon_core::json::parse::parse_slice(
+            slice,
+            bedrock_addon_core::json::parse::Options::default(),
+        )
+        .ok()?
+        .spans
+        .at(path)
+    };
     let text = "{\"a\": [1, {\"b\\n\": \"x y\" /* c */ }, [ ] ], \"a2\": 1e999, \"\": null}";
     let file = format!("\u{feff}{text}");
     let slice = JsonSlice {

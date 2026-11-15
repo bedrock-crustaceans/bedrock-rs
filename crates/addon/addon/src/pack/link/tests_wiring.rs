@@ -1763,7 +1763,8 @@ fn the_languages_of_the_game_are_the_vanilla_resource_packs_list() {
         "bds-1.26.36.1/resource_packs/vanilla/texts/languages.json",
     ] {
         let text = std::fs::read_to_string(game_files.join(file)).expect(file);
-        let codes: Vec<String> = crate::json::from_str_jsonc(&text).expect(file);
+        let json = crate::json::from_str_jsonc::<crate::json::Value>(&text).expect(file);
+        let codes: Vec<String> = bedrock_addon_core::schema::read_value(&json).expect(file);
         assert_eq!(codes, crate::vanilla::names::VANILLA_LANGUAGES, "{file}");
     }
 }

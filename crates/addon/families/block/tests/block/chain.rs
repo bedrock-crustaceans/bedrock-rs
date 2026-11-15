@@ -1,11 +1,6 @@
 //! The chain: contiguity, the range model's selection, floor, ceiling and beta; the Value round
 //! trip; history without upgrade; and the deviations the folder lists, each pinned by a test named `deviation`.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 use bedrock_addon_core::diagnostic::{Kind, Severity};
 use bedrock_addon_core::document::{Content, JsonDocument};
 use bedrock_addon_core::load::{LoadContext, LoadOptions};
@@ -214,9 +209,12 @@ fn parse_as_written_keeps_the_old_struct_and_upgrade_gives_the_parse_result() {
     assert!(matches!(written.value(), BlockHistory::V1_16_0(_)));
     assert_eq!(written.parsed_version(), FormatVersion::new(1, 16, 0));
     // Written in its own version, unchanged.
-    let own: bedrock_addon_core::json::Value =
-        facet_json::from_str(&written.to_json().unwrap()).unwrap();
-    let input: bedrock_addon_core::json::Value = facet_json::from_str(&text).unwrap();
+    let own: bedrock_addon_core::json::Value = bedrock_addon_core::json::from_str_jsonc::<
+        bedrock_addon_core::json::Value,
+    >(&written.to_json().unwrap())
+    .unwrap();
+    let input: bedrock_addon_core::json::Value =
+        bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text).unwrap();
     assert_eq!(own, input);
     let upgraded = history::upgrade(written, &cx).expect("upgrades");
     let parsed = Block::parse(&path, text.as_bytes(), &cx).expect("loads");

@@ -2,14 +2,13 @@
 //! last copy of a duplicate key): `json::last_wins` blanks every earlier copy, keeping every
 //! other byte where it was, so spans into the text stay right.
 
-#![allow(clippy::disallowed_methods, clippy::disallowed_types)]
-
 use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::diagnostic::code_for_deserialize_error_kind;
+use bedrock_addon_core::json::parse::{Fault, Options, parse};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, Winner, blank_repeats, first_wins, from_str_jsonc, last_wins,
-    last_wins_except, parse_at,
+    MAX_JSON_DEPTH, Value, Winner, blank_repeats, first_wins, from_str_jsonc, last_wins,
+    last_wins_except,
 };
+use bedrock_addon_core::schema::{Schema, read_value};
 use facet::Facet;
 
 /// `text` with its earlier copies blanked, and the check that only blanks changed.
@@ -26,7 +25,7 @@ fn cleaned(text: &str) -> String {
 }
 
 fn value(text: &str) -> Value {
-    facet_json::from_str_jsonc(text).unwrap()
+    from_str_jsonc(text).unwrap()
 }
 
 #[test]
@@ -68,21 +67,17 @@ fn keys_compare_by_their_value_not_their_spelling() {
 
 #[test]
 fn a_typed_struct_reads_the_last_value_where_facet_refuses_a_second_one() {
-    #[derive(Debug, Facet, PartialEq)]
+    #[derive(Debug, Facet, PartialEq, Schema)]
     struct Description {
         identifier: String,
     }
-    #[derive(Debug, Facet, PartialEq)]
+    #[derive(Debug, Facet, PartialEq, Schema)]
     struct Item {
         description: Description,
     }
     let text = r#"{"description": {"identifier": "a:first", "identifier": "a:last"}}"#;
-    assert!(
-        parse_at::<Item>(JsonSlice::new(text)).is_err(),
-        "facet alone refuses"
-    );
     let text = cleaned(text);
-    let item = parse_at::<Item>(JsonSlice::new(&text)).unwrap();
+    let item: Item = read_value(&value(&text)).unwrap();
     assert_eq!(item.description.identifier, "a:last");
 }
 
@@ -120,9 +115,9 @@ fn a_deep_text_is_scanned_to_the_limit_and_left_alone_beyond_it() {
 
 /// The fault a reader reports for `text` as a family reads it (`last_wins`, then the door),
 /// and the text it read.
-fn fault_after_last_wins(text: &str) -> (facet_json::DeserializeError, String) {
+fn fault_after_last_wins(text: &str) -> (Fault, String) {
     let cleaned = last_wins(text).into_owned();
-    let fault = from_str_jsonc::<Value>(&cleaned)
+    let fault = parse(&cleaned, Options::default())
         .err()
         .unwrap_or_else(|| panic!("`{text}` was read, as `{cleaned}`"));
     (fault, cleaned)
@@ -169,15 +164,13 @@ const FAULTS_IN_A_LOSING_COPY: &[&str] = &[
 fn a_syntax_fault_in_a_copy_that_loses_is_the_document_s_fault() {
     for &text in FAULTS_IN_A_LOSING_COPY {
         // The fault the text has, read as it is written (a value merges copies: it reads on).
-        let written = from_str_jsonc::<Value>(text)
+        let written = parse(text, Options::default())
             .err()
             .unwrap_or_else(|| panic!("`{text}` has no fault"));
         // It lies before the copy that stands: `"a": <a number>}` ends each text.
         let last = text.rfind("\"a\": ").unwrap();
         assert!(
-            written
-                .span
-                .is_some_and(|span| span.offset as usize <= last),
+            written.span.offset as usize <= last,
             "`{text}`: {written:?}"
         );
         let (fault, cleaned) = fault_after_last_wins(text);
@@ -188,8 +181,7 @@ fn a_syntax_fault_in_a_copy_that_loses_is_the_document_s_fault() {
         );
         assert_eq!(fault.span, written.span, "`{text}` as `{cleaned}`");
         assert!(
-            code_for_deserialize_error_kind(&fault.kind, fault.path.is_some(), false).id()
-                == "core/syntax",
+            fault.code(false).id() == "core/syntax",
             "`{text}`: {fault:?}"
         );
         // Kept members of a family's exception are no exception to this.
@@ -314,15 +306,9 @@ fn no_fault_of_a_generated_text_is_lost_to_last_wins() {
 /// without them, not a "duplicate field" before it.
 #[test]
 fn a_copy_that_loses_before_the_fault_is_still_blanked() {
-    #[derive(Debug, Facet)]
-    struct Pair {
-        a: u8,
-        #[facet(default)]
-        b: Option<bool>,
-    }
     let text = r#"{"a": 1, "a": 2, "b": tru}"#;
     assert_eq!(cleaned(text), r#"{        "a": 2, "b": tru}"#);
-    let fault = parse_at::<Pair>(JsonSlice::new(&cleaned(text))).unwrap_err();
+    let fault = parse(&cleaned(text), Options::default()).unwrap_err();
     // (the parser stops on the byte after the letters it took for a literal)
     assert_eq!(fault.span.offset, 25, "{fault:?}");
     // The fault first, then a copy that loses: nothing is blanked past the fault, and the
@@ -332,7 +318,7 @@ fn a_copy_that_loses_before_the_fault_is_still_blanked() {
     // A copy that loses before the fault, another with the fault in it.
     let text = r#"{"b": 1, "b": true, "a": [tru], "a": 2}"#;
     assert_eq!(cleaned(text), r#"{        "b": true, "a": [tru], "a": 2}"#);
-    let fault = parse_at::<Pair>(JsonSlice::new(&cleaned(text))).unwrap_err();
+    let fault = parse(&cleaned(text), Options::default()).unwrap_err();
     assert_eq!(fault.span.offset, 29, "{fault:?}");
 }
 
@@ -373,7 +359,7 @@ fn a_wide_object_is_scanned_in_linear_time() {
     let text = format!("{{\"k99999\": 0, {}, \"k0\": 1}}", members.join(", "));
     let out = last_wins(&text);
     assert_eq!(out.len(), text.len());
-    let value: Value = facet_json::from_str(&out).unwrap();
+    let value: Value = from_str_jsonc(&out).unwrap();
     let object = value.as_object().unwrap();
     assert_eq!(object.len(), 100_000);
     assert_eq!(

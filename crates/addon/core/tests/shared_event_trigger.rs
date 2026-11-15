@@ -77,7 +77,7 @@ fn malformed_triggers_are_read_errors() {
         r#"{"event": "e", "filters": 5}"#,
     ] {
         assert!(
-            read::<EventTrigger>(json).is_err(),
+            read::<EventTrigger>(json).is_none(),
             "{json} must be rejected"
         );
     }

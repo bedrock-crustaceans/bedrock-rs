@@ -26,7 +26,7 @@ fn path(segments: &[&str]) -> JsonPath {
 
 /// The JSON text as a `Value`.
 fn value(json: &str) -> Value {
-    facet_json::from_str_jsonc(json).unwrap()
+    bedrock_addon_core::json::from_str_jsonc(json).unwrap()
 }
 
 /// The read error of `T` for `json`.

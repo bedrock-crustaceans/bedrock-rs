@@ -519,7 +519,8 @@ fn four_thousand_generated_documents_round_trip_or_are_refused() {
                 loaded += 1;
                 assert!(document.diagnostics().is_empty(), "{json}");
                 let written = round_trips(document.value());
-                let value = |text: &str| bedrock_addon_core::json::from_str::<Value>(text).unwrap();
+                let value =
+                    |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap();
                 let latest = document.source_format_version == CullingRules::FORMAT_VERSION;
                 // The recorded rewrites, none with a finding: an array version is
                 // written as a string, a whole cube index written as a float is written as

@@ -143,7 +143,7 @@ fn a_file_built_by_hand_round_trips() {
     let mut built = BlocksJson::new();
     built.entries.insert(
         "demo:lamp".to_owned(),
-        bedrock_addon::json::from_str::<Value>(r#"{"textures": "lamp", "sound": "glass"}"#)
+        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"textures": "lamp", "sound": "glass"}"#)
             .unwrap(),
     );
     let text = built.to_json().unwrap();
@@ -177,8 +177,8 @@ fn format_version_is_written_where_the_author_put_it() {
         let written = round_trips(&document);
         assert_eq!(member_order(&written), member_order(text), "{text}");
         assert_eq!(
-            bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-            bedrock_addon::json::from_str::<Value>(text).unwrap()
+            bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap()
         );
     }
     // A repeated `format_version` is written once, where its last value stands, as every
@@ -496,7 +496,7 @@ fn number_tokens(text: &str) -> Vec<f64> {
 
 /// The root keys of a file and, per entry, its member names, in the order of the text.
 fn member_order(text: &str) -> Vec<(String, Vec<String>)> {
-    let root = bedrock_addon::json::from_str::<Value>(text).unwrap();
+    let root = bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap();
     root.as_object()
         .unwrap()
         .iter()
@@ -569,7 +569,7 @@ fn four_thousand_generated_files_round_trip() {
             .map(|(code, _)| code)
             .filter(|code| matches!(*code, "core/duplicate_identifier" | "core/clamped_value"))
             .collect();
-        let value = |text: &str| bedrock_addon::json::from_str::<Value>(text).unwrap();
+        let value = |text: &str| bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap();
         if rewrites.is_empty() {
             if repeats_a_member {
                 repeated_member += 1;
@@ -807,8 +807,8 @@ fn a_number_beyond_a_double_is_held_as_the_largest_finite_one_and_written_back_d
             .replace("-1e999", "-1.7976931348623157e308")
             .replace("1e999", "1.7976931348623157e308");
         assert_eq!(
-            bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-            bedrock_addon::json::from_str::<Value>(&expected).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(&expected).unwrap(),
             "{text}"
         );
     }
@@ -874,8 +874,8 @@ fn an_integer_beyond_a_double_is_held_as_the_largest_finite_one_deviation() {
         assert_eq!(clamped, [("core/clamped_value", at.to_owned())], "{text}");
         let written = round_trips(&document);
         assert_eq!(
-            bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-            bedrock_addon::json::from_str::<Value>(expected).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+            bedrock_addon::json::from_str_jsonc::<Value>(expected).unwrap(),
             "{text}"
         );
         // Never the digits, as a number or as a string.
@@ -895,8 +895,9 @@ fn an_integer_beyond_a_double_is_held_as_the_largest_finite_one_deviation() {
         document.diagnostics()
     );
     assert_eq!(
-        bedrock_addon::json::from_str::<Value>(&round_trips(&document)).unwrap(),
-        bedrock_addon::json::from_str::<Value>(r#"{"dirt":{"brightness_gamma":1e308}}"#).unwrap()
+        bedrock_addon::json::from_str_jsonc::<Value>(&round_trips(&document)).unwrap(),
+        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"dirt":{"brightness_gamma":1e308}}"#)
+            .unwrap()
     );
     // The client-side view of the exponent is the largest float of the sign, with the
     // reader's own warning beside the clamp's, on the first read and on the read of
@@ -938,8 +939,8 @@ fn a_repeated_key_is_written_once_where_its_last_value_stands() {
         member_order(r#"{"b": {}, "c": {}, "a": {"sound": "z"}}"#)
     );
     assert_eq!(
-        bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-        bedrock_addon::json::from_str::<Value>(r#"{"b": {}, "c": {}, "a": {"sound": "z"}}"#)
+        bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"b": {}, "c": {}, "a": {"sound": "z"}}"#)
             .unwrap()
     );
 }
@@ -962,8 +963,8 @@ fn a_member_repeated_inside_an_entry_is_written_once_where_its_last_value_stands
     let written = round_trips(&document);
     assert_eq!(member_order(&written), member_order(kept));
     assert_eq!(
-        bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-        bedrock_addon::json::from_str::<Value>(kept).unwrap()
+        bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+        bedrock_addon::json::from_str_jsonc::<Value>(kept).unwrap()
     );
     assert_eq!(load_one(text).block("a").sound(), "y");
 }
@@ -977,8 +978,8 @@ fn a_key_is_written_as_the_author_wrote_it() {
     let written = round_trips(&document);
     assert_eq!(member_order(&written), member_order(text));
     assert_eq!(
-        bedrock_addon::json::from_str::<Value>(&written).unwrap(),
-        bedrock_addon::json::from_str::<Value>(text).unwrap()
+        bedrock_addon::json::from_str_jsonc::<Value>(&written).unwrap(),
+        bedrock_addon::json::from_str_jsonc::<Value>(text).unwrap()
     );
     let loaded = load_one(text);
     let lantern = loaded.block("minecraft:sealantern");

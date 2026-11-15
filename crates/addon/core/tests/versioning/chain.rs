@@ -20,6 +20,28 @@ use bedrock_addon_core::versioning::{
 use crate::envelope::{codes, load_toy, load_with};
 use crate::toy::{Marker, Toy, Toy120, ToyBeta, ToyComponent, history, v1_0_0, v1_1_0};
 
+/// `text` read as `T` by the crate's typed reader (`schema::read_value`); `Err` when it does
+/// not read.
+fn typed<T: bedrock_addon_core::schema::FromJson>(text: &str) -> Result<T, ()> {
+    let value = bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+        .map_err(|_| ())?;
+    bedrock_addon_core::schema::read_value::<T>(&value).ok_or(())
+}
+
+/// `value` written on one line by the crate's writer.
+#[allow(dead_code, reason = "not every file writes")]
+fn compact_text<'f, T: facet::Facet<'f>>(
+    value: &T,
+) -> Result<String, bedrock_addon_core::json::EncodeError> {
+    let mut out = Vec::new();
+    let style = bedrock_addon_core::json::WriteStyle {
+        indent: bedrock_addon_core::json::Indent::Compact,
+        trailing_newline: false,
+    };
+    bedrock_addon_core::json::write_json(value, &mut out, style)?;
+    Ok(String::from_utf8(out).unwrap_or_default())
+}
+
 const V100: FormatVersion = FormatVersion::new(1, 0, 0);
 const V110: FormatVersion = FormatVersion::new(1, 1, 0);
 const V120: FormatVersion = FormatVersion::new(1, 2, 0);
@@ -251,8 +273,8 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
     assert_eq!(any.parsed_version(), V110);
     // Written in its own version, envelope included.
     let written = any.to_json().expect("written");
-    let reread: Value = facet_json::from_str(&written).unwrap();
-    let original: Value = facet_json::from_str(&text).unwrap();
+    let reread: Value = typed(&written).unwrap();
+    let original: Value = typed(&text).unwrap();
     assert_eq!(reread, original);
     // An unsupported version is reported.
     let mut d = Diagnostics::default();
@@ -295,7 +317,7 @@ fn the_chain_parses_a_struct_without_upgrading_it() {
 #[test]
 fn a_beta_struct_is_written_with_the_beta_literal() {
     let any = history::ToyHistory::Beta(ToyBeta::default());
-    let written: Value = facet_json::from_str(&any.to_json().unwrap()).unwrap();
+    let written: Value = typed(&any.to_json().unwrap()).unwrap();
     let version = written.as_object().unwrap().get("format_version").unwrap();
     assert_eq!(
         version.as_string().map(facet_value::VString::as_str),

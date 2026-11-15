@@ -103,7 +103,7 @@ where
 /// The value as JSON, written the way documents are.
 pub fn write<T: for<'a> facet::Facet<'a>>(value: &T) -> Value {
     let text = to_json(value).expect("writes");
-    facet_json::from_str::<Value>(&text).expect("the writer's JSON reads back")
+    bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("the writer's JSON reads back")
 }
 
 /// [`write`] with the unknown members a read kept (paths below the value).
@@ -119,7 +119,11 @@ pub fn write_with<T: for<'a> facet::Facet<'a>>(
         bedrock_addon_core::json::WriteStyle::default(),
     )
     .expect("writes");
-    facet_json::from_slice::<Value>(&out).expect("the writer's JSON reads back")
+    bedrock_addon_core::json::parse::parse_bytes(
+        &out,
+        bedrock_addon_core::json::parse::Options::default(),
+    )
+    .expect("the writer's JSON reads back")
 }
 
 /// Strict read, write, strict read again: the two values are equal; returns the first.

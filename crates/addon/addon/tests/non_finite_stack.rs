@@ -26,11 +26,6 @@
 //!
 //! `audit:` lines (shown with `--show-output`) give the outcomes per copy and place.
 
-#![allow(
-    clippy::disallowed_methods,
-    reason = "calls facet-json directly: parses a fixture or written text into a json Value to compare it; not yet moved to the door"
-)]
-
 #[path = "common/two_packs.rs"]
 mod two_packs;
 
@@ -379,9 +374,11 @@ fn findings<S: bedrock_addon::pack::Side>(
 
 #[test]
 fn an_infinity_in_a_held_value_is_found() {
-    let finite: Value = facet_json::from_str(r#"{"a": [1, {"b": 1.5e300}]}"#).unwrap();
+    let finite: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"a": [1, {"b": 1.5e300}]}"#).unwrap();
     assert_eq!(infinity_in(&finite), None);
-    let infinite: Value = facet_json::from_str(r#"{"a": [1, {"b": -1e999}]}"#).unwrap();
+    let infinite: Value =
+        bedrock_addon::json::from_str_jsonc::<Value>(r#"{"a": [1, {"b": -1e999}]}"#).unwrap();
     assert_eq!(infinity_in(&infinite).as_deref(), Some("/a/1/b"));
 }
 
