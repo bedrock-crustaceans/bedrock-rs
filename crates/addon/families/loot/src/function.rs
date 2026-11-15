@@ -3,22 +3,29 @@
 use super::{LootCondition, RandomValueBounds};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, LootTablePath};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::IntRange;
+
+use crate::read;
 
 /// One function of an item entry.
 ///
 /// JSON: `{"function": name, "conditions"?: [Condition], …parameters}`. Everything up to and
 /// including the last `:` of `function` is not part of the name, so `"minecraft:set_count"`
 /// and `"set_count"` are the same function; a name vanilla does not know drops the function.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::after_read = read::function_namespace)]
 pub struct LootFunction {
     /// The text of JSON `function` up to and including its last `:` (`"minecraft:"`), kept for
     /// write-back; `None` when the name has no `:`.
+    #[facet(skip)]
     pub namespace: Option<String>,
-    /// The function (the rest of JSON `function`) and its parameters.
-    pub kind: FunctionKind,
     /// JSON `conditions`: all must hold for the function to apply.
+    #[facet(schema::read_with = read::conditions)]
     pub conditions: Option<Vec<LootCondition>>,
+    /// The function (the rest of JSON `function`) and its parameters.
+    #[facet(flatten)]
+    pub kind: FunctionKind,
     /// Members the function does not read (vanilla's own `set_count.add`,
     /// `looting_enchant.limit`), kept for write-back.
     pub extra: UnknownMembers,
@@ -28,7 +35,14 @@ pub struct LootFunction {
 ///
 /// Every parameter is optional; the default vanilla applies is on the accessor or in the field's
 /// documentation.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    tag = "function",
+    rename_all = "snake_case",
+    schema::tag_with = read::function_name,
+    schema::after_read = read::function_rules
+)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum FunctionKind {
     /// `set_count`: the stack size.
@@ -58,15 +72,20 @@ pub enum FunctionKind {
     /// `enchant_book_for_trading`: a librarian's enchanted book and its price.
     EnchantBookForTrading {
         /// JSON `base_cost` (default 2).
+        #[facet(schema::read_with = read::int)]
         base_cost: Option<i32>,
         /// JSON `per_level_cost` (default 3).
+        #[facet(schema::read_with = read::int)]
         per_level_cost: Option<i32>,
         /// JSON `base_random_cost` (default 5).
+        #[facet(schema::read_with = read::int)]
         base_random_cost: Option<i32>,
         /// JSON `per_level_random_cost` (default 10).
+        #[facet(schema::read_with = read::int)]
         per_level_random_cost: Option<i32>,
         /// JSON `enchantments`: the enchantments to pick from; an option that names no
         /// enchantment is dropped.
+        #[facet(schema::read_with = read::enchant_options, schema::reads_null)]
         enchantments: Option<Vec<EnchantOption>>,
     },
     /// `enchant_randomly`: one random enchantment.
@@ -102,11 +121,14 @@ pub enum FunctionKind {
     /// `set_banner_details`: a banner's type, base colour and patterns.
     SetBannerDetails {
         /// JSON `type`: `"default"`, `"illager_captain"` or 0..1 (default `Default`).
+        #[facet(rename = "type", schema::reads_null)]
         banner_type: Option<BannerType>,
         /// JSON `base_color`: a colour name or 0..15 (default `White`).
+        #[facet(schema::reads_null)]
         base_color: Option<ItemColor>,
         /// JSON `patterns`: at most six patterns, only on a default banner. A single object is
         /// read as one pattern.
+        #[facet(schema::read_with = schema::read_later)]
         patterns: Option<Vec<BannerPattern>>,
     },
     /// `explosion_decay`: items lost to an explosion.
@@ -119,12 +141,14 @@ pub enum FunctionKind {
     /// `set_lore`: the item's lore lines.
     SetLore {
         /// JSON `lore`: an array of strings or a single string (one line).
+        #[facet(schema::read_with = read::strings)]
         lore: Option<Vec<String>>,
     },
     /// `specific_enchants`: these enchantments.
     SpecificEnchants {
         /// JSON `enchants`: an array (or a single value) of enchantment ids or `{id, level}`
         /// objects.
+        #[facet(schema::read_with = read::specific_enchants)]
         enchants: Option<Vec<SpecificEnchant>>,
     },
     /// `fill_container`: fills the container item from another table.
@@ -145,11 +169,13 @@ pub enum FunctionKind {
         /// JSON `title` (default `""`).
         title: Option<String>,
         /// JSON `pages`.
+        #[facet(schema::read_with = read::strings)]
         pages: Option<Vec<String>>,
     },
     /// `set_stew_effect`: a suspicious stew's effects.
     SetStewEffect {
         /// JSON `effects`: an array of `{id}` objects or a single one.
+        #[facet(schema::read_with = read::stew_effects)]
         effects: Option<Vec<StewEffect>>,
     },
     /// `set_ominous_bottle_amplifier`: an ominous bottle's amplifier.
@@ -173,6 +199,7 @@ pub enum FunctionKind {
     /// looted block entity's data to the stack.
     CarryOverBlockEntityData {
         /// JSON `dynamic_properties`: also copy the dynamic properties (default `false`).
+        #[facet(schema::read_with = read::dynamic_properties, schema::reads_null)]
         dynamic_properties: Option<bool>,
     },
 }
@@ -181,7 +208,7 @@ pub enum FunctionKind {
 ///
 /// JSON `data` is read first, then `values`; with neither the range is 0..0 and vanilla warns.
 /// Which key was used decides how vanilla applies the value ([`ItemData::kind`]).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct ItemData {
     /// JSON `data`.
     pub data: Option<RandomValueBounds>,
@@ -205,20 +232,23 @@ pub enum ItemDataKind {
 ///
 /// JSON: `{"name": string, "min"?: int, "max"?: int}`. `min` and `max` default to the
 /// enchantment's own lowest and highest level; vanilla clamps them into that range.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct EnchantOption {
     /// JSON `name`: the enchantment.
     pub name: String,
     /// JSON `min` (read only when an integer).
+    #[facet(schema::read_with = read::whole)]
     pub min: Option<i32>,
     /// JSON `max` (read only when an integer).
+    #[facet(schema::read_with = read::whole)]
     pub max: Option<i32>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
 }
 
 /// A banner's type.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum BannerType {
     /// `"default"` or 0.
@@ -229,7 +259,8 @@ pub enum BannerType {
 }
 
 /// One of the 16 item colours: a name or its index 0..15.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum ItemColor {
     /// `"black"` or 0.
@@ -270,11 +301,12 @@ pub enum ItemColor {
 /// One banner pattern.
 ///
 /// JSON: `{"pattern": string, "color"?: colour}`; a colour that is not one is white.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct BannerPattern {
     /// JSON `pattern`: the pattern's name.
     pub pattern: String,
     /// JSON `color` (default `White`).
+    #[facet(schema::read_with = read::pattern_color, schema::reads_null)]
     pub color: Option<ItemColor>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
@@ -284,11 +316,13 @@ pub struct BannerPattern {
 ///
 /// JSON: an enchantment id (level 1) or `{"id": string, "level"?: IntRange = 1}`. An id that
 /// names no enchantment is dropped.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct SpecificEnchant {
     /// The id (JSON the string, or `id`).
+    #[facet(default)]
     pub id: String,
     /// JSON `level` (default 1); `None` for the string form.
+    #[facet(schema::read_with = read::int_range)]
     pub level: Option<IntRange>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
@@ -297,13 +331,17 @@ pub struct SpecificEnchant {
 /// One effect of `set_stew_effect`.
 ///
 /// JSON: `{"id": int = 0}`; the id is not checked when loading.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct StewEffect {
     /// JSON `id`.
+    #[facet(schema::read_with = read::int)]
     pub id: Option<i32>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
 }
+
+bedrock_addon_core::impl_schema_leaf!(BannerType, ItemColor);
+bedrock_addon_core::impl_no_molang!(BannerType, ItemColor);
 
 #[cfg(test)]
 mod hash_tests {

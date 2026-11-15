@@ -7,8 +7,9 @@
 //! code no list names, the locale overlays, the pack keywords) and says what the game
 //! ignores.
 //!
-//! The reader stays a hand walk over the two JSON lists, read as vanilla's JSON library reads them:
-//! no schema stands behind them.
+//! Each list is read as vanilla's JSON library iterates it (an array's elements, an object's
+//! values in key order), by a function the list's one-field type names (`schema::read_with`):
+//! the codes once each, the pairs by their first two elements.
 
 mod content;
 mod read;

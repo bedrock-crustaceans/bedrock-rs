@@ -15,3 +15,9 @@ error: `schema::reads_null` reads a `null` as a value: an `Option` field
    |
 10 |     #[facet(schema::reads_null)]
    |             ^^^^^^
+
+error: `schema::drop` reads a list: a `Vec` field (or an `Option` of one)
+  --> tests/ui/schema/shape_keys.rs:12:13
+   |
+12 |     #[facet(schema::drop)]
+   |             ^^^^^^

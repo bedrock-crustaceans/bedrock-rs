@@ -130,6 +130,14 @@ facet::define_attr_grammar! {
         /// `FromJson`: `fn(&Node<'_>, &mut Read<'_>) -> Option<T>`, `T` the field's type (an
         /// `Option` field's inner type), called for a member that is written.
         ReadWith(arbitrary),
+        /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
+        /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
+        /// at the object, tells what it refuses (the game's own words for a name that is none)
+        /// and returns the variant's JSON name, or `None` once it has told. In place of the
+        /// string at the tag member, for a tag the game normalises (a namespace dropped, an
+        /// engine that has no such name) or words its own way. The enum may be flattened into a
+        /// struct (`flatten`), which reads the variant where it declares the enum.
+        TagWith(arbitrary),
         /// `required` (marker, an `Option` field): the document must write the member, though
         /// its value is optional in the type: absence is a missing required member.
         Required,
@@ -162,6 +170,11 @@ facet::define_attr_grammar! {
         /// value: an array's elements, an object's values in key order, nothing for any other;
         /// a member that is no array is told a wrong type and read so.
         Iterated,
+        /// `drop` (marker, a list field): an element that fails to read is left out alone, told
+        /// by its own findings, and the rest is kept, whatever the reading does with a failed
+        /// element: the game reads each element by itself and skips the one it cannot take. The
+        /// file's later elements are named by the places they have in the file.
+        Drop,
         /// `reads_null` (marker, an `Option` field): a `null` member is a value like any other,
         /// read by the field's type (or `read_with`) as `Some`, where the reading's null rule
         /// would make it `None`: the game's reader asks for the member and takes what is there

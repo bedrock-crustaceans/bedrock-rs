@@ -1,0 +1,11 @@
+error: `schema::tag_with` names the variant of an internally tagged enum: put it on one
+ --> tests/ui/schema/tag_with.rs:5:9
+  |
+5 | #[facet(schema::tag_with = name_of)]
+  |         ^^^^^^
+
+error: `schema::tag_with` names the variant of an internally tagged enum (`tag = ".."`): an externally tagged one is named by its key
+  --> tests/ui/schema/tag_with.rs:11:9
+   |
+11 | #[facet(schema::tag_with = name_of)]
+   |         ^^^^^^

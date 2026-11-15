@@ -5,8 +5,12 @@
 //! `format_version`: `LootTable` is one unversioned struct and loot is not a version
 //! family.
 //!
-//! The reader stays a hand walk, member by member, because vanilla's loot readers are one: no
-//! schema stands behind them for a typed read to follow.
+//! The types are the schema: each derives its read (`#[derive(Facet, Schema)]`), which reads
+//! member by member in the order vanilla's readers ask for them, and tells what vanilla's
+//! `asInt`/`asFloat`/`asBool`/`asString` and its drop and keep rules tell. What the keys cannot
+//! say is a function the type names: the leaf readers of the integer and string forms, the
+//! name of an entry's, function's or condition's variant, and the rules over a function's
+//! parameters (`read`).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -32,17 +36,20 @@ use bedrock_addon_core::id::{ItemId, LootTablePath};
 use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::{self, CollectionLoader, FileCopy, LoadContext, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A loot table: the pools a drop, a chest or a gameplay event rolls.
 ///
 /// JSON: `{"pools": [Pool]}`. Vanilla reads only `pools`; every other root member (a
 /// `format_version`, the `type` of vanilla's own trade tables) is ignored and kept in
 /// [`extra`](Self::extra). There is no version: every file loads with the same rules.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
+#[facet(schema::quiet = "format_version")]
 #[doc(alias = "loot_tables")]
 pub struct LootTable {
     /// JSON `pools`: the pools, each rolled on its own. An object in their place has its member
     /// values read as the pools, as vanilla iterates it.
+    #[facet(schema::read_with = read::pools)]
     pub pools: Option<Vec<Pool>>,
     /// Root members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
@@ -52,7 +59,8 @@ pub struct LootTable {
 ///
 /// JSON: `{"rolls", "bonus_rolls"?, "conditions"?, "tiers"?, "entries"}`. A pool whose
 /// conditions fail does not roll.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
+#[facet(schema::after_read = read::pool_rules)]
 pub struct Pool {
     /// JSON `rolls`: how many entries are picked; a number or `{min, max}`. Absent, the pool
     /// rolls 0 times ([`rolls`](Self::rolls)).
@@ -60,11 +68,13 @@ pub struct Pool {
     /// JSON `bonus_rolls`: extra rolls per point of luck; a number or `{min, max}`.
     pub bonus_rolls: Option<RandomValueBounds>,
     /// JSON `conditions`: all must hold for the pool to roll.
+    #[facet(schema::read_with = read::conditions)]
     pub conditions: Option<Vec<LootCondition>>,
     /// JSON `tiers`: picks by tier instead of by weight.
     pub tiers: Option<Tiers>,
     /// JSON `entries`: what the pool picks from. Vanilla requires an array; without one the
     /// pool is kept with no entries.
+    #[facet(schema::read_with = read::entries, schema::reads_null)]
     pub entries: Option<Vec<Entry>>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,
@@ -73,11 +83,13 @@ pub struct Pool {
 /// A pool's tier selection.
 ///
 /// JSON: `{"initial_range": int = 0, "bonus_rolls": int = 0, "bonus_chance": float = 0.0}`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct Tiers {
     /// JSON `initial_range` (default 0, [`initial_range`](Self::initial_range)).
+    #[facet(schema::read_with = read::int)]
     pub initial_range: Option<i32>,
     /// JSON `bonus_rolls` (default 0, [`bonus_rolls`](Self::bonus_rolls)).
+    #[facet(schema::read_with = read::int)]
     pub bonus_rolls: Option<i32>,
     /// JSON `bonus_chance` (default 0.0, [`bonus_chance`](Self::bonus_chance)).
     pub bonus_chance: Option<f32>,
@@ -90,18 +102,23 @@ pub struct Tiers {
 /// JSON: `{"type": "item" | "loot_table" | "empty", "weight"?, "quality"?, "conditions"?,
 /// "pools"?, …}`. An entry with another `type` is dropped. `weight` and `quality` are not
 /// range-checked: vanilla accepts 0 and negative values.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Entry {
-    /// JSON `type` and the members it adds.
-    pub kind: EntryKind,
     /// JSON `weight` (default 1, [`weight`](Self::weight)).
+    #[facet(schema::read_with = read::int)]
     pub weight: Option<i32>,
     /// JSON `quality` (default 0, [`quality`](Self::quality)).
+    #[facet(schema::read_with = read::int)]
     pub quality: Option<i32>,
     /// JSON `conditions`: all must hold for the entry to be picked.
+    #[facet(schema::read_with = read::conditions)]
     pub conditions: Option<Vec<LootCondition>>,
+    /// JSON `type` and the members it adds.
+    #[facet(flatten)]
+    pub kind: EntryKind,
     /// JSON `pools`: an inline table nested in the entry (a sub-table), read with the rules of
     /// a table's root.
+    #[facet(schema::read_with = read::pools)]
     pub pools: Option<Vec<Pool>>,
     /// Members vanilla does not read (vanilla's own `aux_val`, `auxVal`, `count`), kept for
     /// write-back.
@@ -109,24 +126,30 @@ pub struct Entry {
 }
 
 /// What an entry gives: the JSON `type` and its members.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(tag = "type", schema::tag_with = read::entry_type)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum EntryKind {
     /// `"type": "item"`: an item stack.
+    #[facet(rename = "item")]
     Item {
         /// JSON `name`: the item. A name that names no item keeps the entry (it still counts
         /// for the weights) and gives nothing.
         name: Option<ItemId>,
         /// JSON `functions`: applied to the stack in order.
+        #[facet(schema::read_with = read::functions)]
         functions: Option<Vec<LootFunction>>,
     },
     /// `"type": "loot_table"`: the result of another table.
+    #[facet(rename = "loot_table")]
     LootTable {
         /// JSON `name`: the referenced table's path, as written. Everything up to and
         /// including the last `:` is not part of the path ([`Entry::table`]).
         name: Option<LootTablePath>,
     },
     /// `"type": "empty"`: nothing.
+    #[facet(rename = "empty")]
     Empty,
 }
 
@@ -134,11 +157,14 @@ pub enum EntryKind {
 ///
 /// JSON: a number (both bounds) or `{"min": float = 0.0, "max": float = 0.0}`. The bounds are
 /// floats and are not ordered: `{"min": 3, "max": 1}` is kept as written.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum RandomValueBounds {
     /// A number: `min = max`.
     Exact(f32),
-    /// `{"min", "max"}`; a bound left out is 0.0.
+    /// `{"min", "max"}`; a bound left out is 0.0. Other members are told and not kept.
+    #[facet(schema::unknown = "report")]
     Range {
         /// JSON `min` ([`RandomValueBounds::min`]).
         min: Option<f32>,

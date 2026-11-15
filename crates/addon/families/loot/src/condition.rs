@@ -2,16 +2,20 @@
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::{EntityId, ItemId};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::IntRange;
+
+use crate::read;
 
 /// One condition.
 ///
 /// JSON: `{"condition": name, …parameters}`. The name is matched exactly (no namespace is
 /// stripped); vanilla drops a condition it does not know, so the pool, entry or function it
 /// would have guarded is not gated by it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct LootCondition {
     /// The condition (JSON `condition`) and its parameters.
+    #[facet(flatten)]
     pub kind: ConditionKind,
     /// Members the condition does not read, kept for write-back.
     pub extra: UnknownMembers,
@@ -20,7 +24,13 @@ pub struct LootCondition {
 /// The conditions of vanilla's factory map, with their parameters (in the game's order).
 ///
 /// Every parameter is optional; vanilla reads each with its default and checks none.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    tag = "condition",
+    rename_all = "snake_case",
+    schema::tag_with = read::condition_name
+)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum ConditionKind {
     /// `killed_by_player`.
@@ -70,11 +80,13 @@ pub enum ConditionKind {
     /// `has_mark_variant`.
     HasMarkVariant {
         /// JSON `value` (default 0).
+        #[facet(schema::read_with = read::int)]
         value: Option<i32>,
     },
     /// `has_variant`.
     HasVariant {
         /// JSON `value` (default 0).
+        #[facet(schema::read_with = read::int)]
         value: Option<i32>,
     },
     /// `match_tool`: the tool used.
@@ -82,16 +94,22 @@ pub enum ConditionKind {
         /// JSON `item` (default `""`).
         item: Option<ItemId>,
         /// JSON `count` (default every count).
+        #[facet(schema::read_with = read::int_range)]
         count: Option<IntRange>,
         /// JSON `durability` (default every durability).
+        #[facet(schema::read_with = read::int_range)]
         durability: Option<IntRange>,
         /// JSON `enchantments`.
+        #[facet(schema::drop)]
         enchantments: Option<Vec<ToolEnchantment>>,
         /// JSON `minecraft:match_tool_filter_any`: item tags, any of which the tool has.
+        #[facet(rename = "minecraft:match_tool_filter_any", schema::read_with = read::strings)]
         filter_any: Option<Vec<String>>,
         /// JSON `minecraft:match_tool_filter_all`: item tags, all of which the tool has.
+        #[facet(rename = "minecraft:match_tool_filter_all", schema::read_with = read::strings)]
         filter_all: Option<Vec<String>>,
         /// JSON `minecraft:match_tool_filter_none`: item tags, none of which the tool has.
+        #[facet(rename = "minecraft:match_tool_filter_none", schema::read_with = read::strings)]
         filter_none: Option<Vec<String>>,
     },
     /// `damaged_by_entity`.
@@ -123,6 +141,7 @@ pub enum ConditionKind {
         /// JSON `domain`: the property name (default `""`).
         domain: Option<String>,
         /// JSON `value` (default 0).
+        #[facet(schema::read_with = read::int)]
         value: Option<i32>,
     },
     /// `float_property`.
@@ -149,11 +168,12 @@ pub enum ConditionKind {
 /// One enchantment `match_tool` requires.
 ///
 /// JSON: `{"enchantment": string, "levels": IntRange}`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct ToolEnchantment {
     /// JSON `enchantment`.
     pub enchantment: Option<String>,
     /// JSON `levels`.
+    #[facet(schema::read_with = read::int_range)]
     pub levels: Option<IntRange>,
     /// Members vanilla does not read, kept for write-back.
     pub extra: UnknownMembers,

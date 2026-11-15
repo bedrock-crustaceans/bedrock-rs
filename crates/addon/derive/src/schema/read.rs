@@ -108,8 +108,9 @@ fn taken(info: &FieldInfo) -> bool {
 }
 
 /// `knows`: the JSON names of the fields, a flattened struct's included, of the member
-/// `__key`.
-pub(super) fn knows(infos: &[FieldInfo]) -> TokenStream {
+/// `__key`. A read (`dynamic`) asks the flattened types what they know of its object
+/// (`__object`), where an internally tagged enum knows the members of the variant it read.
+pub(super) fn knows(infos: &[FieldInfo], dynamic: bool) -> TokenStream {
     let p = paths();
     let fields = &p.fields;
     let names: Vec<&String> = infos
@@ -127,7 +128,11 @@ pub(super) fn knows(infos: &[FieldInfo]) -> TokenStream {
         .filter(|info| info.inline && taken(info))
         .map(|info| {
             let ty = info.ty;
-            quote_spanned!(ty.span()=> || <#ty as #fields>::knows(__key))
+            if dynamic {
+                quote_spanned!(ty.span()=> || <#ty as #fields>::knows_given(__object, __key))
+            } else {
+                quote_spanned!(ty.span()=> || <#ty as #fields>::knows(__key))
+            }
         });
     quote!(#own #(#flattened)*)
 }
@@ -154,6 +159,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             ));
         }
     }
+    validate_drop(info, errors);
     validate_keys(info, errors);
     if let Some(span) = attrs.reads_null
         && (info.option.is_none() || attrs.flatten)
@@ -219,6 +225,27 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                  members no field takes",
             ));
         }
+    }
+}
+
+/// The refusals of `schema::drop`: a field that is no list, or one with its own read.
+fn validate_drop(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let held = info.option.unwrap_or(info.ty);
+    let Some(span) = attrs.drop else {
+        return;
+    };
+    if ty::name(held).is_none_or(|name| name != "Vec") {
+        errors.push(Error::new(
+            span,
+            "`schema::drop` reads a list: a `Vec` field (or an `Option` of one)",
+        ));
+    } else if attrs.read_with.is_some() {
+        errors.push(Error::new(
+            span,
+            "a field with `schema::read_with` is read by its function, which reads the list its \
+             own way",
+        ));
     }
 }
 
@@ -368,14 +395,14 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
     };
     // The field's own read: its `read_with`, a list it iterates, or none (its type's).
     let iterated = info.attrs.iterated.is_some();
-    let list = info
-        .attrs
-        .iterated
-        .and_then(|_| ty::elements(held))
+    let dropping = info.attrs.drop.is_some();
+    let list = (iterated || dropping)
+        .then(|| ty::elements(held))
+        .flatten()
         .map(|element| {
             quote! {
                 |__node: &#node<'_>, __read: &mut #read<'_>| {
-                    #reader::iterated::<#element>(__node, __read)
+                    #reader::list::<#element>(__node, __read, #iterated, #dropping)
                 }
             }
         });
@@ -519,13 +546,16 @@ fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) ->
 /// The body of a read of `fields` from `__object`, evaluating to `Option<#construct ..>`, with
 /// `__object`, `__read`, `__unknown` and `__tag` in scope (`Fields::read_fields`' parameters);
 /// `knows` is the function that names the fields' members.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of field and variant"
+)]
 fn fields_body(
     construct: &TokenStream,
     fields: &Fields,
     infos: &[FieldInfo],
     rule: Option<&String>,
     quiet: &[String],
-    knows: &TokenStream,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -542,18 +572,42 @@ fn fields_body(
     let extra_arg = extra_arg(extra);
     let (mut slots, mut arms, mut finishes, mut flattened, mut flat_skips) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    let (mut flat_slots, mut flat_arms) = (Vec::new(), Vec::new());
     let mut kept = Vec::new();
     for info in infos.iter().filter(|info| taken(info)) {
         let index = index_of(info);
         if info.inline {
             let (ty, value) = (info.ty, format_ident!("__v{index}"));
+            let slot = format_ident!("__f{index}");
+            // An internally tagged enum is read where the object has its tag (where a read in
+            // declared order asks for it), a struct after the members.
+            flat_slots.push(quote_spanned! {ty.span()=>
+                let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
+                    ::core::option::Option::None;
+            });
+            flat_arms.push(quote_spanned! {ty.span()=>
+                _ if ::core::option::Option::Some(__key) == <#ty as #fields_trait>::TAG => {
+                    if #slot.is_none() {
+                        #slot = ::core::option::Option::Some(
+                            <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
+                        );
+                    }
+                    true
+                }
+            });
             flattened.push(quote_spanned! {ty.span()=>
                 let #value = #reader::flattened(
-                    <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
+                    match #slot {
+                        ::core::option::Option::Some(__read_flat) => __read_flat,
+                        ::core::option::Option::None => {
+                            <#ty as #fields_trait>::read_fields(__object, __read, false, __tag)
+                        }
+                    },
                     &mut __ok,
                 );
             });
-            flat_skips.push(quote!(_ if <#ty as #fields_trait>::knows(__key) => true,));
+            flat_skips
+                .push(quote!(_ if <#ty as #fields_trait>::knows_given(__object, __key) => true,));
             continue;
         }
         let FieldRead {
@@ -573,15 +627,47 @@ fn fields_body(
     });
     let build = built_value(construct, fields, infos);
     let (names, gates) = member_names_and_gates(infos);
+    let knows = knows(infos, true);
     let unknown_member = unknown_member(&extra_arg, quiet);
+    // A flattened enum whose variant failed (a tag that names none) fails the read of its owner
+    // there: the members after it, the unknown ones and the missing ones are not told.
+    let abandoned = infos
+        .iter()
+        .filter(|info| info.inline && taken(info))
+        .map(|info| {
+            let slot = format_ident!("__f{}", index_of(info));
+            quote!(|| ::core::matches!(#slot, ::core::option::Option::Some(::core::option::Option::None)))
+        })
+        .collect::<Vec<_>>();
+    let (give_up, unknown_last, abandon) = if abandoned.is_empty() {
+        (quote!(), quote!(), quote!())
+    } else {
+        (
+            quote!(if false #(#abandoned)* { return true; }),
+            quote!(let __abandoned = false #(#abandoned)*;),
+            quote!(if __abandoned {
+                __object.abandon();
+            }),
+        )
+    };
+    let unknown_after = if abandoned.is_empty() {
+        quote!(#reader::read_unknown_last(__object, __read, __unknown, &__declared, #unknown_member);)
+    } else {
+        quote! {
+            if !__abandoned {
+                #reader::read_unknown_last(__object, __read, __unknown, &__declared, #unknown_member);
+            }
+        }
+    };
     quote! {
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
         #(#slots)*
+        #(#flat_slots)*
         let __declared = #reader::Declared {
             names: &[#(#names),*],
             gates: &[#(#gates),*],
-            knows: #knows,
+            knows: |__key: &str| -> bool { #knows },
             tag: __tag,
         };
         #reader::read_members(
@@ -590,9 +676,11 @@ fn fields_body(
             __unknown,
             &__declared,
             |__key: &str, __member: ::core::option::Option<&#node<'_>>, __read: &mut #read<'_>| -> bool {
+                #give_up
                 match __key {
                     #(#arms)*
                     _ if ::core::option::Option::Some(__key) == __tag => true,
+                    #(#flat_arms)*
                     #(#flat_skips)*
                     _ => false,
                 }
@@ -601,10 +689,12 @@ fn fields_body(
         );
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
-        #reader::read_unknown_last(__object, __read, __unknown, &__declared, #unknown_member);
+        #unknown_last
+        #unknown_after
         // Under the game's schema tree an error raised while the members were read fails the
         // struct, and its missing members are then not told.
         let mut __ok = __object.settle(__read);
+        #abandon
         #(#flattened)*
         #(#finishes)*
         if !__ok {
@@ -628,13 +718,25 @@ fn unknown_member(extra_arg: &TokenStream, quiet: &[String]) -> TokenStream {
 }
 
 /// The members a declaration-order read asks for, in declaration order, and the ones a struct
-/// reads from a format version on.
-fn member_names_and_gates<'a>(infos: &'a [FieldInfo<'_>]) -> (Vec<&'a String>, Vec<TokenStream>) {
-    let own = || infos.iter().filter(|info| taken(info) && !info.inline);
+/// reads from a format version on. A flattened type is asked for by its tag, where it declares
+/// it (an empty name for a type with none, which is read after the members).
+fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<TokenStream>) {
+    let (reader, fields) = (paths().reader, paths().fields);
+    let own = || infos.iter().filter(|info| taken(info));
     let names = own()
-        .flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()))
+        .flat_map(|info| {
+            if info.inline {
+                let ty = info.ty;
+                return vec![quote_spanned!(ty.span()=> #reader::tag_name(<#ty as #fields>::TAG))];
+            }
+            std::iter::once(&info.json)
+                .chain(info.attrs.alias.as_ref())
+                .map(|name| quote!(#name))
+                .collect()
+        })
         .collect();
     let gates = own()
+        .filter(|info| !info.inline)
         .filter_map(|info| {
             let version = format_version(info.attrs.since_format?);
             let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
@@ -668,6 +770,10 @@ fn after_read(container: &ContainerAttrs) -> Option<TokenStream> {
 
 /// The read of a struct: `FromJson` (the object, then its fields) and `Fields`; a transparent
 /// newtype reads as its one field.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of field and variant"
+)]
 pub(super) fn struct_read(
     target: &Target,
     fields: &Fields,
@@ -731,7 +837,17 @@ pub(super) fn struct_read(
             }
         };
     }
-    let knows = knows(infos);
+    let knows = knows(infos, false);
+    // A struct that flattens another asks it what its object's members are (an internally
+    // tagged enum knows the variant it read).
+    let knows_given = infos.iter().any(|info| info.inline).then(|| {
+        let given = self::knows(infos, true);
+        quote! {
+            fn knows_given(__object: &#object<'_>, __key: &str) -> bool {
+                #given
+            }
+        }
+    });
     let after_read = after_read(container);
     let body = fields_body(
         &quote!(#ident),
@@ -739,7 +855,6 @@ pub(super) fn struct_read(
         infos,
         container.unknown.as_ref(),
         &container.quiet,
-        &quote!(<Self as #fields_trait>::knows),
     );
     quote! {
         #[automatically_derived]
@@ -766,6 +881,8 @@ pub(super) fn struct_read(
             fn knows(__key: &str) -> bool {
                 #knows
             }
+
+            #knows_given
 
             #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
             fn read_fields(
@@ -850,14 +967,12 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
     let (generics, where_clause) = target.fn_generics(&from_json);
     let v = &variant.variant.ident;
     let name = format_ident!("__variant_{index}");
-    let knows = knows(variant.fields);
     let body = fields_body(
         &quote!(#ident::#v),
         &variant.variant.fields,
         variant.fields,
         variant.unknown.as_ref(),
         &[],
-        &quote!(|__key: &str| -> bool { #knows }),
     );
     quote! {
         #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
@@ -974,12 +1089,20 @@ pub(super) fn untagged_read(
     }
 }
 
-/// The read of an internally tagged enum (`tag = ".."`): the variant its tag member names, its
-/// members beside the tag.
+/// The read of an internally tagged enum (`tag = ".."`): the variant its tag member names (or
+/// `tag_with` says), its members beside the tag. `Fields` is the read of the variant from an
+/// object the enum may share with the struct that flattens it, `FromJson` opens the object and
+/// tells the unknown members of the variant.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of field and variant"
+)]
 pub(super) fn tagged_read(
     target: &Target,
     tag: &str,
     invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    tag_with: Option<&(syn::Expr, proc_macro2::Span)>,
+    after_read: Option<&(syn::Expr, proc_macro2::Span)>,
     variants: &[ReadVariant],
 ) -> TokenStream {
     let Paths {
@@ -987,49 +1110,108 @@ pub(super) fn tagged_read(
         read,
         fields: fields_trait,
         from_json,
+        object,
         reader,
         expected,
-        ..
     } = paths();
     let invalid = invalid_code(invalid);
+    let with = tag_with.map_or_else(
+        || quote!(::core::option::Option::None),
+        |(with, _)| quote!(::core::option::Option::Some(#with)),
+    );
     let fns = variants
         .iter()
         .enumerate()
         .filter(|(_, v)| matches!(payload(v), Payload::Struct | Payload::Unit))
         .map(|(index, v)| variant_fn(target, index, v));
-    let header = target.impl_for(&from_json, Some(&from_json));
+    // The rule over the variant just read, with the object as written.
+    let after = after_read.map(|(after, _)| {
+        quote! {
+            if let ::core::option::Option::Some(__built) = &mut __value {
+                (#after)(__built, __object.node(), __read);
+            }
+        }
+    });
+    let from_json_header = target.impl_for(&from_json, Some(&from_json));
+    let fields_header = target.impl_for(&fields_trait, Some(&from_json));
+    // What the enum knows of an object's members: its tag, and those of every variant (the
+    // variant read, once it is).
+    let knowing: Vec<TokenStream> = variants.iter().map(|v| knows(v.fields, false)).collect();
+    let names: Vec<&String> = variants.iter().map(|v| &v.name).collect();
     let arms = variants.iter().enumerate().map(|(index, v)| {
         let json = &v.name;
         let name = &v.variant.ident;
         let fn_name = format_ident!("__variant_{index}");
+        let known = &knowing[index];
         let value = match payload(v) {
             Payload::Unit | Payload::Struct => {
-                quote!(#fn_name(&__object, __read, true, ::core::option::Option::Some(#tag)))
+                quote!(#fn_name(__object, __read, __unknown, ::core::option::Option::Some(#tag)))
             }
             Payload::Newtype(ty, _) => quote_spanned! {ty.span()=>
-                <#ty as #fields_trait>::read_fields(&__object, __read, true, ::core::option::Option::Some(#tag))
+                <#ty as #fields_trait>::read_fields(__object, __read, __unknown, ::core::option::Option::Some(#tag))
                     .map(Self::#name)
             },
         };
-        quote!(#json => #value,)
+        quote! {
+            #json => {
+                __object.choose(|__key: &str| -> bool { __key == #tag || #known });
+                #value
+            }
+        }
     });
     quote! {
         #[automatically_derived]
-        #header {
+        #from_json_header {
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Object);
 
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                let __object = #object::open(__node, __read)?;
+                let __value = <Self as #fields_trait>::read_fields(
+                    &__object,
+                    __read,
+                    true,
+                    ::core::option::Option::None,
+                );
+                __object.close(__read);
+                __value
+            }
+        }
+
+        #[automatically_derived]
+        #fields_header {
+            const TAG: ::core::option::Option<&'static str> = ::core::option::Option::Some(#tag);
+
+            const VARIANTS: &'static [&'static str] = &[#(#names),*];
+
+            fn knows(__key: &str) -> bool {
+                __key == #tag #(|| #knowing)*
+            }
+
+            fn knows_given(__object: &#object<'_>, __key: &str) -> bool {
+                match __object.chosen_knows(__key) {
+                    ::core::option::Option::Some(__known) => __known,
+                    ::core::option::Option::None => <Self as #fields_trait>::knows(__key),
+                }
+            }
+
+            #[allow(unused_variables, clippy::too_many_lines)]
+            fn read_fields(
+                __object: &#object<'_>,
+                __read: &mut #read<'_>,
+                __unknown: bool,
+                __tag: ::core::option::Option<&'static str>,
+            ) -> ::core::option::Option<Self> {
                 #(#fns)*
-                let (__object, __name) = #reader::tagged(__node, __read, #tag)?;
-                let __value = match __name.as_str() {
+                let __name = #reader::variant_of(__object, __read, #tag, #with)?;
+                let mut __value = match __name.as_str() {
                     #(#arms)*
                     _ => {
                         #reader::unknown_tag(__object, __read, #invalid);
-                        return ::core::option::Option::None;
+                        ::core::option::Option::None
                     }
                 };
-                __object.close(__read);
+                #after
                 __value
             }
         }

@@ -1543,6 +1543,10 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
 /// members beside it) or externally (`{"name": payload}`, a unit variant its name). `impl
 /// Schema` and `impl MolangFields` as an untagged enum's (an externally tagged variant's
 /// fields one key down), and its read.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of field and variant"
+)]
 fn derive_tagged(
     input: &DeriveInput,
     data: &DataEnum,
@@ -1555,6 +1559,13 @@ fn derive_tagged(
             span,
             "an adjacently tagged enum (`content` beside `tag`) has no derived read: no document \
              of the game writes one",
+        ));
+    }
+    if let (None, Some((_, span))) = (tag, &container.tag_with) {
+        errors.push(Error::new(
+            *span,
+            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`): \
+             an externally tagged one is named by its key",
         ));
     }
     read::check_tagged_variants(data, tag.is_some(), errors);
@@ -1637,7 +1648,14 @@ fn derive_tagged(
         })
         .collect();
     let from_json = match tag {
-        Some(tag) => read::tagged_read(&target, tag, container.invalid.as_ref(), &reads),
+        Some(tag) => read::tagged_read(
+            &target,
+            tag,
+            container.invalid.as_ref(),
+            container.tag_with.as_ref(),
+            container.after_read.as_ref(),
+            &reads,
+        ),
         None => read::external_read(&target, container.invalid.as_ref(), &reads),
     };
     quote!(#impls #from_json)

@@ -9,8 +9,11 @@ use bedrock_addon_core::pack_identity::PackPath;
 ///
 /// Vanilla checks no format when it reads a code from a pack, so any text is a code; the form
 /// `xx_YY` is only required of the code a client logs in with ([`Language::is_valid_code`]).
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, facet::Facet)]
 pub struct Language(String);
+
+bedrock_addon_core::impl_schema_leaf!(Language);
+bedrock_addon_core::impl_no_molang!(Language);
 
 impl Language {
     /// The language with this code. Any text is a code: vanilla checks no format when it reads

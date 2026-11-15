@@ -209,6 +209,8 @@ pub(crate) struct FieldAttrs {
     pub keys: Option<(Expr, Span)>,
     /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
     pub iterated: Option<Span>,
+    /// `schema::drop`: a failed element is left out alone, the rest of the list kept.
+    pub drop: Option<Span>,
     /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
     pub reads_null: Option<Span>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
@@ -243,6 +245,9 @@ pub(crate) struct ContainerAttrs {
     pub molang_with: Option<(Expr, Span)>,
     /// `schema::invalid = CODE` on an enum with data: the code of a value that names no variant.
     pub invalid: Option<(Expr, Span)>,
+    /// `schema::tag_with = path` on an internally tagged enum: the function that names the
+    /// variant of an object.
+    pub tag_with: Option<(Expr, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -268,6 +273,7 @@ const FIELD_KEYS: &[&str] = &[
     "invalid",
     "finite",
     "iterated",
+    "drop",
     "reads_null",
     "or_kept",
     "low_code",
@@ -330,6 +336,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
         let enum_key = ENUM_KEYS.contains(&key.as_str());
         let struct_key = STRUCT_KEYS.contains(&key.as_str());
         let message = match place {
+            Place::Tagged if key == "after_read" => continue,
             Place::Field | Place::Enum | Place::Untagged | Place::Tagged | Place::Variant
                 if struct_key =>
             {
@@ -340,6 +347,11 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             }
             Place::Struct if key == "molang" || key == "molang_with" => continue,
             Place::Untagged | Place::Tagged if key == "invalid" => continue,
+            Place::Tagged if key == "tag_with" => continue,
+            _ if key == "tag_with" => {
+                "`schema::tag_with` names the variant of an internally tagged enum: put it on one"
+                    .to_owned()
+            }
             Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
             }
@@ -612,6 +624,7 @@ impl FieldAttrs {
                     "kept" => once(&mut out.kept, span, &key, span, errors),
                     "finite" => once(&mut out.finite, span, &key, span, errors),
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
+                    "drop" => once(&mut out.drop, span, &key, span, errors),
                     "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
@@ -686,6 +699,7 @@ impl FieldAttrs {
             })
             .or(self.finite)
             .or(self.iterated)
+            .or(self.drop)
             .or(self.reads_null)
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
@@ -750,8 +764,8 @@ impl ContainerAttrs {
                         errors,
                     );
                 }),
-                Some("after_read") if place == Place::Struct => value_expr(entry, "after_read")
-                    .map(|expr| {
+                Some("after_read") if matches!(place, Place::Struct | Place::Tagged) => {
+                    value_expr(entry, "after_read").map(|expr| {
                         once(
                             &mut out.after_read,
                             (expr, entry.span),
@@ -759,7 +773,8 @@ impl ContainerAttrs {
                             entry.span,
                             errors,
                         );
-                    }),
+                    })
+                }
                 Some("quiet") if place == Place::Struct => {
                     string_value(entry, "quiet").map(|names| {
                         out.quiet = names
@@ -800,6 +815,17 @@ impl ContainerAttrs {
                             &mut out.invalid,
                             (expr, entry.span),
                             "invalid",
+                            entry.span,
+                            errors,
+                        );
+                    })
+                }
+                Some("tag_with") if place == Place::Tagged => {
+                    value_expr(entry, "tag_with").map(|expr| {
+                        once(
+                            &mut out.tag_with,
+                            (expr, entry.span),
+                            "tag_with",
                             entry.span,
                             errors,
                         );

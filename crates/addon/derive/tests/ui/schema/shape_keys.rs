@@ -9,6 +9,8 @@ struct Shapes {
     plain: u8,
     #[facet(schema::reads_null)]
     never_null: u8,
+    #[facet(schema::drop)]
+    not_a_list: Option<u8>,
 }
 
 fn main() {}

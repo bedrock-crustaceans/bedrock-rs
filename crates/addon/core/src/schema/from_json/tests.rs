@@ -472,6 +472,145 @@ fn a_flattened_struct_reads_its_members_from_its_owner_s_object() {
     );
 }
 
+/// The name of a stage's variant: the text at `kind` without everything up to its last `:`;
+/// a name that is none is told at the stage, as the game words it.
+fn stage_kind(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'static str> {
+    let written = node
+        .value()
+        .as_object()
+        .and_then(|object| object.get("kind"))
+        .and_then(|kind| kind.as_string().map(|text| text.as_str().to_owned()))
+        .unwrap_or_default();
+    let name = written.rsplit(':').next().unwrap_or_default();
+    let found = <StageKind as super::derived::Fields>::VARIANTS
+        .iter()
+        .find(|variant| **variant == name);
+    if found.is_none() {
+        read.push(crate::diagnostic::Diagnostic::of(&STAGE_KIND).at(node.path().clone()));
+    }
+    found.copied()
+}
+
+/// The code of a stage of no known kind.
+static STAGE_KIND: crate::diagnostic::CodeDef<0> = crate::diagnostic::CodeDef::new(
+    "test/stage_kind",
+    crate::diagnostic::Kind::InvalidValue,
+    crate::diagnostic::Class::KeptError,
+    "a stage of an unknown kind",
+);
+
+/// A rule over the variant just read, with the object as written: a weighted stage that
+/// writes no weight is told.
+fn stage_rule(kind: &mut StageKind, node: &Node<'_>, read: &mut Read<'_>) {
+    if matches!(kind, StageKind::Weighted { weight: None }) {
+        read.push(crate::diagnostic::Diagnostic::of(&STAGE_WEIGHT).at(node.path().clone()));
+    }
+}
+
+/// The code of a weighted stage without a weight.
+static STAGE_WEIGHT: crate::diagnostic::CodeDef<0> = crate::diagnostic::CodeDef::new(
+    "test/stage_weight",
+    crate::diagnostic::Kind::MissingRequired,
+    crate::diagnostic::Class::Warning,
+    "a weighted stage without a weight",
+);
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "kind", schema::tag_with = stage_kind, schema::after_read = stage_rule)]
+#[repr(u8)]
+enum StageKind {
+    #[facet(rename = "plain")]
+    Plain,
+    #[facet(rename = "weighted")]
+    Weighted { weight: Option<u8> },
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Stage {
+    before: Option<u8>,
+    #[facet(flatten)]
+    kind: StageKind,
+    after: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// An internally tagged enum flattened into a struct is read where the struct declares it, so
+/// the findings of the members before and after it come in declaration order; the name of the
+/// variant is the function's; a member only another variant has is one the struct does not know
+/// (told and kept by the struct, whatever the variant).
+#[test]
+fn a_flattened_tagged_enum_is_read_where_the_struct_declares_it() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<Stage>(text, lenient(), declared);
+    let (stage, told) = read(r#"{"after": 2, "weight": 5, "kind": "x:weighted", "before": 1}"#);
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(
+        stage.map(|stage| (stage.before, stage.kind, stage.after)),
+        Some((Some(1), StageKind::Weighted { weight: Some(5) }, Some(2)))
+    );
+    // `weight` is no member of a plain stage: unknown, kept in the struct's own.
+    let (stage, told) = read(r#"{"kind": "plain", "weight": 5}"#);
+    assert_eq!(told, ["Warning root/weight core/unrecognized_field"]);
+    let extra = stage.expect("read").extra;
+    assert_eq!(
+        extra.iter().map(|(key, _)| key).collect::<Vec<_>>(),
+        ["weight"]
+    );
+    // The members before it are told before its own and the rule's, those after it after.
+    let (_, told) = read(r#"{"after": "a", "weight": "w", "kind": "weighted", "before": "b"}"#);
+    assert_eq!(
+        told,
+        [
+            "Info root/before core/invalid_type",
+            "Info root/weight core/invalid_type",
+            "Warning root test/stage_weight",
+            "Info root/after core/invalid_type",
+        ]
+    );
+}
+
+/// A name the function refuses is told by it, in the tag's place, and fails the struct that
+/// flattens the enum there: its members after the tag and its unknown ones are not told. With
+/// no tag member the function is asked all the same.
+#[test]
+fn a_flattened_tagged_enum_the_function_refuses_fails_its_owner() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (stage, told) = read_as::<Stage>(
+        r#"{"before": "b", "kind": "other", "after": "a", "k": 1}"#,
+        lenient(),
+        declared,
+    );
+    assert_eq!(stage, None);
+    assert_eq!(
+        told,
+        [
+            "Info root/before core/invalid_type",
+            "Error root test/stage_kind"
+        ]
+    );
+    let (stage, told) = read_as::<Stage>(r#"{"before": 1}"#, lenient(), declared);
+    assert_eq!(stage, None);
+    assert_eq!(told, ["Error root test/stage_kind"]);
+}
+
+/// A rule on the enum runs over the variant read, flattened or not, in the place the variant is
+/// read: before the owner's members after it.
+#[test]
+fn a_tagged_enum_s_rule_runs_over_the_variant_it_read() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (_, told) = read_as::<Stage>(r#"{"kind": "weighted", "after": "a"}"#, lenient(), declared);
+    assert_eq!(
+        told,
+        [
+            "Warning root test/stage_weight",
+            "Info root/after core/invalid_type"
+        ]
+    );
+    let (kind, told) = read_as::<StageKind>(r#"{"kind": "weighted"}"#, lenient(), declared);
+    assert_eq!(kind, Some(StageKind::Weighted { weight: None }));
+    assert_eq!(told, ["Warning root test/stage_weight"]);
+}
+
 /// A level read as a word: `read_with`'s function reads the member.
 fn level_word(node: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
     match read.string(node)? {
@@ -1040,6 +1179,68 @@ fn a_list_reads_as_its_keys_say() {
     let (value, told) = read(r#"{"colour": "red"}"#);
     assert!(told.is_empty(), "{told:?}");
     assert_eq!(value.and_then(|v| v.color).as_deref(), Some("red"));
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Part {
+    weight: u8,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Parts {
+    #[facet(schema::drop)]
+    dropped: Option<Vec<Part>>,
+    plain: Option<Vec<Part>>,
+}
+
+/// A list that says `drop` leaves a failed element out alone, told by its own findings, whatever
+/// the reading: the list does not fail, and the elements kept are renumbered for the findings
+/// told after; a list that does not say it fails with its element.
+#[test]
+fn a_dropping_list_leaves_a_failed_element_out_alone() {
+    let text = r#"{"dropped": [{"weight": 1}, 7, {"weight": "x"}, {"weight": 4}]}"#;
+    let (value, told) = read_as::<Parts>(text, Reading::DOCUMENT, Profile::EVERY_FAILURE);
+    let weights = value
+        .expect("read")
+        .dropped
+        .map(|parts| parts.iter().map(|part| part.weight).collect::<Vec<_>>());
+    assert_eq!(weights, Some(vec![1, 4]));
+    assert_eq!(
+        told,
+        [
+            "Error root/dropped/1 core/invalid_type",
+            "Error root/dropped/2/weight core/invalid_type",
+        ]
+    );
+    let (value, told) = read_as::<Parts>(
+        r#"{"plain": [3]}"#,
+        Reading::DOCUMENT,
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/plain/0 core/invalid_type"]);
+}
+
+/// The elements a dropping list keeps are named as the file has them by the findings told after.
+#[test]
+fn a_dropping_list_names_the_elements_it_kept_as_the_file_has_them() {
+    let json: Value = from_str_jsonc(r#"[{"weight": 1}, 7, {"weight": 3}]"#).unwrap();
+    let node = Node::new(&json, JsonPath::of_keys(["list"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let list = crate::schema::derive_support::list::<Part>(&node, &mut read, false, true);
+    assert_eq!(list.map(|parts| parts.len()), Some(2));
+    read.findings_mut().push(
+        crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::INVALID_VALUE)
+            .at(JsonPath::of_keys(["list"]).index(1)),
+    );
+    drop(read);
+    found.name_as_the_file_has_it();
+    let at: Vec<String> = found
+        .iter()
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["list/1", "list/2"]);
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]

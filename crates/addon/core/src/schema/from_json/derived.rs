@@ -31,8 +31,23 @@ use crate::versioning::NullHandling;
     note = "only a struct that derives `Schema` reads its fields from another's object"
 )]
 pub trait Fields: Sized {
+    /// The member of an internally tagged enum that names the variant, which a struct that
+    /// flattens the enum reads at the place it declares the enum.
+    const TAG: Option<&'static str> = None;
+
+    /// The JSON names of the variants of an internally tagged enum, which a function that names
+    /// the variant of an object (`schema::tag_with`) looks its name up in.
+    const VARIANTS: &'static [&'static str] = &[];
+
     /// Whether a member named `key` is one of the fields (a flattened struct's included).
     fn knows(key: &str) -> bool;
+
+    /// [`knows`](Self::knows) for the fields of `object`: a flattened enum's are the members of
+    /// the variant read from it, once there is one.
+    fn knows_given(object: &Object<'_>, key: &str) -> bool {
+        let _ = object;
+        Self::knows(key)
+    }
 
     /// Reads the fields from `object`, telling the members no field takes when `unknown` (the
     /// struct read it is the object of; a flattened struct's are its owner's to tell). `tag`
@@ -65,6 +80,9 @@ impl Disposal {
     }
 }
 
+/// What a variant of a flattened enum knows of an object's members.
+pub type Knows = fn(&str) -> bool;
+
 /// The object a struct reads its fields from: its members, and the `schema::unknown` of the
 /// field that holds it, which comes before the struct's own.
 #[derive(Debug)]
@@ -76,6 +94,9 @@ pub struct Object<'v> {
     /// Under a tree ([`Objects::Tree`]), whether an error was raised while the members were
     /// read ([`settle`](Self::settle)).
     failed: std::cell::Cell<bool>,
+    /// What the variant of a flattened internally tagged enum, once read from the object, knows
+    /// ([`choose`](Self::choose)).
+    chosen: std::cell::Cell<Option<Knows>>,
 }
 
 impl<'v> Object<'v> {
@@ -93,7 +114,26 @@ impl<'v> Object<'v> {
             field,
             mark: read.mark(),
             failed: std::cell::Cell::new(false),
+            chosen: std::cell::Cell::new(None),
         })
+    }
+
+    /// Ends the read of the object's owner there: a flattened enum's variant failed, and the
+    /// members still to come are no more told missing than the unknown ones are told.
+    pub fn abandon(&self) {
+        self.failed.set(true);
+    }
+
+    /// Notes the variant of a flattened internally tagged enum the object's members are read as:
+    /// `knows` says which of them it takes.
+    pub fn choose(&self, knows: Knows) {
+        self.chosen.set(Some(knows));
+    }
+
+    /// Whether the variant chosen ([`choose`](Self::choose)) takes the member `key`; `None` while
+    /// none is.
+    pub fn chosen_knows(&self, key: &str) -> Option<bool> {
+        self.chosen.get().map(|knows| knows(key))
     }
 
     /// Ends the read of the members: whether the struct may still be built. Under the game's
@@ -349,7 +389,8 @@ pub fn read_members<K: Fn(&str) -> bool>(
             }
         }
     } else {
-        for name in declared.names {
+        // An empty name stands for a flattened struct, which is read after the members.
+        for name in declared.names.iter().filter(|name| !name.is_empty()) {
             if read.stopped() {
                 return;
             }
@@ -793,10 +834,26 @@ impl<T> KindOfNone for &Probe<T> {
     }
 }
 
-/// The read of a list field jsoncpp iterates (`schema::iterated`,
-/// [`read_iterated`](super::read_iterated)), a failed element as the reading says.
-pub fn iterated<E: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<E>> {
-    super::read_iterated(node, read, super::ElementFailure::ByReading, E::from_json)
+/// The read of a list field that states how it reads (`schema::iterated`, `schema::drop`):
+/// iterated as jsoncpp iterates a value when `iterated` ([`read_iterated`](super::read_iterated)),
+/// a failed element left out alone when `drop` ([`ElementFailure::Drop`](super::ElementFailure::Drop)),
+/// else as the reading says.
+pub fn list<E: FromJson>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    iterated: bool,
+    drop: bool,
+) -> Option<Vec<E>> {
+    let failure = if drop {
+        super::ElementFailure::Drop
+    } else {
+        super::ElementFailure::ByReading
+    };
+    if iterated {
+        super::read_iterated(node, read, failure, E::from_json)
+    } else {
+        super::read_list(node, read, failure, E::from_json)
+    }
 }
 
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.
@@ -914,39 +971,56 @@ pub fn unit_arm(node: &Node<'_>, names: &[&str]) -> Option<usize> {
     }
 }
 
-/// The variant an internally tagged enum's object names by its member `tag`: the object and
-/// the name, or the failure told as facet-json told it: no object a wrong type, a tag that is
-/// missing or no string a missing member at the tag (facet looks for a string tag and finds
-/// none).
-pub fn tagged<'v>(
-    node: &Node<'v>,
+/// The name of the variant a read names by a function of its own (`schema::tag_with`): it looks
+/// at the object, tells what it refuses (a name that is none, with the game's words) and gives
+/// the variant's name as the enum's JSON gives it, or `None`.
+pub type TagWith = fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>;
+
+/// The name an internally tagged enum's object gives its variant: the string at the member `tag`
+/// (a missing or non-string one is a missing member at the tag, as facet-json told it), or what
+/// `with` says of the object.
+pub fn variant_of(
+    object: &Object<'_>,
     read: &mut Read<'_>,
     tag: &'static str,
-) -> Option<(Object<'v>, String)> {
-    let object = Object::open(node, read)?;
+    with: Option<TagWith>,
+) -> Option<String> {
+    if read.stopped() {
+        return None;
+    }
+    if let Some(with) = with {
+        return with(object.node(), read).map(str::to_owned);
+    }
     let name = object.members.get(tag).and_then(|member| {
         member
             .value()
             .as_string()
             .map(|name| name.as_str().to_owned())
     });
-    let Some(name) = name else {
+    if name.is_none() {
         read.missing_member(&object.members, tag);
-        object.close(read);
-        return None;
-    };
-    Some((object, name))
+    }
+    name
+}
+
+/// The member name a struct that flattens a type with this `tag` is read at (an empty one for a
+/// type with none): where its variant is read, among the members of the struct.
+#[must_use]
+pub const fn tag_name(tag: Option<&'static str>) -> &'static str {
+    match tag {
+        Some(tag) => tag,
+        None => "",
+    }
 }
 
 /// Tells that the tag of an internally tagged enum names no variant, as facet-json told it: a
 /// wrong type at the enum's object; under the enum's `schema::invalid` (`invalid`), that code, at
 /// the member the object belongs to.
-pub fn unknown_tag(object: Object<'_>, read: &mut Read<'_>, invalid: Option<&'static CodeDef<0>>) {
+pub fn unknown_tag(object: &Object<'_>, read: &mut Read<'_>, invalid: Option<&'static CodeDef<0>>) {
     match invalid {
         Some(code) => read.refuse_variant(object.node(), code),
         None => read.wrong_type(object.node()),
     }
-    object.close(read);
 }
 
 /// The variant an externally tagged enum's value names: a string (a unit variant), or an
