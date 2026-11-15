@@ -2,9 +2,11 @@
 //! (`minecraft:block_culling_rules`), which parts of a block model are hidden against which
 //! neighbour. A behaviour-pack block names a rules document with `minecraft:geometry` `culling`.
 //!
-//! The reader stays a hand walk in vanilla's strict cereal terms, because every finding carries
-//! vanilla's breadcrumb and text for its path, which the reader kit words only through
-//! `Read::push`.
+//! The document types read themselves (`#[derive(Facet, Schema)]`, the derived read of
+//! `versioning::read_payload_with`): every failure fails the file, unknown members are told
+//! first, and what the reader tells in the kit's words is given vanilla's breadcrumb and text
+//! afterwards (`read::word`). What stays hand code: the two enums' reads, which tell cereal's
+//! enum text (a leaf `FromJson` each), and `cube`'s (`schema::read_with`).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -1,13 +1,16 @@
 //! Texture sets (`<texture>.texture_set.json`): the newest document, its layer values and the
 //! layer kinds.
 
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
+
 /// The name of a layer's image: a path relative to the folder of the texture set, with or
 /// without an image extension. It never starts with `#` (such a string is a hex colour).
 ///
 /// The client loads `<folder of the set>/<name>` from the texture set's own pack: the name as
 /// written first, then with `.tga`, `.png`, `.jpg`, `.jpeg`, `.hdr`, `.ktx`. The value is not
 /// normalised, so `sub/stone` names a file one folder down.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct TextureName(pub String);
 
 impl TextureName {
@@ -19,7 +22,7 @@ impl TextureName {
 }
 
 /// Three channels of a uniform layer, each 0 to 255 as authored (`[r, g, b]` or `#RRGGBB`).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
 pub struct Rgb {
     /// Red; metalness in `metalness_emissive_roughness`.
     pub r: f32,
@@ -31,7 +34,7 @@ pub struct Rgb {
 
 /// Four channels of a uniform layer, each 0 to 255 as authored (`[r, g, b, a]` or
 /// `#AARRGGBB`, alpha first in the hex form).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
 pub struct Rgba {
     /// Red; metalness in `metalness_emissive_roughness_subsurface`.
     pub r: f32,
@@ -57,7 +60,8 @@ impl From<Rgb> for Rgba {
 }
 
 /// The value of a layer that may be uniform: an image, or one colour for the whole texture.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum LayerValue<C> {
     /// A string that does not start with `#`: the layer's image.
     Texture(TextureName),
@@ -146,19 +150,24 @@ impl LayerKind {
 /// `metalness_emissive_roughness_subsurface`, and at most one of `normal` and `heightmap`.
 #[doc(alias = "texture_set")]
 #[doc(alias = "minecraft:texture_set")]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct TextureSet {
     /// JSON `color`: the base colour, as an image or uniform (alpha is opacity).
+    #[facet(schema::reads_null)]
     pub color: Option<LayerValue<Rgba>>,
     /// JSON `normal`: the normal map image.
+    #[facet(schema::reads_null)]
     pub normal: Option<TextureName>,
     /// JSON `heightmap`: the height map image.
+    #[facet(schema::reads_null)]
     pub heightmap: Option<TextureName>,
     /// JSON `metalness_emissive_roughness`: the three material channels, as an image or
     /// uniform.
+    #[facet(schema::reads_null)]
     pub metalness_emissive_roughness: Option<LayerValue<Rgb>>,
     /// JSON `metalness_emissive_roughness_subsurface`: the four material channels, as an
     /// image or uniform. Format 1.21.30 only.
+    #[facet(schema::reads_null, schema::since_format = "1.21.30")]
     pub metalness_emissive_roughness_subsurface: Option<LayerValue<Rgba>>,
 }
 

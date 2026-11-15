@@ -34,13 +34,12 @@ pub(super) fn parse_layers(
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<TextureSet> {
-    let read = read_lenient(payload.text.as_bytes()).ok();
-    let Some(layers) = read.as_ref().and_then(|read| read.value.as_object()) else {
+    let Some(read) = read_lenient(payload.text.as_bytes()).ok() else {
         let code = Code::from(&core_codes::INVALID_TYPE);
         d.push(Diagnostic::error(code).at(at.clone()));
         return None;
     };
-    read_layers(layers, schema, at, d)
+    read_layers(&read.value, schema, at, d)
 }
 
 /// A channel as the integer the client stores: rounded and held to 0 to 255.

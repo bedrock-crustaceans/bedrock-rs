@@ -2,18 +2,22 @@
 //! the texture set loader, the schema pass, the post-validation and the colour
 //! parse. Every finding carries the text the client logs, where it logs one.
 
-use facet_value::{VArray, VObject};
+use facet_value::VArray;
 
 use super::codes;
 use super::history::{TextureSetHistory, v1_16_100};
 use super::types::{LayerKind, LayerValue, Rgb, Rgba, TextureName, TextureSet};
+use bedrock_addon_core::diagnostic::cereal::unknown_child_option;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
+use bedrock_addon_core::json::kit::{Node, Read as KitRead, Versions};
 use bedrock_addon_core::json::{Value, strip_bom};
+use bedrock_addon_core::schema::{FromJson, read_document};
 use bedrock_addon_core::version::{FormatVersion, SemVersion, known};
+use bedrock_addon_core::versioning::Reading;
 use bedrock_addon_shared_shapes::color::parse_hex;
 
 /// The member that holds the version.
@@ -56,11 +60,6 @@ impl Schema {
                 let v = schema.version();
                 (version.major, version.minor, version.patch) == (v.major, v.minor, v.patch)
             })
-    }
-
-    /// Whether the schema has the layer.
-    fn has(self, layer: LayerKind) -> bool {
-        layer != LayerKind::Mers || self == Self::V1_21_30
     }
 }
 
@@ -173,7 +172,7 @@ pub(super) fn read(bytes: &[u8], file: &str, d: &mut Diagnostics) -> Read {
             d.push(unknown_option("'object'", payload_at.clone()));
             None
         }
-        Some((_, Some(layers))) => read_layers(layers, schema, &payload_at, d),
+        Some((payload, Some(_))) => read_layers(payload, schema, &payload_at, d),
     };
     if errors(d) > before {
         d.push(closing(&codes::SET_SCHEMA_FAILED, root_at));
@@ -256,57 +255,33 @@ pub(super) fn post_validation<'a>(
     None
 }
 
-/// The layers of the payload object under `schema`; `None` when a member fails the schema.
-/// Colour arrays are parsed as the client parses them.
+/// The layers of the payload `layers` under `schema`: the derived read of [`TextureSet`], every
+/// failure told, in file order, with the client's texts; the member `metalness_emissive_roughness_subsurface`
+/// is `since_format` 1.21.30, so it is an unknown member at 1.16.100. `None` when anything failed
+/// (an unknown member fails the schema too, though the read builds the value).
 pub(super) fn read_layers(
-    layers: &VObject,
+    layers: &Value,
     schema: Schema,
     at: &JsonPath,
     d: &mut Diagnostics,
 ) -> Option<TextureSet> {
-    let mut set = TextureSet::default();
-    let mut failed = false;
-    for (key, value) in layers {
-        let path = at.child(key.as_str());
-        let layer = LayerKind::ALL
-            .into_iter()
-            .find(|layer| layer.key() == key.as_str() && schema.has(*layer));
-        let Some(layer) = layer else {
-            // `metalness_emissive_roughness_subsurface` at 1.16.100 too.
-            d.push(unknown_member(path));
-            failed = true;
-            continue;
-        };
-        let read = match layer {
-            LayerKind::Color => rgba(value, &path, d).map(|value| set.color = Some(value)),
-            LayerKind::Mers => rgba(value, &path, d)
-                .map(|value| set.metalness_emissive_roughness_subsurface = Some(value)),
-            LayerKind::Mer => {
-                rgb(value, &path, d).map(|value| set.metalness_emissive_roughness = Some(value))
-            }
-            LayerKind::Normal => name_only(value, &path, d).map(|name| set.normal = Some(name)),
-            LayerKind::Heightmap => {
-                name_only(value, &path, d).map(|name| set.heightmap = Some(name))
-            }
-        };
-        failed |= read.is_none();
-    }
-    (!failed).then_some(set)
+    let before = d.len();
+    let set = {
+        let mut read = KitRead::new(Reading::OWN, d)
+            .unknown_severity(Severity::Error)
+            .versions(Versions {
+                format: Some(schema.version()),
+                engine: None,
+            });
+        read_document::<TextureSet>(&Node::new(layers, at.clone()), &mut read)
+    };
+    set.filter(|_| !d.iter().skip(before).any(Diagnostic::rejects))
 }
 
 /// A string that is a texture name: one that does not start with `#`.
 fn texture_name(value: &Value) -> Option<TextureName> {
     let text = value.as_string()?.as_str();
     (!text.starts_with('#')).then(|| TextureName(text.to_owned()))
-}
-
-/// A layer with only the name child (`normal`, `heightmap`).
-fn name_only(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<TextureName> {
-    let name = texture_name(value);
-    if name.is_none() {
-        d.push(unknown_option("'string'", at.clone()));
-    }
-    name
 }
 
 /// One byte of `value`, `shift` bits up.
@@ -353,99 +328,121 @@ fn colour(value: &Value) -> Colour<'_> {
 /// The types a colour layer's children are registered under.
 const COLOUR_TYPES: &str = "'color' 'string'";
 
-/// A four-member object. The crate rejects it; the client logs this text and loads a zero
-/// colour.
-fn four_members(at: &JsonPath) -> Diagnostic {
-    let code = Code::from(&codes::BAD_COLOR);
-    Diagnostic::error(code).at(at.clone())
+/// A colour layer's channels: their count (the array form's length, half the digits of the hex
+/// form) and what they are made of.
+trait Channels: Sized {
+    /// The number of channels.
+    const COUNT: usize;
+    /// The colour of a hex value (`#AARRGGBB`, or `#RRGGBB`).
+    fn hex(value: u32) -> Self;
+    /// The colour of the first `COUNT` of `channels`.
+    fn array(channels: [f32; 4]) -> Self;
 }
 
-/// A layer with a four-channel colour child and the name child (`color`,
-/// `metalness_emissive_roughness_subsurface`).
-fn rgba(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<Rgba>> {
-    match colour(value) {
+impl Channels for Rgba {
+    const COUNT: usize = 4;
+
+    fn hex(v: u32) -> Self {
+        Self {
+            r: byte(v, 16),
+            g: byte(v, 8),
+            b: byte(v, 0),
+            a: byte(v, 24),
+        }
+    }
+
+    fn array([r, g, b, a]: [f32; 4]) -> Self {
+        Self { r, g, b, a }
+    }
+}
+
+impl Channels for Rgb {
+    const COUNT: usize = 3;
+
+    fn hex(v: u32) -> Self {
+        Self {
+            r: byte(v, 16),
+            g: byte(v, 8),
+            b: byte(v, 0),
+        }
+    }
+
+    fn array([r, g, b, _]: [f32; 4]) -> Self {
+        Self { r, g, b }
+    }
+}
+
+/// A layer with a name child and a colour child of `C`'s channels (`color`,
+/// `metalness_emissive_roughness`, `metalness_emissive_roughness_subsurface`): an image name, a hex
+/// string or an array of channels. A value no child takes, or a four-member object (the client
+/// loads a zero colour; the crate rejects it), is told with the client's text.
+fn layer<C: Channels>(node: &Node<'_>, read: &mut KitRead<'_>) -> Option<LayerValue<C>> {
+    match colour(node.value()) {
         Colour::Name(name) => Some(LayerValue::Texture(name)),
         Colour::Hex(text) => {
-            let Some(v) = parse_hex(text, 8) else {
-                let code = Code::from(&codes::SET_HEX_8);
-                d.push(Diagnostic::error(code).at(at.clone()));
+            let hex = if C::COUNT == 4 {
+                (8, &codes::SET_HEX_8)
+            } else {
+                (6, &codes::SET_HEX_6)
+            };
+            let Some(v) = parse_hex(text, hex.0) else {
+                read.refuse(node, Code::from(hex.1));
                 return None;
             };
-            // `#AARRGGBB`.
-            Some(LayerValue::Hex(Rgba {
-                r: byte(v, 16),
-                g: byte(v, 8),
-                b: byte(v, 0),
-                a: byte(v, 24),
-            }))
+            Some(LayerValue::Hex(C::hex(v)))
         }
-        Colour::Array(array) if array.len() == 4 => {
-            let [red, green, blue, alpha] = channels::<4>(array, at, d)?;
-            Some(LayerValue::Array(Rgba {
-                r: red,
-                g: green,
-                b: blue,
-                a: alpha,
-            }))
+        Colour::Array(array) if array.len() == C::COUNT => {
+            channels(array, node, read).map(|channels| LayerValue::Array(C::array(channels)))
         }
         Colour::FourMembers => {
-            d.push(four_members(at));
+            read.refuse(node, Code::from(&codes::BAD_COLOR));
             None
         }
         Colour::Array(_) | Colour::Other => {
-            d.push(unknown_option(COLOUR_TYPES, at.clone()));
+            read.refuse(node, unknown_child_option(COLOUR_TYPES));
             None
         }
     }
 }
 
-/// A layer with a three-channel colour child and the name child
-/// (`metalness_emissive_roughness`).
-fn rgb(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<LayerValue<Rgb>> {
-    match colour(value) {
-        Colour::Name(name) => Some(LayerValue::Texture(name)),
-        Colour::Hex(text) => {
-            let Some(v) = parse_hex(text, 6) else {
-                let code = Code::from(&codes::SET_HEX_6);
-                d.push(Diagnostic::error(code).at(at.clone()));
-                return None;
-            };
-            Some(LayerValue::Hex(Rgb {
-                r: byte(v, 16),
-                g: byte(v, 8),
-                b: byte(v, 0),
-            }))
-        }
-        Colour::Array(array) if array.len() == 3 => {
-            let [r, g, b] = channels::<3>(array, at, d)?;
-            Some(LayerValue::Array(Rgb { r, g, b }))
-        }
-        Colour::FourMembers => {
-            d.push(four_members(at));
-            None
-        }
-        Colour::Array(_) | Colour::Other => {
-            d.push(unknown_option(COLOUR_TYPES, at.clone()));
-            None
-        }
+impl FromJson for LayerValue<Rgba> {
+    fn from_json(node: &Node<'_>, read: &mut KitRead<'_>) -> Option<Self> {
+        layer(node, read)
     }
 }
 
-/// The `N` channels of a colour array of `N` elements. An element that is no number fails the
-/// schema; a number that is no integer is 255 with the client's text; an integer
-/// outside 0 to 255 is clamped.
-fn channels<const N: usize>(
-    array: &VArray,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<[f32; N]> {
-    let mut out = [0.0; N];
+impl FromJson for LayerValue<Rgb> {
+    fn from_json(node: &Node<'_>, read: &mut KitRead<'_>) -> Option<Self> {
+        layer(node, read)
+    }
+}
+
+/// A layer with only the name child (`normal`, `heightmap`).
+impl FromJson for TextureName {
+    fn from_json(node: &Node<'_>, read: &mut KitRead<'_>) -> Option<Self> {
+        let name = texture_name(node.value());
+        if name.is_none() {
+            read.refuse(node, unknown_child_option("'string'"));
+        }
+        name
+    }
+}
+
+// Leaves of the derived check and Molang walk: neither holds a bound or Molang.
+bedrock_addon_core::impl_schema_leaf!(TextureName, LayerValue<Rgba>, LayerValue<Rgb>);
+bedrock_addon_core::impl_no_molang!(TextureName, LayerValue<Rgba>, LayerValue<Rgb>);
+
+/// The first `COUNT` of the channels of the colour array `array`, in an array of four. An
+/// element that is no number fails the schema; a number that is no integer is 255 with the
+/// client's text; an integer outside 0 to 255 is clamped.
+fn channels(array: &VArray, node: &Node<'_>, read: &mut KitRead<'_>) -> Option<[f32; 4]> {
+    let mut out = [0.0; 4];
     let mut failed = false;
     for (index, (element, slot)) in array.iter().zip(&mut out).enumerate() {
-        let path = at.index(index);
+        let path = node.path().index(index);
         let Some(number) = element.as_number() else {
             let code = Code::from(&core_codes::INVALID_TYPE);
-            d.push(Diagnostic::error(code).at(path));
+            read.push(Diagnostic::error(code).at(path));
             failed = true;
             continue;
         };
@@ -453,7 +450,8 @@ fn channels<const N: usize>(
             // The game logs this at the content log's error level and the set loads: a kept
             // error.
             let code = Code::from(&codes::NOT_INTEGRAL);
-            d.push_kept_error(Diagnostic::error(code).at(path));
+            read.findings_mut()
+                .push_kept_error(Diagnostic::error(code).at(path));
             *slot = 255.0;
             continue;
         }
@@ -462,7 +460,7 @@ fn channels<const N: usize>(
         let clamped = written.clamp(0, 255);
         if clamped != written {
             let code = Code::from(&core_codes::CLAMPED_VALUE);
-            d.push(Diagnostic::info(code).at(path));
+            read.push(Diagnostic::info(code).at(path));
         }
         *slot = f32::from(u8::try_from(clamped).unwrap_or(u8::MAX));
     }

@@ -2,7 +2,7 @@
 //! on inputs built beforehand, by the crate's one protocol (`bedrock_addon_core::test_cost`): four times the
 //! input takes about four times the time.
 
-use super::{Facing, GeometryPart, Rule, validate};
+use super::{CullingRules, Facing, GeometryPart, Rule, validate};
 use bedrock_addon_core::test_cost::assert_linear_at;
 
 /// The smaller input size; the larger is four times it.
@@ -54,6 +54,9 @@ fn the_rule_checks_are_linear_when_every_other_rule_repeats_a_part() {
 fn the_spans_of_a_finding_per_rule_are_linear_in_the_rules() {
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::JsonSlice;
+    use bedrock_addon_core::load::LoadContext;
+    use bedrock_addon_core::version::FormatVersionInput;
+    use bedrock_addon_core::versioning::ParseCx;
     let payload = |count: usize| {
         let rules: Vec<String> = (0..count)
             .map(|n| {
@@ -73,13 +76,18 @@ fn the_spans_of_a_finding_per_rule_are_linear_in_the_rules() {
         payload,
         |text| {
             let mut d = Diagnostics::default();
-            let base = JsonPath::new().child("minecraft:block_culling_rules");
-            let read = super::read::read(
-                JsonSlice { text, offset: 7 },
-                super::read::Slice::V1_21_80,
-                &base,
-                &mut d,
-            );
+            let load = LoadContext::detached();
+            let cx = ParseCx {
+                load: &load,
+                written: FormatVersionInput {
+                    version: Some(CullingRules::FORMAT_VERSION),
+                    beta_literal: false,
+                    prerelease: false,
+                },
+                original_version: CullingRules::FORMAT_VERSION,
+                at: JsonPath::new().child("minecraft:block_culling_rules"),
+            };
+            let read = super::read::read(JsonSlice { text, offset: 7 }, &cx, &mut d);
             assert!(read.is_none());
             // Every finding has the span of its rule's member, at the file's offsets.
             let rules = text.matches("\"stray\"").count();

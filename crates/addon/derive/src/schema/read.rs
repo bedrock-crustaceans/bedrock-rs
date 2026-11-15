@@ -309,6 +309,16 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
             }}
         },
     );
+    // A required field with one name tells its absence where a read in declared order asks for
+    // the member.
+    let required = !(info.option.is_some() && info.attrs.required.is_none())
+        && info.attrs.default.is_none()
+        && info.attrs.alias.is_none();
+    let when_absent = if required {
+        quote!(#slot.missing_now(__object, #json, __read);)
+    } else {
+        quote!()
+    };
     FieldRead {
         slot: quote!(let mut #slot = #new_slot;),
         // A field that reads a `null` as a value reads it, whatever the reading does with a
@@ -316,6 +326,10 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         arm: if info.attrs.reads_null.is_some() {
             quote! {
                 #names => {
+                    let ::core::option::Option::Some(__member) = __member else {
+                        #when_absent
+                        return true;
+                    };
                     #read_call
                     #since_engine
                     true
@@ -324,6 +338,10 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         } else {
             quote! {
                 #names => {
+                    let ::core::option::Option::Some(__member) = __member else {
+                        #when_absent
+                        return true;
+                    };
                     if !__object.absent(__member, __read) {
                         #read_call
                         #since_engine
@@ -605,7 +623,7 @@ fn fields_body(
             &[#(#names),*],
             &[#(#gates),*],
             #knows,
-            |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| -> bool {
+            |__key: &str, __member: ::core::option::Option<&#node<'_>>, __read: &mut #read<'_>| -> bool {
                 match __key {
                     #(#arms)*
                     _ if ::core::option::Option::Some(__key) == __tag => true,

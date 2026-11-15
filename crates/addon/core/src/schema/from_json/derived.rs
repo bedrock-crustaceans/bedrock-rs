@@ -272,7 +272,8 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
 }
 
 /// Reads the members of `object` for a struct, by the read's [`Profile`](crate::json::kit::Profile):
-/// `field` reads one (`true` when it is one of the struct's, a flattened struct's or the tag),
+/// `field` reads one (`true` when it is one of the struct's, a flattened struct's or the tag; the
+/// member is `None` where a read in declaration order asks for one the object lacks),
 /// `unknown_member` tells and keeps one no field takes (when `unknown`: a flattened struct's
 /// are its owner's to tell). In [`MemberOrder::File`] each member is read where the file has
 /// it; in [`MemberOrder::Declaration`] the struct's `names` (its JSON names, in declaration
@@ -292,7 +293,7 @@ pub fn read_members(
     names: &[&str],
     gates: &[(&str, FormatVersion)],
     knows: impl Fn(&str) -> bool,
-    mut field: impl FnMut(&str, &Node<'_>, &mut Read<'_>) -> bool,
+    mut field: impl FnMut(&str, Option<&Node<'_>>, &mut Read<'_>) -> bool,
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
     let profile = read.telling();
@@ -336,7 +337,7 @@ pub fn read_members(
             {
                 one_spelling(&mut spelled, name, member, read);
             }
-            let read_it = !later(read, name) && field(name, member, read);
+            let read_it = !later(read, name) && field(name, Some(member), read);
             if !read_it && unknown && among {
                 unknown_member(key, member, read);
             }
@@ -346,9 +347,8 @@ pub fn read_members(
             if read.stopped() {
                 return;
             }
-            if let Some(member) = object.members.get(name).filter(|_| !later(read, name)) {
-                field(name, &member, read);
-            }
+            let member = object.members.get(name).filter(|_| !later(read, name));
+            field(name, member.as_ref(), read);
         }
     }
 }
@@ -458,6 +458,8 @@ pub struct Slot<T> {
     /// Whether the member failed without an error under the game's schema tree, which leaves
     /// it out ([`Objects::Tree`], [`Read::left_out_since`]).
     left_out: bool,
+    /// Whether the member's absence was told where it was asked for ([`missing_now`](Self::missing_now)).
+    missing_told: bool,
 }
 
 impl<T> Default for Slot<T> {
@@ -467,6 +469,7 @@ impl<T> Default for Slot<T> {
             rules: None,
             depth: 0,
             left_out: false,
+            missing_told: false,
         }
     }
 }
@@ -486,6 +489,7 @@ impl<T> Slot<T> {
             rules: Some(rules),
             depth: 0,
             left_out: false,
+            missing_told: false,
         }
     }
 
@@ -536,13 +540,34 @@ impl<T> Slot<T> {
                 None
             }
             _ => {
-                match self.rules.and_then(|rules| rules.missing) {
-                    Some(code) => read.missing_member_as(&object.members, key, Code::from(code)),
-                    None => read.missing_member(&object.members, key),
+                if !self.missing_told {
+                    self.tell_missing(object, key, read);
                 }
                 *ok = false;
                 None
             }
+        }
+    }
+
+    /// Tells the member `key` missing, under the field's own code when it has one.
+    fn tell_missing(&self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
+        match self.rules.and_then(|rules| rules.missing) {
+            Some(code) => read.missing_member_as(&object.members, key, Code::from(code)),
+            None => read.missing_member(&object.members, key),
+        }
+    }
+
+    /// Where a read in declared order asks for the member `key` and the object does not have it:
+    /// a required field tells its absence here, in its place among the members, and
+    /// [`required`](Self::required) then does not tell it again. A tree tells it at the end
+    /// ([`Object::settle`]).
+    pub fn missing_now(&mut self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
+        if matches!(self.state, State::Absent)
+            && !self.missing_told
+            && read.telling().objects != Objects::Tree
+        {
+            self.tell_missing(object, key, read);
+            self.missing_told = true;
         }
     }
 
@@ -598,6 +623,7 @@ impl<T> Slot<T> {
             rules: self.rules,
             depth: node.path().len(),
             left_out: false,
+            missing_told: false,
         };
         if reads_null {
             inner.read_with(node, &mut attempt, unknown, with);

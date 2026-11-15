@@ -27,7 +27,6 @@ bedrock_addon_core::version_chain! {
         /// Format 1.21.30 exactly: the newest document.
         V1_21_30(TextureSet),
     }
-    molang = none;
 }
 
 /// Runs the upgrade step of a document [`parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written) gave: the same result

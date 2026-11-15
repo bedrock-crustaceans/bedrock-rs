@@ -1757,3 +1757,36 @@ fn a_leaf_that_fails_without_telling_is_no_one_s_business_off_the_tree() {
     assert_eq!(quiet, None);
     assert!(told.is_empty(), "{told:?}");
 }
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Placed {
+    first: u8,
+    second: u8,
+    third: Option<u8>,
+}
+
+/// A read that asks for the members one by one in declared order tells a missing required one
+/// where it asks for it; a read in the file's order tells it after the members the file has.
+#[test]
+fn a_missing_required_member_is_told_in_its_place_in_declared_order() {
+    let text = r#"{"third": "x"}"#;
+    let (value, told) = read_as::<Placed>(text, Reading::DOCUMENT, Profile::DECLARED_ORDER);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        [
+            "Error root/first core/missing_required_field",
+            "Error root/second core/missing_required_field",
+            "Error root/third core/invalid_type",
+        ]
+    );
+    let (_, told) = read_as::<Placed>(text, Reading::DOCUMENT, Profile::EVERY_FAILURE);
+    assert_eq!(
+        told,
+        [
+            "Error root/third core/invalid_type",
+            "Error root/first core/missing_required_field",
+            "Error root/second core/missing_required_field",
+        ]
+    );
+}

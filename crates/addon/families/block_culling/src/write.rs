@@ -9,7 +9,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned};
 
-use super::read::{Slice, read};
+use super::read::read;
 
 /// The payload of a culling-rules document: only the members the value holds are written.
 pub(super) fn payload(description: &Description, rules: &[Rule]) -> Value {
@@ -58,7 +58,7 @@ impl Versioned for CullingRules {
 
 impl VersionStruct for CullingRules {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = read(payload, Slice::V1_21_80, &cx.at, d)?;
+        let payload = read(payload, cx, d)?;
         Some(Self {
             description: payload.description,
             rules: payload.rules,

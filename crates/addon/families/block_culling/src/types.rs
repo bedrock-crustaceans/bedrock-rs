@@ -1,7 +1,9 @@
 //! The culling-rules types, their constructors, defaults and derived views.
 
 use bedrock_addon_core::id::CullingRulesId;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
+use facet::Facet;
 
 /// The culling rules of a block model (`minecraft:block_culling_rules`), at the newest format
 /// version: which parts of the model are hidden against which neighbour.
@@ -24,7 +26,7 @@ pub struct CullingRules {
 }
 
 /// `minecraft:block_culling_rules/description`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Description {
     /// The identifier a block's `minecraft:geometry` `culling` names (JSON `identifier`):
     /// `namespace:name`, without spaces, tabs or line breaks. Only a base-game pack may use
@@ -33,15 +35,21 @@ pub struct Description {
 }
 
 /// One culling rule: a part of the model and the neighbour it is hidden against.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Rule {
     /// When the part is hidden against a neighbour that is not a full, opaque block (JSON
     /// `condition`, from format 1.21.80); without one it never is.
+    #[facet(schema::since_format = "1.21.80", schema::reads_null)]
     pub condition: Option<Condition>,
     /// Whether the part is hidden against a full, opaque neighbour (JSON
     /// `cull_against_full_and_opaque`, from format 1.21.80);
     /// [`culls_against_full_and_opaque`](Self::culls_against_full_and_opaque) gives the
     /// client's `true` when the member is absent.
+    #[facet(
+        schema::since_format = "1.21.80",
+        schema::reads_null,
+        schema::wrong_type = bedrock_addon_core::diagnostic::codes::INVALID_NUMERIC_VALUE
+    )]
     pub cull_against_full_and_opaque: Option<bool>,
     /// The part of the model (JSON `geometry_part`).
     pub geometry_part: GeometryPart,
@@ -50,18 +58,20 @@ pub struct Rule {
 }
 
 /// The part of a block model a rule hides: a whole bone, or one face of one cube of it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct GeometryPart {
     /// The bone's name (JSON `bone`).
     pub bone: String,
     /// The index of a cube of the bone, 0 or more (JSON `cube`); it needs `face`.
+    #[facet(schema::reads_null, schema::read_with = crate::read::cube)]
     pub cube: Option<i32>,
     /// The face of that cube (JSON `face`); it needs `cube`.
+    #[facet(schema::reads_null)]
     pub face: Option<Facing>,
 }
 
 /// A side of a block (vanilla `SharedTypes::Facing`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 #[repr(i16)]
 pub enum Facing {
     /// `"down"`.
@@ -79,7 +89,7 @@ pub enum Facing {
 }
 
 /// What a culling rule compares the neighbour with (JSON `condition`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 #[repr(i32)]
 #[non_exhaustive]
 pub enum Condition {

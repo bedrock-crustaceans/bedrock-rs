@@ -24,6 +24,9 @@ pub struct TextureSet {
     pub metalness_emissive_roughness: Option<LayerValue<Rgb>>,
 }
 
+// The newest struct derives its Molang walk; this one holds none.
+bedrock_addon_core::impl_no_molang!(TextureSet);
+
 impl Versioned for TextureSet {
     const VERSION: FormatVersion = V1_16_100;
 }

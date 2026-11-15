@@ -4,8 +4,8 @@
 use bedrock_addon_core::diagnostic::Kind;
 
 use super::common::{
-    BONE1_EAST, KEY, base_game, document, error, errors, failed_internal, latest, load_in, loads,
-    rejects, rejects_in, user_pack,
+    BONE1_EAST, KEY, base_game, document, error, errors, failed_internal, failed_to_parse, latest,
+    load_in, loads, rejects, rejects_in, user_pack,
 };
 
 /// `(code, text)` of every finding.
@@ -366,5 +366,28 @@ fn the_checks_run_on_the_upgraded_document() {
     assert_eq!(
         errors(&rejects_in(&json, &user_pack()))[0].1,
         "Rule 0 with geometry part 'b' had a cube index but no face specified"
+    );
+}
+
+#[test]
+fn a_missing_geometry_part_is_told_before_a_direction_of_the_wrong_type() {
+    // The game's reader asks for the members of a rule in the order of its schema, so what it
+    // finds missing it tells where it asks.
+    let json = latest(&[BONE1_EAST, r#"{"direction": 5}"#]);
+    assert_eq!(
+        errors(&rejects(&json)),
+        [
+            error(
+                "core/missing_required_field_worded",
+                "-> rules[1] -> geometry_part: missing required field",
+                &format!("{KEY}/rules/1/geometry_part")
+            ),
+            error(
+                "core/invalid_type_worded",
+                "-> rules[1] -> direction: This value is bound to 'Facing' and expects a \"named value\" (i.e. a string)",
+                &format!("{KEY}/rules/1/direction")
+            ),
+            failed_to_parse(),
+        ]
     );
 }

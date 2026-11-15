@@ -6,7 +6,7 @@ use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned};
 
-use super::super::read::{Slice, read};
+use super::super::read::read;
 use super::super::write;
 pub use super::super::{Description, Facing, GeometryPart};
 
@@ -37,7 +37,7 @@ impl Versioned for CullingRules {
 
 impl VersionStruct for CullingRules {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let payload = read(payload, Slice::V1_20_60, &cx.at, d)?;
+        let payload = read(payload, cx, d)?;
         Some(Self {
             description: payload.description,
             rules: payload

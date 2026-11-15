@@ -8,8 +8,11 @@
 //! of the packs that ship sets. Which file the client loads for a texture path, and the images
 //! of the layers, are the stack's composition of this family with the texture files.
 //!
-//! The reader stays hand-versioned: one walk per `format_version` the client has a schema for
-//! (`history`), each with the texts the client logs, the colour parse included.
+//! The file's own rules stay hand code, as the client has them (`read`): the empty file, the
+//! version that selects one of its two schemas, the root's members, the post-validation. The
+//! layers are the derived read of [`TextureSet`] under that schema's format version
+//! (`metalness_emissive_roughness_subsurface` is `since_format` 1.21.30, an unknown member
+//! below it), with the client's texts; the colour parse is a leaf read of [`LayerValue`].
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
