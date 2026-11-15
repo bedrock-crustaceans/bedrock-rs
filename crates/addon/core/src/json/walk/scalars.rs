@@ -79,10 +79,9 @@ pub(super) fn judge_scalar(
 /// newtype variant around a scalar (or an enum of unit variants) whose type takes the token
 /// (`scalar_matches_shape`: a string that parses into the type is taken), else the first such
 /// variant whatever the token. Under [`Scalars::ConvertAndTell`] that is the arm. Under the
-/// other profiles an arm takes the token when the strict rule does (the `JsonCpp` one under
-/// [`Scalars::JsonCpp`]): the first such arm in order, and when none does and every scalar arm
-/// has a declared scalar type, the token is refused at the enum (the `StrictShape` check the
-/// block family made before the typed read).
+/// other profiles an arm takes the token when the strict rule does: the first such arm in order,
+/// and when none does and every scalar arm has a declared scalar type, the token is refused at
+/// the enum (the `StrictShape` check the block family made before the typed read).
 pub(super) fn scalar_arm(
     variants: &'static [facet::Variant],
     token: Token<'_>,
@@ -166,10 +165,7 @@ pub(crate) fn choose_scalar_arm(
             declared: declared.is_some(),
         });
     }
-    let arm_rules = match rules.scalars {
-        Scalars::JsonCpp => rules,
-        _ => rules.with_scalars(Scalars::Strict),
-    };
+    let arm_rules = rules.with_scalars(Scalars::Strict);
     let takes =
         |declared: Declared| !matches!(judge(declared, token, arm_rules), Verdict::Refused(_));
     if let Some((index, _, _)) = arms

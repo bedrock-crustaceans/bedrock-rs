@@ -8,11 +8,10 @@ use indexmap::IndexMap;
 
 use super::value::{ValueComponent, value_component};
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::schema::{self, FromJson, Schema, from_value_ref};
+use bedrock_addon_core::schema::{FromJson, Schema, from_value_ref};
 
 /// `minecraft:display_name`: the item's name, or a localization key (JSON `{"value": text}`).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DisplayName {
     /// The name or localization key (JSON `value`).
     #[facet(default)]
@@ -40,7 +39,6 @@ value_component! {
 /// besides `default` (`dyed`, `icon_trim`, `bundle_open_front`, `bundle_open_back`, trim
 /// palettes) are read by the engine where they apply.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Icon {
     /// The texture keys by role (JSON `textures`).
     #[facet(default)]
@@ -131,7 +129,6 @@ impl FromJson for InteractButton {
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value [`effective_duration`](Self::effective_duration) and its siblings state.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Record {
     /// The sound played (JSON `sound_event`): a level sound event's name in a stable
     /// document, any sound name in a beta one. Unset: the stable struct plays the level sound
@@ -171,7 +168,6 @@ impl Record {
 
 /// `minecraft:tags`: the item tags.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Tags {
     /// The tags (JSON `tags`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]

@@ -41,7 +41,7 @@ use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 use bedrock_addon_core::molang::{MolangFieldSpec, MolangVersionSource};
 use bedrock_addon_core::schema::FromJson;
-use bedrock_addon_core::versioning::{ConvertMode, read_component};
+use bedrock_addon_core::versioning::{ConvertMode, read_component_with};
 use bedrock_addon_derive::Components;
 
 use crate::history::ItemFamily;
@@ -207,7 +207,7 @@ pub(crate) fn typed<T>(
 where
     T: FromJson + for<'a> facet::Facet<'a> + Into<ItemComponent>,
 {
-    read_component::<T, ItemComponent>(slice, mode, cx, d)
+    read_component_with::<T, ItemComponent>(slice, mode, cx, d, crate::typed_read)
 }
 
 /// `repair_amount`: the version of the item's `format_version`

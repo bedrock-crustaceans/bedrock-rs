@@ -82,7 +82,6 @@ pub(crate) const FULL_SIZE: Vec3 = [16.0, 16.0, 16.0];
 /// values of [`origin()`](Self::origin) and [`size()`](Self::size) for an absent member, so the
 /// default box (both `None`) is the full block.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BoundingBox {
     /// The minimum corner (JSON `origin`); each axis in `-8..=8`; `[-8, 0, -8]` when absent.
     #[facet(schema::fallback = FULL_ORIGIN)]
@@ -159,6 +158,7 @@ pub enum Color {
 
 /// A float range `{min, max}`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report")]
 pub struct Bounds {
     /// JSON `min`.
     pub min: f32,

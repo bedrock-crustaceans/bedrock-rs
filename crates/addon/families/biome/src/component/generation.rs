@@ -8,14 +8,13 @@ use facet_value::VArray;
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::ValueExt;
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::schema::{self, FromJson, Schema, from_value};
+use bedrock_addon_core::schema::{FromJson, Schema, from_value};
 use bedrock_addon_core::shared::ShapeErrorKind;
 use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// `minecraft:mountain_parameters`: steep-slope materials and the top slide of mountain
 /// terrain. Every member is optional.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MountainParameters {
     /// The block on steep slopes and the sides it covers (JSON `steep_material_adjustment`).
     pub steep_material_adjustment: Option<SteepMaterialAdjustment>,
@@ -25,7 +24,6 @@ pub struct MountainParameters {
 
 /// `mountain_parameters.steep_material_adjustment`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SteepMaterialAdjustment {
     /// The block placed on steep slopes (JSON `material`).
     pub material: Option<BlockSpecifier>,
@@ -42,7 +40,6 @@ pub struct SteepMaterialAdjustment {
 /// `mountain_parameters.top_slide`.
 // Required members: no `Default`, or facet would default them.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TopSlide {
     /// Whether the top slide applies (JSON `enabled`, required).
     pub enabled: bool,
@@ -51,7 +48,6 @@ pub struct TopSlide {
 /// `minecraft:multinoise_generation_rules`: where the biome lands in the multi-noise climate
 /// space. The game applies it only to biomes in the `minecraft` namespace.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MultinoiseGenerationRules {
     /// JSON `target_temperature`.
     pub target_temperature: Option<f32>,
@@ -68,7 +64,6 @@ pub struct MultinoiseGenerationRules {
 /// `minecraft:overworld_generation_rules`: the legacy overworld generator's transformations
 /// and climates.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OverworldGenerationRules {
     /// The biomes that replace this one as hills (JSON `hills_transformation`).
     pub hills_transformation: Option<WeightedBiomes>,
@@ -306,7 +301,6 @@ impl From<&WeightedClimate> for Value {
 /// `minecraft:overworld_height`: the legacy generator's terrain height, as a preset or as
 /// `[depth, scale]`, not both.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OverworldHeight {
     /// A height preset (JSON `noise_type`).
     pub noise_type: Option<NoiseType>,
@@ -366,7 +360,6 @@ impl NoiseType {
 /// `minecraft:replace_biomes`: replaces vanilla biomes, by noise, with this one.
 // Required members: no `Default`, or facet would default them.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ReplaceBiomes {
     /// The replacements (JSON `replacements`, required, at least one).
     pub replacements: Vec<BiomeReplacement>,
@@ -374,7 +367,6 @@ pub struct ReplaceBiomes {
 
 /// One entry of `replace_biomes.replacements`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BiomeReplacement {
     /// The dimension: `minecraft:overworld`, or from format 1.26.0 also `minecraft:nether`
     /// (JSON `dimension`, required).

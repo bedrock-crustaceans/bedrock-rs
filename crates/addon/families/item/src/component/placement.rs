@@ -10,7 +10,6 @@ use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:block_placer`: using the item places `block`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BlockPlacer {
     /// The block placed (JSON `block`, required).
     pub block: BlockSpecifier,
@@ -40,7 +39,6 @@ impl BlockPlacer {
 
 /// `minecraft:digger`: how fast the item breaks blocks.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Digger {
     /// The speed per block (JSON `destroy_speeds`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -55,7 +53,6 @@ pub struct Digger {
 
 /// One entry of a [`Digger`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DestroySpeed {
     /// The blocks (JSON `block`, required).
     #[facet(schema::molang_with = visit_block_descriptor)]
@@ -83,7 +80,6 @@ impl Digger {
 
 /// `minecraft:entity_placer`: using the item spawns `entity`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EntityPlacer {
     /// The entity spawned, with an optional `<event>` (JSON `entity`).
     pub entity: Option<EntityId>,

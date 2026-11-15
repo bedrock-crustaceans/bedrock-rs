@@ -14,7 +14,6 @@ use bedrock_addon_core::schema::{self, Schema};
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:structure_set")]
 #[doc(alias = "JigsawStructureSet")]
-#[facet(schema::unknown = "keep")]
 pub struct StructureSet {
     /// The set's identifier (JSON `description`).
     pub description: StructureSetDescription,
@@ -26,7 +25,6 @@ pub struct StructureSet {
 
 /// `minecraft:structure_set/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StructureSetDescription {
     /// The set's identifier, `namespace:name` (JSON `identifier`).
     pub identifier: StructureSetId,
@@ -35,7 +33,6 @@ pub struct StructureSetDescription {
 /// The placement of a structure set: one attempt per grid cell of `spacing` chunks, at least
 /// `separation` chunks from the cell's edge; `spacing` must be more than twice `separation`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomSpreadPlacement {
     /// The placement type, only `minecraft:random_spread` (JSON `type`).
     #[facet(rename = "type")]
@@ -77,7 +74,6 @@ pub enum SpreadType {
 
 /// One structure of a set (`structures[]`).
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StructureSetEntry {
     /// The jigsaw structure (JSON `structure`).
     pub structure: JigsawStructureId,

@@ -181,7 +181,6 @@ pub enum GrassColorMap {
 
 /// `minecraft:foliage_appearance`: the colour of the biome's leaves.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FoliageAppearance {
     /// JSON `color`; absent leaves the game's colour.
     #[facet(schema::wrong_type = codes::COLOR)]
@@ -190,7 +189,6 @@ pub struct FoliageAppearance {
 
 /// `minecraft:grass_appearance`: the colour of the biome's grass.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GrassAppearance {
     /// JSON `color`; absent leaves the game's colour.
     #[facet(schema::wrong_type = codes::COLOR)]
@@ -205,7 +203,6 @@ pub struct GrassAppearance {
 
 /// `minecraft:dry_foliage_color`: the colour of leaf litter and other dry foliage.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DryFoliageColor {
     /// JSON `color`.
     #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
@@ -214,7 +211,6 @@ pub struct DryFoliageColor {
 
 /// `minecraft:sky_color`: the colour of the sky.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SkyColor {
     /// JSON `sky_color`.
     #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
@@ -224,7 +220,6 @@ pub struct SkyColor {
 /// `minecraft:water_appearance`: the colour and opacity of the water's surface. At least one
 /// member is needed.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct WaterAppearance {
     /// JSON `surface_color`.
     #[facet(schema::read_with = colour, schema::wrong_type = codes::COLOR)]
@@ -236,7 +231,6 @@ pub struct WaterAppearance {
 /// `minecraft:precipitation`: the particles that fall in the biome and how dense they are. At
 /// most one member may be present.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Precipitation {
     /// JSON `ash`.
     pub ash: Option<f32>,

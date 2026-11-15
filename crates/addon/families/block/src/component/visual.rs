@@ -40,7 +40,6 @@ impl Geometry {
 
 /// The object form of [`Geometry`].
 #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct GeometryParams {
     /// The geometry identifier (JSON `identifier`).
     pub identifier: String,
@@ -81,7 +80,6 @@ pub enum UvLock {
 
 /// `geometry.n_way_visual_rotation`: the state that drives the rotation about each axis.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NWayVisualRotation {
     /// JSON `x`.
     pub x: Option<String>,
@@ -114,7 +112,6 @@ pub enum MaterialInstanceEntry {
 
 /// A material instance; every member optional.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MaterialInstance {
     /// The `terrain_texture.json` short name (JSON `texture`).
     pub texture: Option<String>,
@@ -158,7 +155,6 @@ impl MaterialInstances {
 
 /// `minecraft:transformation`: translation, scale and rotation of the model.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Transformation {
     /// JSON `translation`.
     pub translation: Option<Vec3>,
@@ -174,7 +170,6 @@ pub struct Transformation {
 
 /// `minecraft:item_visual`: how the block's item looks (geometry and materials, both required).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ItemVisual {
     /// JSON `geometry`.
     pub geometry: Geometry,
@@ -185,7 +180,6 @@ pub struct ItemVisual {
 /// `minecraft:embedded_visual`: how the block looks inside another (a flower pot), geometry and
 /// materials, both required.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EmbeddedVisual {
     /// JSON `geometry`.
     pub geometry: Geometry,
@@ -195,7 +189,6 @@ pub struct EmbeddedVisual {
 
 /// `minecraft:destruction_particles`: the particles shown while the block breaks.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DestructionParticles {
     /// The texture (JSON `texture`); `""` when absent.
     pub texture: Option<String>,
@@ -223,7 +216,6 @@ pub enum MapColor {
 
 /// The object form of [`MapColor`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MapColorParams {
     /// JSON `color` (required).
     pub color: Color,

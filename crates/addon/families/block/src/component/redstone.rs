@@ -7,7 +7,6 @@ use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:redstone_conductivity`: whether the block conducts redstone power.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RedstoneConductivity {
     /// JSON `redstone_conductor`; `false` when absent.
     #[facet(schema::fallback = false)]
@@ -19,7 +18,6 @@ pub struct RedstoneConductivity {
 
 /// `minecraft:redstone_consumer`: the block takes redstone power (custom components see it).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RedstoneConsumer {
     /// The lowest power it reacts to (JSON `min_power`, `0..=15`); 0 when absent.
     #[facet(schema::fallback = 0, schema::max = 15)]
@@ -31,7 +29,6 @@ pub struct RedstoneConsumer {
 
 /// `minecraft:redstone_producer`: the block gives off redstone power.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RedstoneProducer {
     /// The power level (JSON `power`, required, `0..=15`).
     #[facet(schema::max = 15)]

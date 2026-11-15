@@ -14,7 +14,6 @@ use bedrock_addon_core::schema::{self, Schema};
 /// `minecraft:damage_absorption`: worn armour absorbs damage of these causes, spending
 /// durability.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DamageAbsorption {
     /// The damage causes (JSON `absorbable_causes`, required, at least one).
     #[facet(schema::min_len = 1)]
@@ -23,7 +22,6 @@ pub struct DamageAbsorption {
 
 /// `minecraft:durability`: how much use the item takes before it breaks.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Durability {
     /// The durability, at least 0 (JSON `max_durability`, required).
     #[facet(schema::min = 0)]
@@ -47,7 +45,6 @@ impl Durability {
 /// `minecraft:durability_sensor`: particles and sounds when the durability falls to a
 /// threshold.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DurabilitySensor {
     /// The thresholds (JSON `durability_thresholds`, required, at least one).
     #[facet(schema::min_len = 1)]
@@ -59,7 +56,6 @@ pub struct DurabilitySensor {
 /// A member the document leaves out stays unset (and is not written); the game gives it the
 /// value the constants and accessors below state.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DurabilityThreshold {
     /// The durability at which it fires (JSON `durability`).
     #[facet(default)]
@@ -85,7 +81,6 @@ impl DurabilityThreshold {
 
 /// `minecraft:dyeable`: the item can be dyed in a cauldron.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Dyeable {
     /// The colour before dyeing (JSON `default_color`: a `#RRGGBB` string or `[r, g, b]`), as
     /// written.
@@ -94,7 +89,6 @@ pub struct Dyeable {
 
 /// `minecraft:enchantable`: which enchantments the item takes and how well.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Enchantable {
     /// The enchantability, at least 0 (JSON `value`, required).
     #[facet(schema::min = 0)]
@@ -136,7 +130,6 @@ pub(crate) const ENCHANT_SLOTS: &[&str] = &[
 
 /// `minecraft:repairable`: the items that repair this one, and by how much.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Repairable {
     /// The repair entries (JSON `repair_items`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -145,7 +138,6 @@ pub struct Repairable {
 
 /// One entry of a [`Repairable`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RepairItem {
     /// The items that repair (JSON `items`, required).
     #[facet(schema::molang_with = visit_item_descriptors)]
@@ -158,7 +150,6 @@ pub struct RepairItem {
 
 /// `minecraft:wearable`: the item is worn in `slot`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Wearable {
     /// The slot (JSON `slot`, required).
     pub slot: WearableSlot,

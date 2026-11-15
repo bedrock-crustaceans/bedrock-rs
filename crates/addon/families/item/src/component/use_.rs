@@ -10,7 +10,6 @@ use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:compostable`: a composter takes the item.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Compostable {
     /// The chance in percent, 1–100, that it adds a layer (JSON `composting_chance`, required).
     #[facet(schema::min = 1, schema::max = 100)]
@@ -19,7 +18,6 @@ pub struct Compostable {
 
 /// `minecraft:food`: the item can be eaten.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Food {
     /// The hunger restored (JSON `nutrition`).
     pub nutrition: Option<i32>,
@@ -35,7 +33,6 @@ pub struct Food {
 /// `minecraft:fuel`: the item burns in a furnace (JSON `{"duration": seconds}` or a bare
 /// number; at least 0.05).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Fuel {
     /// The burn time in seconds (JSON `duration`).
     #[facet(default, schema::min = 0.05)]
@@ -94,7 +91,6 @@ pub enum UseAnimationKind {
 
 /// `minecraft:use_modifiers`: how using the item behaves.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct UseModifiers {
     /// How long a use lasts, in seconds, at least 0 (JSON `use_duration`).
     #[facet(default, schema::min = 0.0)]

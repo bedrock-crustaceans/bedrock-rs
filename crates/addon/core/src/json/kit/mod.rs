@@ -27,7 +27,7 @@
 //! | axis | what the kit does with it |
 //! |---|---|
 //! | [`Reading::null`] | [`NullHandling::Absent`] (and `AbsentSilently`, which tells nothing): [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
-//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`). In the hand reads [`Scalars::JsonCpp`] only, in two reads: [`number`](Read::number) also takes a bool, as 1 or 0, and [`int`](Read::int) any number, cut as `asInt` cuts it under the caller's [`Coercing`] (a string or `null` is still a wrong type to both, and a bool to `int`). [`Scalars::Strict`], [`Scalars::NonStrict`] and [`Scalars::ConvertAndTell`] read alike here: a token of another kind is a wrong type, and `int` takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
+//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`). In the hand reads every profile reads alike: a token of another kind is a wrong type, and [`int`](Read::int) takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
 //! | [`Reading::beyond_width`] | in [`scalar`](Read::scalar): a number beyond its float reads as the infinity it is, told so the load clamps it and reads again ([`BeyondWidth::ClampAndTell`](crate::json::BeyondWidth::ClampAndTell)), or is a wrong type ([`BeyondWidth::Error`](crate::json::BeyondWidth::Error)) |
 //! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown) |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
@@ -1584,6 +1584,15 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The read with `keeps_unknown` for whether a struct that says nothing keeps its unknown
+    /// members instead of the reading's: a family's typed reads keep them for write-back where
+    /// its slices' reading (the one its reading table prints) keeps none.
+    #[must_use]
+    pub fn keeps_unknown(mut self, keeps_unknown: bool) -> Self {
+        self.reading = self.reading.with_keeps_unknown(keeps_unknown);
+        self
+    }
+
     /// The read telling unknown members at `severity` instead of the reading's: a reader the
     /// game runs without a word about them is told as information.
     ///
@@ -2347,11 +2356,10 @@ impl<'d> Read<'d> {
     /// # }
     /// let json: Value = from_str_jsonc("[true, 1]").unwrap();
     /// let mut found = Diagnostics::default();
-    /// use bedrock_addon_core::versioning::Scalars;
-    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
+    /// let mut read = Read::new(Reading::OWN, &mut found);
     /// let elements = read.array(&Node::new(&json, JsonPath::new())).unwrap();
     /// let read: Vec<Option<bool>> = elements.iter().map(|n| read.bool(&n)).collect();
-    /// // Not even the `JsonCpp` reading takes a number for a bool.
+    /// // A number is no bool.
     /// assert_eq!(read, [Some(true), None]);
     /// ```
     pub fn bool(&mut self, node: &Node<'_>) -> Option<bool> {
@@ -2390,9 +2398,8 @@ impl<'d> Read<'d> {
         read
     }
 
-    /// The number `node` holds, as the double it spells; under [`Scalars::JsonCpp`] a bool
-    /// too, as 1 or 0. A [wrong type](Self::wrong_type) for any other value, a string included
-    /// under either.
+    /// The number `node` holds, as the double it spells. A [wrong type](Self::wrong_type) for
+    /// any other value, a bool or a string included.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -2406,30 +2413,23 @@ impl<'d> Read<'d> {
     /// let root = Node::new(&json, JsonPath::new());
     /// let mut found = Diagnostics::default();
     /// let mut read = Read::new(Reading::DOCUMENT, &mut found);
-    /// let strict: Vec<Option<f64>> = read.array(&root).unwrap().iter().map(|n| read.number(&n)).collect();
-    /// use bedrock_addon_core::versioning::Scalars;
-    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
-    /// let coercing: Vec<Option<f64>> = read.array(&root).unwrap().iter().map(|n| read.number(&n)).collect();
-    /// assert_eq!(strict, [Some(0.5), Some(2.0), None]);
-    /// assert_eq!(coercing, [Some(0.5), Some(2.0), Some(1.0)]);
+    /// let numbers: Vec<Option<f64>> = read.array(&root).unwrap().iter().map(|n| read.number(&n)).collect();
+    /// assert_eq!(numbers, [Some(0.5), Some(2.0), None]);
     /// ```
     pub fn number(&mut self, node: &Node<'_>) -> Option<f64> {
-        let read = match (node.value.as_number(), self.reading.scalars) {
-            (Some(number), _) => Some(number.to_f64_lossy()),
-            (None, Scalars::JsonCpp) => node.value.as_bool().map(|flag| f64::from(u8::from(flag))),
-            (None, _) => None,
-        };
+        let read = node
+            .value
+            .as_number()
+            .map(facet_value::VNumber::to_f64_lossy);
         if read.is_none() {
             self.wrong_kind(node, Expected::Number);
         }
         read
     }
 
-    /// The `i32` `node` holds, under `ints` (jsoncpp's `isInt` and `asInt`, which the families
-    /// disagree on, so each names its own): under every profile but `JsonCpp` the number `isInt`
-    /// takes; under [`Scalars::JsonCpp`] any number, as `asInt` cuts it. A
-    /// [wrong type](Self::wrong_type) for any other value, a bool or a string included under
-    /// either.
+    /// The `i32` `node` holds, under `ints` (jsoncpp's `isInt`, which the families disagree on,
+    /// so each names its own): the number `isInt` takes. A [wrong type](Self::wrong_type) for
+    /// any other value, a bool or a string included.
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -2451,16 +2451,9 @@ impl<'d> Read<'d> {
     /// };
     /// assert_eq!(ints(&mut read, TOKEN), [Some(3), None, None]);
     /// assert_eq!(ints(&mut read, INTEGRAL), [Some(3), Some(2), None]);
-    /// use bedrock_addon_core::versioning::Scalars;
-    /// let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
-    /// // `asInt` cuts a real toward zero.
-    /// assert_eq!(ints(&mut read, TOKEN), [Some(3), Some(2), Some(2)]);
     /// ```
     pub fn int(&mut self, node: &Node<'_>, ints: Coercing) -> Option<i32> {
-        let read = match self.reading.scalars {
-            Scalars::JsonCpp => node.value.as_number().map(|_| node.value.as_int(0, ints)),
-            _ => node.value.is_int(ints),
-        };
+        let read = node.value.is_int(ints);
         if read.is_none() {
             self.wrong_kind(node, Expected::Number);
         }

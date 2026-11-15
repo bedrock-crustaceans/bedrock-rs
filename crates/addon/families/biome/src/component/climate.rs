@@ -4,13 +4,12 @@
 
 use facet::Facet;
 
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_shared_shapes::HexOr;
 
 /// `minecraft:climate`: temperature, downfall and snow cover. Every member is optional; an
 /// absent one leaves the game's built-in value.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Climate {
     /// How much precipitation falls (JSON `downfall`); below `2^-23` the biome gets no rain.
     pub downfall: Option<f32>,
@@ -24,7 +23,6 @@ pub struct Climate {
 /// `minecraft:creature_spawn_probability`: the chance that creatures spawn while chunks
 /// generate.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CreatureSpawnProbability {
     /// The probability, in `[0.0, 0.75]` (JSON `probability`).
     pub probability: Option<f32>,
@@ -33,7 +31,6 @@ pub struct CreatureSpawnProbability {
 /// `minecraft:humidity`: whether the biome counts as humid (fire spread, farmland).
 // Required members: no `Default`, or facet would default them.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Humidity {
     /// Humid or dry (JSON `is_humid`, required).
     pub is_humid: bool,
@@ -41,7 +38,6 @@ pub struct Humidity {
 
 /// `minecraft:map_tints`: the colours a map draws the biome's grass and foliage with.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MapTints {
     /// The grass colour (JSON `grass`, required).
     pub grass: GrassTint,
@@ -56,14 +52,12 @@ pub struct MapTints {
 pub enum GrassTint {
     /// `{"type": "tint", "tint": <colour>}`: one colour.
     #[facet(rename = "tint")]
-    #[facet(schema::unknown = "keep")]
     Tint {
         /// The colour (JSON `tint`, required).
         tint: Color,
     },
     /// `{"type": "noise"}`: the colour the game picks by noise.
     #[facet(rename = "noise")]
-    #[facet(schema::unknown = "keep")]
     Noise {},
 }
 
@@ -76,13 +70,11 @@ pub type ColorRgba = HexOr<[i32; 4]>;
 
 /// `minecraft:partially_frozen`: the biome is partly frozen by noise (no members).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PartiallyFrozen {}
 
 /// `minecraft:tags`: the biome's tags, which features, spawn rules and Molang queries test.
 // Required members: no `Default`, or facet would default them.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Tags {
     /// The tags (JSON `tags`, required).
     pub tags: Vec<String>,
@@ -97,7 +89,6 @@ impl Tags {
 
 /// `minecraft:village_type` (format 1.26.0): which village style generates in the biome.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct VillageType {
     /// The style (JSON `type`, required).
     #[facet(rename = "type")]

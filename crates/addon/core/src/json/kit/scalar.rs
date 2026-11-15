@@ -87,7 +87,7 @@ impl Read<'_> {
     /// [`beyond_width`](crate::versioning::Reading::beyond_width) rule ([`judge`]), telling what
     /// the typed door tells for the same token:
     ///
-    /// - [`Scalars::Strict`], [`Scalars::JsonCpp`], [`Scalars::NonStrict`]: the token the
+    /// - [`Scalars::Strict`], [`Scalars::NonStrict`]: the token the
     ///   profile reads (kept, or respelt: `257` is `1` to the non-strict `u8` reader), or a
     ///   [wrong type](Self::wrong_kind) where it refuses it (out of range included);
     /// - [`Scalars::ConvertAndTell`]: a token of the member's JSON type as written (an integer

@@ -13,7 +13,6 @@ use bedrock_addon_core::schema::{self, Schema};
 /// `minecraft:cooldown`: the item cannot be used again for `duration` seconds; items sharing a
 /// `category` share the cooldown.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Cooldown {
     /// The cooldown group (JSON `category`, required).
     pub category: String,
@@ -63,7 +62,6 @@ value_component! {
 /// `minecraft:kinetic_weapon`: a charged attack that deals damage, knockback or dismounts by
 /// the attacker's speed (engine 1.21.130). No member is required.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct KineticWeapon {
     /// Ticks before the effects apply (JSON `delay`).
     pub delay: Option<i32>,
@@ -87,7 +85,6 @@ pub struct KineticWeapon {
 
 /// One effect condition of a [`KineticWeapon`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct KineticCondition {
     /// How long the effect lasts, in ticks (JSON `max_duration`); 0 is an error.
     pub max_duration: Option<i32>,
@@ -103,7 +100,6 @@ pub struct KineticCondition {
 /// `minecraft:piercing_weapon`: an attack that hits every entity along its reach (engine
 /// 1.21.130).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PiercingWeapon {
     /// The reach in blocks (JSON `reach`).
     pub reach: Option<FloatRange>,
@@ -115,7 +111,6 @@ pub struct PiercingWeapon {
 
 /// `minecraft:projectile`: the item can be shot as `projectile_entity`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Projectile {
     /// The power above which the shot is critical (JSON `minimum_critical_power`).
     pub minimum_critical_power: Option<f32>,
@@ -125,7 +120,6 @@ pub struct Projectile {
 
 /// `minecraft:shooter`: the item shoots one of its `ammunition` items.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Shooter {
     /// The ammunition, in order of preference (JSON `ammunition`).
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -140,7 +134,6 @@ pub struct Shooter {
 
 /// One ammunition entry of a [`Shooter`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ShooterAmmunition {
     /// The ammunition item (JSON `item`, required).
     #[facet(schema::molang_with = visit_item_descriptor)]
@@ -156,7 +149,6 @@ pub struct ShooterAmmunition {
 /// `minecraft:swing_sounds`: the sounds of a swing (engine 1.21.130). At least one member must
 /// be set.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwingSounds {
     /// A swing that hits nothing (JSON `attack_miss`).
     pub attack_miss: Option<SoundEventName>,
@@ -168,7 +160,6 @@ pub struct SwingSounds {
 
 /// `minecraft:throwable`: the item can be thrown.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Throwable {
     /// The swing animation plays (JSON `do_swing_animation`).
     pub do_swing_animation: Option<bool>,

@@ -6,11 +6,11 @@ use bedrock_addon_core::document::Unknown as Table;
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, NullRule, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx};
+use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ConvertMode, ParseCx, Reading, VersionStruct, Versioned, read_component,
-    read_payload, read_slice, write_payload,
+    BETA_VERSION, ConvertMode, ParseCx, Reading, VersionStruct, Versioned, read_component_with,
+    read_payload_with, read_slice_with, write_payload,
 };
 use bedrock_addon_shared_shapes::{CreativeCategory, MenuCategory};
 use facet::Facet;
@@ -80,7 +80,6 @@ pub struct ItemDocument<const V: u32> {
 /// The `description` of an older item format: `identifier`, the 1.16.100–1.20.0 `category`
 /// and the 1.20.20 and later `menu_category`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// JSON `identifier` (required).
     pub identifier: String,
@@ -128,7 +127,7 @@ fn typed<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Opti
 where
     T: FromJson + for<'a> Facet<'a> + Into<Component>,
 {
-    read_component::<T, Component>(slice, ConvertMode::Strict, cx, d)
+    read_component_with::<T, Component>(slice, ConvertMode::Strict, cx, d, crate::typed_read)
 }
 
 /// A component of a shape of its own, whatever its JSON kind: `render_offsets` kept as
@@ -137,7 +136,7 @@ fn plain<T>(slice: JsonSlice<'_>, cx: &LoadContext, d: &mut Diagnostics) -> Opti
 where
     T: FromJson + Into<Component>,
 {
-    read_slice::<T>(slice, cx, d).map(Into::into)
+    read_slice_with::<T>(slice, cx, d, crate::typed_read).map(Into::into)
 }
 
 /// A one-value component of the newest format, from its object form or its bare value: the
@@ -150,7 +149,13 @@ where
         + Into<Component>
         + bedrock_addon_core::document::Component<Set = ItemComponent>,
 {
-    let component = read_component::<T, ItemComponent>(slice, ConvertMode::Strict, cx, d)?;
+    let component = read_component_with::<T, ItemComponent>(
+        slice,
+        ConvertMode::Strict,
+        cx,
+        d,
+        crate::typed_read,
+    )?;
     T::try_from_set(component).ok().map(Into::into)
 }
 
@@ -164,7 +169,7 @@ where
     if slice.opens_an_object() {
         return typed::<T>(slice, cx, d);
     }
-    read_slice::<T::Scalar>(slice, cx, d).map(|v| T::from_scalar(v).into())
+    read_slice_with::<T::Scalar>(slice, cx, d, crate::typed_read).map(|v| T::from_scalar(v).into())
 }
 
 /// `minecraft:allow_off_hand` of the beta struct: the stable component's binding, whose
@@ -324,7 +329,6 @@ pub(crate) fn binding(version: FormatVersion, key: &str) -> Option<Parser> {
 
 /// What the parse shell reads of an item object.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct Shell {
     description: Description,
     components: Option<IndexMap<String, Raw>>,
@@ -361,7 +365,7 @@ pub(crate) fn parse_parts(
     let strict = strict(original);
     let unknown = cx.load.grade(Class::Unknown);
     let mut found = Diagnostics::default();
-    let Some(shell) = read_payload::<Shell>(payload, cx, &mut found) else {
+    let Some(shell) = read_payload_with::<Shell>(payload, cx, &mut found, crate::typed_read) else {
         d.extend_with_unknown(found);
         return None;
     };
@@ -884,8 +888,8 @@ fn unbind_members(
 }
 
 /// Whether a typed component keeps the members this version's struct does not bind as
-/// unknown members of its object (in the document's `Unknown` table; each of these structs says
-/// `schema::unknown = "keep"`).
+/// unknown members of its object (in the document's `Unknown` table; the typed reads keep them,
+/// [`crate::typed_read`]).
 fn keeps_unknown(component: &Component) -> bool {
     matches!(
         component,

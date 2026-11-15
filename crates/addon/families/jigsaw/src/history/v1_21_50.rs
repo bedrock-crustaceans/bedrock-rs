@@ -13,7 +13,6 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
 /// The metadata registry at 1.21.50 (JSON `minecraft:jigsaw_structure_metadata`).
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MetadataRegistry {
     /// The metadata of each structure element, by its metadata key in decimal (JSON
     /// `metadata`).
@@ -23,7 +22,6 @@ pub struct MetadataRegistry {
 
 /// The metadata of one generated structure template at 1.21.50.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StructureMetadata {
     /// The template's bounding size (JSON `size`).
     pub size: [i32; 3],

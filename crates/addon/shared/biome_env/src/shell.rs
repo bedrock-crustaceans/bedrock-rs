@@ -32,31 +32,36 @@ use bedrock_addon_core::versioning::{ConvertMode, Reading, write_payload};
 /// first failure told and then every unknown member (a component that fails still names what
 /// it has that its struct does not, so a document of another era is told what to drop), the
 /// findings relative to the component. A component of the wrong JSON kind, `null` included, is a
-/// wrong type at the component. The `parse` of a `#[component(..)]` row.
-pub fn read_row<T, C>(
+/// wrong type at the component. The `parse` of a `#[component(..)]` row, with the read set by
+/// `configure` before it reads, as
+/// [`read_payload_with`](bedrock_addon_core::versioning::read_payload_with) does for a payload:
+/// a family whose typed reads keep their unknown members gives [`Read::keeps_unknown`].
+pub fn read_row_with<T, C>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
+    configure: impl for<'r> FnOnce(Read<'r>) -> Read<'r>,
 ) -> Option<C>
 where
     T: FromJson + Into<C>,
 {
-    row::<T, C>(slice, mode, cx, d, false)
+    row::<T, C>(slice, mode, cx, d, false, configure)
 }
 
-/// [`read_row`] where a component that is no object is told as the game's reader of a struct
+/// [`read_row_with`] where a component that is no object is told as the game's reader of a struct
 /// tells it ([`malformed`]).
-pub fn read_row_of_struct<T, C>(
+pub fn read_row_of_struct_with<T, C>(
     slice: JsonSlice<'_>,
     mode: ConvertMode,
     cx: &LoadContext,
     d: &mut Diagnostics,
+    configure: impl for<'r> FnOnce(Read<'r>) -> Read<'r>,
 ) -> Option<C>
 where
     T: FromJson + Into<C>,
 {
-    row::<T, C>(slice, mode, cx, d, true)
+    row::<T, C>(slice, mode, cx, d, true, configure)
 }
 
 fn row<T, C>(
@@ -65,6 +70,7 @@ fn row<T, C>(
     cx: &LoadContext,
     d: &mut Diagnostics,
     of_struct: bool,
+    configure: impl for<'r> FnOnce(Read<'r>) -> Read<'r>,
 ) -> Option<C>
 where
     T: FromJson + Into<C>,
@@ -76,11 +82,13 @@ where
         d.push(finding);
         return None;
     }
-    let mut read = Read::new(cx.reading, d)
-        .unknown_severity(cx.grade(Class::Unknown))
-        .profile(Profile::FIRST_THEN_PASSES)
-        .load(cx)
-        .format(cx.document_format);
+    let mut read = configure(
+        Read::new(cx.reading, d)
+            .unknown_severity(cx.grade(Class::Unknown))
+            .profile(Profile::FIRST_THEN_PASSES)
+            .load(cx)
+            .format(cx.document_format),
+    );
     read_document::<T>(&node, &mut read).map(Into::into)
 }
 

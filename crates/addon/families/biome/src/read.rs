@@ -31,7 +31,6 @@ pub(crate) const V1_26_30: FormatVersion = known::V1_26_30;
 /// What a payload object holds: the components are those of the struct the read is of
 /// ([`read_as`]).
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct Payload {
     pub(crate) description: Description,
     #[facet(opaque, schema::read_with = components)]
@@ -40,7 +39,6 @@ pub(crate) struct Payload {
 
 /// The beta payload: [`Payload`] and the environment attributes.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct BetaPayload {
     #[facet(flatten)]
     pub(crate) payload: Payload,
@@ -49,7 +47,6 @@ pub(crate) struct BetaPayload {
 
 /// The root of a document below 1.21.120: one strict struct of two members.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct Root {
     pub(crate) format_version: String,
     #[facet(rename = "minecraft:biome", schema::read_with = read_struct::<Payload>)]
@@ -72,8 +69,9 @@ pub(crate) fn read_as<T: FromJson>(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    let whole: Option<Whole<T>> =
-        read_payload_with(slice, cx, d, |read| read.format(Some(version)));
+    let whole: Option<Whole<T>> = read_payload_with(slice, cx, d, |read| {
+        crate::typed_read(read.format(Some(version)))
+    });
     whole.map(|whole| whole.0)
 }
 
@@ -155,6 +153,43 @@ mod tests {
         assert_eq!(
             told,
             ["core/unrecognized_component minecraft:biome/components/demo:nothing"]
+        );
+    }
+
+    /// The members no struct binds are kept at every depth of a payload read, where the load
+    /// refuses the document for them (the strict slices): the table is the read's, not the load's.
+    #[test]
+    fn a_payload_read_keeps_its_unknown_members_at_every_depth() {
+        use bedrock_addon_core::version::FormatVersionInput;
+        let text = r#"{"zz": 1, "description": {"identifier": "demo:a", "zz": 2}, "components": {"minecraft:climate": {"temperature": 0.5, "zz": 3}, "minecraft:humidity": {"is_humid": true, "zz": 4}, "minecraft:surface_builder": {"builder": {"type": "minecraft:overworld", "sea_floor_depth": 7, "sea_floor_material": "minecraft:sand", "foundation_material": "minecraft:stone", "mid_material": "minecraft:dirt", "top_material": "minecraft:grass_block", "sea_material": "minecraft:water", "zz": 5}, "zz": 6}}}"#;
+        let load = LoadContext::detached();
+        let cx = ParseCx {
+            load: &load,
+            written: FormatVersionInput {
+                version: Some(V1_26_30),
+                beta_literal: false,
+                prerelease: false,
+            },
+            original_version: V1_26_30,
+            at: JsonPath::of_keys(["minecraft:biome"]),
+        };
+        let mut d = Diagnostics::default();
+        read_as::<Payload>(JsonSlice::new(text), V1_26_30, &cx, &mut d).expect("a payload");
+        let kept: Vec<String> = d
+            .unknown()
+            .iter()
+            .map(|(at, key, _)| format!("{at}/{key}"))
+            .collect();
+        assert_eq!(
+            kept,
+            [
+                "minecraft:biome/zz",
+                "minecraft:biome/components/minecraft:climate/zz",
+                "minecraft:biome/components/minecraft:humidity/zz",
+                "minecraft:biome/components/minecraft:surface_builder/zz",
+                "minecraft:biome/components/minecraft:surface_builder/builder/zz",
+                "minecraft:biome/description/zz",
+            ]
         );
     }
 }

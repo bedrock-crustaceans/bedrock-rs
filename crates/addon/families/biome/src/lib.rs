@@ -6,7 +6,7 @@
 //!
 //! Every document type derives its read (`#[derive(Facet, Schema)]`): the payload by
 //! `versioning::read_payload_with` in the struct's own version, each component by
-//! [`bedrock_addon_shared_biome_env::read_row`] from the row of its table. The one hand-written
+//! [`bedrock_addon_shared_biome_env::read_row_of_struct_with`] from the row of its table. The one hand-written
 //! read is the loop over the keys of `components` (`read::components`, a `schema::read_with`):
 //! which components a struct binds is the version's, and a key it does not bind is told as an
 //! unrecognized component and left out.
@@ -56,13 +56,14 @@ use bedrock_addon_core::document::{
     UnknownMembers, default_path_flat_for_vanilla,
 };
 use bedrock_addon_core::id::kind;
+use bedrock_addon_core::json::kit::Read;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle, write_json};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::{
     self, CollectionLoader, DocumentSource, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, SemVersion};
 use bedrock_addon_core::versioning::{
@@ -89,7 +90,6 @@ pub struct Biome {
 
 /// `minecraft:biome/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The biome's identifier, `namespace:name` in lower case (JSON `identifier`, matching
     /// `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`).
@@ -124,6 +124,13 @@ const EXPERIMENTAL_FORMATS: FormatVersion = FormatVersion::new(1, 13, 0);
 /// components read by it too, also outside a versioned load.
 pub(crate) fn reading() -> Reading {
     BiomeFamily::ENVELOPE.input.profile().strict()
+}
+
+/// What the typed reads of the biome's own structs (the payload and its components) read by:
+/// [`reading`], every struct keeping its unknown members for write-back. The reading table
+/// prints [`reading`], which keeps none.
+pub(crate) fn typed_read(read: Read<'_>) -> Read<'_> {
+    read.keeps_unknown(true)
 }
 
 impl Family for BiomeFamily {

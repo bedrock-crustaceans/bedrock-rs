@@ -15,7 +15,6 @@ use bedrock_addon_core::schema::{self, Schema};
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:template_pool")]
 #[doc(alias = "JigsawStructureTemplatePool")]
-#[facet(schema::unknown = "keep")]
 pub struct TemplatePool {
     /// The pool's identifier (JSON `description`).
     pub description: PoolDescription,
@@ -27,7 +26,6 @@ pub struct TemplatePool {
 
 /// `minecraft:template_pool/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PoolDescription {
     /// The pool's identifier, `namespace:name` (JSON `identifier`).
     pub identifier: TemplatePoolId,
@@ -35,7 +33,6 @@ pub struct PoolDescription {
 
 /// One weighted entry of a template pool (`elements[]`).
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TemplatePoolElement {
     /// What the entry places (JSON `element`).
     pub element: PoolElement,
@@ -52,11 +49,9 @@ pub struct TemplatePoolElement {
 pub enum PoolElement {
     /// Nothing (JSON `minecraft:empty_pool_element`).
     #[facet(rename = "minecraft:empty_pool_element")]
-    #[facet(schema::unknown = "keep")]
     Empty {},
     /// A structure template (JSON `minecraft:single_pool_element`).
     #[facet(rename = "minecraft:single_pool_element")]
-    #[facet(schema::unknown = "keep")]
     Single {
         /// The structure file, relative to the pack's `structures/` folder, at most 256 bytes
         /// (JSON `location`).
@@ -70,7 +65,6 @@ pub enum PoolElement {
     },
     /// A feature (JSON `minecraft:feature_pool_element`, engine 1.26.20).
     #[facet(rename = "minecraft:feature_pool_element")]
-    #[facet(schema::unknown = "keep")]
     Feature {
         /// The feature to place (JSON `feature`).
         feature: FeatureId,

@@ -2,8 +2,7 @@
 //! profile a slice reads by. Its oracles are the readers it stands for: the strict wrappers
 //! (`Strict`, and `NonStrict` under `with_reader_mode`), the post-hoc misread walk of a plain
 //! member (`ConvertAndTell`), and the legacy block reader's fixtures
-//! (`families/block/tests/block/legacy_reader.rs`). The `JsonCpp` accept set is held against entity's generated game table
-//! in the entity crate.
+//! (`families/block/tests/block/legacy_reader.rs`).
 
 #![allow(clippy::disallowed_methods, clippy::disallowed_types)]
 
@@ -95,7 +94,6 @@ const fn rules(scalars: Scalars, beyond_width: BeyondWidth) -> ScalarRules {
 
 const STRICT: ScalarRules = rules(Scalars::Strict, BeyondWidth::Error);
 const NON_STRICT: ScalarRules = rules(Scalars::NonStrict, BeyondWidth::Error);
-const JSON_CPP: ScalarRules = rules(Scalars::JsonCpp, BeyondWidth::Error);
 
 /// A value as the test compares it: a respelling, or a string (never respelt).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -334,15 +332,6 @@ fn a_128_bit_member_takes_every_integer_token_of_its_sign() {
             "u128 {text}"
         );
     }
-    // The `JsonCpp` reader truncates a real into them.
-    assert_eq!(
-        verdict(i128, "-7.9", JSON_CPP),
-        Verdict::Respell(Respelt::Int(-7))
-    );
-    assert_eq!(
-        verdict(u128, "-7.9", JSON_CPP),
-        Verdict::Refused(Refusal::OutOfRange)
-    );
 }
 
 /// `families/block/tests/block/legacy_reader.rs`, the legacy block reader's fixtures, as respellings.
@@ -461,54 +450,6 @@ fn convert_and_tell_tells_what_the_misread_walk_of_a_plain_member_tells() {
     tells_as_the_misread_walk::<f64>(Declared::Float { bits: 64 });
     tells_as_the_misread_walk::<bool>(Declared::Bool);
     tells_as_the_misread_walk::<String>(Declared::Text);
-}
-
-#[test]
-fn json_cpp_takes_the_token_types_of_the_game_table() {
-    // entity's generated table: `int` INT|UINT|REAL, `float` INT|UINT|REAL|BOOL, `string`
-    // STRING, `bool` BOOL (the entity crate holds the table to `JsonCpp::accepts`).
-    let int = Declared::Int {
-        bits: 32,
-        signed: true,
-    };
-    let float = Declared::Float { bits: 32 };
-    let takes = |declared: Declared, text: &str| {
-        !matches!(verdict(declared, text, JSON_CPP), Verdict::Refused(_))
-    };
-    // (token, int, float, string, bool)
-    for (text, row) in [
-        ("null", [false, false, false, false]),
-        ("-7", [true, true, false, false]),
-        ("7", [true, true, false, false]),
-        ("7.5", [true, true, false, false]),
-        ("\"7\"", [false, false, true, false]),
-        ("true", [false, true, false, true]),
-    ] {
-        assert_eq!(
-            [
-                takes(int, text),
-                takes(float, text),
-                takes(Declared::Text, text),
-                takes(Declared::Bool, text)
-            ],
-            row,
-            "{text}"
-        );
-    }
-    // A real into an integer is its truncation toward zero; a bool into a float `0.0` or
-    // `1.0`.
-    assert_eq!(
-        verdict(int, "7.5", JSON_CPP),
-        Verdict::Respell(Respelt::UInt(7))
-    );
-    assert_eq!(
-        verdict(int, "-7.5", JSON_CPP),
-        Verdict::Respell(Respelt::Int(-7))
-    );
-    assert_eq!(
-        verdict(float, "true", JSON_CPP),
-        Verdict::Respell(Respelt::Real(1.0))
-    );
 }
 
 #[test]

@@ -161,7 +161,7 @@ const TOKENS: &[&str] = &[
     "18446744073709551616",
 ];
 
-fn readings() -> [(&'static str, Reading); 7] {
+fn readings() -> [(&'static str, Reading); 6] {
     [
         ("document", Reading::DOCUMENT),
         (
@@ -170,7 +170,6 @@ fn readings() -> [(&'static str, Reading); 7] {
                 .with_scalars(Scalars::Strict)
                 .with_beyond_width(BeyondWidth::Error),
         ),
-        ("jsoncpp", Reading::DOCUMENT.with_scalars(Scalars::JsonCpp)),
         (
             "non_strict",
             Reading::DOCUMENT.with_scalars(Scalars::NonStrict),
@@ -322,8 +321,8 @@ fn the_reader_tells_what_the_door_tells_but_where_it_is_pinned_otherwise() {
     assert_eq!(
         counts,
         [
-            ("the member's path", 317),
-            ("the untagged arm the profile takes", 4)
+            ("the member's path", 264),
+            ("the untagged arm the profile takes", 3)
         ]
     );
 }

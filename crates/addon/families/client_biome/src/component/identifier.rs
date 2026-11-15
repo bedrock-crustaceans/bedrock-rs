@@ -7,14 +7,13 @@ use bedrock_addon_core::id::{
     AtmosphereSettingsId, ColorGradingSettingsId, CubemapSettingsId, FogId, LightingSettingsId,
     WaterSettingsId,
 };
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 
 /// One component with a single required identifier member.
 macro_rules! identifier_component {
     ($(#[$doc:meta])* $name:ident, $field:ident, $id:ty, $what:literal) => {
         $(#[$doc])*
         #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-        #[facet(schema::unknown = "keep")]
         pub struct $name {
             #[doc = concat!("JSON `", stringify!($field), "`: ", $what, ".")]
             pub $field: $id,

@@ -14,7 +14,6 @@ use bedrock_addon_core::shared::FilterSubject;
 /// conversion moved aside (JSON `deprecated`, the crate's own member). Only documents below 1.26.20 of
 /// allow-listed packs (vanilla's legacy creator features) carry them.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DeprecatedComponents {
     /// JSON `on_fall_on`.
     pub on_fall_on: Option<DeprecatedBaseTrigger>,
@@ -50,7 +49,6 @@ impl DeprecatedComponents {
 /// A legacy trigger component (the game's deprecated trigger): an event to run, its
 /// condition and target.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DeprecatedBaseTrigger {
     /// The event of `deprecated_event_handlers` to run (JSON `event`).
     pub event: Option<String>,
@@ -65,7 +63,6 @@ pub struct DeprecatedBaseTrigger {
 
 /// The legacy `minecraft:queued_ticking` component.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DeprecatedQueuedTicking {
     /// JSON `min_ticks`.
     #[facet(default)]
@@ -83,7 +80,6 @@ pub struct DeprecatedQueuedTicking {
 
 /// The legacy `minecraft:random_ticking` component.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DeprecatedRandomTicking {
     /// JSON `on_tick`.
     #[facet(default)]
@@ -105,7 +101,7 @@ pub enum Breathing {
 /// A legacy block event (the game's deprecated definition event), kept for write-back and for
 /// hosts that still run them (JSON `deprecated_event_handlers.<name>`, the crate's own member).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep", schema::molang_with = walk_event)]
+#[facet(schema::molang_with = walk_event)]
 pub struct DeprecatedDefinitionEvent {
     /// The weight of a `randomize` entry (JSON `probability`).
     pub probability: Option<f32>,
@@ -129,7 +125,6 @@ pub struct DeprecatedDefinitionEvent {
 /// The event a legacy event node fires (the game's definition trigger): its name, target and
 /// condition.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DefinitionTrigger {
     /// The event of `deprecated_event_handlers` (JSON `event`).
     pub event: Option<String>,

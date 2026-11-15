@@ -5,3 +5,6 @@
 
 #[path = "jigsaw/scalars.rs"]
 mod scalars;
+
+#[path = "jigsaw/keeps.rs"]
+mod keeps;

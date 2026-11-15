@@ -254,12 +254,7 @@ fn the_door_defaults_a_refused_scalar_member_as_its_pre_pass_does() {
 
 #[test]
 fn scalars_read_by_every_profile() {
-    let profiles = [
-        Scalars::Strict,
-        Scalars::JsonCpp,
-        Scalars::NonStrict,
-        Scalars::ConvertAndTell,
-    ];
+    let profiles = [Scalars::Strict, Scalars::NonStrict, Scalars::ConvertAndTell];
     let read = |text: &str| -> Vec<Option<u8>> {
         profiles
             .iter()
@@ -273,11 +268,11 @@ fn scalars_read_by_every_profile() {
             })
             .collect()
     };
-    assert_eq!(read("3"), [Some(3); 4]);
-    assert_eq!(read("2.7"), [None, Some(2), Some(2), None]);
-    assert_eq!(read("3.0"), [None, Some(3), Some(3), Some(3)]);
-    assert_eq!(read("257"), [None, None, Some(1), None]);
-    assert_eq!(read("true"), [None, None, Some(1), None]);
+    assert_eq!(read("3"), [Some(3); 3]);
+    assert_eq!(read("2.7"), [None, Some(2), None]);
+    assert_eq!(read("3.0"), [None, Some(3), Some(3)]);
+    assert_eq!(read("257"), [None, Some(1), None]);
+    assert_eq!(read("true"), [None, Some(1), None]);
     // Converted, read, and told as a wrong type.
     let (value, told) = door::<u8>(r#""4""#);
     assert_eq!(value, Some(4));

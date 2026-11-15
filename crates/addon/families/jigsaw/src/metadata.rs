@@ -37,7 +37,6 @@ impl std::fmt::Debug for JigsawMetadata {
 /// The typed body of a metadata file at 1.21.80 and later, the payload of
 /// `minecraft:jigsaw_structure_metadata`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MetadataRegistry {
     /// The metadata of each structure element, by the element's 64-bit metadata key written in
     /// decimal (JSON `metadata`).
@@ -47,7 +46,6 @@ pub struct MetadataRegistry {
 
 /// The metadata of one generated structure template.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StructureMetadata {
     /// The template's bounding size (JSON `size`).
     pub size: [i32; 3],
@@ -57,7 +55,6 @@ pub struct StructureMetadata {
 
 /// One jigsaw block of a template.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct JigsawBlockMetadata {
     /// The name another jigsaw block's `target` refers to (JSON `name`).
     pub name: String,

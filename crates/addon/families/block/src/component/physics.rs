@@ -48,7 +48,6 @@ impl DestructibleByMining {
 
 /// The object form of [`DestructibleByMining`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MiningParams {
     /// Seconds to mine by hand (JSON `seconds_to_destroy`, required, `>= 0`).
     #[facet(schema::min = 0.0)]
@@ -61,7 +60,6 @@ pub struct MiningParams {
 
 /// One entry of `item_specific_speeds`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ItemSpecificSpeed {
     /// The item (JSON `item`, required): a name or `{"tags": "<molang>"}`.
     #[facet(schema::molang_with = item_tags)]
@@ -93,7 +91,6 @@ pub enum DestructibleByExplosion {
 
 /// The object form of [`DestructibleByExplosion`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ExplosionParams {
     /// JSON `explosion_resistance` (required, `>= 0`). Read by the slice's scalar rules: a
     /// number under the strict reader, a number or a bool under the legacy one.
@@ -152,7 +149,6 @@ pub enum Flammable {
 
 /// The object form of [`Flammable`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FlammableParams {
     /// JSON `catch_chance_modifier`; 5 when absent.
     #[facet(schema::fallback = 5)]
@@ -178,7 +174,6 @@ pub enum LavaFlammable {
 
 /// `minecraft:movable`: how pistons move the block.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Movable {
     /// JSON `movement_type` (required).
     pub movement_type: MovementType,
@@ -216,7 +211,6 @@ pub enum Sticky {
 
 /// `minecraft:random_offset`: a random shift of the model and boxes per position.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct RandomOffset {
     /// JSON `x`.
     pub x: Option<OffsetAxis>,
@@ -228,7 +222,6 @@ pub struct RandomOffset {
 
 /// One axis of [`RandomOffset`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OffsetAxis {
     /// The offset range in sixteenths (JSON `range`, required).
     pub range: Bounds,
@@ -239,7 +232,6 @@ pub struct OffsetAxis {
 
 /// `minecraft:support`: what the block's top can hold.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Support {
     /// JSON `shape` (required).
     pub shape: SupportShape,
@@ -259,7 +251,6 @@ pub enum SupportShape {
 
 /// `minecraft:tick`: a scheduled tick that fires the block's custom components.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Tick {
     /// The delay in ticks, `[min, max]` with `min <= max` (JSON `interval_range`, required).
     pub interval_range: [u32; 2],
@@ -270,7 +261,6 @@ pub struct Tick {
 
 /// `minecraft:entity_fall_on`: report falls onto the block to custom components.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct EntityFallOn {
     /// JSON `min_fall_distance`; 0 when absent.
     #[facet(schema::fallback = 0.0)]
@@ -282,7 +272,6 @@ const KNOT_OFFSET: Vec3 = [0.0, 0.25, 0.0];
 
 /// `minecraft:leashable`: leads can be tied to the block.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Leashable {
     /// Where the knot sits (JSON `offset`); `[0, 0.25, 0]` when absent.
     #[facet(schema::fallback = KNOT_OFFSET)]
@@ -291,7 +280,6 @@ pub struct Leashable {
 
 /// `minecraft:chest_obstruction`: whether the block stops a chest below it opening.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ChestObstruction {
     /// JSON `obstruction_rule`.
     #[facet(schema::fallback = ObstructionRule::Shape)]
@@ -314,7 +302,6 @@ pub enum ObstructionRule {
 
 /// `minecraft:connection_rule`: which blocks connect to this one (fences, walls, panes).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ConnectionRule {
     /// JSON `accepts_connections_from`.
     #[facet(schema::fallback = AcceptsConnections::All)]
@@ -358,7 +345,6 @@ pub enum ConnectionId {
 
 /// `minecraft:crafting_table`: the block opens a crafting grid.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CraftingTable {
     /// Recipe tags the table crafts (JSON `crafting_tags`, required; at most 64, each at most
     /// 64 characters).
@@ -376,7 +362,6 @@ impl CraftingTable {
 
 /// `minecraft:placement_filter`: where the block may be placed or survive.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlacementFilter {
     /// JSON `conditions` (at most 64); any one passing allows the placement.
     pub conditions: Option<Vec<PlacementCondition>>,
@@ -391,7 +376,6 @@ impl PlacementFilter {
 
 /// One entry of `placement_filter.conditions`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlacementCondition {
     /// The faces it may be placed against (JSON `allowed_faces`).
     pub allowed_faces: Option<Vec<PlacementFace>>,
@@ -451,7 +435,6 @@ fn block_filter_tags(filter: &mut Option<Vec<BlockDescriptor>>, visitor: &mut Mo
 
 /// `minecraft:precipitation_interactions`: what rain and snow do on the block.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PrecipitationInteractions {
     /// JSON `precipitation_behavior` (required).
     pub precipitation_behavior: PrecipitationBehavior,
@@ -480,7 +463,6 @@ pub enum PrecipitationBehavior {
 
 /// `minecraft:liquid_detection`: how the block reacts to liquids.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LiquidDetection {
     /// JSON `detection_rules`: exactly one rule.
     pub detection_rules: Vec<DetectionRule>,
@@ -488,7 +470,6 @@ pub struct LiquidDetection {
 
 /// One entry of `liquid_detection.detection_rules`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DetectionRule {
     /// JSON `liquid_type`; `water` is the only liquid.
     pub liquid_type: Option<LiquidType>,
@@ -542,18 +523,15 @@ pub enum LiquidReaction {
 
 /// `minecraft:flower_pottable`: the block can go in a flower pot.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FlowerPottable {}
 
 /// `minecraft:replaceable`: placing another block replaces this one.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Replaceable {}
 
 /// `minecraft:block_entity`: the block has a block entity (engine 1.26.30, Upcoming Creator
 /// Features; base components only).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BlockEntity {
     /// JSON `dynamic_properties`.
     #[facet(schema::fallback = false)]
@@ -569,7 +547,6 @@ pub struct BlockEntity {
 
 /// `block_entity.container`: the slot count and title of the block's container.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ContainerData {
     /// The number of slots, `1..=54` (JSON `slot_count`, required).
     #[facet(schema::min = 1, schema::max = 54)]
@@ -658,7 +635,6 @@ pub struct EnchantmentPowerTransmitter(pub bool);
 /// `minecraft:vibration_properties` (1.26.60, Upcoming Creator Features): how the block
 /// treats vibrations.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct VibrationProperties {
     /// JSON `dampen_vibrations`; `false` when absent.
     #[facet(schema::fallback = false)]
@@ -671,7 +647,6 @@ pub struct VibrationProperties {
 /// `minecraft:neighbor_change` (1.26.60, Upcoming Creator Features): which neighbouring
 /// changes reach the block's custom components.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NeighborChange {
     /// JSON `neighbor_directions`: 1 to 6 directions, `all` alone; `[all]` when absent.
     #[facet(schema::fallback = vec![NeighborChangeDirection::All])]

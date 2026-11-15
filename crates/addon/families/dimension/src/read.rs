@@ -8,7 +8,7 @@ use super::{DimensionComponents, DimensionDescription};
 use crate::history::v1_18_0::Components as ComponentsV1;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::{JsonSlice, Value};
-use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx};
+use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{NullHandling, ParseCx, read_payload_with};
 
@@ -16,7 +16,6 @@ use bedrock_addon_core::versioning::{NullHandling, ParseCx, read_payload_with};
 /// `format_version` is the envelope's: bound here so it is no unknown member, though vanilla
 /// binds none and would report it.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct RootV1 {
     #[facet(rename = "minecraft:dimension")]
     pub(crate) dimension: InnerV1,
@@ -26,7 +25,6 @@ pub(crate) struct RootV1 {
 
 /// `minecraft:dimension` of `[1.18.0, 1.26.50)`.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct InnerV1 {
     pub(crate) description: DimensionDescription,
     pub(crate) components: ComponentsV1,
@@ -34,7 +32,6 @@ pub(crate) struct InnerV1 {
 
 /// The whole document from 1.26.50 (vanilla `v1_26_50::DimensionDocument`).
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct RootLatest {
     #[facet(rename = "minecraft:dimension")]
     pub(crate) dimension: InnerLatest,
@@ -44,7 +41,6 @@ pub(crate) struct RootLatest {
 
 /// `minecraft:dimension` from 1.26.50.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct InnerLatest {
     pub(crate) description: DimensionDescription,
     pub(crate) components: DimensionComponents,
@@ -66,6 +62,9 @@ pub(crate) fn parse_root<R: FromJson>(
     d: &mut Diagnostics,
 ) -> Option<R> {
     read_payload_with(text, cx, d, |read| {
+        // Every struct keeps its unknown members for write-back; the slice's reading, which the
+        // reading table prints, keeps none.
+        let read = read.keeps_unknown(true);
         if cx.original_version >= CEREAL_FLOOR {
             read
         } else {

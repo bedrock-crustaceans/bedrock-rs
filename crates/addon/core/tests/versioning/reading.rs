@@ -197,9 +197,12 @@ fn the_envelope_sizes_a_json_text_of_a_document_input_only() {
 
 #[test]
 fn a_profile_with_other_scalars_differs_from_own_in_them_alone() {
-    let json_cpp = Reading::OWN.with_scalars(Scalars::JsonCpp);
-    assert_eq!(json_cpp.scalars, Scalars::JsonCpp);
-    assert_eq!(json_cpp.with_scalars(Scalars::ConvertAndTell), Reading::OWN);
+    let non_strict = Reading::OWN.with_scalars(Scalars::NonStrict);
+    assert_eq!(non_strict.scalars, Scalars::NonStrict);
+    assert_eq!(
+        non_strict.with_scalars(Scalars::ConvertAndTell),
+        Reading::OWN
+    );
     let error = Reading::OWN.with_beyond_width(BeyondWidth::Error);
     assert_eq!(error.beyond_width, BeyondWidth::Error);
     assert_eq!(

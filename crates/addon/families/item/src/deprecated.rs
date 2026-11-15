@@ -23,7 +23,6 @@ use super::component::Digger;
 /// It is read as the crate's own reading of a document the game does not load ([`SIDE_CAR`]):
 /// every finding is an information, a member of the wrong shape is kept in `extra` as written.
 #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 #[non_exhaustive]
 pub struct ItemDeprecatedData {
     /// `food.on_consume` (JSON `on_consume_trigger` › `on_consume_trigger`; from 1.20.30).

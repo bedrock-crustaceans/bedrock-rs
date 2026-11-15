@@ -109,7 +109,6 @@ pub enum Component {
 /// `minecraft:armor` (up to 1.20.0): a marker vanilla's component binds no member of; the
 /// 1.20.20 upgrade reads `protection` into `minecraft:wearable`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Armor {
     /// The armour points (JSON `protection`).
     pub protection: Option<i32>,
@@ -119,7 +118,6 @@ pub struct Armor {
 
 /// `minecraft:chargeable` (up to 1.20.40).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Chargeable {
     /// The movement speed factor while charging (JSON `movement_modifier`).
     pub movement_modifier: Option<f32>,
@@ -129,7 +127,6 @@ pub struct Chargeable {
 
 /// `minecraft:on_use` (up to 1.20.30).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OnUse {
     /// The trigger (JSON `on_use`).
     pub on_use: Option<EventTrigger>,
@@ -137,7 +134,6 @@ pub struct OnUse {
 
 /// `minecraft:on_use_on` (up to 1.20.30).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OnUseOn {
     /// The trigger (JSON `on_use_on`).
     pub on_use_on: Option<EventTrigger>,
@@ -159,7 +155,6 @@ impl FromJson for RenderOffsets {
 
 /// `minecraft:weapon` (up to 1.20.30).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Weapon {
     /// The trigger on hurting an entity (JSON `on_hurt_entity`).
     pub on_hurt_entity: Option<EventTrigger>,
@@ -171,7 +166,6 @@ pub struct Weapon {
 
 /// `minecraft:use_duration` (up to 1.20.40): seconds, `{"value": n}` or `n`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct UseDuration {
     /// The use duration in seconds (JSON `value`).
     #[facet(default, schema::min = 0.0)]
@@ -188,7 +182,6 @@ impl ValueComponent for UseDuration {
 /// `minecraft:food` up to 1.20.20: an `on_consume` trigger, and (below 1.18.0) a named
 /// `saturation_modifier`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyFoodComponent {
     /// JSON `nutrition`.
     pub nutrition: Option<i32>,
@@ -205,7 +198,6 @@ pub struct LegacyFoodComponent {
 
 /// `minecraft:durability` of 1.16.100: `max_damage` before the 1.18 rename.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyDurability {
     /// JSON `max_damage` (below 1.18.0).
     pub max_damage: Option<i32>,
@@ -218,7 +210,6 @@ pub struct LegacyDurability {
 /// `minecraft:repairable` of 1.16.100: `repair_items` may be a list of item names (removed by
 /// the 1.18 fixer), as written.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyRepairable {
     /// JSON `repair_items`, as written.
     pub repair_items: Option<Value>,
@@ -226,7 +217,6 @@ pub struct LegacyRepairable {
 
 /// `minecraft:digger` up to 1.20.40: `on_dig` triggers.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyDigger {
     /// JSON `destroy_speeds`.
     #[facet(default, skip_serializing_if = Vec::is_empty)]
@@ -239,7 +229,6 @@ pub struct LegacyDigger {
 
 /// One entry of a [`LegacyDigger`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyDestroySpeed {
     /// JSON `block` (required).
     #[facet(schema::molang_with = visit_block_descriptor)]
@@ -252,7 +241,6 @@ pub struct LegacyDestroySpeed {
 
 /// `minecraft:icon` up to 1.20.50: one texture key, `{"texture": key}` or `key`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyIcon {
     /// JSON `texture`.
     #[facet(default)]
@@ -268,7 +256,6 @@ impl ValueComponent for LegacyIcon {
 
 /// `minecraft:storage_item` of 1.21.30–1.21.50: the weight members before the 1.21.60 split.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct LegacyStorageItem {
     /// JSON `max_slots`.
     #[facet(default = 64, schema::max = 64)]

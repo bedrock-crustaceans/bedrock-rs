@@ -16,7 +16,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::{ComponentMap, ComponentSet, UnknownMembers};
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::json::{EncodeError, Value};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Legacy, LegacyStep, UpgradeCx, write_payload};
 
@@ -69,7 +69,6 @@ impl ComponentEra for Component {
 /// `minecraft:ambient_sounds` of formats `[1.21.40, 1.21.120)`: three sounds by name, every
 /// member optional.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AmbientSounds {
     /// JSON `addition`: a sound played now and then.
     pub addition: Option<SoundEventName>,

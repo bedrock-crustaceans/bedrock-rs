@@ -42,7 +42,7 @@ use bedrock_addon_core::molang::{
     Molang, MolangFieldSpec, MolangVersion, MolangVersionSource, MolangVisitor, ReaderKind,
 };
 use bedrock_addon_core::versioning::write_payload;
-use bedrock_addon_shared_biome_env::read_row_of_struct;
+use bedrock_addon_shared_biome_env::read_row_of_struct_with;
 
 // Every component is released with the first format version whose document declares it: most
 // with 1.21.110, `village_type` with 1.26.0 and `subsurface_builder` with 1.26.30. No component
@@ -56,34 +56,34 @@ use bedrock_addon_shared_biome_env::read_row_of_struct;
 #[non_exhaustive]
 pub enum BiomeComponent {
     /// `minecraft:climate`.
-    #[component(name = "minecraft:climate", released = "1.21.110", parse = read_row_of_struct::<Climate, BiomeComponent>)]
+    #[component(name = "minecraft:climate", released = "1.21.110", parse = typed::<Climate>)]
     Climate(Climate),
     /// `minecraft:creature_spawn_probability`.
-    #[component(name = "minecraft:creature_spawn_probability", released = "1.21.110", parse = read_row_of_struct::<CreatureSpawnProbability, BiomeComponent>)]
+    #[component(name = "minecraft:creature_spawn_probability", released = "1.21.110", parse = typed::<CreatureSpawnProbability>)]
     CreatureSpawnProbability(CreatureSpawnProbability),
     /// `minecraft:humidity`.
-    #[component(name = "minecraft:humidity", released = "1.21.110", parse = read_row_of_struct::<Humidity, BiomeComponent>)]
+    #[component(name = "minecraft:humidity", released = "1.21.110", parse = typed::<Humidity>)]
     Humidity(Humidity),
     /// `minecraft:map_tints`.
-    #[component(name = "minecraft:map_tints", released = "1.21.110", parse = read_row_of_struct::<MapTints, BiomeComponent>)]
+    #[component(name = "minecraft:map_tints", released = "1.21.110", parse = typed::<MapTints>)]
     MapTints(MapTints),
     /// `minecraft:mountain_parameters`.
-    #[component(name = "minecraft:mountain_parameters", released = "1.21.110", parse = read_row_of_struct::<MountainParameters, BiomeComponent>)]
+    #[component(name = "minecraft:mountain_parameters", released = "1.21.110", parse = typed::<MountainParameters>)]
     MountainParameters(MountainParameters),
     /// `minecraft:multinoise_generation_rules`.
-    #[component(name = "minecraft:multinoise_generation_rules", released = "1.21.110", parse = read_row_of_struct::<MultinoiseGenerationRules, BiomeComponent>)]
+    #[component(name = "minecraft:multinoise_generation_rules", released = "1.21.110", parse = typed::<MultinoiseGenerationRules>)]
     MultinoiseGenerationRules(MultinoiseGenerationRules),
     /// `minecraft:overworld_generation_rules`.
-    #[component(name = "minecraft:overworld_generation_rules", released = "1.21.110", parse = read_row_of_struct::<OverworldGenerationRules, BiomeComponent>)]
+    #[component(name = "minecraft:overworld_generation_rules", released = "1.21.110", parse = typed::<OverworldGenerationRules>)]
     OverworldGenerationRules(OverworldGenerationRules),
     /// `minecraft:overworld_height`.
-    #[component(name = "minecraft:overworld_height", released = "1.21.110", parse = read_row_of_struct::<OverworldHeight, BiomeComponent>)]
+    #[component(name = "minecraft:overworld_height", released = "1.21.110", parse = typed::<OverworldHeight>)]
     OverworldHeight(OverworldHeight),
     /// `minecraft:partially_frozen`.
-    #[component(name = "minecraft:partially_frozen", released = "1.21.110", parse = read_row_of_struct::<PartiallyFrozen, BiomeComponent>)]
+    #[component(name = "minecraft:partially_frozen", released = "1.21.110", parse = typed::<PartiallyFrozen>)]
     PartiallyFrozen(PartiallyFrozen),
     /// `minecraft:replace_biomes`.
-    #[component(name = "minecraft:replace_biomes", released = "1.21.110", parse = read_row_of_struct::<ReplaceBiomes, BiomeComponent>)]
+    #[component(name = "minecraft:replace_biomes", released = "1.21.110", parse = typed::<ReplaceBiomes>)]
     ReplaceBiomes(ReplaceBiomes),
     /// `minecraft:subsurface_builder` (format 1.26.30).
     #[component(name = "minecraft:subsurface_builder", released = "1.26.30", parse = builder_row::<SubsurfaceBuilder>)]
@@ -92,13 +92,13 @@ pub enum BiomeComponent {
     #[component(name = "minecraft:surface_builder", released = "1.21.110", parse = builder_row::<SurfaceBuilder>)]
     SurfaceBuilder(SurfaceBuilder),
     /// `minecraft:surface_material_adjustments`.
-    #[component(name = "minecraft:surface_material_adjustments", released = "1.21.110", molang, parse = read_row_of_struct::<SurfaceMaterialAdjustments, BiomeComponent>)]
+    #[component(name = "minecraft:surface_material_adjustments", released = "1.21.110", molang, parse = typed::<SurfaceMaterialAdjustments>)]
     SurfaceMaterialAdjustments(SurfaceMaterialAdjustments),
     /// `minecraft:tags`.
-    #[component(name = "minecraft:tags", released = "1.21.110", parse = read_row_of_struct::<Tags, BiomeComponent>)]
+    #[component(name = "minecraft:tags", released = "1.21.110", parse = typed::<Tags>)]
     Tags(Tags),
     /// `minecraft:village_type` (format 1.26.0).
-    #[component(name = "minecraft:village_type", released = "1.26.0", parse = read_row_of_struct::<VillageType, BiomeComponent>)]
+    #[component(name = "minecraft:village_type", released = "1.26.0", parse = typed::<VillageType>)]
     VillageType(VillageType),
 }
 
@@ -139,6 +139,20 @@ pub(crate) fn height_range(range: &mut Option<[Molang; 2]>, visitor: &mut Molang
 
 pub(crate) use bedrock_addon_support::biome_json::child;
 
+/// The parser of a typed component's table row: the component from its slice, its unknown
+/// members kept ([`crate::typed_read`]).
+fn typed<T>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<BiomeComponent>
+where
+    T: FromJson + Into<BiomeComponent>,
+{
+    read_row_of_struct_with::<T, BiomeComponent>(slice, mode, cx, d, crate::typed_read)
+}
+
 /// A builder row (`surface_builder`, `subsurface_builder`): below 1.26.30 the builder variant has
 /// no `minecraft:noise_gradient` alternative, so such a builder is an unknown `type`, which the
 /// strict slice rejects.
@@ -151,7 +165,7 @@ fn builder_row<T>(
 where
     T: FromJson + Into<BiomeComponent>,
 {
-    let value = read_row_of_struct::<T, BiomeComponent>(slice, mode, cx, d)?;
+    let value = typed::<T>(slice, mode, cx, d)?;
     let (BiomeComponent::SurfaceBuilder(SurfaceBuilder { builder, .. })
     | BiomeComponent::SubsurfaceBuilder(SubsurfaceBuilder { builder, .. })) = &value
     else {
@@ -178,7 +192,7 @@ mod tests {
     fn an_absent_option_is_written_as_no_member() {
         let text = r#"{"builder": {"type": "minecraft:noise_gradient", "noise_descriptor": {"name": "test:gradient", "first_octave": -4, "amplitudes": [1.0]}, "noise_block_specifiers": [{"range": {"min": 0.5, "max": 0.7}, "block": "minecraft:calcite"}]}}"#;
         let mut found = Diagnostics::default();
-        let builder = read_row_of_struct::<SubsurfaceBuilder, BiomeComponent>(
+        let builder = typed::<SubsurfaceBuilder>(
             JsonSlice::new(text),
             ConvertMode::Strict,
             &LoadContext::detached(),

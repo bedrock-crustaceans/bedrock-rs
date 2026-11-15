@@ -9,7 +9,6 @@ use bedrock_addon_core::schema::{self, Schema};
 
 /// `minecraft:bundle_interaction`: the bundle user interface (needs `storage_item`).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct BundleInteraction {
     /// The slots shown, 1–64 (JSON `num_viewable_slots`; default 12).
     #[facet(default = 12, schema::min = 1, schema::max = 64)]
@@ -18,7 +17,6 @@ pub struct BundleInteraction {
 
 /// `minecraft:storage_item`: the item stores other items (needs a stack size of 1).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StorageItem {
     /// The number of slots, at most 64 (JSON `max_slots`; default 64).
     #[facet(default = 64)]
@@ -36,7 +34,6 @@ pub struct StorageItem {
 
 /// `minecraft:storage_weight_limit`: the total weight a storage item holds (from 1.21.60).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StorageWeightLimit {
     /// The limit, at most 64 (JSON `max_weight_limit`; default 64).
     #[facet(default = 64, schema::max = 64)]
@@ -46,7 +43,6 @@ pub struct StorageWeightLimit {
 /// `minecraft:storage_weight_modifier`: the weight of this item inside a storage item (from
 /// 1.21.60).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StorageWeightModifier {
     /// The weight, at least 0; 0 means it cannot be stored (JSON `weight_in_storage_item`;
     /// default 4).

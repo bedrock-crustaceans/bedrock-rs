@@ -5,7 +5,7 @@
 
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::versioning::{ConvertMode, read_slice};
+use bedrock_addon_core::versioning::{ConvertMode, read_slice_with};
 use facet::Facet;
 
 use super::{ItemComponent, typed};
@@ -34,7 +34,8 @@ pub(crate) fn parse_value<T: ValueComponent + Into<ItemComponent>>(
     if slice.opens_an_object() {
         return typed::<T>(slice, mode, cx, d);
     }
-    read_slice::<T::Scalar>(slice, cx, d).map(|value| T::from_scalar(value).into())
+    read_slice_with::<T::Scalar>(slice, cx, d, crate::typed_read)
+        .map(|value| T::from_scalar(value).into())
 }
 
 /// Declares a one-value component: its value, its default (`= x`) and the bounds of the value
@@ -46,7 +47,6 @@ macro_rules! value_component {
     ) => {
         $(#[$meta])*
         #[derive(Clone, Debug, PartialEq, ::facet::Facet, ::bedrock_addon_core::schema::Schema)]
-        #[facet(schema::unknown = "keep")]
         pub struct $name {
             /// The value (JSON `value`, or the bare value).
             #[facet(default $(= $default)? $(, $($bound)+)?)]
@@ -92,7 +92,6 @@ value_component! {
 /// `minecraft:fire_resistant`: the dropped item is immune to fire and lava (JSON `{"value":
 /// bool}` only; no bare form is bound).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct FireResistant {
     /// Whether it resists (JSON `value`).
     #[facet(default)]
@@ -105,7 +104,6 @@ pub struct FireResistant {
 /// out a default, and writes a stack size of 1 as `{}`.
 // (inferred) `max_stack_size`
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MaxStackSize {
     /// The stack size (JSON `value`).
     #[facet(default = 1, schema::min = 1, schema::max = 64)]

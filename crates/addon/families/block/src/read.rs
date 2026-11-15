@@ -41,7 +41,6 @@ pub(crate) const CONDITION_STRICT: FormatVersion = FormatVersion::new(1, 19, 70)
 
 /// What a payload is read into.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct Shell {
     description: Description,
     #[facet(opaque, default, schema::read_with = base_section)]
@@ -60,7 +59,6 @@ struct Shell {
 
 /// What a permutation is read into.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct PermutationShell {
     condition: Molang,
     #[facet(opaque, default, schema::read_with = permutation_section)]
@@ -339,7 +337,9 @@ fn read_shell(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> 
         original_version: cx.original_version,
         at: cx.at.clone(),
     };
-    read_payload_with(payload, &parse, d, |read| read.scalars(Scalars::Strict))
+    read_payload_with(payload, &parse, d, |read| {
+        crate::typed_read(read.scalars(Scalars::Strict))
+    })
 }
 
 /// [`parse_block`], and the sections (`None` the base, `Some(i)` permutation `i`) whose

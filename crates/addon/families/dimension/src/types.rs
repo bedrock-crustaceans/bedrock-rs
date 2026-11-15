@@ -28,7 +28,6 @@ pub struct Dimension {
 
 /// `minecraft:dimension/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DimensionDescription {
     /// The dimension (JSON `identifier`): one of the three vanilla dimensions, exactly, or a
     /// custom dimension `namespace:name`.
@@ -38,7 +37,6 @@ pub struct DimensionDescription {
 /// `minecraft:dimension/components` from format 1.26.50: a fixed set of members, not a
 /// component registry.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DimensionComponents {
     /// The height (JSON `minecraft:dimension_height`).
     #[facet(rename = "minecraft:dimension_height")]
@@ -56,7 +54,6 @@ pub struct DimensionComponents {
 
 /// `minecraft:dimension_height`: where the dimension starts and how tall it is.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DimensionHeight {
     /// The lowest y (JSON `min_y`), in `[-512, 512]`.
     #[facet(schema::min = -512, schema::max = 512)]
@@ -82,7 +79,6 @@ impl DimensionHeight {
 
 /// `minecraft:default_biome`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DefaultBiome {
     /// JSON `biome`.
     pub biome: BiomeId,
@@ -90,7 +86,6 @@ pub struct DefaultBiome {
 
 /// `minecraft:clouds`: "Defines the cloud height in the custom dimension."
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Clouds {
     /// "The Y coordinate at which clouds are rendered in the custom dimension. Defaults to 128
     /// if this component is omitted." (JSON `height`, required), in `[-512, 512]`.
@@ -100,7 +95,6 @@ pub struct Clouds {
 
 /// `minecraft:generation`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Generation {
     /// The generator as written (JSON `generator_type`); only `void` names one (see
     /// [`Generation::generator`]), any other text is a warning and the document loads.
@@ -158,7 +152,6 @@ impl Generation {
 
 /// `minecraft:dimension_bounds` of a document below 1.26.50: the lowest and highest y.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct DimensionBounds {
     /// JSON `min`, in `[-512, 512]` and a multiple of 16.
     #[facet(schema::min = -512, schema::max = 512, schema::multiple_of = 16)]

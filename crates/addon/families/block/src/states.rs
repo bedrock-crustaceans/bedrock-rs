@@ -4,7 +4,7 @@ use facet::Facet;
 
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::kit::{Node, Read};
-use bedrock_addon_core::schema::{self, FromJson, Schema};
+use bedrock_addon_core::schema::{FromJson, Schema};
 use bedrock_addon_shared_shapes::{BlockDescriptor, StateValue};
 
 /// The values one block state can take (JSON `description.states.<name>`).
@@ -184,7 +184,6 @@ impl From<&StateValues> for Value {
 
 /// `description.traits`: built-in behaviours that add states the engine sets on placement.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Traits {
     /// JSON `minecraft:placement_direction`.
     #[facet(rename = "minecraft:placement_direction")]
@@ -209,7 +208,6 @@ impl Traits {
 
 /// `minecraft:placement_direction`: the direction the player faced when placing the block.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlacementDirection {
     /// `minecraft:cardinal_direction`, `minecraft:facing_direction`,
     /// `minecraft:corner_and_cardinal_direction`, `minecraft:sixteen_way_rotation` (JSON
@@ -232,7 +230,6 @@ impl PlacementDirection {
 
 /// `minecraft:placement_position`: where on the face the block was placed.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct PlacementPosition {
     /// `minecraft:block_face`, `minecraft:vertical_half` (JSON `enabled_states`; at least one).
     #[facet(default)]
@@ -241,7 +238,6 @@ pub struct PlacementPosition {
 
 /// `minecraft:connection`: connections to neighbouring blocks.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Connection {
     /// `minecraft:cardinal_connections`, `minecraft:vertical_connections` (JSON
     /// `enabled_states`; at least one).
@@ -251,7 +247,6 @@ pub struct Connection {
 
 /// `minecraft:multi_block`: a block made of several stacked parts (doors, tall plants).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MultiBlock {
     /// `minecraft:multi_block_part` (JSON `enabled_states`; required).
     #[facet(default)]

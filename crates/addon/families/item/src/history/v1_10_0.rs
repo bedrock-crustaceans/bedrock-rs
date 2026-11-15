@@ -6,10 +6,10 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::kit::{Members, Node, Profile, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::BuiltIns;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, read_payload, write_payload,
+    ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, read_payload_with, write_payload,
 };
 use facet::Facet;
 use facet_value::{VArray, VObject};
@@ -42,7 +42,6 @@ impl Versioned for Item {
 
 /// What the legacy item is parsed from.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 struct Shell {
     description: Description,
     components: Option<Raw>,
@@ -52,7 +51,7 @@ struct Shell {
 impl VersionStruct for Item {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         let mut found = Diagnostics::default();
-        let shell = read_payload::<Shell>(payload, cx, &mut found);
+        let shell = read_payload_with::<Shell>(payload, cx, &mut found, crate::typed_read);
         // unknown keys are ignored silently at every version (and kept)
         found.retain(|f| {
             !matches!(

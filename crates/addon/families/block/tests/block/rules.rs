@@ -1742,3 +1742,33 @@ fn a_legacy_selection_box_out_of_its_bounds_is_a_kept_error() {
         );
     }
 }
+
+/// A struct that says nothing reports its unknown members and holds none for the write-back,
+/// where the structs around it keep theirs: the range of an offset axis is read beside the axis.
+#[test]
+fn an_unknown_member_of_a_range_is_reported_where_its_axis_keeps_its_own() {
+    let loaded = loads(
+        &document(
+            "1.21.120",
+            r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:random_offset": {"x": {"range": {"min": 0, "max": 1, "zz": 1}, "yy": 2}}}}"#,
+        ),
+        &ucf(),
+    );
+    let axis_at = bedrock_addon_core::diagnostic::JsonPath::of_keys([
+        "minecraft:block",
+        "components",
+        "minecraft:random_offset",
+        "x",
+    ]);
+    assert!(
+        loaded.unknown().get(&axis_at, "yy").is_some(),
+        "the axis keeps"
+    );
+    assert!(
+        loaded
+            .unknown()
+            .get(&axis_at.child("range"), "zz")
+            .is_none(),
+        "the range reports"
+    );
+}

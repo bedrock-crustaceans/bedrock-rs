@@ -121,6 +121,24 @@ where
     T: crate::schema::FromJson + for<'a> Facet<'a> + Into<C>,
     C: crate::schema::ShorthandRows,
 {
+    read_component_with::<T, C>(slice, mode, cx, d, |read| read)
+}
+
+/// [`read_component`] with the read set by `configure` before it reads, as
+/// [`read_payload_with`](super::read_payload_with) does for a payload: a family whose typed
+/// reads keep their unknown members, whatever its slices' reading says, gives
+/// [`Read::keeps_unknown`](crate::json::kit::Read::keeps_unknown).
+pub fn read_component_with<T, C>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+    configure: impl for<'r> FnOnce(crate::json::kit::Read<'r>) -> crate::json::kit::Read<'r>,
+) -> Option<C>
+where
+    T: crate::schema::FromJson + for<'a> Facet<'a> + Into<C>,
+    C: crate::schema::ShorthandRows,
+{
     use crate::json::kit::Node;
     let _ = mode;
     let parsed = parsed_or_told(slice, d)?;
@@ -138,7 +156,7 @@ where
         let wrapped = Value::from(object);
         let mut found = Diagnostics::default();
         let value = {
-            let mut read = door_read(cx, &mut found);
+            let mut read = configure(door_read(cx, &mut found));
             crate::schema::read_document::<T>(&Node::new(&wrapped, JsonPath::new()), &mut read)
         };
         let kept = found.take_unknown();
@@ -151,7 +169,7 @@ where
         return value.map(Into::into);
     }
     let node = Node::parsed(&parsed, JsonPath::new());
-    let mut read = door_read(cx, d);
+    let mut read = configure(door_read(cx, d));
     crate::schema::read_document::<T>(&node, &mut read).map(Into::into)
 }
 
@@ -167,6 +185,16 @@ pub fn read_slice<T: crate::schema::FromJson>(
     cx: &LoadContext,
     d: &mut Diagnostics,
 ) -> Option<T> {
+    read_slice_with(slice, cx, d, |read| read)
+}
+
+/// [`read_slice`] with the read set by `configure` before it reads, as [`read_component_with`].
+pub fn read_slice_with<T: crate::schema::FromJson>(
+    slice: JsonSlice<'_>,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+    configure: impl for<'r> FnOnce(crate::json::kit::Read<'r>) -> crate::json::kit::Read<'r>,
+) -> Option<T> {
     use crate::json::kit::Node;
     let parsed = parsed_or_told(slice, d)?;
     if let Some(finding) = door_syntax::<T>(&parsed.value, None, cx, span_of(slice)) {
@@ -174,7 +202,7 @@ pub fn read_slice<T: crate::schema::FromJson>(
         return None;
     }
     let node = Node::parsed(&parsed, JsonPath::new());
-    let mut read = door_read(cx, d);
+    let mut read = configure(door_read(cx, d));
     crate::schema::read_document::<T>(&node, &mut read)
 }
 

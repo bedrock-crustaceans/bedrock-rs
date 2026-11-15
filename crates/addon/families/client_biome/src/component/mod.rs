@@ -26,8 +26,9 @@ use crate::codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::json::JsonSlice;
 use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::versioning::ConvertMode;
-use bedrock_addon_shared_biome_env::read_row;
+use bedrock_addon_shared_biome_env::read_row_with;
 
 // Every component is released with the first format version whose document declares it:
 // 1.21.40 declares seven, 1.21.70 adds five (the atmosphere, colour-grading, lighting and
@@ -47,47 +48,61 @@ use bedrock_addon_shared_biome_env::read_row;
 )]
 pub enum ClientBiomeComponent {
     /// `minecraft:ambient_sounds`.
-    #[component(name = "minecraft:ambient_sounds", released = "1.21.40", parse = read_row::<AmbientSounds, ClientBiomeComponent>)]
+    #[component(name = "minecraft:ambient_sounds", released = "1.21.40", parse = typed::<AmbientSounds>)]
     AmbientSounds(AmbientSounds),
     /// `minecraft:atmosphere_identifier` (format 1.21.70).
-    #[component(name = "minecraft:atmosphere_identifier", released = "1.21.70", parse = read_row::<AtmosphereIdentifier, ClientBiomeComponent>)]
+    #[component(name = "minecraft:atmosphere_identifier", released = "1.21.70", parse = typed::<AtmosphereIdentifier>)]
     AtmosphereIdentifier(AtmosphereIdentifier),
     /// `minecraft:biome_music`.
-    #[component(name = "minecraft:biome_music", released = "1.21.40", parse = read_row::<BiomeMusic, ClientBiomeComponent>)]
+    #[component(name = "minecraft:biome_music", released = "1.21.40", parse = typed::<BiomeMusic>)]
     BiomeMusic(BiomeMusic),
     /// `minecraft:color_grading_identifier` (format 1.21.70).
-    #[component(name = "minecraft:color_grading_identifier", released = "1.21.70", parse = read_row::<ColorGradingIdentifier, ClientBiomeComponent>)]
+    #[component(name = "minecraft:color_grading_identifier", released = "1.21.70", parse = typed::<ColorGradingIdentifier>)]
     ColorGradingIdentifier(ColorGradingIdentifier),
     /// `minecraft:cubemap_identifier` (format 1.21.130).
-    #[component(name = "minecraft:cubemap_identifier", released = "1.21.130", parse = read_row::<CubemapIdentifier, ClientBiomeComponent>)]
+    #[component(name = "minecraft:cubemap_identifier", released = "1.21.130", parse = typed::<CubemapIdentifier>)]
     CubemapIdentifier(CubemapIdentifier),
     /// `minecraft:dry_foliage_color` (format 1.21.70).
-    #[component(name = "minecraft:dry_foliage_color", released = "1.21.70", parse = read_row::<DryFoliageColor, ClientBiomeComponent>)]
+    #[component(name = "minecraft:dry_foliage_color", released = "1.21.70", parse = typed::<DryFoliageColor>)]
     DryFoliageColor(DryFoliageColor),
     /// `minecraft:fog_appearance`.
-    #[component(name = "minecraft:fog_appearance", released = "1.21.40", parse = read_row::<FogAppearance, ClientBiomeComponent>)]
+    #[component(name = "minecraft:fog_appearance", released = "1.21.40", parse = typed::<FogAppearance>)]
     FogAppearance(FogAppearance),
     /// `minecraft:foliage_appearance`.
-    #[component(name = "minecraft:foliage_appearance", released = "1.21.40", parse = read_row::<FoliageAppearance, ClientBiomeComponent>)]
+    #[component(name = "minecraft:foliage_appearance", released = "1.21.40", parse = typed::<FoliageAppearance>)]
     FoliageAppearance(FoliageAppearance),
     /// `minecraft:grass_appearance`.
-    #[component(name = "minecraft:grass_appearance", released = "1.21.40", parse = read_row::<GrassAppearance, ClientBiomeComponent>)]
+    #[component(name = "minecraft:grass_appearance", released = "1.21.40", parse = typed::<GrassAppearance>)]
     GrassAppearance(GrassAppearance),
     /// `minecraft:lighting_identifier` (format 1.21.70).
-    #[component(name = "minecraft:lighting_identifier", released = "1.21.70", parse = read_row::<LightingIdentifier, ClientBiomeComponent>)]
+    #[component(name = "minecraft:lighting_identifier", released = "1.21.70", parse = typed::<LightingIdentifier>)]
     LightingIdentifier(LightingIdentifier),
     /// `minecraft:precipitation` (format 1.21.110).
-    #[component(name = "minecraft:precipitation", released = "1.21.110", parse = read_row::<Precipitation, ClientBiomeComponent>)]
+    #[component(name = "minecraft:precipitation", released = "1.21.110", parse = typed::<Precipitation>)]
     Precipitation(Precipitation),
     /// `minecraft:sky_color`.
-    #[component(name = "minecraft:sky_color", released = "1.21.40", parse = read_row::<SkyColor, ClientBiomeComponent>)]
+    #[component(name = "minecraft:sky_color", released = "1.21.40", parse = typed::<SkyColor>)]
     SkyColor(SkyColor),
     /// `minecraft:water_appearance`.
     #[component(name = "minecraft:water_appearance", released = "1.21.40", parse = water_appearance)]
     WaterAppearance(WaterAppearance),
     /// `minecraft:water_identifier` (format 1.21.70).
-    #[component(name = "minecraft:water_identifier", released = "1.21.70", parse = read_row::<WaterIdentifier, ClientBiomeComponent>)]
+    #[component(name = "minecraft:water_identifier", released = "1.21.70", parse = typed::<WaterIdentifier>)]
     WaterIdentifier(WaterIdentifier),
+}
+
+/// The parser of a typed component's table row: the component from its slice, its unknown
+/// members kept ([`crate::typed_read`]).
+fn typed<T>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<ClientBiomeComponent>
+where
+    T: FromJson + Into<ClientBiomeComponent>,
+{
+    read_row_with::<T, ClientBiomeComponent>(slice, mode, cx, d, crate::typed_read)
 }
 
 /// `minecraft:water_appearance`, which needs at least one member: a component with neither is
@@ -101,7 +116,13 @@ fn water_appearance(
     d: &mut Diagnostics,
 ) -> Option<ClientBiomeComponent> {
     let mut told = Diagnostics::default();
-    let water = read_row::<WaterAppearance, WaterAppearance>(slice, mode, cx, &mut told);
+    let water = read_row_with::<WaterAppearance, WaterAppearance>(
+        slice,
+        mode,
+        cx,
+        &mut told,
+        crate::typed_read,
+    );
     if water
         .as_ref()
         .is_some_and(|water| water.surface_color.is_none() && water.surface_opacity.is_none())

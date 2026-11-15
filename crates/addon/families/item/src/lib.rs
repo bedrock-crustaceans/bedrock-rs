@@ -61,6 +61,7 @@ use bedrock_addon_core::document::{
     JsonPlaced, Origin, Registry, RegistryBuilder, Rejected, default_path,
 };
 use bedrock_addon_core::id::{ItemId, kind};
+use bedrock_addon_core::json::kit::Read;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::load::{
     self, Accept, CollectionLoader, DocumentSource, LoadContext, StackCx, Walk,
@@ -76,6 +77,13 @@ use indexmap::IndexMap;
 use component::ItemComponent;
 use history::{ItemFamily, ItemHistory};
 use read::{V1_16_100, is_component_based, json_path_texts, numeric_version, prepare, read_item};
+/// What the typed reads of the item's own structs (a document's shell, its components and their
+/// values) read by: the slice's reading, every struct keeping its unknown members for write-back.
+/// The reading table prints the slice's own, which keeps none.
+pub(crate) fn typed_read(read: Read<'_>) -> Read<'_> {
+    read.keeps_unknown(true)
+}
+
 /// The directory item files live in.
 const DIRECTORY: &str = "items";
 

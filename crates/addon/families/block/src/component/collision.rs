@@ -48,7 +48,6 @@ impl CollisionBox {
 /// document below 1.26.60 is converted to `min`/`max` by the upgrade
 /// ([`CollisionBoundingBox::from_origin_size`]).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CollisionBoundingBox {
     /// The corner nearest `[-8, 0, -8]` (JSON `origin`); x and z in `-8..=8`, y in `0..=24`;
     /// `[-8, 0, -8]` when absent, as 1.26.20 reads it.

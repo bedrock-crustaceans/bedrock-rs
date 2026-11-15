@@ -10,7 +10,6 @@ use bedrock_addon_shared_shapes::BlockSpecifier;
 
 /// `minecraft:surface_builder`: how the biome's surface is built.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SurfaceBuilder {
     /// The builder, chosen by its `type` (JSON `builder`, required).
     pub builder: Builder,
@@ -19,7 +18,6 @@ pub struct SurfaceBuilder {
 /// `minecraft:subsurface_builder` (format 1.26.30): a second builder of the same shape that
 /// shapes the ground below the surface.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SubsurfaceBuilder {
     /// The builder, chosen by its `type` (JSON `builder`, required).
     pub builder: Builder,
@@ -77,7 +75,6 @@ impl Builder {
 
 /// The members of the `minecraft:overworld` and `minecraft:frozen_ocean` builders.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct OverworldSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
     pub sea_floor_depth: i32,
@@ -95,7 +92,6 @@ pub struct OverworldSurface {
 
 /// The members of the `minecraft:swamp` builder.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SwampSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
     pub sea_floor_depth: i32,
@@ -116,7 +112,6 @@ pub struct SwampSurface {
 
 /// The members of the `minecraft:capped` builder.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct CappedSurface {
     /// The floor blocks, at least one (JSON `floor_materials`).
     pub floor_materials: Vec<BlockSpecifier>,
@@ -132,12 +127,10 @@ pub struct CappedSurface {
 
 /// The `minecraft:the_end` builder (no members).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct TheEndSurface {}
 
 /// The members of the `minecraft:mesa` builder.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct MesaSurface {
     /// How deep the sea floor material goes, in `[0, 127]` (JSON `sea_floor_depth`).
     pub sea_floor_depth: i32,
@@ -163,7 +156,6 @@ pub struct MesaSurface {
 
 /// The members of the `minecraft:noise_gradient` builder (format 1.26.30).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NoiseGradientSurface {
     /// The noise the gradient reads (JSON `noise_descriptor`).
     pub noise_descriptor: NoiseDescriptor,
@@ -175,7 +167,6 @@ pub struct NoiseGradientSurface {
 
 /// A noise: its name, first octave and octave amplitudes.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NoiseDescriptor {
     /// The noise's seed name (JSON `name`).
     pub name: String,
@@ -188,7 +179,6 @@ pub struct NoiseDescriptor {
 /// One block of a noise gradient and the noise range it covers.
 /// `noise`, `threshold` and `range` are optional; `block` is required.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct NoiseBlockSpecifier {
     /// A namespaced noise name (JSON `noise`; `""` when absent).
     pub noise: Option<String>,
@@ -224,7 +214,6 @@ impl NoiseBlockSpecifier {
 /// `minecraft:surface_material_adjustments`: material changes applied, in order, where noise
 /// and height ranges match.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct SurfaceMaterialAdjustments {
     /// The adjustments (JSON `adjustments`).
     pub adjustments: Option<Vec<Adjustment>>,
@@ -232,7 +221,6 @@ pub struct SurfaceMaterialAdjustments {
 
 /// One entry of `surface_material_adjustments.adjustments`.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Adjustment {
     /// The materials it sets (JSON `materials`, required).
     pub materials: AdjustmentMaterials,
@@ -249,7 +237,6 @@ pub struct Adjustment {
 
 /// `adjustments[].materials`: every member optional.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct AdjustmentMaterials {
     /// JSON `top_material`.
     pub top_material: Option<BlockSpecifier>,

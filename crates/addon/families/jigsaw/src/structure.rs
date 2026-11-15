@@ -17,7 +17,6 @@ use bedrock_addon_core::shared::Filter;
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:jigsaw")]
 #[doc(alias = "JigsawStructureDefinition")]
-#[facet(schema::unknown = "keep")]
 pub struct JigsawStructure {
     /// The structure's identifier (JSON `description`).
     pub description: StructureDescription,
@@ -59,7 +58,6 @@ pub struct JigsawStructure {
 
 /// `minecraft:jigsaw/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct StructureDescription {
     /// The structure's identifier, `namespace:name` (JSON `identifier`).
     pub identifier: JigsawStructureId,
@@ -152,7 +150,6 @@ pub enum LiquidSettings {
 pub enum HeightProvider {
     /// Uniformly between `min` and `max` (JSON `uniform`).
     #[facet(rename = "uniform")]
-    #[facet(schema::unknown = "keep")]
     Uniform {
         /// The lowest height (JSON `min`).
         min: VerticalAnchor,
@@ -161,7 +158,6 @@ pub enum HeightProvider {
     },
     /// Always `value` (JSON `constant`).
     #[facet(rename = "constant")]
-    #[facet(schema::unknown = "keep")]
     Constant {
         /// The height (JSON `value`).
         value: VerticalAnchor,
@@ -196,7 +192,6 @@ pub enum DimensionPadding {
     /// The same padding at the top and the bottom (JSON a number).
     Both(u32),
     /// Separate padding (JSON `{"top"?, "bottom"?}`).
-    #[facet(schema::unknown = "keep")]
     // The `skip_serializing_if` pairs stay: core's
     // `an_untagged_struct_variant_writes_a_none_field_as_null`.
     Range {
@@ -220,7 +215,6 @@ pub enum MaxDistanceFromCenter {
     /// The horizontal distance only, 1 to 128 (JSON a number).
     Horizontal(#[facet(schema::min = 1, schema::max = 128)] i32),
     /// Both distances (JSON an object).
-    #[facet(schema::unknown = "keep")]
     Object {
         /// The distance on the horizontal plane, 1 to 128 (JSON `horizontal`).
         #[facet(schema::min = 1, schema::max = 128)]
@@ -240,7 +234,6 @@ pub enum MaxDistanceFromCenter {
 #[repr(u8)]
 pub enum PoolAlias {
     /// One pool (JSON `{"alias", "target"}`).
-    #[facet(schema::unknown = "keep")]
     Direct {
         /// The alias name (JSON `alias`).
         alias: String,
@@ -248,19 +241,15 @@ pub enum PoolAlias {
         target: TemplatePoolId,
     },
     /// A weighted choice of pools (JSON `{"alias", "targets"}`).
-    #[facet(schema::unknown = "keep")]
     Random {
         /// The alias name (JSON `alias`).
         alias: String,
         /// The pools and their weights (JSON `targets`).
-        #[facet(schema::unknown = "keep")]
         targets: Vec<Weighted<TemplatePoolId>>,
     },
     /// A weighted choice of alias groups (JSON `{"groups"}`).
-    #[facet(schema::unknown = "keep")]
     RandomGroup {
         /// The groups and their weights (JSON `groups`).
-        #[facet(schema::unknown = "keep")]
         groups: Vec<Weighted<Vec<GroupedPoolAlias>>>,
     },
 }
@@ -271,7 +260,6 @@ pub enum PoolAlias {
 #[repr(u8)]
 pub enum GroupedPoolAlias {
     /// One pool (JSON `{"alias", "target"}`).
-    #[facet(schema::unknown = "keep")]
     Direct {
         /// The alias name (JSON `alias`).
         alias: String,
@@ -279,19 +267,15 @@ pub enum GroupedPoolAlias {
         target: TemplatePoolId,
     },
     /// A weighted choice of pools (JSON `{"alias", "targets"}`).
-    #[facet(schema::unknown = "keep")]
     Random {
         /// The alias name (JSON `alias`).
         alias: String,
         /// The pools and their weights (JSON `targets`).
-        #[facet(schema::unknown = "keep")]
         targets: Vec<Weighted<TemplatePoolId>>,
     },
 }
 
 /// A weighted item (`{"weight", "data"}`), both members required.
-// No `schema::unknown` word of its own: each field holding a list of these says it (the word is
-// every element's object's).
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Weighted<T> {
     /// The item's weight (JSON `weight`).

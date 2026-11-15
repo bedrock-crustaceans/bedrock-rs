@@ -17,11 +17,6 @@ pub enum Scalars {
     /// an integer or real token finite in its width, a bool member `true` or `false`, a
     /// string member a string. Every other token is a type error.
     Strict,
-    /// The `JsonCpp` schema readers, the accept set of entity's generated game table: an
-    /// `int` takes an integer or real token (a real read as its truncation toward zero), a
-    /// `float` an integer, real or bool token (`true` read as `1.0`), a `string` a string, a
-    /// `bool` a bool. No slice reads by it yet.
-    JsonCpp,
     /// The non-strict readers of the legacy block loader: a bool and a number read as each
     /// other (`asBool` takes a number as `value != 0`, an integer reader a bool as `0` or
     /// `1`, `asFloat` a bool as `0.0` or `1.0`), an integer token by its low bits with no
@@ -366,7 +361,6 @@ pub fn judge(declared: Declared, token: Token<'_>, rules: ScalarRules) -> Verdic
     let verdict = match rules.scalars {
         Scalars::Strict => strict(declared, token),
         Scalars::NonStrict => non_strict(declared, token),
-        Scalars::JsonCpp => json_cpp(declared, token),
         Scalars::ConvertAndTell => convert_and_tell(declared, token),
         // Read by `Read::scalar` over the value, whose coercions are not tokens.
         Scalars::Fork => Verdict::Keep,
@@ -543,26 +537,6 @@ fn non_strict(declared: Declared, token: Token<'_>) -> Verdict {
             _ => wrong,
         },
         Declared::Text => strict(declared, token),
-    }
-}
-
-/// The `JsonCpp` schema readers' rule.
-#[allow(clippy::cast_possible_truncation)] // the truncation toward zero is the reading
-fn json_cpp(declared: Declared, token: Token<'_>) -> Verdict {
-    match (declared, token) {
-        (Declared::Int { bits, signed }, Token::Real(x)) => {
-            let truncated = x.trunc();
-            // A real beyond every integer has no truncation that fits.
-            if truncated.abs() < 1e38 && fits(truncated as i128, bits, signed) {
-                Verdict::Respell(integer(truncated as i128))
-            } else {
-                Verdict::Refused(Refusal::OutOfRange)
-            }
-        }
-        (Declared::Float { .. }, Token::Bool(b)) => {
-            Verdict::Respell(Respelt::Real(f64::from(u8::from(b))))
-        }
-        _ => strict(declared, token),
     }
 }
 

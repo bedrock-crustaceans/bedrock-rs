@@ -24,7 +24,7 @@ use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
     ConvertMode, FieldGate, ParseCx, check_fields_released, read_payload_with,
 };
-use bedrock_addon_shared_biome_env::{Whole, read_component, read_row, read_struct};
+use bedrock_addon_shared_biome_env::{Whole, read_component, read_row_with, read_struct};
 
 /// The first version read from the `minecraft:client_biome` payload alone (below it the whole
 /// document, envelope included, is read as one struct).
@@ -121,7 +121,6 @@ impl ComponentEra for ClientBiomeComponent {
 /// What a payload object holds: the components are those of the struct the read is of
 /// ([`read_as`]), in the older set.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct Payload {
     pub(crate) description: Description,
     #[facet(opaque, schema::read_with = components)]
@@ -130,7 +129,6 @@ pub(crate) struct Payload {
 
 /// The beta payload: [`Payload`] and the environment attributes.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct BetaPayload {
     #[facet(flatten)]
     pub(crate) payload: Payload,
@@ -140,7 +138,6 @@ pub(crate) struct BetaPayload {
 /// The root of a document below 1.21.130: one strict struct of two members, `format_version`
 /// and `minecraft:client_biome`, both required.
 #[derive(Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub(crate) struct Root {
     pub(crate) format_version: String,
     #[facet(rename = "minecraft:client_biome", schema::read_with = read_struct::<Payload>)]
@@ -163,8 +160,9 @@ pub(crate) fn read_as<T: FromJson>(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<T> {
-    let whole: Option<Whole<T>> =
-        read_payload_with(slice, cx, d, |read| read.format(Some(version)));
+    let whole: Option<Whole<T>> = read_payload_with(slice, cx, d, |read| {
+        crate::typed_read(read.format(Some(version)))
+    });
     whole.map(|whole| whole.0)
 }
 
@@ -293,7 +291,13 @@ fn components(node: &Node<'_>, read: &mut Read<'_>) -> Option<Components> {
         };
         let value = read_component(&path, &mut found, |at| {
             if key == AMBIENT_SOUNDS && version < AMBIENT_SOUNDS_NEWEST {
-                read_row::<OlderAmbientSounds, Component>(slice, ConvertMode::Strict, &cx, at)
+                read_row_with::<OlderAmbientSounds, Component>(
+                    slice,
+                    ConvertMode::Strict,
+                    &cx,
+                    at,
+                    crate::typed_read,
+                )
             } else {
                 (meta.parse)(slice, ConvertMode::Strict, &cx, at).map(Component::from)
             }
@@ -404,6 +408,76 @@ mod tests {
         assert_eq!(
             told,
             ["core/unrecognized_component minecraft:client_biome/components/demo:nothing"]
+        );
+    }
+
+    /// The members no struct binds are kept at every depth of a payload read, where the load
+    /// refuses the document for them (the strict slices): the table is the read's, not the
+    /// load's. One older ambient-sounds struct beside the newest.
+    #[test]
+    fn a_payload_read_keeps_its_unknown_members_at_every_depth() {
+        use bedrock_addon_core::version::FormatVersionInput;
+        let text = r##"{"zz": 1, "description": {"identifier": "demo:a", "zz": 2}, "components": {"minecraft:sky_color": {"sky_color": "#ffffff", "zz": 3}, "minecraft:biome_music": {"volume_multiplier": 0.5, "zz": 4}, "minecraft:ambient_sounds": {"addition": {"asset": "demo.sound", "chance": 0.5, "zz": 5}, "zz": 6}, "minecraft:precipitation": {"ash": 0.5, "zz": 7}, "minecraft:water_appearance": {"surface_color": "#ffffff", "zz": 8}}}"##;
+        let load = LoadContext::detached();
+        let cx = ParseCx {
+            load: &load,
+            written: FormatVersionInput {
+                version: Some(MODERN),
+                beta_literal: false,
+                prerelease: false,
+            },
+            original_version: MODERN,
+            at: JsonPath::of_keys(["minecraft:client_biome"]),
+        };
+        let mut d = Diagnostics::default();
+        read_as::<Payload>(JsonSlice::new(text), MODERN, &cx, &mut d).expect("a payload");
+        let kept: Vec<String> = d
+            .unknown()
+            .iter()
+            .map(|(at, key, _)| format!("{at}/{key}"))
+            .collect();
+        assert_eq!(
+            kept,
+            [
+                "minecraft:client_biome/zz",
+                "minecraft:client_biome/components/minecraft:ambient_sounds/zz",
+                "minecraft:client_biome/components/minecraft:ambient_sounds/addition/zz",
+                "minecraft:client_biome/components/minecraft:biome_music/zz",
+                "minecraft:client_biome/components/minecraft:precipitation/zz",
+                "minecraft:client_biome/components/minecraft:sky_color/zz",
+                "minecraft:client_biome/components/minecraft:water_appearance/zz",
+                "minecraft:client_biome/description/zz",
+            ]
+        );
+    }
+
+    /// The same of the older ambient sounds, read by their own struct below 1.21.120.
+    #[test]
+    fn an_older_ambient_sounds_read_keeps_its_unknown_members() {
+        use bedrock_addon_core::version::FormatVersionInput;
+        let text = r#"{"description": {"identifier": "demo:a"}, "components": {"minecraft:ambient_sounds": {"addition": "demo.sound", "zz": 1}}}"#;
+        let load = LoadContext::detached();
+        let version = known::V1_21_90;
+        let cx = ParseCx {
+            load: &load,
+            written: FormatVersionInput {
+                version: Some(version),
+                beta_literal: false,
+                prerelease: false,
+            },
+            original_version: version,
+            at: JsonPath::of_keys(["minecraft:client_biome"]),
+        };
+        let mut d = Diagnostics::default();
+        read_as::<Payload>(JsonSlice::new(text), version, &cx, &mut d).expect("a payload");
+        let kept: Vec<String> = d
+            .unknown()
+            .iter()
+            .map(|(at, key, _)| format!("{at}/{key}"))
+            .collect();
+        assert_eq!(
+            kept,
+            ["minecraft:client_biome/components/minecraft:ambient_sounds/zz"]
         );
     }
 }

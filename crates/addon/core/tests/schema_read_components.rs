@@ -18,7 +18,7 @@ use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BeyondWidth, ComponentTable, ConvertMode, Family, KeyGate, Loaded, MemberFailure, NoStable,
     Reading, Scalars, UpgradeCx, VersionChain, parse_component, parse_component_map,
-    read_component, read_component_map_by, read_slice,
+    read_component, read_component_map_by, read_component_with, read_slice, read_slice_with,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
@@ -748,4 +748,29 @@ fn a_key_gate_drops_a_key_in_the_files_order() {
         ]
     );
     assert_eq!(map.iter().count(), 2);
+}
+
+#[test]
+fn a_component_read_keeps_its_unknown_members_where_the_read_says_so_whatever_the_reading() {
+    let cx = context(Reading::OWN);
+    let text = JsonSlice::new(r#"{"value": 3, "zz": 1}"#);
+    let kept_by = |keeps: bool| {
+        let mut d = Diagnostics::default();
+        let part =
+            read_component_with::<Damage, Part>(text, ConvertMode::Strict, &cx, &mut d, |read| {
+                read.keeps_unknown(keeps)
+            });
+        assert_eq!(part, Some(Part::Damage(Damage { value: 3 })));
+        let codes: Vec<&str> = d.iter().map(|f| f.code.id()).collect();
+        (d.unknown().iter().count(), codes.len())
+    };
+    // The reading keeps none: the member is told, and nothing is held for the write-back.
+    assert_eq!(kept_by(false), (0, 1), "the reading's own disposal");
+    // The read keeps: the member is held, and told as a kept one (the grade is the reading's).
+    assert_eq!(kept_by(true), (1, 1), "the read's keeping");
+    // A slice read the same way.
+    let mut d = Diagnostics::default();
+    let slice: Option<Damage> = read_slice_with(text, &cx, &mut d, |read| read.keeps_unknown(true));
+    assert_eq!(slice, Some(Damage { value: 3 }));
+    assert_eq!(d.unknown().iter().count(), 1);
 }

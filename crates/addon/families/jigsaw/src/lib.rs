@@ -4,7 +4,7 @@
 //! `minecraft:processor_list`, each one struct at format 1.21.20) and the binary metadata cache
 //! `worldgen/metadata/*.dat`, loaded together as the `Jigsaw` group.
 //!
-//! The JSON documents are read by the derived reader (`versioning::read_payload`): every type,
+//! The JSON documents are read by the derived reader (`versioning::read_payload_with`): every type,
 //! the tagged and untagged enums and the generic `Weighted<T>` included, derives `Schema`; no
 //! hand reader is left.
 
@@ -58,6 +58,7 @@ use bedrock_addon_core::document::{Files, Registry};
 use bedrock_addon_core::id::{
     Id, JigsawStructureId, Kind, ProcessorListId, StructureSetId, TemplatePoolId, kind,
 };
+use bedrock_addon_core::json::kit::Read;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Unrepresentable, WriteStyle};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{self, DocumentSource};
@@ -144,6 +145,13 @@ const JSON_ENVELOPE: Envelope = Envelope {
 /// The game's four slices (processor list, template pool, structure, structure set) are not
 /// strict: unknown members are warnings.
 pub(crate) const JSON_READING: Reading = Reading::DOCUMENT.with_unknown(Severity::Warning).strict();
+
+/// What the typed reads of the jigsaw's own structs (every document's payload) read by: the
+/// slice's reading, every struct keeping its unknown members for write-back. The reading table
+/// prints the slice's own, which keeps none.
+pub(crate) fn typed_read(read: Read<'_>) -> Read<'_> {
+    read.keeps_unknown(true)
+}
 
 impl Family for StructureFamily {
     const NAME: &'static str = "jigsaw structure";

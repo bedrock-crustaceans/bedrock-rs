@@ -8,7 +8,7 @@ use crate::{RootV1, constraints, parse_root};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::schema::Schema;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     ParseCx, Upgrade, UpgradeCx, VersionStruct, Versioned, write_payload,
@@ -32,7 +32,6 @@ pub struct Dimension {
 
 /// `minecraft:dimension/components` of `[1.18.0, 1.26.50)`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Components {
     /// The lowest and highest y (JSON `minecraft:dimension_bounds`); vanilla reads an absent
     /// member as `{0, 0}`.

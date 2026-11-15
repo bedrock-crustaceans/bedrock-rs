@@ -42,6 +42,7 @@ use bedrock_addon_core::document::{
     Contribution, JsonDefinition, JsonDocument, JsonPlaced, NoBeta, Origin, Registry, default_path,
 };
 use bedrock_addon_core::id::{BlockId, kind};
+use bedrock_addon_core::json::kit::Read;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::load::DocumentSource;
 use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, Walk};
@@ -117,6 +118,13 @@ impl Family for BlockFamily {
             validate::validate(block, cx);
         }
     }
+}
+
+/// What the typed reads of the block's own structs (the payload's shell, its components) read
+/// by: the slice's reading, every struct keeping its unknown members for write-back. The
+/// reading table prints the slice's own, which keeps none.
+pub(crate) fn typed_read(read: Read<'_>) -> Read<'_> {
+    read.keeps_unknown(true)
 }
 
 /// The reading of a cereal slice or a legacy one ([`Family::reading`]); the components of a

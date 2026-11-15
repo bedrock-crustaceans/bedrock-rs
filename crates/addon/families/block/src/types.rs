@@ -55,7 +55,6 @@ pub struct Block {
 
 /// `minecraft:block/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The block's identifier, `namespace:name`, never in the `minecraft` namespace outside the
     /// base game (JSON `identifier`).
@@ -75,7 +74,6 @@ pub struct Description {
 
 /// `description.internal_vanilla_data`: what the engine needs of a base-game block.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct VanillaBlockData {
     /// The legacy numeric block id (JSON `block_id`).
     pub block_id: Option<i32>,

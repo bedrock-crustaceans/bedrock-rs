@@ -21,6 +21,6 @@ pub use environment::{
     FloatAttribute, FloatOperation,
 };
 pub use shell::{
-    Whole, beta_object, malformed, payload_object, read_component, read_row, read_row_of_struct,
-    read_struct, write_components,
+    Whole, beta_object, malformed, payload_object, read_component, read_row_of_struct_with,
+    read_row_with, read_struct, write_components,
 };

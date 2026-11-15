@@ -1,5 +1,5 @@
 //! Reading the jigsaw documents: each struct read by the derived reader
-//! (`versioning::read_payload`; the types derive `Schema`), then the bind constraints the game's
+//! (`versioning::read_payload_with`; the types derive `Schema`), then the bind constraints the game's
 //! parse checks: the bounds the types state, and the few rules no attribute states (a file
 //! reference's length, an object `limit` of the other form, the block specifiers' findings).
 //!
@@ -22,7 +22,7 @@ use bedrock_addon_core::schema::{Schema, SchemaCx};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::versioning::{
-    ParseCx, VersionStruct, Versioned, read_payload, write_payload,
+    ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
 };
 use bedrock_addon_core::versioning::{Selection, select};
 
@@ -58,7 +58,7 @@ impl Versioned for JigsawStructure {
 
 impl VersionStruct for JigsawStructure {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut structure: Self = read_payload(payload, cx, d)?;
+        let mut structure: Self = read_payload_with(payload, cx, d, crate::typed_read)?;
         structure.check(&cx.at, d);
         Some(structure)
     }
@@ -88,7 +88,7 @@ impl Versioned for TemplatePool {
 
 impl VersionStruct for TemplatePool {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut pool: Self = read_payload(payload, cx, d)?;
+        let mut pool: Self = read_payload_with(payload, cx, d, crate::typed_read)?;
         pool.check(&cx.at, d);
         Some(pool)
     }
@@ -123,7 +123,7 @@ impl Versioned for StructureSet {
 
 impl VersionStruct for StructureSet {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut set: Self = read_payload(payload, cx, d)?;
+        let mut set: Self = read_payload_with(payload, cx, d, crate::typed_read)?;
         set.check(&cx.at, d);
         Some(set)
     }
@@ -149,7 +149,7 @@ impl Versioned for ProcessorList {
 
 impl VersionStruct for ProcessorList {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut list: Self = read_payload(payload, cx, d)?;
+        let mut list: Self = read_payload_with(payload, cx, d, crate::typed_read)?;
         list.check(&cx.at, d);
         Some(list)
     }
@@ -232,7 +232,7 @@ impl Versioned for MetadataRegistry {
 
 impl VersionStruct for MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_payload(payload, cx, d)
+        read_payload_with(payload, cx, d, crate::typed_read)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -242,7 +242,7 @@ impl VersionStruct for MetadataRegistry {
 
 impl VersionStruct for v1_21_50::MetadataRegistry {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_payload(payload, cx, d)
+        read_payload_with(payload, cx, d, crate::typed_read)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

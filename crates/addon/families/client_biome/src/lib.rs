@@ -5,7 +5,7 @@
 //!
 //! Every document type derives its read (`#[derive(Facet, Schema)]`): the payload by
 //! `versioning::read_payload_with` in the struct's own version (the whole document below
-//! 1.21.130), each component by [`bedrock_addon_shared_biome_env::read_row`] from the row of its
+//! 1.21.130), each component by [`bedrock_addon_shared_biome_env::read_row_with`] from the row of its
 //! table, a colour by `color::colour` and a colour map by the leaf read of
 //! [`component::ColorOrMap`]. The one hand-written read of a document is the loop over the keys
 //! of `components` (`read::components`, a `schema::read_with`): which components and members a
@@ -53,6 +53,7 @@ use bedrock_addon_core::document::{
 };
 use bedrock_addon_core::id::SoundEventName;
 use bedrock_addon_core::id::kind;
+use bedrock_addon_core::json::kit::Read;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, WriteStyle};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::DocumentSource;
@@ -84,7 +85,6 @@ pub struct ClientBiome {
 
 /// `minecraft:client_biome/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The biome's identifier (JSON `identifier`): `namespace:name` in lower case from format
     /// 1.21.90 (matching `^[a-z0-9._%+-]+:[a-z0-9._%+-]+$`); an older document may name a
@@ -122,6 +122,13 @@ const LAST_LEGACY: FormatVersion = known::V1_21_120;
 /// The components read by it too, also outside a versioned load.
 pub(crate) fn reading() -> Reading {
     ClientBiomeFamily::ENVELOPE.input.profile().strict()
+}
+
+/// What the typed reads of the client biome's own structs (the payload and its components) read
+/// by: the slice's reading, every struct keeping its unknown members for write-back. The reading
+/// table prints the slice's own, which keeps none.
+pub(crate) fn typed_read(read: Read<'_>) -> Read<'_> {
+    read.keeps_unknown(true)
 }
 
 impl Family for ClientBiomeFamily {

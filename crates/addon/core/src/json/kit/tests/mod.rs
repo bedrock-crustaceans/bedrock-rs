@@ -531,33 +531,6 @@ fn a_non_strict_read_tells_each_scalar_it_takes_as_the_other_json_type() {
 }
 
 #[test]
-fn a_json_cpp_reading_takes_a_bool_as_a_number_and_any_number_as_an_int() {
-    let json = value(r#"[true, "5", 2.7, -2.7, 4294967298, null]"#);
-    let root = Node::new(&json, JsonPath::new());
-    let mut found = Diagnostics::default();
-    let mut read = Read::new(Reading::OWN.with_scalars(Scalars::JsonCpp), &mut found);
-    let elements = read.array(&root).expect("an array");
-    let nodes: Vec<Node<'_>> = elements.iter().collect();
-    let numbers: Vec<_> = nodes.iter().map(|n| read.number(n)).collect();
-    let ints: Vec<_> = nodes.iter().map(|n| read.int(n, TOKEN)).collect();
-    assert_eq!(
-        numbers,
-        [
-            Some(1.0),
-            None,
-            Some(2.7),
-            Some(-2.7),
-            Some(4_294_967_298.0),
-            None
-        ]
-    );
-    // `asInt`: a real cut toward zero, an integer's low word.
-    assert_eq!(ints, [None, None, Some(2), Some(-2), Some(2), None]);
-    // A bool and a string are no int; a string and `null` no number.
-    assert_eq!(found.len(), 2 + 3);
-}
-
-#[test]
 fn a_value_of_another_shape_is_a_wrong_type_at_it() {
     let json = value(r#"{"o": [], "a": {}}"#);
     let root = Node::new(&json, JsonPath::new());

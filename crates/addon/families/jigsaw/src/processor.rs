@@ -16,7 +16,6 @@ use bedrock_addon_shared_shapes::BlockSpecifier;
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:processor_list")]
 #[doc(alias = "JigsawStructureProcessorList")]
-#[facet(schema::unknown = "keep")]
 pub struct ProcessorList {
     /// The list's identifier (JSON `description`).
     pub description: ProcessorListDescription,
@@ -26,7 +25,6 @@ pub struct ProcessorList {
 
 /// `minecraft:processor_list/description`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ProcessorListDescription {
     /// The list's identifier, `namespace:name` (JSON `identifier`).
     pub identifier: ProcessorListId,
@@ -40,28 +38,24 @@ pub struct ProcessorListDescription {
 pub enum Processor {
     /// Block rules (JSON `minecraft:rule`).
     #[facet(rename = "minecraft:rule")]
-    #[facet(schema::unknown = "keep")]
     Rule {
         /// The rules, each evaluated on every block (JSON `rules`).
         rules: Vec<ProcessorRule>,
     },
     /// Blocks of a tag the template never replaces (JSON `minecraft:protected_blocks`).
     #[facet(rename = "minecraft:protected_blocks")]
-    #[facet(schema::unknown = "keep")]
     ProtectedBlocks {
         /// The block tag (JSON `value`).
         value: String,
     },
     /// Blocks of the template that are not placed (JSON `minecraft:block_ignore`).
     #[facet(rename = "minecraft:block_ignore")]
-    #[facet(schema::unknown = "keep")]
     BlockIgnore {
         /// The blocks (JSON `blocks`).
         blocks: Vec<BlockId>,
     },
     /// Another processor applied a limited number of times (JSON `minecraft:capped`).
     #[facet(rename = "minecraft:capped")]
-    #[facet(schema::unknown = "keep")]
     Capped {
         /// The processor, never itself `capped` (JSON `delegate`).
         delegate: CappedDelegate,
@@ -78,21 +72,18 @@ pub enum Processor {
 pub enum CappedDelegate {
     /// Block rules (JSON `minecraft:rule`).
     #[facet(rename = "minecraft:rule")]
-    #[facet(schema::unknown = "keep")]
     Rule {
         /// The rules (JSON `rules`).
         rules: Vec<ProcessorRule>,
     },
     /// Protected blocks (JSON `minecraft:protected_blocks`).
     #[facet(rename = "minecraft:protected_blocks")]
-    #[facet(schema::unknown = "keep")]
     ProtectedBlocks {
         /// The block tag (JSON `value`).
         value: String,
     },
     /// Ignored blocks (JSON `minecraft:block_ignore`).
     #[facet(rename = "minecraft:block_ignore")]
-    #[facet(schema::unknown = "keep")]
     BlockIgnore {
         /// The blocks (JSON `blocks`).
         blocks: Vec<BlockId>,
@@ -108,7 +99,6 @@ pub enum IntProvider {
     /// A number (JSON a number).
     Value(i32),
     /// Always `value` (JSON `{"type": "constant", "value"}`).
-    #[facet(schema::unknown = "keep")]
     Constant {
         /// `constant` (JSON `type`).
         #[facet(rename = "type")]
@@ -118,7 +108,6 @@ pub enum IntProvider {
     },
     /// Uniformly between the two ends (JSON `{"type": "uniform", "min_inclusive",
     /// "max_inclusive"}`); vanilla does not reject `min_inclusive` above `max_inclusive`.
-    #[facet(schema::unknown = "keep")]
     Uniform {
         /// `uniform` (JSON `type`).
         #[facet(rename = "type")]
@@ -145,7 +134,6 @@ pub enum IntProviderType {
 /// A block rule (`rules[]`): every block of the template for which all predicates hold becomes
 /// `output_state`.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
-#[facet(schema::unknown = "keep")]
 pub struct ProcessorRule {
     /// The test on the template's block (JSON `input_predicate`, default `always_true`).
     pub input_predicate: Option<BlockPredicate>,
@@ -169,18 +157,15 @@ pub struct ProcessorRule {
 pub enum BlockPredicate {
     /// Always passes (JSON `minecraft:always_true`).
     #[facet(rename = "minecraft:always_true")]
-    #[facet(schema::unknown = "keep")]
     AlwaysTrue {},
     /// The block is `block` (JSON `minecraft:block_match`).
     #[facet(rename = "minecraft:block_match")]
-    #[facet(schema::unknown = "keep")]
     BlockMatch {
         /// The block (JSON `block`).
         block: BlockId,
     },
     /// The block is `block`, with a chance (JSON `minecraft:random_block_match`).
     #[facet(rename = "minecraft:random_block_match")]
-    #[facet(schema::unknown = "keep")]
     RandomBlockMatch {
         /// The block (JSON `block`).
         block: BlockId,
@@ -190,14 +175,12 @@ pub enum BlockPredicate {
     },
     /// The block has a tag (JSON `minecraft:tag_match`).
     #[facet(rename = "minecraft:tag_match")]
-    #[facet(schema::unknown = "keep")]
     TagMatch {
         /// The block tag (JSON `tag`).
         tag: String,
     },
     /// The block and its states match (JSON `minecraft:blockstate_match`).
     #[facet(rename = "minecraft:blockstate_match")]
-    #[facet(schema::unknown = "keep")]
     BlockstateMatch {
         /// The block and states (JSON `block_state`).
         block_state: BlockSpecifier,
@@ -205,7 +188,6 @@ pub enum BlockPredicate {
     /// The block and its states match, with a chance (JSON
     /// `minecraft:random_blockstate_match`).
     #[facet(rename = "minecraft:random_blockstate_match")]
-    #[facet(schema::unknown = "keep")]
     RandomBlockstateMatch {
         /// The block and states (JSON `block_state`).
         block_state: BlockSpecifier,
@@ -223,12 +205,10 @@ pub enum BlockPredicate {
 pub enum PositionPredicate {
     /// Always passes (JSON `minecraft:always_true`).
     #[facet(rename = "minecraft:always_true")]
-    #[facet(schema::unknown = "keep")]
     AlwaysTrue {},
     /// Passes with a chance that changes linearly with the distance along an axis (JSON
     /// `minecraft:axis_aligned_linear_pos`). Every member defaults to 0, `axis` to `y`.
     #[facet(rename = "minecraft:axis_aligned_linear_pos")]
-    #[facet(schema::unknown = "keep")]
     AxisAlignedLinearPos {
         /// The chance at `min_dist`, in `[0, 1)` (JSON `min_chance`).
         #[facet(skip_serializing_if = Option::is_none, schema::min = 0.0, schema::below = 1.0)]
@@ -270,11 +250,9 @@ pub enum Axis {
 pub enum BlockEntityModifier {
     /// Nothing changes (JSON `minecraft:passthrough`).
     #[facet(rename = "minecraft:passthrough")]
-    #[facet(schema::unknown = "keep")]
     Passthrough {},
     /// A loot table is added (JSON `minecraft:append_loot`).
     #[facet(rename = "minecraft:append_loot")]
-    #[facet(schema::unknown = "keep")]
     AppendLoot {
         /// The loot table, at most 256 bytes, not empty (JSON `loot_table`).
         loot_table: LootTablePath,
