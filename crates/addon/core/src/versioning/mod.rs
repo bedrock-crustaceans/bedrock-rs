@@ -44,9 +44,9 @@ mod write;
 pub mod __macro;
 
 pub use component::{
-    ComponentSection, check_experimental_fields, check_fields_released, check_fields_since_engine,
-    parse_component, parse_component_map, read_component, read_component_map, read_slice,
-    validate_components,
+    ComponentSection, KeyGate, check_experimental_fields, check_fields_released,
+    check_fields_since_engine, parse_component, parse_component_map, read_component,
+    read_component_map, read_component_map_by, read_slice, validate_components,
 };
 pub use document::{
     DocumentRead, OpenBeta, beta_refused, parse_document, parse_document_as_written,

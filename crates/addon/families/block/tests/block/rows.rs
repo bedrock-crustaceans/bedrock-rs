@@ -9,7 +9,6 @@
 )]
 
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, Kind, Severity};
-use bedrock_addon_core::json::StrictFloat;
 use bedrock_addon_core::molang::{Molang, MolangVersion, RawVersion};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_family_block::component::{
@@ -888,7 +887,7 @@ fn y_rotation_offset_snap() {
             .placement_direction
             .as_ref()
             .and_then(|p| p.y_rotation_offset),
-        Some(StrictFloat(90.0))
+        Some(90.0)
     );
     expect(
         block.diagnostics(),
@@ -948,10 +947,7 @@ fn cereal_rejected_keys() {
         "{:#?}",
         block.diagnostics()
     );
-    assert_eq!(
-        block.deprecated.unit_cube,
-        Some(bedrock_addon_core::json::StrictBool(true))
-    );
+    assert_eq!(block.deprecated.unit_cube, Some(true));
 }
 
 #[test]

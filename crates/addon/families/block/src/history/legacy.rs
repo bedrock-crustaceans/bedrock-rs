@@ -10,6 +10,7 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::json::parse::{Options, SpanKind, parse};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::FormatVersion;
@@ -541,147 +542,27 @@ pub(crate) fn strings_told(
     strings
 }
 
-// ---- a JSONC object scanner: members in document order, duplicates kept ------------------
+// ---- the members of an object in document order, duplicates kept ------------------------
 
 /// The members of the object `text` as `(key, raw value text)`, in document order with
-/// duplicates kept (facet keeps only the last value of a duplicate key). `None` when `text` is
-/// not an object.
+/// duplicates kept (a value holds the last of a repeated key; the span tree lists every copy).
+/// `None` when `text` is not an object.
 pub(crate) fn object_members(text: &str) -> Option<Vec<(String, &str)>> {
-    let bytes = text.as_bytes();
-    let mut i = skip_space(bytes, 0);
-    if bytes.get(i) != Some(&b'{') {
-        return None;
-    }
-    i += 1;
-    let mut members = Vec::new();
-    loop {
-        i = skip_space(bytes, i);
-        match bytes.get(i)? {
-            b'}' => return Some(members),
-            b',' => {
-                i += 1;
-                continue;
-            }
-            b'"' => {}
-            _ => return None,
-        }
-        let key_end = skip_string(bytes, i)?;
-        let key: String = bedrock_addon_core::json::from_str(&text[i..key_end]).ok()?;
-        i = skip_space(bytes, key_end);
-        if bytes.get(i) != Some(&b':') {
-            return None;
-        }
-        i = skip_space(bytes, i + 1);
-        let value_end = skip_value(bytes, i)?;
-        members.push((key, &text[i..value_end]));
-        i = value_end;
-    }
+    let parsed = parse(text, Options::default()).ok()?;
+    let root = parsed.spans.root();
+    (root.kind() == SpanKind::Object).then(|| {
+        root.members()
+            .map(|member| (member.key.into_owned(), member.value.text().text))
+            .collect()
+    })
 }
 
 /// The elements of the array `text` as raw texts; `None` when it is not an array.
 pub(crate) fn array_elements(text: &str) -> Option<Vec<&str>> {
-    let bytes = text.as_bytes();
-    let mut i = skip_space(bytes, 0);
-    if bytes.get(i) != Some(&b'[') {
-        return None;
-    }
-    i += 1;
-    let mut elements = Vec::new();
-    loop {
-        i = skip_space(bytes, i);
-        match bytes.get(i)? {
-            b']' => return Some(elements),
-            b',' => {
-                i += 1;
-                continue;
-            }
-            _ => {}
-        }
-        let end = skip_value(bytes, i)?;
-        elements.push(&text[i..end]);
-        i = end;
-    }
-}
-
-/// The index after whitespace and comments from `i`.
-fn skip_space(bytes: &[u8], mut i: usize) -> usize {
-    loop {
-        match bytes.get(i) {
-            Some(b' ' | b'\t' | b'\r' | b'\n') => i += 1,
-            Some(b'/') if bytes.get(i + 1) == Some(&b'/') => {
-                while let Some(&b) = bytes.get(i) {
-                    if b == b'\n' {
-                        break;
-                    }
-                    i += 1;
-                }
-            }
-            Some(b'/') if bytes.get(i + 1) == Some(&b'*') => {
-                i += 2;
-                while i < bytes.len() && !(bytes[i] == b'*' && bytes.get(i + 1) == Some(&b'/')) {
-                    i += 1;
-                }
-                i = (i + 2).min(bytes.len());
-            }
-            _ => return i,
-        }
-    }
-}
-
-/// The index after the string starting at `i` (a `"`).
-fn skip_string(bytes: &[u8], mut i: usize) -> Option<usize> {
-    i += 1;
-    while let Some(&b) = bytes.get(i) {
-        match b {
-            b'\\' => i += 2,
-            b'"' => return Some(i + 1),
-            _ => i += 1,
-        }
-    }
-    None
-}
-
-/// The index after the value starting at `i`.
-fn skip_value(bytes: &[u8], i: usize) -> Option<usize> {
-    match bytes.get(i)? {
-        b'"' => skip_string(bytes, i),
-        b'{' | b'[' => {
-            let mut depth = 0usize;
-            let mut j = i;
-            while j < bytes.len() {
-                match bytes[j] {
-                    b'"' => {
-                        j = skip_string(bytes, j)?;
-                        continue;
-                    }
-                    b'/' if matches!(bytes.get(j + 1), Some(b'/' | b'*')) => {
-                        j = skip_space(bytes, j);
-                        continue;
-                    }
-                    b'{' | b'[' => depth += 1,
-                    b'}' | b']' => {
-                        depth -= 1;
-                        if depth == 0 {
-                            return Some(j + 1);
-                        }
-                    }
-                    _ => {}
-                }
-                j += 1;
-            }
-            None
-        }
-        _ => {
-            let mut j = i;
-            while let Some(&b) = bytes.get(j) {
-                if matches!(b, b',' | b'}' | b']' | b' ' | b'\t' | b'\r' | b'\n' | b'/') {
-                    break;
-                }
-                j += 1;
-            }
-            (j > i).then_some(j)
-        }
-    }
+    let parsed = parse(text, Options::default()).ok()?;
+    let root = parsed.spans.root();
+    (root.kind() == SpanKind::Array)
+        .then(|| root.elements().map(|element| element.text().text).collect())
 }
 
 #[cfg(test)]

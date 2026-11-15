@@ -121,7 +121,23 @@ impl FromJson for Value {
     const HOLDS_NULL: bool = true;
 
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        (!read.stopped()).then(|| node.value().clone())
+        if read.stopped() {
+            return None;
+        }
+        let mut value = node.value().clone();
+        if read.clamps_kept() {
+            let mut clamped = crate::diagnostic::Diagnostics::default();
+            crate::json::clamp_non_finite_warned(
+                &mut value,
+                node.text(),
+                node.path(),
+                &mut clamped,
+            );
+            for finding in &clamped {
+                read.push(finding.clone());
+            }
+        }
+        Some(value)
     }
 }
 

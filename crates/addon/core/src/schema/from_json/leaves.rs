@@ -255,6 +255,12 @@ impl FromJson for Molang {
             if x.is_finite() {
                 return Some(Molang::Const(x));
             }
+            if read.clamps_molang() {
+                // The largest finite float of the sign, told at the token.
+                let finding = crate::molang::beyond_f32_warning(node.path().clone(), node.span());
+                read.push(finding);
+                return Some(Molang::Const(f32::MAX.copysign(x)));
+            }
         } else if let Some(b) = value.as_bool() {
             return Some(Molang::Bool(b));
         } else if value.is_string() || value.is_object() {

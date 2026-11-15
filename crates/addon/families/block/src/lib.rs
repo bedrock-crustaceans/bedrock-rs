@@ -3,6 +3,18 @@
 //! Custom blocks: `blocks/**/*.json` of a behaviour pack (`minecraft:block`). `Block` is the
 //! newest document (format 1.26.20); older files are upgraded when they load, and `history` has
 //! the older shapes.
+//!
+//! How it reads: a payload of 1.26.20 or later, and the payload a legacy document is converted
+//! to, is read member by member by the derived read (`read::Shell`, with
+//! `#[derive(Facet, Schema)]` types for the description, the traits and the side-car), under the
+//! `Reading` of its kind of slice (`reading_of`): the cereal document's strict one, or the
+//! legacy slice's non-strict one for the components. Each component is read by its row's
+//! `read_component`. The legacy document below 1.26.20 itself stays a hand walk
+//! (`history::BlockPayload`'s reader, the game's hand-written parser): it keeps the members it
+//! does not know without a word, keeps the first of a component written twice and tells the
+//! rest (vanilla's rule 11), and answers a structural failure with the game's pair of lines, none
+//! of which a derived read says (no silent `schema::unknown`, no written copies of a repeated
+//! key).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -107,9 +119,8 @@ impl Family for BlockFamily {
     }
 }
 
-/// Whether `index` names a cereal struct (1.26.20 and later).
 /// The reading of a cereal slice or a legacy one ([`Family::reading`]); the components of a
-/// payload are read by it too (`read::section`), whichever slice the payload is read for.
+/// payload are read by it too (`read::read_shell`), whichever slice the payload is read for.
 pub(crate) fn reading_of(cereal: bool) -> Reading {
     if cereal {
         Reading::DOCUMENT.with_scalars(Scalars::Strict)
@@ -119,6 +130,7 @@ pub(crate) fn reading_of(cereal: bool) -> Reading {
     .with_beyond_width(BeyondWidth::Error)
 }
 
+/// Whether `index` names a cereal struct (1.26.20 and later).
 fn is_cereal(index: StructIndex) -> bool {
     match index {
         StructIndex::Stable(i) => <BlockHistory as VersionChain<BlockFamily>>::VERSIONS

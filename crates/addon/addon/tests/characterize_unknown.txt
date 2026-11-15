@@ -489,8 +489,8 @@ d1a0549579a02594 block link/linked_asset_validator/UsesVanillaReferencesBP/block
 d6fa920cce9cb660 block pack/determinism_link/behavior_pack/blocks/linked_lamp.json as written
 c9b3b85fb90f957e block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 0..=1
 050e7181a8845d0d block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 2
-62845184b429b2fe block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 3
-e0178529d9e540b6 block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 4..
+0e2a80a36a29afd7 block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 3
+9bfd7849d38958a5 block pack/determinism_link/behavior_pack/blocks/linked_lamp.json depth 4..
 c9b3b85fb90f957e block pack/determinism_link/behavior_pack/blocks/linked_lamp.json every object
 019fa1c0c6b94e87 block pack/round_trip/behavior_pack/blocks/round_trip/old.json as written
 ccdd1d371f6d9ca1 block pack/round_trip/behavior_pack/blocks/round_trip/old.json depth 0..=1

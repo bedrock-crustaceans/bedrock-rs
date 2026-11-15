@@ -16,9 +16,9 @@ use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BeyondWidth, ComponentTable, ConvertMode, Family, Loaded, MemberFailure, NoStable, Reading,
-    Scalars, UpgradeCx, VersionChain, parse_component, parse_component_map, read_component,
-    read_component_map, read_slice,
+    BeyondWidth, ComponentTable, ConvertMode, Family, KeyGate, Loaded, MemberFailure, NoStable,
+    Reading, Scalars, UpgradeCx, VersionChain, parse_component, parse_component_map,
+    read_component, read_component_map, read_component_map_by, read_slice,
 };
 use bedrock_addon_derive::Components;
 use facet::Facet;
@@ -420,6 +420,10 @@ fn map_outcome(map: &ComponentMap<Part>, d: &Diagnostics) -> String {
 /// input: `core/syntax`, "unexpected token", an error at the component spanning its text, in
 /// the door's words.
 #[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one case of the table per three lines"
+)]
 fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
     let told = |d: &Diagnostics| -> Vec<(Severity, String, String, bool, String)> {
         d.iter()
@@ -490,11 +494,7 @@ fn a_component_of_the_wrong_json_kind_is_the_door_s_syntax_error() {
             "null",
             "unexpected token: got scalar, expected sequence start",
         ),
-        (
-            "tags",
-            "{}",
-            "unexpected token: got object, expected array",
-        ),
+        ("tags", "{}", "unexpected token: got object, expected array"),
     ];
     let cx = context(Reading::DOCUMENT);
     for (row, token, text) in cases {
@@ -648,4 +648,64 @@ fn a_slice_reads_as_a_component_without_a_shorthand() {
         told[0].starts_with("Error core/syntax Some(Span"),
         "{told:?}"
     );
+}
+
+/// A family judges the keys first: a refused one is told before any row reads and left out, one
+/// the slice has no row for is told after the rows and kept as an unknown component.
+#[test]
+fn a_key_gate_refuses_a_key_or_keeps_it_unread() {
+    let text = r#"{"minecraft:damage": 5, "minecraft:count": {"count": 1}, "minecraft:friction": "x", "minecraft:pair": {"a": 1}}"#;
+    let parsed = bedrock_addon_core::json::parse::parse(
+        text,
+        bedrock_addon_core::json::parse::Options::default(),
+    )
+    .expect("a text");
+    let cx = context(Reading::DOCUMENT);
+    let mut d = Diagnostics::default();
+    let map = {
+        let mut read = Read::new(Reading::DOCUMENT, &mut d).load(&cx);
+        read_component_map_by::<Shelf>(
+            &Node::parsed(&parsed, JsonPath::of_keys(["components"])),
+            &mut read,
+            ConvertMode::Strict,
+            is_custom,
+            |key| match key {
+                "minecraft:count" => {
+                    KeyGate::Refuse(bedrock_addon_core::diagnostic::Diagnostic::of(
+                        &bedrock_addon_core::diagnostic::codes::DROPPED_FIELD,
+                    ))
+                }
+                "minecraft:damage" => {
+                    KeyGate::Unread(bedrock_addon_core::diagnostic::Diagnostic::of(
+                        &bedrock_addon_core::diagnostic::codes::INVALID_TYPE,
+                    ))
+                }
+                _ => KeyGate::Read,
+            },
+        )
+    }
+    .expect("an object");
+    let told: Vec<String> = d
+        .iter()
+        .map(|f| {
+            format!(
+                "{} {} {}",
+                f.code.id(),
+                f.location.json_path,
+                f.location.span.is_some()
+            )
+        })
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "core/dropped_field components/minecraft:count true",
+            "core/invalid_type components/minecraft:friction true",
+            "core/invalid_type components/minecraft:damage true",
+        ]
+    );
+    let names: Vec<String> = map.iter().map(|entry| format!("{entry:?}")).collect();
+    assert_eq!(names.len(), 2, "{names:?}");
+    assert!(names[0].contains("Pair"), "{names:?}");
+    assert!(names[1].contains("damage"), "{names:?}");
 }

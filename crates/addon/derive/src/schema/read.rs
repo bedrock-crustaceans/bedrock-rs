@@ -297,11 +297,22 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
     let field_rule = unknown_option(info.attrs.unknown.as_ref());
     let p = paths();
     let (node, read) = (&p.node, &p.read);
-    let kind = quote! {{
-        #[allow(unused_imports)]
-        use #reader::{KindOfNone as _, KindOfRead as _};
-        (&#reader::Probe::<#held>::NEW).kind()
-    }};
+    // What the type says of its `null`. A `schema::read_with` fn never sees one (the null rule
+    // reads it first), so the type's `HOLDS_NULL` is not for it: a member that fn reads refuses a
+    // `null` as every other member does.
+    let kind = if info.attrs.read_with.is_some() {
+        quote! {{
+            #[allow(unused_imports)]
+            use #reader::{KindOfNone as _, KindOfRead as _};
+            #reader::Kind { holds_null: false, ..(&#reader::Probe::<#held>::NEW).kind() }
+        }}
+    } else {
+        quote! {{
+            #[allow(unused_imports)]
+            use #reader::{KindOfNone as _, KindOfRead as _};
+            (&#reader::Probe::<#held>::NEW).kind()
+        }}
+    };
     // The field's own read: its `read_with`, a list it states the read of, or none (its type's).
     let iterated = info.attrs.iterated.is_some();
     let list = (iterated || info.attrs.elements.is_some())
@@ -526,6 +537,18 @@ fn fields_body(
     }
 }
 
+/// The type parameters a struct flattens: they share its object, so they are read as `Fields`.
+fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
+    infos
+        .iter()
+        .filter(|info| info.attrs.flatten)
+        .filter_map(|info| match info.ty {
+            Type::Path(path) if path.qself.is_none() => path.path.get_ident(),
+            _ => None,
+        })
+        .collect()
+}
+
 /// The read of a struct: `FromJson` (the object, then its fields) and `Fields`; a transparent
 /// newtype reads as its one field.
 pub(super) fn struct_read(
@@ -540,13 +563,14 @@ pub(super) fn struct_read(
         from_json,
         fields: fields_trait,
         object,
+        reader,
         expected,
-        ..
     } = paths();
     let ident = target.ident;
     let bound = quote!(#from_json);
-    let from_json_impl = target.impl_for(&from_json, Some(&bound));
-    let fields_impl = target.impl_for(&fields_trait, Some(&bound));
+    let flat = flattened_parameters(infos);
+    let from_json_impl = target.impl_flat(&from_json, &bound, &flat, &fields_trait);
+    let fields_impl = target.impl_flat(&fields_trait, &bound, &flat, &fields_trait);
     if container.transparent {
         let Some(info) = infos.first() else {
             return TokenStream::new();
@@ -555,18 +579,25 @@ pub(super) fn struct_read(
         // A field read by its own function takes no wording or `null` of the type's.
         let (inner, kind) = match &info.attrs.read_with {
             Some((with, _)) => (
-                quote!((#with)(__node, __read)?),
+                quote!((#with)(__node, __read)),
                 quote! {
                     const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
                 },
             ),
             None => (
-                quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(__node, __read)?),
+                quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(__node, __read)),
                 quote_spanned! {ty.span()=>
                     const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
                     const HOLDS_NULL: bool = <#ty as #from_json>::HOLDS_NULL;
                 },
             ),
+        };
+        // The word of the field (`schema::unknown`) is for the value the newtype holds.
+        let inner = if info.attrs.unknown.is_some() {
+            let rule = unknown_option(info.attrs.unknown.as_ref());
+            quote!(#reader::under_word(__read, #rule, |__read| #inner)?)
+        } else {
+            quote!(#inner?)
         };
         let build = match &info.member {
             Member::Named(name) => quote!(Self { #name: #inner }),

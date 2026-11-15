@@ -6,9 +6,6 @@ use indexmap::IndexMap;
 
 use super::BONE_VISIBILITY;
 use super::types::{Color, RenderMethod, TintMethod, Vec3};
-use bedrock_addon_core::diagnostic::JsonPath;
-use bedrock_addon_core::document::Unknown;
-use bedrock_addon_core::json::Value;
 use bedrock_addon_core::molang::Molang;
 use bedrock_addon_core::schema::{self, Schema};
 
@@ -100,7 +97,9 @@ pub struct NWayVisualRotation {
 /// the geometry; a string value names another instance of the map.
 #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[facet(transparent)]
-pub struct MaterialInstances(pub IndexMap<String, MaterialInstanceEntry>);
+pub struct MaterialInstances(
+    #[facet(schema::unknown = "keep")] pub IndexMap<String, MaterialInstanceEntry>,
+);
 
 /// One entry of [`MaterialInstances`].
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -124,6 +123,7 @@ pub struct MaterialInstance {
     /// JSON `tint_method`; `none` when absent.
     pub tint_method: Option<TintMethod>,
     /// JSON `ambient_occlusion` (`0..=10`; 1 when absent).
+    #[facet(schema::min = 0.0, schema::max = 10.0)]
     pub ambient_occlusion: Option<f32>,
     /// JSON `face_dimming`; `true` when absent.
     pub face_dimming: Option<bool>,
@@ -137,18 +137,6 @@ pub struct MaterialInstance {
 }
 
 impl MaterialInstances {
-    /// The JSON keys of [`MaterialInstance`].
-    const KNOWN: [&'static str; 8] = [
-        "texture",
-        "render_method",
-        "tint_method",
-        "ambient_occlusion",
-        "face_dimming",
-        "isotropic",
-        "alpha_masked_tint",
-        "dithering",
-    ];
-
     /// The instance `*` (or the one it names) renders opaque, as the game's render-layer check treats it.
     pub fn is_opaque(&self) -> bool {
         self.resolve("*")
@@ -165,35 +153,6 @@ impl MaterialInstances {
             }
         }
         None
-    }
-
-    /// Keeps each instance's unknown members, from the JSON it was read from
-    /// (`keep_unknown_members` does not reach map values), in `kept` below `at/<instance>`, and
-    /// returns the unknown keys as `(instance, member)`.
-    pub(crate) fn keep_unknown(
-        &self,
-        json: &Value,
-        at: &JsonPath,
-        kept: &mut Unknown,
-    ) -> Vec<(String, String)> {
-        let mut unknown = Vec::new();
-        let Some(object) = json.as_object() else {
-            return unknown;
-        };
-        for (name, entry) in &self.0 {
-            let (MaterialInstanceEntry::Instance(_), Some(written)) =
-                (entry, object.get(name.as_str()).and_then(Value::as_object))
-            else {
-                continue;
-            };
-            for (key, value) in written {
-                if !Self::KNOWN.contains(&key.as_str()) {
-                    kept.put(&at.child(name), key.as_str(), value.clone());
-                    unknown.push((name.clone(), key.to_string()));
-                }
-            }
-        }
-        unknown
     }
 }
 

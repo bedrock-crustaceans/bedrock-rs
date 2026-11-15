@@ -196,6 +196,60 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
     );
 }
 
+/// The wording of a wrong type by the path it is told at.
+fn by_place(path: &JsonPath) -> crate::diagnostic::Code {
+    let allowed = if path.len() == 1 { "object" } else { "string" };
+    crate::diagnostic::cereal::unknown_child_option(allowed)
+}
+
+#[test]
+fn a_wrong_type_is_worded_by_where_it_is_told() {
+    let json = value(r#"{"a": 1, "b": null}"#);
+    let root = Node::new(&json, JsonPath::new());
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).texts(Texts {
+        wrong_at: Some(WrongAt(by_place)),
+        ..Texts::CODES
+    });
+    let members = read.object(&root).expect("an object");
+    let a = read.required(&members, "a").expect("written");
+    assert!(read.string(&a).is_none());
+    let nested = value("[1]");
+    assert!(read.object(&Node::new(&nested, at(&["a", "b"]))).is_none());
+    assert!(read.object(&Node::new(&nested, at(&["c"]))).is_none());
+    assert_eq!(
+        rendered(&found),
+        [
+            r#"Error|a|core/unknown_child_option ["object"]|None|false"#,
+            r#"Error|a/b|core/unknown_child_option ["string"]|None|false"#,
+            r#"Error|c|core/unknown_child_option ["object"]|None|false"#,
+        ]
+    );
+}
+
+#[test]
+fn a_missing_member_is_told_at_the_object_where_the_texts_say() {
+    let json = value(r#"{"a": 1}"#);
+    let root = Node::new(&json, at(&["root"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let members = read.object(&root).expect("an object");
+    read.required(&members, "b");
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).texts(Texts {
+        missing_named: Some(&core_codes::REQUIRED_CHILD),
+        missing_in_object: true,
+        ..Texts::CODES
+    });
+    read.required(&members, "c");
+    assert_eq!(
+        rendered(&found),
+        [
+            "Error|root/b|core/missing_required_field|None|false",
+            "Error|root|core/required_child [\"c\"]|None|false",
+        ]
+    );
+}
+
 #[test]
 fn an_unknown_member_is_told_under_the_code_the_texts_name() {
     let json = value(r#"{"a": 1, "z": 0}"#);

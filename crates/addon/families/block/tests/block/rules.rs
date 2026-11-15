@@ -9,7 +9,6 @@
 
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, Kind, Severity};
 use bedrock_addon_core::id::BlockId;
-use bedrock_addon_core::json::StrictInt;
 use bedrock_addon_core::molang::{Molang, MolangVersion, RawVersion};
 use bedrock_addon_family_block::component::{
     BlockComponent, CollisionBox, ConnectionRule, CraftingTable, DestructibleByExplosion,
@@ -810,7 +809,7 @@ fn internal_vanilla_data_is_an_unknown_member_outside_the_base_game() {
         .internal_vanilla_data
         .clone()
         .unwrap();
-    assert_eq!(data.block_id, Some(StrictInt(7)));
+    assert_eq!(data.block_id, Some(7));
     assert_eq!(
         data.material,
         Some(bedrock_addon_family_block::MaterialType::SolidPlant)

@@ -4,7 +4,7 @@
 
 use std::borrow::Cow;
 
-use super::{Expected, Node, Pass, Read};
+use super::{Expected, Node, Pass, Read, WrongAt};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath};
 use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, fits, judge};
@@ -363,7 +363,12 @@ impl Read<'_> {
     ///
     /// [`NullHandling::Rejected`]: crate::versioning::NullHandling::Rejected
     pub(crate) fn null_error(&mut self, node: &Node<'_>) {
-        let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE).at(node.path.clone());
+        let mut finding = match self.texts.wrong_at {
+            // The family words a wrong type by where it is; a refused `null` is one.
+            Some(WrongAt(word)) => Diagnostic::error(word(&node.path)),
+            None => Diagnostic::of(&core_codes::INVALID_TYPE),
+        }
+        .at(node.path.clone());
         finding.location.span = node.span();
         self.defer(Pass::Null, finding);
     }

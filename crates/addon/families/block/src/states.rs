@@ -2,8 +2,9 @@
 
 use facet::Facet;
 
-use bedrock_addon_core::json::{StrictFloat, StrictInt, StrictString, Value};
-use bedrock_addon_core::schema;
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, FromJson, Schema};
 use bedrock_addon_shared_shapes::{BlockDescriptor, StateValue};
 
 /// The values one block state can take (JSON `description.states.<name>`).
@@ -80,6 +81,16 @@ impl From<Value> for StateValues {
         read_state_values(&value).unwrap_or(StateValues::Invalid(value))
     }
 }
+
+impl FromJson for StateValues {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        (!read.stopped()).then(|| StateValues::from(node.value().clone()))
+    }
+}
+
+// A state's values read their own forms and hold no Molang, no bound and no trigger.
+bedrock_addon_core::impl_no_molang!(StateValues);
+bedrock_addon_core::impl_schema_leaf!(StateValues);
 
 /// One of the list forms, or `None`.
 fn read_list(array: &facet_value::VArray) -> Option<StateValues> {
@@ -172,7 +183,7 @@ impl From<&StateValues> for Value {
 }
 
 /// `description.traits`: built-in behaviours that add states the engine sets on placement.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Traits {
     /// JSON `minecraft:placement_direction`.
@@ -197,17 +208,17 @@ impl Traits {
 }
 
 /// `minecraft:placement_direction`: the direction the player faced when placing the block.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PlacementDirection {
     /// `minecraft:cardinal_direction`, `minecraft:facing_direction`,
     /// `minecraft:corner_and_cardinal_direction`, `minecraft:sixteen_way_rotation` (JSON
     /// `enabled_states`; at least one).
     #[facet(default)]
-    pub enabled_states: Vec<StrictString>,
+    pub enabled_states: Vec<String>,
     /// Degrees added to the placement rotation, a multiple of 90 in `0..=360` (JSON
     /// `y_rotation_offset`).
-    pub y_rotation_offset: Option<StrictFloat<f32>>,
+    pub y_rotation_offset: Option<f32>,
     /// Blocks a corner placement connects with (JSON `blocks_to_corner_with`).
     pub blocks_to_corner_with: Option<Vec<BlockDescriptor>>,
 }
@@ -220,42 +231,42 @@ impl PlacementDirection {
 }
 
 /// `minecraft:placement_position`: where on the face the block was placed.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct PlacementPosition {
     /// `minecraft:block_face`, `minecraft:vertical_half` (JSON `enabled_states`; at least one).
     #[facet(default)]
-    pub enabled_states: Vec<StrictString>,
+    pub enabled_states: Vec<String>,
 }
 
 /// `minecraft:connection`: connections to neighbouring blocks.
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Connection {
     /// `minecraft:cardinal_connections`, `minecraft:vertical_connections` (JSON
     /// `enabled_states`; at least one).
     #[facet(default)]
-    pub enabled_states: Vec<StrictString>,
+    pub enabled_states: Vec<String>,
 }
 
 /// `minecraft:multi_block`: a block made of several stacked parts (doors, tall plants).
-#[derive(Clone, Debug, Default, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct MultiBlock {
     /// `minecraft:multi_block_part` (JSON `enabled_states`; required).
     #[facet(default)]
-    pub enabled_states: Vec<StrictString>,
+    pub enabled_states: Vec<String>,
     /// Where the other parts go: `down`, `up`, or a horizontal direction with Upcoming Creator
     /// Features (JSON `direction`, required).
-    pub direction: StrictString,
+    pub direction: String,
     /// How many parts, `2..=4` (JSON `parts`); 2 when absent.
-    pub parts: Option<StrictInt<u8>>,
+    pub parts: Option<u8>,
 }
 
 impl MultiBlock {
     /// How many parts: `parts`, 2 when absent.
     pub fn parts(&self) -> u8 {
-        self.parts.map_or(2, |parts| parts.0)
+        self.parts.unwrap_or(2)
     }
 }
 

@@ -6,6 +6,7 @@ use super::read::{CEREAL, NEWEST, parse_block};
 use super::{Block, Permutation};
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::document::{Unknown, UnknownMembers};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Unrepresentable, Value, WriteStyle, merge_unknown, write_json,
 };
@@ -14,9 +15,10 @@ use bedrock_addon_core::json::{
 type Written = (Value, Vec<Diagnostic>);
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang;
+use bedrock_addon_core::schema::read_document;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
-    Loaded, ParseCx, VersionStruct, Versioned, write_envelope, write_payload,
+    Loaded, ParseCx, Reading, VersionStruct, Versioned, write_envelope, write_payload,
 };
 
 impl Versioned for Block {
@@ -108,10 +110,16 @@ fn legacy_boxes(components: Option<&mut Value>, at: &JsonPath) -> Result<(), Enc
     };
     let mut written = facet_value::VArray::new();
     for (index, b) in boxes.iter().enumerate() {
-        let read: super::component::CollisionBoundingBox = bedrock_addon_core::json::from_str(
-            &bedrock_addon_core::json::to_json(b)?,
-        )
-        .map_err(|_| {
+        let mut found = Diagnostics::default();
+        let read = {
+            let mut read = Read::new(Reading::OWN, &mut found);
+            read_document::<super::component::CollisionBoundingBox>(
+                &Node::new(b, JsonPath::new()),
+                &mut read,
+            )
+        }
+        .filter(|_| !found.has_errors())
+        .ok_or_else(|| {
             // The box the writer holds has no reading of its own: named where it is.
             let at = at.child("minecraft:collision_box").index(index);
             EncodeError::NotRepresentable {

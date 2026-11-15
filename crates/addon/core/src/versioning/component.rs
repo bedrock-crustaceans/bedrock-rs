@@ -505,6 +505,31 @@ pub fn read_component_map<F: Family>(
     mode: ConvertMode,
     is_custom: fn(&str) -> bool,
 ) -> Option<ComponentMap<F::Component>> {
+    read_component_map_by::<F>(node, read, mode, is_custom, |_| KeyGate::Read)
+}
+
+/// What a family says of a key of its `components` object before the rows read it
+/// ([`read_component_map_by`]).
+#[derive(Debug)]
+pub enum KeyGate {
+    /// The row reads it (or it is a custom or an unknown component).
+    Read,
+    /// The slice refuses the key: told by the finding at the key, the component left out.
+    Refuse(Diagnostic),
+    /// The slice has no row for the key: told by the finding at the key, after the rows' own,
+    /// and kept as written, an unknown component.
+    Unread(Diagnostic),
+}
+
+/// [`read_component_map`] where the family judges each key first with `gate`: the refused ones
+/// are told before any row reads, the ones with no row in the slice after the last row.
+pub fn read_component_map_by<F: Family>(
+    node: &crate::json::kit::Node<'_>,
+    read: &mut crate::json::kit::Read<'_>,
+    mode: ConvertMode,
+    is_custom: fn(&str) -> bool,
+    gate: impl Fn(&str) -> KeyGate,
+) -> Option<ComponentMap<F::Component>> {
     if read.stopped() {
         return None;
     }
@@ -533,7 +558,21 @@ pub fn read_component_map<F: Family>(
     let table = table::<F>();
     let mut map = ComponentMap::new();
     let mut found = Diagnostics::default();
+    let (mut rows, mut unread) = (Vec::new(), Vec::new());
     for (key, member) in members.iter() {
+        let (path, span) = (node.path().child(key), member.span());
+        let at = |mut finding: Diagnostic| {
+            finding.location.json_path = path;
+            finding.location.span = span;
+            finding
+        };
+        match gate(key) {
+            KeyGate::Read => rows.push((key, member)),
+            KeyGate::Refuse(finding) => read.push(at(finding)),
+            KeyGate::Unread(finding) => unread.push((key, member, at(finding))),
+        }
+    }
+    for (key, member) in rows {
         // A member without a text (a node made without one) is read from its value written out.
         let written;
         let slice = if let Some(slice) = member.text() {
@@ -555,6 +594,10 @@ pub fn read_component_map<F: Family>(
     let kept = found.take_unknown();
     for finding in found {
         read.push(finding);
+    }
+    for (key, member, finding) in unread {
+        read.push(finding);
+        map.insert_unknown(key, member.value().clone());
     }
     read.findings_mut()
         .unknown_mut()

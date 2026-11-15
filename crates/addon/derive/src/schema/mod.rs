@@ -88,6 +88,25 @@ impl Target<'_> {
         self.impl_where(trait_path, bound, None)
     }
 
+    /// [`impl_for`](Self::impl_for) where each type parameter named in `flat` is also bounded by
+    /// `extra`: a parameter the struct flattens.
+    pub(super) fn impl_flat(
+        &self,
+        trait_path: &TokenStream,
+        bound: &TokenStream,
+        flat: &[&Ident],
+        extra: &TokenStream,
+    ) -> TokenStream {
+        let (mut generics, ty) = self.bounded(Some(bound));
+        for param in generics.type_params_mut() {
+            if flat.contains(&&param.ident) {
+                param.bounds.push(syn::parse_quote!(#extra));
+            }
+        }
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #trait_path for #ty #where_clause)
+    }
+
     /// [`impl_for`](Self::impl_for) with one more predicate in the where clause (`predicate`:
     /// `Self::ty(): Facet<'static>`, as tokens), when the type has parameters.
     pub(super) fn impl_where(

@@ -1525,3 +1525,93 @@ fn a_value_in_memory_reads_as_the_plain_typed_read_does() {
     assert!(schema::read_value::<Value>(&nested(MAX_JSON_DEPTH)).is_some());
     assert!(schema::read_value::<Value>(&nested(MAX_JSON_DEPTH + 1)).is_none());
 }
+
+/// A Molang number beyond `f32` is a wrong type, unless the read clamps it: then the largest
+/// finite float of its sign and an information at the number, after the read.
+#[test]
+fn a_molang_number_beyond_f32_is_clamped_where_the_read_says() {
+    use crate::molang::Molang;
+    let text = "[1e39, -1e999, 0.5]";
+    let (value, told) = door::<Vec<Molang>>(text);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/0 core/invalid_type"]);
+    let json: Value = from_str_jsonc(text).expect("JSON");
+    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found)
+        .profile(Profile::FIRST_FAILURE)
+        .clamp_molang();
+    let value = Vec::<Molang>::from_json(&node, &mut read);
+    read.finish();
+    assert_eq!(
+        value,
+        Some(vec![
+            Molang::Const(f32::MAX),
+            Molang::Const(f32::MIN),
+            Molang::Const(0.5)
+        ])
+    );
+    let told: Vec<String> = found
+        .iter()
+        .map(|f| {
+            format!(
+                "{:?} {} {:?}",
+                f.severity, f.location.json_path, f.location.span
+            )
+        })
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "Info root/0 Some(Span { offset: 1, len: 4 })",
+            "Info root/1 Some(Span { offset: 7, len: 6 })"
+        ]
+    );
+}
+
+/// A kept `Value` holds the infinity a number beyond a double is, unless the read clamps it: then
+/// the largest finite double of its sign and an information at the number.
+#[test]
+fn a_kept_number_beyond_a_double_is_clamped_where_the_read_says() {
+    let text = r#"[1.5, {"a": -1e999}, 1e999]"#;
+    let json: Value = from_str_jsonc(text).expect("JSON");
+    let node = Node::with_text(&json, JsonPath::of_keys(["root"]), JsonSlice::new(text));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found)
+        .profile(Profile::FIRST_FAILURE)
+        .clamp_kept();
+    let value = Value::from_json(&node, &mut read).expect("a value");
+    read.finish();
+    let again = value.as_array().expect("a list");
+    assert_eq!(
+        again[2].as_number().and_then(facet_value::VNumber::to_f64),
+        Some(f64::MAX)
+    );
+    let told: Vec<String> = found
+        .iter()
+        .map(|f| {
+            format!(
+                "{:?} {} {:?}",
+                f.severity, f.location.json_path, f.location.span
+            )
+        })
+        .collect();
+    assert_eq!(
+        told,
+        [
+            "Info root/1/a Some(Span { offset: 12, len: 6 })",
+            "Info root/2 Some(Span { offset: 21, len: 5 })"
+        ]
+    );
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).profile(Profile::FIRST_FAILURE);
+    let kept = Value::from_json(&node, &mut read).expect("a value");
+    read.finish();
+    assert!(found.is_empty());
+    assert_ne!(
+        kept.as_array().expect("a list")[2]
+            .as_number()
+            .and_then(facet_value::VNumber::to_f64),
+        Some(f64::MAX)
+    );
+}

@@ -43,8 +43,7 @@ pub use visual::{
 use bedrock_addon_derive::Components;
 
 use super::history::BlockFamily;
-use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPathSegment, Severity, codes as core_codes};
 use bedrock_addon_core::document::{ComponentMap, ComponentRef, CustomComponent};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::load::{Experiment, LoadContext, LoadRequirement};
@@ -52,7 +51,35 @@ use bedrock_addon_core::molang::{
     BLOCK_STATE_QUERIES, EmptyRule, MolangFieldSpec, MolangVersion, MolangVersionSource, OpsRule,
     ReaderKind,
 };
-use bedrock_addon_core::versioning::{ConvertMode, parse_component};
+use bedrock_addon_core::versioning::{ConvertMode, NullHandling, read_component};
+
+/// A component whose material instances keep their unknown members: the game says nothing of one
+/// in a legacy document, so the crate tells it as an information; a cereal document's is the
+/// slice's grade. `NESTED`: the instances are the component's `material_instances` member.
+fn read_instances<T, const NESTED: bool>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<BlockComponent>
+where
+    T: bedrock_addon_core::schema::FromJson + for<'a> facet::Facet<'a> + Into<BlockComponent>,
+{
+    let before = d.len();
+    let component = read_component::<T, BlockComponent>(slice, mode, cx, d);
+    if cx.reading.null != NullHandling::Rejected {
+        for finding in d.iter_mut().skip(before) {
+            let path = &finding.location.json_path;
+            let instance_member = path.len() == if NESTED { 3 } else { 2 }
+                && (!NESTED
+                    || path.segments().next() == Some(JsonPathSegment::Key("material_instances")));
+            if instance_member && finding.code.id() == core_codes::UNRECOGNIZED_FIELD.id() {
+                finding.severity = Severity::Info;
+            }
+        }
+    }
+    component
+}
 
 /// Vanilla's legacy creator features: the ten allow-listed packs.
 const LCF: LoadRequirement = LoadRequirement::LegacyCreatorFeatures;
@@ -71,132 +98,132 @@ pub enum BlockComponent {
     /// `minecraft:block_entity`. No member of a legacy document; its `container` and
     /// `entity_storage` are behind Upcoming Creator Features by the validator of 1.26.60: the
     /// family gates them itself.
-    #[component(name = "minecraft:block_entity", fields = [{ name = "", since_engine = "1.26.30" }], parse = parse_component::<BlockEntity, BlockComponent>)]
+    #[component(name = "minecraft:block_entity", fields = [{ name = "", since_engine = "1.26.30" }], parse = read_component::<BlockEntity, BlockComponent>)]
     BlockEntity(BlockEntity),
     /// `minecraft:chest_obstruction`.
-    #[component(name = "minecraft:chest_obstruction", released = "1.26.20", requires = [UCF], parse = parse_component::<ChestObstruction, BlockComponent>)]
+    #[component(name = "minecraft:chest_obstruction", released = "1.26.20", requires = [UCF], parse = read_component::<ChestObstruction, BlockComponent>)]
     ChestObstruction(ChestObstruction),
     /// `minecraft:collision_box`.
     #[component(name = "minecraft:collision_box", shorthand = scalar, released = "1.19.50", requires = [LCF], parse = parse_collision_box)]
     CollisionBox(CollisionBox),
     /// `minecraft:connection_rule`.
-    #[component(name = "minecraft:connection_rule", released = "1.26.0", requires = [UCF], parse = parse_component::<ConnectionRule, BlockComponent>)]
+    #[component(name = "minecraft:connection_rule", released = "1.26.0", requires = [UCF], parse = read_component::<ConnectionRule, BlockComponent>)]
     ConnectionRule(ConnectionRule),
     /// `minecraft:crafting_table`.
-    #[component(name = "minecraft:crafting_table", released = "1.19.50", requires = [LCF], parse = parse_component::<CraftingTable, BlockComponent>)]
+    #[component(name = "minecraft:crafting_table", released = "1.19.50", requires = [LCF], parse = read_component::<CraftingTable, BlockComponent>)]
     CraftingTable(CraftingTable),
     /// `minecraft:destructible_by_explosion`.
-    #[component(name = "minecraft:destructible_by_explosion", shorthand = scalar, parse = parse_component::<DestructibleByExplosion, BlockComponent>)]
+    #[component(name = "minecraft:destructible_by_explosion", shorthand = scalar, parse = read_component::<DestructibleByExplosion, BlockComponent>)]
     DestructibleByExplosion(DestructibleByExplosion),
     /// `minecraft:destructible_by_mining`.
-    #[component(name = "minecraft:destructible_by_mining", shorthand = scalar, molang, parse = parse_component::<DestructibleByMining, BlockComponent>)]
+    #[component(name = "minecraft:destructible_by_mining", shorthand = scalar, molang, parse = read_component::<DestructibleByMining, BlockComponent>)]
     DestructibleByMining(DestructibleByMining),
     /// `minecraft:destruction_particles` (format 1.21.70, checked by the family).
-    #[component(name = "minecraft:destruction_particles", parse = parse_component::<DestructionParticles, BlockComponent>)]
+    #[component(name = "minecraft:destruction_particles", parse = read_component::<DestructionParticles, BlockComponent>)]
     DestructionParticles(DestructionParticles),
     /// `minecraft:display_name`.
-    #[component(name = "minecraft:display_name", released = "1.19.60", requires = [LCF], parse = parse_component::<DisplayName, BlockComponent>)]
+    #[component(name = "minecraft:display_name", released = "1.19.60", requires = [LCF], parse = read_component::<DisplayName, BlockComponent>)]
     DisplayName(DisplayName),
     /// `minecraft:embedded_visual`.
-    #[component(name = "minecraft:embedded_visual", released = "1.21.120", requires = [UCF], molang, parse = parse_embedded_visual)]
+    #[component(name = "minecraft:embedded_visual", released = "1.21.120", requires = [UCF], molang, parse = read_instances::<EmbeddedVisual, true>)]
     EmbeddedVisual(EmbeddedVisual),
     /// `minecraft:enchantment_power_transmitter` (1.26.60). Behind Upcoming Creator Features
     /// by the validator of 1.26.60, and no member of a legacy document: the family gates it itself.
-    #[component(name = "minecraft:enchantment_power_transmitter", parse = parse_component::<EnchantmentPowerTransmitter, BlockComponent>)]
+    #[component(name = "minecraft:enchantment_power_transmitter", parse = read_component::<EnchantmentPowerTransmitter, BlockComponent>)]
     EnchantmentPowerTransmitter(EnchantmentPowerTransmitter),
     /// `minecraft:entity_fall_on`.
-    #[component(name = "minecraft:entity_fall_on", parse = parse_component::<EntityFallOn, BlockComponent>)]
+    #[component(name = "minecraft:entity_fall_on", parse = read_component::<EntityFallOn, BlockComponent>)]
     EntityFallOn(EntityFallOn),
     /// `minecraft:flammable`.
-    #[component(name = "minecraft:flammable", shorthand = scalar, fields = [{ name = "lava_flammable", since_engine = "1.26.30" }], parse = parse_component::<Flammable, BlockComponent>)]
+    #[component(name = "minecraft:flammable", shorthand = scalar, fields = [{ name = "lava_flammable", since_engine = "1.26.30" }], parse = read_component::<Flammable, BlockComponent>)]
     Flammable(Flammable),
     /// `minecraft:flower_pottable`.
-    #[component(name = "minecraft:flower_pottable", released = "1.21.120", requires = [UCF], parse = parse_component::<FlowerPottable, BlockComponent>)]
+    #[component(name = "minecraft:flower_pottable", released = "1.21.120", requires = [UCF], parse = read_component::<FlowerPottable, BlockComponent>)]
     FlowerPottable(FlowerPottable),
     /// `minecraft:friction`.
-    #[component(name = "minecraft:friction", parse = parse_component::<Friction, BlockComponent>)]
+    #[component(name = "minecraft:friction", parse = read_component::<Friction, BlockComponent>)]
     Friction(Friction),
     /// `minecraft:geometry`.
-    #[component(name = "minecraft:geometry", shorthand = scalar, released = "1.19.40", requires = [LCF], fields = [{ name = "n_way_visual_rotation", since_engine = "1.26.30" }], molang, parse = parse_component::<Geometry, BlockComponent>)]
+    #[component(name = "minecraft:geometry", shorthand = scalar, released = "1.19.40", requires = [LCF], fields = [{ name = "n_way_visual_rotation", since_engine = "1.26.30" }], molang, parse = read_component::<Geometry, BlockComponent>)]
     Geometry(Geometry),
     /// `minecraft:instrument_sound`. No member of a legacy document, ungated from 1.26.20.
-    #[component(name = "minecraft:instrument_sound", fields = [{ name = "", since_engine = "1.26.30" }], parse = parse_component::<InstrumentSound, BlockComponent>)]
+    #[component(name = "minecraft:instrument_sound", fields = [{ name = "", since_engine = "1.26.30" }], parse = read_component::<InstrumentSound, BlockComponent>)]
     InstrumentSound(InstrumentSound),
     /// `minecraft:item_visual`.
-    #[component(name = "minecraft:item_visual", released = "1.21.50", requires = [UCF], molang, parse = parse_item_visual)]
+    #[component(name = "minecraft:item_visual", released = "1.21.50", requires = [UCF], molang, parse = read_instances::<ItemVisual, true>)]
     ItemVisual(ItemVisual),
     /// `minecraft:leashable`.
-    #[component(name = "minecraft:leashable", released = "1.26.0", requires = [UCF], parse = parse_component::<Leashable, BlockComponent>)]
+    #[component(name = "minecraft:leashable", released = "1.26.0", requires = [UCF], parse = read_component::<Leashable, BlockComponent>)]
     Leashable(Leashable),
     /// `minecraft:light_dampening`.
-    #[component(name = "minecraft:light_dampening", parse = parse_component::<LightDampening, BlockComponent>)]
+    #[component(name = "minecraft:light_dampening", parse = read_component::<LightDampening, BlockComponent>)]
     LightDampening(LightDampening),
     /// `minecraft:light_emission`.
-    #[component(name = "minecraft:light_emission", parse = parse_component::<LightEmission, BlockComponent>)]
+    #[component(name = "minecraft:light_emission", parse = read_component::<LightEmission, BlockComponent>)]
     LightEmission(LightEmission),
     /// `minecraft:liquid_detection`.
-    #[component(name = "minecraft:liquid_detection", released = "1.21.60", requires = [UCF], parse = parse_component::<LiquidDetection, BlockComponent>)]
+    #[component(name = "minecraft:liquid_detection", released = "1.21.60", requires = [UCF], parse = read_component::<LiquidDetection, BlockComponent>)]
     LiquidDetection(LiquidDetection),
     /// `minecraft:loot`.
-    #[component(name = "minecraft:loot", parse = parse_component::<Loot, BlockComponent>)]
+    #[component(name = "minecraft:loot", parse = read_component::<Loot, BlockComponent>)]
     Loot(Loot),
     /// `minecraft:map_color`.
-    #[component(name = "minecraft:map_color", shorthand = scalar, parse = parse_component::<MapColor, BlockComponent>)]
+    #[component(name = "minecraft:map_color", shorthand = scalar, parse = read_component::<MapColor, BlockComponent>)]
     MapColor(MapColor),
     /// `minecraft:material_instances`.
-    #[component(name = "minecraft:material_instances", released = "1.19.40", requires = [LCF], parse = parse_material_instances)]
+    #[component(name = "minecraft:material_instances", released = "1.19.40", requires = [LCF], parse = read_instances::<MaterialInstances, false>)]
     MaterialInstances(MaterialInstances),
     /// `minecraft:movable`.
-    #[component(name = "minecraft:movable", released = "1.21.100", requires = [UCF], parse = parse_component::<Movable, BlockComponent>)]
+    #[component(name = "minecraft:movable", released = "1.21.100", requires = [UCF], parse = read_component::<Movable, BlockComponent>)]
     Movable(Movable),
     /// `minecraft:neighbor_change` (1.26.60). Behind Upcoming Creator Features by the
     /// validator of 1.26.60, and no member of a legacy document: the family gates it itself.
-    #[component(name = "minecraft:neighbor_change", parse = parse_component::<NeighborChange, BlockComponent>)]
+    #[component(name = "minecraft:neighbor_change", parse = read_component::<NeighborChange, BlockComponent>)]
     NeighborChange(NeighborChange),
     /// `minecraft:placement_filter`.
-    #[component(name = "minecraft:placement_filter", released = "1.19.60", requires = [LCF], molang, parse = parse_component::<PlacementFilter, BlockComponent>)]
+    #[component(name = "minecraft:placement_filter", released = "1.19.60", requires = [LCF], molang, parse = read_component::<PlacementFilter, BlockComponent>)]
     PlacementFilter(PlacementFilter),
     /// `minecraft:precipitation_interactions`.
-    #[component(name = "minecraft:precipitation_interactions", released = "1.21.120", requires = [UCF], parse = parse_component::<PrecipitationInteractions, BlockComponent>)]
+    #[component(name = "minecraft:precipitation_interactions", released = "1.21.120", requires = [UCF], parse = read_component::<PrecipitationInteractions, BlockComponent>)]
     PrecipitationInteractions(PrecipitationInteractions),
     /// `minecraft:random_offset`.
-    #[component(name = "minecraft:random_offset", released = "1.21.100", requires = [UCF], parse = parse_component::<RandomOffset, BlockComponent>)]
+    #[component(name = "minecraft:random_offset", released = "1.21.100", requires = [UCF], parse = read_component::<RandomOffset, BlockComponent>)]
     RandomOffset(RandomOffset),
     /// `minecraft:redstone_conductivity`.
-    #[component(name = "minecraft:redstone_conductivity", released = "1.21.30", requires = [UCF], parse = parse_component::<RedstoneConductivity, BlockComponent>)]
+    #[component(name = "minecraft:redstone_conductivity", released = "1.21.30", requires = [UCF], parse = read_component::<RedstoneConductivity, BlockComponent>)]
     RedstoneConductivity(RedstoneConductivity),
     /// `minecraft:redstone_consumer`.
-    #[component(name = "minecraft:redstone_consumer", released = "1.26.0", requires = [UCF], parse = parse_component::<RedstoneConsumer, BlockComponent>)]
+    #[component(name = "minecraft:redstone_consumer", released = "1.26.0", requires = [UCF], parse = read_component::<RedstoneConsumer, BlockComponent>)]
     RedstoneConsumer(RedstoneConsumer),
     /// `minecraft:redstone_producer`.
-    #[component(name = "minecraft:redstone_producer", released = "1.21.120", requires = [UCF], parse = parse_component::<RedstoneProducer, BlockComponent>)]
+    #[component(name = "minecraft:redstone_producer", released = "1.21.120", requires = [UCF], parse = read_component::<RedstoneProducer, BlockComponent>)]
     RedstoneProducer(RedstoneProducer),
     /// `minecraft:replaceable`.
-    #[component(name = "minecraft:replaceable", released = "1.21.60", requires = [UCF], parse = parse_component::<Replaceable, BlockComponent>)]
+    #[component(name = "minecraft:replaceable", released = "1.21.60", requires = [UCF], parse = read_component::<Replaceable, BlockComponent>)]
     Replaceable(Replaceable),
     /// `minecraft:selection_box`.
-    #[component(name = "minecraft:selection_box", shorthand = scalar, released = "1.19.60", requires = [LCF], parse = parse_component::<SelectionBox, BlockComponent>)]
+    #[component(name = "minecraft:selection_box", shorthand = scalar, released = "1.19.60", requires = [LCF], parse = read_component::<SelectionBox, BlockComponent>)]
     SelectionBox(SelectionBox),
     /// `minecraft:sound`. Its legacy row is released at 1.26.40 behind Upcoming Creator
     /// Features (the family's own gate below 1.26.20); ungated from 1.26.20.
-    #[component(name = "minecraft:sound", fields = [{ name = "", since_engine = "1.26.50" }], parse = parse_component::<Sound, BlockComponent>)]
+    #[component(name = "minecraft:sound", fields = [{ name = "", since_engine = "1.26.50" }], parse = read_component::<Sound, BlockComponent>)]
     Sound(Sound),
     /// `minecraft:support`.
-    #[component(name = "minecraft:support", released = "1.26.0", requires = [UCF], parse = parse_component::<Support, BlockComponent>)]
+    #[component(name = "minecraft:support", released = "1.26.0", requires = [UCF], parse = read_component::<Support, BlockComponent>)]
     Support(Support),
     /// `minecraft:tags`.
-    #[component(name = "minecraft:tags", parse = parse_component::<Tags, BlockComponent>)]
+    #[component(name = "minecraft:tags", parse = read_component::<Tags, BlockComponent>)]
     Tags(Tags),
     /// `minecraft:tick`.
-    #[component(name = "minecraft:tick", parse = parse_component::<Tick, BlockComponent>)]
+    #[component(name = "minecraft:tick", parse = read_component::<Tick, BlockComponent>)]
     Tick(Tick),
     /// `minecraft:transformation`.
-    #[component(name = "minecraft:transformation", released = "1.19.80", requires = [LCF], parse = parse_component::<Transformation, BlockComponent>)]
+    #[component(name = "minecraft:transformation", released = "1.19.80", requires = [LCF], parse = read_component::<Transformation, BlockComponent>)]
     Transformation(Transformation),
     /// `minecraft:vibration_properties` (1.26.60). Behind Upcoming Creator Features, by the
     /// validator of 1.26.60 and below 1.26.20 by its legacy row (released 1.26.60): the
     /// family gates it itself.
-    #[component(name = "minecraft:vibration_properties", parse = parse_component::<VibrationProperties, BlockComponent>)]
+    #[component(name = "minecraft:vibration_properties", parse = read_component::<VibrationProperties, BlockComponent>)]
     VibrationProperties(VibrationProperties),
     /// A custom component (`ns:name`) with its parameters.
     Custom(CustomComponent),
@@ -214,139 +241,20 @@ fn parse_collision_box(
     d: &mut Diagnostics,
 ) -> Option<BlockComponent> {
     if slice.text.trim_start().starts_with('{') {
-        parse_component::<OneCollisionBox, BlockComponent>(slice, mode, cx, d)
+        read_component::<OneCollisionBox, BlockComponent>(slice, mode, cx, d)
     } else {
-        parse_component::<CollisionBox, BlockComponent>(slice, mode, cx, d)
+        read_component::<CollisionBox, BlockComponent>(slice, mode, cx, d)
     }
 }
 
 /// One collision box written as an object.
-#[derive(facet::Facet)]
+#[derive(facet::Facet, bedrock_addon_core::schema::Schema)]
 #[facet(transparent)]
 struct OneCollisionBox(CollisionBoundingBox);
 
 impl From<OneCollisionBox> for BlockComponent {
     fn from(one: OneCollisionBox) -> Self {
         BlockComponent::CollisionBox(CollisionBox::Boxes(vec![one.0]))
-    }
-}
-
-/// `minecraft:material_instances`, whose instances keep their unknown members.
-fn parse_material_instances(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<BlockComponent> {
-    let mut value: MaterialInstances = parse_typed(slice, mode, cx, d)?;
-    keep_instances(&mut value, slice, None, instance_unknown(cx), d);
-    Some(value.into())
-}
-
-/// `minecraft:item_visual`, whose instances keep their unknown members.
-fn parse_item_visual(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<BlockComponent> {
-    let mut value: ItemVisual = parse_typed(slice, mode, cx, d)?;
-    keep_instances(
-        &mut value.material_instances,
-        slice,
-        Some("material_instances"),
-        instance_unknown(cx),
-        d,
-    );
-    Some(value.into())
-}
-
-/// `minecraft:embedded_visual`, whose instances keep their unknown members.
-fn parse_embedded_visual(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<BlockComponent> {
-    let mut value: EmbeddedVisual = parse_typed(slice, mode, cx, d)?;
-    keep_instances(
-        &mut value.material_instances,
-        slice,
-        Some("material_instances"),
-        instance_unknown(cx),
-        d,
-    );
-    Some(value.into())
-}
-
-/// `parse_component` for a type that is then given back to the caller.
-fn parse_typed<T>(
-    slice: JsonSlice<'_>,
-    mode: ConvertMode,
-    cx: &LoadContext,
-    d: &mut Diagnostics,
-) -> Option<T>
-where
-    T: for<'a> facet::Facet<'a>
-        + Into<BlockComponent>
-        + bedrock_addon_core::document::Component<Set = BlockComponent>,
-{
-    let component = parse_component::<T, BlockComponent>(slice, mode, cx, d)?;
-    <T as bedrock_addon_core::document::Component>::try_from_set(component).ok()
-}
-
-/// Whether the load is a cereal slice's (rule N2): the legacy slice has no null rule.
-fn is_cereal(cx: &LoadContext) -> bool {
-    cx.null_rule == Some(bedrock_addon_core::json::NullRule::Rejected)
-}
-
-/// The severity of an unknown member of a material instance: in a cereal document the slice's
-/// grade (the strict mask's error, which refuses the block); in a legacy one the game says
-/// nothing of an unknown member, so the crate reports it as an information.
-fn instance_unknown(cx: &LoadContext) -> Severity {
-    if is_cereal(cx) {
-        cx.grade(Class::Unknown)
-    } else {
-        Severity::Info
-    }
-}
-
-/// Keeps the unknown members of each material instance (below the member `within`, if any)
-/// and reports each at `unknown`.
-fn keep_instances(
-    instances: &mut MaterialInstances,
-    slice: JsonSlice<'_>,
-    within: Option<&str>,
-    unknown: Severity,
-    d: &mut Diagnostics,
-) {
-    let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) else {
-        return;
-    };
-    let json = match within {
-        Some(key) => match json.as_object().and_then(|o| o.get(key)) {
-            Some(inner) => inner.clone(),
-            None => return,
-        },
-        None => json,
-    };
-    let mut at = JsonPath::new();
-    if let Some(key) = within {
-        at.push(key);
-    }
-    for (instance, member) in instances.keep_unknown(&json, &at, d.unknown_mut()) {
-        let mut path = JsonPath::new();
-        if let Some(key) = within {
-            path.push(key);
-        }
-        path.push(&instance);
-        path.push(&member);
-        d.push(
-            Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                .severity(Severity::Error)
-                .severity(unknown)
-                .at(path),
-        );
     }
 }
 
@@ -415,6 +323,7 @@ mod tests {
     use bedrock_addon_core::diagnostic::JsonPath;
     use bedrock_addon_core::molang::visit_fields;
     use bedrock_addon_core::schema::misshapen_shorthand_rows;
+    use bedrock_addon_core::versioning::Reading;
 
     /// The paths and specs the Molang walk of `value` visits.
     fn walked<T: bedrock_addon_core::molang::MolangFields>(
@@ -427,8 +336,13 @@ mod tests {
         seen
     }
 
-    fn from_json<T: for<'a> facet::Facet<'a>>(text: &str) -> T {
-        bedrock_addon_core::json::from_str(text).expect("the payload reads")
+    fn from_json<T: bedrock_addon_core::schema::FromJson>(text: &str) -> T {
+        use bedrock_addon_core::json::kit::{Node, Read};
+        let value: Value = bedrock_addon_core::json::from_str_jsonc(text).expect("a text");
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::OWN, &mut found);
+        bedrock_addon_core::schema::read_document(&Node::new(&value, JsonPath::new()), &mut read)
+            .expect("the payload reads")
     }
 
     #[test]

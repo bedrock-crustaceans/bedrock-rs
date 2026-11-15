@@ -1385,6 +1385,57 @@ mod hygiene {
     }
 }
 
+/// A member kept whole as `Value`, which holds a `null`, read by a `schema::read_with` fn: the fn
+/// never sees a `null`, the null rule refuses it as it does every other member's.
+mod null_of_a_kept_value {
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::{self, FromJson, Schema};
+    use bedrock_addon_core::versioning::{NullHandling, Reading};
+    use facet::Facet;
+
+    fn whole(node: &Node<'_>, read: &mut Read<'_>) -> Option<Value> {
+        Value::from_json(node, read)
+    }
+
+    #[derive(Debug, PartialEq, Facet, Schema)]
+    struct Notes {
+        #[facet(schema::read_with = whole)]
+        refused: Option<Value>,
+        held: Option<Value>,
+    }
+
+    fn read(text: &str) -> (Option<Notes>, Vec<String>) {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        let reading = Reading::DOCUMENT;
+        let mut reader = Read::new(reading, &mut found).null(NullHandling::Rejected);
+        let value = Notes::from_json(&Node::new(&json, JsonPath::new()), &mut reader);
+        let told = found
+            .iter()
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
+            .collect();
+        (value, told)
+    }
+
+    #[test]
+    fn a_null_a_read_with_fn_would_hold_is_refused_by_the_null_rule() {
+        let (value, told) = read(r#"{"held": null}"#);
+        assert_eq!(
+            value,
+            Some(Notes {
+                refused: None,
+                held: None
+            })
+        );
+        assert!(told.is_empty(), "{told:?}");
+        let (value, told) = read(r#"{"refused": null}"#);
+        assert_eq!(value, None);
+        assert_eq!(told, ["core/invalid_type refused"]);
+    }
+}
+
 // ---- the validate stage: since_engine, the older tree's wording, length, hooks -----------------
 
 use bedrock_addon_core::diagnostic::Phase;
@@ -1851,6 +1902,14 @@ pub struct Maybe<T> {
 #[facet(transparent)]
 pub struct Wrapped<T>(pub T);
 
+/// A name and whatever else the parameter reads from the same object.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Beside<T> {
+    pub name: String,
+    #[facet(flatten)]
+    pub rest: T,
+}
+
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
@@ -1882,7 +1941,7 @@ pub enum External<T> {
 /// need (`FromJson` for the read, `SchemaFields` for the check and the trigger list,
 /// `MolangFields` for the Molang walk).
 mod generics {
-    use super::{External, Maybe, OneOf, Slots, Tagged, Weighted, Wrapped};
+    use super::{Beside, External, Maybe, OneOf, Slots, Tagged, Weighted, Wrapped};
     use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
     use bedrock_addon_core::json::kit::{Node, Read};
     use bedrock_addon_core::json::{Value, from_str_jsonc};
@@ -1981,6 +2040,23 @@ mod generics {
         assert_eq!(Maybe::<u8>::default(), Maybe { value: None });
         let (value, _) = read::<Maybe<u8>>("{}");
         assert_eq!(value, Some(Maybe::default()));
+    }
+
+    #[test]
+    fn a_generic_struct_reads_a_flattened_parameter_from_its_own_object() {
+        let (value, found) = read::<Beside<Maybe<u8>>>(r#"{"name": "a", "value": 3}"#);
+        assert_eq!(
+            value,
+            Some(Beside {
+                name: "a".to_owned(),
+                rest: Maybe { value: Some(3) }
+            })
+        );
+        assert!(found.is_empty());
+        // What neither reads is unknown to the owner, which tells it.
+        let (value, found) = read::<Beside<Maybe<u8>>>(r#"{"name": "a", "zz": 1}"#);
+        assert_eq!(value.map(|beside| beside.rest), Some(Maybe { value: None }));
+        assert_eq!(told(&found), ["core/unrecognized_field zz"]);
     }
 
     #[test]
@@ -2187,6 +2263,11 @@ pub struct Entry {
     level: Option<u8>,
 }
 
+/// A transparent newtype of a map whose field says `keep`: the word is for the map it holds.
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[facet(transparent)]
+pub struct KeptRegistry(#[facet(schema::unknown = "keep")] IndexMap<String, Entry>);
+
 /// Two maps of the same structs: one says `keep`, the other nothing.
 #[derive(Debug, PartialEq, Facet, Schema)]
 pub struct Registry {
@@ -2234,6 +2315,24 @@ mod map_values {
             ]
         );
         assert_eq!(kept, ["kept/a/zz=5", "kept/b/yy=null"]);
+    }
+
+    #[test]
+    fn a_transparent_newtype_says_keep_for_the_map_it_holds() {
+        let json: Value = from_str_jsonc(r#"{"a": {"level": 1, "zz": 5}}"#).unwrap();
+        let mut found = Diagnostics::default();
+        {
+            let mut read = Read::new(Reading::DOCUMENT, &mut found);
+            let value =
+                super::KeptRegistry::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+            assert!(value.is_some());
+        }
+        let kept: Vec<String> = found
+            .unknown()
+            .iter()
+            .map(|(at, key, value)| format!("{at}/{key}={value:?}"))
+            .collect();
+        assert_eq!(kept, ["a/zz=5"]);
     }
 
     #[test]

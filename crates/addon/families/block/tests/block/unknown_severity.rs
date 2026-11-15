@@ -159,3 +159,28 @@ beta refused
         "\n{found}"
     );
 }
+
+/// The game says nothing of an unknown member of a material instance in a legacy document (the
+/// crate tells it as an information, kept); the cereal document's is the slice's error.
+#[test]
+fn an_unknown_member_of_a_material_instance_is_an_information_in_a_legacy_document() {
+    let found = told(
+        r#"{"description": {"identifier": "demo:x"}, "components": {"minecraft:geometry": "geometry.x", "minecraft:material_instances": {"*": {"texture": "x", "zz": 1}}}}"#,
+    );
+    let at = "minecraft:block/components/minecraft:material_instances/*/zz";
+    for (version, severity) in [
+        ("1.21.90", "Info"),
+        ("1.26.0", "Info"),
+        ("1.26.20", "Error"),
+        ("1.26.60", "Error"),
+    ] {
+        let line = format!("  {severity} core/unrecognized_field {at}\n");
+        let block = found
+            .split_inclusive('\n')
+            .skip_while(|l| !l.starts_with(version))
+            .skip(1)
+            .take_while(|l| l.starts_with("  "))
+            .collect::<String>();
+        assert!(block.contains(&line), "{version}: {block}\nin\n{found}");
+    }
+}

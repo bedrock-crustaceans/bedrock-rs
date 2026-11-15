@@ -1,31 +1,35 @@
-//! Reading [`Block`] from the text of a 1.26.20 payload (the game's cereal
-//! document), and the Molang walk of the document.
+//! Reading [`Block`] from the text of a payload (the game's cereal document, and the payload a
+//! legacy document converts to), and the Molang walk of the document.
 
 use crate::codes;
 use facet::Facet;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
-use super::component::{BlockComponent, DeprecatedComponents, DeprecatedDefinitionEvent};
+use super::component::{
+    BlockComponent, BlockEntity, DeprecatedComponents, DeprecatedDefinitionEvent,
+    read_collision_box,
+};
 use super::history::{BlockFamily, BlockHistory};
 use super::{Block, Description, Permutation};
+use bedrock_addon_core::diagnostic::cereal;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::document::{ComponentMap, Document, Origin, Rejected};
 use bedrock_addon_core::id::syntax::split_namespace;
 use bedrock_addon_core::json::Prepared;
-use bedrock_addon_core::json::{JsonSlice, ScalarRules, Value, keep_unknown_members, parse_at};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{
     BLOCK_STATE_QUERIES, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
     MolangVersion, MolangVersionSource, MolangVisitor, OpsRule, ReaderKind,
 };
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_document};
 use bedrock_addon_core::version::FormatVersionInput;
 use bedrock_addon_core::version::{FormatVersion, known};
-use bedrock_addon_core::versioning::{ConvertMode, ParseCx, parse_component_map, parse_payload};
 use bedrock_addon_core::versioning::{
-    DocumentRead, Family, Identity, Loaded, Parsed, finish, parse_as_written,
+    ConvertMode, DocumentRead, Family, Identity, KeyGate, Loaded, ParseCx, Parsed, Scalars, finish,
+    parse_as_written, read_component_map_by, read_payload_with,
 };
 
 /// The first version vanilla reads with the cereal document.
@@ -35,39 +39,89 @@ pub(crate) const NEWEST: FormatVersion = known::V1_26_60;
 /// The version from which a legacy permutation condition that fails is an error.
 pub(crate) const CONDITION_STRICT: FormatVersion = FormatVersion::new(1, 19, 70);
 
-/// What a payload is read into: components as raw slices, parsed one at a time.
-#[derive(Facet)]
+/// What a payload is read into.
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct Shell<'a> {
+struct Shell {
     description: Description,
+    #[facet(opaque, default, schema::read_with = base_section)]
+    components: Section,
     #[facet(default)]
-    components: IndexMap<String, RawJson<'a>>,
-    #[facet(default)]
-    permutations: Vec<PermutationShell<'a>>,
-    #[facet(default)]
+    permutations: Vec<PermutationShell>,
+    #[facet(default, schema::read_with = ours::<DeprecatedComponents>)]
     deprecated: DeprecatedComponents,
-    #[facet(default)]
-    deprecated_event_handlers: IndexMap<String, RawJson<'a>>,
-    /// Deprecated by name in the cereal document: the game skips the value unread, so any
-    /// value is held (an `Option<Value>`, which the strict reader does not judge: `"events": null` is
-    /// the deprecation alone).
-    events: Option<Value>,
-    #[facet(default)]
+    #[facet(default, schema::read_with = handlers)]
+    deprecated_event_handlers: IndexMap<String, DeprecatedDefinitionEvent>,
+    #[facet(opaque, default)]
+    events: Events,
+    #[facet(default, schema::read_with = ordered)]
     ordered_v1_custom_components: Vec<String>,
 }
 
 /// What a permutation is read into.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 #[facet(schema::unknown = "keep")]
-struct PermutationShell<'a> {
+struct PermutationShell {
     condition: Molang,
-    #[facet(default)]
-    components: IndexMap<String, RawJson<'a>>,
-    #[facet(default)]
+    #[facet(opaque, default, schema::read_with = permutation_section)]
+    components: Section,
+    #[facet(default, schema::read_with = ours::<DeprecatedComponents>)]
     deprecated: DeprecatedComponents,
-    #[facet(default)]
+    #[facet(default, schema::read_with = ordered)]
     ordered_v1_custom_components: Vec<String>,
 }
+
+/// One `components` object, read: the map, and whether its `minecraft:collision_box` is one box
+/// written as an object (the 1.26.20 alternative, which the 1.26.20 struct writes back as it).
+#[derive(Default)]
+struct Section {
+    map: ComponentMap<BlockComponent>,
+    one_box: bool,
+}
+
+// A section reads its own members and holds no Molang, no bound and no trigger of its own.
+bedrock_addon_core::impl_no_molang!(Section);
+bedrock_addon_core::impl_schema_leaf!(Section);
+
+/// `events`, deprecated by name in the cereal document: the game checks that before it reads the
+/// value and then skips it, so any value is held, `null` included, and told by what it is.
+#[derive(Default, Facet)]
+#[facet(opaque)]
+struct Events;
+
+impl FromJson for Events {
+    const HOLDS_NULL: bool = true;
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let version = read.known_versions().format?;
+        let mut finding = if version >= CEREAL {
+            Diagnostic::deprecated_member("events", node.path().clone())
+        } else if node
+            .value()
+            .as_object()
+            .is_some_and(|events| !events.is_empty())
+        {
+            // The legacy event reader takes them with no deprecation line (the deprecation is the
+            // cereal document's), so the crate reports them as an information.
+            Diagnostic::of(
+                core_codes::DEPRECATED_IN_FORMAT.with(["events".to_string(), version.to_string()]),
+            )
+            .severity(Severity::Info)
+            .at(node.path().clone())
+        } else {
+            return Some(Events);
+        };
+        finding.location.span = node.span();
+        read.push(finding);
+        Some(Events)
+    }
+}
+
+bedrock_addon_core::impl_no_molang!(Events);
+bedrock_addon_core::impl_schema_leaf!(Events);
 
 /// The keys the 1.26.20 document rejects in base `components`: the game's document binds them
 /// as keys to refuse, so a block that has one fails to load.
@@ -96,11 +150,171 @@ pub(crate) const REJECTED_IN_PERMUTATIONS: [&str; 6] = [
     "minecraft:block_entity",
 ];
 
+/// The components no legacy description exists for: the legacy reader of a document below
+/// 1.26.20 leaves them to the document's schema, which has no child for them: the block is
+/// refused, and the crate keeps them as the unknown components they are.
+const NOT_IN_LEGACY: [&str; 4] = [
+    "minecraft:block_entity",
+    "minecraft:enchantment_power_transmitter",
+    "minecraft:instrument_sound",
+    "minecraft:neighbor_change",
+];
+
 /// A key of another namespace than `minecraft` is a custom component.
 pub(crate) fn is_custom(key: &str) -> bool {
     split_namespace(key)
         .is_some_and(|(namespace, name)| namespace != "minecraft" && !name.is_empty())
 }
+
+/// Whether the read is of a cereal document (the version it reads is 1.26.20 or later).
+fn cereal_read(read: &Read<'_>) -> bool {
+    read.known_versions().format.is_some_and(|v| v >= CEREAL)
+}
+
+/// The base `components`.
+fn base_section(node: &Node<'_>, read: &mut Read<'_>) -> Option<Section> {
+    section(node, read, false)
+}
+
+/// A permutation's `components`.
+fn permutation_section(node: &Node<'_>, read: &mut Read<'_>) -> Option<Section> {
+    section(node, read, true)
+}
+
+/// One `components` object: the rejected keys refused ("key {} is not allowed", an error that
+/// fails the block), the ones no legacy description exists for left unread (`child '%s' not valid
+/// here.`, an error that refuses the block: the schema of the legacy document has no child for
+/// the key), the rest read one at a time by their rows, under the reading of the slice's kind
+/// (set on the read's load: a legacy description is the non-strict reader's, a cereal document
+/// the strict one; the game's legacy component parser reads each cereal-registered description
+/// with its non-strict schema reader, and a failed component or a missing required member still
+/// fails the load). Then the collision box and the members only the 1.26.60 document binds.
+fn section(node: &Node<'_>, read: &mut Read<'_>, permutation: bool) -> Option<Section> {
+    let version = read.known_versions().format?;
+    let cereal = version >= CEREAL;
+    let map =
+        read_component_map_by::<BlockFamily>(node, read, ConvertMode::Strict, is_custom, |key| {
+            let refused = REJECTED_IN_BASE.contains(&key)
+                || (permutation && REJECTED_IN_PERMUTATIONS.contains(&key));
+            if cereal && refused {
+                // The cereal document refuses these keys: an error that fails the block.
+                KeyGate::Refuse(Diagnostic::error(cereal::key_not_allowed(key)))
+            } else if !cereal && NOT_IN_LEGACY.contains(&key) {
+                KeyGate::Unread(Diagnostic::of(codes::CHILD_NOT_VALID.with([key])))
+            } else {
+                KeyGate::Read
+            }
+        });
+    let mut map = map?;
+    let unknown = read.unknown_grade();
+    let at = node.path();
+    let one = node
+        .value()
+        .as_object()
+        .and_then(|components| components.get(COLLISION_BOX))
+        .is_some_and(Value::is_object);
+    let found = read.findings_mut();
+    let one_box = read_collision_box(
+        &mut map,
+        one,
+        &at.child(COLLISION_BOX),
+        version,
+        unknown,
+        found,
+    );
+    if !permutation {
+        newest_members(&mut map, at, version, unknown, found);
+    }
+    Some(Section { map, one_box })
+}
+
+/// The finding of a member of ours that no cereal document takes (`deprecated`,
+/// `deprecated_event_handlers`): an unknown member there, at the slice's grade, which refuses the
+/// block. It is read as ever.
+fn ours<T>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T>
+where
+    T: FromJson,
+{
+    let value = T::from_json(node, read)?;
+    if cereal_read(read) {
+        let mut finding = Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+            .severity(read.unknown_grade())
+            .at(node.path().clone());
+        finding.location.span = node.span();
+        read.push(finding);
+    }
+    Some(value)
+}
+
+/// `ordered_v1_custom_components`: bound and deprecated by name in the cereal document.
+fn ordered(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    let names = Vec::<String>::from_json(node, read)?;
+    if cereal_read(read) {
+        let mut finding =
+            Diagnostic::deprecated_member("ordered_v1_custom_components", node.path().clone());
+        finding.location.span = node.span();
+        read.push(finding);
+    }
+    Some(names)
+}
+
+/// `deprecated_event_handlers`: each entry is read on its own, so a bad one goes whole while the
+/// rest stay. The legacy events are hand-written in the game and the crate's side-car has no game
+/// counterpart, so what is told here is the crate's own: informations (in a cereal document the
+/// member itself refuses the block, `ours`).
+fn handlers(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) -> Option<IndexMap<String, DeprecatedDefinitionEvent>> {
+    let entries = ours::<Handlers>(node, read)?;
+    Some(entries.0)
+}
+
+/// The handlers as the member reads them.
+struct Handlers(IndexMap<String, DeprecatedDefinitionEvent>);
+
+impl FromJson for Handlers {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let members = read.object(node)?;
+        let mut handlers = IndexMap::new();
+        for (name, entry) in members.iter() {
+            let mut told = Diagnostics::default();
+            let event = {
+                let mut attempt = Read::new(read.reading(), &mut told)
+                    .profile(Profile::FIRST_FAILURE)
+                    .unknown_severity(Severity::Info);
+                read_document::<DeprecatedDefinitionEvent>(&entry, &mut attempt)
+            };
+            let kept = told.take_unknown();
+            if let Some(event) = event {
+                for finding in told {
+                    read.push(finding);
+                }
+                read.findings_mut()
+                    .unknown_mut()
+                    .absorb(&JsonPath::new(), kept);
+                handlers.insert(name.to_owned(), event);
+            } else if let Some(first) = told.iter().next() {
+                let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
+                    .at(first.location.json_path.clone());
+                finding.location.span = first.location.span;
+                let inside = first.location.json_path != *entry.path();
+                read.push(finding);
+                // The entry goes whole for one member: told at the entry too, unless the
+                // member's finding is at the entry itself.
+                if inside {
+                    read.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(entry.path().clone()));
+                }
+            }
+        }
+        Some(Handlers(handlers))
+    }
+}
+
+// The handlers are read entry by entry and hold no Molang, no bound and no trigger of their own.
+bedrock_addon_core::impl_no_molang!(Handlers);
+bedrock_addon_core::impl_schema_leaf!(Handlers);
 
 /// Reads one payload of the 1.26.20 shape. `cx.original_version` is the document's version (for
 /// the 1.26.20 rules) or, when the 1.26.20 step converts a legacy document, the legacy one.
@@ -112,27 +326,20 @@ pub(crate) fn parse_block(
     parse_document(payload, cx, d).map(|(block, _)| block)
 }
 
-/// The payload's shell. Its own members (the description's, the custom component order) are
-/// plain types that facet converts and the misread walk tells: read as they always were,
-/// whatever the slice's scalar rules, until they are its rule's too. The components are read
-/// by the slice's (`section`).
-fn parse_shell<'a>(
-    payload: JsonSlice<'a>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<Shell<'a>> {
-    if cx.load.scalar_rules == ScalarRules::PLAIN {
-        return parse_payload(payload, cx, d);
-    }
+/// The payload's shell. The load is the slice's kind of reading (`reading_of`: a legacy
+/// description is the non-strict reader's, a cereal document the strict one) for the components;
+/// the shell's own members are strict in both, as the strict wrappers they were read by.
+fn read_shell(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Shell> {
     let mut load = cx.load.clone();
-    load.scalar_rules = ScalarRules::PLAIN;
-    let plain = ParseCx {
+    load.reading = crate::reading_of(cx.original_version >= CEREAL);
+    load.strict_components = true;
+    let parse = ParseCx {
         load: &load,
         written: cx.written,
         original_version: cx.original_version,
         at: cx.at.clone(),
     };
-    parse_payload(payload, &plain, d)
+    read_payload_with(payload, &parse, d, |read| read.scalars(Scalars::Strict))
 }
 
 /// [`parse_block`], and the sections (`None` the base, `Some(i)` permutation `i`) whose
@@ -144,96 +351,32 @@ pub(crate) fn parse_document(
     d: &mut Diagnostics,
 ) -> Option<(Block, Vec<Option<usize>>)> {
     let start = d.len();
-    let shell = parse_shell(payload, cx, d)?;
-    let cereal = cx.original_version >= CEREAL;
-    if cereal {
+    let shell = read_shell(payload, cx, d)?;
+    if cx.original_version >= CEREAL {
         unknown_traits(d, start, &cx.at);
     }
-    let unknown = cx.load.grade(Class::Unknown);
-    // `events` is bound and deprecated by name in the cereal document: written at all (`null`
-    // included), it is the deprecation alone, which the game checks before it reads the value.
-    let root = if cereal {
-        bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok()
-    } else {
-        None
-    };
-    let events_written = root
-        .as_ref()
-        .and_then(Value::as_object)
-        .is_some_and(|root| root.contains_key("events"));
-    if let Some(root) = &root {
-        reject_crate_members(root, &cx.at, unknown, d);
-    }
     let mut one_box = Vec::new();
-    let mut components = section(
-        &shell.components,
-        payload,
-        &cx.at.with(&["components"]),
-        cereal.then_some(&[][..]),
-        cx,
-        d,
-    );
-    if super::component::read_collision_box(
-        &mut components,
-        shell.components.get(COLLISION_BOX),
-        &cx.at.with(&["components", COLLISION_BOX]),
-        cx.original_version,
-        unknown,
-        d,
-    ) {
+    if shell.components.one_box {
         one_box.push(None);
     }
-    newest_members(
-        &mut components,
-        &cx.at.with(&["components"]),
-        cx.original_version,
-        unknown,
-        d,
-    );
     let mut permutations = Vec::with_capacity(shell.permutations.len());
-    for (index, p) in shell.permutations.iter().enumerate() {
-        let mut at = cx.at.with(&["permutations"]);
-        at.push_index(index);
-        at.push("components");
-        let mut components = section(
-            &p.components,
-            payload,
-            &at,
-            cereal.then_some(&REJECTED_IN_PERMUTATIONS[..]),
-            cx,
-            d,
-        );
-        if super::component::read_collision_box(
-            &mut components,
-            p.components.get(COLLISION_BOX),
-            &at.with(&[COLLISION_BOX]),
-            cx.original_version,
-            unknown,
-            d,
-        ) {
+    for (index, p) in shell.permutations.into_iter().enumerate() {
+        if p.components.one_box {
             one_box.push(Some(index));
         }
         permutations.push(Permutation {
-            condition: p.condition.clone(),
-            components,
-            deprecated: p.deprecated.clone(),
-            ordered_v1_custom_components: p.ordered_v1_custom_components.clone(),
+            condition: p.condition,
+            components: p.components.map,
+            deprecated: p.deprecated,
+            ordered_v1_custom_components: p.ordered_v1_custom_components,
         });
     }
-    let mut deprecated_event_handlers = IndexMap::new();
-    for (name, raw) in &shell.deprecated_event_handlers {
-        let at = cx.at.with(&["deprecated_event_handlers", name]);
-        if let Some(event) = parse_entry::<DeprecatedDefinitionEvent>(payload, raw, &at, d) {
-            deprecated_event_handlers.insert(name.clone(), event);
-        }
-    }
-    tell_events(events_written, shell.events.as_ref(), cx, d);
     let block = Block {
         description: shell.description,
-        components,
+        components: shell.components.map,
         deprecated: shell.deprecated,
         permutations,
-        deprecated_event_handlers,
+        deprecated_event_handlers: shell.deprecated_event_handlers,
         ordered_v1_custom_components: shell.ordered_v1_custom_components,
         source_format_version: cx.original_version,
         refused_at: Vec::new(),
@@ -257,7 +400,7 @@ fn newest_members(
     if !(CEREAL..NEWEST).contains(&version) {
         return;
     }
-    let Some(entity) = map.get_mut::<super::component::BlockEntity>() else {
+    let Some(entity) = map.get_mut::<BlockEntity>() else {
         return;
     };
     if let Some(value) = entity.entity_storage.take() {
@@ -273,79 +416,6 @@ fn newest_members(
             "entity_storage",
             Value::from(value),
         );
-    }
-}
-
-/// `events`: bound and deprecated by name in the cereal document, an error that
-/// rejects the block; elsewhere a deprecated member, told.
-fn tell_events(written: bool, events: Option<&Value>, cx: &ParseCx<'_>, d: &mut Diagnostics) {
-    if written {
-        d.push(Diagnostic::deprecated_member(
-            "events",
-            cx.at.with(&["events"]),
-        ));
-    } else if events
-        .and_then(Value::as_object)
-        .is_some_and(|events| !events.is_empty())
-    {
-        // The legacy event reader takes them with no deprecation line (the deprecation is the
-        // cereal document's), so the crate reports them as an information.
-        d.push(
-            Diagnostic::of(
-                core_codes::DEPRECATED_IN_FORMAT
-                    .with(["events".to_string(), cx.original_version.to_string()]),
-            )
-            .severity(Severity::Info)
-            .at(cx.at.with(&["events"])),
-        );
-    }
-}
-
-/// The crate's own members a cereal document has: `deprecated` (of the block or of a
-/// permutation) and `deprecated_event_handlers` are no members of the game's document
-/// (`UnrecognizedField` at `unknown`, the strict slice's error);
-/// `ordered_v1_custom_components` (of either) is bound and deprecated by name.
-/// Each rejects the block; what the shell read of them is not used.
-fn reject_crate_members(root: &Value, at: &JsonPath, unknown: Severity, d: &mut Diagnostics) {
-    let mut sections = vec![(root, at.clone())];
-    for (index, permutation) in root
-        .as_object()
-        .and_then(|root| root.get("permutations"))
-        .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .enumerate()
-    {
-        let mut path = at.with(&["permutations"]);
-        path.push_index(index);
-        sections.push((permutation, path));
-    }
-    for (index, (object, path)) in sections.into_iter().enumerate() {
-        let Some(object) = object.as_object() else {
-            continue;
-        };
-        let ours: &[&str] = if index == 0 {
-            &["deprecated", "deprecated_event_handlers"]
-        } else {
-            &["deprecated"]
-        };
-        for key in ours {
-            if object.contains_key(key) {
-                // The strict slice's error that refuses the block (cereal documents alone
-                // reach here).
-                d.push(
-                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                        .severity(unknown)
-                        .at(path.with(&[key])),
-                );
-            }
-        }
-        if object.contains_key("ordered_v1_custom_components") {
-            d.push(Diagnostic::deprecated_member(
-                "ordered_v1_custom_components",
-                path.with(&["ordered_v1_custom_components"]),
-            ));
-        }
     }
 }
 
@@ -377,134 +447,6 @@ fn unknown_traits(d: &mut Diagnostics, start: usize, at: &JsonPath) {
         };
         finding.code = codes::UNKNOWN_TRAIT.with([name]);
         finding.severity = Severity::Error;
-    }
-}
-
-/// One `components` object: the rejected keys refused ("key {} is not allowed", an error that
-/// fails the block), the rest parsed one at a time.
-fn section(
-    raw: &IndexMap<String, RawJson<'_>>,
-    payload: JsonSlice<'_>,
-    at: &JsonPath,
-    rejected: Option<&[&str]>,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> ComponentMap<BlockComponent> {
-    let mut kept = IndexMap::new();
-    let mut unread = Vec::new();
-    for (key, value) in raw {
-        let refused = rejected.is_some_and(|extra| {
-            REJECTED_IN_BASE.contains(&key.as_str()) || extra.contains(&key.as_str())
-        });
-        if refused {
-            d.push(
-                // The cereal document refuses these keys: an error that fails the block.
-                Diagnostic::error(bedrock_addon_core::diagnostic::cereal::key_not_allowed(key))
-                    .at(at.with(&[key])),
-            );
-        } else if rejected.is_none() && NOT_IN_LEGACY.contains(&key.as_str()) {
-            unread.push((key.clone(), value.clone()));
-        } else {
-            kept.insert(key.clone(), value.clone());
-        }
-    }
-    // The legacy reader parses each component with its cereal description under a lenient
-    // error mask too: a member of the wrong type or a required member missing still fails the
-    // load. The game logs "Failed to parse block '%s' " and each error at the content log's
-    // error level, the component load fails with it, and no block definition is generated:
-    // the block is refused, as under the strict slice.
-    // The game's legacy component parser reads every cereal-registered description with
-    // its non-strict schema reader (the strict flag of the component metadata is clear): a bool and a number read as each other, an
-    // integer token by its low bits, a real by its truncation. A cereal document is the strict
-    // reader's. Both refuse a number beyond its float. The components' members are read by the
-    // context's scalar rules: the `Reading` of the document's kind of slice (`reading_of`), set
-    // here too for a read outside a versioned load and for a legacy document converted by the
-    // 1.26.20 step.
-    let scalar_rules = crate::reading_of(rejected.is_some()).scalar_rules();
-    let strict;
-    let load = if cx.load.strict_components && cx.load.scalar_rules == scalar_rules {
-        cx.load
-    } else {
-        let mut with_strict = cx.load.clone();
-        with_strict.strict_components = true;
-        with_strict.scalar_rules = scalar_rules;
-        strict = with_strict;
-        &strict
-    };
-    let mut map = parse_component_map::<BlockFamily>(
-        &kept,
-        payload,
-        at,
-        ConvertMode::Strict,
-        is_custom,
-        load,
-        d,
-    );
-    for (key, raw) in unread {
-        // The schema of the legacy document has no child for the key: the game logs "child
-        // '%s' not valid here." at the content log's error level, validation fails and with
-        // it the component load: the block is refused.
-        d.push(Diagnostic::of(codes::CHILD_NOT_VALID.with([key.clone()])).at(at.with(&[&key])));
-        let json =
-            bedrock_addon_core::json::from_str_jsonc::<Value>(raw.as_str()).unwrap_or(Value::NULL);
-        map.insert_unknown(&key, json);
-    }
-    map
-}
-
-/// The components no legacy description exists for: the legacy reader of a document below
-/// 1.26.20 leaves them to the document's schema, which has no child for them: the block is
-/// refused, and the crate keeps them as the unknown components they are.
-const NOT_IN_LEGACY: [&str; 4] = [
-    "minecraft:block_entity",
-    "minecraft:enchantment_power_transmitter",
-    "minecraft:instrument_sound",
-    "minecraft:neighbor_change",
-];
-
-/// One entry of a map-valued member, read from its own slice so its unknown members are kept.
-/// The legacy events are hand-written in the game and the crate's side-car has no game
-/// counterpart, so what is told here is the crate's own: informations. In a cereal document the member
-/// itself refuses the block (`reject_crate_members`).
-fn parse_entry<T: for<'f> Facet<'f>>(
-    payload: JsonSlice<'_>,
-    raw: &RawJson<'_>,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<T> {
-    let slice = payload.nested(raw)?;
-    match parse_at::<T>(slice) {
-        Ok(value) => {
-            if let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(slice.text) {
-                let mut kept = bedrock_addon_core::document::Unknown::new();
-                let found = keep_unknown_members(&value, &json, &mut kept);
-                d.unknown_mut().absorb(at, kept);
-                for (path, _) in found {
-                    let mut full = at.clone();
-                    full.append(&path);
-                    d.push(
-                        Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                            .severity(Severity::Info)
-                            .at(full),
-                    );
-                }
-            }
-            Some(value)
-        }
-        Err(error) => {
-            let mut full = at.clone();
-            full.append(&error.path);
-            d.push(
-                Diagnostic::of(&core_codes::INVALID_TYPE)
-                    .severity(Severity::Info)
-                    .at(full),
-            );
-            // The entry goes whole for one member: told at the entry too, unless the member's finding is at the entry itself.
-            if !error.path.is_empty() {
-                d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(at.clone()));
-            }
-            None
-        }
     }
 }
 

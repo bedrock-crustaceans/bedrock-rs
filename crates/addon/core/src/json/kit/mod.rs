@@ -578,6 +578,26 @@ impl std::hash::Hash for WrongKind {
     }
 }
 
+/// A family's wording of a wrong type by where it is told ([`Texts::wrong_at`]): the code to
+/// tell at the path of the value, from the path.
+#[derive(Clone, Copy, Debug)]
+pub struct WrongAt(pub fn(&JsonPath) -> Code);
+
+/// By the function: two wordings are the same when they are the same function.
+impl PartialEq for WrongAt {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::fn_addr_eq(self.0, other.0)
+    }
+}
+
+impl Eq for WrongAt {}
+
+impl std::hash::Hash for WrongAt {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (self.0 as usize).hash(state);
+    }
+}
+
 /// The texts of the kit's findings. `None` is the code's own wording, which is what most of the
 /// hand-walked families print: `wrong JSON type`, `missing required field`, `unrecognized
 /// field`. A family whose game prints another line for one of them names it here once, for
@@ -617,6 +637,11 @@ pub struct Texts {
     /// of [`wrong_type`](Self::wrong_type): `crafting_catalog` words it as vanilla's
     /// `MalformedInput` naming both.
     pub wrong_kind: Option<WrongKind>,
+    /// The code of every wrong type, made from where it is told, in place of
+    /// [`wrong_type`](Self::wrong_type) and [`wrong_kind`](Self::wrong_kind): a family whose
+    /// game words a wrong type by the member it is of (the older client's "unknown child schema
+    /// option type.  Allowed types: …"), whichever type the member's reader expected.
+    pub wrong_at: Option<WrongAt>,
     /// The code of a missing required member, made from the member's key (`"Required child %s
     /// not found"`), in place of [`missing`](Self::missing): the client's older schema tree words
     /// it with the name.
@@ -627,6 +652,9 @@ pub struct Texts {
     /// read's ([`Read::unknown_severity`]), which the family sets to an error where its game
     /// rejects whatever the unknown mask says.
     pub unknown_named: Option<&'static CodeDef<1>>,
+    /// Whether a missing required member is told at the object that lacks it, not at the member:
+    /// the older client's schema tree words it "Required child %s not found" at the parent.
+    pub missing_in_object: bool,
     /// The code of an enum name that is none of its values, in place of
     /// [`INVALID_ENUM_VALUE`](core_codes::INVALID_ENUM_VALUE).
     pub invalid_enum: Option<&'static CodeDef<0>>,
@@ -645,8 +673,10 @@ impl Texts {
         unknown: None,
         unknown_code: None,
         wrong_kind: None,
+        wrong_at: None,
         missing_named: None,
         unknown_named: None,
+        missing_in_object: false,
         invalid_enum: None,
         defaulted: None,
     };
@@ -952,6 +982,12 @@ pub struct Read<'d> {
     /// The member or element of the root the last failure told was in, under
     /// [`Recovery::TopLevel`].
     told_unit: Option<JsonPath>,
+    /// A Molang number beyond `f32` reads as the largest finite one and is told
+    /// ([`clamps_molang`](Self::clamps_molang)).
+    clamp_molang: bool,
+    /// A number of a `json::Value` kept whole that no double holds reads as the largest finite
+    /// one and is told ([`clamps_kept`](Self::clamps_kept)).
+    clamp_kept: bool,
 }
 
 impl<'d> Read<'d> {
@@ -978,6 +1014,8 @@ impl<'d> Read<'d> {
             load: None,
             root: 0,
             told_unit: None,
+            clamp_molang: false,
+            clamp_kept: false,
         }
     }
 
@@ -1071,6 +1109,8 @@ impl<'d> Read<'d> {
             load: self.load,
             root: self.root,
             told_unit: self.told_unit.clone(),
+            clamp_molang: self.clamp_molang,
+            clamp_kept: self.clamp_kept,
         }
     }
 
@@ -1160,7 +1200,7 @@ impl<'d> Read<'d> {
     }
 
     /// The findings of the read so far, the document's table of kept unknown members with them.
-    pub(crate) fn findings_mut(&mut self) -> &mut Diagnostics {
+    pub fn findings_mut(&mut self) -> &mut Diagnostics {
         self.findings.get()
     }
 
@@ -1263,6 +1303,34 @@ impl<'d> Read<'d> {
     // the derived reads' protocol
     pub(crate) fn keepable(&self) -> bool {
         self.unkeepable == 0
+    }
+
+    /// The read taking a Molang number beyond `f32` as the largest finite one of its sign, told
+    /// with an information at the number: a game whose schema takes any JSON number for an
+    /// expression and holds it as a float.
+    #[must_use]
+    pub fn clamp_molang(mut self) -> Self {
+        self.clamp_molang = true;
+        self
+    }
+
+    /// Whether the read clamps a Molang number beyond `f32` ([`clamp_molang`](Self::clamp_molang)).
+    pub fn clamps_molang(&self) -> bool {
+        self.clamp_molang
+    }
+
+    /// The read taking a number that no double holds, in a value kept whole (`json::Value`), as
+    /// the largest finite double of its sign, told with an information at the number: a game
+    /// whose value is written back and must be finite.
+    #[must_use]
+    pub fn clamp_kept(mut self) -> Self {
+        self.clamp_kept = true;
+        self
+    }
+
+    /// Whether the read clamps the numbers of the values it keeps ([`clamp_kept`](Self::clamp_kept)).
+    pub fn clamps_kept(&self) -> bool {
+        self.clamp_kept
     }
 
     /// Marks `node` as the root of the read: [`Recovery::TopLevel`]'s members and elements
@@ -1392,6 +1460,15 @@ impl<'d> Read<'d> {
     #[must_use]
     pub fn null(mut self, null: NullHandling) -> Self {
         self.reading = self.reading.with_null(null);
+        self
+    }
+
+    /// The read with `scalars` for its scalar rule instead of the reading's: a part of a slice
+    /// the game reads by another rule (members of a legacy block document that were always read
+    /// strictly, beside its components, which its non-strict reader reads).
+    #[must_use]
+    pub fn scalars(mut self, scalars: crate::versioning::Scalars) -> Self {
+        self.reading = self.reading.with_scalars(scalars);
         self
     }
 
@@ -1656,6 +1733,9 @@ impl<'d> Read<'d> {
         if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
             return self.fail(Code::from(code), node.path.clone(), node.span());
         }
+        if let Some(WrongAt(word)) = self.texts.wrong_at {
+            return self.fail(word(&node.path), node.path.clone(), node.span());
+        }
         let code = self.texts.wrong_type.map_or_else(
             || Code::from(&core_codes::INVALID_TYPE),
             |text| core_codes::INVALID_TYPE_WORDED.with([text]),
@@ -1859,7 +1939,7 @@ impl<'d> Read<'d> {
     /// Where a missing member `key` of `members` is told: at it, or at the object that lacks it
     /// where the read words a defaulted failure as one ([`Texts::defaulted`]).
     fn missing_at(&self, members: &Members<'_>, key: &str) -> JsonPath {
-        if self.texts.defaulted.is_some() && self.defaults() {
+        if self.texts.missing_in_object || (self.texts.defaulted.is_some() && self.defaults()) {
             members.node.path.clone()
         } else {
             members.node.path.child(key)

@@ -9,10 +9,9 @@ use super::{StateValues, Traits};
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::ComponentMap;
 use bedrock_addon_core::id::BlockId;
-use bedrock_addon_core::json::{StrictBool, StrictFloat, StrictInt, StrictString};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, MolangVersion};
-use bedrock_addon_core::schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_shared_shapes::MenuCategory;
 
@@ -55,7 +54,7 @@ pub struct Block {
 }
 
 /// `minecraft:block/description`.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct Description {
     /// The block's identifier, `namespace:name`, never in the `minecraft` namespace outside the
@@ -75,29 +74,30 @@ pub struct Description {
 }
 
 /// `description.internal_vanilla_data`: what the engine needs of a base-game block.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(schema::unknown = "keep")]
 pub struct VanillaBlockData {
     /// The legacy numeric block id (JSON `block_id`).
-    pub block_id: Option<StrictInt<i32>>,
+    pub block_id: Option<i32>,
     /// The block material (JSON `material`).
     pub material: Option<MaterialType>,
     /// The archetype, one entry keyed by its name, as written (JSON `block_archetype`).
     pub block_archetype: Option<IndexMap<String, bedrock_addon_core::json::Value>>,
-    /// JSON `translucency`.
-    pub translucency: Option<StrictFloat<f32>>,
+    /// JSON `translucency`, `0..=1`.
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
+    pub translucency: Option<f32>,
     /// JSON `can_dampen_vibrations`.
-    pub can_dampen_vibrations: Option<StrictBool>,
+    pub can_dampen_vibrations: Option<bool>,
     /// JSON `can_occlude_vibrations`.
-    pub can_occlude_vibrations: Option<StrictBool>,
+    pub can_occlude_vibrations: Option<bool>,
     /// JSON `requires_correct_tool_for_drops` (engine 1.26.50).
-    pub requires_correct_tool_for_drops: Option<StrictBool>,
+    pub requires_correct_tool_for_drops: Option<bool>,
 }
 
 impl VanillaBlockData {
     /// The legacy numeric block id: `block_id`, −1 when absent (the game's constructor default).
     pub fn block_id(&self) -> i32 {
-        self.block_id.map_or(-1, |id| id.0)
+        self.block_id.unwrap_or(-1)
     }
 
     /// The material: `material`, dirt when absent (the game's constructor default).
@@ -108,7 +108,7 @@ impl VanillaBlockData {
     /// `requires_correct_tool_for_drops`, `false` when absent, as the game's block loader
     /// defaults it.
     pub fn requires_correct_tool_for_drops(&self) -> bool {
-        self.requires_correct_tool_for_drops.is_some_and(|b| b.0)
+        self.requires_correct_tool_for_drops.unwrap_or(false)
     }
 }
 
@@ -127,7 +127,7 @@ pub struct Permutation {
 }
 
 /// A block's material (ids 0..=25), `internal_vanilla_data.material`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -224,9 +224,9 @@ impl Traits {
     /// The states the enabled traits add, in trait order.
     pub(crate) fn implied_states(&self) -> Vec<(&'static str, StateValues)> {
         let mut states = Vec::new();
-        let mut add = |enabled: &[StrictString], parts: u8| {
+        let mut add = |enabled: &[String], parts: u8| {
             for name in enabled {
-                for state in implied_states(&name.0, parts) {
+                for state in implied_states(name, parts) {
                     if !states.iter().any(|(n, _)| *n == state.0) {
                         states.push(state);
                     }

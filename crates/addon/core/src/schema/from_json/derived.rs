@@ -528,6 +528,19 @@ impl<T> Slot<T> {
     }
 }
 
+/// Runs `with` with `word` as the unknown-member rule of the field that holds the value read:
+/// what a transparent newtype's field says (`schema::unknown`) for the value the newtype is.
+pub fn under_word<T>(
+    read: &mut Read<'_>,
+    word: Option<UnknownRule>,
+    with: impl FnOnce(&mut Read<'_>) -> T,
+) -> T {
+    let before = read.set_field_unknown(word);
+    let out = with(read);
+    read.set_field_unknown(before);
+    out
+}
+
 /// What a type's read says of the JSON it takes, for the null rule of a field read by its own
 /// function: its `FromJson`'s [`EXPECTED`](FromJson::EXPECTED) and `HOLDS_NULL`, or nothing for
 /// a type that has no `FromJson`.

@@ -5,7 +5,6 @@ use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::Value;
 use facet::Facet;
-use facet_json::RawJson;
 
 use super::BlockComponent;
 use super::types::{FULL_ORIGIN, FULL_SIZE, Vec3};
@@ -136,13 +135,12 @@ const MAX_BOXES: usize = 16;
 ///   neither), and the 1.26.60 constraint holds.
 pub(crate) fn read_collision_box(
     map: &mut ComponentMap<BlockComponent>,
-    raw: Option<&RawJson<'_>>,
+    one: bool,
     at: &JsonPath,
     version: FormatVersion,
     unknown: Severity,
     d: &mut Diagnostics,
 ) -> bool {
-    let one = raw.is_some_and(|raw| raw.as_str().trim_start().starts_with('{'));
     let Some(CollisionBox::Boxes(boxes)) = map.get_mut::<CollisionBox>() else {
         return false;
     };

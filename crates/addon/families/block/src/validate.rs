@@ -343,14 +343,9 @@ fn vanilla_data(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 &["description", "internal_vanilla_data", "block_archetype"],
             );
         }
-        // One constraint for the check and its text.
-        let translucency = NumericRange::inclusive(0.0, 1.0);
-        if data
-            .translucency
-            .is_some_and(|t| !translucency.contains(f64::from(t.0)))
-        {
+        if let Some(bound) = out_of_bounds(data) {
             report.error(
-                constraint_code(&translucency.code()),
+                constraint_code(&bound),
                 &["description", "internal_vanilla_data", "translucency"],
             );
         }
@@ -500,10 +495,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
         };
         report.error(code, &["description", "traits", name]);
     };
-    let enabled = |report: &mut Report<'_>,
-                   name: &str,
-                   states: &[bedrock_addon_core::json::StrictString],
-                   valid: &[&str]| {
+    let enabled = |report: &mut Report<'_>, name: &str, states: &[String], valid: &[&str]| {
         if states.is_empty() {
             report.error(
                 codes::TRAIT_NEEDS_STATE.with([name]),
@@ -511,9 +503,9 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             );
         }
         for state in states {
-            if !valid.contains(&state.0.as_str()) {
+            if !valid.contains(&state.as_str()) {
                 report.error(
-                    codes::INVALID_STATE_OPTION.with([&state.0, name]),
+                    codes::INVALID_STATE_OPTION.with([state, name]),
                     &["description", "traits", name, "enabled_states"],
                 );
             }
@@ -533,9 +525,8 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 "minecraft:sixteen_way_rotation",
             ],
         );
-        let has = |s: &str| direction.enabled_states.iter().any(|e| e.0 == s);
+        let has = |s: &str| direction.enabled_states.iter().any(|e| e == s);
         if let Some(offset) = direction.y_rotation_offset {
-            let offset = offset.0;
             if !(has("minecraft:cardinal_direction")
                 || has("minecraft:facing_direction")
                 || has("minecraft:sixteen_way_rotation"))
@@ -546,7 +537,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 );
             } else if !(0.0..=360.0).contains(&offset) || offset % 90.0 != 0.0 {
                 let snapped = ((offset / 90.0).round() * 90.0).clamp(0.0, 360.0);
-                direction.y_rotation_offset = Some(bedrock_addon_core::json::StrictFloat(snapped));
+                direction.y_rotation_offset = Some(snapped);
                 // The game logs this line at the content log's warning level and goes on with
                 // the closest axis-aligned rotation: a warning.
                 report.warn(
@@ -583,7 +574,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
             && connection
                 .enabled_states
                 .iter()
-                .any(|s| s.0 == "minecraft:vertical_connections")
+                .any(|s| s == "minecraft:vertical_connections")
         {
             report.error(
                 codes::INVALID_STATE_OPTION.with(["minecraft:vertical_connections", NAME]),
@@ -621,7 +612,7 @@ fn traits(block: &mut Block, cx: &LoadContext, report: &mut Report<'_>) {
                 &["description", "traits", NAME, "parts"],
             );
         }
-        match multi.direction.0.as_str() {
+        match multi.direction.as_str() {
             // The horizontal gate is the Upcoming Creator Features validator's first check
             // (`creator_features`).
             "down" | "up" | "north" | "south" | "west" | "east" => {}
@@ -656,9 +647,7 @@ const VANILLA_DATA_FIELDS: &[FieldMeta] = &[FieldMeta {
 /// pack's `min_engine_version`.
 fn engine_fields(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
     let traits = &block.description.traits;
-    let enables = |states: &[bedrock_addon_core::json::StrictString], name: &str| {
-        states.iter().any(|s| s.0 == name)
-    };
+    let enables = |states: &[String], name: &str| states.iter().any(|s| s == name);
     if let Some(direction) = &traits.placement_direction
         && enables(&direction.enabled_states, "minecraft:sixteen_way_rotation")
     {
@@ -947,14 +936,13 @@ fn component_rules(
                 drop(report, "minecraft:geometry", text, &["culling_layer"]);
             }
         }
-        if map.get::<MaterialInstances>().is_some_and(|m| {
-            m.0.values().any(|e| {
-                matches!(e, MaterialInstanceEntry::Instance(i)
-                    if i.ambient_occlusion.is_some_and(|a| !(0.0..=10.0).contains(&a)))
-            })
-        }) {
-            let text = constraint_code(&NumericRange::inclusive(0.0, 10.0).code());
-            drop(report, "minecraft:material_instances", text, &[]);
+        if let Some(bound) = map.get::<MaterialInstances>().and_then(out_of_bounds) {
+            drop(
+                report,
+                "minecraft:material_instances",
+                constraint_code(&bound),
+                &[],
+            );
         }
     }
     // Rule 7.
@@ -1621,7 +1609,7 @@ fn creator_features(block: &Block, cx: &LoadContext, report: &mut Report<'_>) {
             .traits
             .multi_block
             .as_ref()
-            .is_some_and(|m| matches!(m.direction.0.as_str(), "north" | "south" | "west" | "east"))
+            .is_some_and(|m| matches!(m.direction.as_str(), "north" | "south" | "west" | "east"))
     {
         report.error(
             Code::from(&codes::MULTI_BLOCK_HORIZONTAL_TOGGLE),
@@ -1997,7 +1985,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
     // The 1.26.60 validator has no multi-block + `block_entity` rule; a horizontal direction
     // refuses a base `random_offset`.
     let horizontal = matches!(
-        traits.multi_block.as_ref().map(|m| m.direction.0.as_str()),
+        traits.multi_block.as_ref().map(|m| m.direction.as_str()),
         Some("north" | "south" | "west" | "east")
     );
     if horizontal && has(&block.components, "minecraft:random_offset") {
@@ -2024,7 +2012,7 @@ fn multi_block(block: &Block, report: &mut Report<'_>) {
         && direction
             .enabled_states
             .iter()
-            .any(|s| s.0 != "minecraft:cardinal_direction")
+            .any(|s| s != "minecraft:cardinal_direction")
     {
         report.error(
             Code::from(&codes::MULTI_BLOCK_PLACEMENT_DIRECTION),
@@ -2273,12 +2261,12 @@ fn references(block: &Block, at: &JsonPath, d: &mut Diagnostics) {
         );
         if let Some(event) = &trigger.event
             && own
-            && !event.0.is_empty()
-            && !block.deprecated_event_handlers.contains_key(&event.0)
+            && !event.is_empty()
+            && !block.deprecated_event_handlers.contains_key(event)
         {
             let mut steps = base.to_vec();
             steps.push(Key("event"));
-            dangling(d, at, &steps, "event", &event.0);
+            dangling(d, at, &steps, "event", event);
         }
     };
     let sections = std::iter::once((Vec::new(), &block.components, &block.deprecated)).chain(
@@ -2378,12 +2366,12 @@ fn references(block: &Block, at: &JsonPath, d: &mut Diagnostics) {
             );
             if let Some(name) = &fired.event
                 && own
-                && !name.0.is_empty()
-                && !block.deprecated_event_handlers.contains_key(&name.0)
+                && !name.is_empty()
+                && !block.deprecated_event_handlers.contains_key(name)
             {
                 let mut steps = path.clone();
                 steps.extend([Key("trigger"), Key("event")]);
-                dangling(d, at, &steps, "event", &name.0);
+                dangling(d, at, &steps, "event", name);
             }
         }
         for (key, list) in [
