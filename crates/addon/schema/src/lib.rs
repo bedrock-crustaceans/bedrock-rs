@@ -31,13 +31,17 @@ facet::define_attr_grammar! {
         /// read.
         SinceEngine(&'static str),
         /// `unknown = "keep"` (stored, on a field or a container): what an unknown member
-        /// is where this struct differs from the slice's rule: `keep`, `report`, `reject` or
-        /// `ignore`.
+        /// is where this struct differs from the slice's rule: `keep`, `report`, `reject`,
+        /// `ignore`, or `component` (a name that is no component of its object, as the game
+        /// tells it).
         Unknown(&'static str),
         /// `fallback = x` (compile-time, an `Option` field): the value absence stands for;
         /// the getter returns it, and it is never written into the data.
         Fallback(arbitrary),
-        /// `min = x` (compile-time): the value is `>= x`; a number or another field's name.
+        /// `min = x` (compile-time): the value is `>= x`; a number or another field's name. On a
+        /// fixed array or a `Vec` it is the bound of each element: the first one outside is the
+        /// one finding, at its index. A limit written with the `f64` suffix (`179.9_f64`) is a
+        /// double the value is widened to, and the finding's text states it as one.
         Min(arbitrary),
         /// `max = x` (compile-time): the value is `<= x`.
         Max(arbitrary),
@@ -60,6 +64,9 @@ facet::define_attr_grammar! {
         /// `FromJson`: `fn(&Node<'_>, &mut Read<'_>) -> Option<T>`, `T` the field's type (an
         /// `Option` field's inner type), called for a member that is written.
         ReadWith(arbitrary),
+        /// `required` (marker, an `Option` field): the document must write the member, though
+        /// its value is optional in the type: absence is a missing required member.
+        Required,
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,

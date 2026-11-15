@@ -182,6 +182,8 @@ pub(crate) struct FieldAttrs {
     pub read_with: Option<(Expr, Span)>,
     pub foreign_event: Option<Span>,
     pub lowercase: Option<Span>,
+    /// `schema::required`: an `Option` field the document must write.
+    pub required: Option<Span>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -214,6 +216,7 @@ const FIELD_KEYS: &[&str] = &[
     "read_with",
     "foreign_event",
     "lowercase",
+    "required",
 ];
 const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order"];
 
@@ -317,14 +320,14 @@ fn string_value(entry: &Entry, key: &str) -> Result<LitStr> {
 fn unknown_word(entry: &Entry) -> Result<String> {
     let lit = string_value(entry, "unknown")?;
     let word = lit.value();
-    if ["keep", "report", "reject", "ignore"].contains(&word.as_str()) {
+    if ["keep", "report", "reject", "ignore", "component"].contains(&word.as_str()) {
         Ok(word)
     } else {
         Err(Error::new(
             lit.span(),
             format!(
-                "`{word}` is not an unknown-member rule: expected `keep`, `report`, `reject` or \
-                 `ignore`"
+                "`{word}` is not an unknown-member rule: expected `keep`, `report`, `reject`, \
+                 `ignore` or `component`"
             ),
         ))
     }
@@ -475,6 +478,7 @@ impl FieldAttrs {
                     }
                     "foreign_event" => once(&mut out.foreign_event, span, &key, span, errors),
                     "lowercase" => once(&mut out.lowercase, span, &key, span, errors),
+                    "required" => once(&mut out.required, span, &key, span, errors),
                     other => {
                         if let Some(op) = Op::from_key(other) {
                             let limit = limit(entry, op)?;
@@ -515,6 +519,7 @@ impl FieldAttrs {
             .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
             .or(self.lowercase)
+            .or(self.required)
             .or(self.stored)
     }
 }

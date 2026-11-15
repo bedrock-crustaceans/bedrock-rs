@@ -1131,12 +1131,12 @@ fn a02_companion_block_avoidance_reads_its_offsets_and_defaults() {
         r#""minecraft:companion_block_avoidance": {"backup_anchor_offsets": [[0, 1]]}"#,
     );
     let d = rejected(atomic(&text, &cx()));
-    // The typed read fails on the list of three-number arrays: a wrong type at the list.
+    // An array of two numbers is a wrong type at the offset itself.
     expect_at(
         &d,
         "core/invalid_type",
         Severity::Error,
-        &format!("{at}/backup_anchor_offsets"),
+        &format!("{at}/backup_anchor_offsets/0"),
     );
 }
 

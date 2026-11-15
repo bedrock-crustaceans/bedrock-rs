@@ -4,7 +4,7 @@
 use crate::{
     DimensionBounds, DimensionComponents, DimensionDescription, DimensionHeight, Generation,
 };
-use crate::{RootV1, constraints, parse_root, slice_null_rule};
+use crate::{RootV1, constraints, parse_root};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
@@ -59,8 +59,7 @@ impl Versioned for Dimension {
 impl VersionStruct for Dimension {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let rule = slice_null_rule(cx);
-        let root: RootV1 = parse_root(text, cx, rule, d)?;
+        let root: RootV1 = parse_root(text, cx, d)?;
         let mut inner = root.dimension;
         // `{-512, 512, multipleOf 16}` on both members, the same in every format that reads
         // the bounds.

@@ -50,6 +50,37 @@ fn a_range_finding_has_the_game_range_text_only_where_the_family_opts_in() {
 }
 
 #[test]
+fn a_one_sided_range_has_its_own_text_switch() {
+    let both = NumericRange::inclusive(0.0, 0.9);
+    let one = NumericRange::at_least(0.0);
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out)
+        .with_range_text(true)
+        .with_one_sided_range_text(false);
+    cx.range(both, true);
+    cx.range(one, true);
+    let mut other = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut other)
+        .with_one_sided_range_text(true);
+    cx.range(both, true);
+    cx.range(one, true);
+    let codes: Vec<_> = out
+        .iter()
+        .chain(other.iter())
+        .map(|d| d.code.clone())
+        .collect();
+    assert_eq!(
+        codes,
+        [
+            both.code(),
+            Code::from(&codes::INVALID_VALUE),
+            Code::from(&codes::INVALID_VALUE),
+            one.code()
+        ]
+    );
+}
+
+#[test]
 fn default_and_tell_resets_the_member_with_an_information() {
     let mut out = Diagnostics::default();
     let reading = Reading::DOCUMENT.with_on_member_failure(MemberFailure::DefaultAndTell);

@@ -34,6 +34,17 @@ pub(crate) fn option_inner(ty: &Type) -> Option<&Type> {
     }
 }
 
+/// `T` of a `[T; N]` or a `Vec<T>`: the elements a bound on the field applies to.
+pub(crate) fn elements(ty: &Type) -> Option<&Type> {
+    if let Type::Array(array) = ty {
+        return Some(&array.elem);
+    }
+    match last(ty)? {
+        (name, args) if name == "Vec" && args.len() == 1 => Some(args[0]),
+        _ => None,
+    }
+}
+
 /// The type below every `Option`, `Vec`, `Box` and map (`IndexMap`, `HashMap`, `BTreeMap`: the
 /// value type) around it.
 pub(crate) fn innermost(ty: &Type) -> &Type {

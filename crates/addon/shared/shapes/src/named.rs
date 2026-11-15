@@ -4,8 +4,9 @@
 
 use bedrock_addon_core::id::RenderControllerId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::{Molang, MolangFields, MolangSlot, MolangVisitor};
-use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields};
 use indexmap::IndexMap;
 
 /// What the string form of a [`NamedCondition`] names: read from the text as written, and
@@ -55,8 +56,23 @@ pub enum NamedCondition<N: Name> {
     Conditional(IndexMap<String, Molang>),
 }
 
-// bridge: read through its NamedConditionProxy
-bedrock_addon_core::from_json_via_facet!(impl<N: Name> NamedCondition<N>);
+/// A string is the name, an object the conditions; any other value is a wrong type (a number is
+/// no name, whatever the profile converts).
+impl<N: Name> FromJson for NamedCondition<N> {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        if let Some(name) = node.value().as_string() {
+            return Some(Self::Always(N::from_name(name.as_str().to_owned())));
+        }
+        if node.value().is_object() {
+            return IndexMap::<String, Molang>::from_json(node, read).map(Self::Conditional);
+        }
+        read.wrong_type(node);
+        None
+    }
+}
 
 impl<N: Name> NamedCondition<N> {
     /// The text of the name this entry uses (the string form's, or the object's member that

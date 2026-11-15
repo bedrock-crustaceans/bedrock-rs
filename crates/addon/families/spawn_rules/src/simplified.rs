@@ -1,20 +1,20 @@
 //! Simplified spawn rules (behind the Simplified Spawn Rules experiment): a cereal struct, read
-//! typed from the payload; its numeric constraints and the placement-name validator.
+//! member by member by core's reader (`versioning::read_payload_with`); its numeric constraints and the placement-name validator.
 
 use facet::Facet;
 
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Class, Code, CodeDef, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
-use bedrock_addon_core::json::{
-    EncodeError, JsonSlice, ScalarFailure, Value, keep_unknown_members_with, parse_with_rules,
-    unknown_members,
-};
+use bedrock_addon_core::json::kit::Order;
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
-use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+use bedrock_addon_core::versioning::{
+    ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
+};
 use bedrock_addon_shared_spawn::read::finding;
 
 /// Spawn rules in the simplified shape (format 1.21.60 and later, with the Simplified Spawn Rules
@@ -115,50 +115,11 @@ impl Versioned for SimplifiedSpawnRules {
 }
 
 impl VersionStruct for SimplifiedSpawnRules {
-    /// The typed parse; unknown members are `UnrecognizedField` warnings, reported also when the
-    /// typed parse fails (vanilla's cereal parser logs both).
+    /// Read by core's reader under the slice's reading: the spawn-rule loader registers it with
+    /// the lenient error mask, under which an unknown member is a warning, and tells it
+    /// beside a failure, as vanilla's cereal parser logs both.
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
-        // The spawn-rule loader registers the slice with the lenient error mask, under which an
-        // unknown member is written to the content log at the warning level: the grade.
-        let severity = cx.load.grade(Class::Unknown);
-        let unknown = |path: &JsonPath, d: &mut Diagnostics| {
-            finding(
-                Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                severity,
-                &cx.at.join(path),
-                d,
-            );
-        };
-        // The scalars are read by the slice's reading (`crate::SIMPLIFIED_READING`).
-        let read =
-            parse_with_rules::<Self>(payload, None, crate::SIMPLIFIED_READING.scalar_rules());
-        match read.map(|read| read.value) {
-            Ok(value) => {
-                if let Some(json) = &json {
-                    let mut kept = bedrock_addon_core::document::Unknown::new();
-                    let keeps = crate::SIMPLIFIED_READING.keeps_unknown;
-                    for (path, _) in keep_unknown_members_with(&value, json, keeps, &mut kept) {
-                        unknown(&path, d);
-                    }
-                    d.unknown_mut().absorb(&cx.at, kept);
-                }
-                Some(value)
-            }
-            Err(failure) => {
-                if let Some(json) = &json {
-                    for (path, _) in unknown_members(Self::SHAPE, json) {
-                        unknown(&path, d);
-                    }
-                }
-                d.push(match failure {
-                    ScalarFailure::Read(error) => error.into_diagnostic(&cx.at, |code, _| code),
-                    // A scalar no arm of an untagged enum takes: a type error at the enum.
-                    ScalarFailure::Refused(misread) => misread.spanned_finding(&cx.at),
-                });
-                None
-            }
-        }
+        read_payload_with(payload, cx, d, |read| read.order(Order::UnknownFirst))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

@@ -1,9 +1,10 @@
 //! The camera preset at `[1.19.50, 1.26.50)`, which vanilla's legacy slice parses, and its step
 //! to 1.26.50.
 
+use super::super::read::{preset_name, string_enum};
 use super::super::{AudioListener, ControlScheme, PresetAimAssist};
 use bedrock_addon_core::id::CameraPresetId;
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 
@@ -15,8 +16,10 @@ use bedrock_addon_core::versioning::{Upgrade, UpgradeCx, Versioned};
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct CameraPreset {
     /// JSON `identifier`.
+    #[facet(schema::read_with = preset_name)]
     pub identifier: CameraPresetId,
     /// JSON `inherit_from`.
+    #[facet(schema::read_with = preset_name)]
     pub inherit_from: Option<CameraPresetId>,
     /// JSON `pos_x`.
     pub pos_x: Option<f32>,
@@ -25,10 +28,12 @@ pub struct CameraPreset {
     /// JSON `pos_z`.
     pub pos_z: Option<f32>,
     /// JSON `rot_x`.
+    #[facet(schema::min = -90.0, schema::max = 90.0)]
     pub rot_x: Option<f32>,
     /// JSON `rot_y`.
     pub rot_y: Option<f32>,
     /// JSON `rotation_speed`.
+    #[facet(schema::min = 0.0, schema::max = 360.0)]
     pub rotation_speed: Option<f32>,
     /// JSON `snap_to_target`.
     pub snap_to_target: Option<bool>,
@@ -41,28 +46,33 @@ pub struct CameraPreset {
     /// JSON `tracking_radius`.
     pub tracking_radius: Option<f32>,
     /// JSON `view_offset`.
+    #[facet(schema::min = -64.0, schema::max = 64.0)]
     pub view_offset: Option<[f32; 2]>,
     /// JSON `entity_offset`.
+    #[facet(schema::min = -64.0, schema::max = 64.0)]
     pub entity_offset: Option<[f32; 3]>,
     /// JSON `radius`.
+    #[facet(schema::min = 0.1, schema::max = 64.0)]
     pub radius: Option<f32>,
     /// JSON `yaw_limits_min`.
+    #[facet(schema::min = -180.0, schema::max = 179.9_f64)]
     pub yaw_limits_min: Option<f32>,
     /// JSON `yaw_limits_max`.
+    #[facet(schema::min = -179.9_f64, schema::max = 180.0)]
     pub yaw_limits_max: Option<f32>,
     /// JSON `listener`.
+    #[facet(schema::read_with = string_enum)]
     pub listener: Option<AudioListener>,
     /// JSON `player_effects`.
     pub player_effects: Option<bool>,
     /// JSON `aim_assist`.
     pub aim_assist: Option<PresetAimAssist>,
     /// JSON `control_scheme`.
+    #[facet(schema::read_with = string_enum)]
     pub control_scheme: Option<ControlScheme>,
     /// The `format_version` the document was read at, 1.19.50 or later; the struct is
     /// written back at it (not a JSON member of the payload).
-    // A skipped field still takes the JSON member of its name in facet rc.7, so the field is
-    // given a NUL-prefixed name that no document has.
-    #[facet(skip, rename = "\u{0}source_format_version")]
+    #[facet(skip)]
     pub source_format_version: FormatVersion,
 }
 

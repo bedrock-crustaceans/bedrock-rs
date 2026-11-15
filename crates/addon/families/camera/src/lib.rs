@@ -4,6 +4,11 @@
 //! files (`cameras/splines/`, `minecraft:camera_custom_splines`), loaded together as the
 //! `Cameras` group, and the camera entity documents of vanilla's resource pack
 //! (`CameraEntity`, read on request only).
+//!
+//! Every document is a `Facet` and `Schema` type read member by member by core's reader, as
+//! vanilla's strict cereal loader reads it (`read.rs`): the struct and its `schema::` attributes
+//! are the whole description, the bounds are the derived `Schema::check`, and the hand code is
+//! the game's own lines for a name, a time and the rotation limits.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -27,24 +32,13 @@ pub mod codes;
 mod entity;
 mod list;
 mod preset;
-pub(crate) mod read;
-mod read_entity;
-mod read_list;
-mod read_spline;
+mod read;
 mod spline;
 mod stack;
 mod validate;
 
 #[cfg(test)]
 mod tests;
-
-/// A constraint with its own line: an `InvalidValue` error at `at`.
-pub(crate) fn violation(line: &'static CodeDef<0>, at: JsonPath, d: &mut Diagnostics) {
-    d.push(bedrock_addon_core::versioning::shape::error(
-        Code::from(line),
-        at,
-    ));
-}
 
 /// The closing line of a failed file.
 fn closing_line(diagnostics: &mut Diagnostics, line: &'static CodeDef<0>) {
@@ -55,7 +49,7 @@ use std::convert::Infallible;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, Kind,
 };
 use bedrock_addon_core::document::unversioned::origin_of;
 use bedrock_addon_core::document::{
@@ -218,7 +212,7 @@ impl Family for PresetFamily {
     const FLOOR: FormatVersion = V1_19_50;
     const ENVELOPE: Envelope = Envelope {
         // The game reads a preset through a document input: the version is read as that input
-        // reads it, and a `null` document passes no shape, which the shape check applies.
+        // reads it, and a `null` document is a wrong type, which the read tells.
         input: InputKind::Document,
         // The game hands the document reader an invalid minimum version, so the text stays raw and
         // both slices parse the whole document, envelope included.
@@ -233,12 +227,12 @@ impl Family for PresetFamily {
 
     /// The legacy slice `[1.19.50, 1.26.50)` tolerates some errors the 1.26.50 slice does not.
     /// An unknown member drops the preset under both: the game scans the log of the parse for
-    /// the unknown-member error, which the shape check reports as an error.
+    /// the unknown-member error, which the read tells as an error.
     ///
     /// Both slices' tables say `Strict`, but the legacy slice 0 is read by the game's
-    /// non-strict cereal reader: its parse (`file::typed_unstrict`) reads each scalar of the
-    /// other type as the bound one, with an information, before the shape check, so the strict
-    /// scalars of its reading never see one.
+    /// non-strict cereal reader: its parse (`read::read`, `legacy`) reads each scalar of the
+    /// other type as the bound one, with an information, so the strict scalars of its reading
+    /// never see one.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         file::strict(match index {
             StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
@@ -292,7 +286,7 @@ impl Family for ListFamily {
         ..Envelope::DEFAULT
     };
     // The game reads a list without a document input: the input kind stays the first run's,
-    // and the shape check rejects a `null` and an unknown member itself.
+    // and the read rejects a `null` and an unknown member itself.
 
     fn identity(payload: JsonSlice<'_>) -> Identity {
         file::identity(payload, "identifier")

@@ -1,37 +1,19 @@
-//! Reading [`VoxelShape`] from the text of a payload (the game's cereal parse): every failure
-//! of the schema fails the file, an unknown member included.
+//! Reading [`VoxelShape`] from the text of a payload (the game's cereal parse) with core's
+//! reader (`versioning::read_payload_with`): every failure of the schema fails the file, an
+//! unknown member included. The family's own is a corner, which has two JSON forms.
 
-use facet::Facet;
-use facet_json::RawJson;
-
-use super::{Description, Shape, ShapeBox, VoxelShape, codes};
+use super::{VoxelShape, codes};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Span, cereal,
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, cereal};
+use bedrock_addon_core::json::kit::{Disposition, Node, Read, Texts};
+use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
+
+/// An unknown member is cereal's line, as the game logs it.
+const TEXTS: Texts = Texts {
+    unknown_code: Some(&core_codes::MEMBER_NOT_IN_SCHEMA),
+    ..Texts::CODES
 };
-use bedrock_addon_core::json::{self, JsonSlice, Value, parse_at};
-use bedrock_addon_core::versioning::ParseCx;
-
-/// What a payload is read into: the corners are held as raw slices, because a corner has two
-/// JSON forms.
-#[derive(Facet)]
-struct Shell<'a> {
-    description: Description,
-    shape: ShapeShell<'a>,
-}
-
-/// What `shape` is read into.
-#[derive(Facet)]
-struct ShapeShell<'a> {
-    boxes: Vec<BoxShell<'a>>,
-}
-
-/// What one box is read into.
-#[derive(Facet)]
-struct BoxShell<'a> {
-    min: RawJson<'a>,
-    max: RawJson<'a>,
-}
 
 /// Reads one `minecraft:voxel_shape` payload; `None` (with an error in `d`) when vanilla's
 /// cereal pass would fail the file.
@@ -40,46 +22,16 @@ pub(crate) fn parse_shape(
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
 ) -> Option<VoxelShape> {
-    let shell: Shell<'_> = match parse_at(payload) {
-        Ok(shell) => shell,
-        Err(failure) => {
-            d.push(failure.into_diagnostic(&cx.at, |code, _| code));
-            return None;
-        }
-    };
+    let mut shape: VoxelShape = read_payload_with(payload, cx, d, |read| read.texts(TEXTS))?;
     // Each of these is an error in `d`, and an error rejects the document.
-    let unknown = cx.load.grade(Class::Unknown);
-    unknown_members(payload, &cx.at, unknown, d);
     constraints(
-        shell.description.identifier.as_str(),
-        shell.shape.boxes.len(),
+        shape.description.identifier.as_str(),
+        shape.shape.boxes.len(),
         &cx.at,
         d,
     );
-    // Every corner of the file is read, so every bad one is reported; a box with one has no
-    // value and neither has the shape.
-    let boxes: Vec<Option<ShapeBox>> = shell
-        .shape
-        .boxes
-        .iter()
-        .enumerate()
-        .map(|(index, shell)| {
-            let at = cx.at.with(&["shape", "boxes"]).index(index);
-            let min = corner(payload, &shell.min, &at.child("min"), unknown, d);
-            let max = corner(payload, &shell.max, &at.child("max"), unknown, d);
-            Some(ShapeBox {
-                min: min?,
-                max: max?,
-            })
-        })
-        .collect();
-    Some(VoxelShape {
-        description: shell.description,
-        shape: Shape {
-            boxes: boxes.into_iter().collect::<Option<_>>()?,
-        },
-        source_format_version: cx.original_version,
-    })
+    shape.source_format_version = cx.original_version;
+    Some(shape)
 }
 
 /// The longest identifier, in bytes (the length limit of the game's identifier strings).
@@ -110,88 +62,59 @@ pub(crate) fn constraints(identifier: &str, boxes: usize, at: &JsonPath, d: &mut
     }
 }
 
-/// Reports every member of `payload` no schema type binds, in document order (the corners are
-/// read on their own), each an `UnrecognizedField` at `severity`, the slice's grade (its strict
-/// mask makes it the error that fails the file, `Family::reading`).
-fn unknown_members(payload: JsonSlice<'_>, at: &JsonPath, severity: Severity, d: &mut Diagnostics) {
-    let Ok(json) = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text) else {
-        return;
-    };
-    for (path, _) in &json::unknown_members(<Shell<'_> as Facet>::SHAPE, &json) {
-        d.push(unknown(at.join(path), severity));
-    }
-}
-
-/// One corner (vanilla's `Vec3`), in the two forms the game tries in this order: `[x, y, z]`,
-/// exactly three numbers; then an object with the optional members `x`, `y` and `z`, an absent
-/// one 0. `None` (with the errors in `d`) for anything else. A member no axis takes is an
-/// `UnrecognizedField` at `unknown`.
+/// One corner (vanilla's `Vec3`; `schema::read_with` of a box's `min` and `max`), in the two
+/// forms the game tries in this order: `[x, y, z]`, exactly three numbers; then an object with
+/// the optional members `x`, `y` and `z`, an absent one 0. `None` (with the errors told) for
+/// anything else. A member no axis takes is an unknown member.
 // The game logs the help text when the array form fails and clears it when the members load.
-fn corner(
-    payload: JsonSlice<'_>,
-    raw: &RawJson<'_>,
-    at: &JsonPath,
-    unknown: Severity,
-    d: &mut Diagnostics,
-) -> Option<[f32; 3]> {
-    let span = payload.nested(raw).map(|slice| Span {
-        offset: u32::try_from(slice.offset).unwrap_or(u32::MAX),
-        len: u32::try_from(slice.text.len()).unwrap_or(u32::MAX),
-    });
-    let json = bedrock_addon_core::json::from_str_jsonc::<Value>(raw.as_str()).ok();
-    let json = json.as_ref();
-    if let Some([x, y, z]) = json
-        .and_then(Value::as_array)
-        .map(facet_value::VArray::as_slice)
-        && let (Some(x), Some(y), Some(z)) = (number(x), number(y), number(z))
+// Every finding is told, none stops the read: a file's every bad corner is reported.
+pub(crate) fn corner(node: &Node<'_>, read: &mut Read<'_>) -> Option<[f32; 3]> {
+    if read.stopped() {
+        return None;
+    }
+    if let Some(array) = node.value().as_array()
+        && array.len() == 3
+        && let [Some(x), Some(y), Some(z)] =
+            [0, 1, 2].map(|index| array.get(index).and_then(number))
     {
         return Some([x, y, z]);
     }
-    // A corner's own finding is at the corner's text, when the payload holds it.
-    let at_corner = |code: Code| {
-        let finding = Diagnostic::error(code).at(at.clone());
-        match span {
-            Some(span) => finding.span(span),
-            None => finding,
-        }
+    let error = |node: &Node<'_>, code: Code| {
+        let mut finding = Diagnostic::error(code).at(node.path().clone());
+        finding.location.span = node.span();
+        finding
     };
-    let expected = |d: &mut Diagnostics| {
-        d.push(at_corner(Code::from(&codes::EXPECTED_X_Y_Z)));
-    };
-    let Some(object) = json.and_then(Value::as_object) else {
-        expected(d);
-        d.push(at_corner(
-            bedrock_addon_core::diagnostic::cereal::expected_object(),
-        ));
+    let expected = error(node, Code::from(&codes::EXPECTED_X_Y_Z));
+    if !node.value().is_object() {
+        read.push(expected);
+        read.push(error(node, cereal::expected_object()));
         return None;
-    };
-    let mut read = [0.0; 3];
-    let mut unbound = Vec::new();
+    }
+    let members = read.object(node)?;
+    let mut at_axis = [0.0; 3];
     let mut mistyped = Vec::new();
-    for (key, value) in object {
-        let Some(axis) = ["x", "y", "z"]
-            .iter()
-            .position(|name| *name == key.as_str())
-        else {
-            unbound.push(key.as_str());
+    let mut unbound = Vec::new();
+    for (key, member) in members.iter() {
+        let Some(axis) = ["x", "y", "z"].iter().position(|name| *name == key) else {
+            unbound.push(member);
             continue;
         };
-        match number(value) {
-            Some(value) => read[axis] = value,
-            None => mistyped.push(key.as_str()),
+        match number(member.value()) {
+            Some(value) => at_axis[axis] = value,
+            None => mistyped.push(member),
         }
     }
     if !mistyped.is_empty() {
-        expected(d);
+        read.push(expected);
     }
-    for key in &mistyped {
-        d.push(Diagnostic::of(&core_codes::INVALID_TYPE).at(at.child(key)));
+    for member in &mistyped {
+        read.push(error(member, Code::from(&core_codes::INVALID_TYPE)));
     }
-    for key in &unbound {
-        d.push(self::unknown(at.child(key), unknown));
+    for member in &unbound {
+        read.unknown_member(member, Disposition::Keep);
     }
-    // With a finding above the value is not used: an error in `d` rejects the document.
-    Some(read)
+    // With a finding above the value is not used: an error told rejects the document.
+    Some(at_axis)
 }
 
 /// A JSON number (an integer or a real token) as the `f32` nearest to it; `None` for any other
@@ -200,12 +123,4 @@ fn number(json: &Value) -> Option<f32> {
     #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
     let x = json.as_number()?.to_f64_lossy() as f32;
     x.is_finite().then_some(x)
-}
-
-/// A member the schema does not bind, at `at` and `severity`: the slice's grade, the error that
-/// refuses the document (every voxel-shape slice is strict).
-fn unknown(at: JsonPath, severity: Severity) -> Diagnostic {
-    Diagnostic::warn(cereal::member_not_in_schema())
-        .at(at)
-        .severity(severity)
 }

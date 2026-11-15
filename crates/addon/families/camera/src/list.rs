@@ -1,7 +1,9 @@
 //! `minecraft:camera_list`: a named list of camera presets.
 
 use bedrock_addon_core::id::{CameraListId, CameraPresetId};
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
+
+use super::read::list_name;
 
 /// A camera list (`minecraft:camera_list`, in `cameras/lists/`): the presets a player may
 /// switch between.
@@ -15,6 +17,7 @@ use bedrock_addon_core::schema::Schema;
 #[doc(alias = "camera_list")]
 pub struct CameraList {
     /// The list's name, `namespace:name` (JSON `identifier`).
+    #[facet(schema::read_with = list_name)]
     pub identifier: CameraListId,
     /// The presets of the list, in order (JSON `cameras`).
     pub cameras: Vec<CameraPresetId>,

@@ -131,6 +131,7 @@ fn an_unknown_member_is_told_under_its_disposition_at_the_mask_s_severity() {
         (Disposition::Report, "core/member_not_kept"),
         (Disposition::Reject, "core/dropped_field"),
         (Disposition::Ignore, "core/ignored_member"),
+        (Disposition::Component, "core/unrecognized_component"),
     ] {
         for (mask, severity) in [
             (UnknownMask::Error, "Error"),
@@ -176,6 +177,7 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
         wrong_type: Some("not a string"),
         missing: Some(crate::diagnostic::cereal::MISSING_REQUIRED_FIELD_TEXT),
         unknown: Some(crate::diagnostic::cereal::MEMBER_NOT_IN_SCHEMA_TEXT),
+        unknown_code: None,
         wrong_kind: None,
     });
     let members = read.object(&root).expect("an object");
@@ -189,6 +191,32 @@ fn texts_word_the_kit_s_findings_as_a_family_s_game_does() {
             r#"Error|z|core/unrecognized_field_worded ["this member was found in the input, but is not present in the Schema"]|None|false"#,
             r#"Error|a|core/invalid_type_worded ["not a string"]|None|false"#,
             r#"Error|b|core/missing_required_field_worded ["missing required field"]|None|false"#,
+        ]
+    );
+}
+
+#[test]
+fn an_unknown_member_is_told_under_the_code_the_texts_name() {
+    let json = value(r#"{"a": 1, "z": 0}"#);
+    let root = Node::new(&json, JsonPath::new());
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).texts(Texts {
+        unknown_code: Some(&core_codes::MEMBER_NOT_IN_SCHEMA),
+        ..Texts::CODES
+    });
+    let members = read.object(&root).expect("an object");
+    read.unknown(&members, &["a"], Disposition::Keep);
+    // Only the member the struct keeps or reports is cereal's line; a rejected one is its own.
+    read.unknown_by_rule(
+        &members.get("a").expect("written"),
+        crate::schema::UnknownRule::Reject,
+    );
+    read.finish();
+    assert_eq!(
+        rendered(&found),
+        [
+            "Error|z|core/member_not_in_schema|None|false",
+            "Error|a|core/dropped_field|None|false",
         ]
     );
 }
@@ -400,6 +428,59 @@ fn a_strict_reading_takes_a_scalar_of_its_own_kind_alone() {
     // Every refusal is a wrong type at the element: 6 + 6 + 3 + 6 + 5.
     assert_eq!(found.len(), 26);
     assert!(found.iter().all(|f| f.is(&core_codes::INVALID_TYPE)));
+}
+
+#[test]
+fn a_non_strict_read_tells_each_scalar_it_takes_as_the_other_json_type() {
+    use crate::json::Declared;
+    let text = r#"[2, 0, true, false, 2.5, 1, "x"]"#;
+    let json = value(text);
+    let root = Node::with_text(&json, JsonPath::new(), JsonSlice::new(text));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).non_strict("read as the bound type");
+    let elements = read.array(&root).expect("an array");
+    let nodes: Vec<Node<'_>> = elements.iter().collect();
+    // Bool members: a number is `!= 0`; a bool is itself and says nothing.
+    let bools: Vec<_> = nodes
+        .iter()
+        .take(4)
+        .map(|n| read.scalar(n, Declared::Bool))
+        .collect();
+    // Number members: a bool is 1 or 0, a number is itself and says nothing.
+    let number = Declared::Float { bits: 32 };
+    let numbers: Vec<_> = nodes[2..]
+        .iter()
+        .map(|n| read.scalar(n, number).and_then(|scalar| scalar.real()))
+        .collect();
+    assert_eq!(
+        bools,
+        [
+            Some(Scalar::Bool(true)),
+            Some(Scalar::Bool(false)),
+            Some(Scalar::Bool(true)),
+            Some(Scalar::Bool(false))
+        ]
+    );
+    assert_eq!(numbers, [Some(1.0), Some(0.0), Some(2.5), Some(1.0), None]);
+    // Told at the two numbers read as bools, the two bools read as numbers, spanning each.
+    assert_eq!(
+        rendered(&found),
+        [
+            "Info|0|core/value_rewritten|Some((1, 1))|false",
+            "Info|1|core/value_rewritten|Some((4, 1))|false",
+            "Info|2|core/value_rewritten|Some((7, 4))|false",
+            "Info|3|core/value_rewritten|Some((13, 5))|false",
+            "Error|6|core/invalid_type|Some((28, 3))|false",
+        ]
+    );
+    // Without it the same read tells nothing of a respelling.
+    let mut quiet = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN.with_scalars(Scalars::NonStrict), &mut quiet);
+    assert_eq!(
+        read.scalar(&nodes[0], Declared::Bool),
+        Some(Scalar::Bool(true))
+    );
+    assert!(quiet.is_empty());
 }
 
 #[test]

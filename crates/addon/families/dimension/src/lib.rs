@@ -32,7 +32,7 @@ use bedrock_addon_core::versioning::{
 use history::{DimensionFamily, DimensionHistory};
 use indexmap::IndexMap;
 
-pub(crate) use read::{RootV1, constraints, parse_root, slice_null_rule};
+pub(crate) use read::{RootV1, constraints, parse_root};
 pub use types::{
     Clouds, DefaultBiome, Dimension, DimensionBounds, DimensionComponents, DimensionDescription,
     DimensionHeight, Generation, GeneratorType,
@@ -66,7 +66,7 @@ impl Family for DimensionFamily {
         // The game reads the file as a whole document: the version is the one its JSON reader picks
         // from the text, and a `null` where a value is read counts as the wrong JSON type in the
         // cereal slices (the legacy parser below 1.21.60 keeps its own reading:
-        // `parse::slice_null_rule`).
+        // `read::parse_root`).
         input: InputKind::Document,
         // What the document does not read is kept for write-back: a number no double holds is
         // the largest finite one, with a warning at it.

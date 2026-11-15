@@ -48,8 +48,6 @@ pub const UNIT_CUBE: VoxelShapeId = VoxelShapeId::from_static("minecraft:unit_cu
 #[doc(hidden)]
 pub struct VoxelShapeFamily;
 
-bedrock_addon_core::impl_no_molang!(VoxelShape);
-
 impl Family for VoxelShapeFamily {
     const NAME: &'static str = "voxel shape";
     const PAYLOAD_KEY: &'static str = "minecraft:voxel_shape";

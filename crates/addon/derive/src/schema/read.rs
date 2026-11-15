@@ -157,7 +157,7 @@ fn field_read(info: &FieldInfo, index: usize) -> FieldRead {
         (None, false) => quote!(#slot.read(&member, read, #field_rule);),
     };
     let json = &info.json;
-    let finish = if info.option.is_some() {
+    let finish = if info.option.is_some() && info.attrs.required.is_none() {
         quote!(let #value = #slot.optional(read, &mut __ok);)
     } else if let Some(default) = &info.attrs.default {
         let value_expr = default.value.as_ref().map_or_else(
@@ -166,6 +166,8 @@ fn field_read(info: &FieldInfo, index: usize) -> FieldRead {
         );
         quote!(let #value = #slot.or_default(read, &mut __ok, || #value_expr);)
     } else {
+        // A plain field, or an `Option` the document must write (`schema::required`): its value
+        // is the field's own, `Some(..)` for the `Option`.
         quote!(let #value = #slot.required(object, #json, read, &mut __ok);)
     };
     FieldRead {

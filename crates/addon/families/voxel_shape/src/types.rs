@@ -1,12 +1,12 @@
 //! The family's types, their constructors and `validate`.
 
 use super::FLOOR;
-use super::read::constraints;
+use super::read::{constraints, corner};
 use super::validate::rules;
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::id::VoxelShapeId;
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 
 /// A voxel shape (`minecraft:voxel_shape`): a named set of boxes, in pixels, that a block's
@@ -17,7 +17,7 @@ use bedrock_addon_core::version::FormatVersion;
 /// is required and an unknown member fails the file. A shape has 1 to 32 boxes; each lies within
 /// -14 to 30 pixels, at least one overlaps the block itself (0 to 16 on every axis), and the
 /// whole shape spans at most 30 pixels on any axis.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:voxel_shape")]
 #[doc(alias = "shapes")]
 pub struct VoxelShape {
@@ -27,6 +27,9 @@ pub struct VoxelShape {
     pub shape: Shape,
     /// The document's `format_version`. Not a JSON member; the writer writes it as
     /// `format_version`.
+    // A skipped field still takes the JSON member of its name in facet rc.7: a NUL-prefixed
+    // name no document has.
+    #[facet(skip, rename = "\u{0}source_format_version")]
     pub source_format_version: FormatVersion,
 }
 
@@ -55,8 +58,10 @@ pub struct Shape {
 pub struct ShapeBox {
     /// The corner with the smallest coordinates, each below `max`'s and at least -14 (JSON
     /// `min`).
+    #[facet(schema::read_with = corner)]
     pub min: [f32; 3],
     /// The corner with the largest coordinates, each at most 30 (JSON `max`).
+    #[facet(schema::read_with = corner)]
     pub max: [f32; 3],
 }
 

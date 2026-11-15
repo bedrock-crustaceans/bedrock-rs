@@ -1,31 +1,78 @@
 //! The reading kit of the camera and aim-assist documents, which are read whole on the raw-text
-//! path: the typed parse after the shape check, the identity of a payload that names itself,
-//! the upgrade of an as-written document, the closing line, the source version and the root a
+//! path: the strict cereal read and its bounds, the identity of a payload that names itself, the
+//! upgrade of an as-written document, the closing line, the source version and the root a
 //! raw-text struct writes. The files themselves are read by core's `parse_document`.
 
-use facet::Facet;
-
-use super::shape::{self, Shape};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{
-    Code, Diagnostic, Diagnostics, JsonPath, Span, code_for_deserialize_error_kind,
-};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
 use crate::document::{Document, Rejected};
-use crate::json::{JsonSlice, ScalarFailure, Value, parse_with_rules, probe_envelope};
+use crate::json::kit::{Expected, Order, Texts, WrongKind};
+use crate::json::{JsonSlice, Value};
 use crate::load::LoadContext;
+use crate::schema::{FromJson, Schema, SchemaCx};
 use crate::version::FormatVersionInput;
 use crate::versioning::{
     BeyondWidth, Family, Identity, Loaded, ParseCx, Parsed, Reading, Scalars, beta_refused, finish,
+    read_payload_with,
 };
 
 /// `reading` with the scalars of vanilla's strict cereal readers, which read every document of
 /// these families: a member takes only a token of its own type (an integer member no real), and
-/// a number beyond its float's width is a type error. [`typed`] reads by it.
+/// a number beyond its float's width is a type error. [`read`] reads by it.
 #[must_use]
 pub const fn strict(reading: Reading) -> Reading {
     reading
         .with_scalars(Scalars::Strict)
         .with_beyond_width(BeyondWidth::Error)
+}
+
+/// A value of another JSON type than a member takes, as the strict cereal loaders word it: an
+/// object where a struct or a map is bound, an array where a list is, the plain type error for
+/// the rest.
+fn wrong_kind(expected: Expected, _: &Value) -> Code {
+    match expected {
+        Expected::Object => crate::diagnostic::cereal::expected_object(),
+        Expected::Array => core_codes::INVALID_TYPE_WORDED.with(["expected an array"]),
+        _ => Code::from(&core_codes::INVALID_TYPE),
+    }
+}
+
+/// `text` read as `T` as vanilla's strict cereal loader reads a document: member by member by
+/// [`read_payload_with`], every failure told in file order, a missing member and a wrong type as
+/// the loader words them, an unknown member always an error worded `unknown` (the family's line)
+/// whatever the slice's mask. `non_strict` is the note of a reader that takes a scalar of the
+/// other JSON type as the bound one ([`Read::non_strict`]); `None` for the strict one.
+pub fn read<T: FromJson>(
+    text: JsonSlice<'_>,
+    cx: &ParseCx<'_>,
+    d: &mut Diagnostics,
+    unknown: &'static str,
+    non_strict: Option<&'static str>,
+) -> Option<T> {
+    read_payload_with(text, cx, d, |read| {
+        let read = read
+            .order(Order::AsRead)
+            .unknown_severity(Severity::Error)
+            .texts(Texts {
+                wrong_kind: Some(WrongKind(wrong_kind)),
+                missing: Some(crate::diagnostic::cereal::MISSING_REQUIRED_FIELD_TEXT),
+                unknown: Some(unknown),
+                ..Texts::CODES
+            });
+        match non_strict {
+            Some(note) => read.non_strict(note),
+            None => read,
+        }
+    })
+}
+
+/// The bounds `value` states (`Schema::check`), at the document's path under the slice's rule,
+/// worded with the game's range text where a range has both ends and plain where it has one.
+pub fn check<T: Schema>(value: &mut T, cx: &ParseCx<'_>, d: &mut Diagnostics) {
+    let mut at = SchemaCx::new(cx.load.reading, cx.at.clone(), d)
+        .with_range_text(true)
+        .with_one_sided_range_text(false);
+    value.check(&mut at);
 }
 
 /// The closing line `text` of a failed file.
@@ -93,145 +140,6 @@ pub fn identity(payload: JsonSlice<'_>, key: &str) -> Identity {
     }
 }
 
-/// The JSON of `text`, a slice of the text `versioning::parse_as_written` read, in which a
-/// member written twice has its last value only (core's last-wins rule).
-pub fn last_wins(text: &str) -> Option<Value> {
-    crate::json::from_str_jsonc::<Value>(&crate::json::last_wins(text)).ok()
-}
-
-/// The typed parse of `slice` after its JSON passed `shape` (the whole of `checked`, which
-/// `slice` is, or is the member `key` of). `None` with the findings when either fails.
-pub fn typed<'a, T: for<'f> Facet<'f>>(
-    checked: JsonSlice<'a>,
-    shape: &Shape,
-    key: Option<&str>,
-    unknown: &'static str,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<T> {
-    typed_as(checked, shape, key, unknown, false, cx, d)
-}
-
-/// [`typed`] as the game's non-strict cereal reader reads (the legacy camera preset slice):
-/// before the shape check each scalar of the other type is read as the bound one
-/// ([`shape::coerce_scalars`]), each such place carries an information (`ValueRewritten`), and
-/// the typed parse reads the rewritten JSON.
-pub fn typed_unstrict<'a, T: for<'f> Facet<'f>>(
-    checked: JsonSlice<'a>,
-    shape: &Shape,
-    key: Option<&str>,
-    unknown: &'static str,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<T> {
-    typed_as(checked, shape, key, unknown, true, cx, d)
-}
-
-/// [`typed`], or [`typed_unstrict`] when `coerce`.
-fn typed_as<'a, T: for<'f> Facet<'f>>(
-    checked: JsonSlice<'a>,
-    shape: &Shape,
-    key: Option<&str>,
-    unknown: &'static str,
-    coerce: bool,
-    cx: &ParseCx<'_>,
-    d: &mut Diagnostics,
-) -> Option<T> {
-    let Some(mut json) = last_wins(checked.text) else {
-        d.push(shape::error(
-            Code::from(&core_codes::INVALID_TYPE),
-            cx.at.clone(),
-        ));
-        return None;
-    };
-    let mut coerced = Vec::new();
-    if coerce {
-        shape::coerce_scalars(&mut json, shape, &JsonPath::new(), &mut coerced);
-    }
-    if !shape::check(&json, shape, &cx.at, unknown, d) {
-        return None;
-    }
-    for place in &coerced {
-        d.push(coerced_finding(checked, &cx.at, place));
-    }
-    let (slice, at) = match key {
-        Some(key) => (
-            probe_envelope(checked).ok()?.payload(key)?,
-            shape::child(&cx.at, key),
-        ),
-        None => (checked, cx.at.clone()),
-    };
-    // The rewritten JSON, when a scalar was coerced: the text the typed parse reads. A
-    // failure's place is still found in the file's text, by its path.
-    let rewritten = if coerced.is_empty() {
-        None
-    } else {
-        let payload = match key {
-            Some(key) => json.as_object()?.get(key)?,
-            None => &json,
-        };
-        Some(crate::json::to_json(payload).ok()?)
-    };
-    // The scalars are read by the slice's scalar rules (`LoadContext::scalar_rules`): the
-    // strict cereal readers' rule for every family read here.
-    let rules = cx.load.scalar_rules;
-    let read = match &rewritten {
-        Some(text) => parse_with_rules::<T>(JsonSlice::new(text), None, rules),
-        None => parse_with_rules::<T>(slice, None, rules),
-    };
-    let failure = match read {
-        Ok(read) => {
-            for told in &read.told {
-                d.push(told.finding(&at));
-            }
-            return Some(read.value);
-        }
-        Err(ScalarFailure::Read(failure)) => failure,
-        // A scalar no arm of an untagged enum takes: a type error at the enum.
-        Err(ScalarFailure::Refused(misread)) => {
-            d.push(misread.spanned_finding(&at));
-            return None;
-        }
-    };
-    // The text is core's, in which a member written twice has its last value only
-    // (`versioning::parse_as_written` blanks the earlier copies), so the one read decides. No
-    // message of facet's is looked at: a duplicate member is never recognised by wording.
-    let code =
-        code_for_deserialize_error_kind(&failure.error.kind, !failure.path.is_empty(), false);
-    // The failing value's own place in the file; facet's span only for a failure that names
-    // no member (the whole slice when the text read was the rewritten one).
-    let span = if !failure.path.is_empty() {
-        crate::json::span_reached(slice, &failure.path)
-    } else if rewritten.is_some() {
-        crate::json::span_reached(slice, &JsonPath::new())
-    } else {
-        failure.span
-    };
-    d.push(typed_failure(code, &at, &failure.path, span));
-    None
-}
-
-/// The information at `place` (a path below `checked`), a scalar of the other JSON type read
-/// as the bound one: write-back writes the member's own type there, so nothing is changed in
-/// silence.
-fn coerced_finding(checked: JsonSlice<'_>, at: &JsonPath, place: &JsonPath) -> Diagnostic {
-    let path = at.join(place);
-    Diagnostic::of(&core_codes::VALUE_REWRITTEN)
-        .at(path)
-        .span(crate::json::span_reached(checked, place))
-        .detail(crate::diagnostic::DiagnosticDetail::Note(
-            shape::SCALAR_READ_AS_BOUND_TYPE,
-        ))
-}
-
-/// The finding of a failed typed parse: `code` at `base` followed by the failing member.
-fn typed_failure(code: Code, base: &JsonPath, member: &JsonPath, span: Span) -> Diagnostic {
-    let path = base.join(member);
-    let mut finding = shape::error(code, path);
-    finding.location.span = Some(span);
-    finding
-}
-
 /// `{"format_version": version, key: payload}`: the whole document of a family read whole.
 pub fn document(version: &str, key: &str, payload: Value) -> Value {
     let mut root = facet_value::VObject::new();
@@ -243,7 +151,10 @@ pub fn document(version: &str, key: &str, payload: Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Location, Phase, Severity};
+    use crate::diagnostic::{Location, Phase};
+    use crate::load::LoadContext;
+    use crate::schema;
+    use crate::version::{FormatVersion, FormatVersionInput};
 
     #[test]
     fn the_closing_line_is_a_rejection_with_its_text() {
@@ -258,6 +169,72 @@ mod tests {
                 Phase::Parse,
                 Location::default()
             )]
+        );
+    }
+
+    #[derive(Debug, PartialEq, facet::Facet, Schema)]
+    struct Probe {
+        #[facet(schema::min = 0.0)]
+        least: Option<f32>,
+        #[facet(schema::min = 0.0, schema::max = 1.0)]
+        unit: Option<f32>,
+        list: Option<Vec<u8>>,
+        #[facet(schema::required)]
+        name: Option<String>,
+    }
+
+    /// `text` read and checked as a `Probe`, each finding as `severity path text`.
+    fn probe(text: &str) -> (Option<Probe>, Vec<String>) {
+        let load = LoadContext::detached();
+        let cx = ParseCx {
+            load: &load,
+            written: FormatVersionInput {
+                version: Some(FormatVersion::new(1, 0, 0)),
+                beta_literal: false,
+                prerelease: false,
+            },
+            original_version: FormatVersion::new(1, 0, 0),
+            at: JsonPath::of_keys(["payload"]),
+        };
+        let mut d = Diagnostics::default();
+        let mut value = read::<Probe>(JsonSlice::new(text), &cx, &mut d, "not in the schema", None);
+        if let Some(value) = &mut value {
+            check(value, &cx, &mut d);
+        }
+        let told = d
+            .iter()
+            .map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code))
+            .collect();
+        (value, told)
+    }
+
+    #[test]
+    fn a_document_is_read_as_the_strict_loader_words_it_and_every_failure_is_told() {
+        let (value, told) = probe(r#"{"least": "x", "list": 1, "extra": 0}"#);
+        assert_eq!(value, None);
+        assert_eq!(
+            told,
+            [
+                "Error payload/least wrong JSON type",
+                "Error payload/list expected an array",
+                "Error payload/extra not in the schema",
+                "Error payload/name missing required field",
+            ]
+        );
+        let (value, told) = probe("[]");
+        assert_eq!((value, told.len()), (None, 1));
+    }
+
+    #[test]
+    fn the_bounds_are_checked_after_the_read_and_a_one_sided_one_has_no_text() {
+        let (value, told) = probe(r#"{"least": -1, "unit": 2, "name": "n"}"#);
+        assert!(value.is_some());
+        assert_eq!(
+            told,
+            [
+                "Error payload/least invalid value",
+                "Error payload/unit the input is outside of the accepted range [0, 1]",
+            ]
         );
     }
 }

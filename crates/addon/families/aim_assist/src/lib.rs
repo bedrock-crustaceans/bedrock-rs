@@ -2,6 +2,10 @@
 //! kinds below `aim_assist/` of a behaviour pack, presets (`aim_assist/presets/`,
 //! `minecraft:aim_assist_preset`) and category files (`aim_assist/categories/`,
 //! `minecraft:aim_assist_categories`), loaded together as the `AimAssist` group.
+//!
+//! Every document is a `Facet` and `Schema` type read member by member by core's reader, as
+//! vanilla's strict cereal loader reads it (`read.rs`); the hand code is the priority, a number
+//! whose two ends have two lines of the game's, and the namespace checks after the read.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

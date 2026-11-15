@@ -1,9 +1,10 @@
 //! The feature-rule types and the collection of a stack's rules.
 
+use super::read::distribution;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::{Document, Registry, Rejected};
 use bedrock_addon_core::id::{FeatureId, FeatureRuleId};
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_shared_scatter::ScatterParams;
@@ -14,7 +15,7 @@ use bedrock_addon_shared_scatter::ScatterParams;
 /// JSON: `{"format_version": "1.12.0", "minecraft:feature_rules": {"description", "conditions",
 /// "distribution"?}}`. A rule loads even when its identifier does not match its file name or
 /// names an unknown pass (vanilla logs both and keeps the rule).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:feature_rules")]
 #[doc(alias = "feature_rules")]
 pub struct FeatureRule {
@@ -24,9 +25,13 @@ pub struct FeatureRule {
     pub conditions: FeatureRuleConditions,
     /// How the feature's positions are scattered (JSON `distribution`). Without it the rule
     /// scatters no position.
+    #[facet(schema::read_with = distribution)]
     pub distribution: Option<ScatterParams>,
     /// The document's `format_version` (the floor when absent). Not a JSON member; the writer
     /// writes it as `format_version`.
+    // A skipped field still takes the JSON member of its name in facet rc.7: a NUL-prefixed
+    // name no document has.
+    #[facet(skip, rename = "\u{0}source_format_version")]
     pub source_format_version: FormatVersion,
 }
 

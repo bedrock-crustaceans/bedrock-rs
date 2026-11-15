@@ -1,103 +1,97 @@
-//! Reading and writing the aim-assist documents: each root struct typed from the whole text
-//! after the shape check.
+//! Reading and writing the aim-assist documents. Each is read member by member by core's reader
+//! as vanilla's strict cereal loader reads it (`chain_file::read`): every failure told in file
+//! order, an unknown member always an error, a wrong type worded as the game words it. The
+//! family's own is a priority, a number from 0 to 100 whose two ends have two lines.
 
 use super::history::v1_21_50;
 use super::{AimAssistCategories, AimAssistPreset};
-use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::versioning::chain_file as file;
-use bedrock_addon_core::versioning::chain_file::document;
-use bedrock_addon_core::versioning::shape::{self, Member, Shape, opt, req};
+use bedrock_addon_core::schema::{FromJson, Schema};
+use bedrock_addon_core::versioning::chain_file::{check, document, read};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
-
-/// A list of strings (`vector<Reference<…>>`, `vector<string>`).
-const STRINGS: Shape = Shape::List(&Shape::Str);
-/// A map of integers (the priority maps).
-const PRIORITY_MAP: Shape = Shape::Map(&Shape::Float);
-
-/// The preset at format 1.21.50, members in bind order.
-const PRESET_V1_21_50: &[Member] = &[
-    req("identifier", Shape::Str),
-    opt("exclusion_list", STRINGS),
-    opt("liquid_targeting_list", STRINGS),
-    opt("item_settings", Shape::Map(&Shape::Str)),
-    opt("default_item_settings", Shape::Str),
-    opt("hand_settings", Shape::Str),
-];
-
-/// The exclusion settings of a preset at format 1.21.120.
-const EXCLUSION_SETTINGS: &[Member] = &[
-    opt("blocks", STRINGS),
-    opt("entities", STRINGS),
-    opt("block_tags", STRINGS),
-    opt("entity_type_families", STRINGS),
-];
-
-/// The preset at format 1.21.120, members in bind order.
-const PRESET: &[Member] = &[
-    req("identifier", Shape::Str),
-    opt("exclusion_settings", Shape::Object(EXCLUSION_SETTINGS)),
-    opt("liquid_targeting_list", STRINGS),
-    opt("item_settings", Shape::Map(&Shape::Str)),
-    opt("default_item_settings", Shape::Str),
-    opt("hand_settings", Shape::Str),
-];
-
-/// A preset file at 1.21.50: both members required.
-const PRESET_FILE_V1_21_50: &[Member] = &[
-    req("format_version", Shape::Str),
-    req(
-        "minecraft:aim_assist_preset",
-        Shape::Object(PRESET_V1_21_50),
-    ),
-];
-
-/// A preset file at 1.21.120.
-const PRESET_FILE: &[Member] = &[
-    req("format_version", Shape::Str),
-    req("minecraft:aim_assist_preset", Shape::Object(PRESET)),
-];
-
-/// The priority maps of a category.
-const PRIORITIES: &[Member] = &[
-    opt("entities", PRIORITY_MAP),
-    opt("blocks", PRIORITY_MAP),
-    opt("block_tags", PRIORITY_MAP),
-    opt("entity_type_families", PRIORITY_MAP),
-    opt("entity_default", Shape::Float),
-    opt("block_default", Shape::Float),
-];
-
-/// One category.
-const CATEGORY: &[Member] = &[
-    req("name", Shape::Str),
-    req("priorities", Shape::Object(PRIORITIES)),
-];
-
-/// The categories list of a categories file.
-const CATEGORIES: &[Member] = &[req("categories", Shape::List(&Shape::Object(CATEGORY)))];
-
-/// A categories file.
-const CATEGORIES_FILE: &[Member] = &[
-    req("format_version", Shape::Str),
-    req("minecraft:aim_assist_categories", Shape::Object(CATEGORIES)),
-];
+use indexmap::IndexMap;
 
 pub(crate) use super::checks::{category_namespaces, preset_namespaces};
+
+/// A priority (`schema::read_with`): a number in `[0, 100]`. A negative number is cereal's
+/// "invalid numeric value"; a number above 100 is a range violation. Each is told and the member
+/// kept: the game's bind tells every violated constraint.
+pub(crate) fn priority(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
+    let value = i32::from_json(node, read)?;
+    let code = if value < 0 {
+        Some(core_codes::INVALID_VALUE_WORDED.with([cereal::INVALID_NUMERIC_VALUE_TEXT]))
+    } else {
+        let range = NumericRange::inclusive(0.0, 100.0);
+        (!range.contains(f64::from(value))).then(|| range.code())
+    };
+    if let Some(code) = code {
+        let mut finding = Diagnostic::error(code)
+            .severity(Severity::Error)
+            .at(node.path().clone());
+        finding.location.span = node.span();
+        read.push(finding);
+    }
+    Some(value)
+}
+
+/// A map of priorities (`schema::read_with`): each value a [`priority`]; one that is no number
+/// fails the map.
+pub(crate) fn priority_map(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, i32>> {
+    let members = read.object(node)?;
+    let mut map = IndexMap::new();
+    let mut read_all = true;
+    for (key, value) in members.iter() {
+        match priority(&value, read) {
+            Some(priority) => {
+                map.insert(key.to_owned(), priority);
+            }
+            None => read_all = false,
+        }
+    }
+    read_all.then_some(map)
+}
+
+/// The preset file at 1.21.50: the version and the payload.
+#[derive(facet::Facet, Schema)]
+struct PresetFileV1_21_50 {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:aim_assist_preset")]
+    payload: v1_21_50::AimAssistPreset,
+}
+
+/// The preset file at 1.21.120.
+#[derive(facet::Facet, Schema)]
+struct PresetFile {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:aim_assist_preset")]
+    payload: AimAssistPreset,
+}
+
+/// The categories file.
+#[derive(facet::Facet, Schema)]
+struct CategoriesFile {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:aim_assist_categories")]
+    payload: AimAssistCategories,
+}
+
+/// The line of an unknown member of any aim-assist document.
+const UNKNOWN: &str = cereal::MEMBER_NOT_IN_SCHEMA_TEXT;
 
 impl VersionStruct for v1_21_50::AimAssistPreset {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let mut preset: Self = file::typed(
-            text,
-            &Shape::Object(PRESET_FILE_V1_21_50),
-            Some("minecraft:aim_assist_preset"),
-            shape::NOT_IN_SCHEMA,
-            cx,
-            d,
-        )?;
-        preset.source_format_version = cx.original_version;
-        Some(preset)
+        let mut file: PresetFileV1_21_50 = read(text, cx, d, UNKNOWN, None)?;
+        check(&mut file, cx, d);
+        file.payload.source_format_version = cx.original_version;
+        Some(file.payload)
     }
 
     /// The whole document, at the version it was read at.
@@ -115,14 +109,9 @@ impl VersionStruct for v1_21_50::AimAssistPreset {
 impl VersionStruct for AimAssistPreset {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        file::typed(
-            text,
-            &Shape::Object(PRESET_FILE),
-            Some("minecraft:aim_assist_preset"),
-            shape::NOT_IN_SCHEMA,
-            cx,
-            d,
-        )
+        let mut file: PresetFile = read(text, cx, d, UNKNOWN, None)?;
+        check(&mut file, cx, d);
+        Some(file.payload)
     }
 
     /// The whole document, at format 1.21.120.
@@ -140,15 +129,9 @@ impl VersionStruct for AimAssistPreset {
 impl VersionStruct for AimAssistCategories {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let file: Self = file::typed(
-            text,
-            &Shape::Object(CATEGORIES_FILE),
-            Some("minecraft:aim_assist_categories"),
-            shape::NOT_IN_SCHEMA,
-            cx,
-            d,
-        )?;
-        super::checks::priorities(&file, &cx.at, d).then_some(file)
+        let mut file: CategoriesFile = read(text, cx, d, UNKNOWN, None)?;
+        check(&mut file, cx, d);
+        Some(file.payload)
     }
 
     /// The whole document, at format 1.21.50.

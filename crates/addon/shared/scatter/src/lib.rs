@@ -7,11 +7,13 @@ use facet_value::{VArray, VObject};
 
 use bedrock_addon_core::diagnostic::{JsonPath, Severity};
 use bedrock_addon_core::json::EncodeError;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields,
-    MolangVersionSource, MolangVisitor, OpsRule, RawVersion, ReadField, ReaderKind, Step,
+    Admission, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields, MolangSlot,
+    MolangVersionSource, MolangVisitor, OpsRule, RawVersion, ReadField, ReaderKind,
 };
+use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields};
 
 /// `distribution`: the positions a rule scatters its feature to.
 ///
@@ -23,21 +25,26 @@ use bedrock_addon_core::molang::{
 /// The three coordinates are required in a document. One is `None` only in a scatter feature
 /// read from a format below 1.21.10, whose root layout may leave a coordinate out (vanilla logs
 /// "… must be provided, either as a Molang expression string or as a sub-object").
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct ScatterParams {
     /// How many positions to generate (JSON `iterations`): a number or a Molang expression.
+    #[facet(schema::molang = SCATTER)]
     pub iterations: Molang,
     /// The chance that the scatter happens at all, not per iteration (JSON `scatter_chance`);
     /// absent is always.
+    #[facet(schema::molang_with = walk_chance)]
     pub scatter_chance: Option<ScatterChance>,
     /// The order the coordinates are evaluated in (JSON `coordinate_eval_order`); absent is
     /// `xzy`.
     pub coordinate_eval_order: Option<CoordinateEvalOrder>,
     /// The x offset (JSON `x`).
+    #[facet(schema::molang_with = walk_coordinate)]
     pub x: Option<CoordinateRange>,
     /// The y offset (JSON `y`).
+    #[facet(schema::molang_with = walk_coordinate)]
     pub y: Option<CoordinateRange>,
     /// The z offset (JSON `z`).
+    #[facet(schema::molang_with = walk_coordinate)]
     pub z: Option<CoordinateRange>,
 }
 
@@ -58,11 +65,13 @@ pub enum ScatterChance {
 /// The object form of `scatter_chance`: the chance is `numerator / denominator`. Its unknown
 /// members are kept where it is read typed under a reading that keeps them (a feature rule's
 /// `distribution`).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct ScatterFraction {
     /// JSON `numerator`, at least 1.
+    #[facet(schema::min = 1)]
     pub numerator: i32,
     /// JSON `denominator`, at least 1; vanilla uses 1 when it is not above the numerator.
+    #[facet(schema::min = 1)]
     pub denominator: i32,
 }
 
@@ -84,23 +93,26 @@ pub enum CoordinateRange {
 /// The object form of a coordinate: a distribution over an extent. Its unknown members are
 /// kept where it is read typed under a reading that keeps them (a feature rule's
 /// `distribution`).
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct CoordinateDistribution {
     /// The distribution (JSON `distribution`).
     pub distribution: RandomDistribution,
     /// The lower and upper bound, inclusive, as offsets from the input position (JSON
     /// `extent`).
+    #[facet(schema::molang_with = walk_extent)]
     pub extent: [Molang; 2],
     /// The distance between grid steps, at least 1; only for the grid distributions (JSON
     /// `step_size`); absent is 1.
+    #[facet(schema::min = 1)]
     pub step_size: Option<i32>,
     /// The grid offset, at least 0; only for the grid distributions (JSON `grid_offset`); absent
     /// is 0.
+    #[facet(schema::min = 0)]
     pub grid_offset: Option<i32>,
 }
 
 /// `distribution` of a coordinate.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -120,32 +132,6 @@ pub enum RandomDistribution {
 }
 
 impl RandomDistribution {
-    /// The JSON names, in vanilla's order.
-    const NAMES: [(&'static str, RandomDistribution); 6] = [
-        ("uniform", Self::Uniform),
-        ("gaussian", Self::Gaussian),
-        ("inverse_gaussian", Self::InverseGaussian),
-        ("triangle", Self::Triangle),
-        ("fixed_grid", Self::FixedGrid),
-        ("jittered_grid", Self::JitteredGrid),
-    ];
-
-    /// The JSON name.
-    pub fn name(self) -> &'static str {
-        Self::NAMES
-            .iter()
-            .find(|(_, d)| *d == self)
-            .map_or("uniform", |(name, _)| name)
-    }
-
-    /// The distribution of the JSON name `name`.
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::NAMES
-            .iter()
-            .find(|(n, _)| *n == name)
-            .map(|(_, d)| *d)
-    }
-
     /// `fixed_grid` or `jittered_grid`: the distributions that read `step_size` and
     /// `grid_offset`.
     pub fn is_grid(self) -> bool {
@@ -154,7 +140,7 @@ impl RandomDistribution {
 }
 
 /// `coordinate_eval_order`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 #[facet(rename_all = "snake_case")]
 #[repr(u8)]
 #[non_exhaustive]
@@ -241,6 +227,60 @@ impl CoordinateDistribution {
             _ => false,
         }
     }
+}
+
+// ---- the reader's form of the two choice members -----------------------------------------------
+//
+// The struct form first, then the expression, as the typed form below: an object that is not
+// `{"expression", "version"}` is the struct form, whose own findings stand.
+
+/// A fraction's parts are checked; a percentage is no bound.
+impl SchemaFields for ScatterChance {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if let Self::Fraction(fraction) = self {
+            fraction.check(cx);
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+/// A distribution's grid members are checked; an expression is no bound.
+impl SchemaFields for CoordinateRange {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if let Self::Object(range) = self {
+            range.check(cx);
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl FromJson for ScatterChance {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if is_struct_form(node.value()) {
+            ScatterFraction::from_json(node, read).map(Self::Fraction)
+        } else {
+            Molang::from_json(node, read).map(Self::Percent)
+        }
+    }
+}
+
+impl FromJson for CoordinateRange {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if is_struct_form(node.value()) {
+            CoordinateDistribution::from_json(node, read).map(Self::Object)
+        } else {
+            Molang::from_json(node, read).map(Self::Single)
+        }
+    }
+}
+
+/// Whether `value` is the struct form of a choice member: an object that is no Molang
+/// `{"expression", "version"}` (vanilla tries the struct first, as the order of the cereal
+/// options shows).
+fn is_struct_form(value: &Value) -> bool {
+    value.is_object() && !is_expression_object(value)
 }
 
 // ---- the typed (facet) form of the two choice members -------------------------------------------
@@ -421,27 +461,26 @@ pub const SCATTER: MolangFieldSpec = MolangFieldSpec {
     error_kept: true,
 };
 
-impl MolangFields for ScatterParams {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        visitor.field("iterations", &SCATTER, &mut self.iterations);
-        if let Some(ScatterChance::Percent(chance)) = &mut self.scatter_chance {
-            visitor.field("scatter_chance", &SCATTER, chance);
-        }
-        for (key, coordinate) in [("x", &mut self.x), ("y", &mut self.y), ("z", &mut self.z)] {
-            match coordinate {
-                None => {}
-                Some(CoordinateRange::Single(value)) => visitor.field(key, &SCATTER, value),
-                Some(CoordinateRange::Object(range)) => {
-                    visitor.enter(Step::Key(key));
-                    visitor.enter(Step::Key("extent"));
-                    for (index, bound) in range.extent.iter_mut().enumerate() {
-                        visitor.field(index, &SCATTER, bound);
-                    }
-                    visitor.leave();
-                    visitor.leave();
-                }
-            }
-        }
+/// The Molang of a `scatter_chance` that is a percentage, at the member.
+fn walk_chance(chance: &mut Option<ScatterChance>, visitor: &mut MolangVisitor<'_>) {
+    if let Some(ScatterChance::Percent(chance)) = chance {
+        chance.visit_slot(&SCATTER, visitor);
+    }
+}
+
+/// The Molang of a coordinate: the expression at the member, the extent's bounds below it.
+fn walk_coordinate(coordinate: &mut Option<CoordinateRange>, visitor: &mut MolangVisitor<'_>) {
+    match coordinate {
+        None => {}
+        Some(CoordinateRange::Single(value)) => value.visit_slot(&SCATTER, visitor),
+        Some(CoordinateRange::Object(range)) => range.visit_molang(visitor),
+    }
+}
+
+/// The bounds of an extent, each at its index.
+fn walk_extent(extent: &mut [Molang; 2], visitor: &mut MolangVisitor<'_>) {
+    for (index, bound) in extent.iter_mut().enumerate() {
+        visitor.field(index, &SCATTER, bound);
     }
 }
 

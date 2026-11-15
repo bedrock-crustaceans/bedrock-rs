@@ -78,7 +78,7 @@ use indexmap::IndexMap;
 use super::parse::{Parsed, SpanNode};
 use super::{Coerce, Coercing, JsonSlice, Value};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Span};
+use crate::diagnostic::{Class, Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity, Span};
 use crate::versioning::{NullHandling, Reading, Scalars};
 
 // hidden: API not yet reviewed
@@ -497,31 +497,42 @@ pub enum Disposition {
     /// The member is ignored, as the game ignores it
     /// ([`codes::IGNORED_MEMBER`](core_codes::IGNORED_MEMBER)).
     Ignore,
+    /// The member names no component of its object, which the game tells as such
+    /// ([`codes::UNRECOGNIZED_COMPONENT`](core_codes::UNRECOGNIZED_COMPONENT)); not kept.
+    Component,
 }
 
 impl Disposition {
     /// The code of an unknown member told under this disposition: the disposition's own line,
     /// or the family's text given whole.
-    fn code(self, text: Option<&'static str>) -> Code {
-        let (plain, worded) = match self {
-            Self::Keep => (
+    fn code(self, texts: Texts) -> Code {
+        if let (Self::Keep, Some(code)) = (self, texts.unknown_code) {
+            return code.into();
+        }
+        let text = texts.unknown;
+        let told = |plain: &'static CodeDef<0>, worded: &'static CodeDef<1>| {
+            text.map_or_else(|| plain.into(), |text| worded.with([text]))
+        };
+        match self {
+            Self::Keep => told(
                 &core_codes::UNRECOGNIZED_FIELD,
                 &core_codes::UNRECOGNIZED_FIELD_WORDED,
             ),
-            Self::Report => (
+            Self::Report => told(
                 &core_codes::MEMBER_NOT_KEPT,
                 &core_codes::MEMBER_NOT_KEPT_WORDED,
             ),
-            Self::Reject => (
+            Self::Reject => told(
                 &core_codes::DROPPED_FIELD,
                 &core_codes::DROPPED_FIELD_WORDED,
             ),
-            Self::Ignore => (
+            Self::Ignore => told(
                 &core_codes::IGNORED_MEMBER,
                 &core_codes::IGNORED_MEMBER_WORDED,
             ),
-        };
-        text.map_or_else(|| plain.into(), |text| worded.with([text]))
+            // The game's own line, which the text of an unknown field does not reword.
+            Self::Component => Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
+        }
     }
 }
 
@@ -590,6 +601,12 @@ pub struct Texts {
     pub missing: Option<&'static str>,
     /// The text of an unknown member, whatever its [`Disposition`].
     pub unknown: Option<&'static str>,
+    /// The code an unknown member told as an `UnrecognizedField` ([`Disposition::Keep`], which
+    /// is what `schema::unknown` words other than `reject` and `ignore` tell) is told under, in
+    /// place of [`UNRECOGNIZED_FIELD`](core_codes::UNRECOGNIZED_FIELD) and [`unknown`](Self::unknown):
+    /// a family whose game prints cereal's line for it
+    /// ([`MEMBER_NOT_IN_SCHEMA`](core_codes::MEMBER_NOT_IN_SCHEMA)) names that once.
+    pub unknown_code: Option<&'static CodeDef<0>>,
     /// The code of a wrong type where the read knows what it expected ([`Read::object`],
     /// [`Read::array`], the scalar reads), from what it expected and what it found, in place
     /// of [`wrong_type`](Self::wrong_type): `crafting_catalog` words it as vanilla's
@@ -603,6 +620,7 @@ impl Texts {
         wrong_type: None,
         missing: None,
         unknown: None,
+        unknown_code: None,
         wrong_kind: None,
     };
 }
@@ -670,6 +688,9 @@ pub struct Read<'d> {
     texts: Texts,
     unknown_severity: Severity,
     findings: Sink<'d>,
+    /// The note of the information a scalar read as another JSON type than written is told with
+    /// ([`non_strict`](Self::non_strict)).
+    rewrite_note: Option<&'static str>,
     failed: bool,
     order: Order,
     /// The read met its first failure under [`Order::Door`].
@@ -695,6 +716,7 @@ impl<'d> Read<'d> {
             texts: Texts::CODES,
             unknown_severity,
             findings: Sink::Borrowed(findings),
+            rewrite_note: None,
             failed: false,
             order: Order::AsRead,
             stopped: false,
@@ -779,6 +801,7 @@ impl<'d> Read<'d> {
             texts: self.texts,
             unknown_severity: self.unknown_severity,
             findings: Sink::Owned(Diagnostics::default()),
+            rewrite_note: self.rewrite_note,
             failed: false,
             order: self.order,
             stopped: false,
@@ -931,6 +954,14 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The read with `null` for its null handling instead of the reading's: a reader the game
+    /// runs on one reading for part of a slice (a legacy parser below a version) gives it here.
+    #[must_use]
+    pub fn null(mut self, null: NullHandling) -> Self {
+        self.reading = self.reading.with_null(null);
+        self
+    }
+
     /// The read telling unknown members at `severity` instead of the reading's: a reader the
     /// game runs without a word about them is told as information.
     ///
@@ -953,6 +984,40 @@ impl<'d> Read<'d> {
     #[must_use]
     pub fn unknown_severity(mut self, severity: Severity) -> Self {
         self.unknown_severity = severity;
+        self
+    }
+
+    /// The read taking its scalars as the game's non-strict reader does
+    /// ([`Scalars::NonStrict`]), whatever the reading says, through [`scalar`](Self::scalar) (the
+    /// typed reads): a number where a bool is bound is read as `value != 0`, a bool where a
+    /// number is bound as 1 or 0. Each such scalar, a token
+    /// read as the other JSON type, is told as the information `ValueRewritten` with `note` (a
+    /// write-back writes the member's own type there, so nothing is changed in silence).
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Disposition, Node, Read};
+    /// # use bedrock_addon_core::json::{JsonSlice, Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// # fn told(d: &Diagnostics) -> Vec<String> {
+    /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
+    /// # }
+    /// use bedrock_addon_core::json::Declared;
+    /// use bedrock_addon_core::json::kit::Scalar;
+    /// let json: Value = from_str_jsonc(r#"{"lit": 2, "level": true}"#).unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found).non_strict("read as the bound type");
+    /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
+    /// let lit = read.required(&members, "lit").unwrap();
+    /// assert_eq!(read.scalar(&lit, Declared::Bool), Some(Scalar::Bool(true)));
+    /// let level = read.required(&members, "level").unwrap();
+    /// assert_eq!(read.scalar(&level, Declared::Float { bits: 32 }), Some(Scalar::Real(1.0)));
+    /// assert_eq!(told(&found).len(), 2);
+    /// ```
+    #[must_use]
+    pub fn non_strict(mut self, note: &'static str) -> Self {
+        self.reading = self.reading.with_scalars(Scalars::NonStrict);
+        self.rewrite_note = Some(note);
         self
     }
 
@@ -1342,7 +1407,7 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error x member read and not kept", "Error identifier wrong JSON type"]);
     /// ```
     pub fn unknown_member(&mut self, node: &Node<'_>, disposition: Disposition) {
-        let code = disposition.code(self.texts.unknown);
+        let code = disposition.code(self.texts);
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());
@@ -1378,8 +1443,9 @@ impl<'d> Read<'d> {
             UnknownRule::Keep | UnknownRule::Report => Disposition::Keep,
             UnknownRule::Reject => Disposition::Reject,
             UnknownRule::Ignore => Disposition::Ignore,
+            UnknownRule::Component => Disposition::Component,
         };
-        let code = disposition.code(self.texts.unknown);
+        let code = disposition.code(self.texts);
         let mut finding = Diagnostic::of(code)
             .severity(self.unknown_severity)
             .at(node.path.clone());

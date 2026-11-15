@@ -33,9 +33,6 @@ mod payload;
 mod pipeline;
 mod range;
 mod reading;
-// hidden: macro and test support of the version chains
-#[doc(hidden)]
-pub mod shape;
 mod single;
 // hidden: macro and test support of the version chains
 #[doc(hidden)]

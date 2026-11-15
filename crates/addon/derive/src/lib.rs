@@ -250,7 +250,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 /// nor another field's name (or names the field itself, or a field that does not exist, or
 /// doubles a side), a `multiple_of` that is not a positive number literal, a stored key whose
 /// value is not a string literal, a version that is not `major.minor.patch`, an `unknown` that
-/// is not `keep`, `report`, `reject` or `ignore`, a key on the wrong item (a field's key on the
+/// is not `keep`, `report`, `reject`, `ignore` or `component`, a key on the wrong item (a field's key on the
 /// container, an enum's key on a field or a struct, `unknown` on a string enum, any key on a
 /// variant or a `skip` field), `lowercase` off a `String`, `foreign_event` off an
 /// `EventTrigger`, `molang` on a plain value (a number, `bool` or string) or beside

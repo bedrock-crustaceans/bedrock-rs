@@ -34,6 +34,7 @@ pub enum Verdict {
 pub struct SchemaCx<'d> {
     grading: Grading,
     range_text: bool,
+    one_sided_text: Option<bool>,
     path: JsonPath,
     out: &'d mut Diagnostics,
     failed: bool,
@@ -45,6 +46,7 @@ impl<'d> SchemaCx<'d> {
         Self {
             grading: grade(reading.on_member_failure),
             range_text: false,
+            one_sided_text: None,
             path: at,
             out,
             failed: false,
@@ -57,6 +59,16 @@ impl<'d> SchemaCx<'d> {
     #[must_use]
     pub fn with_range_text(mut self, on: bool) -> Self {
         self.range_text = on;
+        self
+    }
+
+    /// The context with the finding of a one-sided bound (a lower bound alone, or an upper one)
+    /// worded with the game's text where `on`, or with none where not, whatever
+    /// [`with_range_text`](Self::with_range_text) says of a range with both sides: for a game
+    /// that words only a range with both ends.
+    #[must_use]
+    pub fn with_one_sided_range_text(mut self, on: bool) -> Self {
+        self.one_sided_text = Some(on);
         self
     }
 
@@ -90,7 +102,12 @@ impl<'d> SchemaCx<'d> {
     /// (a default, a fallback, `None`, the other member); a required field has none, so under
     /// `DefaultAndTell` it fails its owner at that rule's severity instead of being accepted.
     pub fn range(&mut self, range: NumericRange, resettable: bool) -> Verdict {
-        let code = if self.range_text {
+        let one_sided = range.min.is_none() || range.max.is_none();
+        let text = match self.one_sided_text {
+            Some(on) if one_sided => on,
+            _ => self.range_text,
+        };
+        let code = if text {
             range.code()
         } else {
             Code::from(&codes::INVALID_VALUE)

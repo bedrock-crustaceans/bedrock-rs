@@ -102,6 +102,9 @@ pub enum UnknownRule {
     /// Not kept and told as the game ignoring it (`IgnoredMember`, at the slice's unknown
     /// severity).
     Ignore,
+    /// Not kept and told as the game tells a name that is no component of its object
+    /// (`UnrecognizedComponent`, at the slice's unknown severity).
+    Component,
 }
 
 impl UnknownRule {
@@ -113,6 +116,7 @@ impl UnknownRule {
             "report" => Some(Self::Report),
             "reject" => Some(Self::Reject),
             "ignore" => Some(Self::Ignore),
+            "component" => Some(Self::Component),
             _ => None,
         }
     }

@@ -80,9 +80,28 @@ impl FieldInfo<'_> {
         self.option.unwrap_or(self.ty)
     }
 
+    /// The element type of a `[T; N]` or `Vec<T>` field (below its `Option`): a bound on such a
+    /// field is the bound of each element.
+    fn element_ty(&self) -> Option<&Type> {
+        ty::elements(self.value_ty())
+    }
+
     fn required(&self) -> bool {
         self.option.is_none() && self.attrs.default.is_none()
     }
+}
+
+/// Whether a limit is a number literal written with the `f64` suffix (`179.9_f64`): the bound
+/// is a double the field's value is widened to, where an unsuffixed one is the field's type.
+fn is_f64_limit(bound: Option<&BoundDecl>) -> bool {
+    fn suffixed(expr: &Expr) -> bool {
+        match expr {
+            Expr::Lit(lit) => matches!(&lit.lit, Lit::Float(float) if float.suffix() == "f64"),
+            Expr::Unary(unary) => suffixed(&unary.expr),
+            _ => false,
+        }
+    }
+    bound.is_some_and(|b| matches!(&b.limit, LimitDecl::Num(expr) if suffixed(expr)))
 }
 
 /// `expr` as a value of `ty`: a string literal through `From` (`String` from `&str`), any
@@ -161,6 +180,7 @@ fn unknown_option(word: Option<&String>) -> TokenStream {
             "keep" => "Keep",
             "report" => "Report",
             "reject" => "Reject",
+            "component" => "Component",
             _ => "Ignore",
         }
     );
@@ -346,6 +366,15 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
             *span,
             "`schema::fallback` is what an absent `Option` stands for: a plain field states its \
              default with facet's `default = ..`",
+        ));
+    }
+    if let Some(span) = attrs.required
+        && info.option.is_none()
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::required` is for an `Option` field the document must write: a plain field \
+             is required already",
         ));
     }
     if let Some(span) = attrs.lowercase
@@ -621,36 +650,13 @@ fn field_multiple(info: &FieldInfo) -> Option<TokenStream> {
     })
 }
 
-/// A field's range, as an expression that is whether the value broke it: one finding,
-/// whichever side the value broke; `None` where the field states no bound.
-fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
-    if info.attrs.bounds.is_empty() {
-        return None;
-    }
+/// What a broken side does under `DefaultAndTell`: the member takes what `side_reset` says for
+/// the side that broke.
+fn side_apply(info: &FieldInfo, low: Option<&BoundDecl>, high: Option<&BoundDecl>) -> TokenStream {
     let core = core();
-    let access = &info.access;
-    let value_ty = info.value_ty();
-    let (low, high) = (side_bound(info, true), side_bound(info, false));
-    let exclusive =
-        |bound: Option<&BoundDecl>| bound.is_some_and(|b| matches!(b.op, Op::Above | Op::Below));
-    let (low_exclusive, high_exclusive) = (exclusive(low), exclusive(high));
-    let (low_limit, high_limit) = (
-        limit_expr(low, value_ty, all),
-        limit_expr(high, value_ty, all),
-    );
     let low_reset = side_reset(info, low, &quote!(__sides.low));
     let high_reset = side_reset(info, high, &quote!(__sides.high));
-    // A side resets where it names another member or the field has its own reset.
-    let resettable = |bound: Option<&BoundDecl>| {
-        bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) || own_reset(info).is_some()
-    };
-    let (low_resettable, high_resettable) = (resettable(low), resettable(high));
-    let value = if info.option.is_some() {
-        quote!(#access)
-    } else {
-        quote!(::core::option::Option::Some(#access))
-    };
-    let apply = if low_reset.is_empty() && high_reset.is_empty() {
+    if low_reset.is_empty() && high_reset.is_empty() {
         quote!(let _ = (__verdict, __side);)
     } else {
         quote! {
@@ -661,7 +667,85 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
                 }
             }
         }
+    }
+}
+
+/// A field's range, as an expression that is whether the value broke it: one finding,
+/// whichever side the value broke; `None` where the field states no bound.
+fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
+    if info.attrs.bounds.is_empty() {
+        return None;
+    }
+    let core = core();
+    let access = &info.access;
+    let elements = info.element_ty();
+    let (low, high) = (side_bound(info, true), side_bound(info, false));
+    // A limit written as a double (`179.9_f64`) is compared with the value widened to one.
+    let precise = is_f64_limit(low) || is_f64_limit(high);
+    let double: Type = syn::parse_quote!(f64);
+    let value_ty = if precise {
+        &double
+    } else {
+        elements.unwrap_or_else(|| info.value_ty())
     };
+    let widen = |value: TokenStream| {
+        if precise {
+            quote!(#core::schema::Number::to_f64(#value))
+        } else {
+            value
+        }
+    };
+    let (element, scalar) = (widen(quote!(*__value)), widen(quote!(__value)));
+    let exclusive =
+        |bound: Option<&BoundDecl>| bound.is_some_and(|b| matches!(b.op, Op::Above | Op::Below));
+    let (low_exclusive, high_exclusive) = (exclusive(low), exclusive(high));
+    let (low_limit, high_limit) = (
+        limit_expr(low, value_ty, all),
+        limit_expr(high, value_ty, all),
+    );
+    let apply = side_apply(info, low, high);
+    // A side resets where it names another member or the field has its own reset.
+    let resettable = |bound: Option<&BoundDecl>| {
+        bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) || own_reset(info).is_some()
+    };
+    let (low_resettable, high_resettable) = (resettable(low), resettable(high));
+    let value = if info.option.is_some() {
+        quote!(#access)
+    } else {
+        quote!(::core::option::Option::Some(#access))
+    };
+    if elements.is_some() {
+        // The bound of each element: the first one outside is the one finding, at its index.
+        let list = if info.option.is_some() {
+            quote!(#access.as_ref())
+        } else {
+            quote!(::core::option::Option::Some(&#access))
+        };
+        return Some(quote! {{
+            let __sides = #core::schema::Sides::<#value_ty> {
+                low: #low_limit,
+                low_exclusive: #low_exclusive,
+                high: #high_limit,
+                high_exclusive: #high_exclusive,
+            };
+            let __first = #list.and_then(|__list| {
+                __list.iter().enumerate().find_map(|(__index, __value)| {
+                    __sides.broken(#element).map(|__side| (__index, __side))
+                })
+            });
+            if let ::core::option::Option::Some((__index, __side)) = __first {
+                let __resettable = match __side {
+                    #core::schema::Side::Low => #low_resettable,
+                    #core::schema::Side::High => #high_resettable,
+                };
+                cx.enter_index(__index);
+                let __verdict = cx.range(__sides.range(), __resettable);
+                cx.leave();
+                #apply
+            }
+            __first.is_some()
+        }});
+    }
     Some(quote! {{
         let __sides = #core::schema::Sides::<#value_ty> {
             low: #low_limit,
@@ -671,7 +755,7 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
         };
         let mut __broken = false;
         if let ::core::option::Option::Some(__value) = #value {
-            if let ::core::option::Option::Some(__side) = __sides.broken(__value) {
+            if let ::core::option::Option::Some(__side) = __sides.broken(#scalar) {
                 __broken = true;
                 let __resettable = match __side {
                     #core::schema::Side::Low => #low_resettable,

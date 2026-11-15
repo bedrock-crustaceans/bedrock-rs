@@ -325,11 +325,11 @@ fn rule_6_a_numerator_of_another_type_is_refused_at_its_member() {
         found[0].location.json_path.to_string(),
         "minecraft:feature_rules/distribution/scatter_chance/numerator"
     );
-    // The span is the member's key, as the typed read has it.
-    let key = text.find(r#""numerator""#).expect("the key");
+    // The span is the member's value, as the reader has it.
+    let value = text.find(r#""1""#).expect("the value");
     let span = found[0].location.span.expect("a span");
     assert_eq!(
         (span.offset as usize, span.len as usize),
-        (key, r#""numerator""#.len())
+        (value, r#""1""#.len())
     );
 }

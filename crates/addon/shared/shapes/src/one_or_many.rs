@@ -1,16 +1,16 @@
 //! [`OneOrMany`]: a member that takes one value or an array of them, kept in the form it was
 //! written.
 
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields};
 
 /// One value, or an array of them, as written: a member that takes either keeps the form, so
 /// writing reproduces it.
 ///
-/// JSON (facet's untagged read, for a family that reads it through facet): the value itself,
-/// or an array of values. A family with its own reader keeps it: what a one form may be (an
-/// atlas takes any value but an array), whether an empty array is accepted and the findings of
-/// a bad element are the family's.
+/// JSON (the reader's [`FromJson`]): the value itself, or an array of values. A family with its
+/// own reader keeps it: what a one form may be (an atlas takes any value but an array), whether
+/// an empty array is accepted and the findings of a bad element are the family's.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, facet::Facet)]
 #[facet(untagged)]
 #[repr(u8)]
@@ -21,8 +21,17 @@ pub enum OneOrMany<T> {
     Many(Vec<T>),
 }
 
-// bridge: untagged facet enum without the Schema derive
-bedrock_addon_core::from_json_via_facet!(impl<T> OneOrMany<T>);
+/// An array is the `Many` form, read element by element; any other value is the `One` form, read
+/// as `T` reads it (a value `T` refuses is `T`'s finding, at the member).
+impl<T: FromJson> FromJson for OneOrMany<T> {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if node.value().is_array() {
+            Vec::<T>::from_json(node, read).map(Self::Many)
+        } else {
+            T::from_json(node, read).map(Self::One)
+        }
+    }
+}
 
 impl<T> OneOrMany<T> {
     /// The values, in document order: one for [`One`](Self::One), all for

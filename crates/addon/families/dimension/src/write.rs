@@ -15,8 +15,7 @@ impl Versioned for Dimension {
 impl VersionStruct for Dimension {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        let rule = cx.load.null_rule;
-        let root: RootLatest = parse_root(text, cx, rule, d)?;
+        let root: RootLatest = parse_root(text, cx, d)?;
         let mut inner = root.dimension;
         let components = cx.at.with(&["minecraft:dimension", "components"]);
         // The 1.26.50 schema constraints: `min_y` in `[-512, 512]`, `height_range` in

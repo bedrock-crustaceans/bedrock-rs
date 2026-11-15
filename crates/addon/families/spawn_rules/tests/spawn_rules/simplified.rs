@@ -513,22 +513,22 @@ fn no_placement_is_the_runtime_default() {
 }
 
 /// A scalar of another type than its member's is refused: an `InvalidType` error at the member,
-/// its span the member's key, and the file rejected.
+/// its span the member's value, and the file rejected.
 #[test]
 fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
-    for (body, path, key) in [
-        (r#"{"weight": "2"}"#, "conditions/0/weight", r#""weight""#),
-        (r#"{"weight": 2.0}"#, "conditions/0/weight", r#""weight""#),
-        (r#"{"weight": true}"#, "conditions/0/weight", r#""weight""#),
+    for (body, path, value) in [
+        (r#"{"weight": "2"}"#, "conditions/0/weight", r#""2""#),
+        (r#"{"weight": 2.0}"#, "conditions/0/weight", "2.0"),
+        (r#"{"weight": true}"#, "conditions/0/weight", "true"),
         (
             r#"{"weight": 1, "herds": [{"min": 1.5}]}"#,
             "conditions/0/herds/0/min",
-            r#""min""#,
+            "1.5",
         ),
         (
             r#"{"weight": 1, "mob_event_filter": 5}"#,
             "conditions/0/mob_event_filter",
-            r#""mob_event_filter""#,
+            "5",
         ),
     ] {
         let text = modern("1.21.60", &format!(r#", "conditions": [{body}]"#));
@@ -544,11 +544,11 @@ fn s16b_simplified_wrong_typed_scalars_are_refused_at_their_member() {
             format!("minecraft:spawn_rules/{path}"),
             "{body}"
         );
-        let at = text.find(key).expect("the key");
+        let at = text.find(&format!(": {value}")).expect("the value") + 2;
         let span = found[0].location.span.expect("a span");
         assert_eq!(
             (span.offset as usize, span.len as usize),
-            (at, key.len()),
+            (at, value.len()),
             "{body}"
         );
     }

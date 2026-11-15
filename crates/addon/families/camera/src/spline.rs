@@ -2,6 +2,10 @@
 
 use bedrock_addon_core::schema::{self, Schema};
 
+use super::read::{
+    progress, progress_time, rotation_time, spline_name, spline_type, string_enum, total_time,
+};
+
 /// A camera spline file (`minecraft:camera_custom_splines`, in `cameras/splines/`), format
 /// 1.26.0: the paths the `/camera … play_spline` command moves a camera along.
 ///
@@ -27,12 +31,14 @@ pub struct CameraSpline {
 #[doc(alias = "CameraSplineDefinition")]
 pub struct Spline {
     /// The spline's name, `namespace:name` (JSON `name`).
+    #[facet(schema::read_with = spline_name)]
     pub name: String,
     /// How long the spline plays, in seconds, 0 or more (JSON `total_time`).
+    #[facet(schema::read_with = total_time)]
     pub total_time: f32,
     /// How the control points are joined (JSON `spline_type`, default `catmullrom`: see
     /// [`Spline::spline_type`]).
-    #[facet(schema::fallback = SplineType::Catmullrom)]
+    #[facet(schema::fallback = SplineType::Catmullrom, schema::read_with = spline_type)]
     pub spline_type: Option<SplineType>,
     /// The points the path runs through, in world space (JSON `control_points`).
     pub control_points: Vec<ControlPoint>,
@@ -66,11 +72,14 @@ pub struct ControlPoint {
 #[derive(Clone, Copy, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct ProgressKeyFrame {
     /// The fraction of the path covered at `time`, 0 to 1 (JSON `progress`).
+    #[facet(schema::read_with = progress)]
     pub progress: f32,
     /// The time in seconds, 0 or more (JSON `time`).
+    #[facet(schema::read_with = progress_time)]
     pub time: f32,
     /// How the progress is interpolated towards this frame; linear at playback when left out
     /// (JSON `easing`).
+    #[facet(schema::read_with = string_enum)]
     pub easing: Option<Easing>,
 }
 
@@ -80,9 +89,11 @@ pub struct RotationKeyFrame {
     /// The rotation `[x, y, z]` at `time` (JSON `rotation`).
     pub rotation: [f32; 3],
     /// The time in seconds, 0 or more (JSON `time`).
+    #[facet(schema::read_with = rotation_time)]
     pub time: f32,
     /// How the rotation is interpolated towards this frame; linear at playback when left out
     /// (JSON `easing`).
+    #[facet(schema::read_with = string_enum)]
     pub easing: Option<Easing>,
 }
 

@@ -1,84 +1,48 @@
 //! Reading an atomic client entity as the game's cereal parse does under its strict error mask:
-//! typed, with every unknown member, wrong type and failed constraint an error.
+//! member by member by core's reader (`versioning::read_payload`), with every unknown member,
+//! wrong type and failed constraint an error.
+//!
+//! What is the family's own: the floats with a minimum of 0 (`schema::read_with = finite`: a
+//! number beyond `f32` is the largest finite float, told), and, once the entity is read, the
+//! rules of the game's validators: a namespace in the identifier, no condition on a render
+//! controller, no float below 0.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Severity,
-};
-use bedrock_addon_core::json::{
-    ClampedText, EncodeError, JsonSlice, NullRule, ScalarFailure, ScalarRead, Value, Width,
-    clamp_text, parse_with_rules, reject_nulls, unknown_members,
-};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
+use bedrock_addon_core::json::kit::{Node, Order, Read};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::molang::beyond_f32_warning;
+use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
-    BETA_VERSION, ParseCx, VersionStruct, Versioned, write_payload,
+    BETA_VERSION, ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
 };
 use bedrock_addon_shared_visual::ControllerUse;
-use facet::Facet;
 
 use super::{AtomicClientEntity, codes};
 
 const AABB: &str = "minecraft:aabb_dimensions";
 const CLIPPING: &str = "minecraft:companion_block_clipping";
 
-/// The text of `slice` (whose value is `json`) with every number at one of `paths` that is
-/// beyond `f32` replaced by the largest finite float of its sign, each with an `InvalidValue`
-/// warning at its path below `at`; `None` when no number is.
-fn finite_floats(
-    slice: JsonSlice<'_>,
-    json: &Value,
-    paths: &[&[&str]],
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<ClampedText> {
-    clamp_text(
-        slice,
-        json,
-        &|path| is_float(paths, path).then_some(Width::Float),
-        at,
-        d,
-    )
+/// A float member that has a minimum of 0 (`schema::read_with`): a number beyond `f32` is the
+/// largest finite float of its sign, told as an `InvalidValue` information at it; any other
+/// value as an `f32` reads. The offsets of `companion_block_avoidance` are elements, not such
+/// members: a number beyond `f32` there is a type error.
+pub(crate) fn finite(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the question
+    let beyond = node
+        .value()
+        .as_number()
+        .map(|number| number.to_f64_lossy() as f32)
+        .filter(|nearest| nearest.is_infinite());
+    match beyond {
+        Some(nearest) if !read.stopped() => {
+            read.push(beyond_f32_warning(node.path().clone(), node.span()));
+            Some(f32::MAX.copysign(nearest))
+        }
+        _ => f32::from_json(node, read),
+    }
 }
-
-/// Whether `path` is one of `floats` (each a path of member names).
-fn is_float(floats: &[&[&str]], path: &[JsonPathSegment<'_>]) -> bool {
-    floats.iter().any(|float| {
-        float.len() == path.len()
-            && float
-                .iter()
-                .zip(path)
-                .all(|(name, segment)| *segment == JsonPathSegment::Key(name))
-    })
-}
-
-/// The float members of the document, each constrained to a minimum of 0: the AABB's two, the
-/// clipping component's four and the three of each of its boundaries. A number beyond `f32` at one
-/// of them is read as the largest finite float. The offsets of `companion_block_avoidance` are
-/// elements, not members, and have no constraint: a number beyond `f32` there is a type error.
-const FLOATS: [&[&str]; 12] = [
-    &["components", AABB, "width"],
-    &["components", AABB, "height"],
-    &["components", CLIPPING, "min_hidden_seconds"],
-    &["components", CLIPPING, "min_visible_seconds"],
-    &["components", CLIPPING, "hide_delay_seconds"],
-    &["components", CLIPPING, "hide_transition_seconds"],
-    &["components", CLIPPING, "reveal_boundary", "margin"],
-    &[
-        "components",
-        CLIPPING,
-        "reveal_boundary",
-        "lookahead_per_speed",
-    ],
-    &["components", CLIPPING, "reveal_boundary", "lookahead_max"],
-    &["components", CLIPPING, "hide_boundary", "margin"],
-    &[
-        "components",
-        CLIPPING,
-        "hide_boundary",
-        "lookahead_per_speed",
-    ],
-    &["components", CLIPPING, "hide_boundary", "lookahead_max"],
-];
 
 impl Versioned for AtomicClientEntity {
     const VERSION: FormatVersion = BETA_VERSION;
@@ -87,78 +51,7 @@ impl Versioned for AtomicClientEntity {
 impl VersionStruct for AtomicClientEntity {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         // The strict error mask applies: every cereal entry is fatal.
-        // The payload is parsed to a `Value` once: the float clamp and the unknown-member
-        // scan read this one.
-        let json = bedrock_addon_core::json::from_str_jsonc::<Value>(payload.text).ok();
-        let clamped = json
-            .as_ref()
-            .and_then(|json| finite_floats(payload, json, &FLOATS, &cx.at, d));
-        let payload = clamped.as_ref().map_or(payload, |clamped| JsonSlice {
-            text: &clamped.text,
-            offset: payload.offset,
-        });
-        // The scalars are read by the slice's rules (`Family::reading`: strict, a number beyond
-        // its float a type error).
-        // A `null` read as a struct is the null rule's: `reject_nulls` below tells it where the
-        // input rejects nulls, and elsewhere it reads as its defaults untold, so the pre-pass
-        // leaves it out.
-        let rules = cx.load.scalar_rules.with_tells_null_struct(false);
-        let read = parse_with_rules::<Self>(payload, cx.load.null_rule, rules);
-        let entity = match read {
-            Ok(ScalarRead { value, told, .. }) => {
-                // Under the strict rules the pre-pass refuses every conversion, so it tells nothing.
-                for misread in told {
-                    d.push(misread.finding(&cx.at));
-                }
-                value
-            }
-            Err(ScalarFailure::Refused(misread)) => {
-                d.push(misread.finding(&cx.at));
-                return None;
-            }
-            Err(ScalarFailure::Read(mut error)) => {
-                // The parse read the clamped text; the finding is of the file as written.
-                if let Some(clamped) = &clamped {
-                    error.span = clamped.written_span(error.span, payload.offset);
-                }
-                // A wrong type is the declared value's, however deep the reader got into it.
-                // The code reads the slice's own blank flag where the old code forced `false`:
-                // a member slice cannot be blank, so the result is equal.
-                // The facet table's wrong type is core's one definition.
-                if error
-                    .code_with_path(error.has_path())
-                    .is(&core_codes::INVALID_TYPE)
-                {
-                    error.path = declared(&error.path);
-                }
-                d.push(error.into_diagnostic(&cx.at, |code, _| code));
-                return None;
-            }
-        };
-        // The loader's input is a document input: a member written `null`, an optional one
-        // included, is present and fails its type.
-        if cx.load.null_rule == Some(NullRule::Rejected)
-            && reject_nulls(&entity, payload, &cx.at, d)
-        {
-            return None;
-        }
-        let before = d
-            .iter()
-            .filter(|found| found.severity == Severity::Error)
-            .count();
-        if let Some(json) = &json {
-            for (path, _) in unknown_members(<Self as Facet>::SHAPE, json) {
-                let mut at = cx.at.clone();
-                at.append(&path);
-                // A key of `components` is a component; anywhere else it is a member.
-                let code = if is_component(&path) {
-                    Code::from(&core_codes::UNRECOGNIZED_COMPONENT)
-                } else {
-                    Code::from(&core_codes::UNRECOGNIZED_FIELD)
-                };
-                d.push(Diagnostic::error(code).at(at));
-            }
-        }
+        let entity: Self = read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))?;
         let description_at = cx.at.child("description");
         if !has_namespace(entity.description.identifier.as_str()) {
             // A namespace is required: the identifier matches `^(?:.)+:(?:.)+$`.
@@ -178,11 +71,7 @@ impl VersionStruct for AtomicClientEntity {
                 d.push(Diagnostic::of(&codes::NOT_NEGATIVE_TEXT).at(cx.at.with(&members)));
             }
         }
-        let errors = d
-            .iter()
-            .filter(|found| found.severity == Severity::Error)
-            .count();
-        (errors == before).then_some(entity)
+        Some(entity)
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -238,36 +127,6 @@ pub(super) fn has_namespace(identifier: &str) -> bool {
         .chars()
         .enumerate()
         .any(|(index, c)| c == ':' && index >= 1 && index + 1 < count)
-}
-
-/// `path` cut back to the value the schema declares a type for. Every declared value of the
-/// document is an element of a list, or lies at most four members deep: a value of a slot
-/// map or of `scripts` (three), a member of a component or of a clipping boundary (four).
-fn declared(path: &JsonPath) -> JsonPath {
-    // A description value lies three members deep (a slot map's value is a name, whatever
-    // the reader looks for inside it); a component's member as deep as four.
-    let deepest = match path.segments().next() {
-        Some(JsonPathSegment::Key("description")) => 3,
-        _ => 4,
-    };
-    let mut cut = JsonPath::new();
-    for (depth, segment) in path.segments().enumerate() {
-        match segment {
-            JsonPathSegment::Key(_) if depth == deepest => break,
-            JsonPathSegment::Key(key) => cut.push(key),
-            JsonPathSegment::Index(index) => {
-                cut.push_index(index);
-                break;
-            }
-        }
-    }
-    cut
-}
-
-/// Whether `path` is a key directly below `components`.
-fn is_component(path: &JsonPath) -> bool {
-    let mut segments = path.segments();
-    segments.len() == 2 && segments.next() == Some(JsonPathSegment::Key("components"))
 }
 
 #[cfg(test)]

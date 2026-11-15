@@ -6,7 +6,7 @@ use std::borrow::Cow;
 
 use super::{Expected, Node, Order, Pass, Read};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, JsonPath};
+use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath};
 use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, judge};
 use crate::json::{Misread, Misreading};
 
@@ -149,12 +149,15 @@ impl Read<'_> {
         }
         match judge(declared, token, rules) {
             Verdict::Keep => Some(as_written(token)),
-            Verdict::Respell(respelt) => Some(match respelt {
-                Respelt::Bool(b) => Scalar::Bool(b),
-                Respelt::UInt(u) => Scalar::UInt(u),
-                Respelt::Int(i) => Scalar::Int(i),
-                Respelt::Real(x) => Scalar::Real(x),
-            }),
+            Verdict::Respell(respelt) => {
+                self.tell_rewrite(node, token, &respelt);
+                Some(match respelt {
+                    Respelt::Bool(b) => Scalar::Bool(b),
+                    Respelt::UInt(u) => Scalar::UInt(u),
+                    Respelt::Int(i) => Scalar::Int(i),
+                    Respelt::Real(x) => Scalar::Real(x),
+                })
+            }
             Verdict::BeyondFloat => {
                 self.misread(node, Misreading::BeyondFloat);
                 Some(as_written(token))
@@ -169,6 +172,22 @@ impl Read<'_> {
                 None
             }
         }
+    }
+
+    /// Tells a token read as the other JSON type (a number as a bool, a bool as a number), when
+    /// the read says to ([`Read::non_strict`]).
+    fn tell_rewrite(&mut self, node: &Node<'_>, token: Token<'_>, respelt: &Respelt) {
+        let Some(told) = self.rewrite_note else {
+            return;
+        };
+        if matches!(token, Token::Bool(_)) == matches!(respelt, Respelt::Bool(_)) {
+            return;
+        }
+        let mut finding = Diagnostic::of(&core_codes::VALUE_REWRITTEN)
+            .at(node.path.clone())
+            .detail(DiagnosticDetail::Note(told));
+        finding.location.span = node.span();
+        self.push(finding);
     }
 
     /// The plain typed read's rule ([`Scalars::ConvertAndTell`]).

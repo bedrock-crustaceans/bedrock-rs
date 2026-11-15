@@ -6,7 +6,7 @@ use indexmap::IndexMap;
 use super::FromJson;
 use crate::diagnostic::{Diagnostics, JsonPath};
 use crate::document::Extra;
-use crate::json::kit::{Node, Order, Read};
+use crate::json::kit::{Node, Order, Read, Texts};
 use crate::json::{JsonSlice, Value, from_str_jsonc};
 use crate::schema::{self, Schema};
 use crate::versioning::{MemberFailure, NullHandling, Reading, Scalars};
@@ -546,4 +546,78 @@ fn a_fork_is_committed_or_dropped_whole() {
     assert!(read.failed());
     assert_eq!(found.len(), 1);
     assert!(found.unknown().contains(&JsonPath::of_keys(["root"]), "zz"));
+}
+
+/// The members of a component storage: a name that is none is an unrecognized component.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "component")]
+struct Components {
+    #[facet(rename = "minecraft:fly")]
+    fly: Option<bool>,
+}
+
+#[test]
+fn an_unknown_member_of_a_component_struct_is_an_unrecognized_component_and_not_kept() {
+    let (value, told) = as_read::<Components>(r#"{"minecraft:fly": true, "minecraft:swim": {}}"#);
+    assert_eq!(value, Some(Components { fly: Some(true) }));
+    assert_eq!(
+        told,
+        ["Error root/minecraft:swim core/unrecognized_component"]
+    );
+    // The door's order tells it after the read, as it tells any unknown member.
+    let (_, told) = door::<Components>(r#"{"minecraft:swim": {}}"#);
+    assert_eq!(
+        told,
+        ["Error root/minecraft:swim core/unrecognized_component"]
+    );
+    // The text of an unknown field does not reword it: it is the game's own line.
+    let json: Value = from_str_jsonc(r#"{"minecraft:swim": {}}"#).unwrap();
+    let node = Node::new(&json, JsonPath::of_keys(["root"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).texts(Texts {
+        unknown: Some("not in the schema"),
+        ..Texts::CODES
+    });
+    assert!(Components::from_json(&node, &mut read).is_some());
+    assert!(
+        found
+            .iter()
+            .all(|f| f.code.id() == "core/unrecognized_component")
+    );
+    // A reading that keeps unknown members does not keep it.
+    let node = Node::new(&json, JsonPath::of_keys(["root"]));
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT.with_keeps_unknown(true), &mut found);
+    assert!(Components::from_json(&node, &mut read).is_some());
+    assert!(
+        !found
+            .unknown()
+            .contains(&JsonPath::of_keys(["root"]), "minecraft:swim")
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Projection {
+    #[facet(schema::required)]
+    field_of_view: Option<f32>,
+    near: Option<f32>,
+}
+
+#[test]
+fn a_required_option_must_be_written_and_reads_as_some() {
+    let (value, told) = as_read::<Projection>(r#"{"field_of_view": 66, "near": 0.5}"#);
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(
+        value,
+        Some(Projection {
+            field_of_view: Some(66.0),
+            near: Some(0.5)
+        })
+    );
+    let (value, told) = as_read::<Projection>(r#"{"near": 0.5}"#);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        ["Error root/field_of_view core/missing_required_field"]
+    );
 }

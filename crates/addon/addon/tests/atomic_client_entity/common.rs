@@ -257,9 +257,17 @@ pub fn clamp_changes_no_other_finding(
         .filter(|f| !is_clamp(f))
         .map(|f| spanned(f, text))
         .collect();
+    // A finding that spans a value holding a number (a missing member spans its object) covers
+    // that number in the one text and its in-range stand-in in the other.
     let expected: Vec<String> = load(&in_range)
         .iter()
-        .map(|f| spanned(f, &in_range))
+        .map(|f| {
+            beyond
+                .iter()
+                .fold(spanned(f, &in_range), |line, (token, within, _)| {
+                    line.replace(within, token)
+                })
+        })
         .collect();
     assert_eq!(others, expected, "the findings beside the clamp's");
     for (token, _, path) in beyond {

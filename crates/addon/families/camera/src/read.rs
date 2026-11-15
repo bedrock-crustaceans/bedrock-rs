@@ -1,239 +1,253 @@
-//! Reading and writing camera presets: each struct typed from the whole document after the
-//! shape check, then the bind constraints vanilla's cereal parse checks.
+//! Reading and writing the camera documents. Each is read member by member by core's reader as
+//! vanilla's strict cereal loader reads it (`chain_file::read`: every failure told in file order,
+//! an unknown member always an error, a wrong type worded as the game words it). The bounds the
+//! types state (`schema::min`, `schema::max`) are checked by the derived `Schema::check`
+//! (`chain_file::check`) once the document is read, as the loader checks them once it is bound.
+//!
+//! What is the family's own: a name that must be `namespace:name`, a time that must not be
+//! negative (each with the game's line, `schema::read_with`), a member that takes a name and
+//! nothing else (`string_enum`), and the rotation limits, whose constraints the game checks in
+//! an order of its own.
 
 use super::history::v1_19_50;
-use super::violation;
-use super::{CameraPreset, codes};
-use super::{V1_19_50, V1_26_50};
-use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+use super::{CameraEntity, CameraList, CameraPreset, CameraSpline, SplineType};
+use super::{V1_19_50, V1_26_50, codes};
+use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::id::{Id, Kind};
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::versioning::chain_file::{self as file, document};
-use bedrock_addon_core::versioning::shape::{
-    Member, Shape, child, element, in_range, namespace_name, opt, req,
-};
+use bedrock_addon_core::schema::{FromJson, Schema};
+use bedrock_addon_core::versioning::chain_file::{check, document, read};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 
-/// A pair of numbers.
-pub(crate) const VEC2: Shape = Shape::Array(&Shape::Float, 2);
-/// Three numbers.
-pub(crate) const VEC3: Shape = Shape::Array(&Shape::Float, 3);
+/// The note of a scalar the legacy preset reader reads as the other JSON type: write-back
+/// writes the member's own type there, so nothing is changed in silence.
+const REWRITTEN: &str = "a number read as a bool (0 is false, any other number true) or a bool read as a number (1 or 0), as vanilla's non-strict reader of presets below 1.26.50 reads it; written back in the member's own type";
 
-/// The members of `aim_assist`.
-const PRESET_AIM_ASSIST: &[Member] = &[
-    opt("preset", Shape::Str),
-    opt("target_mode", Shape::Str),
-    opt("angle", VEC2),
-    opt("distance", Shape::Float),
-];
-
-/// The 22 members both of vanilla's slices bind, then the one of 1.26.50.
-const PRESET: &[Member] = &[
-    req("identifier", Shape::Str),
-    opt("inherit_from", Shape::Str),
-    opt("pos_x", Shape::Float),
-    opt("pos_y", Shape::Float),
-    opt("pos_z", Shape::Float),
-    opt("rot_x", Shape::Float),
-    opt("rot_y", Shape::Float),
-    opt("rotation_speed", Shape::Float),
-    opt("snap_to_target", Shape::Bool),
-    opt("horizontal_rotation_limit", VEC2),
-    opt("vertical_rotation_limit", VEC2),
-    opt("continue_targeting", Shape::Bool),
-    opt("tracking_radius", Shape::Float),
-    opt("view_offset", VEC2),
-    opt("entity_offset", VEC3),
-    opt("radius", Shape::Float),
-    opt("yaw_limits_min", Shape::Float),
-    opt("yaw_limits_max", Shape::Float),
-    opt("listener", Shape::Str),
-    opt("player_effects", Shape::Bool),
-    opt("aim_assist", Shape::Object(PRESET_AIM_ASSIST)),
-    opt("control_scheme", Shape::Str),
-    opt("starting_rot", VEC2),
-];
-
-/// How many of [`PRESET`]'s members the 1.19.50 struct has.
-const PRESET_V1_19_50: usize = 22;
-
-/// The whole preset file: both members required, the payload's members
-/// those of the struct.
-fn preset_file(members: &'static [Member]) -> [Member; 2] {
-    [
-        req("format_version", Shape::Str),
-        req("minecraft:camera_preset", Shape::Object(members)),
-    ]
+/// An error of the document at `at`.
+fn violation(line: &'static CodeDef<0>, at: JsonPath, d: &mut Diagnostics) {
+    d.push(
+        Diagnostic::error(Code::from(line))
+            .severity(Severity::Error)
+            .at(at),
+    );
 }
 
-/// The members of [`PRESET`] the 1.19.50 struct binds.
-fn preset_v1_19_50() -> &'static [Member] {
-    PRESET.get(..PRESET_V1_19_50).unwrap_or(PRESET)
-}
-
-/// The members of a preset that carry a bind constraint; the same in both structs.
-struct Constrained<'a> {
-    identifier: &'a str,
-    inherit_from: Option<&'a str>,
-    rot_x: Option<f32>,
-    rotation_speed: Option<f32>,
-    horizontal_rotation_limit: Option<[f32; 2]>,
-    vertical_rotation_limit: Option<[f32; 2]>,
-    view_offset: Option<[f32; 2]>,
-    entity_offset: Option<[f32; 3]>,
-    radius: Option<f32>,
-    yaw_limits_min: Option<f32>,
-    yaw_limits_max: Option<f32>,
-}
-
-/// The constrained members of a preset struct.
-macro_rules! constrained {
-    ($preset:expr) => {
-        Constrained {
-            identifier: $preset.identifier.as_str(),
-            inherit_from: $preset.inherit_from.as_ref().map(|id| id.as_str()),
-            rot_x: $preset.rot_x,
-            rotation_speed: $preset.rotation_speed,
-            horizontal_rotation_limit: $preset.horizontal_rotation_limit,
-            vertical_rotation_limit: $preset.vertical_rotation_limit,
-            view_offset: $preset.view_offset,
-            entity_offset: $preset.entity_offset,
-            radius: $preset.radius,
-            yaw_limits_min: $preset.yaw_limits_min,
-            yaw_limits_max: $preset.yaw_limits_max,
-        }
+/// Whether `text` is `^\w+:\w+$`: a namespace and a name, each one or more of `A-Z`, `a-z`,
+/// `0-9` and `_`, around one `:`.
+fn namespace_name(text: &str) -> bool {
+    let word = |part: &str| {
+        !part.is_empty()
+            && part
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
     };
+    text.split_once(':')
+        .is_some_and(|(namespace, name)| word(namespace) && word(name))
 }
 
-/// `value` in `[min, max]`, when it is set.
-pub(crate) fn ranged(
-    value: Option<f32>,
-    (min, max): (f64, f64),
-    at: JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    value.is_none_or(|value| in_range(f64::from(value), min, max, at, d))
+/// Tells `line` at `node`, a constraint the value breaks: the game's bind tells every violated
+/// constraint of the document, so the member is kept and the read goes on.
+fn violated(read: &mut Read<'_>, node: &Node<'_>, line: &'static CodeDef<0>) {
+    let mut finding = Diagnostic::error(Code::from(line))
+        .severity(Severity::Error)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
-/// Each element of `values` in `[min, max]`: the first one outside is reported.
-pub(crate) fn each_ranged(
-    values: &[f32],
-    (min, max): (f64, f64),
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> bool {
-    values
+/// A preset's `identifier` and `inherit_from` (`schema::read_with`): `^(\w+:\w+)?$`, so the
+/// empty string passes.
+pub(crate) fn preset_name<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Id<K>> {
+    let id = Id::<K>::from_json(node, read)?;
+    if !id.as_str().is_empty() && !namespace_name(id.as_str()) {
+        violated(read, node, &codes::IDENTIFIER);
+    }
+    Some(id)
+}
+
+/// A list's `identifier`: `^\w+:\w+$`, which the empty string does not match.
+pub(crate) fn list_name<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Id<K>> {
+    let id = Id::<K>::from_json(node, read)?;
+    if !namespace_name(id.as_str()) {
+        violated(read, node, &codes::IDENTIFIER);
+    }
+    Some(id)
+}
+
+/// A string member that must be `namespace:name`, told as `line` when it is not.
+fn named(node: &Node<'_>, read: &mut Read<'_>, line: &'static CodeDef<0>) -> Option<String> {
+    let name = String::from_json(node, read)?;
+    if !namespace_name(&name) {
+        violated(read, node, line);
+    }
+    Some(name)
+}
+
+/// A camera entity's `description.identifier`.
+pub(crate) fn entity_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    named(node, read, &codes::ENTITY_IDENTIFIER)
+}
+
+/// A spline's `name`.
+pub(crate) fn spline_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    named(node, read, &codes::SPLINE_NAME)
+}
+
+/// A number member that must be `0` or more, told as `line` when it is less.
+fn not_below_zero(node: &Node<'_>, read: &mut Read<'_>, line: &'static CodeDef<0>) -> Option<f32> {
+    let value = f32::from_json(node, read)?;
+    if value < 0.0 {
+        violated(read, node, line);
+    }
+    Some(value)
+}
+
+/// A spline's `total_time`.
+pub(crate) fn total_time(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    not_below_zero(node, read, &codes::SPLINE_TOTAL_TIME)
+}
+
+/// A progress key frame's `time`.
+pub(crate) fn progress_time(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    not_below_zero(node, read, &codes::SPLINE_PROGRESS_TIME)
+}
+
+/// A rotation key frame's `time`.
+pub(crate) fn rotation_time(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    not_below_zero(node, read, &codes::SPLINE_ROTATION_TIME)
+}
+
+/// A progress key frame's `progress`: `0` to `1`.
+pub(crate) fn progress(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    let value = f32::from_json(node, read)?;
+    if !(0.0..=1.0).contains(&value) {
+        violated(read, node, &codes::SPLINE_PROGRESS);
+    }
+    Some(value)
+}
+
+/// A spline's `spline_type`: a string with a pattern, not an enum, so a name outside the two is
+/// the constraint's own line, and the member fails.
+pub(crate) fn spline_type(node: &Node<'_>, read: &mut Read<'_>) -> Option<SplineType> {
+    let kind = SplineType::from_name(read.string(node)?);
+    if kind.is_none() {
+        read.refuse(node, Code::from(&codes::SPLINE_TYPE));
+    }
+    kind
+}
+
+/// An enum member (`schema::read_with`): the game binds it as a string, so a token of another
+/// JSON type is a wrong type, where the enum's own read tells it an invalid name.
+pub(crate) fn string_enum<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T> {
+    if !node.value().is_string() {
+        read.wrong_kind(node, Expected::String);
+        return None;
+    }
+    T::from_json(node, read)
+}
+
+/// Tells that an element of `limit` is outside `range`, at that element: the first one is the
+/// one finding.
+fn outside(limit: [f32; 2], range: NumericRange, at: &JsonPath, d: &mut Diagnostics) -> bool {
+    let Some(index) = limit
         .iter()
-        .enumerate()
-        .all(|(i, value)| in_range(f64::from(*value), min, max, element(at, i), d))
-}
-
-impl Constrained<'_> {
-    /// The bind constraints of a preset, in bind order; a violation is a constraint violation
-    /// of vanilla's parser, fatal on both slices. `false` when one failed.
-    fn check(&self, at: &JsonPath, d: &mut Diagnostics) -> bool {
-        let mut passed = true;
-        // `^(\w+:\w+)?$`: the empty string passes.
-        for (key, id) in [
-            ("identifier", Some(self.identifier)),
-            ("inherit_from", self.inherit_from),
-        ] {
-            if id.is_some_and(|id| !id.is_empty() && !namespace_name(id)) {
-                violation(&codes::IDENTIFIER, child(at, key), d);
-                passed = false;
-            }
-        }
-        passed &= ranged(self.rot_x, (-90.0, 90.0), child(at, "rot_x"), d);
-        passed &= ranged(
-            self.rotation_speed,
-            (0.0, 360.0),
-            child(at, "rotation_speed"),
-            d,
-        );
-        if let Some(limit) = &self.horizontal_rotation_limit {
-            passed &= horizontal_limit(*limit, &child(at, "horizontal_rotation_limit"), d);
-        }
-        if let Some(limit) = &self.vertical_rotation_limit {
-            passed &= vertical_limit(*limit, &child(at, "vertical_rotation_limit"), d);
-        }
-        if let Some(offset) = &self.view_offset {
-            passed &= each_ranged(offset, (-64.0, 64.0), &child(at, "view_offset"), d);
-        }
-        if let Some(offset) = &self.entity_offset {
-            passed &= each_ranged(offset, (-64.0, 64.0), &child(at, "entity_offset"), d);
-        }
-        // The lower bound is the `f32` 0.1 widened to a double.
-        passed &= ranged(
-            self.radius,
-            (f64::from(0.1_f32), 64.0),
-            child(at, "radius"),
-            d,
-        );
-        passed &= ranged(
-            self.yaw_limits_min,
-            (-180.0, 179.9),
-            child(at, "yaw_limits_min"),
-            d,
-        );
-        passed &= ranged(
-            self.yaw_limits_max,
-            (-179.9, 180.0),
-            child(at, "yaw_limits_max"),
-            d,
-        );
-        passed
-    }
-}
-
-/// Each component in `[0, 360]` and the sum at most 360. The constraints are checked in bind
-/// order and the first one that fails is the one reported; each rejects the preset either way.
-fn horizontal_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
-    if !each_ranged(&limit, (0.0, 360.0), at, d) {
+        .position(|value| !range.contains(f64::from(*value)))
+    else {
         return false;
-    }
-    if limit[0] + limit[1] > 360.0 {
-        violation(&codes::VECTOR_TOTAL, at.clone(), d);
-        return false;
-    }
+    };
+    d.push(
+        Diagnostic::error(range.code())
+            .severity(Severity::Error)
+            .at(at.index(index)),
+    );
     true
 }
 
-/// The components differ, `x` is below `y`, and each is in `[0, 180]`; there is no sum
-/// constraint. As for the horizontal limit, the first failing constraint is the one reported.
-fn vertical_limit(limit: [f32; 2], at: &JsonPath, d: &mut Diagnostics) -> bool {
-    let [x, y] = limit;
-    #[allow(
-        clippy::float_cmp,
-        reason = "vanilla compares the two components for equality"
-    )]
-    if x == y {
-        violation(&codes::VECTOR_EQUAL, at.clone(), d);
-        return false;
+/// A preset's rotation limits, at the preset's `at`: the constraints are checked in the order
+/// the game binds them, and the first that fails is the one reported. Each component of the
+/// horizontal limit is in `[0, 360]` and together they are at most 360; the vertical limit's
+/// components differ, `x` is below `y`, and each is in `[0, 180]`.
+fn rotation_limits(
+    horizontal: Option<[f32; 2]>,
+    vertical: Option<[f32; 2]>,
+    at: &JsonPath,
+    d: &mut Diagnostics,
+) {
+    if let Some(limit) = horizontal {
+        let at = at.child("horizontal_rotation_limit");
+        if !outside(limit, NumericRange::inclusive(0.0, 360.0), &at, d)
+            && limit[0] + limit[1] > 360.0
+        {
+            violation(&codes::VECTOR_TOTAL, at, d);
+        }
     }
-    if x >= y {
-        violation(&codes::VECTOR_ORDER, at.clone(), d);
-        return false;
+    if let Some([x, y]) = vertical {
+        let at = at.child("vertical_rotation_limit");
+        #[allow(
+            clippy::float_cmp,
+            reason = "vanilla compares the two components for equality"
+        )]
+        if x == y {
+            violation(&codes::VECTOR_EQUAL, at, d);
+        } else if x >= y {
+            violation(&codes::VECTOR_ORDER, at, d);
+        } else {
+            outside([x, y], NumericRange::inclusive(0.0, 180.0), &at, d);
+        }
     }
-    each_ranged(&limit, (0.0, 180.0), at, d)
+}
+
+/// The preset file (1.26.50): the version and the payload.
+#[derive(facet::Facet, Schema)]
+struct PresetFile {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:camera_preset")]
+    payload: CameraPreset,
+}
+
+/// The preset file below 1.26.50.
+#[derive(facet::Facet, Schema)]
+struct LegacyPresetFile {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:camera_preset")]
+    payload: v1_19_50::CameraPreset,
+}
+
+/// The list file.
+#[derive(facet::Facet, Schema)]
+struct ListFile {
+    #[allow(dead_code, reason = "the envelope's version, read by the pipeline")]
+    format_version: String,
+    #[facet(rename = "minecraft:camera_list")]
+    payload: CameraList,
 }
 
 impl VersionStruct for v1_19_50::CameraPreset {
-    /// Reads the whole document (the raw-text path).
+    /// Reads the whole document (the raw-text path). The legacy slice's reader is the
+    /// non-strict one.
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        static FILE: std::sync::OnceLock<[Member; 2]> = std::sync::OnceLock::new();
-        let members = FILE.get_or_init(|| preset_file(preset_v1_19_50()));
-        // The legacy slice's reader is the non-strict one.
-        let mut preset: Self = file::typed_unstrict(
+        let mut file: LegacyPresetFile = read(
             text,
-            &Shape::Object(members),
-            Some("minecraft:camera_preset"),
-            codes::UNRECOGNIZED_FIELD.template(),
             cx,
             d,
+            codes::UNRECOGNIZED_FIELD.template(),
+            Some(REWRITTEN),
         )?;
+        check(&mut file, cx, d);
+        let preset = &mut file.payload;
         preset.source_format_version = cx.original_version;
-        constrained!(preset)
-            .check(&child(&cx.at, "minecraft:camera_preset"), d)
-            .then_some(preset)
+        let at = cx.at.child("minecraft:camera_preset");
+        rotation_limits(
+            preset.horizontal_rotation_limit,
+            preset.vertical_rotation_limit,
+            &at,
+            d,
+        );
+        Some(file.payload)
     }
 
     /// The whole document, at the version it was read at: the struct covers a range of
@@ -253,19 +267,16 @@ impl VersionStruct for v1_19_50::CameraPreset {
 impl VersionStruct for CameraPreset {
     /// Reads the whole document (the raw-text path).
     fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        static FILE: std::sync::OnceLock<[Member; 2]> = std::sync::OnceLock::new();
-        let members = FILE.get_or_init(|| preset_file(PRESET));
-        let preset: Self = file::typed(
-            text,
-            &Shape::Object(members),
-            Some("minecraft:camera_preset"),
-            codes::UNRECOGNIZED_FIELD.template(),
-            cx,
+        let mut file: PresetFile = read(text, cx, d, codes::UNRECOGNIZED_FIELD.template(), None)?;
+        check(&mut file, cx, d);
+        let at = cx.at.child("minecraft:camera_preset");
+        rotation_limits(
+            file.payload.horizontal_rotation_limit,
+            file.payload.vertical_rotation_limit,
+            &at,
             d,
-        )?;
-        constrained!(preset)
-            .check(&child(&cx.at, "minecraft:camera_preset"), d)
-            .then_some(preset)
+        );
+        Some(file.payload)
     }
 
     /// The whole document, at format 1.26.50; at 1.19.50 when the preset applies the inherited
@@ -286,5 +297,72 @@ impl VersionStruct for CameraPreset {
             "minecraft:camera_preset",
             write_payload(self)?,
         ))
+    }
+}
+
+impl VersionStruct for CameraList {
+    /// Reads the whole document, strictly.
+    fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let mut file: ListFile = read(text, cx, d, cereal::MEMBER_NOT_IN_SCHEMA_TEXT, None)?;
+        check(&mut file, cx, d);
+        Some(file.payload)
+    }
+
+    /// The whole document, at format 1.19.50.
+    // The raw-text path: `write_envelope` hands the payload back as is, so the struct
+    // writes its own root.
+    fn write(&self) -> Result<Value, EncodeError> {
+        Ok(document(
+            "1.19.50",
+            "minecraft:camera_list",
+            write_payload(self)?,
+        ))
+    }
+}
+
+impl VersionStruct for CameraSpline {
+    /// Reads the payload (the envelope is checked from 1.26.0, the only version range).
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let mut file: Self = read(payload, cx, d, cereal::MEMBER_NOT_IN_SCHEMA_TEXT, None)?;
+        check(&mut file, cx, d);
+        Some(file)
+    }
+
+    /// The payload.
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
+    }
+}
+
+impl VersionStruct for CameraEntity {
+    /// Reads the payload (the envelope is always checked).
+    fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let mut entity: Self = read(payload, cx, d, cereal::MEMBER_NOT_IN_SCHEMA_TEXT, None)?;
+        check(&mut entity, cx, d);
+        // Each component of the horizontal limit is in `[0, 360]` and together at most 360.
+        if let Some(limit) = entity
+            .components
+            .target
+            .as_ref()
+            .and_then(|target| target.horizontal_rotation_limit)
+        {
+            let at = cx
+                .at
+                .child("components")
+                .child("minecraft:target")
+                .child("horizontal_rotation_limit");
+            let range = NumericRange::inclusive(0.0, 360.0);
+            if limit.iter().any(|value| !range.contains(f64::from(*value))) {
+                violation(&codes::TARGET_HORIZONTAL_RANGE, at, d);
+            } else if limit[0] + limit[1] > 360.0 {
+                violation(&codes::TARGET_HORIZONTAL_SUM, at, d);
+            }
+        }
+        Some(entity)
+    }
+
+    /// The payload.
+    fn write(&self) -> Result<Value, EncodeError> {
+        write_payload(self)
     }
 }

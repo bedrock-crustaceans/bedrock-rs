@@ -98,3 +98,29 @@ fn one_or_many_reads_as_a_slice_and_converts_from_a_vec() {
     assert_eq!((&one).into_iter().count(), 1);
     assert_eq!(many.iter().sum::<i32>(), 6);
 }
+
+#[test]
+fn the_reader_takes_an_array_as_the_many_form_and_any_other_value_as_the_one() {
+    use bedrock_addon_core::json::from_str_jsonc;
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::schema::FromJson;
+    let read = |text: &str| {
+        let json: bedrock_addon_core::json::Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::DOCUMENT, &mut found);
+        let value = OneOrMany::<String>::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+        let paths: Vec<String> = found
+            .iter()
+            .map(|f| f.location.json_path.to_string())
+            .collect();
+        (value, paths)
+    };
+    assert_eq!(read(r#""a""#).0, Some(OneOrMany::One("a".to_owned())));
+    assert_eq!(
+        read(r#"["a", "b"]"#).0,
+        Some(OneOrMany::Many(vec!["a".to_owned(), "b".to_owned()]))
+    );
+    // A value the element type refuses is told at it, as one or inside the array.
+    assert_eq!(read("{}"), (None, vec![String::new()]));
+    assert_eq!(read(r#"["a", {}]"#), (None, vec!["1".to_owned()]));
+}

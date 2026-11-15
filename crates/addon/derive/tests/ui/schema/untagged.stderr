@@ -22,7 +22,7 @@ error: a variant of an untagged enum takes no `schema::min`: put it on the field
 9 |     #[facet(schema::min = 0)]
   |             ^^^^^^
 
-error: `kept` is not an unknown-member rule: expected `keep`, `report`, `reject` or `ignore`
+error: `kept` is not an unknown-member rule: expected `keep`, `report`, `reject`, `ignore` or `component`
   --> tests/ui/schema/untagged.rs:11:31
    |
 11 |     #[facet(schema::unknown = "kept")]

@@ -4,6 +4,8 @@
 
 use bedrock_addon_core::schema::{self, Schema};
 
+use super::read::{entity_name, string_enum};
+
 /// A camera entity document (`minecraft:camera_entity`, vanilla resource pack
 /// `cameras/<name>.json`).
 ///
@@ -24,6 +26,7 @@ pub struct CameraEntity {
 #[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct CameraEntityDescription {
     /// The camera's name, `namespace:name` (JSON `identifier`).
+    #[facet(schema::read_with = entity_name)]
     pub identifier: String,
 }
 
@@ -34,6 +37,7 @@ pub struct Present {}
 /// The components of a camera entity (31 components); each is
 /// optional.
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "component")]
 #[doc(alias = "CameraDefinitions")]
 pub struct CameraComponents {
     /// The inside-cube renderer is used when the camera is inside a block (JSON
@@ -145,11 +149,11 @@ pub struct AttachToPlayer {
 pub struct Avoidance {
     /// The stiffness of the spring that answers obstructions, 0 or more; 0 adjusts at once
     /// (JSON `relax_distance_smoothing_spring`, default 4).
-    #[facet(schema::fallback = 4.0)]
+    #[facet(schema::fallback = 4.0, schema::min = 0.0)]
     pub relax_distance_smoothing_spring: Option<f32>,
     /// The least radial offset kept from the attachment point, 0 or more (JSON
     /// `distance_constraint_min`, default 0).
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::min = 0.0)]
     pub distance_constraint_min: Option<f32>,
     /// The horizontal rays that detect objects (JSON `avoidance_rays_horizontal`).
     pub avoidance_rays_horizontal: Option<Vec<AvoidanceRay>>,
@@ -172,6 +176,7 @@ pub struct AvoidanceRay {
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Camera {
     /// The field of view in degrees; required in a document (JSON `field_of_view`).
+    #[facet(schema::required)]
     pub field_of_view: Option<f32>,
     /// The distance to the near clipping plane (JSON `near_clipping_plane`, default 0.025).
     #[facet(schema::fallback = 0.025)]
@@ -207,9 +212,11 @@ pub struct FlyMove {
 pub struct Offset {
     /// The over-the-shoulder offset `[x, y]`, each -100 to 100 (JSON `view`, default
     /// `[0, 0]`).
+    #[facet(schema::min = -100.0, schema::max = 100.0)]
     pub view: Option<[f32; 2]>,
     /// The offset `[x, y, z]` of the pivot, each -100 to 100 (JSON `entity`, default
     /// `[0, 0, 0]`).
+    #[facet(schema::min = -100.0, schema::max = 100.0)]
     pub entity: Option<[f32; 3]>,
 }
 
@@ -217,28 +224,28 @@ pub struct Offset {
 #[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Orbit {
     /// The azimuth spring, 0 or more (JSON `azimuth_smoothing_spring`, default 4).
-    #[facet(schema::fallback = 4.0)]
+    #[facet(schema::fallback = 4.0, schema::min = 0.0)]
     pub azimuth_smoothing_spring: Option<f32>,
     /// The polar-angle spring, 0 or more (JSON `polar_angle_smoothing_spring`, default 4).
-    #[facet(schema::fallback = 4.0)]
+    #[facet(schema::fallback = 4.0, schema::min = 0.0)]
     pub polar_angle_smoothing_spring: Option<f32>,
     /// The distance spring, 0 or more (JSON `distance_smoothing_spring`, default 4).
-    #[facet(schema::fallback = 4.0)]
+    #[facet(schema::fallback = 4.0, schema::min = 0.0)]
     pub distance_smoothing_spring: Option<f32>,
     /// The radius of the orbit, 0.1 to 64 (JSON `radius`, default 1).
-    #[facet(schema::fallback = 1.0)]
+    #[facet(schema::fallback = 1.0, schema::min = 0.1, schema::max = 64.0)]
     pub radius: Option<f32>,
     /// The lowest polar angle in degrees, 0 to 180 (JSON `polar_angle_min`, default 5).
-    #[facet(schema::fallback = 5.0)]
+    #[facet(schema::fallback = 5.0, schema::min = 0.0, schema::max = 180.0)]
     pub polar_angle_min: Option<f32>,
     /// The highest polar angle in degrees, 0 to 180 (JSON `polar_angle_max`, default 65).
-    #[facet(schema::fallback = 65.0)]
+    #[facet(schema::fallback = 65.0, schema::min = 0.0, schema::max = 180.0)]
     pub polar_angle_max: Option<f32>,
     /// The lowest yaw in degrees, -180 to 180 (JSON `yaw_angle_min`, default -180).
-    #[facet(schema::fallback = -180.0)]
+    #[facet(schema::fallback = -180.0, schema::min = -180.0, schema::max = 180.0)]
     pub yaw_angle_min: Option<f32>,
     /// The highest yaw in degrees, -180 to 180 (JSON `yaw_angle_max`, default 180).
-    #[facet(schema::fallback = 180.0)]
+    #[facet(schema::fallback = 180.0, schema::min = -180.0, schema::max = 180.0)]
     pub yaw_angle_max: Option<f32>,
     /// Horizontal input is inverted (JSON `invert_x_input`, default `false`).
     #[facet(schema::fallback = false)]
@@ -252,6 +259,7 @@ pub struct Orbit {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct PerspectiveOption {
     /// The perspective the camera stands for; required (JSON `view_mode`).
+    #[facet(schema::read_with = string_enum)]
     pub view_mode: PlayerViewMode,
 }
 
@@ -290,7 +298,7 @@ pub struct Shake {
 pub struct Target {
     /// The rotation speed in degrees per second, 0 to 360 (JSON `rotation_speed`, default
     /// 0).
-    #[facet(schema::fallback = 0.0)]
+    #[facet(schema::fallback = 0.0, schema::min = 0.0, schema::max = 360.0)]
     pub rotation_speed: Option<f32>,
     /// The camera snaps to its target (JSON `snap_to_target`, default `false`).
     #[facet(schema::fallback = false)]
@@ -300,6 +308,7 @@ pub struct Target {
     pub horizontal_rotation_limit: Option<[f32; 2]>,
     /// The vertical limits `[x, y]`, each 0 to 180; unset by default (JSON
     /// `vertical_rotation_limit`).
+    #[facet(schema::min = 0.0, schema::max = 180.0)]
     pub vertical_rotation_limit: Option<[f32; 2]>,
     /// The camera keeps targeting outside the tracking radius (JSON `continue_targeting`,
     /// default `false`).
@@ -318,6 +327,7 @@ pub struct ThirdPersonBoom {
     /// The starting orientation around the target (JSON `starting_rot`, default `[0, 0]`).
     pub starting_rot: Option<[f32; 2]>,
     /// The space `starting_rot` is in (JSON `rotation_space`, default `local`).
+    #[facet(schema::read_with = string_enum)]
     pub rotation_space: Option<RotationSpace>,
 }
 
@@ -347,6 +357,7 @@ pub struct Stationary {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct UpdatePlayerFromCamera {
     /// Where the player looks (JSON `look_mode`, default `along_camera`).
+    #[facet(schema::read_with = string_enum)]
     pub look_mode: Option<LookMode>,
 }
 

@@ -78,6 +78,7 @@ pub fn read_via_facet<T: for<'a> Facet<'a>>(node: &Node<'_>, read: &mut Read<'_>
         let code = match rule {
             UnknownRule::Reject => Code::from(&core_codes::DROPPED_FIELD),
             UnknownRule::Ignore => Code::from(&core_codes::IGNORED_MEMBER),
+            UnknownRule::Component => Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
             UnknownRule::Keep | UnknownRule::Report => Code::from(&core_codes::UNRECOGNIZED_FIELD),
         };
         let mut full = at.clone();

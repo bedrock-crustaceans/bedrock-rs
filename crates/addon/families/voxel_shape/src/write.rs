@@ -1,7 +1,5 @@
 //! Writing [`VoxelShape`]: the payload (the envelope is core's `write_envelope`).
 
-use facet_value::VObject;
-
 use super::read::parse_shape;
 use super::{FLOOR, VoxelShape};
 use bedrock_addon_core::diagnostic::Diagnostics;
@@ -19,9 +17,6 @@ impl VersionStruct for VoxelShape {
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        let mut object = VObject::new();
-        object.insert("description", write_payload(&self.description)?);
-        object.insert("shape", write_payload(&self.shape)?);
-        Ok(object.into())
+        write_payload(self)
     }
 }

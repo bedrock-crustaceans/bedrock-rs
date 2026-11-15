@@ -166,6 +166,27 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
         .unknown_severity(cx.load.grade(Class::Unknown))
         .order(crate::json::kit::Order::Door);
     let mut read = configure(read);
+    // The door's typed read names no member for a payload of another kind than the struct's
+    // (a `null` is the null rule's): facet's malformed input, in its words.
+    let json = node.value();
+    if read.telling() == crate::json::kit::Order::Door
+        && T::EXPECTED == Some(crate::json::kit::Expected::Object)
+        && !json.is_object()
+        && !json.is_null()
+    {
+        let got = if json.is_array() {
+            "sequence start"
+        } else {
+            "scalar"
+        };
+        let mut finding = Diagnostic::of(crate::diagnostic::builders::syntax(format!(
+            "unexpected token: got {got}, expected struct start"
+        )))
+        .at(cx.at.clone());
+        finding.location.span = node.span();
+        read.push(finding);
+        return None;
+    }
     let value = T::from_json(&node, &mut read);
     read.finish();
     value
@@ -191,6 +212,10 @@ pub(super) fn tell_unknown(
             ),
             UnknownRule::Ignore => (
                 Code::from(&core_codes::IGNORED_MEMBER),
+                cx.grade(Class::Unknown),
+            ),
+            UnknownRule::Component => (
+                Code::from(&core_codes::UNRECOGNIZED_COMPONENT),
                 cx.grade(Class::Unknown),
             ),
             UnknownRule::Keep | UnknownRule::Report => (

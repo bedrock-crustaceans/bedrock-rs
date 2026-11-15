@@ -356,3 +356,46 @@ fn a_document_of_several_findings_tells_them_in_the_door_s_order() {
         "--- unexplained ---\n{unexplained}--- end ---"
     );
 }
+
+#[test]
+fn a_payload_that_is_no_object_is_the_door_s_syntax_error() {
+    let mut unexplained = String::new();
+    for (name, reading) in readings() {
+        for text in ["5", r#""s""#, "[]", "[1, 2]", "null", "true"] {
+            let load = context(reading);
+            let mut d = Diagnostics::default();
+            let value: Option<Several> =
+                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let door = outcome(value.as_ref(), &d);
+            let mut d = Diagnostics::default();
+            let value: Option<Several> =
+                read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let read = outcome(value.as_ref(), &d);
+            if door != read {
+                let _ = writeln!(unexplained, "{name} {text}\n  door {door}\n  read {read}");
+            }
+        }
+    }
+    assert!(
+        unexplained.is_empty(),
+        "--- unexplained ---\n{unexplained}--- end ---"
+    );
+}
+
+#[test]
+fn a_read_may_take_another_null_handling_than_its_reading() {
+    use bedrock_addon_core::versioning::{NullHandling, read_payload_with};
+    let load = context(Reading::DOCUMENT);
+    let text = r#"{"v": null}"#;
+    let mut d = Diagnostics::default();
+    let rejected: Option<OptU8> = read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+    assert_eq!(rejected, None);
+    assert_eq!(d.len(), 1);
+    let mut d = Diagnostics::default();
+    let own: Option<OptU8> =
+        read_payload_with(JsonSlice::new(text), &parse_cx(&load), &mut d, |read| {
+            read.null(NullHandling::Own)
+        });
+    assert_eq!(own, Some(OptU8 { v: None }));
+    assert!(d.is_empty());
+}

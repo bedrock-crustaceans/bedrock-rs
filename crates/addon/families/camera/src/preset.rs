@@ -1,7 +1,9 @@
 //! `minecraft:camera_preset`: a camera preset.
 
 use bedrock_addon_core::id::{AimAssistPresetId, CameraPresetId};
-use bedrock_addon_core::schema::Schema;
+use bedrock_addon_core::schema::{self, Schema};
+
+use super::read::{preset_name, string_enum};
 
 /// The vanilla presets another preset may inherit from (`ALLOWED_MC_INHERIT`); they count as
 /// known parents whether or not a pack of the stack defines them.
@@ -35,9 +37,11 @@ pub const VANILLA_CAMERAS: &[&str] = &[
 #[doc(alias = "camera_preset")]
 pub struct CameraPreset {
     /// The preset's name, `namespace:name` (JSON `identifier`).
+    #[facet(schema::read_with = preset_name)]
     pub identifier: CameraPresetId,
     /// The preset this one takes its unset members from (JSON `inherit_from`): a loaded preset
     /// or one of [`ALLOWED_MC_INHERIT`].
+    #[facet(schema::read_with = preset_name)]
     pub inherit_from: Option<CameraPresetId>,
     /// The camera's x position (JSON `pos_x`).
     pub pos_x: Option<f32>,
@@ -46,11 +50,13 @@ pub struct CameraPreset {
     /// The camera's z position (JSON `pos_z`).
     pub pos_z: Option<f32>,
     /// The pitch in degrees, -90 to 90 (JSON `rot_x`).
+    #[facet(schema::min = -90.0, schema::max = 90.0)]
     pub rot_x: Option<f32>,
     /// The yaw in degrees (JSON `rot_y`).
     pub rot_y: Option<f32>,
     /// How fast the camera turns towards its target, in degrees per second, 0 to 360; 0 tracks
     /// perfectly (JSON `rotation_speed`).
+    #[facet(schema::min = 0.0, schema::max = 360.0)]
     pub rotation_speed: Option<f32>,
     /// Whether the camera snaps to its target (JSON `snap_to_target`).
     pub snap_to_target: Option<bool>,
@@ -67,19 +73,25 @@ pub struct CameraPreset {
     /// no preset of the chain sets it (JSON `tracking_radius`).
     pub tracking_radius: Option<f32>,
     /// The over-the-shoulder offset `[x, y]`, each -64 to 64 (JSON `view_offset`).
+    #[facet(schema::min = -64.0, schema::max = 64.0)]
     pub view_offset: Option<[f32; 2]>,
     /// The offset `[x, y, z]` of the camera's pivot from the entity, each -64 to 64 (JSON
     /// `entity_offset`).
+    #[facet(schema::min = -64.0, schema::max = 64.0)]
     pub entity_offset: Option<[f32; 3]>,
     /// The distance of the camera from the entity, 0.1 to 64 (JSON `radius`). A preset named
     /// like one of [`VANILLA_CAMERAS`] may not set it.
+    #[facet(schema::min = 0.1, schema::max = 64.0)]
     pub radius: Option<f32>,
     /// The lowest yaw, -180 to 179.9 (JSON `yaw_limits_min`).
+    #[facet(schema::min = -180.0, schema::max = 179.9_f64)]
     pub yaw_limits_min: Option<f32>,
     /// The highest yaw, -179.9 to 180 (JSON `yaw_limits_max`).
+    #[facet(schema::min = -179.9_f64, schema::max = 180.0)]
     pub yaw_limits_max: Option<f32>,
     /// Where sound is heard from; the client uses the camera when no preset of the chain says
     /// (JSON `listener`).
+    #[facet(schema::read_with = string_enum)]
     pub listener: Option<AudioListener>,
     /// Whether player effects (night vision, blindness, …) show through this camera; `false`
     /// when no preset of the chain says (JSON `player_effects`).
@@ -87,6 +99,7 @@ pub struct CameraPreset {
     /// The aim assist the camera turns on (JSON `aim_assist`).
     pub aim_assist: Option<PresetAimAssist>,
     /// How movement input maps to the player under this camera (JSON `control_scheme`).
+    #[facet(schema::read_with = string_enum)]
     pub control_scheme: Option<ControlScheme>,
     /// The starting rotation `[pitch, yaw]` (JSON `starting_rot`, format 1.26.50). Vanilla's
     /// help: "Optional. Overrides the starting camera rotation as [pitch, yaw] for a preset that
@@ -98,9 +111,7 @@ pub struct CameraPreset {
     /// preset has no [`starting_rot`](Self::starting_rot). It is a member of the camera presets
     /// packet and of no JSON document (the key `apply_inherited_starting_rotation` is an unknown
     /// member). `false` for a preset read at 1.26.50 or later.
-    // A skipped field still takes the JSON member of its name in facet rc.7, so the field is
-    // given a NUL-prefixed name that no document has.
-    #[facet(skip, rename = "\u{0}apply_inherited_starting_rotation")]
+    #[facet(skip)]
     pub apply_inherited_starting_rotation: bool,
 }
 
@@ -149,6 +160,7 @@ pub struct PresetAimAssist {
     /// The aim-assist preset to use (JSON `preset`).
     pub preset: Option<AimAssistPresetId>,
     /// How targets are picked (JSON `target_mode`).
+    #[facet(schema::read_with = string_enum)]
     pub target_mode: Option<TargetMode>,
     /// The view angle `[x, y]` targets are picked in (JSON `angle`).
     pub angle: Option<[f32; 2]>,

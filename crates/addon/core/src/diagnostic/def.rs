@@ -141,6 +141,13 @@ impl<const N: usize> PartialEq for CodeDef<N> {
 
 impl<const N: usize> Eq for CodeDef<N> {}
 
+/// By the id, as equality is.
+impl<const N: usize> Hash for CodeDef<N> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.meta.id.hash(state);
+    }
+}
+
 impl<const N: usize> CodeDef<N> {
     /// A code of the toolkit's own: `line` is the sentence `Display` renders, with no
     /// placeholder or one `{}` per argument. Add the game's sentence with
@@ -557,7 +564,8 @@ impl From<crate::json::kit::Disposition> for Disposition {
     fn from(disposition: crate::json::kit::Disposition) -> Self {
         use crate::json::kit::Disposition as Policy;
         match disposition {
-            Policy::Keep => Self::Kept,
+            // An unrecognized component is told as the code's own kind, a kept one.
+            Policy::Keep | Policy::Component => Self::Kept,
             Policy::Report => Self::NotKept,
             Policy::Reject => Self::Dropped,
             Policy::Ignore => Self::Ignored,

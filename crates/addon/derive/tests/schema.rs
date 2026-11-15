@@ -1140,3 +1140,81 @@ fn molang_on_a_nested_walk_sets_that_walks_default_spec() {
         ]
     );
 }
+
+/// A bound on a fixed array or a list is the bound of each element.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Offsets {
+    #[facet(schema::min = -64.0, schema::max = 64.0)]
+    pub view: Option<[f32; 2]>,
+    #[facet(schema::min = 0)]
+    pub counts: Vec<i32>,
+}
+
+#[test]
+fn a_bound_on_an_array_or_a_list_is_the_bound_of_each_element_and_tells_the_first_one_outside() {
+    let mut inside = Offsets {
+        view: Some([-64.0, 64.0]),
+        counts: vec![0, 3],
+    };
+    assert!(check(&mut inside, MemberFailure::Refuse).0.is_empty());
+    let mut outside = Offsets {
+        view: Some([65.0, -65.0]),
+        counts: vec![1, -2, -3],
+    };
+    let (out, failed) = check(&mut outside, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(
+        paths(&out),
+        [
+            ("view/0".to_owned(), Severity::Error),
+            ("counts/1".to_owned(), Severity::Error)
+        ]
+    );
+    // An absent member has no element to check, and an `Option` resets whole.
+    let mut absent = Offsets {
+        view: None,
+        counts: Vec::new(),
+    };
+    assert!(check(&mut absent, MemberFailure::Refuse).0.is_empty());
+    let mut told = Offsets {
+        view: Some([65.0, 0.0]),
+        counts: Vec::new(),
+    };
+    let (out, failed) = check(&mut told, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert_eq!(paths(&out), [("view/0".to_owned(), Severity::Info)]);
+    assert_eq!(told.view, None);
+}
+
+/// A limit written as a double is compared, and worded, as the double it is.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Yaw {
+    #[facet(schema::min = -180.0, schema::max = 179.9_f64)]
+    pub least: Option<f32>,
+    #[facet(schema::min = -180.0, schema::max = 179.9)]
+    pub plain: Option<f32>,
+}
+
+#[test]
+fn a_limit_with_the_f64_suffix_is_compared_and_worded_as_a_double() {
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out).with_range_text(true);
+    Yaw {
+        least: Some(180.0),
+        plain: Some(180.0),
+    }
+    .check(&mut cx);
+    let double = NumericRange::inclusive(-180.0, 179.9);
+    let single = NumericRange::inclusive(-180.0, f64::from(179.9_f32));
+    assert_eq!(
+        out.iter().map(|d| &d.code).collect::<Vec<_>>(),
+        [&double.code(), &single.code()]
+    );
+    assert_ne!(double.code(), single.code());
+    // The field's own 179.9 is below the double 179.9.
+    let mut at_the_limit = Yaw {
+        least: Some(179.9),
+        plain: Some(179.9),
+    };
+    assert!(check(&mut at_the_limit, MemberFailure::Refuse).0.is_empty());
+}

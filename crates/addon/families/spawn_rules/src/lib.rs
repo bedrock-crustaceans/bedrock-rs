@@ -3,7 +3,9 @@
 //! Spawn rules (`spawn_rules/**/*.json` of a behaviour pack, `minecraft:spawn_rules`). A
 //! spawn-rules file is read in one of two shapes, never upgraded from one to the other: the 1.8.0
 //! shape ([`StandardSpawnRules`]) always, the 1.21.60 shape ([`SimplifiedSpawnRules`]) when the
-//! Simplified Spawn Rules experiment is on and the file is 1.21.60 or newer.
+//! Simplified Spawn Rules experiment is on and the file is 1.21.60 or newer. The simplified shape
+//! is read by core's reader (its types derive `Schema`); the 1.8.0 shape stays the hand-written
+//! parser of `bedrock_addon_shared_spawn::legacy`, which spawn groups share.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
