@@ -1845,3 +1845,114 @@ fn wide_document() -> String {
 
 #[allow(dead_code, reason = "the options a test names by their shape")]
 fn _shapes(_: Duplicates<'_>, _: Span, _: JsonPathSegment<'_>) {}
+
+/// The slices a raw member read of the old door gives, as text and file offset.
+fn old_members(text: &str) -> Option<Vec<(String, (String, usize))>> {
+    let slice = JsonSlice::new(text);
+    let raw = bedrock_addon_core::json::parse_at::<
+        indexmap::IndexMap<String, facet_json::RawJson<'_>>,
+    >(slice)
+    .ok()?;
+    Some(
+        raw.iter()
+            .filter_map(|(key, raw)| {
+                let nested = slice.nested(raw)?;
+                Some((key.clone(), (nested.text.to_owned(), nested.offset)))
+            })
+            .collect(),
+    )
+}
+
+#[test]
+fn members_of_agrees_with_the_raw_members_of_the_door() {
+    for text in [
+        r#"{"a": 1, "b": [1, 2], "c": {"d": null}}"#,
+        r#"{ "a" : 1 , /* c */ "b" : "x" // end
+        }"#,
+        r#"{"a": 1, "b": 2, "a": 3}"#,
+        r#"{"a": {"x": 1}, "b": 2, "a": {"y": 2}}"#,
+        r#"{"kA": 1, "kA": 2}"#,
+        r#"{"a": 1e999, "b": 18446744073709551616,}"#,
+        "{}",
+        "[1, 2]",
+        r#""x""#,
+        r#"{"a": 1"#,
+        "",
+    ] {
+        let ours =
+            bedrock_addon_core::json::parse::members_of(JsonSlice::new(text)).map(|members| {
+                members
+                    .into_iter()
+                    .map(|(key, slice)| (key, (slice.text.to_owned(), slice.offset)))
+                    .collect::<Vec<_>>()
+            });
+        assert_eq!(ours, old_members(text), "{text}");
+    }
+}
+
+#[test]
+fn elements_of_lists_the_values_of_an_array_with_their_offsets() {
+    let text = r#"[1, "two", {"three": 3} /* c */, [4], ]"#;
+    let elements = bedrock_addon_core::json::parse::elements_of(JsonSlice::new(text)).unwrap();
+    let seen: Vec<_> = elements.iter().map(|e| (e.text, e.offset)).collect();
+    assert_eq!(
+        seen,
+        [
+            ("1", 1),
+            (r#""two""#, 4),
+            (r#"{"three": 3}"#, 11),
+            ("[4]", 33)
+        ]
+    );
+    for text in ["{}", "1", "[1,", ""] {
+        assert!(
+            bedrock_addon_core::json::parse::elements_of(JsonSlice::new(text)).is_none(),
+            "{text}"
+        );
+    }
+}
+
+#[test]
+fn string_literal_decodes_what_the_door_reads_as_a_string() {
+    use bedrock_addon_core::json::parse::string_literal;
+    for token in [r#""a""#, r#""a\nb""#, r#""é😀""#, r#""""#] {
+        assert_eq!(
+            string_literal(token),
+            bedrock_addon_core::json::from_str::<String>(token).ok(),
+            "{token}"
+        );
+    }
+    for token in ["1", "null", r#""\q""#, r#""\ud800""#, "\"open", ""] {
+        assert_eq!(string_literal(token), None, "{token}");
+    }
+}
+
+#[test]
+fn a_scalar_shape_of_a_value_is_the_shape_the_door_reads_the_token_as() {
+    use bedrock_addon_core::json::ScalarShape;
+    for token in [
+        "null",
+        "true",
+        r#""x""#,
+        "0",
+        "-0",
+        "7",
+        "-7",
+        "1.5",
+        "-0.0",
+        "1e3",
+        "18446744073709551615",
+        "18446744073709551616",
+        "-9223372036854775808",
+        "-9223372036854775809",
+        "1e999",
+    ] {
+        let value = parse(token, Options::default()).unwrap().value;
+        let old = bedrock_addon_core::json::from_str_jsonc::<ScalarShape>(token).ok();
+        assert_eq!(ScalarShape::of(&value), old, "{token}");
+    }
+    for token in ["[1]", "{}"] {
+        let value = parse(token, Options::default()).unwrap().value;
+        assert_eq!(ScalarShape::of(&value), None, "{token}");
+    }
+}

@@ -5,7 +5,7 @@ use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{ScalarShape, Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, Molang};
-use bedrock_addon_core::schema::{self, FromJson, Schema};
+use bedrock_addon_core::schema::{self, FromJson, Schema, from_value};
 use bedrock_addon_core::shared::Filter;
 use facet::Facet;
 use facet_value::VArray;
@@ -640,7 +640,13 @@ impl TryFrom<Value> for ParticleColor {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(ParticleColor);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for ParticleColor {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 
 impl TryFrom<&ParticleColor> for Value {
     type Error = ValueError;

@@ -2,12 +2,13 @@
 //! dispatches after-events, per `@minecraft/server` version. chorus's event pump
 //! consumes it; this crate only models it.
 
+use bedrock_addon_core::schema::Schema;
 use facet::Facet;
 
 use crate::meta::MetaError;
 
 /// The after-events ordering file.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct AfterEventsOrdering {
     /// `module_type`: `after_events_ordering`.
     pub module_type: String,
@@ -19,7 +20,7 @@ pub struct AfterEventsOrdering {
 }
 
 /// The dispatch order of one module version.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct OrderForVersion {
     /// `name`: `<public module> <version>` (`@minecraft/server 2.10.0`).
     pub name: String,
@@ -30,7 +31,7 @@ pub struct OrderForVersion {
 }
 
 /// One entry of `event_order`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct EventName {
     /// `name`: the event class (`PlayerJoinAfterEvent`).
     pub name: String,

@@ -4,9 +4,10 @@
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::id::FeatureId;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{StrictError, Value};
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::schema::{self, Schema, SchemaCx};
+use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, from_value};
 use bedrock_addon_core::version::known;
 use facet::Facet;
 use facet_value::VArray;
@@ -281,7 +282,13 @@ refers!(SurfaceRelativeThresholdFeature { "feature_to_place" => feature_to_place
 // no reference of the link pass.
 refers!(HeightDifferenceFilterFeature {});
 
-bedrock_addon_core::from_json_via_value!(WeightedFeature);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedFeature {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_schema_leaf!(WeightedFeature);
 bedrock_addon_core::impl_no_molang!(WeightedFeature);
 

@@ -9,14 +9,13 @@
 use facet::Facet;
 use facet_value::Value;
 
-use super::ShapeError;
-use bedrock_addon_core::json::ScalarShape;
+use bedrock_addon_core::schema::Schema;
 
 /// A script-module file as written, before it is told apart as a native module or a stub
 /// ([`RawModuleFile::classify`]); [`ModuleMetadata::parse`](crate::meta::ModuleMetadata::parse)
 /// reads and classifies in one step. The file carries no version: a module's version is only in
 /// its file name.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RawModuleFile {
     /// `name`: `@minecraft/<module>`, the file name's prefix.
     pub name: String,
@@ -53,7 +52,7 @@ pub struct RawModuleFile {
 }
 
 /// `module_type` of a script-module file.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 pub enum ModuleType {
     /// `script`.
@@ -62,7 +61,7 @@ pub enum ModuleType {
 }
 
 /// `parentModule` of a stub: the bindings module that declares what the stub exports.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ParentModule {
     /// `name`: the bindings module (`@minecraft/server-bindings`).
     pub name: String,
@@ -72,7 +71,7 @@ pub struct ParentModule {
 
 /// One entry of `dependencies`. No release of the metadata has one; it is read like a peer so a first real
 /// entry parses.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Dependency {
     /// `name`.
     pub name: String,
@@ -84,7 +83,7 @@ pub struct Dependency {
 
 /// One entry of `peer_dependencies`: a public module this one works with, and the versions it
 /// accepts.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct PeerDependency {
     /// `name`: the public module (`@minecraft/server`, `@minecraft/common`,
     /// `@minecraft/vanilla-data`).
@@ -105,14 +104,14 @@ pub struct PeerDependency {
 }
 
 /// One entry of `peer_dependencies[].versions`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct VersionRef {
     /// `version`.
     pub version: String,
 }
 
 /// One entry of `classes`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Class {
     /// `name`.
     pub name: String,
@@ -143,7 +142,7 @@ pub struct Class {
 }
 
 /// One entry of `functions`: a class method, an error method or a module function.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Function {
     /// `name`.
     pub name: String,
@@ -169,7 +168,7 @@ pub struct Function {
 }
 
 /// One type parameter (`generic_function_types[]`, `generic_class_types[]`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct GenericParam {
     /// `name`: the parameter (`T`).
     pub name: String,
@@ -180,7 +179,7 @@ pub struct GenericParam {
 }
 
 /// One entry of `arguments`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Argument {
     /// `name`.
     pub name: String,
@@ -198,7 +197,7 @@ pub struct Argument {
 }
 
 /// `arguments[].details`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ArgDetails {
     /// `default_value`: a string (`"null"`, `"Simulated Player"`), an integer, a boolean or `[]`,
     /// kept as written.
@@ -212,7 +211,7 @@ pub struct ArgDetails {
 }
 
 /// One entry of `properties` of a class, an interface or an error.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Property {
     /// `name`.
     pub name: String,
@@ -241,7 +240,7 @@ pub struct Property {
 }
 
 /// One entry of `constants` of a class or of `enums[].constants`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ClassConstant {
     /// `name`.
     pub name: String,
@@ -263,7 +262,7 @@ pub struct ClassConstant {
 }
 
 /// One entry of the module's `constants`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ModuleConstant {
     /// `name`.
     pub name: String,
@@ -281,8 +280,8 @@ pub struct ModuleConstant {
 /// The value of a constant: a JSON string or a JSON integer, never anything else. An enum's
 /// members are all of one kind; integers occur where the type is an integer primitive or a
 /// numeric enum (`PaletteColor`, `HudElement`).
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(proxy = ScalarShape)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum ConstValue {
     /// A JSON string.
@@ -292,7 +291,7 @@ pub enum ConstValue {
 }
 
 /// One entry of `enums`.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Enum {
     /// `name`.
     pub name: String,
@@ -307,7 +306,7 @@ pub struct Enum {
 }
 
 /// One entry of `interfaces`: a plain object shape.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Interface {
     /// `name`.
     pub name: String,
@@ -331,7 +330,7 @@ pub struct Interface {
 }
 
 /// One entry of `errors`: an error class scripts can catch.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ErrorClass {
     /// `name`.
     pub name: String,
@@ -345,7 +344,7 @@ pub struct ErrorClass {
 }
 
 /// One entry of `objects`: a global object the module exports (`world`, `system`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Object {
     /// `name`.
     pub name: String,
@@ -360,7 +359,7 @@ pub struct Object {
 
 /// One entry of `type_aliases`: either a type map (`alias_type` + `mappings`) or a
 /// script-generated TypeScript alias (`is_script_generated` + `raw_script_text`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct TypeAlias {
     /// `name`.
     pub name: String,
@@ -378,7 +377,7 @@ pub struct TypeAlias {
 }
 
 /// `alias_type` of a type alias.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 pub enum AliasType {
     /// `type_map`.
@@ -387,7 +386,7 @@ pub enum AliasType {
 }
 
 /// One entry of a type map (`mappings[]`): a component id and the class it returns.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct AliasMapping {
     /// `name`: the key (`minecraft:inventory`).
     pub name: String,
@@ -397,7 +396,7 @@ pub struct AliasMapping {
 
 /// `from_module` of a descriptor: the native module that declares a foreign type. It is
 /// informational only and does not follow the peer dependencies.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct FromModule {
     /// `name`: the declaring module (`@minecraft/server-bindings`).
     pub name: String,
@@ -409,7 +408,7 @@ pub struct FromModule {
 
 /// `valid_range` of a numeric descriptor: always the `int32` range, whatever the type, so it
 /// says nothing; the real bounds are in argument details and property `min_value` / `max_value`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ValidRange {
     /// `min`.
     pub min: i64,
@@ -419,7 +418,7 @@ pub struct ValidRange {
 
 /// One privilege name (`{ "name": … }`): `default`, `restricted_execution`, `early_execution`,
 /// or a script-generated name such as `read_only`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 pub struct PrivilegeName {
     /// `name`.
     pub name: String,
@@ -428,7 +427,7 @@ pub struct PrivilegeName {
 /// A type descriptor as written: every `type`, `return_type`, base type, error type and nested
 /// type. [`TypeDescriptor::lower`](crate::meta::TypeDescriptor::lower) gives the form
 /// consumers use.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RawTypeDesc {
     /// `name`: a primitive, a composite tag (`optional`, `array`, …), a declared type, or
     /// TypeScript text.
@@ -478,7 +477,7 @@ pub struct RawTypeDesc {
 }
 
 /// `closure_type`: a callback's signature.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct ClosureType {
     /// `argument_types`: possibly empty.
     pub argument_types: Vec<RawTypeDesc>,
@@ -490,7 +489,7 @@ pub struct ClosureType {
 }
 
 /// `generator_type`: a generator's three types (`System.runJob`).
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct GeneratorType {
     /// `yield_type`.
     pub yield_type: RawTypeDesc,
@@ -498,33 +497,4 @@ pub struct GeneratorType {
     pub return_type: RawTypeDesc,
     /// `next_type`.
     pub next_type: RawTypeDesc,
-}
-
-impl TryFrom<ScalarShape> for ConstValue {
-    type Error = ShapeError;
-
-    fn try_from(json: ScalarShape) -> Result<Self, ShapeError> {
-        match json {
-            ScalarShape::String(text) => Ok(Self::Str(text)),
-            ScalarShape::Int(int) => Ok(Self::Int(int)),
-            ScalarShape::UInt(uint) => i64::try_from(uint)
-                .map(Self::Int)
-                .map_err(|_| ShapeError::OutOfRange),
-            _ => Err(ShapeError::WrongType {
-                expected: "a string or an integer",
-            }),
-        }
-    }
-}
-
-impl From<&ConstValue> for ScalarShape {
-    fn from(value: &ConstValue) -> Self {
-        match value {
-            ConstValue::Str(text) => ScalarShape::String(text.clone()),
-            ConstValue::Int(int) => match u64::try_from(*int) {
-                Ok(uint) => ScalarShape::UInt(uint),
-                Err(_) => ScalarShape::Int(*int),
-            },
-        }
-    }
 }

@@ -44,9 +44,7 @@ pub(super) fn read(
             return;
         };
         for (name, raw) in &members {
-            let Some(slice) = root.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             let here = at.child(name);
             match name.as_str() {
                 DEFAULT_PERMISSION_LEVEL => match level(slice, here, true, sink) {
@@ -105,9 +103,7 @@ fn levels(
     let mut accepted = true;
     config.permission_levels.reserve(members.len());
     for (command, raw) in &members {
-        let Some(slice) = slice.nested(raw) else {
-            continue;
-        };
+        let slice = *raw;
         match level(slice, at.child(command), false, sink) {
             Some(level) => {
                 // A name as typed, without `/`: a command's own or one of its aliases.

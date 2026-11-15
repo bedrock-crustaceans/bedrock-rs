@@ -96,8 +96,10 @@ fn value_at(text: &str, at: usize) -> Option<(usize, Element)> {
     let end = at + root_end(rest)?;
     let slice = text.get(at..end)?;
     if slice.starts_with('"') {
-        let decoded = bedrock_addon_core::json::from_str::<String>(slice).ok()?;
-        return Some((end, Element::Text(decoded)));
+        return Some((
+            end,
+            Element::Text(bedrock_addon_core::json::parse::string_literal(slice)?),
+        ));
     }
     bedrock_addon_core::json::from_str_jsonc::<Value>(slice).ok()?;
     Some((end, Element::Other))
@@ -154,7 +156,7 @@ fn scan(text: &str) -> Scanned {
                 break None;
             };
             let name = text.get(at..end).unwrap_or_default();
-            let Ok(name) = bedrock_addon_core::json::from_str::<String>(name) else {
+            let Some(name) = bedrock_addon_core::json::parse::string_literal(name) else {
                 break None;
             };
             at = skip_trivia(bytes, end);

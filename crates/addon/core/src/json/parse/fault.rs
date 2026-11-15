@@ -84,6 +84,13 @@ impl Fault {
         self
     }
 
+    /// The error facet-json gives for the same fault: its words and its kind, which
+    /// `code_for_deserialize_error_kind` maps to a code.
+    #[must_use]
+    pub fn to_error(&self) -> DeserializeError {
+        self.clone().into()
+    }
+
     /// Whether the text ended before the grammar was done: the one fault a reader may take
     /// for an empty document when the text was blank.
     pub fn is_end_of_input(&self) -> bool {

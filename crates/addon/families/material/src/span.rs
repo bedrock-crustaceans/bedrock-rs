@@ -8,19 +8,19 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Span};
-use bedrock_addon_core::json::{JsonSlice, parse_at, strip_bom};
+use bedrock_addon_core::json::parse::{Options, SpanNode, parse_slice};
+use bedrock_addon_core::json::{JsonSlice, Winner, strip_bom};
 
 /// The spans of the values `paths` name in the text of one file, each `None` when a step of
 /// its path is not in the text. Offsets count from the start of the file, a byte-order mark
 /// included. Of a key written twice the last value is the one found, as the readers keep it.
 ///
-/// Every level of the text that a path goes through is split once, whatever the number of
-/// paths through it, so the cost is the size of the text times the depth of the paths, never
-/// the size of the text per path.
+/// The text is parsed once, and every level of it that a path goes through is looked through
+/// once, whatever the number of paths through it, so the cost is the size of the text times the
+/// depth of the paths, never the size of the text per path.
 pub(super) fn spans_of(bytes: &[u8], paths: &[&JsonPath]) -> Vec<Option<Span>> {
     let mut out = vec![None; paths.len()];
     let stripped = strip_bom(bytes);
@@ -31,6 +31,9 @@ pub(super) fn spans_of(bytes: &[u8], paths: &[&JsonPath]) -> Vec<Option<Span>> {
         text,
         offset: bytes.len() - stripped.len(),
     };
+    let Ok(parsed) = parse_slice(root, Options::winner(Winner::Last)) else {
+        return out;
+    };
     let segments: Vec<Vec<JsonPathSegment<'_>>> =
         paths.iter().map(|path| path.segments().collect()).collect();
     let wanted = segments
@@ -38,24 +41,30 @@ pub(super) fn spans_of(bytes: &[u8], paths: &[&JsonPath]) -> Vec<Option<Span>> {
         .enumerate()
         .map(|(index, path)| (index, path.as_slice()))
         .collect();
-    descend(root, wanted, &mut out);
+    descend(parsed.spans.root(), wanted, &mut out);
+    // The empty path is the whole text, as `span_at` gives it.
+    for (place, path) in segments.iter().enumerate() {
+        if path.is_empty() {
+            out[place] = Some(parsed.spans.whole());
+        }
+    }
     out
 }
 
-/// One path still to follow below a slice: the place of its span in the output, and the steps
+/// One path still to follow below a node: the place of its span in the output, and the steps
 /// left.
 type Wanted<'p, 'k> = (usize, &'p [JsonPathSegment<'k>]);
 
-/// Follows every path of `wanted` below `slice`. The recursion is as deep as the longest
-/// path, and a path is no longer than the reader's depth limit lets a value nest.
-fn descend<'a>(slice: JsonSlice<'a>, wanted: Vec<Wanted<'_, '_>>, out: &mut [Option<Span>]) {
+/// Follows every path of `wanted` below `node`. The recursion is as deep as the longest path,
+/// and a path is no longer than the reader's depth limit lets a value nest.
+fn descend(node: SpanNode<'_, '_>, wanted: Vec<Wanted<'_, '_>>, out: &mut [Option<Span>]) {
     let mut keys: HashMap<&str, Vec<Wanted<'_, '_>>> = HashMap::new();
     let mut indices: HashMap<usize, Vec<Wanted<'_, '_>>> = HashMap::new();
     for (place, path) in wanted {
         match path.split_first() {
             None => {
                 if let Some(span) = out.get_mut(place) {
-                    *span = bedrock_addon_core::json::span_at(slice, &JsonPath::new());
+                    *span = Some(node.span());
                 }
             }
             Some((JsonPathSegment::Key(key), rest)) => {
@@ -66,22 +75,21 @@ fn descend<'a>(slice: JsonSlice<'a>, wanted: Vec<Wanted<'_, '_>>, out: &mut [Opt
             }
         }
     }
-    if !keys.is_empty()
-        && let Ok(members) = parse_at::<IndexMap<String, RawJson<'a>>>(slice)
-    {
+    if !keys.is_empty() {
+        // The object is gone through once; of a key written twice the last member stands.
+        let mut members = HashMap::new();
+        for member in node.members() {
+            members.insert(member.key, member.value);
+        }
         for (key, below) in keys {
-            if let Some(member) = members.get(key).and_then(|raw| slice.nested(raw)) {
-                descend(member, below, out);
+            if let Some(member) = members.get(key) {
+                descend(*member, below, out);
             }
         }
     }
-    if !indices.is_empty()
-        && let Ok(elements) = parse_at::<Vec<RawJson<'a>>>(slice)
-    {
-        for (index, below) in indices {
-            if let Some(element) = elements.get(index).and_then(|raw| slice.nested(raw)) {
-                descend(element, below, out);
-            }
+    for (index, below) in indices {
+        if let Some(element) = node.element(index) {
+            descend(element, below, out);
         }
     }
 }

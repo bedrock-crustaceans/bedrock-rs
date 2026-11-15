@@ -756,9 +756,10 @@ fn gather(entity: &Entity, cx: &mut ValidateCx<'_>, drop: &mut Vec<NodeRef>) -> 
             path.extend(steps.iter().cloned());
             path.push(Seg::Key("set_property".to_owned()));
             path.push(Seg::Key(property));
-            let molang = value.as_string().and_then(|s| {
-                bedrock_addon_core::json::from_str::<Molang>(&json_string(s.as_str())).ok()
-            });
+            let molang = value
+                .is_string()
+                .then(|| bedrock_addon_core::schema::read_value::<Molang>(&value))
+                .flatten();
             if let Some(molang) = molang {
                 expressions.push(Expression {
                     path,
@@ -860,14 +861,6 @@ fn compile(
     let _ = (molang, drop);
     not_checked(expressions, base, cx.diagnostics);
 }
-/// `text` as a JSON string literal.
-fn json_string(text: &str) -> String {
-    bedrock_addon_core::json::to_json(&Value::from(text))
-        .unwrap_or_default()
-        .trim_end()
-        .to_owned()
-}
-
 /// The game's component validation of the final document, `components` and then each group:
 /// the preferred path's duplicate blocks (an error) and the timer's two times (a warning).
 fn validate_function(entity: &Entity, cx: &mut ValidateCx<'_>) {
@@ -972,7 +965,7 @@ mod tests {
             r#"{{"add": {{"component_groups": [{}]}}}}"#,
             named.join(",")
         );
-        let event = bedrock_addon_core::json::from_str::<Value>(&text).expect("json");
+        let event = bedrock_addon_core::json::from_str_jsonc::<Value>(&text).expect("json");
         (groups, event)
     }
 
@@ -1003,7 +996,7 @@ mod tests {
     /// `set_property`, then `sequence`, `first_valid` and `randomize`, whatever the document's.
     #[test]
     fn set_property_expressions_are_collected_sequence_first_valid_randomize() {
-        let node = bedrock_addon_core::json::from_str::<Value>(
+        let node = bedrock_addon_core::json::from_str_jsonc::<Value>(
             r#"{
                 "randomize": [{"set_property": {"demo:r": "q.r"}}],
                 "first_valid": [{"set_property": {"demo:f": "q.f"}}],

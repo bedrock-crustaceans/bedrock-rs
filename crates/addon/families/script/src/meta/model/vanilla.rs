@@ -13,12 +13,11 @@
 
 use facet::Facet;
 
-use super::ShapeError;
 use crate::meta::MetaError;
-use bedrock_addon_core::json::ScalarShape;
+use bedrock_addon_core::schema::{FromJson, Schema};
 
 /// A vanilla data file: the common header and the entries.
-#[derive(Clone, Debug, PartialEq, Facet)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct VanillaDataFile<T> {
     /// `module_type`: `vanilla_data`.
     pub module_type: String,
@@ -34,7 +33,7 @@ pub struct VanillaDataFile<T> {
     pub block_properties: Option<Vec<BlockPropertyDef>>,
 }
 
-impl<T: for<'f> Facet<'f>> VanillaDataFile<T> {
+impl<T: FromJson> VanillaDataFile<T> {
     /// Reads the file strictly: a key no field takes is an error.
     ///
     /// # Errors
@@ -48,14 +47,14 @@ impl<T: for<'f> Facet<'f>> VanillaDataFile<T> {
 
 /// An entry that is only a name: entities, effects, dimensions, camera presets, cooldown
 /// categories, structure features, potion effects and potion delivery types.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct NameEntry {
     /// `name`: `minecraft:…`; potion delivery types are bare (`Consume`).
     pub name: String,
 }
 
 /// One block (`mojang-blocks.json`).
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct BlockEntry {
     /// `name`: the identifier.
     pub name: String,
@@ -68,7 +67,7 @@ pub struct BlockEntry {
 }
 
 /// One block-state definition (`block_properties[]`).
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct BlockPropertyDef {
     /// `name`.
     pub name: String,
@@ -80,7 +79,7 @@ pub struct BlockPropertyDef {
 }
 
 /// `block_properties[].type`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
 #[repr(u8)]
 pub enum BlockPropertyType {
     /// `bool`.
@@ -95,15 +94,15 @@ pub enum BlockPropertyType {
 }
 
 /// One entry of `block_properties[].values`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct BlockPropertyValue {
     /// `value`.
     pub value: BlockStateValue,
 }
 
 /// A block-state value: its JSON type follows the property's `type`.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
-#[facet(proxy = ScalarShape)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum BlockStateValue {
     /// A JSON boolean.
@@ -125,39 +124,8 @@ impl BlockStateValue {
     }
 }
 
-impl TryFrom<ScalarShape> for BlockStateValue {
-    type Error = ShapeError;
-
-    fn try_from(json: ScalarShape) -> Result<Self, ShapeError> {
-        match json {
-            ScalarShape::Bool(flag) => Ok(Self::Bool(flag)),
-            ScalarShape::Int(int) => Ok(Self::Int(int)),
-            ScalarShape::UInt(uint) => i64::try_from(uint)
-                .map(Self::Int)
-                .map_err(|_| ShapeError::OutOfRange),
-            ScalarShape::String(text) => Ok(Self::Str(text)),
-            _ => Err(ShapeError::WrongType {
-                expected: "a boolean, an integer or a string",
-            }),
-        }
-    }
-}
-
-impl From<&BlockStateValue> for ScalarShape {
-    fn from(value: &BlockStateValue) -> Self {
-        match value {
-            BlockStateValue::Bool(flag) => ScalarShape::Bool(*flag),
-            BlockStateValue::Int(int) => match u64::try_from(*int) {
-                Ok(uint) => ScalarShape::UInt(uint),
-                Err(_) => ScalarShape::Int(*int),
-            },
-            BlockStateValue::Str(text) => ScalarShape::String(text.clone()),
-        }
-    }
-}
-
 /// One item (`mojang-items.json`).
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ItemEntry {
     /// `name`: the identifier.
     pub name: String,
@@ -172,7 +140,7 @@ pub struct ItemEntry {
 }
 
 /// One biome (`mojang-biomes.json`).
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct BiomeEntry {
     /// `name`: the identifier.
     pub name: String,
@@ -181,7 +149,7 @@ pub struct BiomeEntry {
 }
 
 /// One enchantment (`mojang-enchantments.json`).
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct EnchantmentEntry {
     /// `name`: the identifier.
     pub name: String,

@@ -3,6 +3,27 @@
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{SliceError, TooDeep};
 
+/// Why the JSON of a metadata file was refused.
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum JsonFault {
+    /// The text is not JSON.
+    #[error(transparent)]
+    Syntax(#[from] SliceError),
+    /// A member has a type its field does not take, or a member its field needs is missing.
+    #[error("the value at `{path}` does not read as the file's shape")]
+    Shape {
+        /// The first member that did not read, from the file root.
+        path: JsonPath,
+    },
+}
+
+impl From<SliceError> for MetaError {
+    fn from(error: SliceError) -> Self {
+        Self::Json(JsonFault::Syntax(error))
+    }
+}
+
 /// Why a metadata file was rejected. The files are machine-written, so every deviation from the
 /// shapes the generator writes is an error: a regeneration notices a new generator key or shape
 /// instead of ignoring it.
@@ -17,7 +38,7 @@ pub enum MetaError {
     NotUtf8(#[from] std::str::Utf8Error),
     /// The file is not JSON, or a member has a type its field does not take.
     #[error(transparent)]
-    Json(#[from] SliceError),
+    Json(#[from] JsonFault),
     /// A member no field of the model takes.
     #[error("unknown member `{path}`")]
     UnknownMember {

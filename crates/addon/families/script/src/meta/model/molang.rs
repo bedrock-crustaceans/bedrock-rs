@@ -2,12 +2,13 @@
 //! the engine registers. A cross-check only: the crate's Molang facts
 //! come from molang, not from this file.
 
+use bedrock_addon_core::schema::Schema;
 use facet::Facet;
 
 use crate::meta::MetaError;
 
 /// The Molang queries file.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct MolangQueriesFile {
     /// `module_type`: `molang`.
     pub module_type: String,
@@ -32,7 +33,7 @@ impl MolangQueriesFile {
 }
 
 /// One query.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct QueryMeta {
     /// `name`: `query.…`.
     pub name: String,
@@ -50,7 +51,7 @@ pub struct QueryMeta {
 }
 
 /// One entry of `version_ranges`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct QueryVersionRange {
     /// `first_version`.
     pub first_version: String,
@@ -61,7 +62,7 @@ pub struct QueryVersionRange {
 }
 
 /// One math function.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct MathFunction {
     /// `name`: `math.…`.
     pub name: String,

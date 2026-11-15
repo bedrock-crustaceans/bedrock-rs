@@ -432,7 +432,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
     });
     // The empty object's test names the type: a generic one has no type to name.
     let default = (!infos.iter().any(FieldInfo::required)).then(|| {
-        let test = (!target.is_generic()).then(|| default_test(ident, !container.transparent));
+        // A `schema::required` option is told missing by `{}` and by the written default: the
+        // reader's rule, not facet's.
+        let required = infos.iter().any(|info| info.attrs.required.is_some());
+        let test = (!target.is_generic())
+            .then(|| default_test(ident, !container.transparent && !required, required));
         let default = default_impl(&target, fields, &infos);
         quote!(#default #test)
     });
@@ -1264,9 +1268,14 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
 
 /// The test beside the emitted `Default`: it is the value `{}` reads (unless the struct is a
 /// transparent newtype, which no object spells) and it reads back unchanged from what the
-/// writer makes of it. A module of its own per struct, so that the test's path names the type.
-fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
+/// writer makes of it; for a struct with a required option, that neither reads. A module of its own per struct, so that the test's path names the type.
+fn default_test(ident: &Ident, empty_object: bool, required: bool) -> TokenStream {
     let core = core();
+    let check = if required {
+        quote!(#core::schema::default_refused::<super::#ident>())
+    } else {
+        quote!(#core::schema::default_round_trip::<super::#ident>(#empty_object))
+    };
     let module = format_ident!("__schema_{}", ident);
     quote! {
         #[cfg(test)]
@@ -1275,9 +1284,7 @@ fn default_test(ident: &Ident, empty_object: bool) -> TokenStream {
         mod #module {
             #[test]
             fn default_is_the_empty_object_and_round_trips() {
-                if let ::core::result::Result::Err(fault) =
-                    #core::schema::default_round_trip::<super::#ident>(#empty_object)
-                {
+                if let ::core::result::Result::Err(fault) = #check {
                     ::core::panic!("{}: {fault:?}", ::core::any::type_name::<super::#ident>());
                 }
             }

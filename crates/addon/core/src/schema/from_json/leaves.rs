@@ -81,93 +81,6 @@ pub fn from_value_ref<T, E>(
     value
 }
 
-/// `FromJson` for each type named, by its `TryFrom<json::Value>` ([`from_value`]), or with
-/// `ref` by its `TryFrom<&json::Value>` ([`from_value_ref`]): the read of a leaf behind
-/// `#[facet(opaque, proxy = json::Value)]`, a refused value a wrong type at its member, as the
-/// door reads it. A generic type is named as `impl<T: Bound> Type<T>`.
-///
-/// A bridge, like [`from_json_via_facet!`](crate::from_json_via_facet): the leaf's own
-/// conversion reads the whole value by the shape's rule, so the slice's `Reading` does not
-/// reach inside it (its scalars, its `null`s), a refusal names no member inside it and a family
-/// cannot word it. Each use carries a `// bridge:` comment; a leaf leaves it for a `FromJson`
-/// over the kit when its family's pins allow the Reading in (`rg 'from_json_via_value'`).
-///
-/// ```
-/// use bedrock_addon_core::json::Value;
-///
-/// pub struct Even(u64);
-///
-/// impl TryFrom<&Value> for Even {
-///     type Error = ();
-///     fn try_from(value: &Value) -> Result<Self, ()> {
-///         value.as_number().and_then(|n| n.to_u64()).filter(|n| n % 2 == 0).map(Even).ok_or(())
-///     }
-/// }
-///
-/// // bridge: the example's leaf reads by its conversion
-/// bedrock_addon_core::from_json_via_value!(ref Even);
-/// ```
-#[macro_export]
-macro_rules! from_json_via_value {
-    (ref $(impl<$($param:ident $(: $bound:path)?),+> $ty:ty),+ $(,)?) => {
-        $(
-            impl<$($param $(: $bound)?),+> $crate::schema::FromJson for $ty {
-                fn from_json(
-                    node: &$crate::json::kit::Node<'_>,
-                    read: &mut $crate::json::kit::Read<'_>,
-                ) -> ::core::option::Option<Self> {
-                    $crate::schema::from_value_ref(node, read, |value| <Self as ::core::convert::TryFrom<&$crate::json::Value>>::try_from(value))
-                }
-            }
-        )+
-    };
-    (ref $($ty:ty),+ $(,)?) => {
-        $(
-            impl $crate::schema::FromJson for $ty {
-                fn from_json(
-                    node: &$crate::json::kit::Node<'_>,
-                    read: &mut $crate::json::kit::Read<'_>,
-                ) -> ::core::option::Option<Self> {
-                    $crate::schema::from_value_ref(node, read, |value| <Self as ::core::convert::TryFrom<&$crate::json::Value>>::try_from(value))
-                }
-            }
-        )+
-    };
-    ($(impl<$($param:ident $(: $bound:path)?),+> $ty:ty),+ $(,)?) => {
-        $(
-            impl<$($param $(: $bound)?),+> $crate::schema::FromJson for $ty {
-                fn from_json(
-                    node: &$crate::json::kit::Node<'_>,
-                    read: &mut $crate::json::kit::Read<'_>,
-                ) -> ::core::option::Option<Self> {
-                    $crate::schema::from_value(node, read, <Self as ::core::convert::TryFrom<$crate::json::Value>>::try_from)
-                }
-            }
-        )+
-    };
-    ($($ty:ty),+ $(,)?) => {
-        $(
-            impl $crate::schema::FromJson for $ty {
-                fn from_json(
-                    node: &$crate::json::kit::Node<'_>,
-                    read: &mut $crate::json::kit::Read<'_>,
-                ) -> ::core::option::Option<Self> {
-                    $crate::schema::from_value(node, read, <Self as ::core::convert::TryFrom<$crate::json::Value>>::try_from)
-                }
-            }
-        )+
-    };
-}
-
-// bridge: the shared leaves read by their own conversion (the game's reader of the shape)
-crate::from_json_via_value!(
-    ref crate::shared::Filter,
-    crate::shared::FilterTest,
-    crate::shared::FilterGroup,
-    crate::shared::FilterSubject,
-    crate::shared::FilterScalar,
-    crate::shared::EventTrigger,
-);
 /// A number, a list of two or an object of `min`/`max` (or `range_min`/`range_max`), its ends
 /// read by the range's own integer and float rules; another value is a wrong type. Under a
 /// reading that says so ([`Reading::range_members`](crate::versioning::Reading::range_members))
@@ -175,7 +88,9 @@ crate::from_json_via_value!(
 /// past its two ends, is told: told, not kept (a range has no `extra`).
 impl<T: crate::shared::RangeEnd> FromJson for crate::shared::Range<T> {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        // bridge: a range reads its ends by its own integer and float rules
+        // The ends are read as the game's range reader reads them (an integer end is an
+        // integer token, a float end any finite number), not by the slice's scalar rule, and
+        // a refusal is one wrong type at the range, so the conversion is the read.
         let range = from_value_ref(node, read, |value| Self::try_from(value))?;
         if read.reading().range_members != RangeMembers::Silent {
             if let Some(object) = node.value().as_object() {

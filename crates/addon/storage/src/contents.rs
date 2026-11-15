@@ -3,7 +3,13 @@
 
 use std::collections::BTreeMap;
 
-use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, check_depth, last_wins, strip_bom};
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
+use bedrock_addon_core::json::{
+    MAX_JSON_DEPTH, Scalars, TooDeep, Value, check_depth, last_wins, strip_bom,
+};
+use bedrock_addon_core::schema::{Schema, read_document};
+use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
 
 use super::{ContentKey, PackPath};
@@ -13,11 +19,10 @@ use super::{ContentKey, PackPath};
 ///
 /// Every member is optional: the `contents.json` of an unencrypted pack has no `version` and no
 /// entry has a `key`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ContentsJson {
     /// `version`: 1 in a current file; the game rewrites any other value (and a missing one);
     /// the crate reports it.
-    #[facet(default)]
     pub version: Option<u32>,
     /// `content`: one entry per file.
     #[facet(default)]
@@ -25,16 +30,14 @@ pub struct ContentsJson {
 }
 
 /// One entry of `contents.json`'s `content` array.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ContentsEntry {
     /// `path`: the file, relative to the pack root.
     pub path: String,
     /// `key`: the asset's own key string (encrypted packs only).
-    #[facet(default)]
     pub key: Option<String>,
     /// `mode`: `"cfb"` (the default) or `"ctr"`.
     // The game's newer per-asset cipher mode: absent or `"cfb"` is CFB8, `"ctr"` is counter mode.
-    #[facet(default)]
     pub mode: Option<String>,
 }
 
@@ -46,7 +49,21 @@ pub enum ContentsError {
     TooDeep(#[source] TooDeep),
     /// Not a contents table: a syntax or type error.
     #[error("contents.json is not a contents table")]
-    Json(#[source] Box<facet_json::DeserializeError>),
+    Json(#[source] Box<ContentsJsonError>),
+}
+
+/// What is wrong with the text of `contents.json`.
+#[derive(Debug, thiserror::Error)]
+pub enum ContentsJsonError {
+    /// The text is not JSON.
+    #[error(transparent)]
+    Syntax(#[from] facet_json::DeserializeError),
+    /// The JSON is not a contents table: the first member that does not read, where it is.
+    #[error("the value at `{path}` is not what a contents table holds")]
+    Shape {
+        /// Where in the document.
+        path: JsonPath,
+    },
 }
 
 impl ContentsJson {
@@ -57,14 +74,24 @@ impl ContentsJson {
         let bytes = strip_bom(bytes);
         check_depth(bytes, MAX_JSON_DEPTH).map_err(ContentsError::TooDeep)?;
         // Of a member written twice the last one stands, as in the game's own JSON readers; the
-        // typed reader refuses a repeated member, so the earlier copies are blanked first.
-        // Bytes that are
-        // not UTF-8 go to the byte reader as they are.
-        let read = match std::str::from_utf8(bytes) {
+        // earlier copies are blanked first. Bytes that are not UTF-8 go to the byte reader as
+        // they are.
+        let parsed: Result<Value, _> = match std::str::from_utf8(bytes) {
             Ok(text) => bedrock_addon_core::json::from_str_jsonc(&last_wins(text)),
             Err(_) => bedrock_addon_core::json::from_slice_jsonc(bytes),
         };
-        read.map_err(|error| ContentsError::Json(Box::new(error)))
+        let json = parsed.map_err(|error| ContentsError::Json(Box::new(error.into())))?;
+        let mut told = Diagnostics::default();
+        let mut read = Read::new(Reading::OWN.with_scalars(Scalars::Strict), &mut told)
+            .profile(Profile::FIRST_FAILURE);
+        read_document(&Node::new(&json, JsonPath::new()), &mut read).ok_or_else(|| {
+            let path = told
+                .iter()
+                .find(|finding| finding.severity == Severity::Error)
+                .map(|finding| finding.location.json_path.clone())
+                .unwrap_or_default();
+            ContentsError::Json(Box::new(ContentsJsonError::Shape { path }))
+        })
     }
 
     /// `version` is 1.

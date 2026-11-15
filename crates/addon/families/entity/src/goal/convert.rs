@@ -333,7 +333,7 @@ mod tests {
     fn each_conversion_is_idempotent() {
         type Conversion = fn(&mut VObject, &mut Diagnostics);
         let json = |text: &str| {
-            bedrock_addon_core::json::from_str::<Value>(text)
+            bedrock_addon_core::json::from_str_jsonc::<Value>(text)
                 .expect("json")
                 .as_object()
                 .expect("object")

@@ -14,9 +14,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, DiagnosticDetail, Diagnostics};
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse};
-use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, Winner, check_depth, parse_at, strip_bom,
-};
+use bedrock_addon_core::json::{MAX_JSON_DEPTH, Winner, check_depth, strip_bom};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackSide, PackType};
 use bedrock_addon_core::schema::{FromJson, read_each, read_keyed};
@@ -55,10 +53,8 @@ pub fn text_of(bytes: &[u8]) -> Result<Text<'_>, Box<Diagnostic>> {
     // in the words of the door's reader.
     // Of a key written twice, the first place and the last value, as the walker of the game's
     // schema reads an object.
-    parse(text, Options::winner(Winner::LastInPlace)).map_err(|_| {
-        let error = parse_at::<Value>(JsonSlice::new(text)).err();
-        malformed(error.map_or_else(|| "not JSON".to_owned(), |e| e.error.to_string()))
-    })
+    parse(text, Options::winner(Winner::LastInPlace))
+        .map_err(|fault| malformed(fault.to_error().to_string()))
 }
 
 /// A `format_version` as written, as a schema's `SemVersion` node reads it.

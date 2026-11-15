@@ -6,9 +6,10 @@
 //! `#AARRGGBB` for most others) and in what they write back, so a family keeps its own colour
 //! type where those differ and shares only the hex reader.
 
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{Value, ValueExt};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields, from_value_ref};
 use bedrock_addon_core::shared::read;
 use bedrock_addon_core::shared::{ShapeError, ShapeErrorKind};
 use facet_value::VArray;
@@ -214,8 +215,13 @@ impl<C: Channels> TryFrom<Value> for HexOr<C> {
     }
 }
 
-// bridge: a colour reads its channels by its own rule
-bedrock_addon_core::from_json_via_value!(ref impl<C: Channels> HexOr<C>);
+impl<C: Channels> FromJson for HexOr<C> {
+    // The channels are read as the game's colour reader reads them, not by the slice's scalar
+    // rule, and a refusal is one wrong type at the colour.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl<C: Channels> TryFrom<&HexOr<C>> for Value {
     type Error = ShapeErrorKind;

@@ -8,6 +8,8 @@ use super::{finding, unrecognized};
 use crate::diagnostic::{Diagnostics, JsonPath, Severity, codes};
 use crate::document::UnknownMembers;
 use crate::json::Value;
+use crate::json::kit::{Node, Read};
+use crate::schema::{FromJson, from_value_ref};
 
 /// A filter group: one test, a list (every element must pass), or a group of collection keys, as
 /// the game's filter group.
@@ -562,6 +564,14 @@ impl TryFrom<&Value> for Filter {
     }
 }
 
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for Filter {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
+
 impl TryFrom<Value> for Filter {
     type Error = ShapeError;
 
@@ -586,6 +596,14 @@ impl TryFrom<&Value> for FilterTest {
             .as_object()
             .ok_or_else(|| wrong_type(ROOT, "an object", value))?;
         Ok(Self::read(object)?)
+    }
+}
+
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for FilterTest {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
     }
 }
 
@@ -616,6 +634,14 @@ impl TryFrom<&Value> for FilterGroup {
     }
 }
 
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for FilterGroup {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
+
 impl TryFrom<Value> for FilterGroup {
     type Error = ShapeError;
 
@@ -640,6 +666,14 @@ impl TryFrom<&Value> for FilterSubject {
     }
 }
 
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for FilterSubject {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
+
 impl TryFrom<Value> for FilterSubject {
     type Error = ShapeError;
 
@@ -659,6 +693,14 @@ impl TryFrom<&Value> for FilterScalar {
 
     fn try_from(value: &Value) -> Result<Self, ShapeError> {
         Ok(Self::read(ROOT, value)?)
+    }
+}
+
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for FilterScalar {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
     }
 }
 

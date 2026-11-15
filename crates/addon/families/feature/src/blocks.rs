@@ -11,9 +11,10 @@ use super::molang::{DESCRIPTOR_TAGS, refers};
 use super::strict_struct;
 use super::values::{BlockList, JsonInt, WeightedBlock, pair, weight_of, weight_value};
 use bedrock_addon_core::id::FeatureId;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonType, StrictError, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields, from_value};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::VersionStruct;
@@ -644,7 +645,19 @@ refers!(MultipartBlockColumnFeature {
     "may_replace" => may_replace,
 });
 
-bedrock_addon_core::from_json_via_value!(PlacesBlock, HeightWeight);
+// Read as the game's reader of the shape reads them (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for PlacesBlock {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
+
+impl FromJson for HeightWeight {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_no_molang!(HeightWeight);
 
 /// A specifier or descriptor is walked at the member; a weighted list's blocks at

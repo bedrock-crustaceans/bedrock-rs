@@ -25,6 +25,35 @@ use facet::Facet;
 
 use super::scalar::{ScalarShape, StrictError, StrictIntType, sealed};
 
+impl ScalarShape {
+    /// The shape of a scalar `value`, as the typed door reads the same token: an integer is
+    /// [`UInt`](Self::UInt) when it fits `u64` and [`Int`](Self::Int) when it is negative and fits
+    /// `i64`; any other number (a real, an integer past 64 bits) is [`Number`](Self::Number).
+    /// `None` for an array or an object.
+    #[must_use]
+    pub fn of(value: &super::Value) -> Option<Self> {
+        if value.is_null() {
+            return Some(Self::Null);
+        }
+        if let Some(text) = value.as_string() {
+            return Some(Self::String(text.as_str().to_owned()));
+        }
+        if let Some(flag) = value.as_bool() {
+            return Some(Self::Bool(flag));
+        }
+        let number = value.as_number()?;
+        if number.is_integer() {
+            if let Some(unsigned) = number.to_u64() {
+                return Some(Self::UInt(unsigned));
+            }
+            if let Some(signed) = number.to_i64() {
+                return Some(Self::Int(signed));
+            }
+        }
+        Some(Self::Number(number.to_f64()?))
+    }
+}
+
 /// Which of the game's scalar readers a typed read stands for.
 ///
 /// Every cereal document is read through one of two reader families: the strict one

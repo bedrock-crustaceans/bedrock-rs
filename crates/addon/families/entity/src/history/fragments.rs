@@ -1160,12 +1160,12 @@ pub(super) fn enderman_projectile_filter() -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_addon_core::json::{from_str, to_json};
+    use bedrock_addon_core::json::{from_str_jsonc, to_json};
 
     /// The same value and the same text: `VNumber`'s `==` takes `1` for `1.0`, the text does
     /// not.
     fn assert_is(built: &Value, text: &str) {
-        let parsed: Value = from_str(text).expect("the text the fragment replaced");
+        let parsed: Value = from_str_jsonc(text).expect("the text the fragment replaced");
         assert_eq!(built, &parsed, "{text}");
         assert_eq!(to_json(built).ok(), to_json(&parsed).ok(), "{text}");
     }

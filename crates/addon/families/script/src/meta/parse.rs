@@ -1,17 +1,20 @@
 //! The strict read every metadata model shares: text checks, the typed parse, and the
 //! unknown-member walk over the same text.
 
-use facet::Facet;
-
-use super::MetaError;
+use super::{JsonFault, MetaError};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value, blank_bom, check_depth, parse_at,
-    unknown_members,
+    BeyondWidth, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Scalars, Value, blank_bom,
+    check_depth, parse_at,
 };
+use bedrock_addon_core::schema::{FromJson, read_document};
+use bedrock_addon_core::versioning::Reading;
 
 /// `T` read from `bytes`, and the same text as a `Value`; the first member no field of `T`
 /// takes is an error.
-pub(crate) fn strict<T: for<'f> Facet<'f>>(bytes: &[u8]) -> Result<(T, Value), MetaError> {
+pub(crate) fn strict<T: FromJson>(bytes: &[u8]) -> Result<(T, Value), MetaError> {
     // A byte order mark is blanked, so that every offset stays the file's own. The depth
     // before the encoding: a text both too deep and not UTF-8 is `TooDeep`. The mark is
     // blanked before the scan too, which would stop at it.
@@ -26,10 +29,27 @@ pub(crate) fn strict<T: for<'f> Facet<'f>>(bytes: &[u8]) -> Result<(T, Value), M
         Err(PrepareError::Empty) => std::borrow::Cow::Borrowed(""),
     };
     let text = &*text;
-    let typed: T = parse_at(JsonSlice::new(text))?;
     let value: Value = parse_at(JsonSlice::new(text))?;
-    if let Some((path, _)) = unknown_members(T::SHAPE, &value).into_iter().next() {
-        return Err(MetaError::UnknownMember { path });
+    let mut told = Diagnostics::default();
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Strict)
+        .with_beyond_width(BeyondWidth::Error);
+    let mut read = Read::new(reading, &mut told).profile(Profile::FIRST_FAILURE);
+    let typed = read_document::<T>(&Node::new(&value, JsonPath::new()), &mut read);
+    let Some(typed) = typed else {
+        let path = told
+            .iter()
+            .find(|finding| finding.severity == Severity::Error)
+            .map(|finding| finding.location.json_path.clone())
+            .unwrap_or_default();
+        return Err(MetaError::Json(JsonFault::Shape { path }));
+    };
+    // The members no field takes are told after the read, in the file's order.
+    let unknown = Code::from(&core_codes::UNRECOGNIZED_FIELD);
+    if let Some(finding) = told.iter().find(|finding| finding.code == unknown) {
+        return Err(MetaError::UnknownMember {
+            path: finding.location.json_path.clone(),
+        });
     }
     Ok((typed, value))
 }

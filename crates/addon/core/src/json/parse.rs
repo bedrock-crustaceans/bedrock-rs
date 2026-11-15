@@ -153,6 +153,38 @@ pub fn parse_slice<'t>(slice: JsonSlice<'t>, options: Options<'_>) -> Result<Par
     read(slice.text, slice.offset, options).map_err(|fault| fault.rebased(slice.offset))
 }
 
+/// The text a JSON string literal spells, its escapes decoded; `None` when `token` is no string
+/// literal (what `from_str::<String>` read for a token already cut from a text).
+#[must_use]
+pub fn string_literal(token: &str) -> Option<String> {
+    let parsed = parse(token, Options::default()).ok()?;
+    Some(parsed.value.as_string()?.as_str().to_owned())
+}
+
+/// The members of the object `slice` holds, each the slice of its value (file offsets kept), in
+/// the order of the first copy of a key and holding its last copy; `None` when the text is no
+/// JSON or its root is no object.
+#[must_use]
+pub fn members_of(slice: JsonSlice<'_>) -> Option<indexmap::IndexMap<String, JsonSlice<'_>>> {
+    let parsed = parse_slice(slice, Options::winner(Winner::LastInPlace)).ok()?;
+    let root = parsed.spans.root();
+    (root.kind() == SpanKind::Object).then(|| {
+        root.members()
+            .map(|member| (member.key.into_owned(), member.value.text()))
+            .collect()
+    })
+}
+
+/// The elements of the array `slice` holds, each the slice of its value (file offsets kept);
+/// `None` when the text is no JSON or its root is no array.
+#[must_use]
+pub fn elements_of(slice: JsonSlice<'_>) -> Option<Vec<JsonSlice<'_>>> {
+    let parsed = parse_slice(slice, Options::default()).ok()?;
+    let root = parsed.spans.root();
+    (root.kind() == SpanKind::Array)
+        .then(|| root.elements().map(|element| element.text()).collect())
+}
+
 fn read<'t>(text: &'t str, base: usize, options: Options<'_>) -> Result<Parsed<'t>, Fault> {
     if u32::try_from(text.len()).is_err() {
         return Err(Fault::new(0, 0, FaultKind::TextTooLong));

@@ -94,13 +94,13 @@ pub struct RenderController {
 #[facet(schema::molang_with = crate::molang::by_controller)]
 pub struct RenderControllerArrays {
     /// `geometries`: each `array.<name>` and its geometry references; no list is empty.
-    #[facet(default, schema::read_with = named_lists)]
+    #[facet(default, skip_serializing_if = IndexMap::is_empty, schema::read_with = named_lists)]
     pub geometries: IndexMap<String, Vec<MolangSource>>,
     /// `materials`: each `array.<name>` and its material references.
-    #[facet(default, schema::read_with = named_lists)]
+    #[facet(default, skip_serializing_if = IndexMap::is_empty, schema::read_with = named_lists)]
     pub materials: IndexMap<String, Vec<MolangSource>>,
     /// `textures`: each `array.<name>` and its texture references.
-    #[facet(default, schema::read_with = named_lists)]
+    #[facet(default, skip_serializing_if = IndexMap::is_empty, schema::read_with = named_lists)]
     pub textures: IndexMap<String, Vec<MolangSource>>,
 }
 

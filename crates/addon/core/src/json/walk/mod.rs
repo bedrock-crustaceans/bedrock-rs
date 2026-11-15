@@ -29,7 +29,7 @@ mod scalars;
 pub(crate) mod untagged;
 
 use enums::walk_enum;
-pub(crate) use keep::{door_unknown_members, held_unknown_members};
+pub(crate) use keep::door_unknown_members;
 pub use keep::{
     keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
 };

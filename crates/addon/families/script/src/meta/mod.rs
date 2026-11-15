@@ -3,7 +3,7 @@ mod generated;
 /// `model::vanilla`, `model::commands`, `model::molang`).
 pub mod model;
 pub use descriptor::{Errorability, Prim, TypeDescriptor, TypeKind, TypeOverlay};
-pub use error::MetaError;
+pub use error::{JsonFault, MetaError};
 pub use module::{ModuleMetadata, NativeModule, StubModule, StubOverlay};
 pub use privilege::{Privilege, PrivilegeList};
 pub use versions::{

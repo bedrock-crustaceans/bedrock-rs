@@ -18,7 +18,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::json::kit::{Lossy, MemberOrder, Node, Profile, Read, Texts};
 use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse};
-use bedrock_addon_core::json::{JsonSlice, MAX_JSON_DEPTH, Value, Winner, check_depth, parse_at};
+use bedrock_addon_core::json::{MAX_JSON_DEPTH, Value, Winner, check_depth};
 use bedrock_addon_core::json::{PrepareError, Prepared};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::{Molang, MolangSource, RawVersion};
@@ -198,11 +198,9 @@ fn parse_folded(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Parsed {
     let folded = fold(original);
     // The whole text is parsed first: a syntax error anywhere drops the file. Of a key written
     // twice (also two keys the fold made equal) the last value stands.
-    let Ok(text) = parse(&folded.text, Options::winner(Winner::Last)) else {
-        let error = parse_at::<Value>(JsonSlice::new(&folded.text)).err();
-        return malformed(
-            error.map_or_else(|| "not a JSON value".to_owned(), |e| e.error.to_string()),
-        );
+    let text = match parse(&folded.text, Options::winner(Winner::Last)) {
+        Ok(text) => text,
+        Err(fault) => return malformed(fault.to_error().to_string()),
     };
 
     let mut diagnostics = Diagnostics::default();

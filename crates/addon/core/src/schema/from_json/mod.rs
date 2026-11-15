@@ -4,9 +4,7 @@
 //! A document type is `#[derive(Facet, Schema)]`; the `Schema` derive emits its `FromJson`,
 //! which reads every field through its type's `FromJson` under the read's
 //! [`Reading`](crate::versioning::Reading), so a failed member is told and the rest is read. A
-//! leaf type with its own syntax implements it by hand, next to the type (`leaves`); a facet type
-//! not converted yet reads through the bridge to the old facet read
-//! ([`from_json_via_facet!`](crate::from_json_via_facet)).
+//! leaf type with its own syntax implements it by hand, next to the type (`leaves`).
 //!
 //! ```
 //! use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -25,7 +23,6 @@
 //! assert_eq!(told, ["counts/1 wrong JSON type"]);
 //! ```
 
-mod bridge;
 // hidden: emitted by the schema derive
 #[doc(hidden)]
 pub mod derived;
@@ -36,7 +33,6 @@ mod leaves;
 #[cfg(test)]
 mod tests;
 
-pub use bridge::read_via_facet;
 pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
 pub use keys::{KeyPattern, Keys, read_keyed};
 pub use leaves::{from_value, from_value_ref, read_later};

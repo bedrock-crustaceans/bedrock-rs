@@ -3,9 +3,10 @@
 //! controls).
 
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{Value, ValueExt};
 use bedrock_addon_core::molang::{JsonType, MolangFields, MolangVisitor};
-use bedrock_addon_core::schema::{SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{FromJson, SchemaCx, SchemaFields, from_value_ref};
 use facet_value::{VArray, VObject};
 
 /// Why a vector's JSON could not be read, or a vector could not be written as JSON.
@@ -223,8 +224,13 @@ impl<T: Coordinate> TryFrom<Value> for Vec3<T> {
     }
 }
 
-// bridge: a vector reads its coordinates by its own rule
-bedrock_addon_core::from_json_via_value!(ref impl<T: Coordinate> Vec3<T>);
+impl<T: Coordinate> FromJson for Vec3<T> {
+    // The coordinates are read as the game's vector reader reads them, not by the slice's
+    // scalar rule, and a refusal is one wrong type at the vector.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl<T: Coordinate> TryFrom<&Vec3<T>> for Value {
     type Error = VectorError;
@@ -288,8 +294,13 @@ impl<T: Coordinate> TryFrom<Value> for Vec2<T> {
     }
 }
 
-// bridge: a vector reads its coordinates by its own rule
-bedrock_addon_core::from_json_via_value!(ref impl<T: Coordinate> Vec2<T>);
+impl<T: Coordinate> FromJson for Vec2<T> {
+    // The coordinates are read as the game's vector reader reads them, not by the slice's
+    // scalar rule, and a refusal is one wrong type at the vector.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl<T: Coordinate> TryFrom<&Vec2<T>> for Value {
     type Error = VectorError;

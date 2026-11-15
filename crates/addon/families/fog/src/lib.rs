@@ -40,9 +40,10 @@ use bedrock_addon_core::document::{
     Origin, PackTie, Registry, Rejected, VersionInfo, default_path,
 };
 use bedrock_addon_core::id::kind;
+use bedrock_addon_core::json::parse::{Options, parse};
 use bedrock_addon_core::json::{
     EncodeError, EnvelopeVersion, JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value,
-    blank_bom, check_depth, last_wins, parse_at, probe_envelope,
+    blank_bom, check_depth, last_wins, probe_envelope,
 };
 use bedrock_addon_core::load::{self, CollectionLoader, LoadContext, StackCx, Walk};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
@@ -401,8 +402,9 @@ fn gates(bytes: &[u8]) -> Result<String, Diagnostics> {
     let text = prepared.as_str();
     // Of a member written twice the last value stands, before anything looks at the text.
     let cleaned = last_wins(text).into_owned();
-    let root =
-        parse_at::<Value>(JsonSlice::new(&cleaned)).map_err(|e| malformed(e.error.to_string()))?;
+    let root = parse(&cleaned, Options::default())
+        .map_err(|fault| malformed(fault.to_error().to_string()))?
+        .value;
     // `Json::Value::empty()`: null, or an array or object without members.
     let is_empty = root.is_null()
         || root.as_object().is_some_and(facet_value::VObject::is_empty)

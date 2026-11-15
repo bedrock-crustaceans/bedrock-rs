@@ -646,8 +646,11 @@ fn with_payload<T>(
     reader: &mut Reader<'_>,
     read: impl FnOnce(&mut Reader<'_>, &Node<'_>) -> Option<T>,
 ) -> Option<T> {
-    let json = match bedrock_addon_core::json::from_str_borrowed_jsonc::<Value>(payload.text) {
-        Ok(json) => json,
+    let parsed = match bedrock_addon_core::json::parse::parse_slice(
+        payload,
+        bedrock_addon_core::json::parse::Options::default(),
+    ) {
+        Ok(parsed) => parsed,
         Err(failure) => {
             let finding = Diagnostic::of(builders::syntax(failure.kind.to_string()))
                 .at(at.clone())
@@ -656,7 +659,7 @@ fn with_payload<T>(
             return None;
         }
     };
-    read(reader, &Node::with_text(&json, at.clone(), payload))
+    read(reader, &Node::parsed(&parsed, at.clone()))
 }
 
 /// Reads the payload of a form style: a `description` and its `components`.

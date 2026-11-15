@@ -1,7 +1,6 @@
 //! The `@minecraft/server-net` entry of `module_permissions`, which the server loads
 //! strictly: an unknown member or a wrong type fails the entry.
 
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -189,9 +188,7 @@ impl Load<'_, '_> {
         let mut uris = Vec::with_capacity(elements.len());
         let mut failed = false;
         for (index, raw) in elements.iter().enumerate() {
-            let Some(slice) = slice.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             let at = at.index(index);
             let Some(uri) = string(slice) else {
                 self.wrong_type(ALLOWED_URIS, at, slice);
@@ -231,9 +228,7 @@ impl Load<'_, '_> {
         let mut headers = IndexMap::with_capacity(members.len());
         let mut failed = false;
         for (name, raw) in &members {
-            let Some(slice) = slice.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             if let Some(header) = string(slice) {
                 headers.insert(name.clone(), header);
             } else {
@@ -257,7 +252,7 @@ fn is_absolute(uri: &str) -> bool {
 /// Loads the entry `entry`, whose members are `members`, at the path `at`.
 pub(super) fn read(
     entry: JsonSlice<'_>,
-    members: &IndexMap<String, RawJson<'_>>,
+    members: &IndexMap<String, JsonSlice<'_>>,
     at: &JsonPath,
     sink: &mut Sink<'_>,
 ) -> ServerNet {
@@ -269,9 +264,7 @@ pub(super) fn read(
     // The legacy `force_https` is copied over `force_tls` and removed before the load.
     let legacy = members.contains_key(FORCE_HTTPS);
     for (name, raw) in members {
-        let Some(slice) = entry.nested(raw) else {
-            continue;
-        };
+        let slice = *raw;
         let here = at.child(name);
         match name.as_str() {
             ALLOWED_URIS => config.allowed_uris = load.uris(&here, slice),
@@ -325,7 +318,7 @@ pub(super) fn read(
     if config.force_tls == Some(false) {
         // TLS is required whenever the member is present.
         let name = if legacy { FORCE_HTTPS } else { FORCE_TLS };
-        let slice = members.get(name).and_then(|raw| entry.nested(raw));
+        let slice = members.get(name).copied();
         load.sink.warn(
             Code::from(&core_codes::NO_EFFECT),
             at.child(name),

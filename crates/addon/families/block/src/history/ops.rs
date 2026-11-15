@@ -136,7 +136,7 @@ mod unwrap_tests {
     use bedrock_addon_core::json::Value;
 
     fn json(text: &str) -> Value {
-        bedrock_addon_core::json::from_str::<Value>(text).expect("test JSON")
+        bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("test JSON")
     }
 
     #[test]

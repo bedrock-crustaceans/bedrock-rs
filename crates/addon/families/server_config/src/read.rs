@@ -5,7 +5,6 @@
 use crate::codes;
 use std::collections::HashMap;
 
-use facet_json::RawJson;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -13,7 +12,8 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, Span,
 };
-use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value, parse_at};
+use bedrock_addon_core::json::parse::{Options, elements_of, members_of, parse_slice};
+use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value};
 use bedrock_addon_core::pack_identity::PackPath;
 
 use super::{
@@ -218,23 +218,22 @@ pub(super) fn span(slice: JsonSlice<'_>) -> Option<Span> {
 
 /// The members of the object `slice` holds, each a raw slice of the file; `None` when it is
 /// not an object.
-pub(super) fn object(slice: JsonSlice<'_>) -> Option<IndexMap<String, RawJson<'_>>> {
-    (kind(slice) == Kind::Object)
-        .then(|| parse_at(slice).ok())
-        .flatten()
+pub(super) fn object(slice: JsonSlice<'_>) -> Option<IndexMap<String, JsonSlice<'_>>> {
+    members_of(slice)
 }
 
 /// The elements of the array `slice` holds; `None` when it is not an array.
-pub(super) fn array(slice: JsonSlice<'_>) -> Option<Vec<RawJson<'_>>> {
-    (kind(slice) == Kind::Array)
-        .then(|| parse_at(slice).ok())
-        .flatten()
+pub(super) fn array(slice: JsonSlice<'_>) -> Option<Vec<JsonSlice<'_>>> {
+    elements_of(slice)
 }
 
 /// The string `slice` holds; `None` when it is not a string.
 pub(super) fn string(slice: JsonSlice<'_>) -> Option<String> {
     (kind(slice) == Kind::String)
-        .then(|| parse_at(slice).ok())
+        .then(|| {
+            let parsed = parse_slice(slice, Options::default()).ok()?;
+            Some(parsed.value.as_string()?.as_str().to_owned())
+        })
         .flatten()
 }
 
@@ -312,18 +311,24 @@ pub(super) fn with_root(
     };
     if twice == Twice::First
         && matches!(clean, std::borrow::Cow::Owned(_))
-        && let Err(failure) = parse_at::<Value>(JsonSlice::new(text))
+        && let Err(fault) = parse_slice(JsonSlice::new(text), Options::default())
     {
         // `first_wins` follows brackets and keys, not the grammar: a copy it blanked may
         // hold the text's syntax fault. The server's reader reads the whole text, so the
         // text as written is read once more, and its fault is the file's.
-        sink.malformed(failure.error.to_string(), Some(failure.span));
+        sink.malformed(
+            facet_json::DeserializeError::from(fault.clone()).to_string(),
+            Some(fault.span),
+        );
         return false;
     }
     let root = JsonSlice::new(&clean);
     // The whole root is read once, so that every slice of it read later is known to parse.
-    if let Err(failure) = parse_at::<Value>(root) {
-        sink.malformed(failure.error.to_string(), Some(failure.span));
+    if let Err(fault) = parse_slice(root, Options::default()) {
+        sink.malformed(
+            facet_json::DeserializeError::from(fault.clone()).to_string(),
+            Some(fault.span),
+        );
         return false;
     }
     if let Some(mut finding) = json::trailing_content_finding(root) {

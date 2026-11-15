@@ -3,10 +3,6 @@
 
 use std::fmt;
 
-use facet::Facet;
-use facet_json::RawJson;
-use indexmap::IndexMap;
-
 use super::component::validate_components;
 use super::payload::span_of;
 use super::range::{Selection, select};
@@ -548,10 +544,8 @@ pub fn file_version(document: JsonSlice<'_>) -> Option<FormatVersion> {
 /// the envelope's), for `Family::payload_version` (entity: `minecraft:entity.format_version`).
 /// `None` when absent or unreadable.
 pub fn member_version(payload: JsonSlice<'_>, key: &str) -> Option<FormatVersionInput> {
-    let members =
-        crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(payload.text).ok()?;
-    let json = crate::json::from_str_jsonc::<Value>(members.get(key)?.as_str()).ok()?;
-    FormatVersionInput::from_json(&json)
+    let json = crate::json::from_str_jsonc::<Value>(payload.text).ok()?;
+    FormatVersionInput::from_json(json.as_object()?.get(key)?)
 }
 
 /// The version as the game's "no parser available for version …" text prints it, the
@@ -574,17 +568,12 @@ pub(super) fn unsupported(written: &str, at: JsonPath) -> Diagnostic {
 
 /// The default identity: `description.identifier` and `description.runtime_identifier`.
 pub(super) fn description_identity(payload: JsonSlice<'_>) -> Identity {
-    /// The members the identity is read from; everything else is ignored.
-    #[derive(Facet)]
-    struct Shell {
-        #[facet(default)]
-        description: Option<Value>,
-    }
-    let description = crate::json::from_str_jsonc::<Shell>(payload.text)
-        .ok()
-        .and_then(|shell| shell.description);
+    let root = crate::json::from_str_jsonc::<Value>(payload.text).ok();
+    let description = root
+        .as_ref()
+        .and_then(|root| root.as_object()?.get("description"));
     let member = |key: &str| {
-        let value = description.as_ref()?.as_object()?.get(key)?;
+        let value = description?.as_object()?.get(key)?;
         Some(value.as_string()?.as_str().to_owned())
     };
     Identity {
@@ -1009,8 +998,10 @@ fn written_text(version: &EnvelopeVersion) -> String {
 
 /// Whether the object `payload` has the member `key` (any value).
 fn has_member(payload: JsonSlice<'_>, key: &str) -> bool {
-    crate::json::from_str_borrowed_jsonc::<IndexMap<String, RawJson<'_>>>(payload.text)
-        .is_ok_and(|members| members.contains_key(key))
+    crate::json::from_str_jsonc::<Value>(payload.text).is_ok_and(|root| {
+        root.as_object()
+            .is_some_and(|members| members.contains_key(key))
+    })
 }
 
 /// An empty document (`EmptyDocument`): nothing but whitespace and comments, or `null`.

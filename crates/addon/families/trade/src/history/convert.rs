@@ -401,7 +401,7 @@ mod tests {
     use super::*;
 
     fn read(text: &str) -> i64 {
-        let value: Value = bedrock_addon_core::json::from_str(text).unwrap();
+        let value: Value = bedrock_addon_core::json::from_str_jsonc(text).unwrap();
         int(Some(&value)).0
     }
 

@@ -5,18 +5,21 @@
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum DefaultFault {
-    /// `{}` does not read as the type; the reader's error.
+    /// `{}` does not read as the type.
     #[error("the empty object does not read as the type")]
-    EmptyObjectUnread(#[source] facet_json::DeserializeError),
+    EmptyObjectUnread,
     /// `{}` reads, as a value other than the default.
     #[error("the empty object reads as a value other than the default")]
     NotTheEmptyObject,
     /// The writer refuses the default; the writer's error.
     #[error("the default cannot be written")]
     Unwritten(#[source] crate::json::EncodeError),
-    /// What the writer made of the default does not read; the reader's error.
+    /// What the writer made of the default is no JSON, or does not read as the type.
     #[error("the written default does not read")]
-    WrittenUnread(#[source] facet_json::DeserializeError),
+    WrittenUnread,
+    /// A required option is missing from the default, and `{}` or the written default reads.
+    #[error("the default reads although a required member is missing from it")]
+    ReadsWithoutRequired,
     /// What the writer made of the default reads, as a value other than the default.
     #[error("the written default reads as another value: {written}")]
     NotTheSame {
@@ -25,7 +28,7 @@ pub enum DefaultFault {
     },
 }
 
-/// Checks `T::default()` against the door's reader and writer: with `empty_object`, that `{}`
+/// Checks `T::default()` against the reader and the writer: with `empty_object`, that `{}`
 /// reads as the default (a `#[facet(transparent)]` newtype is no object, and passes `false`),
 /// then that the default written and read back is the default.
 ///
@@ -34,19 +37,45 @@ pub enum DefaultFault {
 /// Returns the first [`DefaultFault`] found, in the order above.
 pub fn default_round_trip<T>(empty_object: bool) -> Result<(), DefaultFault>
 where
-    T: Default + PartialEq + core::fmt::Debug + facet::Facet<'static>,
+    T: Default + PartialEq + core::fmt::Debug + facet::Facet<'static> + super::FromJson,
 {
     let default = T::default();
     if empty_object {
-        let parsed: T = crate::json::from_str("{}").map_err(DefaultFault::EmptyObjectUnread)?;
+        let empty = crate::json::Value::from(facet_value::VObject::new());
+        let parsed: T = super::read_value(&empty).ok_or(DefaultFault::EmptyObjectUnread)?;
         if parsed != default {
             return Err(DefaultFault::NotTheEmptyObject);
         }
     }
     let written = crate::json::to_json(&default).map_err(DefaultFault::Unwritten)?;
-    let again: T = crate::json::from_str(&written).map_err(DefaultFault::WrittenUnread)?;
+    let again: T = crate::json::from_str_jsonc::<crate::json::Value>(&written)
+        .ok()
+        .and_then(|json| super::read_value(&json))
+        .ok_or(DefaultFault::WrittenUnread)?;
     if again != default {
         return Err(DefaultFault::NotTheSame { written });
+    }
+    Ok(())
+}
+
+/// Checks the `Default` of a type with a `schema::required` option, which no text spells: the
+/// default is written, and neither `{}` nor what the writer made of it reads (the member is told
+/// missing, as the game asks for it).
+///
+/// # Errors
+///
+/// [`DefaultFault::Unwritten`] when the writer refuses the default,
+/// [`DefaultFault::ReadsWithoutRequired`] when either text reads.
+pub fn default_refused<T>() -> Result<(), DefaultFault>
+where
+    T: Default + facet::Facet<'static> + super::FromJson,
+{
+    let written = crate::json::to_json(&T::default()).map_err(DefaultFault::Unwritten)?;
+    let empty = crate::json::Value::from(facet_value::VObject::new());
+    let reads = |json: &crate::json::Value| super::read_value::<T>(json).is_some();
+    let written = crate::json::from_str_jsonc::<crate::json::Value>(&written).ok();
+    if reads(&empty) || written.as_ref().is_some_and(reads) {
+        return Err(DefaultFault::ReadsWithoutRequired);
     }
     Ok(())
 }
@@ -54,7 +83,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::{self, Schema};
+    use crate::json::kit::{Node, Read};
+    use crate::schema::{self, FromJson, Schema};
     use facet::Facet;
 
     /// A hand `Default` the empty object does not give back: facet reads an object holding
@@ -67,6 +97,14 @@ mod tests {
     impl Default for HandDefault {
         fn default() -> Self {
             Self { level: f32::NAN }
+        }
+    }
+
+    /// The empty object reads as the number 0, not as the hand default.
+    impl FromJson for HandDefault {
+        fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+            read.object(node)?;
+            Some(Self { level: 0.0 })
         }
     }
 
@@ -100,6 +138,22 @@ mod tests {
         }
     }
 
+    /// The empty object reads as the default, as the door read a struct of no member; a `level`
+    /// member is read, and the skipped field is its own default.
+    impl FromJson for Unkept {
+        fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+            let members = read.object(node)?;
+            if members.is_empty() {
+                return Some(Self::default());
+            }
+            let level = read.required(&members, "level")?;
+            Some(Self {
+                level: i32::from_json(&level, read)?,
+                seen: false,
+            })
+        }
+    }
+
     /// A transparent newtype: written as a bare number, so `{}` is not its text.
     #[derive(Debug, PartialEq, Facet, Schema)]
     #[facet(transparent)]
@@ -129,13 +183,31 @@ mod tests {
         assert!(checked.is_ok(), "{checked:?}");
     }
 
+    /// A required option: no text spells the default.
+    #[derive(Debug, PartialEq, Facet, Schema)]
+    struct Needs {
+        #[facet(schema::required)]
+        name: Option<String>,
+    }
+
+    #[test]
+    fn a_default_with_a_required_option_is_refused_by_both_texts() {
+        let checked = default_refused::<Needs>();
+        assert!(checked.is_ok(), "{checked:?}");
+        let fault = default_refused::<Derived>();
+        assert!(
+            matches!(fault, Err(DefaultFault::ReadsWithoutRequired)),
+            "{fault:?}"
+        );
+    }
+
     #[test]
     fn a_transparent_default_round_trips_without_the_empty_object() {
         let checked = default_round_trip::<Bare>(false);
         assert!(checked.is_ok(), "{checked:?}");
         let fault = default_round_trip::<Bare>(true);
         assert!(
-            matches!(fault, Err(DefaultFault::EmptyObjectUnread(_))),
+            matches!(fault, Err(DefaultFault::EmptyObjectUnread)),
             "{fault:?}"
         );
     }

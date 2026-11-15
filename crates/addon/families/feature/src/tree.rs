@@ -11,8 +11,9 @@ use super::molang::{DESCRIPTOR_TAGS, refers};
 use super::values::{BlockList, Chance, ChanceList, JsonInt, WeightedBlock};
 use bedrock_addon_core::diagnostic::{Code, CodeDef};
 use bedrock_addon_core::id::FeatureId;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonType, StrictError, Value};
-use bedrock_addon_core::schema::{self, Schema, SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields, from_value};
 use bedrock_addon_core::shared::IntRange;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
@@ -895,7 +896,13 @@ refers!(MangroveRoots {
 });
 refers!(AboveRoot { "above_root_block" => above_root_block });
 
-bedrock_addon_core::from_json_via_value!(Submerged);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for Submerged {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_no_molang!(Submerged);
 
 /// A depth is at least 1.

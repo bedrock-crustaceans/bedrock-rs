@@ -554,14 +554,14 @@ mod tests {
     #[test]
     fn a_lone_hash_is_no_colour_and_no_name() {
         // The colour child takes a `#` string of two bytes or more; the name child none.
-        let lone: Value = bedrock_addon_core::json::from_str("\"#\"").unwrap();
+        let lone: Value = bedrock_addon_core::json::from_str_jsonc("\"#\"").unwrap();
         assert!(matches!(colour(&lone), Colour::Other));
-        let two: Value = bedrock_addon_core::json::from_str("\"#1\"").unwrap();
+        let two: Value = bedrock_addon_core::json::from_str_jsonc("\"#1\"").unwrap();
         assert!(matches!(colour(&two), Colour::Hex("#1")));
-        let empty: Value = bedrock_addon_core::json::from_str("\"\"").unwrap();
+        let empty: Value = bedrock_addon_core::json::from_str_jsonc("\"\"").unwrap();
         assert!(matches!(colour(&empty), Colour::Name(name) if name.0.is_empty()));
         let five: Value =
-            bedrock_addon_core::json::from_str(r#"{"a":1,"b":2,"c":3,"d":4,"e":5}"#).unwrap();
+            bedrock_addon_core::json::from_str_jsonc(r#"{"a":1,"b":2,"c":3,"d":4,"e":5}"#).unwrap();
         assert!(matches!(colour(&five), Colour::Other));
     }
 

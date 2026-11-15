@@ -63,12 +63,9 @@ pub use from_json::{
     ElementFailure, FromJson, KeyPattern, Keys, MapKey, from_value, from_value_ref, read_document,
     read_each, read_entries, read_iterated, read_keyed, read_later, read_list, read_value,
 };
-// hidden: the bridge to the old typed door, which goes with it
-#[doc(hidden)]
-pub use from_json::read_via_facet;
 // hidden: emitted by the schema derives
 #[doc(hidden)]
-pub use default::{DefaultFault, default_round_trip};
+pub use default::{DefaultFault, default_refused, default_round_trip};
 // hidden: emitted by the schema derives
 #[doc(hidden)]
 pub use goal::int_fallback;

@@ -87,7 +87,7 @@ pub fn write_json_with_precedence<'f, T: Facet<'f>>(
     // The writer's output is JSON this reader accepts; were it not, the value has no JSON form.
     let mut root = std::str::from_utf8(&text)
         .ok()
-        .and_then(|text| super::from_str::<Value>(text).ok())
+        .and_then(|text| super::from_str_jsonc::<Value>(text).ok())
         .ok_or(EncodeError::NotRepresentable {
             at: JsonPath::new(),
             what: Unrepresentable::Unsupported,

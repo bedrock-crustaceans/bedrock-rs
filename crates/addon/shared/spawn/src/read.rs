@@ -205,7 +205,7 @@ mod tests {
         reader: fn(Option<&Value>, &JsonPath, &mut Diagnostics) -> Option<T>,
         token: &str,
     ) -> (Option<T>, bool) {
-        let value = bedrock_addon_core::json::from_str::<Value>(token).expect("a JSON value");
+        let value = bedrock_addon_core::json::from_str_jsonc::<Value>(token).expect("a JSON value");
         let mut at = JsonPath::new();
         at.push("member");
         let mut d = Diagnostics::default();

@@ -1,6 +1,8 @@
 //! Reading one `blocks.json` file as the client does (the loader entry point): the effective
 //! version, then every member in bytewise key order, each resolved to the blocks it applies to.
 
+use std::collections::HashMap;
+
 use facet_value::VObject;
 use indexmap::IndexMap;
 
@@ -14,9 +16,10 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, Disposition, JsonPath, Kind, Phase, Severity,
 };
 use bedrock_addon_core::id::BlockId;
+use bedrock_addon_core::json::parse::{Options, Parsed, parse_slice};
 use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value, check_depth, last_wins, strip_bom,
-    trailing_content_finding,
+    JsonSlice, MAX_JSON_DEPTH, PrepareError, Prepared, Value, Winner, check_depth, last_wins,
+    strip_bom, trailing_content_finding,
 };
 
 /// The namespace of every vanilla block, and the only one a vanilla block can have.
@@ -153,18 +156,26 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
     }
 }
 
-/// The members of a file's root by key, split once, so that the span of any finding's path
-/// is found below its member without reading the whole file again per finding.
+/// The spans of a file's text, parsed once, so that the span of any finding's path is found
+/// below its root member without reading the whole file again per finding.
 struct Spans<'a> {
-    root: JsonSlice<'a>,
-    members: IndexMap<String, facet_json::RawJson<'a>>,
+    /// `None` when the text is no JSON.
+    parsed: Option<Parsed<'a>>,
+    /// The place of the last member of each key of the root, the one the client reads.
+    members: HashMap<String, usize>,
 }
 
 impl<'a> Spans<'a> {
     fn of(root: JsonSlice<'a>) -> Self {
         // A key written twice keeps its last value, the one the client reads.
-        let members = bedrock_addon_core::json::parse_at(root).unwrap_or_default();
-        Self { root, members }
+        let parsed = parse_slice(root, Options::winner(Winner::Last)).ok();
+        let members = parsed
+            .iter()
+            .flat_map(|parsed| parsed.spans.root().members())
+            .enumerate()
+            .map(|(place, member)| (member.key.into_owned(), place))
+            .collect();
+        Self { parsed, members }
     }
 
     /// Gives every finding without a span the span of the value its path names; a path
@@ -184,17 +195,16 @@ impl<'a> Spans<'a> {
         let bedrock_addon_core::diagnostic::JsonPathSegment::Key(key) = segments.next()? else {
             return None;
         };
-        let member = self.root.nested(self.members.get(key)?)?;
-        let mut below = JsonPath::new();
+        let parsed = self.parsed.as_ref()?;
+        let mut node = parsed
+            .spans
+            .root()
+            .member_at(*self.members.get(key)?)?
+            .value;
         for segment in segments {
-            match segment {
-                bedrock_addon_core::diagnostic::JsonPathSegment::Key(key) => below.push(key),
-                bedrock_addon_core::diagnostic::JsonPathSegment::Index(index) => {
-                    below.push_index(index);
-                }
-            }
+            node = node.child(segment)?;
         }
-        bedrock_addon_core::json::span_at(member, &below)
+        Some(node.span())
     }
 }
 
@@ -566,9 +576,9 @@ pub(super) fn duplicate_keys(text: &str) -> Vec<(String, usize)> {
                 at = (at + 1).min(bytes.len());
                 if depth == 1 && expects_key {
                     expects_key = false;
-                    let key = text.get(start..at).and_then(|literal| {
-                        bedrock_addon_core::json::from_str::<String>(literal).ok()
-                    });
+                    let key = text
+                        .get(start..at)
+                        .and_then(bedrock_addon_core::json::parse::string_literal);
                     if let Some(key) = key {
                         *counts.entry(key).or_insert(0) += 1;
                     }

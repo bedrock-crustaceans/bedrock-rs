@@ -836,7 +836,8 @@ mod tests {
         let empty = SoundDefinitions::from_json(Value::NULL);
         let written =
             bedrock_addon_core::json::to_json(&empty.to_value().expect("written")).expect("text");
-        let json = |text: &str| bedrock_addon_core::json::from_str::<Value>(text).expect("JSON");
+        let json =
+            |text: &str| bedrock_addon_core::json::from_str_jsonc::<Value>(text).expect("JSON");
         assert_eq!(json(&written), json(r#"{"format_version": "1.26.50"}"#));
         let path = PackPath::new("sounds/sound_definitions.json").expect("a pack path");
         let again = SoundDefinitions::parse(&path, written.as_bytes(), &LoadContext::detached())

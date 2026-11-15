@@ -239,8 +239,14 @@ impl<N: Name> SchemaFields for NamedCondition<N> {
 mod tests {
     use super::*;
 
-    fn entry<N: Name + facet::Facet<'static>>(text: &str) -> NamedCondition<N> {
-        bedrock_addon_core::json::from_str(text).unwrap_or_else(|error| panic!("{text}: {error}"))
+    fn entry<N: Name>(text: &str) -> NamedCondition<N>
+    where
+        NamedCondition<N>: bedrock_addon_core::schema::FromJson,
+    {
+        let value =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(text)
+                .unwrap_or_else(|error| panic!("{text}: {error}"));
+        bedrock_addon_core::schema::read_value(&value).unwrap_or_else(|| panic!("{text}"))
     }
 
     #[test]
@@ -262,6 +268,11 @@ mod tests {
     fn an_empty_object_names_nothing_and_a_number_is_no_entry() {
         let empty: AnimateEntry = entry("{}");
         assert_eq!(empty.name(), None);
-        assert!(bedrock_addon_core::json::from_str::<AnimateEntry>("1").is_err());
+        assert!(
+            bedrock_addon_core::schema::read_value::<AnimateEntry>(
+                &bedrock_addon_core::json::Value::from(1)
+            )
+            .is_none()
+        );
     }
 }

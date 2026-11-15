@@ -9,7 +9,7 @@ use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::json::kit::{Expected, Node, Read};
 use bedrock_addon_core::json::{JsonType, ScalarShape, StrictError, Value};
 use bedrock_addon_core::molang::{MolangFields, MolangVisitor, Step};
-use bedrock_addon_core::schema::{Bounded, End, FromJson, SchemaCx, SchemaFields};
+use bedrock_addon_core::schema::{Bounded, End, FromJson, SchemaCx, SchemaFields, from_value};
 use bedrock_addon_core::shared::FloatRange;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
@@ -222,7 +222,13 @@ impl From<&BlockList> for Value {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(BlockList);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for BlockList {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 
 /// The descriptors are walked each at its member, or at its index in the array.
 impl SchemaFields for BlockList {
@@ -311,7 +317,13 @@ impl From<&Chance> for Value {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(Chance);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for Chance {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_no_molang!(Chance);
 
 /// A ratio's `numerator` is at least 0 and its `denominator` at least 1.
@@ -378,7 +390,13 @@ impl From<&ChanceList> for Value {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(ChanceList);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for ChanceList {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_no_molang!(ChanceList);
 
 /// Each chance is checked at its member, or at its index in the array.
@@ -427,7 +445,13 @@ impl From<&WeightedBlock> for Value {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(WeightedBlock);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedBlock {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 
 /// The block is the element at position 0.
 impl SchemaFields for WeightedBlock {
@@ -504,7 +528,13 @@ impl TryFrom<&CarverRange> for Value {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(CarverRange);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for CarverRange {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 bedrock_addon_core::impl_no_molang!(CarverRange);
 
 /// A range tells its own finding; an array of another length than two is an error the

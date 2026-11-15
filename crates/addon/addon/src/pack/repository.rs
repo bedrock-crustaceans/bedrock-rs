@@ -5,10 +5,14 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, Diagnostics, JsonPath, Location, PackReport, Phase, Severity,
 };
 use bedrock_addon_core::document::{Origin, Rejected};
+use bedrock_addon_core::json::Scalars;
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::{self, JsonSlice, MAX_JSON_DEPTH, Value};
 use bedrock_addon_core::load::{LoadOptions, Place};
 use bedrock_addon_core::pack_identity::{PackIdVersion, PackOrigin, PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{Schema, read_document};
 use bedrock_addon_core::version::SemVersion;
+use bedrock_addon_core::versioning::Reading;
 use facet::Facet;
 use indexmap::IndexMap;
 use uuid::Uuid;
@@ -289,7 +293,7 @@ pub struct PackSelection {
 }
 
 /// An entry as written; unknown members are ignored.
-#[derive(Facet)]
+#[derive(Facet, Schema)]
 struct Entry {
     pack_id: Value,
     version: Value,
@@ -337,15 +341,38 @@ fn parse_list(
     }
     let text = std::str::from_utf8(bytes)
         .map_err(|error| reject(malformed(error.to_string()), JsonPath::new(), None))?;
-    let entries: Vec<Entry> = json::parse_at(JsonSlice::new(text)).map_err(|error| {
-        let blank = text.trim().is_empty();
-        let code = bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
-            &error.error.kind,
-            error.error.path.is_some(),
-            blank,
-        );
-        reject(code, error.path, Some(error.span))
-    })?;
+    let slice = JsonSlice::new(text);
+    let parsed = match json::parse::parse_slice(slice, json::parse::Options::default()) {
+        Ok(parsed) => parsed,
+        Err(fault) => {
+            // The text parse refused it: its error words the failure.
+            let blank = text.trim().is_empty();
+            let code = bedrock_addon_core::diagnostic::code_for_deserialize_error_kind(
+                &fault.to_error().kind,
+                false,
+                blank,
+            );
+            return Err(reject(code, JsonPath::new(), Some(fault.span)));
+        }
+    };
+    let mut told = Diagnostics::default();
+    let mut read = Read::new(Reading::OWN.with_scalars(Scalars::Strict), &mut told)
+        .profile(Profile::FIRST_FAILURE);
+    let node = Node::parsed(&parsed, JsonPath::new());
+    let Some(entries) = read_document::<Vec<Entry>>(&node, &mut read) else {
+        let failure = told
+            .iter()
+            .find(|finding| finding.severity == Severity::Error)
+            .or_else(|| told.iter().next());
+        return Err(match failure {
+            Some(finding) => reject(
+                finding.code.clone(),
+                finding.location.json_path.clone(),
+                finding.location.span,
+            ),
+            None => reject(Code::from(&core_codes::INVALID_TYPE), JsonPath::new(), None),
+        });
+    };
     entries
         .into_iter()
         .enumerate()

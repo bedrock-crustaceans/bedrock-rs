@@ -83,7 +83,7 @@ fn tables(path: &Path) -> Vec<(String, HashMap<String, String>)> {
         }
         let (key, value) = line.split_once(" = ").expect("key = value");
         let value = if value.starts_with('"') {
-            bedrock_addon_core::json::from_str::<String>(value).unwrap()
+            bedrock_addon_core::json::parse::string_literal(value).unwrap()
         } else {
             value.to_owned()
         };

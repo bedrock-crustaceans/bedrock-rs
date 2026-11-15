@@ -1915,8 +1915,8 @@ impl<'d> Read<'d> {
     }
 
     /// Tells `finding` as a failed member, at its own path, span and code, graded as
-    /// [`refuse`](Self::refuse) grades: for a reader that builds the finding itself (the bridge
-    /// to facet's read, a leaf's own detail).
+    /// [`refuse`](Self::refuse) grades: for a reader that builds the finding itself (a leaf's
+    /// own detail).
     pub fn refuse_with(&mut self, finding: Diagnostic) {
         if self.stopped {
             return;

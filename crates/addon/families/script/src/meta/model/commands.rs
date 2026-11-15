@@ -2,12 +2,13 @@
 //! and the enums those draw values from. The command table generated
 //! from it is [`bedrock_addon_core::vanilla::commands`].
 
+use bedrock_addon_core::schema::Schema;
 use facet::Facet;
 
 use crate::meta::MetaError;
 
 /// The commands file.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct CommandsFile {
     /// `module_type`: `commands`.
     pub module_type: String,
@@ -32,7 +33,7 @@ impl CommandsFile {
 }
 
 /// One command.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Command {
     /// `name`: the command as typed, without `/`.
     pub name: String,
@@ -49,14 +50,14 @@ pub struct Command {
 }
 
 /// One entry of `aliases`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct CommandAlias {
     /// `name`.
     pub name: String,
 }
 
 /// One argument list of a command.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Overload {
     /// `name`: its number as a string (`"1"`, `"2"`, …).
     pub name: String,
@@ -65,7 +66,7 @@ pub struct Overload {
 }
 
 /// One argument.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct Param {
     /// `name`: as the help text shows it; may contain spaces (`x angle`).
     pub name: String,
@@ -77,7 +78,7 @@ pub struct Param {
 }
 
 /// `params[].type`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct ParamType {
     /// `name`: a command enum's name upper-cased (`AIMASSISTACTIONSET`) or a built-in token
     /// (`SELECTION`, `INT`, `POSITION`, `postfix_d`, …).
@@ -85,7 +86,7 @@ pub struct ParamType {
 }
 
 /// One entry of `command_enums`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct CommandEnum {
     /// `name`.
     pub name: String,
@@ -94,7 +95,7 @@ pub struct CommandEnum {
 }
 
 /// One entry of `command_enums[].values`.
-#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[derive(Clone, Debug, PartialEq, Eq, Facet, Schema)]
 pub struct EnumValue {
     /// `value`.
     pub value: String,

@@ -33,8 +33,11 @@ mod tests {
     /// the step recorded.
     fn stepped(members: &str) -> Diagnostics {
         let text = format!(r#"{{"identifier": "demo:ghost", {members}}}"#);
+        let json =
+            bedrock_addon_core::json::from_str_jsonc::<bedrock_addon_core::json::Value>(&text)
+                .expect("JSON");
         let description =
-            bedrock_addon_core::json::from_str::<Description>(&text).expect("a description");
+            bedrock_addon_core::schema::read_value::<Description>(&json).expect("a description");
         let entity = ClientEntity {
             format_version: FormatVersion::new(1, 8, 0),
             description,

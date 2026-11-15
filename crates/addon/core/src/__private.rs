@@ -9,7 +9,7 @@ pub trait Sealed {}
 /// but the derive's output names only core).
 pub use facet::Shape;
 
-/// facet's `Facet`, for the bounds `from_json_via_facet!` and `#[derive(Schema)]` emit.
+/// facet's `Facet`, for the bounds `#[derive(Schema)]` emit.
 pub use facet::Facet;
 
 /// The grammar's dispatcher macro, which `schema::__attr!` forwards to (`__schema_attr!`).

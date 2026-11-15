@@ -8,6 +8,8 @@ use super::unrecognized;
 use crate::diagnostic::{Diagnostics, JsonPath, Severity};
 use crate::document::UnknownMembers;
 use crate::json::Value;
+use crate::json::kit::{Node, Read};
+use crate::schema::{FromJson, from_value_ref};
 
 /// An event trigger: the game's entity trigger (typed entity components) and the item
 /// side-car `Trigger` (the same object without `filters`).
@@ -91,6 +93,14 @@ impl TryFrom<&Value> for EventTrigger {
             extra,
             bare: false,
         })
+    }
+}
+
+/// Read as the game's filter reader reads the shape (`TryFrom<&Value>`): the slice's scalar
+/// rules do not reach the tests inside, and a refusal is one wrong type at the member.
+impl FromJson for EventTrigger {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
     }
 }
 

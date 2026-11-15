@@ -7,7 +7,8 @@ use facet_value::VArray;
 
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::ValueExt;
-use bedrock_addon_core::schema::{self, Schema};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, FromJson, Schema, from_value};
 use bedrock_addon_core::shared::ShapeErrorKind;
 use bedrock_addon_shared_shapes::BlockSpecifier;
 
@@ -227,7 +228,13 @@ impl TryFrom<Value> for WeightedBiomes {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(WeightedBiomes);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedBiomes {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 
 impl From<&WeightedBiomes> for Value {
     fn from(biomes: &WeightedBiomes) -> Self {
@@ -279,7 +286,13 @@ impl TryFrom<Value> for WeightedClimate {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(WeightedClimate);
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedClimate {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
 
 impl From<&WeightedClimate> for Value {
     fn from(climate: &WeightedClimate) -> Self {

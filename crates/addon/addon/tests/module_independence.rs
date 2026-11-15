@@ -1560,18 +1560,20 @@ fn declared_paths(code: &str) -> Vec<&str> {
 #[test]
 fn library_code_does_not_read_the_text_of_a_finding_s_path() {
     /// The library files that write a path out for a reader, and on how many lines: the
-    /// text of a finding (`Display for Diagnostic`), the texts of three errors that say
-    /// where (`EncodeError::NotRepresentable`, `ShapeError`, `MetaError::UnknownMember`) and
+    /// text of a finding (`Display for Diagnostic`), the texts of five errors that say
+    /// where (`EncodeError::NotRepresentable`, `ShapeError`, `MetaError::UnknownMember`,
+    /// `JsonFault::Shape`, `ContentsJsonError::Shape`) and
     /// the JSON pointer the legacy manifest reader's messages name a member by
     /// (`ManifestNotSemVer`, `ManifestWrongType`, `ManifestInvalidValue`). They are messages;
     /// nothing reads a key, a prefix or a step back out of them. A line more in one of these
     /// files, or one in any other file, fails.
-    const SHOWN: [(&str, usize); 5] = [
+    const SHOWN: [(&str, usize); 6] = [
         ("core/src/diagnostic/mod.rs", 1),
         ("core/src/json/mod.rs", 1),
         ("core/src/shared/read.rs", 1),
-        ("families/script/src/meta/error.rs", 1),
+        ("families/script/src/meta/error.rs", 2),
         ("manifest/src/read.rs", 1),
+        ("storage/src/contents.rs", 1),
     ];
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     let mut violations = Vec::new();

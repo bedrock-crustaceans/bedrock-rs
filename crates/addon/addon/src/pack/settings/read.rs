@@ -7,7 +7,6 @@
 //! finding keeps its file offset.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use facet_json::RawJson;
 use indexmap::IndexMap;
 use uuid::Uuid;
 
@@ -15,7 +14,7 @@ use crate::diagnostic::{
     Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, code_for_deserialize_error_kind,
 };
 use crate::json::kit::{Disposition, Node, Read};
-use crate::json::{EncodeError, JsonSlice, Value, parse_at};
+use crate::json::{EncodeError, JsonSlice, Value};
 use crate::version::FormatVersion;
 use crate::versioning::{ParseCx, Reading, VersionStruct, Versioned};
 
@@ -64,14 +63,16 @@ pub(super) fn read(
     d: &mut Diagnostics,
     grammar: Grammar,
 ) -> Option<Vec<Settings>> {
-    let Ok(json) = crate::json::from_str_jsonc::<Value>(payload.text) else {
-        // Not reached for a payload the door has read; the typed read words the failure.
-        if let Err(failure) = parse_at::<IndexMap<String, RawJson<'_>>>(payload) {
-            slice_error(d, &failure, payload, &cx.at);
-        }
-        return None;
-    };
-    let node = Node::with_text(&json, cx.at.clone(), payload);
+    let parsed =
+        match crate::json::parse::parse_slice(payload, crate::json::parse::Options::default()) {
+            Ok(parsed) => parsed,
+            Err(fault) => {
+                // Not reached for a payload the door has read; the text parse words the failure.
+                slice_error(d, &fault, payload, &cx.at);
+                return None;
+            }
+        };
+    let node = Node::parsed(&parsed, cx.at.clone());
     let mut reader = Reader {
         grammar,
         read: Read::new(READING, d),
@@ -233,21 +234,20 @@ fn string_token<'v>(node: &Node<'v>) -> Option<&'v str> {
         .then_some(text)
 }
 
-/// A failed typed read of `slice` at `at`.
+/// A text of `slice` the parser refused, at `at`.
 fn slice_error(
     d: &mut Diagnostics,
-    failure: &crate::json::SliceError,
+    fault: &crate::json::parse::Fault,
     slice: JsonSlice<'_>,
     at: &JsonPath,
 ) {
     let blank = slice.text.trim().is_empty();
-    let code =
-        code_for_deserialize_error_kind(&failure.error.kind, !failure.path.is_empty(), blank);
+    let code = code_for_deserialize_error_kind(&fault.to_error().kind, false, blank);
     d.push(Diagnostic::new(
         code,
         Severity::Error,
         Phase::Parse,
-        Location::new(None, None, at.join(&failure.path), Some(failure.span)),
+        Location::new(None, None, at.clone(), Some(fault.span)),
     ));
 }
 

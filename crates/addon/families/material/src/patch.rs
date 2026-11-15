@@ -302,7 +302,7 @@ mod tests {
     use super::*;
 
     fn value(text: &str) -> Value {
-        bedrock_addon_core::json::from_str::<Value>(text).unwrap()
+        bedrock_addon_core::json::from_str_jsonc::<Value>(text).unwrap()
     }
 
     fn patched(base: &str, patch: &str) -> Value {

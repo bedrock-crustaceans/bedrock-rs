@@ -17,9 +17,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::document::{Document, Origin, Rejected, VersionInfo};
 use bedrock_addon_core::json::parse::{Options, Parsed as Text, parse};
-use bedrock_addon_core::json::{
-    JsonSlice, MAX_JSON_DEPTH, Value, Winner, check_depth, parse_at, strip_bom,
-};
+use bedrock_addon_core::json::{JsonSlice, MAX_JSON_DEPTH, Winner, check_depth, strip_bom};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bedrock_addon_core::vanilla::ActorType;
@@ -95,8 +93,8 @@ fn text_of<'a>(bytes: &'a [u8], diagnostics: &mut Diagnostics) -> Outcome<Cow<'a
     };
     // The game parses the whole text with its JSON reader first: a syntax error anywhere drops
     // the file.
-    if let Err(error) = parse_at::<Value>(JsonSlice::new(text)) {
-        return malformed(error.error.to_string());
+    if let Err(fault) = parse(text, Options::default()) {
+        return malformed(fault.to_error().to_string());
     }
     // Of a member written twice the last one stands, whole and at its place:
     // the walk and the version peek read the text without the earlier copies.

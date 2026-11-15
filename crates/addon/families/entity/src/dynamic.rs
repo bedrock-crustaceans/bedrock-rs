@@ -271,10 +271,10 @@ fn gather(entity: &Entity, cx: &mut ValidateCx<'_>, drop: &mut Vec<ComponentAt>)
             if value.is_number() || value.is_bool() {
                 continue;
             }
-            let molang = value.as_string().and_then(|s| {
-                let text = bedrock_addon_core::json::to_json(&Value::from(s.as_str())).ok()?;
-                bedrock_addon_core::json::from_str::<Molang>(text.trim_end()).ok()
-            });
+            let molang = value
+                .is_string()
+                .then(|| bedrock_addon_core::schema::read_value::<Molang>(&value))
+                .flatten();
             if let Some(value) = molang {
                 members.push(Member {
                     component,
@@ -420,7 +420,7 @@ mod tests {
 
     #[test]
     fn a_pattern_names_each_element_of_a_list_or_the_member_itself() {
-        let json = bedrock_addon_core::json::from_str::<Value>(
+        let json = bedrock_addon_core::json::from_str_jsonc::<Value>(
             r#"{"a": [{"b": [1, 2]}, {"b": 3}, 4], "c": {"d": 5}}"#,
         )
         .expect("json");

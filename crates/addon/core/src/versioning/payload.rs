@@ -277,7 +277,7 @@ pub(crate) fn failure_finding(
 pub fn write_payload<'f, T: Facet<'f>>(value: &T) -> Result<Value, EncodeError> {
     let text = crate::json::to_json(value)?;
     // The writer's output is JSON this reader accepts; were it not, the value has no JSON form.
-    crate::json::from_str::<Value>(&text).map_err(|_| EncodeError::NotRepresentable {
+    crate::json::from_str_jsonc::<Value>(&text).map_err(|_| EncodeError::NotRepresentable {
         at: JsonPath::new(),
         what: Unrepresentable::Unsupported,
     })

@@ -57,7 +57,7 @@ pub(crate) fn door_unknown_members<'f, T: Facet<'f>>(
 
 /// [`door_unknown_members`] of a value a field holds that says `field` (`schema::unknown`):
 /// the word is the first object's below it, as the door's walk of the whole document takes it.
-pub(crate) fn held_unknown_members<'f, T: Facet<'f>>(
+fn held_unknown_members<'f, T: Facet<'f>>(
     target: &T,
     json: &Value,
     keeps_unknown: bool,

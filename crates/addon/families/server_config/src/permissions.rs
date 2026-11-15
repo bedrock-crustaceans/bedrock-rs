@@ -2,7 +2,6 @@
 //! wrong type counts as absent. The members are `commands_permission_level`,
 //! `allowed_modules` and `module_permissions`.
 
-use facet_json::RawJson;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -39,9 +38,7 @@ pub(super) fn read(bytes: &[u8], sink: &mut Sink<'_>) -> Read {
             return;
         };
         for (name, raw) in &members {
-            let Some(slice) = root.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             let at = at.child(name);
             match name.as_str() {
                 ALLOWED_MODULES => {
@@ -85,9 +82,7 @@ fn allowed_modules(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> 
     let mut modules = Vec::with_capacity(elements.len());
     let mut wildcard = None;
     for (index, raw) in elements.iter().enumerate() {
-        let Some(slice) = slice.nested(raw) else {
-            continue;
-        };
+        let slice = *raw;
         let at = at.index(index);
         let Some(module) = string(slice) else {
             // The string elements still apply.
@@ -140,9 +135,7 @@ fn module_permissions(
         return;
     };
     for (module, raw) in &modules {
-        let Some(slice) = slice.nested(raw) else {
-            continue;
-        };
+        let slice = *raw;
         let at = at.child(module);
         let is_net = module == SERVER_NET_MODULE;
         let Some(settings) = object(slice) else {
@@ -161,7 +154,7 @@ fn module_permissions(
             // Kept, read by nothing.
             sink.info(Code::from(&core_codes::NO_EFFECT), at.clone(), span(slice));
         }
-        let settings = values_of(slice, &settings, &at, sink, is_net);
+        let settings = values_of(&settings, &at, sink, is_net);
         permissions
             .module_permissions
             .insert(module.clone(), settings);
@@ -171,8 +164,7 @@ fn module_permissions(
 /// The members of a settings object as untyped values. `loaded`: the entry was loaded as
 /// well (server-net), and that load has said what there is to say about its numbers.
 fn values_of(
-    slice: JsonSlice<'_>,
-    settings: &IndexMap<String, RawJson<'_>>,
+    settings: &IndexMap<String, JsonSlice<'_>>,
     at: &JsonPath,
     sink: &mut Sink<'_>,
     loaded: bool,
@@ -180,13 +172,12 @@ fn values_of(
     settings
         .iter()
         .filter_map(|(key, raw)| {
-            let slice = slice.nested(raw)?;
             let value = if loaded {
-                let mut value = raw_value(slice)?;
+                let mut value = raw_value(*raw)?;
                 bedrock_addon_core::json::clamp_non_finite(&mut value, None);
                 value
             } else {
-                value(slice, &at.child(key), sink)?
+                value(*raw, &at.child(key), sink)?
             };
             Some((key.clone(), value))
         })

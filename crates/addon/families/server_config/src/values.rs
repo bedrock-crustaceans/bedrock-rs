@@ -23,9 +23,7 @@ pub(super) fn variables(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, V
         };
         variables.reserve(members.len());
         for (name, raw) in &members {
-            let Some(slice) = root.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             if let Some(value) = value(slice, &at.child(name), sink) {
                 variables.insert(name.clone(), value);
             }
@@ -49,9 +47,7 @@ pub(super) fn secrets(bytes: &[u8], sink: &mut Sink<'_>) -> IndexMap<String, Sec
         secrets.reserve(members.len());
         let mut skipped = Vec::new();
         for (name, raw) in &members {
-            let Some(slice) = root.nested(raw) else {
-                continue;
-            };
+            let slice = *raw;
             match string(slice) {
                 Some(secret) => {
                     secrets.insert(name.clone(), SecretString::new(secret));

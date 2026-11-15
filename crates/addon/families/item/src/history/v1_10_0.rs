@@ -585,7 +585,7 @@ mod tests {
     /// text, the effect kept.
     #[test]
     fn rule_19d_unknown_legacy_effect_names_warn() {
-        let json: Value = bedrock_addon_core::json::from_str(
+        let json: Value = bedrock_addon_core::json::from_str_jsonc(
             r#"{"minecraft:food": {"nutrition": 1, "effects": [{"name": "speed"}, {"name": "zoom"}], "remove_effects": ["poison", "fizz"]}}"#,
         )
         .unwrap();

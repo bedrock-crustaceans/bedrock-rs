@@ -384,8 +384,13 @@ impl TryFrom<Value> for StateValue {
     }
 }
 
-// bridge: the block shapes read by their own rules
-bedrock_addon_core::from_json_via_value!(ref StateValue);
+impl FromJson for StateValue {
+    // A state is read as the game's state reader reads it (an integer token, a bool or a
+    // string), not by the slice's scalar rule, and a refusal is one wrong type at the state.
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value_ref(node, read, |value| Self::try_from(value))
+    }
+}
 
 impl From<&StateValue> for Value {
     fn from(state: &StateValue) -> Self {
