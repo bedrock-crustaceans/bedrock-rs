@@ -2,10 +2,11 @@
 //! for a struct, `impl Fields` (the read of its fields from an object it may share with the
 //! struct that flattens it). The emitted code is a slot per field, a match arm per JSON name and
 //! one call per field that says what absence and failure make of it; the rest is core's
-//! `schema::__read`.
+//! `schema::derive_support`.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, quote_spanned};
+use syn::spanned::Spanned;
 use syn::{DataEnum, Error, Fields, Ident, Member, Type, Variant};
 
 use super::attr::{ContainerAttrs, FieldAttrs};
@@ -28,9 +29,9 @@ fn paths() -> Paths {
         node: quote!(#core::json::kit::Node),
         read: quote!(#core::json::kit::Read),
         from_json: quote!(#core::schema::FromJson),
-        fields: quote!(#core::schema::__read::Fields),
-        object: quote!(#core::schema::__read::Object),
-        reader: quote!(#core::schema::__read),
+        fields: quote!(#core::schema::derive_support::Fields),
+        object: quote!(#core::schema::derive_support::Object),
+        reader: quote!(#core::schema::derive_support),
         expected: quote!(#core::json::kit::Expected),
     }
 }
@@ -60,7 +61,7 @@ fn untaken_value(field: &syn::Field) -> TokenStream {
     }
     if named(ty, "Written") {
         return quote!(::core::convert::From::from(::core::option::Option::Some(
-            ::core::clone::Clone::clone(object.node().value())
+            ::core::clone::Clone::clone(__object.node().value())
         )));
     }
     attrs.default.and_then(|default| default.value).map_or_else(
@@ -92,33 +93,92 @@ fn taken(info: &FieldInfo) -> bool {
     !named(info.ty, "UnknownMembers")
 }
 
-/// `knows`: the JSON names of the fields, a flattened struct's included.
+/// `knows`: the JSON names of the fields, a flattened struct's included, of the member
+/// `__key`.
 pub(super) fn knows(infos: &[FieldInfo]) -> TokenStream {
     let p = paths();
     let fields = &p.fields;
     let names: Vec<&String> = infos
         .iter()
         .filter(|info| taken(info) && !info.inline)
-        .map(|info| &info.json)
+        .flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()))
         .collect();
     let own = if names.is_empty() {
         quote!(false)
     } else {
-        quote!(::core::matches!(key, #(#names)|*))
+        quote!(::core::matches!(__key, #(#names)|*))
     };
     let flattened = infos
         .iter()
         .filter(|info| info.inline && taken(info))
         .map(|info| {
             let ty = info.ty;
-            quote!(|| <#ty as #fields>::knows(key))
+            quote_spanned!(ty.span()=> || <#ty as #fields>::knows(__key))
         });
     quote!(#own #(#flattened)*)
 }
 
 /// The refusals of the read's keys: `read_with` on a flattened field or on the field that holds
-/// the unknown members.
+/// the unknown members; a code or `finite` where the field has no member of its own to read,
+/// `missing` on a field that is never missing, `finite` on a field that holds no float; a
+/// list's keys on a field that is no `Vec` or that has its own read; `or_kept` on a field that
+/// is no `Option`.
 pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let list_key = attrs.iterated.or(attrs.elements.map(|(_, span)| span));
+    let held = info.option.unwrap_or(info.ty);
+    if let Some(span) = list_key {
+        if ty::name(held).is_none_or(|name| name != "Vec") {
+            errors.push(Error::new(
+                span,
+                "`schema::iterated` and `schema::elements` read a list: a `Vec` field (or an \
+                 `Option` of one)",
+            ));
+        } else if attrs.read_with.is_some() {
+            errors.push(Error::new(
+                span,
+                "a field with `schema::read_with` is read by its function, which reads the list \
+                 its own way",
+            ));
+        }
+    }
+    if let Some((_, span)) = attrs.or_kept
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
+        ));
+    }
+    let ruled = [&attrs.wrong_type, &attrs.missing, &attrs.invalid]
+        .into_iter()
+        .find_map(|code| code.as_ref().map(|(_, span)| *span))
+        .or(attrs.finite);
+    if let Some(span) = ruled.filter(|_| attrs.flatten || !taken(info)) {
+        errors.push(Error::new(
+            span,
+            "a member's code or rule is for a field that reads one member: a flattened field \
+             or an `UnknownMembers` one has none",
+        ));
+    }
+    if let Some((_, span)) = &attrs.missing
+        && ((info.option.is_some() && attrs.required.is_none()) || attrs.default.is_some())
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::missing` words a member the document must write: an `Option` field \
+             (without `schema::required`) or one with a `default` is never missing",
+        ));
+    }
+    if let Some(span) = attrs.finite
+        && !ty::name(info.option.unwrap_or(info.ty))
+            .is_some_and(|name| name == "f32" || name == "f64")
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::finite` applies to an `f32` or `f64` field (or an `Option` of one)",
+        ));
+    }
     if let Some((_, span)) = &info.attrs.read_with {
         if info.attrs.flatten {
             errors.push(Error::new(
@@ -141,46 +201,182 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
 struct FieldRead {
     slot: TokenStream,
     arm: TokenStream,
+    /// The keep of a value it could not read (`schema::or_kept`), after the members.
+    kept: Option<TokenStream>,
     finish: TokenStream,
 }
 
-/// The read of the field `info`, its value bound to `__v{index}`.
-fn field_read(info: &FieldInfo, index: usize) -> FieldRead {
+/// The read of the field `info`, its value bound to `__v{index}`. The calls that need the
+/// field's type to have a read are spanned at the type, so a type without one is the error
+/// there.
+fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldRead {
     let reader = paths().reader;
     let slot = format_ident!("__s{index}");
+    let rules = member_rules(info);
     let value = format_ident!("__v{index}");
     let held = info.option.unwrap_or(info.ty);
-    let field_rule = unknown_option(info.attrs.unknown.as_ref());
-    let read_call = match (&info.attrs.read_with, info.option.is_some()) {
-        (Some((with, _)), _) => quote!(#slot.read_with(&member, read, #field_rule, #with);),
-        (None, true) => quote!(#slot.read_option(&member, read, #field_rule);),
-        (None, false) => quote!(#slot.read(&member, read, #field_rule);),
-    };
+    let read_call = member_read(info, &slot);
+    // A member written for a later engine than the pack's is read and told.
+    let since_engine = info.attrs.since_engine.map(|version| {
+        let version = format_version(version);
+        quote!(#reader::since_engine(__read, __member, #version);)
+    });
     let json = &info.json;
+    let names = info
+        .attrs
+        .alias
+        .iter()
+        .fold(quote!(#json), |names, alias| quote!(#names | #alias));
     let finish = if info.option.is_some() && info.attrs.required.is_none() {
-        quote!(let #value = #slot.optional(read, &mut __ok);)
+        quote!(let #value = #slot.optional(__read, &mut __ok);)
     } else if let Some(default) = &info.attrs.default {
         let value_expr = default.value.as_ref().map_or_else(
             || quote!(::core::default::Default::default()),
             |expr| super::typed(expr, info.ty),
         );
-        quote!(let #value = #slot.or_default(read, &mut __ok, || #value_expr);)
+        quote!(let #value = #slot.or_default(__read, &mut __ok, || #value_expr);)
     } else {
         // A plain field, or an `Option` the document must write (`schema::required`): its value
         // is the field's own, `Some(..)` for the `Option`.
-        quote!(let #value = #slot.required(object, #json, read, &mut __ok);)
+        quote!(let #value = #slot.required(__object, #json, __read, &mut __ok);)
     };
+    let new_slot = rules.map_or_else(
+        || quote!(#reader::Slot::<#held>::new()),
+        |rules| {
+            quote! {{
+                static __RULES: #reader::MemberRules = #rules;
+                #reader::Slot::<#held>::ruled(&__RULES)
+            }}
+        },
+    );
     FieldRead {
-        slot: quote!(let mut #slot = #reader::Slot::<#held>::new();),
+        slot: quote!(let mut #slot = #new_slot;),
         arm: quote! {
-            #json => {
-                if !object.absent(&member, read) {
+            #names => {
+                if !__object.absent(__member, __read) {
                     #read_call
+                    #since_engine
                 }
+                true
             }
         },
+        kept: info.attrs.or_kept.map(|_| {
+            quote! {
+                if let ::core::option::Option::Some(__kept) = #slot.take_kept() {
+                    __object.keep(#json, __kept, __read, #extra_arg);
+                }
+            }
+        }),
         finish,
     }
+}
+
+/// The call that reads the member of field `info` into its slot: the field's `read_with`, the
+/// read of a list it states (`schema::iterated`, `schema::elements`), or its type's; a value it
+/// cannot read kept as written where it says `schema::or_kept`.
+fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
+    let reader = paths().reader;
+    let held = info.option.unwrap_or(info.ty);
+    let field_rule = unknown_option(info.attrs.unknown.as_ref());
+    let p = paths();
+    let (node, read) = (&p.node, &p.read);
+    let kind = quote! {{
+        #[allow(unused_imports)]
+        use #reader::{KindOfNone as _, KindOfRead as _};
+        (&#reader::Probe::<#held>::NEW).kind()
+    }};
+    // The field's own read: its `read_with`, a list it states the read of, or none (its type's).
+    let iterated = info.attrs.iterated.is_some();
+    let list = (iterated || info.attrs.elements.is_some())
+        .then(|| ty::elements(held))
+        .flatten()
+        .map(|element| {
+            let failure = match info.attrs.elements {
+                Some((true, _)) => quote!(Drop),
+                Some((false, _)) => quote!(FailList),
+                None => quote!(ByReading),
+            };
+            quote! {
+                |__node: &#node<'_>, __read: &mut #read<'_>| {
+                    #reader::list::<#element>(
+                        __node,
+                        __read,
+                        #iterated,
+                        ::bedrock_addon_core::schema::ElementFailure::#failure,
+                    )
+                }
+            }
+        });
+    let with = info
+        .attrs
+        .read_with
+        .as_ref()
+        .map(|(with, _)| quote!(#with))
+        .or(list);
+    match (info.attrs.or_kept, with, info.option.is_some()) {
+        // A value it cannot read is kept as written.
+        (Some((told, _)), with, _) => {
+            let with = with.unwrap_or_else(|| {
+                quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json)
+            });
+            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #with);)
+        }
+        // An iterated list reads a `null` as a value that is no array.
+        (None, Some(with), true) if !iterated => {
+            quote!(#slot.read_option_with(__member, __read, #field_rule, #kind, #with);)
+        }
+        (None, Some(with), _) => quote!(#slot.read_with(__member, __read, #field_rule, #with);),
+        (None, None, true) => quote_spanned! {held.span()=>
+            ::bedrock_addon_core::schema::derive_support::Slot::<#held>::read_option(&mut #slot, __member, __read, #field_rule);
+        },
+        (None, None, false) => quote_spanned! {held.span()=>
+            ::bedrock_addon_core::schema::derive_support::Slot::<#held>::read(&mut #slot, __member, __read, #field_rule);
+        },
+    }
+}
+
+/// A format version's tokens.
+fn format_version(version: crate::attr::Version) -> TokenStream {
+    let crate::attr::Version {
+        major,
+        minor,
+        patch,
+    } = version;
+    quote!(::bedrock_addon_core::version::FormatVersion::new(#major, #minor, #patch))
+}
+
+/// The field's rules for its member (`schema::wrong_type`, `missing`, `invalid`, `finite`), a
+/// `MemberRules` value; `None` when it states none.
+fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
+    let attrs = &info.attrs;
+    if attrs.wrong_type.is_none()
+        && attrs.missing.is_none()
+        && attrs.invalid.is_none()
+        && attrs.finite.is_none()
+    {
+        return None;
+    }
+    let reader = paths().reader;
+    let code = |code: &Option<(syn::Expr, proc_macro2::Span)>| {
+        code.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |(expr, _)| quote!(::core::option::Option::Some(&#expr)),
+        )
+    };
+    let (wrong_type, missing, invalid) = (
+        code(&attrs.wrong_type),
+        code(&attrs.missing),
+        code(&attrs.invalid),
+    );
+    let finite = attrs.finite.is_some();
+    Some(quote! {
+        #reader::MemberRules {
+            wrong_type: #wrong_type,
+            missing: #missing,
+            invalid: #invalid,
+            finite: #finite,
+        }
+    })
 }
 
 /// `Some(&mut __extra)` where the fields have an `UnknownMembers` field, else `None`.
@@ -192,16 +388,18 @@ fn extra_arg(extra: bool) -> TokenStream {
     }
 }
 
-/// The body of a read of `fields` from `object`, evaluating to `Option<#construct ..>`, with
-/// `object`, `read`, `unknown` and `tag` in scope (`Fields::read_fields`' parameters).
+/// The body of a read of `fields` from `__object`, evaluating to `Option<#construct ..>`, with
+/// `__object`, `__read`, `__unknown` and `__tag` in scope (`Fields::read_fields`' parameters);
+/// `knows` is the function that names the fields' members.
 fn fields_body(
     construct: &TokenStream,
     fields: &Fields,
     infos: &[FieldInfo],
     rule: Option<&String>,
+    knows: &TokenStream,
 ) -> TokenStream {
     let p = paths();
-    let (fields_trait, reader) = (&p.fields, &p.reader);
+    let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
     let rule = unknown_option(rule);
     let marked = marked(fields);
     let extra = has_extra(fields);
@@ -212,31 +410,38 @@ fn fields_body(
             .position(|(index, field)| member_of(field, index) == info.member)
             .unwrap_or_default()
     };
+    let extra_arg = extra_arg(extra);
     let (mut slots, mut arms, mut finishes, mut flattened, mut flat_skips) =
         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
+    let mut kept = Vec::new();
     for info in infos.iter().filter(|info| taken(info)) {
         let index = index_of(info);
         if info.inline {
             let (ty, value) = (info.ty, format_ident!("__v{index}"));
-            flattened.push(quote! {
+            flattened.push(quote_spanned! {ty.span()=>
                 let #value = #reader::flattened(
-                    <#ty as #fields_trait>::read_fields(object, read, false, tag),
+                    <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
                     &mut __ok,
                 );
             });
-            flat_skips.push(quote!(_ if <#ty as #fields_trait>::knows(key) => {}));
+            flat_skips.push(quote!(_ if <#ty as #fields_trait>::knows(__key) => true,));
             continue;
         }
-        let FieldRead { slot, arm, finish } = field_read(info, index);
+        let FieldRead {
+            slot,
+            arm,
+            kept: keep,
+            finish,
+        } = field_read(info, index, &extra_arg);
         slots.push(slot);
         arms.push(arm);
+        kept.extend(keep);
         finishes.push(finish);
     }
     let extra_decl = extra.then(|| {
         let core = core();
         quote!(let mut __extra = #core::document::UnknownMembers::default();)
     });
-    let extra_arg = extra_arg(extra);
     let inits = fields.iter().enumerate().map(|(index, field)| {
         let member = member_of(field, index);
         let value = format_ident!("__v{index}");
@@ -249,28 +454,40 @@ fn fields_body(
         quote!(#member: #built)
     });
     let build = quote!(#construct { #(#inits),* });
-    let knows = knows(infos);
+    // The members a declaration-order read asks for, in declaration order, and the ones a
+    // struct reads from a format version on.
+    let own = || infos.iter().filter(|info| taken(info) && !info.inline);
+    let names = own().flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()));
+    let gates = own().filter_map(|info| {
+        let version = format_version(info.attrs.since_format?);
+        let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
+        Some(quote!(#((#names, #version)),*))
+    });
     quote! {
-        let __disposal = object.disposal(read, #rule, #marked);
+        let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
         #(#slots)*
-        let __told = unknown
-            && object.unknown_first(read, __disposal, tag, |key: &str| -> bool { #knows }, #extra_arg);
-        for (key, member) in object.members() {
-            if read.stopped() {
-                break;
-            }
-            match key {
-                #(#arms)*
-                _ if ::core::option::Option::Some(key) == tag => {}
-                #(#flat_skips)*
-                _ => {
-                    if unknown && !__told {
-                        object.unknown(key, &member, read, __disposal, #extra_arg);
-                    }
+        #reader::read_members(
+            __object,
+            __read,
+            __unknown,
+            __tag,
+            &[#(#names),*],
+            &[#(#gates),*],
+            #knows,
+            |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| -> bool {
+                match __key {
+                    #(#arms)*
+                    _ if ::core::option::Option::Some(__key) == __tag => true,
+                    #(#flat_skips)*
+                    _ => false,
                 }
-            }
-        }
+            },
+            |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
+                __object.unknown(__key, __member, __read, __disposal, #extra_arg);
+            },
+        );
+        #(#kept)*
         let mut __ok = true;
         #(#flattened)*
         #(#finishes)*
@@ -303,10 +520,22 @@ pub(super) fn struct_read(
             return TokenStream::new();
         };
         let ty = info.ty;
-        let inner = info.attrs.read_with.as_ref().map_or_else(
-            || quote!(<#ty as #from_json>::from_json(node, read)?),
-            |(with, _)| quote!((#with)(node, read)?),
-        );
+        // A field read by its own function takes no wording or `null` of the type's.
+        let (inner, kind) = match &info.attrs.read_with {
+            Some((with, _)) => (
+                quote!((#with)(__node, __read)?),
+                quote! {
+                    const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
+                },
+            ),
+            None => (
+                quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(__node, __read)?),
+                quote_spanned! {ty.span()=>
+                    const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
+                    const HOLDS_NULL: bool = <#ty as #from_json>::HOLDS_NULL;
+                },
+            ),
+        };
         let build = match &info.member {
             Member::Named(name) => quote!(Self { #name: #inner }),
             Member::Unnamed(_) => quote!(Self(#inner)),
@@ -314,47 +543,53 @@ pub(super) fn struct_read(
         return quote! {
             #[automatically_derived]
             impl #from_json for #ident {
-                const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
+                #kind
 
-                fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                     ::core::option::Option::Some(#build)
                 }
             }
         };
     }
     let knows = knows(infos);
-    let body = fields_body(&quote!(#ident), fields, infos, container.unknown.as_ref());
+    let body = fields_body(
+        &quote!(#ident),
+        fields,
+        infos,
+        container.unknown.as_ref(),
+        &quote!(<Self as #fields_trait>::knows),
+    );
     quote! {
         #[automatically_derived]
         impl #from_json for #ident {
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Object);
 
-            fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
-                let object = #object::open(node, read)?;
-                let value = <Self as #fields_trait>::read_fields(
-                    &object,
-                    read,
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                let __object = #object::open(__node, __read)?;
+                let __value = <Self as #fields_trait>::read_fields(
+                    &__object,
+                    __read,
                     true,
                     ::core::option::Option::None,
                 );
-                object.close(read);
-                value
+                __object.close(__read);
+                __value
             }
         }
 
         #[automatically_derived]
         impl #fields_trait for #ident {
-            fn knows(key: &str) -> bool {
+            fn knows(__key: &str) -> bool {
                 #knows
             }
 
             #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
             fn read_fields(
-                object: &#object<'_>,
-                read: &mut #read<'_>,
-                unknown: bool,
-                tag: ::core::option::Option<&'static str>,
+                __object: &#object<'_>,
+                __read: &mut #read<'_>,
+                __unknown: bool,
+                __tag: ::core::option::Option<&'static str>,
             ) -> ::core::option::Option<Self> {
                 #body
             }
@@ -362,8 +597,9 @@ pub(super) fn struct_read(
     }
 }
 
-/// The read of a string enum: by name, through its `from_name`.
-pub(super) fn unit_enum_read(ident: &Ident) -> TokenStream {
+/// The read of a string enum: by name, through its `from_name`; from a string and nothing
+/// else when `string_only`.
+pub(super) fn unit_enum_read(ident: &Ident, string_only: bool) -> TokenStream {
     let Paths {
         node,
         read,
@@ -378,8 +614,8 @@ pub(super) fn unit_enum_read(ident: &Ident) -> TokenStream {
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::String);
 
-            fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
-                #reader::unit_enum(node, read, Self::from_name)
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                #reader::unit_enum(__node, __read, #string_only, Self::from_name)
             }
         }
     }
@@ -393,6 +629,8 @@ pub(super) struct ReadVariant<'a> {
     pub fields: &'a [FieldInfo<'a>],
     /// A struct variant's `schema::unknown`.
     pub unknown: Option<String>,
+    /// The arm of an untagged enum a value takes otherwise (`schema::otherwise`).
+    pub otherwise: bool,
 }
 
 /// What a variant's payload is.
@@ -417,24 +655,27 @@ fn payload<'a>(variant: &ReadVariant<'a>) -> Payload<'a> {
     }
 }
 
-/// The local function that reads struct variant `index` of `ident` from an object.
+/// The local function that reads struct variant `index` of `ident` from an object (a variant
+/// has no `Fields` impl, so its `knows` is a closure).
 fn variant_fn(ident: &Ident, index: usize, variant: &ReadVariant) -> TokenStream {
     let Paths { read, object, .. } = paths();
     let v = &variant.variant.ident;
     let name = format_ident!("__variant_{index}");
+    let knows = knows(variant.fields);
     let body = fields_body(
         &quote!(#ident::#v),
         &variant.variant.fields,
         variant.fields,
         variant.unknown.as_ref(),
+        &quote!(|__key: &str| -> bool { #knows }),
     );
     quote! {
         #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
         fn #name(
-            object: &#object<'_>,
-            read: &mut #read<'_>,
-            unknown: bool,
-            tag: ::core::option::Option<&'static str>,
+            __object: &#object<'_>,
+            __read: &mut #read<'_>,
+            __unknown: bool,
+            __tag: ::core::option::Option<&'static str>,
         ) -> ::core::option::Option<#ident> {
             #body
         }
@@ -445,8 +686,8 @@ fn variant_fn(ident: &Ident, index: usize, variant: &ReadVariant) -> TokenStream
 fn newtype_value(ty: &Type, with: Option<&syn::Expr>, at: &TokenStream) -> TokenStream {
     let from_json = paths().from_json;
     with.map_or_else(
-        || quote!(<#ty as #from_json>::from_json(#at, read)),
-        |with| quote!((#with)(#at, read)),
+        || quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(#at, __read)),
+        |with| quote!((#with)(#at, __read)),
     )
 }
 
@@ -455,18 +696,18 @@ fn struct_value(index: usize, at: &TokenStream) -> TokenStream {
     let object = paths().object;
     let name = format_ident!("__variant_{index}");
     quote! {{
-        match #object::open(#at, read) {
-            ::core::option::Option::Some(object) => {
-                let value = #name(&object, read, true, ::core::option::Option::None);
-                object.close(read);
-                value
+        match #object::open(#at, __read) {
+            ::core::option::Option::Some(__object) => {
+                let __value = #name(&__object, __read, true, ::core::option::Option::None);
+                __object.close(__read);
+                __value
             }
             ::core::option::Option::None => ::core::option::Option::None,
         }
     }}
 }
 
-/// The read of an untagged enum with data: the arm the door chooses (`__read::untagged_arm`),
+/// The read of an untagged enum with data: the arm the door chooses (`derive_support::untagged_arm`),
 /// then that variant's payload.
 pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStream {
     let Paths {
@@ -491,7 +732,7 @@ pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
         let v = &v.variant.ident;
         quote!(::core::option::Option::Some(#at) => ::core::option::Option::Some(Self::#v),)
     });
-    let at = quote!(node);
+    let at = quote!(__node);
     let arms = variants.iter().enumerate().map(|(index, v)| {
         let name = &v.variant.ident;
         let value = match payload(v) {
@@ -502,28 +743,51 @@ pub(super) fn untagged_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
             }
             Payload::Struct => struct_value(index, &at),
         };
-        quote!(#reader::Arm::Variant(#index) => #value,)
+        quote!(::core::option::Option::Some(#reader::Arm::Variant(#index)) => #value,)
     });
+    // The arm a value takes when the chosen one fails or none is chosen: its findings stand.
+    let otherwise = variants.iter().enumerate().find_map(|(index, v)| {
+        let Payload::Newtype(ty, with) = payload(v) else {
+            return None;
+        };
+        v.otherwise
+            .then(|| (index, &v.variant.ident, newtype_value(ty, with, &at)))
+    });
+    let quiet = otherwise.is_some();
+    let tail = otherwise.map_or_else(
+        || quote!(__value),
+        |(index, name, value)| {
+            quote! {
+                if __value.is_none() && __arm != ::core::option::Option::Some(#reader::Arm::Variant(#index)) {
+                    return #value.map(Self::#name);
+                }
+                __value
+            }
+        },
+    );
     quote! {
         #[automatically_derived]
         impl #from_json for #ident {
-            fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                match #reader::untagged_arm::<Self>(node, read)? {
-                    #reader::Arm::Unit => match #reader::unit_arm(node, &[#(#unit_names),*]) {
+                let __arm = #reader::untagged_arm::<Self>(__node, __read, #quiet);
+                let __value = match __arm {
+                    ::core::option::Option::Some(#reader::Arm::Unit) => match #reader::unit_arm(__node, &[#(#unit_names),*]) {
                         #(#unit_arms)*
                         _ => {
-                            read.wrong_type(node);
+                            __read.wrong_type(__node);
                             ::core::option::Option::None
                         }
                     },
                     #(#arms)*
+                    ::core::option::Option::None => ::core::option::Option::None,
                     #[allow(unreachable_patterns)]
                     _ => {
-                        read.wrong_type(node);
+                        __read.wrong_type(__node);
                         ::core::option::Option::None
                     }
-                }
+                };
+                #tail
             }
         }
     }
@@ -552,10 +816,10 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
         let fn_name = format_ident!("__variant_{index}");
         let value = match payload(v) {
             Payload::Unit | Payload::Struct => {
-                quote!(#fn_name(&object, read, true, ::core::option::Option::Some(#tag)))
+                quote!(#fn_name(&__object, __read, true, ::core::option::Option::Some(#tag)))
             }
-            Payload::Newtype(ty, _) => quote! {
-                <#ty as #fields_trait>::read_fields(&object, read, true, ::core::option::Option::Some(#tag))
+            Payload::Newtype(ty, _) => quote_spanned! {ty.span()=>
+                <#ty as #fields_trait>::read_fields(&__object, __read, true, ::core::option::Option::Some(#tag))
                     .map(Self::#name)
             },
         };
@@ -567,18 +831,18 @@ pub(super) fn tagged_read(ident: &Ident, tag: &str, variants: &[ReadVariant]) ->
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Object);
 
-            fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                let (object, name) = #reader::tagged(node, read, #tag)?;
-                let value = match name.as_str() {
+                let (__object, __name) = #reader::tagged(__node, __read, #tag)?;
+                let __value = match __name.as_str() {
                     #(#arms)*
                     _ => {
-                        #reader::unknown_tag(object, read, #tag);
+                        #reader::unknown_tag(__object, __read, #tag);
                         return ::core::option::Option::None;
                     }
                 };
-                object.close(read);
-                value
+                __object.close(__read);
+                __value
             }
         }
     }
@@ -607,7 +871,7 @@ pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
             let name = &v.variant.ident;
             quote!(#json => ::core::option::Option::Some(Self::#name),)
         });
-    let at = quote!(&payload);
+    let at = quote!(&__payload);
     let payload_arms = variants
         .iter()
         .enumerate()
@@ -627,20 +891,20 @@ pub(super) fn external_read(ident: &Ident, variants: &[ReadVariant]) -> TokenStr
     quote! {
         #[automatically_derived]
         impl #from_json for #ident {
-            fn from_json(node: &#node<'_>, read: &mut #read<'_>) -> ::core::option::Option<Self> {
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                match #reader::external(node, read)? {
-                    #reader::External::Unit(name) => match name.as_str() {
+                match #reader::external(__node, __read)? {
+                    #reader::External::Unit(__name) => match __name.as_str() {
                         #(#unit_arms)*
                         _ => {
-                            #reader::unknown_variant(node, read);
+                            #reader::unknown_variant(__node, __read);
                             ::core::option::Option::None
                         }
                     },
-                    #reader::External::Payload(name, payload) => match name.as_str() {
+                    #reader::External::Payload(__name, __payload) => match __name.as_str() {
                         #(#payload_arms)*
                         _ => {
-                            #reader::unknown_variant(&payload, read);
+                            #reader::unknown_variant(&__payload, __read);
                             ::core::option::Option::None
                         }
                     },
@@ -677,6 +941,16 @@ pub(super) fn check_tagged_variants(data: &DataEnum, internal: bool, errors: &mu
                     "a newtype variant of an internally tagged enum holds a struct, whose members \
                      sit beside the tag: a plain value has no member to sit there",
                 ));
+            } else if internal {
+                let mut scratch = Vec::new();
+                let attrs = FieldAttrs::read(&unnamed.unnamed[0].attrs, &mut scratch);
+                if let Some((_, span)) = attrs.read_with {
+                    errors.push(Error::new(
+                        span,
+                        "`schema::read_with` reads one member: the struct of an internally \
+                         tagged newtype variant has none, its members sit beside the tag",
+                    ));
+                }
             }
         }
     }

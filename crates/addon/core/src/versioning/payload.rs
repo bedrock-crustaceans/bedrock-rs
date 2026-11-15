@@ -64,8 +64,8 @@ pub fn parse_payload<'a, T: Facet<'a>>(
 }
 
 /// Reads a version struct from `payload` on the new reader ([`FromJson`](crate::schema::FromJson),
-/// member by member), under the slice's reading (`cx.load.reading`) in the door's order
-/// ([`Order::Door`](crate::json::kit::Order::Door)): what [`parse_payload`] tells for the same
+/// member by member), under the slice's reading (`cx.load.reading`), by the profile of the
+/// typed door ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)): what [`parse_payload`] tells for the same
 /// text, at the same paths, each finding with the span of the value it is about. The read
 /// stops at its first failure, which is then all it tells; a document that reads tells, after
 /// it, the members written `null` that its reading refuses, those read as absent, its unknown
@@ -114,7 +114,7 @@ pub fn read_payload<T: crate::schema::FromJson>(
 }
 
 /// [`read_payload`] with the read set by `configure` before it reads: a family whose game
-/// tells every failure reads in [`Order::AsRead`](crate::json::kit::Order::AsRead), one that
+/// tells every failure reads by [`Profile::EVERY_FAILURE`](crate::json::kit::Profile::EVERY_FAILURE), one that
 /// words the kit's findings its own way gives its [`Texts`](crate::json::kit::Texts).
 ///
 /// ```
@@ -124,7 +124,7 @@ pub fn read_payload<T: crate::schema::FromJson>(
 /// # use bedrock_addon_core::schema::{self, Schema};
 /// # use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 /// # use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
-/// use bedrock_addon_core::json::kit::Order;
+/// use bedrock_addon_core::json::kit::Profile;
 /// #[derive(Debug, PartialEq, facet::Facet, Schema)]
 /// struct Pair {
 ///     a: u8,
@@ -139,9 +139,9 @@ pub fn read_payload<T: crate::schema::FromJson>(
 /// # };
 /// let mut d = Diagnostics::default();
 /// let text = JsonSlice::new(r#"{"a": "x", "b": "y"}"#);
-/// let pair: Option<Pair> = read_payload_with(text, &cx, &mut d, |read| read.order(Order::AsRead));
+/// let pair: Option<Pair> = read_payload_with(text, &cx, &mut d, |read| read.profile(Profile::EVERY_FAILURE));
 /// assert_eq!(pair, None);
-/// // Both failures, where the door's order tells the first.
+/// // Both failures, where the first failure's profile tells the first.
 /// assert_eq!(d.len(), 2);
 /// ```
 pub fn read_payload_with<T: crate::schema::FromJson>(
@@ -164,32 +164,55 @@ pub fn read_payload_with<T: crate::schema::FromJson>(
     let node = crate::json::kit::Node::parsed(&parsed, cx.at.clone());
     let read = crate::json::kit::Read::new(cx.load.reading, d)
         .unknown_severity(cx.load.grade(Class::Unknown))
-        .order(crate::json::kit::Order::Door);
+        .profile(crate::json::kit::Profile::FIRST_FAILURE)
+        .load(cx.load)
+        .versions(crate::json::kit::Versions {
+            format: Some(cx.original_version),
+            // A pack without one is older than every member.
+            engine: Some(
+                cx.load
+                    .min_engine_version
+                    .as_ref()
+                    .map_or(crate::version::FormatVersion::new(0, 0, 0), |engine| {
+                        engine.version.format_version()
+                    }),
+            ),
+        });
     let mut read = configure(read);
-    // The door's typed read names no member for a payload of another kind than the struct's
-    // (a `null` is the null rule's): facet's malformed input, in its words.
-    let json = node.value();
-    if read.telling() == crate::json::kit::Order::Door
-        && T::EXPECTED == Some(crate::json::kit::Expected::Object)
-        && !json.is_object()
-        && !json.is_null()
-    {
-        let got = if json.is_array() {
-            "sequence start"
-        } else {
-            "scalar"
-        };
-        let mut finding = Diagnostic::of(crate::diagnostic::builders::syntax(format!(
-            "unexpected token: got {got}, expected struct start"
-        )))
-        .at(cx.at.clone());
-        finding.location.span = node.span();
+    if let Some(finding) = no_object::<T>(&node, &read) {
         read.push(finding);
         return None;
     }
-    let value = T::from_json(&node, &mut read);
-    read.finish();
-    value
+    crate::schema::read_document(&node, &mut read)
+}
+
+/// The finding of a root that is no object where `T` reads one, when the read stops at its
+/// first failure: that is facet's typed read, which names no member for a value of another
+/// kind than the struct's (a `null` is the null rule's), but tells its malformed input in its
+/// words.
+pub(super) fn no_object<T: crate::schema::FromJson>(
+    node: &crate::json::kit::Node<'_>,
+    read: &crate::json::kit::Read<'_>,
+) -> Option<Diagnostic> {
+    let json = node.value();
+    if !read.telling().stops()
+        || T::EXPECTED != Some(crate::json::kit::Expected::Object)
+        || json.is_object()
+        || json.is_null()
+    {
+        return None;
+    }
+    let got = if json.is_array() {
+        "sequence start"
+    } else {
+        "scalar"
+    };
+    let mut finding = Diagnostic::of(crate::diagnostic::builders::syntax(format!(
+        "unexpected token: got {got}, expected struct start"
+    )))
+    .at(node.path().clone());
+    finding.location.span = node.span();
+    Some(finding)
 }
 
 /// Tells each unknown member the door found, at `base` followed by its path, by its

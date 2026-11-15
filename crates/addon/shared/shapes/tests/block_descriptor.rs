@@ -202,3 +202,72 @@ fn constructors_write_the_plain_forms() {
     );
     assert_eq!(compact(&BlockSpecifier::new(id)), r#""minecraft:stone""#);
 }
+
+mod walked_by_a_derived_check {
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity};
+    use bedrock_addon_core::schema::{Schema, SchemaCx};
+    use bedrock_addon_core::shared::IntRange;
+    use bedrock_addon_core::versioning::Reading;
+    use bedrock_addon_shared_shapes::{BlockDescriptor, BlockSpecifier};
+
+    /// `text` read as `T`.
+    fn read<T: for<'a> facet::Facet<'a>>(text: &str) -> T {
+        super::read(text).expect("JSON of the type")
+    }
+
+    #[derive(facet::Facet, Schema)]
+    struct Holder {
+        block: BlockDescriptor,
+        specifier: Option<BlockSpecifier>,
+        blocks: Vec<BlockDescriptor>,
+        heights: IntRange,
+    }
+
+    fn holder() -> Holder {
+        Holder {
+            block: read(r#"{"name": "minecraft:stone", "tags": "q.any_tag('x')", "extra": 1}"#),
+            specifier: Some(read(r#"{"name": "minecraft:stone", "colour": 1}"#)),
+            blocks: vec![read(r#"{"states": {}}"#), read(r#""minecraft:stone""#)],
+            heights: IntRange::new(1, 2, bedrock_addon_core::shared::RangeForm::MinMax),
+        }
+    }
+
+    fn told(holder: &mut Holder, leaf_findings: bool) -> Vec<(String, Severity)> {
+        let mut out = Diagnostics::default();
+        let reading = Reading::NULL_ABSENT;
+        {
+            let mut cx = SchemaCx::new(reading, JsonPath::of_keys(["feature"]), &mut out)
+                .with_leaf_findings(leaf_findings);
+            holder.check(&mut cx);
+        }
+        out.iter()
+            .map(|d| (d.location.json_path.to_string(), d.severity))
+            .collect()
+    }
+
+    #[test]
+    fn a_leaf_with_findings_of_its_own_tells_them_at_its_member_when_the_check_asks() {
+        assert_eq!(told(&mut holder(), false), []);
+        // The mixed descriptor's unknown member and its own line (a kept error), the specifier's
+        // unknown member, and the descriptor of no block, each at its path; the unknown ones at
+        // the reading's unknown severity.
+        assert_eq!(
+            told(&mut holder(), true),
+            [
+                ("feature/block/extra".to_owned(), Severity::Warning),
+                ("feature/block".to_owned(), Severity::Error),
+                ("feature/specifier/colour".to_owned(), Severity::Warning),
+                ("feature/blocks/0".to_owned(), Severity::Error),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_range_whose_ends_were_swapped_tells_it_where_the_check_asks() {
+        let mut swapped = holder();
+        swapped.heights = read("[5, 2]");
+        assert_eq!(told(&mut swapped, false), []);
+        let found = told(&mut swapped, true);
+        assert!(found.contains(&("feature/heights".to_owned(), Severity::Info)));
+    }
+}

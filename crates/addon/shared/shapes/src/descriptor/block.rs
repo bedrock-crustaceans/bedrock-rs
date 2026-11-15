@@ -257,19 +257,26 @@ fn invalid_code(value: &Value) -> Code {
     }
 }
 
-impl From<Value> for BlockDescriptor {
-    fn from(value: Value) -> Self {
+impl From<&Value> for BlockDescriptor {
+    fn from(value: &Value) -> Self {
         if let Some(name) = value.as_string() {
             return Self::block(BlockId::parse(name.as_str()));
         }
         value
             .as_object()
             .and_then(|object| Self::read_object(object).ok())
-            .unwrap_or(Self::Invalid(value))
+            .unwrap_or(Self::Invalid(value.clone()))
     }
 }
 
-bedrock_addon_core::from_json_via_value!(BlockDescriptor);
+impl From<Value> for BlockDescriptor {
+    fn from(value: Value) -> Self {
+        Self::from(&value)
+    }
+}
+
+// bridge: the block shapes read by their own rules
+bedrock_addon_core::from_json_via_value!(ref BlockDescriptor);
 
 impl From<&BlockDescriptor> for Value {
     fn from(descriptor: &BlockDescriptor) -> Self {
@@ -348,21 +355,30 @@ impl StateValue {
     }
 }
 
-impl TryFrom<Value> for StateValue {
+impl TryFrom<&Value> for StateValue {
     type Error = ShapeError;
 
-    fn try_from(value: Value) -> Result<Self, ShapeError> {
-        Self::read(&value).ok_or_else(|| {
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        Self::read(value).ok_or_else(|| {
             match value.as_number() {
                 Some(n) if !n.is_float() => Failure::new(ShapeErrorKind::OutOfRange),
-                _ => wrong_type(ROOT, "a boolean, an integer or a string", &value),
+                _ => wrong_type(ROOT, "a boolean, an integer or a string", value),
             }
             .into()
         })
     }
 }
 
-bedrock_addon_core::from_json_via_value!(StateValue);
+impl TryFrom<Value> for StateValue {
+    type Error = ShapeError;
+
+    fn try_from(value: Value) -> Result<Self, ShapeError> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: the block shapes read by their own rules
+bedrock_addon_core::from_json_via_value!(ref StateValue);
 
 impl From<&StateValue> for Value {
     fn from(state: &StateValue) -> Self {
@@ -396,16 +412,16 @@ impl BlockSpecifier {
     }
 }
 
-impl TryFrom<Value> for BlockSpecifier {
+impl TryFrom<&Value> for BlockSpecifier {
     type Error = ShapeError;
 
-    fn try_from(value: Value) -> Result<Self, ShapeError> {
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
         if let Some(name) = value.as_string() {
             return Ok(Self::new(BlockId::parse(name.as_str())));
         }
         let object = value
             .as_object()
-            .ok_or_else(|| wrong_type(ROOT, "a string or an object", &value))?;
+            .ok_or_else(|| wrong_type(ROOT, "a string or an object", value))?;
         let parts = Parts::read(object).map_err(|rejected| match rejected {
             Rejected::Name(name) => wrong_type("name", "a string", &name),
             Rejected::State(name, state) => {
@@ -433,7 +449,16 @@ impl TryFrom<Value> for BlockSpecifier {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(BlockSpecifier);
+impl TryFrom<Value> for BlockSpecifier {
+    type Error = ShapeError;
+
+    fn try_from(value: Value) -> Result<Self, ShapeError> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: the block shapes read by their own rules
+bedrock_addon_core::from_json_via_value!(ref BlockSpecifier);
 
 impl From<&BlockSpecifier> for Value {
     fn from(specifier: &BlockSpecifier) -> Self {

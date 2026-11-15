@@ -4,7 +4,7 @@
 
 use bedrock_addon_core::schema::{self, Schema};
 
-use super::read::{entity_name, string_enum};
+use super::read::entity_name;
 
 /// A camera entity document (`minecraft:camera_entity`, vanilla resource pack
 /// `cameras/<name>.json`).
@@ -259,13 +259,12 @@ pub struct Orbit {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct PerspectiveOption {
     /// The perspective the camera stands for; required (JSON `view_mode`).
-    #[facet(schema::read_with = string_enum)]
     pub view_mode: PlayerViewMode,
 }
 
 /// A perspective option (`view_mode`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum PlayerViewMode {
@@ -327,13 +326,12 @@ pub struct ThirdPersonBoom {
     /// The starting orientation around the target (JSON `starting_rot`, default `[0, 0]`).
     pub starting_rot: Option<[f32; 2]>,
     /// The space `starting_rot` is in (JSON `rotation_space`, default `local`).
-    #[facet(schema::read_with = string_enum)]
     pub rotation_space: Option<RotationSpace>,
 }
 
 /// The space of a boom's starting orientation (`rotation_space`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum RotationSpace {
@@ -357,13 +355,12 @@ pub struct Stationary {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
 pub struct UpdatePlayerFromCamera {
     /// Where the player looks (JSON `look_mode`, default `along_camera`).
-    #[facet(schema::read_with = string_enum)]
     pub look_mode: Option<LookMode>,
 }
 
 /// Where a player turned by the camera looks (`look_mode`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum LookMode {

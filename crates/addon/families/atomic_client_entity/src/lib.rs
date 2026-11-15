@@ -6,7 +6,6 @@
 
 pub mod codes;
 mod read;
-use read::finite;
 #[cfg(test)]
 mod tests;
 
@@ -144,10 +143,10 @@ pub struct Components {
 #[derive(Clone, Copy, Debug, PartialEq, Facet, Schema)]
 pub struct AabbDimensions {
     /// `width`: at least 0.
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub width: f32,
     /// `height`: at least 0.
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub height: f32,
 }
 
@@ -223,19 +222,19 @@ pub struct CompanionBlockClipping {
     pub hide_boundary: Option<VisibilityBoundary>,
     /// `min_hidden_seconds`: default 2.
     #[facet(schema::fallback = Self::DEFAULT_MIN_HIDDEN_SECONDS)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub min_hidden_seconds: Option<f32>,
     /// `min_visible_seconds`: default 0.
     #[facet(schema::fallback = Self::DEFAULT_MIN_VISIBLE_SECONDS)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub min_visible_seconds: Option<f32>,
     /// `hide_delay_seconds`: default 0.
     #[facet(schema::fallback = Self::DEFAULT_HIDE_DELAY_SECONDS)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub hide_delay_seconds: Option<f32>,
     /// `hide_transition_seconds`: default 0.25.
     #[facet(schema::fallback = Self::DEFAULT_HIDE_TRANSITION_SECONDS)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub hide_transition_seconds: Option<f32>,
 }
 
@@ -259,15 +258,15 @@ impl CompanionBlockClipping {
 pub struct VisibilityBoundary {
     /// `margin`: default 0.5.
     #[facet(schema::fallback = Self::DEFAULT_MARGIN)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub margin: Option<f32>,
     /// `lookahead_per_speed`: default 0.1.
     #[facet(schema::fallback = Self::DEFAULT_LOOKAHEAD_PER_SPEED)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub lookahead_per_speed: Option<f32>,
     /// `lookahead_max`: default 1.
     #[facet(schema::fallback = Self::DEFAULT_LOOKAHEAD_MAX)]
-    #[facet(schema::read_with = finite)]
+    #[facet(schema::finite)]
     pub lookahead_max: Option<f32>,
 }
 

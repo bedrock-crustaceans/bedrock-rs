@@ -1,0 +1,35 @@
+error: `schema::elements` takes "drop" or "fail"
+ --> tests/ui/schema/shape_keys.rs:9:32
+  |
+9 |     #[facet(schema::elements = "skip")]
+  |                                ^^^^^^
+
+error: `schema::otherwise` marks the newtype variant of an untagged enum that a value takes when no other arm reads it
+  --> tests/ui/schema/shape_keys.rs:13:13
+   |
+13 |     #[facet(schema::otherwise)]
+   |             ^^^^^^
+
+error: `schema::iterated` and `schema::elements` read a list: a `Vec` field (or an `Option` of one)
+ --> tests/ui/schema/shape_keys.rs:7:13
+  |
+7 |     #[facet(schema::iterated)]
+  |             ^^^^^^
+
+error: `schema::or_kept` leaves the field `None` where its value fails: an `Option` field
+  --> tests/ui/schema/shape_keys.rs:11:13
+   |
+11 |     #[facet(schema::or_kept = "told")]
+   |             ^^^^^^
+
+error: `schema::otherwise` marks a newtype variant: the value it takes is read as its one field
+  --> tests/ui/schema/shape_keys.rs:23:5
+   |
+23 |     Pair { a: u8 },
+   |     ^^^^
+
+error: one variant of an untagged enum is the arm a value takes otherwise
+  --> tests/ui/schema/shape_keys.rs:25:5
+   |
+25 |     Rest(Value),
+   |     ^^^^

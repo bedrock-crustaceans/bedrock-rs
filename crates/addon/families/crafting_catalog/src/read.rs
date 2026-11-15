@@ -6,16 +6,16 @@
 //! (`Family::reading`). The read tells every failure, as read; a wrong type names what was
 //! expected and what was found (the catalogue's [`Texts`]).
 //!
-//! What is the family's own: the names a category takes (`CategoryName`'s read), an item as a
-//! bare string or `{"name"}` (`CatalogItem`'s), and the namespace constraint of a group name
-//! (`schema::read_with = group_name`) and of an item name.
+//! What is the family's own: an item as a bare string or `{"name"}` (`CatalogItem`'s read), and
+//! the namespace constraint of a group name (`schema::read_with = group_name`) and of an item
+//! name. A category's name is the derived enum's, read from a string only
+//! (`schema::string_only`), an unknown one an `InvalidValue` (`schema::invalid`).
 
 use super::codes;
-use super::{CatalogItem, CategoryName, CraftingCatalog};
-use bedrock_addon_core::diagnostic::codes as core_codes;
+use super::{CatalogItem, CraftingCatalog};
 use bedrock_addon_core::diagnostic::{Code, Diagnostics, builders};
 use bedrock_addon_core::id::ItemId;
-use bedrock_addon_core::json::kit::{Expected, Node, Order, Read, Texts, WrongKind};
+use bedrock_addon_core::json::kit::{Expected, Node, Profile, Read, Texts, WrongKind};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::schema::{FromJson, UnknownRule};
 use bedrock_addon_core::versioning::{ParseCx, read_payload_with};
@@ -96,21 +96,6 @@ pub(crate) fn group_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<String>
     constrained(read, node, group_name_code())
 }
 
-/// `category_name`: one of the four names, compared with case; an unknown name is an
-/// `InvalidValue` that stays fatal under either slice.
-impl FromJson for CategoryName {
-    const EXPECTED: Option<Expected> = Some(Expected::String);
-
-    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        let name = read.string(node)?;
-        let category = CategoryName::from_name(name);
-        if category.is_none() {
-            read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
-        }
-        category
-    }
-}
-
 /// An item: the bare string, or `{ "name": "..." }`, whose other members are unknown (told
 /// before the name is read, never kept). The game reads the bare string as if it were the
 /// object's `name` member; either is a namespaced name.
@@ -134,8 +119,8 @@ impl FromJson for CatalogItem {
 }
 
 // Leaves of the derived check and Molang walk: neither holds a bound or Molang.
-bedrock_addon_core::impl_schema_leaf!(CategoryName, CatalogItem);
-bedrock_addon_core::impl_no_molang!(CategoryName, CatalogItem);
+bedrock_addon_core::impl_schema_leaf!(CatalogItem);
+bedrock_addon_core::impl_no_molang!(CatalogItem);
 
 /// Reads the payload `payload` of a catalogue document; `None` when anything in it fails the
 /// file (the reasons are in `d`).
@@ -145,6 +130,6 @@ pub(super) fn parse_catalog(
     d: &mut Diagnostics,
 ) -> Option<CraftingCatalog> {
     read_payload_with(payload, cx, d, |read| {
-        read.order(Order::UnknownFirst).texts(TEXTS)
+        read.profile(Profile::UNKNOWN_FIRST).texts(TEXTS)
     })
 }

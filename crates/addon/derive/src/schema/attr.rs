@@ -167,6 +167,8 @@ pub(crate) struct DefaultDecl {
 pub(crate) struct FieldAttrs {
     pub default: Option<DefaultDecl>,
     pub rename: Option<String>,
+    /// facet's `alias`: a second JSON name the member is read by.
+    pub alias: Option<String>,
     pub skip: bool,
     pub flatten: bool,
     pub since_format: Option<Version>,
@@ -180,10 +182,28 @@ pub(crate) struct FieldAttrs {
     pub molang_with: Option<(Expr, Span)>,
     /// `schema::read_with = path`: the field's read, `fn(&Node, &mut Read) -> Option<T>`.
     pub read_with: Option<(Expr, Span)>,
+    /// `schema::check_with = path`: the field's check, `fn(&mut T, &mut SchemaCx)`, in place of
+    /// the walk into its type.
+    pub check_with: Option<(Expr, Span)>,
+    /// `schema::min_len`, `schema::max_len`: the number of elements the field holds.
+    pub min_len: Option<(usize, Span)>,
+    pub max_len: Option<(usize, Span)>,
     pub foreign_event: Option<Span>,
     pub lowercase: Option<Span>,
     /// `schema::required`: an `Option` field the document must write.
     pub required: Option<Span>,
+    /// The read's codes: `schema::wrong_type`, `schema::missing`, `schema::invalid`.
+    pub wrong_type: Option<(Expr, Span)>,
+    pub missing: Option<(Expr, Span)>,
+    pub invalid: Option<(Expr, Span)>,
+    /// `schema::finite`: a float beyond its width reads as its largest finite value.
+    pub finite: Option<Span>,
+    /// `schema::iterated`: the list is iterated as jsoncpp iterates a value.
+    pub iterated: Option<Span>,
+    /// `schema::elements`: `true` for `"drop"`, `false` for `"fail"`.
+    pub elements: Option<(bool, Span)>,
+    /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
+    pub or_kept: Option<(bool, Span)>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -199,6 +219,12 @@ pub(crate) struct ContainerAttrs {
     pub case_insensitive: bool,
     /// `schema::order = "game"`: the enum keeps its own `ALL`.
     pub order_game: bool,
+    /// `schema::string_only`: the enum reads a string and nothing else.
+    pub string_only: bool,
+    /// `schema::rule = path`: a rule across the fields of the struct.
+    pub rule: Option<(Expr, Span)>,
+    /// `schema::molang = SPEC` on a struct: the default spec of the Molang walk below it.
+    pub molang: Option<(Expr, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -214,11 +240,23 @@ const FIELD_KEYS: &[&str] = &[
     "molang",
     "molang_with",
     "read_with",
+    "check_with",
+    "min_len",
+    "max_len",
     "foreign_event",
     "lowercase",
     "required",
+    "wrong_type",
+    "missing",
+    "invalid",
+    "finite",
+    "iterated",
+    "elements",
+    "or_kept",
 ];
-const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order"];
+const ENUM_KEYS: &[&str] = &["expected", "case_insensitive", "order", "string_only"];
+/// The one key of a struct alone.
+const STRUCT_KEYS: &[&str] = &["rule"];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -249,12 +287,36 @@ fn once<T>(slot: &mut Option<T>, value: T, key: &str, span: Span, errors: &mut V
 /// The schema keys at `place` that do not belong there.
 fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
     for entry in entries {
+        // Facet takes a key written with a longer path (`crate::schema::min`) as it takes
+        // `schema::min`; the derive reads the one spelling, and would drop the other in silence.
+        if entry.path.len() > 2
+            && let Some(key) = entry.path.last()
+            && entry.path[..entry.path.len() - 1]
+                .iter()
+                .any(|s| s == "schema")
+        {
+            errors.push(Error::new(
+                entry.span,
+                format!("write the key as `schema::{key}`: the derive reads no other path to it"),
+            ));
+            continue;
+        }
         let Some(key) = entry.schema_key() else {
             continue;
         };
         let field_key = FIELD_KEYS.contains(&key.as_str());
         let enum_key = ENUM_KEYS.contains(&key.as_str());
+        let struct_key = STRUCT_KEYS.contains(&key.as_str());
         let message = match place {
+            Place::Field | Place::Enum | Place::Untagged | Place::Tagged | Place::Variant
+                if struct_key =>
+            {
+                format!("`schema::{key}` is a struct's key: put it on the struct it is about")
+            }
+            Place::UntaggedVariant | Place::TaggedVariant if struct_key => {
+                format!("a variant takes no `schema::{key}`: it is a struct's key")
+            }
+            Place::Struct if key == "molang" => continue,
             Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
                 format!("`schema::{key}` is a field's key: put it on the field it is about")
             }
@@ -267,6 +329,11 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             }
             Place::Field if enum_key => {
                 format!("`schema::{key}` is a string enum's key: put it on the enum")
+            }
+            _ if key == "otherwise" && place != Place::UntaggedVariant => {
+                "`schema::otherwise` marks the newtype variant of an untagged enum that a value \
+                 takes when no other arm reads it"
+                    .to_owned()
             }
             Place::Variant if field_key || enum_key || key == "unknown" => {
                 format!(
@@ -392,6 +459,39 @@ fn step(entry: &Entry) -> Result<f64> {
     }
 }
 
+/// A key whose value is one of two words: `true` for `yes`, `false` for `no`.
+fn either_word(entry: &Entry, key: &str, yes: &str, no: &str) -> Result<bool> {
+    let lit = string_value(entry, key)?;
+    let word = lit.value();
+    if word == yes || word == no {
+        Ok(word == yes)
+    } else {
+        Err(Error::new(
+            lit.span(),
+            format!("`schema::{key}` takes \"{yes}\" or \"{no}\""),
+        ))
+    }
+}
+
+/// `schema::min_len`'s or `max_len`'s count: an integer literal.
+fn length(entry: &Entry, key: &str) -> Result<usize> {
+    let wrong = |span: Span| {
+        Error::new(
+            span,
+            format!("`schema::{key}` takes a whole number literal, as in `schema::{key} = 1`"),
+        )
+    };
+    let Some(Ok(expr)) = entry.expr() else {
+        return Err(wrong(entry.span));
+    };
+    match &expr {
+        Expr::Lit(syn::ExprLit {
+            lit: Lit::Int(int), ..
+        }) => int.base10_parse::<usize>().map_err(|_| wrong(entry.span)),
+        _ => Err(Error::new_spanned(&expr, wrong(entry.span).to_string())),
+    }
+}
+
 /// A key's value as an expression; facet already refuses a valued key written without one.
 fn value_expr(entry: &Entry, key: &str) -> Result<Expr> {
     match entry.expr() {
@@ -403,6 +503,26 @@ fn value_expr(entry: &Entry, key: &str) -> Result<Expr> {
     }
 }
 
+/// Records the bound `entry` states on `out`, or the error of a second one on a side.
+fn push_bound(out: &mut FieldAttrs, entry: &Entry, op: Op) -> Result<()> {
+    let span = entry.span;
+    let limit = limit(entry, op)?;
+    if let Some(previous) = out.bounds.iter().find(|b| b.op.same_side(op)) {
+        let message = if previous.op == op {
+            format!("duplicate `schema::{}`", op.key())
+        } else {
+            format!(
+                "`schema::{}` and `schema::{}` bound the same side: keep one",
+                previous.op.key(),
+                op.key()
+            )
+        };
+        return Err(Error::new(span, message));
+    }
+    out.bounds.push(BoundDecl { op, limit, span });
+    Ok(())
+}
+
 impl FieldAttrs {
     /// Reads a field's attributes; each malformed key adds an error and is left out.
     pub(crate) fn read(attrs: &[Attribute], errors: &mut Vec<Error>) -> Self {
@@ -411,33 +531,7 @@ impl FieldAttrs {
         let mut out = FieldAttrs::default();
         for entry in &entries {
             if let Some(key) = entry.builtin() {
-                match key.as_str() {
-                    "default" => {
-                        let value = match entry.expr() {
-                            Some(Ok(expr)) => Some(expr),
-                            Some(Err(error)) => {
-                                errors.push(error);
-                                continue;
-                            }
-                            None => None,
-                        };
-                        out.default = Some(DefaultDecl {
-                            value,
-                            span: entry.span,
-                        });
-                    }
-                    "rename" => {
-                        if let Some(Ok(Expr::Lit(syn::ExprLit {
-                            lit: Lit::Str(lit), ..
-                        }))) = entry.expr()
-                        {
-                            out.rename = Some(lit.value());
-                        }
-                    }
-                    "skip" => out.skip = true,
-                    "flatten" => out.flatten = true,
-                    _ => {}
-                }
+                out.read_builtin(entry, &key, errors);
                 continue;
             }
             let Some(key) = entry.schema_key() else {
@@ -462,15 +556,29 @@ impl FieldAttrs {
                         let word = unknown_word(entry)?;
                         once(&mut out.unknown, word, &key, span, errors);
                     }
-                    "fallback" | "molang" | "molang_with" | "read_with" => {
+                    "fallback" | "molang" | "molang_with" | "read_with" | "check_with"
+                    | "wrong_type" | "missing" | "invalid" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
                             "molang" => &mut out.molang,
                             "molang_with" => &mut out.molang_with,
+                            "wrong_type" => &mut out.wrong_type,
+                            "missing" => &mut out.missing,
+                            "invalid" => &mut out.invalid,
+                            "check_with" => &mut out.check_with,
                             _ => &mut out.read_with,
                         };
                         once(slot, (expr, span), &key, span, errors);
+                    }
+                    "min_len" | "max_len" => {
+                        let count = length(entry, &key)?;
+                        let slot = if key == "min_len" {
+                            &mut out.min_len
+                        } else {
+                            &mut out.max_len
+                        };
+                        once(slot, (count, span), &key, span, errors);
                     }
                     "multiple_of" => {
                         let step = step(entry)?;
@@ -479,22 +587,19 @@ impl FieldAttrs {
                     "foreign_event" => once(&mut out.foreign_event, span, &key, span, errors),
                     "lowercase" => once(&mut out.lowercase, span, &key, span, errors),
                     "required" => once(&mut out.required, span, &key, span, errors),
+                    "finite" => once(&mut out.finite, span, &key, span, errors),
+                    "iterated" => once(&mut out.iterated, span, &key, span, errors),
+                    "elements" => {
+                        let drop = either_word(entry, &key, "drop", "fail")?;
+                        once(&mut out.elements, (drop, span), &key, span, errors);
+                    }
+                    "or_kept" => {
+                        let told = either_word(entry, &key, "told", "silent")?;
+                        once(&mut out.or_kept, (told, span), &key, span, errors);
+                    }
                     other => {
                         if let Some(op) = Op::from_key(other) {
-                            let limit = limit(entry, op)?;
-                            if let Some(previous) = out.bounds.iter().find(|b| b.op.same_side(op)) {
-                                let message = if previous.op == op {
-                                    format!("duplicate `schema::{}`", op.key())
-                                } else {
-                                    format!(
-                                        "`schema::{}` and `schema::{}` bound the same side: keep one",
-                                        previous.op.key(),
-                                        op.key()
-                                    )
-                                };
-                                return Err(Error::new(span, message));
-                            }
-                            out.bounds.push(BoundDecl { op, limit, span });
+                            push_bound(&mut out, entry, op)?;
                         }
                     }
                 }
@@ -507,6 +612,38 @@ impl FieldAttrs {
         out
     }
 
+    /// Reads one of facet's own keys the derive takes: `default`, `rename`, `alias`, `skip` and
+    /// `flatten`.
+    fn read_builtin(&mut self, entry: &Entry, key: &str, errors: &mut Vec<Error>) {
+        let string = || match entry.expr() {
+            Some(Ok(Expr::Lit(syn::ExprLit {
+                lit: Lit::Str(lit), ..
+            }))) => Some(lit.value()),
+            _ => None,
+        };
+        match key {
+            "default" => {
+                let value = match entry.expr() {
+                    Some(Ok(expr)) => Some(expr),
+                    Some(Err(error)) => {
+                        errors.push(error);
+                        return;
+                    }
+                    None => None,
+                };
+                self.default = Some(DefaultDecl {
+                    value,
+                    span: entry.span,
+                });
+            }
+            "rename" => self.rename = string().or(self.rename.take()),
+            "alias" => self.alias = string().or(self.alias.take()),
+            "skip" => self.skip = true,
+            "flatten" => self.flatten = true,
+            _ => {}
+        }
+    }
+
     /// Whether the field states any `schema::` key.
     pub(crate) fn any_schema_key(&self) -> Option<Span> {
         self.fallback
@@ -517,6 +654,18 @@ impl FieldAttrs {
             .or_else(|| self.molang.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| {
+                [&self.wrong_type, &self.missing, &self.invalid]
+                    .into_iter()
+                    .find_map(|code| code.as_ref().map(|(_, s)| *s))
+            })
+            .or(self.finite)
+            .or(self.iterated)
+            .or_else(|| self.elements.map(|(_, s)| s))
+            .or_else(|| self.or_kept.map(|(_, s)| s))
+            .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.min_len.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.max_len.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
             .or(self.lowercase)
             .or(self.required)
@@ -563,6 +712,26 @@ impl ContainerAttrs {
                 Some("unknown") => unknown_word(entry).map(|word| {
                     once(&mut out.unknown, word, "unknown", entry.span, errors);
                 }),
+                Some("rule") if place == Place::Struct => value_expr(entry, "rule").map(|expr| {
+                    once(
+                        &mut out.rule,
+                        (expr, entry.span),
+                        "rule",
+                        entry.span,
+                        errors,
+                    );
+                }),
+                Some("molang") if place == Place::Struct => {
+                    value_expr(entry, "molang").map(|expr| {
+                        once(
+                            &mut out.molang,
+                            (expr, entry.span),
+                            "molang",
+                            entry.span,
+                            errors,
+                        );
+                    })
+                }
                 Some("expected") if place == Place::Enum => {
                     string_value(entry, "expected").map(|lit| {
                         once(&mut out.expected, lit, "expected", entry.span, errors);
@@ -570,6 +739,10 @@ impl ContainerAttrs {
                 }
                 Some("case_insensitive") if place == Place::Enum => {
                     out.case_insensitive = true;
+                    Ok(())
+                }
+                Some("string_only") if place == Place::Enum => {
+                    out.string_only = true;
                     Ok(())
                 }
                 Some("order") if place == Place::Enum => {
@@ -665,6 +838,14 @@ pub(crate) fn tag_of(attrs: &[Attribute]) -> Option<String> {
     })
 }
 
+/// Where an adjacently tagged enum (`content = ".."` beside `tag`) says so: no read takes it.
+pub(crate) fn content_of(attrs: &[Attribute]) -> Option<Span> {
+    entries(attrs)
+        .iter()
+        .find(|entry| entry.builtin().as_deref() == Some("content"))
+        .map(|entry| entry.span)
+}
+
 /// What a variant of a tagged enum with data declares: facet's `rename` (its name) and
 /// `rename_all` (its members' names), and a checked `schema::unknown`, which only a struct
 /// variant (`named`) takes. An error for any other `schema::` key.
@@ -709,6 +890,13 @@ pub(crate) fn tagged_variant(
         }
     }
     (rename, rename_all, unknown)
+}
+
+/// Whether a variant of an untagged enum says `schema::otherwise`.
+pub(crate) fn variant_otherwise(attrs: &[Attribute]) -> bool {
+    entries(attrs)
+        .iter()
+        .any(|entry| entry.schema_key().as_deref() == Some("otherwise"))
 }
 
 /// The checked `schema::unknown` of a variant of an untagged enum with data (a struct

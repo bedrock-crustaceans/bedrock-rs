@@ -5,17 +5,18 @@
 //! (`chain_file::check`) once the document is read, as the loader checks them once it is bound.
 //!
 //! What is the family's own: a name that must be `namespace:name`, a time that must not be
-//! negative (each with the game's line, `schema::read_with`), a member that takes a name and
-//! nothing else (`string_enum`), and the rotation limits, whose constraints the game checks in
-//! an order of its own.
+//! negative (each with the game's line, `schema::read_with`), and the rotation limits, whose
+//! constraints the game checks in an order of its own. Its enums are read from a string and
+//! nothing else (`schema::string_only`), a spline type outside the two with the game's line
+//! (`schema::invalid`).
 
 use super::history::v1_19_50;
-use super::{CameraEntity, CameraList, CameraPreset, CameraSpline, SplineType};
+use super::{CameraEntity, CameraList, CameraPreset, CameraSpline};
 use super::{V1_19_50, V1_26_50, codes};
 use bedrock_addon_core::diagnostic::cereal::{self, NumericRange};
 use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{Id, Kind};
-use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::schema::{FromJson, Schema};
 use bedrock_addon_core::versioning::chain_file::{check, document, read};
@@ -126,26 +127,6 @@ pub(crate) fn progress(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
         violated(read, node, &codes::SPLINE_PROGRESS);
     }
     Some(value)
-}
-
-/// A spline's `spline_type`: a string with a pattern, not an enum, so a name outside the two is
-/// the constraint's own line, and the member fails.
-pub(crate) fn spline_type(node: &Node<'_>, read: &mut Read<'_>) -> Option<SplineType> {
-    let kind = SplineType::from_name(read.string(node)?);
-    if kind.is_none() {
-        read.refuse(node, Code::from(&codes::SPLINE_TYPE));
-    }
-    kind
-}
-
-/// An enum member (`schema::read_with`): the game binds it as a string, so a token of another
-/// JSON type is a wrong type, where the enum's own read tells it an invalid name.
-pub(crate) fn string_enum<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T> {
-    if !node.value().is_string() {
-        read.wrong_kind(node, Expected::String);
-        return None;
-    }
-    T::from_json(node, read)
 }
 
 /// Tells that an element of `limit` is outside `range`, at that element: the first one is the

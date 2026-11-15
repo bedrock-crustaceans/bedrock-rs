@@ -280,7 +280,17 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
             .iter()
             .filter_map(|info| field_cross_check(info, &infos)),
     );
-    let molang = infos.iter().map(field_molang);
+    let container_rule = container
+        .rule
+        .as_ref()
+        .map(|(rule, _)| quote!((#rule)(self, cx);));
+    let molang: Vec<TokenStream> = infos.iter().map(field_molang).collect();
+    // A spec on the struct is the default of the walk below it.
+    let molang = if let Some((spec, _)) = &container.molang {
+        quote!(visitor.under(&#spec, |visitor| { #(#molang)* });)
+    } else {
+        quote!(#(#molang)*)
+    };
     let triggers = trigger_calls(&infos);
     let unknown = container.unknown.as_ref().map(|word| {
         let rule = unknown_option(Some(word));
@@ -302,6 +312,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
             #[allow(unused_variables)]
             fn check(&mut self, cx: &mut #core::schema::SchemaCx<'_>) {
                 #(#checks)*
+                #container_rule
             }
 
             #[allow(unused_variables)]
@@ -314,7 +325,7 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         impl #core::molang::MolangFields for #ident {
             #[allow(unused_variables)]
             fn visit_molang(&mut self, visitor: &mut #core::molang::MolangVisitor<'_>) {
-                #(#molang)*
+                #molang
             }
         }
 
@@ -487,6 +498,12 @@ fn field_row(info: &FieldInfo) -> TokenStream {
     }
     if let Some((step, _)) = attrs.multiple_of {
         parts.push(quote!(multiple_of: ::core::option::Option::Some(#step)));
+    }
+    if let Some((count, _)) = attrs.min_len {
+        parts.push(quote!(min_len: ::core::option::Option::Some(#count)));
+    }
+    if let Some((count, _)) = attrs.max_len {
+        parts.push(quote!(max_len: ::core::option::Option::Some(#count)));
     }
     if attrs.since_format.is_some() {
         let v = version_option(attrs.since_format);
@@ -683,11 +700,13 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
     // A limit written as a double (`179.9_f64`) is compared with the value widened to one.
     let precise = is_f64_limit(low) || is_f64_limit(high);
     let double: Type = syn::parse_quote!(f64);
-    let value_ty = if precise {
-        &double
-    } else {
-        elements.unwrap_or_else(|| info.value_ty())
+    // The number a bound compares: the value's own, or what a wrapper or a range holds
+    // (`Bounded`); a double where the limit is one.
+    let held: Type = {
+        let holder = elements.unwrap_or_else(|| info.value_ty());
+        syn::parse_quote!(<#holder as #core::schema::Bounded>::Number)
     };
+    let value_ty = if precise { &double } else { &held };
     let widen = |value: TokenStream| {
         if precise {
             quote!(#core::schema::Number::to_f64(#value))
@@ -695,7 +714,7 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
             value
         }
     };
-    let (element, scalar) = (widen(quote!(*__value)), widen(quote!(__value)));
+    let number = widen(quote!(__number));
     let exclusive =
         |bound: Option<&BoundDecl>| bound.is_some_and(|b| matches!(b.op, Op::Above | Op::Below));
     let (low_exclusive, high_exclusive) = (exclusive(low), exclusive(high));
@@ -730,16 +749,20 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
             };
             let __first = #list.and_then(|__list| {
                 __list.iter().enumerate().find_map(|(__index, __value)| {
-                    __sides.broken(#element).map(|__side| (__index, __side))
+                    #core::schema::Bounded::numbers(__value).into_iter().find_map(|(__end, __number)| {
+                        let __number = #number;
+                        __sides.broken(__number).map(|__side| (__index, __side, __sides.found(__end, __number)))
+                    })
                 })
             });
-            if let ::core::option::Option::Some((__index, __side)) = __first {
+            if let ::core::option::Option::Some((__index, __side, __found)) = __first.as_ref() {
+                let __side = *__side;
                 let __resettable = match __side {
                     #core::schema::Side::Low => #low_resettable,
                     #core::schema::Side::High => #high_resettable,
                 };
-                cx.enter_index(__index);
-                let __verdict = cx.range(__sides.range(), __resettable);
+                cx.enter_index(*__index);
+                let __verdict = cx.found(__found.clone(), __resettable);
                 cx.leave();
                 #apply
             }
@@ -755,14 +778,18 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
         };
         let mut __broken = false;
         if let ::core::option::Option::Some(__value) = #value {
-            if let ::core::option::Option::Some(__side) = __sides.broken(#scalar) {
-                __broken = true;
-                let __resettable = match __side {
-                    #core::schema::Side::Low => #low_resettable,
-                    #core::schema::Side::High => #high_resettable,
-                };
-                let __verdict = cx.range(__sides.range(), __resettable);
-                #apply
+            for (__end, __number) in #core::schema::Bounded::numbers(&__value) {
+                let __number = #number;
+                if let ::core::option::Option::Some(__side) = __sides.broken(__number) {
+                    __broken = true;
+                    let __resettable = match __side {
+                        #core::schema::Side::Low => #low_resettable,
+                        #core::schema::Side::High => #high_resettable,
+                    };
+                    let __verdict = cx.found(__sides.found(__end, __number), __resettable);
+                    #apply
+                    break;
+                }
             }
         }
         __broken
@@ -783,8 +810,56 @@ fn at_field(info: &FieldInfo, body: TokenStream) -> TokenStream {
     }
 }
 
-/// A field's own part of `check`: its bounds (unless one names another field), `lowercase`
-/// (the ASCII lower-casing the game applies in silence), then the walk into it.
+/// A field's length bounds (`schema::min_len`, `schema::max_len`), as an expression that is
+/// whether the field broke them: one finding, whichever side it broke, graded as a broken bound
+/// is; `None` where the field states none.
+fn field_len(info: &FieldInfo) -> Option<TokenStream> {
+    let min = info.attrs.min_len.map(|(count, _)| count);
+    let max = info.attrs.max_len.map(|(count, _)| count);
+    if min.is_none() && max.is_none() {
+        return None;
+    }
+    let access = &info.access;
+    let reset = own_reset(info);
+    let resettable = reset.is_some();
+    let apply = reset.map_or_else(
+        || quote!(let _ = __verdict;),
+        |reset| {
+            quote! {
+                if __verdict == ::bedrock_addon_core::schema::Verdict::Reset {
+                    #access = #reset;
+                }
+            }
+        },
+    );
+    let min = min.map_or_else(
+        || quote!(::core::option::Option::<usize>::None),
+        |count| quote!(::core::option::Option::Some(#count)),
+    );
+    let max = max.map_or_else(
+        || quote!(::core::option::Option::<usize>::None),
+        |count| quote!(::core::option::Option::Some(#count)),
+    );
+    let len = if info.option.is_some() {
+        quote!(#access.as_ref().map(|__list| __list.len()))
+    } else {
+        quote!(::core::option::Option::Some(#access.len()))
+    };
+    Some(quote! {
+        if let ::core::option::Option::Some(__len) = #len {
+            let (__min, __max) = (#min, #max);
+            if __min.is_some_and(|__min| __len < __min) || __max.is_some_and(|__max| __len > __max) {
+                let __verdict = cx.length(__len, __min, __max, #resettable);
+                #apply
+            }
+        }
+    })
+}
+
+/// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
+/// its bounds (unless one names another field), its length bounds, `lowercase` (the ASCII
+/// lower-casing the game applies in silence), then the walk into it, or the field's
+/// `check_with`.
 fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
     let core = core();
     let access = &info.access;
@@ -793,6 +868,20 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
     } else {
         field_bounds(info, all)
     };
+    let len = field_len(info);
+    let since_engine = info.attrs.since_engine.map(|_| {
+        let since = version_option(info.attrs.since_engine);
+        let present = if info.option.is_some() {
+            quote!(#access.is_some())
+        } else {
+            quote!(true)
+        };
+        quote! {
+            if let ::core::option::Option::Some(__since) = #since {
+                cx.since_engine(__since, #present);
+            }
+        }
+    });
     // The game lower-cases the member as it reads it and tells nothing.
     let lowercase = info.attrs.lowercase.map(|_| {
         if info.option.is_some() {
@@ -805,8 +894,16 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
             quote!(#access.make_ascii_lowercase();)
         }
     });
-    let walk = quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx););
-    at_field(info, quote!(#bounds #lowercase #walk))
+    let walk = match &info.attrs.check_with {
+        Some((with, _)) if info.option.is_some() => quote! {
+            if let ::core::option::Option::Some(__value) = &mut #access {
+                (#with)(__value, cx);
+            }
+        },
+        Some((with, _)) => quote!((#with)(&mut #access, cx);),
+        None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
+    };
+    at_field(info, quote!(#since_engine #bounds #len #lowercase #walk))
 }
 
 /// A field's cross-field bounds, which run after every field's own check, so they compare with
@@ -1032,7 +1129,7 @@ fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) ->
         ""
     };
     let from_doc = format!("The value spelt `name`{case}.");
-    let from_json = read::unit_enum_read(ident);
+    let from_json = read::unit_enum_read(ident, container.string_only);
     quote! {
         #from_json
 
@@ -1160,6 +1257,28 @@ fn binding(index: usize) -> Ident {
 /// default one.
 fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) -> TokenStream {
     let container = ContainerAttrs::read(&input.attrs, Place::Untagged, errors);
+    // `schema::otherwise`: one newtype variant, the arm a value takes when no other reads it.
+    let mut otherwise = data
+        .variants
+        .iter()
+        .filter(|variant| attr::variant_otherwise(&variant.attrs));
+    if let Some(first) = otherwise.next() {
+        let newtype =
+            matches!(&first.fields, Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1);
+        if !newtype {
+            errors.push(Error::new_spanned(
+                &first.ident,
+                "`schema::otherwise` marks a newtype variant: the value it takes is read as its \
+                 one field",
+            ));
+        }
+    }
+    if let Some(second) = otherwise.next() {
+        errors.push(Error::new_spanned(
+            &second.ident,
+            "one variant of an untagged enum is the arm a value takes otherwise",
+        ));
+    }
     let variants = untagged_variants(data, errors);
     let impls = untagged_impls(&input.ident, &variants, None);
     let reads: Vec<read::ReadVariant> = data
@@ -1176,6 +1295,7 @@ fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>
                 ),
                 fields: &info.fields,
                 unknown: attr::variant_unknown(&variant.attrs),
+                otherwise: attr::variant_otherwise(&variant.attrs),
             })
         })
         .collect();
@@ -1194,6 +1314,13 @@ fn derive_tagged(
     errors: &mut Vec<Error>,
 ) -> TokenStream {
     let container = ContainerAttrs::read(&input.attrs, Place::Tagged, errors);
+    if let Some(span) = attr::content_of(&input.attrs) {
+        errors.push(Error::new(
+            span,
+            "an adjacently tagged enum (`content` beside `tag`) has no derived read: no document \
+             of the game writes one",
+        ));
+    }
     read::check_tagged_variants(data, tag.is_some(), errors);
     let mut variants: Vec<VariantInfo> = Vec::new();
     let mut json_names = Vec::new();
@@ -1266,6 +1393,7 @@ fn derive_tagged(
                 name: json_names[at].clone(),
                 fields: &variants[at].fields,
                 unknown: unknowns[at].clone(),
+                otherwise: false,
             })
         })
         .collect();

@@ -68,8 +68,14 @@ pub fn read_via_facet<T: for<'a> Facet<'a>>(node: &Node<'_>, read: &mut Read<'_>
         read.defer(Pass::Absent, finding);
     }
     let mut kept = crate::document::Unknown::new();
-    let unknown =
-        crate::json::door_unknown_members(&value, &json, reading.keeps_unknown, &mut kept);
+    // The word of the field that holds the value is the first object's below it.
+    let unknown = crate::json::held_unknown_members(
+        &value,
+        &json,
+        reading.keeps_unknown,
+        read.field_unknown(),
+        &mut kept,
+    );
     if read.keepable() {
         read.findings_mut().unknown_mut().absorb(at, kept);
     }
@@ -188,5 +194,57 @@ mod tests {
                 "inner/level core/invalid_type"
             ]
         );
+    }
+
+    use crate::schema::{self, Schema};
+
+    /// A bridged struct, held by a field that says `schema::unknown = "keep"`.
+    #[derive(Debug, PartialEq, facet::Facet, Schema)]
+    struct Holds {
+        #[facet(schema::unknown = "keep")]
+        held: Option<Bridged>,
+    }
+
+    #[derive(Debug, PartialEq, facet::Facet)]
+    struct Bridged {
+        level: u8,
+    }
+
+    // bridge: the test's type is read by facet
+    crate::from_json_via_facet!(Bridged);
+    crate::impl_schema_leaf!(Bridged);
+    crate::impl_no_molang!(Bridged);
+
+    /// The word of the field that holds a bridged struct is the door's for that struct's
+    /// object: its unknown members are kept, as `parse_payload` keeps them.
+    #[test]
+    fn the_word_of_the_field_that_holds_a_bridged_struct_is_honoured() {
+        use crate::load::LoadContext;
+        use crate::version::{FormatVersion, FormatVersionInput};
+        use crate::versioning::{ParseCx, parse_payload, read_payload};
+        let load = LoadContext::detached();
+        let cx = ParseCx {
+            load: &load,
+            written: FormatVersionInput {
+                version: Some(FormatVersion::new(1, 0, 0)),
+                beta_literal: false,
+                prerelease: false,
+            },
+            original_version: FormatVersion::new(1, 0, 0),
+            at: JsonPath::new(),
+        };
+        let text = JsonSlice::new(r#"{"held": {"level": 1, "zz": 2}}"#);
+        let kept = |d: &Diagnostics| -> Vec<String> {
+            d.unknown()
+                .iter()
+                .map(|(at, key, _)| format!("{at}/{key}"))
+                .collect()
+        };
+        let mut door = Diagnostics::default();
+        let _: Option<Holds> = parse_payload(text, &cx, &mut door);
+        let mut read = Diagnostics::default();
+        let _: Option<Holds> = read_payload(text, &cx, &mut read);
+        assert_eq!(kept(&door), ["held/zz"]);
+        assert_eq!(kept(&read), kept(&door));
     }
 }

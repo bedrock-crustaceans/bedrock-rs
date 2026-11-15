@@ -57,7 +57,6 @@ use bedrock_addon_core::versioning::{
     Parsed, Reading, Selection, StructIndex, UnknownMask, VersionStruct, Versioned, finish,
     parse_as_written, select,
 };
-use std::fmt;
 
 /// The path of the one file a behaviour pack's catalogue is read from.
 pub(crate) const PATH: &str = "item_catalog/crafting_item_catalog.json";
@@ -81,16 +80,19 @@ pub struct CraftingCatalog {
 /// The groups one entry of `categories` adds to a creative category.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Category {
-    /// The category the groups go to (JSON `category_name`, required).
+    /// The category the groups go to (JSON `category_name`, required); an unknown name is an
+    /// `InvalidValue` that stays fatal under either slice.
+    #[facet(schema::invalid = bedrock_addon_core::diagnostic::codes::INVALID_VALUE)]
     pub category_name: CategoryName,
     /// The groups added to it, in order (JSON `groups`, required).
     pub groups: Vec<Group>,
 }
 
 /// One of the four creative categories a catalogue can add to; a pack cannot add, rename or
-/// reorder them. The JSON names are lower-case and compared with case.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Facet)]
-#[facet(rename_all = "snake_case")]
+/// reorder them. The JSON names are lower-case and compared with case; the game binds the name
+/// as a string, so a value of another JSON type is a wrong type.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Facet, Schema)]
+#[facet(rename_all = "snake_case", schema::string_only, schema::order = "game")]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum CategoryName {
@@ -112,24 +114,6 @@ impl CategoryName {
         Self::Equipment,
         Self::Items,
     ];
-
-    /// The JSON name (`"construction"`).
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Construction => "construction",
-            Self::Nature => "nature",
-            Self::Equipment => "equipment",
-            Self::Items => "items",
-        }
-    }
-
-    /// The category a JSON name selects; `None` for any other string (`"Construction"`
-    /// included).
-    pub fn from_name(name: &str) -> Option<Self> {
-        Self::ALL
-            .into_iter()
-            .find(|category| category.name() == name)
-    }
 
     /// The creative-menu category of an item definition's `menu_category` this category is.
     ///
@@ -523,13 +507,6 @@ impl CatalogItem {
 impl From<ItemId> for CatalogItem {
     fn from(name: ItemId) -> Self {
         Self::new(name)
-    }
-}
-
-/// The JSON name.
-impl fmt::Display for CategoryName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.name())
     }
 }
 

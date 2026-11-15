@@ -1,7 +1,7 @@
 //! The camera preset at `[1.19.50, 1.26.50)`, which vanilla's legacy slice parses, and its step
 //! to 1.26.50.
 
-use super::super::read::{preset_name, string_enum};
+use super::super::read::preset_name;
 use super::super::{AudioListener, ControlScheme, PresetAimAssist};
 use bedrock_addon_core::id::CameraPresetId;
 use bedrock_addon_core::schema::{self, Schema};
@@ -61,14 +61,12 @@ pub struct CameraPreset {
     #[facet(schema::min = -179.9_f64, schema::max = 180.0)]
     pub yaw_limits_max: Option<f32>,
     /// JSON `listener`.
-    #[facet(schema::read_with = string_enum)]
     pub listener: Option<AudioListener>,
     /// JSON `player_effects`.
     pub player_effects: Option<bool>,
     /// JSON `aim_assist`.
     pub aim_assist: Option<PresetAimAssist>,
     /// JSON `control_scheme`.
-    #[facet(schema::read_with = string_enum)]
     pub control_scheme: Option<ControlScheme>,
     /// The `format_version` the document was read at, 1.19.50 or later; the struct is
     /// written back at it (not a JSON member of the payload).

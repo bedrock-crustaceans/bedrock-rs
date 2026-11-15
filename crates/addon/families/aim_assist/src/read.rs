@@ -10,7 +10,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
 use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::schema::{FromJson, Schema};
+use bedrock_addon_core::schema::{FromJson, Schema, read_entries};
 use bedrock_addon_core::versioning::chain_file::{check, document, read};
 use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
 use indexmap::IndexMap;
@@ -41,18 +41,7 @@ pub(crate) fn priority(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
 /// A map of priorities (`schema::read_with`): each value a [`priority`]; one that is no number
 /// fails the map.
 pub(crate) fn priority_map(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, i32>> {
-    let members = read.object(node)?;
-    let mut map = IndexMap::new();
-    let mut read_all = true;
-    for (key, value) in members.iter() {
-        match priority(&value, read) {
-            Some(priority) => {
-                map.insert(key.to_owned(), priority);
-            }
-            None => read_all = false,
-        }
-    }
-    read_all.then_some(map)
+    read_entries(node, read, priority)
 }
 
 /// The preset file at 1.21.50: the version and the payload.

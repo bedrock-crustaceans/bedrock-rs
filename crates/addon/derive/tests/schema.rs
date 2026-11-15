@@ -1141,6 +1141,46 @@ fn molang_on_a_nested_walk_sets_that_walks_default_spec() {
     );
 }
 
+/// `schema::molang` on a struct: the default spec of the walk below it, for the fields of its
+/// own and of the structs it holds, unless one of them states another.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang = TAGS)]
+pub struct RootSpec {
+    pub item: Option<bedrock_addon_shared_shapes::ItemDescriptor>,
+    pub boss: Option<Boss>,
+    pub plain: Option<Molang>,
+    #[facet(schema::molang = MolangFieldSpec::KEPT)]
+    pub kept: Option<Molang>,
+}
+
+#[test]
+fn molang_on_a_struct_is_the_default_spec_of_the_walk_below_it() {
+    let mut root: RootSpec =
+        bedrock_addon_core::json::from_str_jsonc(r#"{"item": {"tags": "q.any_tag('a')"}}"#)
+            .expect("the document reads");
+    root.boss = Some(boss());
+    root.plain = Some(Molang::Const(1.0));
+    root.kept = Some(Molang::Const(2.0));
+    let mut seen = Vec::new();
+    visit_fields_under(
+        &mut root,
+        &JsonPath::new(),
+        &MolangFieldSpec::DEFAULT,
+        |field| {
+            seen.push((field.path.to_string(), *field.spec));
+        },
+    );
+    assert_eq!(
+        seen,
+        [
+            ("item/tags".to_owned(), TAGS),
+            ("boss/cond".to_owned(), TAGS),
+            ("plain".to_owned(), TAGS),
+            ("kept".to_owned(), MolangFieldSpec::KEPT),
+        ]
+    );
+}
+
 /// A bound on a fixed array or a list is the bound of each element.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Offsets {
@@ -1217,4 +1257,463 @@ fn a_limit_with_the_f64_suffix_is_compared_and_worded_as_a_double() {
         plain: Some(179.9),
     };
     assert!(check(&mut at_the_limit, MemberFailure::Refuse).0.is_empty());
+}
+
+/// The emitted read names its locals apart from the family's own items: a read function named
+/// `read` and a default from a function named `tag` are the family's, not the read's.
+mod hygiene {
+    use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    use bedrock_addon_core::json::kit::{Node, Read};
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    use bedrock_addon_core::schema::{self, FromJson, Schema};
+    use bedrock_addon_core::versioning::Reading;
+    use facet::Facet;
+
+    /// A level, read doubled.
+    fn read(node: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+        u8::from_json(node, read).map(|level| level * 2)
+    }
+
+    fn tag() -> u8 {
+        9
+    }
+
+    #[derive(Debug, PartialEq, Facet, Schema)]
+    struct Shadowed {
+        #[facet(schema::read_with = read)]
+        level: u8,
+        #[facet(default = tag())]
+        key: u8,
+        member: Option<u8>,
+    }
+
+    #[test]
+    fn a_family_s_own_names_are_not_the_read_s_locals() {
+        let json: Value = from_str_jsonc(r#"{"level": 2, "member": 1}"#).unwrap();
+        let mut found = Diagnostics::default();
+        let mut reader = Read::new(Reading::DOCUMENT, &mut found);
+        let value = Shadowed::from_json(&Node::new(&json, JsonPath::new()), &mut reader);
+        assert_eq!(
+            value,
+            Some(Shadowed {
+                level: 4,
+                key: 9,
+                member: Some(1)
+            })
+        );
+    }
+}
+
+// ---- the validate stage: since_engine, the older tree's wording, length, hooks -----------------
+
+use bedrock_addon_core::diagnostic::Phase;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{Bounded, End, FromJson, TreeWording};
+use bedrock_addon_core::shared::IntRange;
+
+/// An integer that keeps whether it was written as a real (`2.0`): a wrapper a bound sees
+/// through.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Facet)]
+#[facet(opaque)]
+pub struct Counted(pub i32, pub bool);
+
+impl Bounded for Counted {
+    type Number = i32;
+
+    fn numbers(&self) -> impl IntoIterator<Item = (End, i32)> {
+        [(End::Only, self.0)]
+    }
+}
+
+impl FromJson for Counted {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        i32::from_json(node, read).map(|n| Counted(n, false))
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(Counted);
+bedrock_addon_core::impl_no_molang!(Counted);
+
+/// What the game's older schema tree bounds: a wrapped integer, a range, a list.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct TreeBounds {
+    #[facet(schema::min = 1)]
+    pub count: Counted,
+    #[facet(schema::min = 0, schema::max = 4)]
+    pub span: Option<IntRange>,
+    #[facet(schema::min_len = 1, schema::max_len = 2)]
+    pub items: Option<Vec<i32>>,
+    #[facet(schema::min = 1)]
+    pub steps: Option<Vec<Counted>>,
+    #[facet(schema::min = 0.0, schema::max = 1.0)]
+    pub chance: Option<f32>,
+}
+
+fn tree_bounds() -> TreeBounds {
+    TreeBounds {
+        count: Counted(1, false),
+        span: Some(IntRange::new(0, 4, schema_range_form())),
+        items: Some(vec![1]),
+        steps: Some(vec![Counted(1, false)]),
+        chance: Some(0.5),
+    }
+}
+
+fn schema_range_form() -> bedrock_addon_core::shared::RangeForm {
+    bedrock_addon_core::shared::RangeForm::MinMax
+}
+
+// The family's own lines for the two ends of a range.
+static TEST_RANGE_MIN: bedrock_addon_core::diagnostic::CodeDef<3> =
+    bedrock_addon_core::diagnostic::CodeDef::new(
+        "test/range_min",
+        bedrock_addon_core::diagnostic::Kind::InvalidValue,
+        bedrock_addon_core::diagnostic::Class::Error,
+        "range_min {} is outside [{}, {}]",
+    );
+static TEST_RANGE_MAX: bedrock_addon_core::diagnostic::CodeDef<3> =
+    bedrock_addon_core::diagnostic::CodeDef::new(
+        "test/range_max",
+        bedrock_addon_core::diagnostic::Kind::InvalidValue,
+        bedrock_addon_core::diagnostic::Class::Error,
+        "range_max {} is outside [{}, {}]",
+    );
+
+const TREE_WORDING: TreeWording = TreeWording {
+    range_min: &TEST_RANGE_MIN,
+    range_max: &TEST_RANGE_MAX,
+};
+
+fn told_as_the_older_tree(value: &mut TreeBounds) -> Vec<(String, String)> {
+    let load = LoadContext::detached();
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::validating(
+        Reading::DOCUMENT,
+        JsonPath::of_keys(["feature"]),
+        &load,
+        FormatVersion::new(1, 0, 0),
+        &mut out,
+    )
+    .with_tree_wording(TREE_WORDING);
+    value.check(&mut cx);
+    out.iter()
+        .map(|d| (d.location.json_path.to_string(), d.code.to_string()))
+        .collect()
+}
+
+#[test]
+fn a_bound_on_a_wrapper_or_a_range_is_the_bound_of_the_numbers_it_holds() {
+    assert!(told_as_the_older_tree(&mut tree_bounds()).is_empty());
+    let mut outside = tree_bounds();
+    outside.count = Counted(0, false);
+    outside.span = Some(IntRange::new(-1, 9, schema_range_form()));
+    outside.steps = Some(vec![
+        Counted(2, false),
+        Counted(0, false),
+        Counted(-3, false),
+    ]);
+    // The first number outside is the one finding of a range, the first element of a list.
+    assert_eq!(
+        told_as_the_older_tree(&mut outside),
+        [
+            (
+                "feature/count".to_owned(),
+                "Value '0' outside valid range [1, 2147483647]".to_owned()
+            ),
+            (
+                "feature/span".to_owned(),
+                "range_min -1 is outside [0, 4]".to_owned()
+            ),
+            (
+                "feature/steps/1".to_owned(),
+                "Value '0' outside valid range [1, 2147483647]".to_owned()
+            ),
+        ]
+    );
+    let mut upper = tree_bounds();
+    upper.span = Some(IntRange::new(2, 5, schema_range_form()));
+    assert_eq!(
+        told_as_the_older_tree(&mut upper),
+        [(
+            "feature/span".to_owned(),
+            "range_max 5 is outside [0, 4]".to_owned()
+        )]
+    );
+}
+
+#[test]
+fn a_float_outside_its_range_states_the_value_in_its_own_type() {
+    let mut value = tree_bounds();
+    value.chance = Some(1.1);
+    assert_eq!(
+        told_as_the_older_tree(&mut value),
+        [(
+            "feature/chance".to_owned(),
+            "Value '1.1' outside valid range [0, 1]".to_owned()
+        )]
+    );
+}
+
+#[test]
+fn the_findings_of_a_validate_check_are_validate_phase_errors_unless_the_plain_wording_is_on() {
+    let load = LoadContext::detached();
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::validating(
+        Reading::DOCUMENT,
+        JsonPath::new(),
+        &load,
+        FormatVersion::new(1, 0, 0),
+        &mut out,
+    );
+    let mut value = tree_bounds();
+    value.count = Counted(0, false);
+    value.check(&mut cx);
+    assert!(cx.failed());
+    let found: Vec<_> = out.iter().collect();
+    let [finding] = found.as_slice() else {
+        panic!("one finding: {out:?}")
+    };
+    assert_eq!(finding.phase, Phase::Validate);
+    assert_eq!(finding.code, Code::from(&codes::INVALID_VALUE));
+}
+
+#[test]
+fn a_list_of_the_wrong_length_is_one_finding_at_the_field() {
+    let mut empty = tree_bounds();
+    empty.items = Some(Vec::new());
+    let mut long = tree_bounds();
+    long.items = Some(vec![1, 2, 3]);
+    assert_eq!(
+        told_as_the_older_tree(&mut empty),
+        [(
+            "feature/items".to_owned(),
+            "Array too small (0 < 1)".to_owned()
+        )]
+    );
+    assert_eq!(
+        told_as_the_older_tree(&mut long),
+        [(
+            "feature/items".to_owned(),
+            "Array too large (3 > 2)".to_owned()
+        )]
+    );
+    let mut absent = tree_bounds();
+    absent.items = None;
+    assert!(told_as_the_older_tree(&mut absent).is_empty());
+    // Without the tree's wording the finding has no text; an `Option` resets whole under the
+    // lenient rule.
+    let (out, failed) = check(&mut empty, MemberFailure::Refuse);
+    assert!(failed);
+    assert_eq!(
+        out.iter().next().map(|d| d.code.clone()),
+        Some(Code::from(&codes::INVALID_VALUE))
+    );
+    let (out, failed) = check(&mut long, MemberFailure::DefaultAndTell);
+    assert!(!failed);
+    assert_eq!(paths(&out), [("items".to_owned(), Severity::Info)]);
+    assert_eq!(long.items, None);
+}
+
+#[test]
+fn the_rows_state_the_length_bounds() {
+    let items = TreeBounds::FIELDS[2];
+    assert_eq!((items.min_len, items.max_len), (Some(1), Some(2)));
+    assert_eq!(
+        (TreeBounds::FIELDS[0].min_len, TreeBounds::FIELDS[0].max_len),
+        (None, None)
+    );
+}
+
+/// A member the engine may not have yet, and a hook across the fields and one in place of the
+/// walk.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::rule = ends_in_order)]
+pub struct EngineGated {
+    #[facet(schema::since_engine = "1.26.20")]
+    pub fresh: Option<bool>,
+    #[facet(schema::min = 1, schema::since_engine = "1.26.30")]
+    pub newer: Option<Counted>,
+    #[facet(schema::check_with = loose)]
+    pub inner: Option<TreeBounds>,
+    pub low: i32,
+    pub high: i32,
+}
+
+/// A rule across `low` and `high`, told at the struct's own path.
+fn ends_in_order(gated: &mut EngineGated, cx: &mut SchemaCx<'_>) {
+    if gated.high < gated.low {
+        cx.kept("high", Code::from(&codes::INVALID_VALUE));
+        gated.high = gated.low;
+    }
+}
+
+/// The check of `inner` in place of the walk into its type: it tells itself and leaves the
+/// type's own bounds alone.
+fn loose(_: &mut TreeBounds, cx: &mut SchemaCx<'_>) {
+    cx.error("", Code::from(&codes::INVALID_TYPE));
+}
+
+fn engine_gated() -> EngineGated {
+    EngineGated {
+        fresh: Some(true),
+        newer: Some(Counted(1, false)),
+        inner: None,
+        low: 1,
+        high: 2,
+    }
+}
+
+fn validate_on(engine: FormatVersion, value: &mut EngineGated) -> Diagnostics {
+    let mut load = LoadContext::detached();
+    load.engine_version = engine;
+    load.min_engine_version = None;
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::validating(
+        Reading::DOCUMENT,
+        JsonPath::of_keys(["feature"]),
+        &load,
+        FormatVersion::new(1, 0, 0),
+        &mut out,
+    );
+    value.check(&mut cx);
+    out
+}
+
+#[test]
+fn a_member_newer_than_the_engine_is_not_valid_here() {
+    let out = validate_on(FormatVersion::new(1, 26, 10), &mut engine_gated());
+    assert_eq!(
+        out.iter()
+            .map(|d| (
+                d.location.json_path.to_string(),
+                d.code.id().to_owned(),
+                d.severity
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "feature/fresh".to_owned(),
+                "core/child_not_valid".to_owned(),
+                Severity::Error
+            ),
+            (
+                "feature/newer".to_owned(),
+                "core/child_not_valid".to_owned(),
+                Severity::Error
+            ),
+        ]
+    );
+    // On an engine that has them, a pack that does not declare the engine is told, as
+    // information.
+    let out = validate_on(FormatVersion::new(1, 26, 30), &mut engine_gated());
+    assert_eq!(
+        out.iter()
+            .map(|d| (
+                d.location.json_path.to_string(),
+                d.code.id().to_owned(),
+                d.severity
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "feature/fresh".to_owned(),
+                "core/field_since_engine".to_owned(),
+                Severity::Info
+            ),
+            (
+                "feature/newer".to_owned(),
+                "core/field_since_engine".to_owned(),
+                Severity::Info
+            ),
+        ]
+    );
+    let mut absent = EngineGated {
+        fresh: None,
+        newer: None,
+        ..engine_gated()
+    };
+    assert!(validate_on(FormatVersion::new(1, 0, 0), &mut absent).is_empty());
+    // Outside the validate stage nothing is gated.
+    assert!(
+        check(&mut engine_gated(), MemberFailure::Refuse)
+            .0
+            .is_empty()
+    );
+}
+
+#[test]
+fn a_gate_comes_before_the_bounds_of_its_member() {
+    let mut value = EngineGated {
+        newer: Some(Counted(0, false)),
+        ..engine_gated()
+    };
+    let out = validate_on(FormatVersion::new(1, 26, 10), &mut value);
+    let ids: Vec<_> = out
+        .iter()
+        .map(|d| (d.location.json_path.to_string(), d.code.id().to_owned()))
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            (
+                "feature/fresh".to_owned(),
+                "core/child_not_valid".to_owned()
+            ),
+            (
+                "feature/newer".to_owned(),
+                "core/child_not_valid".to_owned()
+            ),
+            ("feature/newer".to_owned(), "core/invalid_value".to_owned()),
+        ]
+    );
+}
+
+#[test]
+fn a_rule_runs_after_the_fields_at_the_structs_path_and_may_keep_the_value() {
+    let mut value = EngineGated {
+        high: 0,
+        ..engine_gated()
+    };
+    let out = validate_on(FormatVersion::new(1, 26, 30), &mut value);
+    let kept: Vec<_> = out.iter().filter(|d| d.kept).collect();
+    let [finding] = kept.as_slice() else {
+        panic!("one kept finding: {out:?}")
+    };
+    assert_eq!(finding.location.json_path.to_string(), "feature/high");
+    assert_eq!(finding.phase, Phase::Validate);
+    assert_eq!(value.high, 1);
+}
+
+#[test]
+fn check_with_stands_in_for_the_walk_into_the_field() {
+    let mut value = EngineGated {
+        inner: Some(TreeBounds {
+            count: Counted(0, false),
+            ..tree_bounds()
+        }),
+        ..engine_gated()
+    };
+    let out = validate_on(FormatVersion::new(1, 26, 30), &mut value);
+    // The hook's finding; `count` is below its bound and is not told, the walk being replaced.
+    let told: Vec<_> = out
+        .iter()
+        .filter(|d| d.location.json_path.to_string().ends_with("inner"))
+        .map(|d| d.code.id().to_owned())
+        .collect();
+    assert_eq!(told, ["core/invalid_type"]);
+    assert!(
+        !out.iter()
+            .any(|d| d.location.json_path.to_string().contains("inner/count"))
+    );
+}
+
+#[test]
+fn leaves_with_findings_of_their_own_are_told_only_where_the_family_opts_in() {
+    let mut out = Diagnostics::default();
+    let cx = SchemaCx::new(Reading::DOCUMENT, JsonPath::new(), &mut out);
+    assert!(!cx.leaf_findings());
+    assert_eq!(cx.unknown_severity(), Severity::Error);
+    let cx = cx.with_leaf_findings(true);
+    assert!(cx.leaf_findings());
 }

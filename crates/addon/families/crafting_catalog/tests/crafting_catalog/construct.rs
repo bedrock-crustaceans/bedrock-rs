@@ -135,7 +135,7 @@ fn items_compare_by_the_name_as_written() {
 
 #[test]
 fn category_names() {
-    let names: Vec<&str> = CategoryName::ALL.iter().map(|c| c.name()).collect();
+    let names: Vec<&str> = CategoryName::ALL.iter().map(CategoryName::name).collect();
     assert_eq!(names, ["construction", "nature", "equipment", "items"]);
     for (value, category) in CategoryName::ALL.into_iter().enumerate() {
         assert_eq!(category as usize, value, "vanilla's enum value");

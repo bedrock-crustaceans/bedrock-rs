@@ -365,8 +365,8 @@ pub fn to_facet_json_signed(value: &Value) -> Result<String, EncodeError> {
 
 /// How deep `value` nests, counted without a call for each level; the path of the first
 /// array or object past `MAX_JSON_DEPTH` when it has one.
-// `pub(super)`: the unknown-member walk sizes its stack by it.
-pub(super) fn levels_of(value: &Value) -> Result<usize, JsonPath> {
+// `pub(crate)`: the unknown-member walk and the derived read size their stacks by it.
+pub(crate) fn levels_of(value: &Value) -> Result<usize, JsonPath> {
     /// The step into an element or a member.
     enum Step<'v> {
         Index(usize),

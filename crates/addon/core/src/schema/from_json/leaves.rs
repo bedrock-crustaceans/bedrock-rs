@@ -16,7 +16,8 @@ use crate::version::FormatVersion;
 
 /// The value `node` holds converted by `convert`, or the wrong type its member is told when the
 /// conversion refuses it: the read of a leaf behind `#[facet(proxy = json::Value)]` and a
-/// `TryFrom<json::Value>`, as the door reads it.
+/// `TryFrom<json::Value>`, as the door reads it. The value is cloned for the conversion; a
+/// leaf that converts from a reference reads by [`from_value_ref`].
 ///
 /// ```
 /// use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -38,36 +39,77 @@ pub fn from_value<T, E>(
     read: &mut Read<'_>,
     convert: impl FnOnce(Value) -> Result<T, E>,
 ) -> Option<T> {
+    from_value_ref(node, read, |value| convert(value.clone()))
+}
+
+/// [`from_value`] by a conversion from a reference: nothing is cloned to read.
+pub fn from_value_ref<T, E>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    convert: impl FnOnce(&Value) -> Result<T, E>,
+) -> Option<T> {
     if read.stopped() {
         return None;
     }
-    let value = convert(node.value().clone()).ok();
+    let value = convert(node.value()).ok();
     if value.is_none() {
         read.wrong_type(node);
     }
     value
 }
 
-/// `FromJson` for each type named, by its `TryFrom<json::Value>` ([`from_value`]): the read of
-/// a leaf behind `#[facet(opaque, proxy = json::Value)]`, a refused value a wrong type at its
-/// member, as the door reads it. A generic type is named as `impl<T: Bound> Type<T>`.
+/// `FromJson` for each type named, by its `TryFrom<json::Value>` ([`from_value`]), or with
+/// `ref` by its `TryFrom<&json::Value>` ([`from_value_ref`]): the read of a leaf behind
+/// `#[facet(opaque, proxy = json::Value)]`, a refused value a wrong type at its member, as the
+/// door reads it. A generic type is named as `impl<T: Bound> Type<T>`.
+///
+/// A bridge, like [`from_json_via_facet!`](crate::from_json_via_facet): the leaf's own
+/// conversion reads the whole value by the shape's rule, so the slice's `Reading` does not
+/// reach inside it (its scalars, its `null`s), a refusal names no member inside it and a family
+/// cannot word it. Each use carries a `// bridge:` comment; a leaf leaves it for a `FromJson`
+/// over the kit when its family's pins allow the Reading in (`rg 'from_json_via_value'`).
 ///
 /// ```
 /// use bedrock_addon_core::json::Value;
 ///
 /// pub struct Even(u64);
 ///
-/// impl TryFrom<Value> for Even {
+/// impl TryFrom<&Value> for Even {
 ///     type Error = ();
-///     fn try_from(value: Value) -> Result<Self, ()> {
+///     fn try_from(value: &Value) -> Result<Self, ()> {
 ///         value.as_number().and_then(|n| n.to_u64()).filter(|n| n % 2 == 0).map(Even).ok_or(())
 ///     }
 /// }
 ///
-/// bedrock_addon_core::from_json_via_value!(Even);
+/// // bridge: the example's leaf reads by its conversion
+/// bedrock_addon_core::from_json_via_value!(ref Even);
 /// ```
 #[macro_export]
 macro_rules! from_json_via_value {
+    (ref $(impl<$($param:ident $(: $bound:path)?),+> $ty:ty),+ $(,)?) => {
+        $(
+            impl<$($param $(: $bound)?),+> $crate::schema::FromJson for $ty {
+                fn from_json(
+                    node: &$crate::json::kit::Node<'_>,
+                    read: &mut $crate::json::kit::Read<'_>,
+                ) -> ::core::option::Option<Self> {
+                    $crate::schema::from_value_ref(node, read, |value| <Self as ::core::convert::TryFrom<&$crate::json::Value>>::try_from(value))
+                }
+            }
+        )+
+    };
+    (ref $($ty:ty),+ $(,)?) => {
+        $(
+            impl $crate::schema::FromJson for $ty {
+                fn from_json(
+                    node: &$crate::json::kit::Node<'_>,
+                    read: &mut $crate::json::kit::Read<'_>,
+                ) -> ::core::option::Option<Self> {
+                    $crate::schema::from_value_ref(node, read, |value| <Self as ::core::convert::TryFrom<&$crate::json::Value>>::try_from(value))
+                }
+            }
+        )+
+    };
     ($(impl<$($param:ident $(: $bound:path)?),+> $ty:ty),+ $(,)?) => {
         $(
             impl<$($param $(: $bound)?),+> $crate::schema::FromJson for $ty {
@@ -94,15 +136,17 @@ macro_rules! from_json_via_value {
     };
 }
 
+// bridge: the shared leaves read by their own conversion (the game's reader of the shape)
 crate::from_json_via_value!(
-    crate::shared::Filter,
+    ref crate::shared::Filter,
     crate::shared::FilterTest,
     crate::shared::FilterGroup,
     crate::shared::FilterSubject,
     crate::shared::FilterScalar,
     crate::shared::EventTrigger,
 );
-crate::from_json_via_value!(impl<T: crate::shared::RangeEnd> crate::shared::Range<T>);
+// bridge: a range reads its ends by its own integer and float rules
+crate::from_json_via_value!(ref impl<T: crate::shared::RangeEnd> crate::shared::Range<T>);
 
 /// A string, kept as written; any other value is a wrong type.
 impl<K: crate::id::Kind> FromJson for crate::id::Id<K> {
@@ -219,7 +263,7 @@ impl FromJson for MolangSource {
 /// the member, as the door's list proxy refuses the whole.
 impl FromJson for MolangList {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        from_value(node, read, |value| list(&value))
+        from_value_ref(node, read, list)
     }
 }
 
@@ -257,6 +301,10 @@ impl FromJson for Extra {
         (!read.stopped()).then(Extra::default)
     }
 }
+
+// The members a struct keeps beside its fields hold no bound and no Molang.
+crate::impl_schema_leaf!(UnknownMembers);
+crate::impl_no_molang!(UnknownMembers);
 
 /// An object's members, as written, in file order.
 impl FromJson for UnknownMembers {

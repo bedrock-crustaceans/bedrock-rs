@@ -388,8 +388,9 @@ fn float(bits: u8, x: f64) -> Verdict {
 }
 
 /// Whether the integer `value` fits an integer of `bits`, signed or not: total over every
-/// width (no bits hold only `0`, 128 and more every `i128` of the sign).
-fn fits(value: i128, bits: u8, signed: bool) -> bool {
+/// width (no bits hold only `0`, 128 and more every `i128` of the sign). The profiles' and the
+/// reader kit's one rule.
+pub(crate) fn fits(value: i128, bits: u8, signed: bool) -> bool {
     match (bits, signed) {
         (0, _) => value == 0,
         (128.., true) => true,

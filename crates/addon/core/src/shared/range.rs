@@ -228,12 +228,12 @@ impl<T: RangeEnd> Range<T> {
     }
 }
 
-impl<T: RangeEnd> TryFrom<Value> for Range<T> {
+impl<T: RangeEnd> TryFrom<&Value> for Range<T> {
     type Error = ShapeError;
 
-    fn try_from(value: Value) -> Result<Self, ShapeError> {
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
         let range = if value.is_number() {
-            let x = T::read_end(ROOT, &value)?;
+            let x = T::read_end(ROOT, value)?;
             Self::new(x, x, RangeForm::Scalar)
         } else if let Some(array) = value.as_array() {
             let (min, max) = T::read_array(array)?;
@@ -243,9 +243,17 @@ impl<T: RangeEnd> TryFrom<Value> for Range<T> {
             // `extra`, so they are not written back.
             Self::read_object(object)?
         } else {
-            return Err(wrong_type(ROOT, "a number, an array or an object", &value).into());
+            return Err(wrong_type(ROOT, "a number, an array or an object", value).into());
         };
         Ok(range.ordered())
+    }
+}
+
+impl<T: RangeEnd> TryFrom<Value> for Range<T> {
+    type Error = ShapeError;
+
+    fn try_from(value: Value) -> Result<Self, ShapeError> {
+        Self::try_from(&value)
     }
 }
 

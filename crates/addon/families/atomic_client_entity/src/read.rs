@@ -2,17 +2,16 @@
 //! member by member by core's reader (`versioning::read_payload`), with every unknown member,
 //! wrong type and failed constraint an error.
 //!
-//! What is the family's own: the floats with a minimum of 0 (`schema::read_with = finite`: a
-//! number beyond `f32` is the largest finite float, told), and, once the entity is read, the
-//! rules of the game's validators: a namespace in the identifier, no condition on a render
-//! controller, no float below 0.
+//! What is the family's own, once the entity is read: the rules of the game's validators (a
+//! namespace in the identifier, no condition on a render controller, no float below 0). A float
+//! with a minimum of 0 reads a number beyond `f32` as the largest finite float, told
+//! (`schema::finite`); the offsets of `companion_block_avoidance` are elements, not such
+//! members: a number beyond `f32` there is a type error.
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
-use bedrock_addon_core::json::kit::{Node, Order, Read};
+use bedrock_addon_core::json::kit::Profile;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::molang::beyond_f32_warning;
-use bedrock_addon_core::schema::FromJson;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::{
     BETA_VERSION, ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
@@ -24,26 +23,6 @@ use super::{AtomicClientEntity, codes};
 const AABB: &str = "minecraft:aabb_dimensions";
 const CLIPPING: &str = "minecraft:companion_block_clipping";
 
-/// A float member that has a minimum of 0 (`schema::read_with`): a number beyond `f32` is the
-/// largest finite float of its sign, told as an `InvalidValue` information at it; any other
-/// value as an `f32` reads. The offsets of `companion_block_avoidance` are elements, not such
-/// members: a number beyond `f32` there is a type error.
-pub(crate) fn finite(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
-    #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the question
-    let beyond = node
-        .value()
-        .as_number()
-        .map(|number| number.to_f64_lossy() as f32)
-        .filter(|nearest| nearest.is_infinite());
-    match beyond {
-        Some(nearest) if !read.stopped() => {
-            read.push(beyond_f32_warning(node.path().clone(), node.span()));
-            Some(f32::MAX.copysign(nearest))
-        }
-        _ => f32::from_json(node, read),
-    }
-}
-
 impl Versioned for AtomicClientEntity {
     const VERSION: FormatVersion = BETA_VERSION;
 }
@@ -51,7 +30,8 @@ impl Versioned for AtomicClientEntity {
 impl VersionStruct for AtomicClientEntity {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
         // The strict error mask applies: every cereal entry is fatal.
-        let entity: Self = read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))?;
+        let entity: Self =
+            read_payload_with(payload, cx, d, |read| read.profile(Profile::EVERY_FAILURE))?;
         let description_at = cx.at.child("description");
         if !has_namespace(entity.description.identifier.as_str()) {
             // A namespace is required: the identifier matches `^(?:.)+:(?:.)+$`.

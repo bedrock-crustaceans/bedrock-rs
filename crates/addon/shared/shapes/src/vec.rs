@@ -200,11 +200,11 @@ impl<T: Coordinate> From<[T; 3]> for Vec3<T> {
     }
 }
 
-impl<T: Coordinate> TryFrom<Value> for Vec3<T> {
+impl<T: Coordinate> TryFrom<&Value> for Vec3<T> {
     type Error = VectorError;
 
-    fn try_from(value: Value) -> Result<Self, VectorError> {
-        let ([x, y, z], form, extra) = read_vector(&value, ["x", "y", "z"])?;
+    fn try_from(value: &Value) -> Result<Self, VectorError> {
+        let ([x, y, z], form, extra) = read_vector(value, ["x", "y", "z"])?;
         Ok(Self {
             x,
             y,
@@ -215,7 +215,16 @@ impl<T: Coordinate> TryFrom<Value> for Vec3<T> {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(impl<T: Coordinate> Vec3<T>);
+impl<T: Coordinate> TryFrom<Value> for Vec3<T> {
+    type Error = VectorError;
+
+    fn try_from(value: Value) -> Result<Self, VectorError> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: a vector reads its coordinates by its own rule
+bedrock_addon_core::from_json_via_value!(ref impl<T: Coordinate> Vec3<T>);
 
 impl<T: Coordinate> TryFrom<&Vec3<T>> for Value {
     type Error = VectorError;
@@ -262,16 +271,25 @@ impl<T: Coordinate> From<[T; 2]> for Vec2<T> {
     }
 }
 
-impl<T: Coordinate> TryFrom<Value> for Vec2<T> {
+impl<T: Coordinate> TryFrom<&Value> for Vec2<T> {
     type Error = VectorError;
 
-    fn try_from(value: Value) -> Result<Self, VectorError> {
-        let ([x, y], form, extra) = read_vector(&value, ["x", "y"])?;
+    fn try_from(value: &Value) -> Result<Self, VectorError> {
+        let ([x, y], form, extra) = read_vector(value, ["x", "y"])?;
         Ok(Self { x, y, form, extra })
     }
 }
 
-bedrock_addon_core::from_json_via_value!(impl<T: Coordinate> Vec2<T>);
+impl<T: Coordinate> TryFrom<Value> for Vec2<T> {
+    type Error = VectorError;
+
+    fn try_from(value: Value) -> Result<Self, VectorError> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: a vector reads its coordinates by its own rule
+bedrock_addon_core::from_json_via_value!(ref impl<T: Coordinate> Vec2<T>);
 
 impl<T: Coordinate> TryFrom<&Vec2<T>> for Value {
     type Error = VectorError;

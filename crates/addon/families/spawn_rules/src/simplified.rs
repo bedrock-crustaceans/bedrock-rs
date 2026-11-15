@@ -7,7 +7,7 @@ use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostics, JsonPath, Severity};
 use bedrock_addon_core::id::{EntityId, SpawnRulesId};
-use bedrock_addon_core::json::kit::Order;
+use bedrock_addon_core::json::kit::Profile;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
 use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::shared::Filter;
@@ -119,7 +119,7 @@ impl VersionStruct for SimplifiedSpawnRules {
     /// the lenient error mask, under which an unknown member is a warning, and tells it
     /// beside a failure, as vanilla's cereal parser logs both.
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_payload_with(payload, cx, d, |read| read.order(Order::UnknownFirst))
+        read_payload_with(payload, cx, d, |read| read.profile(Profile::UNKNOWN_FIRST))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

@@ -12,6 +12,7 @@ use bedrock_addon_core::json::{JsonType, StrictError, Value};
 use bedrock_addon_core::molang::{
     Admission, EmptyRule, Molang, MolangFailure, MolangFieldSpec, MolangFields, MolangSlot,
     MolangVersionSource, MolangVisitor, OpsRule, RawVersion, ReadField, ReaderKind,
+    beyond_f32_warning,
 };
 use bedrock_addon_core::schema::{self, FromJson, Schema, SchemaCx, SchemaFields};
 
@@ -258,6 +259,9 @@ impl SchemaFields for CoordinateRange {
 
 impl FromJson for ScatterChance {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if converts(read) {
+            return converted(node, read, ScatterChance::try_from);
+        }
         if is_struct_form(node.value()) {
             ScatterFraction::from_json(node, read).map(Self::Fraction)
         } else {
@@ -268,12 +272,57 @@ impl FromJson for ScatterChance {
 
 impl FromJson for CoordinateRange {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if converts(read) {
+            return converted(node, read, CoordinateRange::try_from);
+        }
         if is_struct_form(node.value()) {
             CoordinateDistribution::from_json(node, read).map(Self::Object)
         } else {
             Molang::from_json(node, read).map(Self::Single)
         }
     }
+}
+
+/// Whether the reading takes the two choice members as the game's conversion of the whole
+/// member does (the typed form below): a reading that keeps no unknown member has nowhere to
+/// keep one of a struct form, so a struct form with a member it does not take is no form of the
+/// member, and a number beyond `f32` is clamped and told, as the scatter feature reads them.
+/// A reading that keeps them (a feature rule's) reads the struct form member by member, a number
+/// beyond its width refused where it stands.
+fn converts(read: &Read<'_>) -> bool {
+    !read.reading().keeps_unknown
+}
+
+/// The member `node` read by `convert`, the conversion of the whole member (a refusal is a wrong
+/// type at the member, whatever its reason), and each number of it beyond `f32` told where it
+/// stands: read as the largest finite float of its sign, the crate's own information at the
+/// number on its token.
+fn converted<T>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    convert: impl FnOnce(Value) -> Result<T, StrictError>,
+) -> Option<T> {
+    let value = schema::from_value(node, read, convert)?;
+    let beyond = |value: &Value| {
+        value
+            .as_number()
+            .map(facet_value::VNumber::to_f64_lossy)
+            .is_some_and(|number| bedrock_addon_core::molang::beyond_f32(number).is_some())
+    };
+    if beyond(node.value()) {
+        read.push(beyond_f32_warning(node.path().clone(), node.span()));
+    } else if node.value().is_object()
+        && let Some(members) = read.object(node)
+        && let Some(extent) = members.get("extent")
+        && let Some(bounds) = read.array(&extent)
+    {
+        for bound in bounds.iter() {
+            if beyond(bound.value()) {
+                read.push(beyond_f32_warning(bound.path().clone(), bound.span()));
+            }
+        }
+    }
+    Some(value)
 }
 
 /// Whether `value` is the struct form of a choice member: an object that is no Molang

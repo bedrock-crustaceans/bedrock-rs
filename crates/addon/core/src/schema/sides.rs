@@ -2,7 +2,7 @@
 //! once, so a field with `min` and `max` (or `above` and `below`, or one of each) is one range
 //! and one finding.
 
-use super::walk::Number;
+use super::walk::{End, Number};
 use crate::diagnostic::cereal::NumericRange;
 
 /// Which side of a field's range a value broke.
@@ -14,6 +14,25 @@ pub enum Side {
     Low,
     /// The upper bound (`max` or `below`).
     High,
+}
+
+/// A broken bound as a finding states it: the range, which number of the value broke it, and
+/// the value and both limits as the number's own type writes them (a limit the field does not
+/// state is the type's lowest or highest value).
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
+#[doc(hidden)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct Found {
+    /// The range, as the cereal text states it.
+    pub range: NumericRange,
+    /// Which number of the value is outside.
+    pub end: End,
+    /// The number outside, as its type writes it.
+    pub value: String,
+    /// The lower limit, as the type writes it.
+    pub low: String,
+    /// The upper limit, as the type writes it.
+    pub high: String,
 }
 
 /// A field's lower and upper bound, each absent where the field states none (or where a
@@ -58,6 +77,18 @@ impl<T: Number> Sides<T> {
             }
         }
         None
+    }
+
+    /// The broken bound as a finding states it, for the `end` of the value that is outside:
+    /// the range and the texts of `value` and the limits.
+    pub fn found(&self, end: End, value: T) -> Found {
+        Found {
+            range: self.range(),
+            end,
+            value: value.show(),
+            low: self.low.unwrap_or_else(T::lowest).show(),
+            high: self.high.unwrap_or_else(T::highest).show(),
+        }
     }
 
     /// The range, as the finding states it.

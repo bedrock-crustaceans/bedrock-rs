@@ -171,8 +171,8 @@ impl ItemDescriptor {
     }
 }
 
-impl From<Value> for ItemDescriptor {
-    fn from(value: Value) -> Self {
+impl From<&Value> for ItemDescriptor {
+    fn from(value: &Value) -> Self {
         let read = if let Some(id) = value.as_string() {
             Some(Self::Item {
                 id: ItemId::parse(id.as_str()),
@@ -182,11 +182,18 @@ impl From<Value> for ItemDescriptor {
         } else {
             value.as_object().and_then(Self::read_object)
         };
-        read.unwrap_or(Self::Invalid(value))
+        read.unwrap_or(Self::Invalid(value.clone()))
     }
 }
 
-bedrock_addon_core::from_json_via_value!(ItemDescriptor);
+impl From<Value> for ItemDescriptor {
+    fn from(value: Value) -> Self {
+        Self::from(&value)
+    }
+}
+
+// bridge: an item descriptor reads its forms by its own rule, an unread one kept as written
+bedrock_addon_core::from_json_via_value!(ref ItemDescriptor);
 
 impl From<&ItemDescriptor> for Value {
     fn from(descriptor: &ItemDescriptor) -> Self {

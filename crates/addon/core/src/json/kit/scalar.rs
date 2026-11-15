@@ -4,10 +4,10 @@
 
 use std::borrow::Cow;
 
-use super::{Expected, Node, Order, Pass, Read};
+use super::{Expected, Node, Pass, Read};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath};
-use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, judge};
+use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, fits, judge};
 use crate::json::{Misread, Misreading};
 
 /// A scalar as the member that reads it takes it ([`Read::scalar`]): within the declared type
@@ -60,17 +60,6 @@ fn expected(declared: Declared) -> Expected {
     }
 }
 
-/// Whether the integer `value` fits an integer of `bits`, signed or not.
-fn fits(value: i128, bits: u8, signed: bool) -> bool {
-    match (bits, signed) {
-        (0, _) => value == 0,
-        (128.., true) => true,
-        (128.., false) => value >= 0,
-        (bits, true) => matches!(value >> (bits - 1), 0 | -1),
-        (bits, false) => value >= 0 && value >> bits == 0,
-    }
-}
-
 /// The integer `value` as a scalar.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // in range by construction
 fn integer(value: i128) -> Scalar<'static> {
@@ -104,14 +93,14 @@ impl Read<'_> {
     ///   out of the member's range an invalid value, an integral real read as the integer, any
     ///   other real a wrong type); a numeric string for a number, `"true"`/`"false"` for a bool
     ///   or a number for a string read converted and told as a wrong type that does not fail
-    ///   the member (a [`Pass::Misread`] error under [`Order::Door`]); a bool for a number or a
+    ///   the member (a [`Pass::Misread`] error under [`Passes::AfterRead`](super::Passes::AfterRead)); a bool for a number or a
     ///   string, and a string that does not convert, a wrong type;
     /// - a number beyond its float read as the infinity it is, and an information that says so
     ///   (`BEYOND_FLOAT_MEMBER`, [`BeyondWidth::ClampAndTell`]: the versioned load clamps it in
     ///   the text and reads again) or a wrong type ([`BeyondWidth::Error`]);
     /// - `null`, an array or an object a wrong type under every profile.
     ///
-    /// Under [`Order::Door`] with `DefaultAndTell` a member (not an array element) whose token
+    /// Under [`Passes::AfterRead`](super::Passes::AfterRead) with `DefaultAndTell` a member (not an array element) whose token
     /// the profile refuses is read as absent, an information in [`Pass::Misread`]; the owner
     /// takes it as absent ([`take_defaulted`](Self::take_defaulted)).
     ///
@@ -143,6 +132,23 @@ impl Read<'_> {
             self.wrong_kind(node, expected(declared));
             return None;
         };
+        if let Declared::Float { bits } = declared
+            && let Some(x) = number(token)
+            && beyond(bits, x)
+            && self.member_rules(node).is_some_and(|rules| rules.finite)
+        {
+            // The field reads the largest finite float of the sign (`schema::finite`).
+            self.defer(
+                Pass::Misread,
+                crate::molang::beyond_f32_warning(node.path.clone(), node.span()),
+            );
+            let largest = if bits == 32 {
+                f64::from(f32::MAX)
+            } else {
+                f64::MAX
+            };
+            return Some(Scalar::Real(largest.copysign(x)));
+        }
         let rules = self.reading.scalar_rules();
         if rules.scalars == Scalars::ConvertAndTell {
             return self.convert_and_tell(node, declared, token);
@@ -289,34 +295,54 @@ impl Read<'_> {
     }
 
     /// Tells that `node`'s token was read converted across JSON types: in [`Pass::Misread`]
-    /// under [`Order::Door`] (the door's misread wrong type), a wrong type otherwise. The
-    /// member keeps the value read.
+    /// under [`Passes::AfterRead`](super::Passes::AfterRead) (the door's misread wrong type), a
+    /// wrong type otherwise. The member keeps the value read.
     fn converted(&mut self, node: &Node<'_>, declared: Declared) {
-        match self.order {
-            Order::Door => self.misread(node, Misreading::WrongType),
+        if self.profile.defers() {
+            self.misread(node, Misreading::WrongType);
+        } else {
             // The member reads the value; the finding stands.
-            Order::AsRead | Order::UnknownFirst => self.wrong_kind(node, expected(declared)),
+            self.wrong_kind(node, expected(declared));
         }
     }
 
     /// Tells a scalar token the reading's profile refuses where a value that `expected` was
-    /// read: a wrong type, or under [`Order::Door`] with `DefaultAndTell` a member (not an array
+    /// read: a wrong type, or under [`Passes::AfterRead`](super::Passes::AfterRead) with `DefaultAndTell` a member (not an array
     /// element) read as absent, as the door's scalar pre-pass reads it; the owner takes it as
     /// absent ([`take_defaulted`](Self::take_defaulted)).
-    // hidden: the derived reads' protocol (an untagged enum's scalar no arm takes)
-    #[doc(hidden)]
-    pub fn refused_scalar(&mut self, node: &Node<'_>, expected: Expected) {
+    // the derived reads' protocol (an untagged enum's scalar no arm takes)
+    pub(crate) fn refused_scalar(&mut self, node: &Node<'_>, expected: Expected) {
         if self.stopped {
             return;
         }
-        let member = node.path.last_key().is_some();
+        // The door's pre-pass blanks a struct's member and a map's value, but a map's `null`
+        // stays for the null rule.
+        let member = node.path.last_key().is_some() && !(self.map_value && node.value.is_null());
         let defaults = self.reading.scalar_rules().default_and_tell;
-        if self.order == Order::Door && defaults && member {
-            self.misread(node, Misreading::Defaulted);
+        if self.profile.defers() && defaults && member {
+            if node.value.is_null()
+                && self.reading.null == crate::versioning::NullHandling::Rejected
+            {
+                // The pre-pass blanks the member, and the door's null rule still finds the
+                // `null` where the struct reads a value: a null error, in its pass.
+                self.null_error(node);
+            } else {
+                self.misread(node, Misreading::Defaulted);
+            }
             self.defaulted = true;
         } else {
             self.wrong_kind(node, expected);
         }
+    }
+
+    /// Tells that the reading refuses the `null` at `node` ([`NullHandling::Rejected`]) in
+    /// [`Pass::Null`]: the null pass's error, after the read.
+    ///
+    /// [`NullHandling::Rejected`]: crate::versioning::NullHandling::Rejected
+    pub(crate) fn null_error(&mut self, node: &Node<'_>) {
+        let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE).at(node.path.clone());
+        finding.location.span = node.span();
+        self.defer(Pass::Null, finding);
     }
 
     /// Tells the misreading `kind` at `node`, as the door tells it ([`Misread::finding`]),
@@ -329,6 +355,17 @@ impl Read<'_> {
         .finding(&node.path);
         finding.location.span = node.span();
         self.defer(Pass::Misread, finding);
+    }
+}
+
+/// The number of a numeric token.
+#[allow(clippy::cast_precision_loss)] // the nearest double is the reading
+fn number(token: Token<'_>) -> Option<f64> {
+    match token {
+        Token::UInt(u) => Some(u as f64),
+        Token::Int(i) => Some(i as f64),
+        Token::Real(x) => Some(x),
+        _ => None,
     }
 }
 

@@ -52,7 +52,19 @@ pub(crate) fn door_unknown_members<'f, T: Facet<'f>>(
     keeps_unknown: bool,
     kept: &mut Table,
 ) -> Vec<(JsonPath, UnknownRule)> {
-    let walked = Walk::of(target, json).run();
+    held_unknown_members(target, json, keeps_unknown, None, kept)
+}
+
+/// [`door_unknown_members`] of a value a field holds that says `field` (`schema::unknown`):
+/// the word is the first object's below it, as the door's walk of the whole document takes it.
+pub(crate) fn held_unknown_members<'f, T: Facet<'f>>(
+    target: &T,
+    json: &Value,
+    keeps_unknown: bool,
+    field: Option<UnknownRule>,
+    kept: &mut Table,
+) -> Vec<(JsonPath, UnknownRule)> {
+    let walked = Walk::of(target, json).field_rule(field).run();
     keep(walked.unknowns, Peek::new(target), keeps_unknown, kept)
         .into_iter()
         .map(|((path, _), rule)| (path, rule))

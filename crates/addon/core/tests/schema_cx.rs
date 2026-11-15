@@ -109,3 +109,86 @@ fn a_member_with_nothing_to_reset_to_fails_its_owner_at_the_rules_severity() {
         [Severity::Info]
     );
 }
+
+#[test]
+fn a_rule_tells_an_error_that_fails_the_owner_and_a_kept_one_that_does_not() {
+    use bedrock_addon_core::diagnostic::Phase;
+    let mut out = Diagnostics::default();
+    let mut cx =
+        SchemaCx::new(Reading::DOCUMENT, at(&["tree"]), &mut out).with_phase(Phase::Validate);
+    cx.kept("offset", Code::from(&codes::INVALID_VALUE));
+    assert!(!cx.failed());
+    cx.error("", Code::from(&codes::INVALID_TYPE));
+    assert!(cx.failed());
+    let told: Vec<_> = out
+        .iter()
+        .map(|d| {
+            (
+                d.location.json_path.to_string(),
+                d.kept,
+                d.phase,
+                d.severity,
+            )
+        })
+        .collect();
+    assert_eq!(
+        told,
+        [
+            (
+                "tree/offset".to_owned(),
+                true,
+                Phase::Validate,
+                Severity::Error
+            ),
+            ("tree".to_owned(), false, Phase::Validate, Severity::Error),
+        ]
+    );
+}
+
+#[test]
+fn a_leaf_hands_its_own_findings_to_the_walk_at_the_path_it_located_them() {
+    let mut own = Diagnostics::default();
+    own.push(
+        bedrock_addon_core::diagnostic::Diagnostic::warn(&codes::INVALID_VALUE).at(at(&["a", "b"])),
+    );
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::NULL_ABSENT, JsonPath::new(), &mut out);
+    assert_eq!(cx.unknown_severity(), Severity::Warning);
+    assert!(!cx.leaf_findings());
+    cx.extend(own);
+    assert_eq!(out.len(), 1);
+}
+
+#[test]
+fn a_rule_bounds_a_number_as_a_derived_bound_is_worded() {
+    use bedrock_addon_core::schema::TreeWording;
+    static MIN: bedrock_addon_core::diagnostic::CodeDef<3> =
+        bedrock_addon_core::diagnostic::CodeDef::new(
+            "test/min",
+            bedrock_addon_core::diagnostic::Kind::InvalidValue,
+            bedrock_addon_core::diagnostic::Class::Error,
+            "{} {} {}",
+        );
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::new(Reading::DOCUMENT, at(&["leveled"]), &mut out).with_tree_wording(
+        TreeWording {
+            range_min: &MIN,
+            range_max: &MIN,
+        },
+    );
+    assert!(!cx.within("max_steepness", 8, Some(0), Some(8)));
+    assert!(cx.within("max_steepness", 9, Some(0), Some(8)));
+    assert!(cx.failed());
+    assert_eq!(cx.path(), &at(&["leveled"]));
+    let told: Vec<_> = out
+        .iter()
+        .map(|d| (d.location.json_path.to_string(), d.code.to_string()))
+        .collect();
+    assert_eq!(
+        told,
+        [(
+            "leveled/max_steepness".to_owned(),
+            "Value '9' outside valid range [0, 8]".to_owned()
+        )]
+    );
+}

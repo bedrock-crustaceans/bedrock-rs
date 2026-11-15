@@ -9,9 +9,9 @@ use super::{PoiTag, PoiType};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostics};
 use bedrock_addon_core::id::{Id, Kind};
-use bedrock_addon_core::json::kit::{Node, Order, Read};
+use bedrock_addon_core::json::kit::{Node, Profile, Read};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::schema::FromJson;
+use bedrock_addon_core::schema::{FromJson, read_each};
 use bedrock_addon_core::version::{FormatVersion, known};
 use bedrock_addon_core::versioning::{
     ParseCx, VersionStruct, Versioned, read_payload_with, write_payload,
@@ -48,19 +48,7 @@ pub(crate) fn name<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Id<K
 /// array (anything else is `InvalidType`), each element a [`name`]; an element that fails fails
 /// the list.
 pub(crate) fn names<K: Kind>(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Id<K>>> {
-    if read.stopped() {
-        return None;
-    }
-    let elements = read.array(node)?;
-    let mut out = Vec::with_capacity(elements.len());
-    let mut read_all = true;
-    for element in elements.iter() {
-        match name(&element, read) {
-            Some(id) => out.push(id),
-            None => read_all = false,
-        }
-    }
-    read_all.then_some(out)
+    read_each(node, read, name)
 }
 
 /// A byte (`schema::read_with` of `tickets` and `usable_distance`): an integer token from 0 to
@@ -98,7 +86,7 @@ impl Versioned for PoiType {
 /// every failure: the game's reader checks every member.
 impl VersionStruct for PoiType {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))
+        read_payload_with(payload, cx, d, |read| read.profile(Profile::EVERY_FAILURE))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
@@ -113,7 +101,7 @@ impl Versioned for PoiTag {
 /// Read as [`PoiType`] is.
 impl VersionStruct for PoiTag {
     fn parse(payload: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
-        read_payload_with(payload, cx, d, |read| read.order(Order::AsRead))
+        read_payload_with(payload, cx, d, |read| read.profile(Profile::EVERY_FAILURE))
     }
 
     fn write(&self) -> Result<Value, EncodeError> {

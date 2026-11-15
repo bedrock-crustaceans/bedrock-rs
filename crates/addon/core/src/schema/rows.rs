@@ -143,6 +143,10 @@ pub struct FieldRow {
     /// `schema::multiple_of`: the step the value is a multiple of, compared in `f64`
     /// (`value % step == 0.0`), so exact for an integer step or a binary fraction alone.
     pub multiple_of: Option<f64>,
+    /// `schema::min_len`: the fewest elements the field holds.
+    pub min_len: Option<usize>,
+    /// `schema::max_len`: the most elements the field holds.
+    pub max_len: Option<usize>,
     /// `schema::since_format`.
     pub since_format: Option<FormatVersion>,
     /// `schema::since_engine`.
@@ -175,6 +179,8 @@ impl FieldRow {
             fallback: None,
             bounds: &[],
             multiple_of: None,
+            min_len: None,
+            max_len: None,
             since_format: None,
             since_engine: None,
             unknown: None,

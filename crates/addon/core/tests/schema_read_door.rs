@@ -13,7 +13,7 @@ use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::molang::Molang;
-use bedrock_addon_core::schema::{__read, FromJson, Schema};
+use bedrock_addon_core::schema::{self, FromJson, Schema, derive_support};
 use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput};
 use bedrock_addon_core::versioning::{
@@ -60,9 +60,9 @@ struct OptFormatVersion {
 
 impl FromJson for OptFormatVersion {
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        let object = __read::Object::open(node, read)?;
+        let object = derive_support::Object::open(node, read)?;
         let disposal = object.disposal(read, None, false);
-        let mut slot = __read::Slot::<FormatVersion>::new();
+        let mut slot = derive_support::Slot::<FormatVersion>::new();
         for (key, member) in object.members() {
             match key {
                 "v" => {
@@ -256,10 +256,29 @@ fn at_the_member(door: &str) -> String {
     out.replace("core/invalid_value p]", "core/invalid_value p/v]")
 }
 
+/// The probes whose member the door's paths name a step inside of (an array or an object
+/// given to a scalar, an identifier, a Molang value, a format version or an untagged enum of
+/// scalars), or whose owner it names (an integer out of range): the ones [`at_the_member`]
+/// applies to. Every other probe is held to the door's paths as they are.
+const COLLAPSED: &[&str] = &[
+    "OptBool",
+    "OptF32",
+    "OptF64",
+    "OptFormatVersion",
+    "OptI32",
+    "OptId",
+    "OptMolang",
+    "OptString",
+    "OptU8",
+    "OptUntagged",
+    "ReqString",
+    "ReqU8",
+];
+
 /// Why the reader tells `read` where the door tells `door`, when it is one of the differences
 /// it makes on purpose.
 fn explained(probe: &str, token: &str, door: &str, read: &str) -> Option<&'static str> {
-    if at_the_member(door) == read {
+    if COLLAPSED.contains(&probe) && at_the_member(door) == read {
         return Some("the member's path");
     }
     // Under a profile other than the plain read, facet took the first arm that parses the
@@ -398,4 +417,168 @@ fn a_read_may_take_another_null_handling_than_its_reading() {
         });
     assert_eq!(own, Some(OptU8 { v: None }));
     assert!(d.is_empty());
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Mapped {
+    m: Option<IndexMap<String, u8>>,
+    req: Option<Req>,
+    list: Option<Vec<IndexMap<String, u8>>>,
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+struct Req {
+    m: IndexMap<String, u8>,
+}
+
+/// A map one of whose values its profile refuses: under `DefaultAndTell` the door's pre-pass
+/// leaves that entry out and keeps the others (an information at it); every other reading
+/// fails the map.
+#[test]
+fn a_map_with_a_refused_value_reads_as_the_door_reads_it() {
+    let mut unexplained = String::new();
+    for (name, reading) in readings() {
+        for text in [
+            r#"{"m": {"a": 1, "b": "x", "c": 3}}"#,
+            r#"{"req": {"m": {"a": "x"}}}"#,
+            r#"{"m": {"a": null}}"#,
+            r#"{"list": [{"a": "x", "b": 2}, {"c": 3}]}"#,
+        ] {
+            let load = context(reading);
+            let mut d = Diagnostics::default();
+            let value: Option<Mapped> =
+                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let door = outcome(value.as_ref(), &d);
+            let mut d = Diagnostics::default();
+            let value: Option<Mapped> =
+                read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let read = outcome(value.as_ref(), &d);
+            if door != read && at_the_member(&door) != read {
+                let _ = writeln!(unexplained, "{name} {text}\n  door {door}\n  read {read}");
+            }
+        }
+    }
+    assert!(
+        unexplained.is_empty(),
+        "--- unexplained ---\n{unexplained}--- end ---"
+    );
+}
+
+/// A format version written as a number is read as the door reads it, by the number's text:
+/// `1.20` is version 1.20.0, not the 1.2.0 the double prints as.
+#[test]
+fn a_format_version_written_as_a_number_reads_as_the_door_reads_it() {
+    let mut unexplained = String::new();
+    for token in ["1.20", "1.2", "1.21", "2", "1.200", "1e2"] {
+        let reading = Reading::DOCUMENT;
+        let door = old::<OptFormatVersion>(reading, token);
+        let read = new::<OptFormatVersion>(reading, token);
+        if door != read {
+            let _ = writeln!(unexplained, "{token}\n  door {door}\n  read {read}");
+        }
+    }
+    assert!(
+        unexplained.is_empty(),
+        "--- unexplained ---\n{unexplained}--- end ---"
+    );
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep")]
+struct Kept {
+    v: Option<u8>,
+    w: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "type")]
+#[repr(u8)]
+enum Shape {
+    #[facet(rename = "dot")]
+    Dot,
+    #[facet(rename = "box")]
+    Box { size: u8 },
+}
+
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[repr(u8)]
+enum Either {
+    #[facet(rename = "none")]
+    Nothing,
+    #[facet(rename = "count")]
+    Count(u8),
+}
+
+/// A document of every kind of member the derived read has: nested and kept structs, a list of
+/// them, a map of them, a box, a tagged and an externally tagged enum, a `skip` field,
+/// `default = x` and `rename_all`. (A tuple has a read and no check: no `Schema` type holds one
+/// yet. A flattened struct makes facet's read buffer the object and fail at members it reads
+/// whole: `a_flattened_struct_reads_its_members_from_its_owner_s_object` pins the reader's.)
+#[derive(Debug, PartialEq, Facet, Schema)]
+#[facet(rename_all = "camelCase")]
+struct Everything {
+    inner_one: Option<Inner>,
+    kept: Option<Kept>,
+    list: Option<Vec<Kept>>,
+    map: Option<IndexMap<String, Kept>>,
+    boxed: Option<Box<Kept>>,
+    shape: Option<Shape>,
+    either: Option<Either>,
+    #[facet(default = 7)]
+    level: u8,
+    #[facet(skip)]
+    skipped: u8,
+}
+
+const EVERYTHING: &[&str] = &[
+    r#"{"innerOne": {"v": 1, "zz": 2}, "kept": {"v": 2, "zz": 3}}"#,
+    r#"{"list": [{"v": 1, "a": 1}, {"w": "x", "b": 2}], "map": {"k": {"v": 3, "c": 3}}}"#,
+    r#"{"list": [{"v": "x", "a": 1}, {"v": 2}], "level": "high"}"#,
+    r#"{"boxed": {"v": 1, "d": 4}, "skipped": 1}"#,
+    r#"{"shape": {"type": "box", "size": 2}, "either": {"count": 3}}"#,
+    r#"{"shape": {"type": "box"}, "either": "none", "kept": {"zz": null}}"#,
+    r#"{"shape": {"type": "ring"}, "either": {"count": 3, "x": 1}}"#,
+    r#"{"shape": {"size": 1}, "either": "other"}"#,
+    r#"{"shape": {"type": 5}, "inner_one": {}, "level": null}"#,
+    r#"{"map": {"k": {"v": 300}}, "kept": {"v": null, "w": 5}}"#,
+];
+
+/// [`Everything`] read by both readers under every reading, the table of kept members
+/// compared too.
+#[test]
+fn every_kind_of_member_reads_as_the_door_reads_it() {
+    let mut unexplained = String::new();
+    for (name, reading) in readings() {
+        for text in EVERYTHING {
+            let load = context(reading);
+            let kept = |d: &Diagnostics| -> String {
+                let kept: Vec<String> = d
+                    .unknown()
+                    .iter()
+                    .map(|(at, key, value)| format!("{at}/{key}={value:?}"))
+                    .collect();
+                kept.join("; ")
+            };
+            let mut d = Diagnostics::default();
+            let value: Option<Everything> =
+                parse_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let door = format!("{} kept [{}]", outcome(value.as_ref(), &d), kept(&d));
+            let mut d = Diagnostics::default();
+            let value: Option<Everything> =
+                read_payload(JsonSlice::new(text), &parse_cx(&load), &mut d);
+            let read = format!("{} kept [{}]", outcome(value.as_ref(), &d), kept(&d));
+            // An integer out of range at its member, where facet named the document; a `skip`
+            // field is not read, where facet read it from the member of its name.
+            let door = door
+                .replace("core/invalid_value p]", "core/invalid_value p/map/k/v]")
+                .replace(", skipped: 1 }", ", skipped: 0 }");
+            if door != read {
+                let _ = writeln!(unexplained, "{name} {text}\n  door {door}\n  read {read}");
+            }
+        }
+    }
+    assert!(
+        unexplained.is_empty(),
+        "--- unexplained ---\n{unexplained}--- end ---"
+    );
 }

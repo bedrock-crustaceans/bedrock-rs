@@ -68,6 +68,20 @@ impl UnknownMask {
     }
 }
 
+/// How a string member reads a value of another JSON type ([`Reading::strings`]), beside the
+/// number and bool profiles of [`Scalars`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Strings {
+    /// As the slice's [`Scalars`] read a string: a string, or what the profile converts.
+    ByScalars,
+    /// jsoncpp's `asString("")`: a bool is `"true"` or `"false"`, a number, `null`, an array or
+    /// an object the empty string, each told as a wrong type (graded as a failed member is)
+    /// with the member keeping the text: the fixed-path readers of the menu texts and the
+    /// music and sound definitions.
+    AsString,
+}
+
 /// What a member that fails to read does to what holds it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -107,6 +121,9 @@ pub struct Reading {
     pub components_fatal: bool,
     /// What a member that fails to read does.
     pub on_member_failure: MemberFailure,
+    /// How a string member reads a value of another JSON type. Not in the reading tables:
+    /// `ByScalars` in every profile, and no versioned slice reads otherwise.
+    pub strings: Strings,
 }
 
 impl Reading {
@@ -123,6 +140,7 @@ impl Reading {
         keeps_unknown: false,
         components_fatal: true,
         on_member_failure: MemberFailure::Refuse,
+        strings: Strings::ByScalars,
     };
     /// The `JsonCpp` families (entity, features, the legacy item): a `null` member is
     /// absent, an unknown member a warning.
@@ -134,6 +152,7 @@ impl Reading {
         keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
+        strings: Strings::ByScalars,
     };
     /// A slice whose reader is the family's own (`FirstRun`, a hand-written legacy slice):
     /// no null rule, an unknown member a warning.
@@ -145,6 +164,7 @@ impl Reading {
         keeps_unknown: false,
         components_fatal: false,
         on_member_failure: MemberFailure::Refuse,
+        strings: Strings::ByScalars,
     };
     /// The reading with `null` read as `null`.
     #[must_use]
@@ -190,6 +210,12 @@ impl Reading {
             components_fatal,
             ..self
         }
+    }
+
+    /// The reading with string members reading another JSON type as `strings`.
+    #[must_use]
+    pub const fn with_strings(self, strings: Strings) -> Self {
+        Self { strings, ..self }
     }
 
     /// The reading with a failed member doing `failure`.

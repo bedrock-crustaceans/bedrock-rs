@@ -61,16 +61,16 @@ impl EventTrigger {
     }
 }
 
-impl TryFrom<Value> for EventTrigger {
+impl TryFrom<&Value> for EventTrigger {
     type Error = ShapeError;
 
-    fn try_from(value: Value) -> Result<Self, ShapeError> {
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
         if let Some(event) = value.as_string() {
             return Ok(Self::new(event.as_str()));
         }
         let object = value
             .as_object()
-            .ok_or_else(|| wrong_type(ROOT, "a string or an object", &value))?;
+            .ok_or_else(|| wrong_type(ROOT, "a string or an object", value))?;
         let member = |key| object.get(key).filter(|v| !v.is_null());
         let mut extra = UnknownMembers::default();
         for (key, value) in object {
@@ -91,6 +91,14 @@ impl TryFrom<Value> for EventTrigger {
             extra,
             bare: false,
         })
+    }
+}
+
+impl TryFrom<Value> for EventTrigger {
+    type Error = ShapeError;
+
+    fn try_from(value: Value) -> Result<Self, ShapeError> {
+        Self::try_from(&value)
     }
 }
 

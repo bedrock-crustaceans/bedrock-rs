@@ -1,0 +1,11 @@
+error: write the key as `schema::min`: the derive reads no other path to it
+ --> tests/ui/schema/key_with_a_path.rs:8:13
+  |
+8 |     #[facet(crate::schema::min = 1)]
+  |             ^^^^^
+
+error: write the key as `schema::molang`: the derive reads no other path to it
+  --> tests/ui/schema/key_with_a_path.rs:15:9
+   |
+15 | #[facet(bedrock_addon_core::schema::molang = bedrock_addon_core::molang::NONE)]
+   |         ^^^^^^^^^^^^^^^^^^

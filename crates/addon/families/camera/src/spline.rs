@@ -2,9 +2,7 @@
 
 use bedrock_addon_core::schema::{self, Schema};
 
-use super::read::{
-    progress, progress_time, rotation_time, spline_name, spline_type, string_enum, total_time,
-};
+use super::read::{progress, progress_time, rotation_time, spline_name, total_time};
 
 /// A camera spline file (`minecraft:camera_custom_splines`, in `cameras/splines/`), format
 /// 1.26.0: the paths the `/camera … play_spline` command moves a camera along.
@@ -38,7 +36,10 @@ pub struct Spline {
     pub total_time: f32,
     /// How the control points are joined (JSON `spline_type`, default `catmullrom`: see
     /// [`Spline::spline_type`]).
-    #[facet(schema::fallback = SplineType::Catmullrom, schema::read_with = spline_type)]
+    #[facet(
+        schema::fallback = SplineType::Catmullrom,
+        schema::invalid = crate::codes::SPLINE_TYPE
+    )]
     pub spline_type: Option<SplineType>,
     /// The points the path runs through, in world space (JSON `control_points`).
     pub control_points: Vec<ControlPoint>,
@@ -50,7 +51,7 @@ pub struct Spline {
 
 /// How a spline joins its control points (`spline_type`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum SplineType {
@@ -79,7 +80,6 @@ pub struct ProgressKeyFrame {
     pub time: f32,
     /// How the progress is interpolated towards this frame; linear at playback when left out
     /// (JSON `easing`).
-    #[facet(schema::read_with = string_enum)]
     pub easing: Option<Easing>,
 }
 
@@ -93,13 +93,12 @@ pub struct RotationKeyFrame {
     pub time: f32,
     /// How the rotation is interpolated towards this frame; linear at playback when left out
     /// (JSON `easing`).
-    #[facet(schema::read_with = string_enum)]
     pub easing: Option<Easing>,
 }
 
 /// An easing function (the `easing_function` type of the game's camera documents).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 #[allow(

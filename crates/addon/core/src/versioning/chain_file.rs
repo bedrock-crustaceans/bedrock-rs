@@ -4,9 +4,9 @@
 //! raw-text struct writes. The files themselves are read by core's `parse_document`.
 
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
+use crate::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath};
 use crate::document::{Document, Rejected};
-use crate::json::kit::{Expected, Order, Texts, WrongKind};
+use crate::json::kit::{Expected, Profile, Texts, WrongKind};
 use crate::json::{JsonSlice, Value};
 use crate::load::LoadContext;
 use crate::schema::{FromJson, Schema, SchemaCx};
@@ -37,31 +37,30 @@ fn wrong_kind(expected: Expected, _: &Value) -> Code {
     }
 }
 
-/// `text` read as `T` as vanilla's strict cereal loader reads a document: member by member by
-/// [`read_payload_with`], every failure told in file order, a missing member and a wrong type as
-/// the loader words them, an unknown member always an error worded `unknown` (the family's line)
-/// whatever the slice's mask. `non_strict` is the note of a reader that takes a scalar of the
-/// other JSON type as the bound one ([`Read::non_strict`]); `None` for the strict one.
+/// `text` read as `T` as vanilla's cereal loader reads a document: member by member by
+/// [`read_payload_with`] under the slice's reading, every failure told in file order, a missing
+/// member and a wrong type as the loader words them, an unknown member worded `unknown` (the
+/// family's line). `rewritten` is the note a scalar is told with that a slice read by the
+/// non-strict reader ([`Scalars::NonStrict`] in its reading) takes as the other JSON type
+/// ([`Read::non_strict`](crate::json::kit::Read::non_strict)); a strict slice tells none.
 pub fn read<T: FromJson>(
     text: JsonSlice<'_>,
     cx: &ParseCx<'_>,
     d: &mut Diagnostics,
     unknown: &'static str,
-    non_strict: Option<&'static str>,
+    rewritten: Option<&'static str>,
 ) -> Option<T> {
+    let non_strict = cx.load.reading.scalars == Scalars::NonStrict;
     read_payload_with(text, cx, d, |read| {
-        let read = read
-            .order(Order::AsRead)
-            .unknown_severity(Severity::Error)
-            .texts(Texts {
-                wrong_kind: Some(WrongKind(wrong_kind)),
-                missing: Some(crate::diagnostic::cereal::MISSING_REQUIRED_FIELD_TEXT),
-                unknown: Some(unknown),
-                ..Texts::CODES
-            });
-        match non_strict {
-            Some(note) => read.non_strict(note),
-            None => read,
+        let read = read.profile(Profile::EVERY_FAILURE).texts(Texts {
+            wrong_kind: Some(WrongKind(wrong_kind)),
+            missing: Some(crate::diagnostic::cereal::MISSING_REQUIRED_FIELD_TEXT),
+            unknown: Some(unknown),
+            ..Texts::CODES
+        });
+        match rewritten {
+            Some(note) if non_strict => read.non_strict(note),
+            _ => read,
         }
     })
 }
@@ -151,7 +150,7 @@ pub fn document(version: &str, key: &str, payload: Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::diagnostic::{Location, Phase};
+    use crate::diagnostic::{Location, Phase, Severity};
     use crate::load::LoadContext;
     use crate::schema;
     use crate::version::{FormatVersion, FormatVersionInput};
@@ -183,9 +182,11 @@ mod tests {
         name: Option<String>,
     }
 
-    /// `text` read and checked as a `Probe`, each finding as `severity path text`.
+    /// `text` read and checked as a `Probe` under the strict slice's reading, each finding as
+    /// `severity path text`.
     fn probe(text: &str) -> (Option<Probe>, Vec<String>) {
-        let load = LoadContext::detached();
+        let mut load = LoadContext::detached();
+        load.reading = strict(Reading::DOCUMENT);
         let cx = ParseCx {
             load: &load,
             written: FormatVersionInput {

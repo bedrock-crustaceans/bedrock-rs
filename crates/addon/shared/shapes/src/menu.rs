@@ -94,14 +94,14 @@ impl CreativeCategory {
     }
 }
 
-impl TryFrom<Value> for CreativeCategory {
+impl TryFrom<&Value> for CreativeCategory {
     type Error = ShapeError;
 
-    fn try_from(value: Value) -> Result<Self, ShapeError> {
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
         // The game reads the category as an enum constraint over the category names.
         let name = value
             .as_string()
-            .ok_or_else(|| wrong_type(ROOT, "a category name", &value))?;
+            .ok_or_else(|| wrong_type(ROOT, "a category name", value))?;
         NAMES
             .iter()
             .find(|(n, _)| *n == name.as_str())
@@ -110,7 +110,16 @@ impl TryFrom<Value> for CreativeCategory {
     }
 }
 
-bedrock_addon_core::from_json_via_value!(CreativeCategory);
+impl TryFrom<Value> for CreativeCategory {
+    type Error = ShapeError;
+
+    fn try_from(value: Value) -> Result<Self, ShapeError> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: a category reads its names by its own rule
+bedrock_addon_core::from_json_via_value!(ref CreativeCategory);
 
 impl TryFrom<&CreativeCategory> for Value {
     type Error = ShapeError;

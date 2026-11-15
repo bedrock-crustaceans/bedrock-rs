@@ -34,15 +34,34 @@ impl MolangFields for BlockDescriptor {
 // A block specifier holds no Molang.
 bedrock_addon_core::impl_no_molang!(BlockSpecifier);
 
-// An item descriptor and a block specifier read their own syntax and hold no bound the derive
-// checks and no trigger (an item descriptor's `tags` is Molang, walked by `MolangFields`).
-bedrock_addon_core::impl_schema_leaf!(ItemDescriptor, BlockSpecifier);
+// An item descriptor reads its own syntax and holds no bound the derive checks and no trigger
+// (its `tags` is Molang, walked by `MolangFields`).
+bedrock_addon_core::impl_schema_leaf!(ItemDescriptor);
 
-/// A block descriptor reads its own syntax and holds no bound and no trigger; its `tags` (the
+/// A block specifier tells the unknown members it kept ([`BlockSpecifier::check`]) where the
+/// check has leaf findings on ([`SchemaCx::with_leaf_findings`]), graded as the reading grades
+/// an unknown member; it holds no bound and no trigger.
+impl SchemaFields for BlockSpecifier {
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if cx.leaf_findings() {
+            cx.extend(self.check(cx.path(), cx.unknown_severity()));
+        }
+    }
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+/// A block descriptor reads its own syntax and holds no bound and no trigger. Where the check
+/// has leaf findings on ([`SchemaCx::with_leaf_findings`]) it tells what vanilla's readers log
+/// for it ([`BlockDescriptor::check`]: a name beside tags, a shape that is no block, the
+/// unknown members it kept, graded as the reading grades an unknown member). Its `tags` (the
 /// tags and mixed forms) is walked at its member, a Molang value as any other (the Molang walk
 /// is `MolangFields`'s).
 impl SchemaFields for BlockDescriptor {
     fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if cx.leaf_findings() {
+            cx.extend(self.check(cx.path(), cx.unknown_severity()));
+        }
         if let Self::Tags { tags, .. } | Self::Mixed { tags, .. } = self {
             cx.enter("tags");
             tags.check_fields(cx);

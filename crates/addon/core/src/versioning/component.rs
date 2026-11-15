@@ -96,6 +96,88 @@ where
     Some(value.into())
 }
 
+/// Reads one typed component from its slice on the new reader ([`FromJson`](crate::schema::FromJson),
+/// member by member): what [`parse_component`] does, the same signature, so a row's `parse`
+/// takes `read_component::<T, C>` where it took `parse_component::<T, C>`. `T` read under the
+/// slice's reading by the typed door's profile
+/// ([`Profile::FIRST_FAILURE`](crate::json::kit::Profile::FIRST_FAILURE)), on a stack its depth
+/// can take, every finding relative to the component (the component-map parser places them)
+/// and spanning its value; the unknown members it keeps in `d`'s table, relative to it.
+///
+/// A row with `shorthand = scalar` whose payload is a struct of one member reads a payload
+/// that is no object as that member, as `parse_component` does: by the slice's scalar and null
+/// rules, its findings at the component, spanning the text as written.
+pub fn read_component<T, C>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    cx: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<C>
+where
+    T: crate::schema::FromJson + for<'a> Facet<'a> + Into<C>,
+    C: crate::schema::ShorthandRows,
+{
+    use crate::json::kit::{Node, Profile, Read, Versions};
+    let _ = mode;
+    let Ok(parsed) = crate::json::parse::parse_slice(slice, crate::json::parse::Options::default())
+    else {
+        // Not reached for a component the payload's parse has read; the door words it.
+        if let Err(error) = crate::json::parse_at::<Value>(slice) {
+            d.push(super::payload::slice_error(
+                &error,
+                &JsonPath::new(),
+                slice,
+                Severity::Error,
+            ));
+        }
+        return None;
+    };
+    let versions = Versions {
+        format: None,
+        engine: Some(
+            cx.min_engine_version
+                .as_ref()
+                .map_or(FormatVersion::new(0, 0, 0), |engine| {
+                    engine.version.format_version()
+                }),
+        ),
+    };
+    let reader = |d| {
+        Read::new(cx.reading, d)
+            .unknown_severity(cx.grade(Class::Unknown))
+            .profile(Profile::FIRST_FAILURE)
+            .load(cx)
+            .versions(versions)
+    };
+    if let Some(key) = shorthand_member::<T, C>(slice) {
+        // The bare scalar is the member `key` of the object form; what is told of it is told
+        // at the component, spanning the text.
+        let mut object = facet_value::VObject::new();
+        object.insert(key, parsed.value.clone());
+        let wrapped = Value::from(object);
+        let mut found = Diagnostics::default();
+        let value = {
+            let mut read = reader(&mut found);
+            crate::schema::read_document::<T>(&Node::new(&wrapped, JsonPath::new()), &mut read)
+        };
+        let kept = found.take_unknown();
+        for mut finding in found {
+            finding.location.json_path = below_member(&finding.location.json_path);
+            finding.location.span = finding.location.span.or(Some(span_of(slice)));
+            d.push(finding);
+        }
+        d.unknown_mut().absorb(&JsonPath::new(), kept);
+        return value.map(Into::into);
+    }
+    let node = Node::parsed(&parsed, JsonPath::new());
+    let mut read = reader(d);
+    if let Some(finding) = super::payload::no_object::<T>(&node, &read) {
+        read.push(finding);
+        return None;
+    }
+    crate::schema::read_document::<T>(&node, &mut read).map(Into::into)
+}
+
 /// The member a bare scalar of `slice` stands for: `T` is the payload of a `shorthand =
 /// scalar` row of `C`, a struct of one member, and the text is no object.
 fn shorthand_member<T, C>(slice: JsonSlice<'_>) -> Option<&'static str>
@@ -229,12 +311,113 @@ pub fn parse_component_map<'a, F: Family>(
             text: raw.as_str(),
             offset: within.offset,
         });
-        let mut path = at.clone();
-        path.push(key);
         let json = || crate::json::from_str_jsonc::<Value>(slice.text).unwrap_or(Value::NULL);
+        let entry = Entry {
+            key,
+            slice,
+            at,
+            mode,
+            is_custom,
+        };
+        entry.place(table, json, cx, &mut map, d);
+    }
+    map
+}
+
+/// Reads a `components` object at `node` into family `F`'s component map, in file order, on
+/// the new reader: what [`parse_component_map`] does with the raw slices of the typed door,
+/// from the node's members (each read by its row's `parse`, which is
+/// [`read_component`] for a converted component, from the member's text), its findings told
+/// to `read` below the node's path, the unknown members the rows keep in its table. A
+/// component that fails is dropped alone; a key `is_custom` takes is a custom component; any
+/// other is an unrecognized component, kept for write-back. The rows read in the read's load
+/// ([`Read::load`](crate::json::kit::Read::load)), or in a detached one under the read's
+/// reading where it has none. `None` (a wrong type told) when the node is no object.
+///
+/// A family whose document holds its components as a map reads that field with a function of
+/// its own that names its family: `schema::read_with = components`, where `components` is
+/// `read_component_map::<EntityFamily>(node, read, ConvertMode::Strict, is_custom)`.
+pub fn read_component_map<F: Family>(
+    node: &crate::json::kit::Node<'_>,
+    read: &mut crate::json::kit::Read<'_>,
+    mode: ConvertMode,
+    is_custom: fn(&str) -> bool,
+) -> Option<ComponentMap<F::Component>> {
+    if read.stopped() {
+        return None;
+    }
+    let members = read.object(node)?;
+    let detached;
+    let cx = if let Some(cx) = read.load_context() {
+        cx
+    } else {
+        let mut cx = LoadContext::detached();
+        cx.reading = read.reading();
+        detached = cx;
+        &detached
+    };
+    let table = table::<F>();
+    let mut map = ComponentMap::new();
+    let mut found = Diagnostics::default();
+    for (key, member) in members.iter() {
+        // A member without a text (a node made without one) is read from its value written out.
+        let written;
+        let slice = if let Some(slice) = member.text() {
+            slice
+        } else {
+            written = crate::json::to_json(member.value()).unwrap_or_default();
+            JsonSlice::new(&written)
+        };
+        let key = key.to_owned();
+        let entry = Entry {
+            key: &key,
+            slice,
+            at: node.path(),
+            mode,
+            is_custom,
+        };
+        entry.place(table, || member.value().clone(), cx, &mut map, &mut found);
+    }
+    let kept = found.take_unknown();
+    for finding in found {
+        read.push(finding);
+    }
+    read.findings_mut()
+        .unknown_mut()
+        .absorb(&JsonPath::new(), kept);
+    Some(map)
+}
+
+/// One member of a `components` object, for the read of a component map.
+struct Entry<'a> {
+    key: &'a String,
+    slice: JsonSlice<'a>,
+    /// The object's path in the file.
+    at: &'a JsonPath,
+    mode: ConvertMode,
+    is_custom: fn(&str) -> bool,
+}
+
+impl Entry<'_> {
+    /// Reads the member into `map`: a key of `table` by its row's `parse`, the findings it
+    /// tells placed below `at/<key>`; a row whose value has no typed key (an entity's dynamic
+    /// keys) keeps the JSON (`json`) as a dynamic entry; a key `is_custom` accepts is a custom
+    /// component, kept as written; any other key is kept for write-back and reported as an
+    /// `UnrecognizedComponent`, graded by the slice's reading (`LoadContext::grade`).
+    fn place<F: Family>(
+        &self,
+        table: &ComponentTable<F>,
+        json: impl FnOnce() -> Value,
+        cx: &LoadContext,
+        map: &mut ComponentMap<F::Component>,
+        d: &mut Diagnostics,
+    ) {
+        let (key, slice) = (self.key, self.slice);
+        let mut path = self.at.clone();
+        path.push(key);
         if let Some(meta) = table.get(key) {
             let mut found = Diagnostics::default();
-            let value = (meta.parse)(slice, mode, cx, &mut found);
+            let value = (meta.parse)(slice, self.mode, cx, &mut found);
             let kept = found.take_unknown();
             // A component that goes for what is told of a member BELOW it is told at the
             // component too: the member's finding does not say that its siblings go with
@@ -265,7 +448,7 @@ pub fn parse_component_map<'a, F: Family>(
                     Location::new(None, None, path, Some(span_of(slice))),
                 )),
             }
-        } else if is_custom(key) {
+        } else if (self.is_custom)(key) {
             map.insert_custom(CustomComponent {
                 name: key.clone(),
                 parameters: json(),
@@ -283,7 +466,6 @@ pub fn parse_component_map<'a, F: Family>(
             ));
         }
     }
-    map
 }
 
 /// One component map of the newest struct, for the generic per-component checks.

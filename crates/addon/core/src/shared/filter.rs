@@ -554,11 +554,19 @@ impl FilterScalar {
     }
 }
 
+impl TryFrom<&Value> for Filter {
+    type Error = ShapeError;
+
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        Ok(Self::read(value)?)
+    }
+}
+
 impl TryFrom<Value> for Filter {
     type Error = ShapeError;
 
     fn try_from(value: Value) -> Result<Self, ShapeError> {
-        Ok(Self::read(&value)?)
+        Self::try_from(&value)
     }
 }
 
@@ -570,14 +578,22 @@ impl TryFrom<&Filter> for Value {
     }
 }
 
+impl TryFrom<&Value> for FilterTest {
+    type Error = ShapeError;
+
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        let object = value
+            .as_object()
+            .ok_or_else(|| wrong_type(ROOT, "an object", value))?;
+        Ok(Self::read(object)?)
+    }
+}
+
 impl TryFrom<Value> for FilterTest {
     type Error = ShapeError;
 
     fn try_from(value: Value) -> Result<Self, ShapeError> {
-        let object = value
-            .as_object()
-            .ok_or_else(|| wrong_type(ROOT, "an object", &value))?;
-        Ok(Self::read(object)?)
+        Self::try_from(&value)
     }
 }
 
@@ -589,14 +605,22 @@ impl TryFrom<&FilterTest> for Value {
     }
 }
 
+impl TryFrom<&Value> for FilterGroup {
+    type Error = ShapeError;
+
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        let object = value
+            .as_object()
+            .ok_or_else(|| wrong_type(ROOT, "an object", value))?;
+        Ok(Self::read(object)?)
+    }
+}
+
 impl TryFrom<Value> for FilterGroup {
     type Error = ShapeError;
 
     fn try_from(value: Value) -> Result<Self, ShapeError> {
-        let object = value
-            .as_object()
-            .ok_or_else(|| wrong_type(ROOT, "an object", &value))?;
-        Ok(Self::read(object)?)
+        Self::try_from(&value)
     }
 }
 
@@ -608,11 +632,19 @@ impl TryFrom<&FilterGroup> for Value {
     }
 }
 
+impl TryFrom<&Value> for FilterSubject {
+    type Error = ShapeError;
+
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        Ok(Self::read(value)?)
+    }
+}
+
 impl TryFrom<Value> for FilterSubject {
     type Error = ShapeError;
 
     fn try_from(value: Value) -> Result<Self, ShapeError> {
-        Ok(Self::read(&value)?)
+        Self::try_from(&value)
     }
 }
 
@@ -622,11 +654,19 @@ impl From<&FilterSubject> for Value {
     }
 }
 
+impl TryFrom<&Value> for FilterScalar {
+    type Error = ShapeError;
+
+    fn try_from(value: &Value) -> Result<Self, ShapeError> {
+        Ok(Self::read(ROOT, value)?)
+    }
+}
+
 impl TryFrom<Value> for FilterScalar {
     type Error = ShapeError;
 
     fn try_from(value: Value) -> Result<Self, ShapeError> {
-        Ok(Self::read(ROOT, &value)?)
+        Self::try_from(&value)
     }
 }
 

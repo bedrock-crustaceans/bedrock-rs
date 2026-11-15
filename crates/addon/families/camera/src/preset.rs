@@ -3,7 +3,7 @@
 use bedrock_addon_core::id::{AimAssistPresetId, CameraPresetId};
 use bedrock_addon_core::schema::{self, Schema};
 
-use super::read::{preset_name, string_enum};
+use super::read::preset_name;
 
 /// The vanilla presets another preset may inherit from (`ALLOWED_MC_INHERIT`); they count as
 /// known parents whether or not a pack of the stack defines them.
@@ -91,7 +91,6 @@ pub struct CameraPreset {
     pub yaw_limits_max: Option<f32>,
     /// Where sound is heard from; the client uses the camera when no preset of the chain says
     /// (JSON `listener`).
-    #[facet(schema::read_with = string_enum)]
     pub listener: Option<AudioListener>,
     /// Whether player effects (night vision, blindness, …) show through this camera; `false`
     /// when no preset of the chain says (JSON `player_effects`).
@@ -99,7 +98,6 @@ pub struct CameraPreset {
     /// The aim assist the camera turns on (JSON `aim_assist`).
     pub aim_assist: Option<PresetAimAssist>,
     /// How movement input maps to the player under this camera (JSON `control_scheme`).
-    #[facet(schema::read_with = string_enum)]
     pub control_scheme: Option<ControlScheme>,
     /// The starting rotation `[pitch, yaw]` (JSON `starting_rot`, format 1.26.50). Vanilla's
     /// help: "Optional. Overrides the starting camera rotation as [pitch, yaw] for a preset that
@@ -125,7 +123,7 @@ impl CameraPreset {
 
 /// Where sound is heard from under a camera (`listener`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum AudioListener {
@@ -138,7 +136,7 @@ pub enum AudioListener {
 
 /// How movement input maps to the player (`control_scheme`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum ControlScheme {
@@ -160,7 +158,6 @@ pub struct PresetAimAssist {
     /// The aim-assist preset to use (JSON `preset`).
     pub preset: Option<AimAssistPresetId>,
     /// How targets are picked (JSON `target_mode`).
-    #[facet(schema::read_with = string_enum)]
     pub target_mode: Option<TargetMode>,
     /// The view angle `[x, y]` targets are picked in (JSON `angle`).
     pub angle: Option<[f32; 2]>,
@@ -170,7 +167,7 @@ pub struct PresetAimAssist {
 
 /// How aim assist picks its target (`target_mode`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
-#[facet(rename_all = "snake_case")]
+#[facet(rename_all = "snake_case", schema::string_only)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum TargetMode {

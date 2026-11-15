@@ -195,18 +195,27 @@ macro_rules! channels {
 
 channels!(3, 4);
 
-impl<C: Channels> TryFrom<Value> for HexOr<C> {
+impl<C: Channels> TryFrom<&Value> for HexOr<C> {
     type Error = ShapeErrorKind;
 
-    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
+    fn try_from(value: &Value) -> Result<Self, ShapeErrorKind> {
         match value.as_string() {
             Some(text) => Ok(Self::Hex(text.as_str().to_owned())),
-            None => C::read(&value).map(Self::Array),
+            None => C::read(value).map(Self::Array),
         }
     }
 }
 
-bedrock_addon_core::from_json_via_value!(impl<C: Channels> HexOr<C>);
+impl<C: Channels> TryFrom<Value> for HexOr<C> {
+    type Error = ShapeErrorKind;
+
+    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
+        Self::try_from(&value)
+    }
+}
+
+// bridge: a colour reads its channels by its own rule
+bedrock_addon_core::from_json_via_value!(ref impl<C: Channels> HexOr<C>);
 
 impl<C: Channels> TryFrom<&HexOr<C>> for Value {
     type Error = ShapeErrorKind;

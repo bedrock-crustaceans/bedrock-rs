@@ -36,8 +36,8 @@ mod leaves;
 mod tests;
 
 pub use bridge::read_via_facet;
-pub use impls::MapKey;
-pub use leaves::from_value;
+pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
+pub use leaves::{from_value, from_value_ref};
 
 use crate::json::kit::{Expected, Node, Read};
 
@@ -82,6 +82,11 @@ use crate::json::kit::{Expected, Node, Read};
 /// assert!(Rgb::from_json(&Node::new(&json, JsonPath::of_keys(["color"])), &mut read).is_none());
 /// assert_eq!(found.iter().next().unwrap().code.to_string(), "invalid value");
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` has no JSON read (`FromJson`)",
+    label = "a field holds `{Self}`, which has no read",
+    note = "derive `Schema` on it, write `impl FromJson` beside it, or read the field with `schema::read_with`"
+)]
 pub trait FromJson: Sized {
     /// Reads the value at `node`, telling every finding to `read`; `None` when the value could
     /// not be read (already told).
@@ -99,4 +104,44 @@ pub trait FromJson: Sized {
     /// (vanilla's dynamic value holds a `null`).
     #[doc(hidden)]
     const HOLDS_NULL: bool = false;
+}
+
+/// Reads a whole document (or a component) at `node` as `T`, and ends the read
+/// ([`Read::finish`]): the entry of every read of a root, where [`FromJson::from_json`] is the
+/// read of one value inside it. The unknown members the read keeps go to the table of the
+/// read's findings only when the value is read: a document that fails keeps none, as the
+/// door's typed read kept them only after it worked.
+///
+/// The read goes a few calls deeper for each level of the text, so it runs on the stack the
+/// text's depth can take, as the typed door's read did (`json::stack`): on the thread's own
+/// where enough is left, else on one made for it. A text nests at most
+/// [`MAX_JSON_DEPTH`](crate::json::MAX_JSON_DEPTH) deep; a deeper one is read on the stack
+/// that depth takes.
+///
+/// ```
+/// use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+/// use bedrock_addon_core::json::kit::{Node, Read};
+/// use bedrock_addon_core::json::{Value, from_str_jsonc};
+/// use bedrock_addon_core::schema::read_document;
+/// use bedrock_addon_core::versioning::Reading;
+///
+/// let json: Value = from_str_jsonc("[[1], [2, 3]]").unwrap();
+/// let mut found = Diagnostics::default();
+/// let mut read = Read::new(Reading::DOCUMENT, &mut found);
+/// let lists: Option<Vec<Vec<u8>>> = read_document(&Node::new(&json, JsonPath::new()), &mut read);
+/// assert_eq!(lists, Some(vec![vec![1], vec![2, 3]]));
+/// ```
+pub fn read_document<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T> {
+    let levels = crate::json::levels_of(node.value()).unwrap_or(crate::json::MAX_JSON_DEPTH);
+    // The table the read keeps into is its own until the value is read.
+    let before = read.findings_mut().take_unknown();
+    let value = crate::json::with_stack_for(levels, || T::from_json(node, read));
+    read.finish();
+    let kept = std::mem::replace(read.findings_mut().unknown_mut(), before);
+    if value.is_some() && !kept.is_empty() {
+        read.findings_mut()
+            .unknown_mut()
+            .absorb(&crate::diagnostic::JsonPath::new(), kept);
+    }
+    value
 }

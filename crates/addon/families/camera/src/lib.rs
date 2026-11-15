@@ -67,7 +67,8 @@ use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::chain_file as file;
 use bedrock_addon_core::versioning::{
     BelowFloor, Envelope, EnvelopeCheck, Family, Identity, InputKind, Loaded, MissingVersion,
-    NoComponents, Reading, StructIndex, UnknownMask, ValidateCx, Versioned, parse_document,
+    NoComponents, Reading, Scalars, StructIndex, UnknownMask, ValidateCx, Versioned,
+    parse_document,
 };
 use history::{
     EntityFamily, EntityHistory, ListFamily, ListHistory, PresetFamily, PresetHistory,
@@ -225,19 +226,17 @@ impl Family for PresetFamily {
         ..Envelope::DEFAULT
     };
 
-    /// The legacy slice `[1.19.50, 1.26.50)` tolerates some errors the 1.26.50 slice does not.
-    /// An unknown member drops the preset under both: the game scans the log of the parse for
-    /// the unknown-member error, which the read tells as an error.
-    ///
-    /// Both slices' tables say `Strict`, but the legacy slice 0 is read by the game's
-    /// non-strict cereal reader: its parse (`read::read`, `legacy`) reads each scalar of the
-    /// other type as the bound one, with an information, so the strict scalars of its reading
-    /// never see one.
+    /// The legacy slice `[1.19.50, 1.26.50)` tolerates some errors the 1.26.50 slice does not:
+    /// it is read by the game's non-strict cereal reader, which reads each scalar of the other
+    /// JSON type as the bound one (`NonStrict`; the read tells each, `read::read`). An unknown
+    /// member drops the preset under both: the game scans the log of the parse for the
+    /// unknown-member error, so the mask is `Error` in both.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(match index {
-            StructIndex::Stable(0) => Reading::DOCUMENT.with_unknown(UnknownMask::Warn),
-            _ => Reading::DOCUMENT,
-        })
+        let strict = file::strict(Reading::DOCUMENT);
+        match index {
+            StructIndex::Stable(0) => strict.with_scalars(Scalars::NonStrict),
+            _ => strict,
+        }
     }
     type Latest = CameraPreset;
     type Beta = NoBeta<kind::CameraPreset>;
@@ -323,8 +322,9 @@ impl Family for ListFamily {
         }
     }
 
+    /// An unknown member fails the list, as the game reads it: an error.
     fn reading(_: StructIndex, _: DocumentSource) -> Reading {
-        file::strict(Self::ENVELOPE.input.profile())
+        file::strict(Self::ENVELOPE.input.profile()).with_unknown(UnknownMask::Error)
     }
 }
 
@@ -538,7 +538,7 @@ mod reading_table {
                 missing version: rejected: NoValidVersion
                 below floor: NoParser
                 empty document: Error
-                1.19.50..=1.19.50 (0..=0): json Rejected/Strict/Error/Warn/reports/fatal/Refuse, mcb Own/Strict/Error/Warn/reports/fatal/Refuse
+                1.19.50..=1.19.50 (0..=0): json Rejected/NonStrict/Error/Error/reports/fatal/Refuse, mcb Own/NonStrict/Error/Error/reports/fatal/Refuse
                 1.26.50..=1.26.50 (1..=1): json Rejected/Strict/Error/Error/reports/fatal/Refuse, mcb Own/Strict/Error/Error/reports/fatal/Refuse
             ",
         );
@@ -555,7 +555,7 @@ mod reading_table {
                 missing version: rejected: Fixed("missing required field")
                 below floor: UseFormatVersion
                 empty document: Error
-                1.19.50..=1.19.50 (0..=0): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
+                1.19.50..=1.19.50 (0..=0): json Own/Strict/Error/Error/reports/lenient/Refuse, mcb Own/Strict/Error/Error/reports/lenient/Refuse
             "#,
         );
     }

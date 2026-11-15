@@ -118,8 +118,14 @@ impl<K: crate::id::Kind> SchemaFields for crate::id::Id<K> {
 // bound the derive checks and no trigger.
 crate::impl_schema_leaf!(crate::shared::Filter, crate::shared::FilterSubject);
 
+/// A range tells its own finding (its ends were swapped as the game reads them) where the check
+/// has leaf findings on ([`SchemaCx::with_leaf_findings`]).
 impl<T: crate::shared::RangeEnd> SchemaFields for crate::shared::Range<T> {
-    fn check_fields(&mut self, _: &mut SchemaCx<'_>) {}
+    fn check_fields(&mut self, cx: &mut SchemaCx<'_>) {
+        if cx.leaf_findings() {
+            cx.extend(self.check(cx.path()));
+        }
+    }
 
     fn trigger_members(_: &str, _: &mut Vec<String>) {}
 }
@@ -253,6 +259,17 @@ crate::impl_schema_leaf!(
 pub trait Number: PartialOrd + Copy {
     /// The value as an `f64` (rounded where the type is wider).
     fn to_f64(self) -> f64;
+
+    /// The value as the type writes it (`Display`), for the text of the game's older schema
+    /// tree, which prints the number in its own type.
+    fn show(self) -> String;
+
+    /// The lowest value of the type: what the older tree prints for a range with no lower
+    /// limit.
+    fn lowest() -> Self;
+
+    /// The highest value of the type.
+    fn highest() -> Self;
 }
 
 macro_rules! number {
@@ -263,12 +280,69 @@ macro_rules! number {
                 fn to_f64(self) -> f64 {
                     self as f64
                 }
+
+                fn show(self) -> String {
+                    self.to_string()
+                }
+
+                fn lowest() -> Self {
+                    <$ty>::MIN
+                }
+
+                fn highest() -> Self {
+                    <$ty>::MAX
+                }
             }
         )+
     };
 }
 
 number!(i8, i16, i32, i64, isize, u8, u16, u32, u64, usize, f32, f64);
+
+/// Which of a value's numbers a bound compared: the only one of a number, or an end of a
+/// range.
+// hidden: schema support the derive emits
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum End {
+    /// A plain number.
+    Only,
+    /// The lower end of a range (`range_min`).
+    Min,
+    /// The upper end of a range (`range_max`).
+    Max,
+}
+
+/// A value a bound (`schema::min`, `max`, `above`, `below`) applies to: a number, or what holds
+/// numbers (a range, which the bound applies to both ends of: the first end outside is the
+/// one finding). A family names its own wrapper of a number (`JsonInt`, an integer that keeps
+/// its token) beside the type, with the number the bound compares.
+// hidden: schema support the families' hand-written rows name; API not yet reviewed
+#[doc(hidden)]
+pub trait Bounded {
+    /// The number the bound compares, which its limits are typed by.
+    type Number: Number;
+
+    /// The numbers the bound applies to, in the order they are tried, each with the part of
+    /// the value it is.
+    fn numbers(&self) -> impl IntoIterator<Item = (End, Self::Number)>;
+}
+
+impl<T: Number> Bounded for T {
+    type Number = T;
+
+    fn numbers(&self) -> impl IntoIterator<Item = (End, T)> {
+        [(End::Only, *self)]
+    }
+}
+
+impl<T: crate::shared::RangeEnd + Number> Bounded for crate::shared::Range<T> {
+    type Number = T;
+
+    fn numbers(&self) -> impl IntoIterator<Item = (End, T)> {
+        [(End::Min, self.min), (End::Max, self.max)]
+    }
+}
 
 /// A name a string enum does not know: the error of the derived `parse_name`.
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]

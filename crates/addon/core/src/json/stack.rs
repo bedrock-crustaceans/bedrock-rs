@@ -76,7 +76,7 @@ pub(super) const fn to_stay(levels: usize) -> usize {
 /// walk of a value that deep), with the stack it may take: on the thread's own where
 /// [`to_stay`] of it is left, else on one of [`made`] bytes.
 #[cfg(not(target_family = "wasm"))]
-pub(super) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
+pub(crate) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
     stacker::maybe_grow(to_stay(levels), made(levels), walk)
 }
 
@@ -84,7 +84,7 @@ pub(super) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
 /// module is linked, and no other can be made with a guard below it: the embedder sizes it
 /// (`MAX_JSON_DEPTH`).
 #[cfg(target_family = "wasm")]
-pub(super) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
+pub(crate) fn with_stack_for<R>(levels: usize, walk: impl FnOnce() -> R) -> R {
     let _ = (to_stay(levels), made(levels));
     walk()
 }

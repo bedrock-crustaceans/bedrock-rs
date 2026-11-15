@@ -13,10 +13,10 @@
 //!   [`unknown`](Read::unknown), [`wrong_type`](Read::wrong_type), [`refuse`](Read::refuse) and
 //!   the scalars ([`bool`](Read::bool), [`string`](Read::string), [`number`](Read::number),
 //!   [`int`](Read::int), and [`scalar`](Read::scalar), a member of a declared type read under
-//!   every profile as the typed door reads it); it tells in an [`Order`] (as read, every
-//!   failure; or the typed door's, which stops at the first and tells the rest after the read,
-//!   by [`Pass`]), and a [`fork`](Read::fork) of it is an attempt to [commit](Read::commit) or
-//!   drop;
+//!   every profile as the typed door reads it); it tells by a [`Profile`] (every failure or
+//!   the first, members in file or declaration order, unknown members first, where met or
+//!   last, the findings that fail nothing where met or after the read by [`Pass`]), and a
+//!   [`fork`](Read::fork) of it is an attempt to [commit](Read::commit) or drop;
 //! - [`Members`] and [`Elements`] are an object's members and an array's elements, each a
 //!   [`Node`] one step down;
 //! - [`Written`] is the slot a family that keeps its root as the author wrote it holds it in,
@@ -625,31 +625,161 @@ impl Texts {
     };
 }
 
-/// The order a [`Read`] tells its findings in, and how many failures it tells.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+/// How a [`Read`] tells: how many failures, in which order it reads an object's members, where
+/// it tells their unknown members, and whether the findings that are no failure wait for the
+/// end of the read. Four choices, each on its own ([`failures`](Self::failures),
+/// [`members`](Self::members), [`unknown`](Self::unknown), [`passes`](Self::passes)); a family
+/// takes a ready-made profile and changes an axis with a `with_*` builder where its game's
+/// reader differs.
+///
+/// The profile is the read's, set where the family reads ([`Read::profile`],
+/// `versioning::read_payload_with`), not the slice's [`Reading`]: it is the shape of the game's
+/// reader of a document, the same in every slice of the families read so far, where a
+/// [`Reading`] says what differs between slices (the null rule, the scalars, the unknown mask);
+/// and the old typed door, which reads by the same [`Reading`], has no profile to honour.
+///
+/// | profile | failures | members | unknown | passes | for |
+/// |---|---|---|---|---|---|
+/// | [`FIRST_FAILURE`](Self::FIRST_FAILURE) | first | file | where met | after the read | a family facet read through `versioning::parse_payload` (the default of `read_payload`) |
+/// | [`EVERY_FAILURE`](Self::EVERY_FAILURE) | every | file | where met | where met | a game reader that binds every member and tells each failure (poi, camera, aim assist, the atomic client entity); the default of [`Read::new`] |
+/// | [`UNKNOWN_FIRST`](Self::UNKNOWN_FIRST) | every | file | first | where met | a reader that tells an object's unknown members before it reads it (`crafting_catalog`, the simplified spawn rules, block culling) |
+/// | [`DECLARED_ORDER`](Self::DECLARED_ORDER) | every | declaration | first | where met | a reader that asks for its members one by one in the order it declares them, after telling the unknown ones (the kit's hand walks: `ddui`'s styles, loot, deferred settings) |
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
-pub enum Order {
-    /// Every finding where the read meets it, and every failure: the reader goes on past a
-    /// failed member and tells the next one. The hand-walked families' order.
-    #[default]
-    AsRead,
-    /// As [`AsRead`](Self::AsRead), but a struct tells the unknown members of its object, in
-    /// file order, before it reads any of its members: `crafting_catalog`'s reader.
-    UnknownFirst,
-    /// The typed door's order (`versioning::parse_payload`, whose facet read stops at its first
-    /// error): the read stops at its first failure, which is then all it tells, and a failure is
-    /// an error whatever the reading's [`on_member_failure`](Reading::on_member_failure) (but
-    /// for a scalar member under `DefaultAndTell`, below). What it finds besides is told after
-    /// the read ([`Read::finish`]), by [`Pass`], and only when nothing failed: the members
-    /// written `null` that the reading refuses (their errors then are all that is told), the
-    /// members read as absent for their `null`, the unknown members, and the scalars read as
-    /// another value. A scalar member its profile refuses under `DefaultAndTell` is read as
-    /// absent and told in the last pass, as the door's scalar pre-pass does.
-    Door,
+pub struct Profile {
+    /// How many failures the read tells.
+    pub failures: Failures,
+    /// The order the members of an object are read in.
+    pub members: MemberOrder,
+    /// Where the unknown members of an object are told.
+    pub unknown: UnknownAt,
+    /// When the findings that fail nothing are told.
+    pub passes: Passes,
 }
 
-/// The pass of the door ([`Order::Door`]) a finding told after the read belongs to, in the
-/// order the passes run.
+/// How many failures a read tells ([`Profile::failures`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Failures {
+    /// The read stops at its first failure, which is then all it tells, and the failure is an
+    /// error whatever the reading's [`on_member_failure`](Reading::on_member_failure): facet's
+    /// typed read, which stops at its first error. A failed list element fails the list.
+    First,
+    /// Every failure, each graded by the reading's
+    /// [`on_member_failure`](Reading::on_member_failure): the read goes on past a failed member
+    /// and tells the next one; under `DropElement` and `DropOwner` a failed element leaves its
+    /// list.
+    Every,
+}
+
+/// The order a struct reads the members of its object in ([`Profile::members`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum MemberOrder {
+    /// As the file writes them: facet's order, and the game's readers that walk the object.
+    File,
+    /// As the struct declares its fields: the readers that ask for each member by name. A
+    /// missing member is told in declaration order under either.
+    Declaration,
+}
+
+/// Where a struct tells the unknown members of its object ([`Profile::unknown`]), each in file
+/// order.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum UnknownAt {
+    /// Before it reads any member.
+    First,
+    /// Each where it stands among the members (read in [`MemberOrder::File`]); after them
+    /// where the members are read in declaration order, which meets no unknown one.
+    WhereMet,
+    /// After every member is read.
+    Last,
+}
+
+/// When the findings that fail nothing are told ([`Profile::passes`]): the members written
+/// `null` that the reading refuses, those read as absent for their `null`, the unknown members
+/// and the scalars read as another value than written.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum Passes {
+    /// Where the read meets each; a converted scalar or a refused `null` is a wrong type in the
+    /// family's wording, and fails its member as one.
+    WhereMet,
+    /// After the read ([`Read::finish`]), by [`Pass`] (in its order, each pass in the order the
+    /// read met its findings), and only when the read did not stop; the refused `null`s, when
+    /// there are any, are then all that is told: the typed door's passes. A converted scalar is
+    /// the door's misread wrong type, which leaves its member read; under `DefaultAndTell` a
+    /// scalar member its profile refuses is read as absent and told in the last pass, as the
+    /// door's scalar pre-pass blanks it.
+    AfterRead,
+}
+
+impl Profile {
+    /// The read of facet's typed door (`versioning::parse_payload`): the first failure, in file
+    /// order, and the rest by pass after the read. What every family that read through the door
+    /// reads by, and `versioning::read_payload`'s default.
+    pub const FIRST_FAILURE: Self = Self {
+        failures: Failures::First,
+        members: MemberOrder::File,
+        unknown: UnknownAt::WhereMet,
+        passes: Passes::AfterRead,
+    };
+    /// Every failure and every finding where the read meets it, in file order: a game reader
+    /// that binds every member and tells each failure. [`Read::new`]'s.
+    pub const EVERY_FAILURE: Self = Self {
+        failures: Failures::Every,
+        members: MemberOrder::File,
+        unknown: UnknownAt::WhereMet,
+        passes: Passes::WhereMet,
+    };
+    /// As [`EVERY_FAILURE`](Self::EVERY_FAILURE), an object's unknown members told before its
+    /// members.
+    pub const UNKNOWN_FIRST: Self = Self::EVERY_FAILURE.with_unknown(UnknownAt::First);
+    /// Every failure, an object's unknown members first and then its members in the order the
+    /// struct declares them: the hand walks that ask for each member by name.
+    pub const DECLARED_ORDER: Self = Self::UNKNOWN_FIRST.with_members(MemberOrder::Declaration);
+
+    /// The profile telling `failures`.
+    #[must_use]
+    pub const fn with_failures(self, failures: Failures) -> Self {
+        Self { failures, ..self }
+    }
+
+    /// The profile reading an object's members in `members` order.
+    #[must_use]
+    pub const fn with_members(self, members: MemberOrder) -> Self {
+        Self { members, ..self }
+    }
+
+    /// The profile telling an object's unknown members `unknown`.
+    #[must_use]
+    pub const fn with_unknown(self, unknown: UnknownAt) -> Self {
+        Self { unknown, ..self }
+    }
+
+    /// The profile telling what fails nothing `passes`.
+    #[must_use]
+    pub const fn with_passes(self, passes: Passes) -> Self {
+        Self { passes, ..self }
+    }
+
+    /// Whether the read stops at its first failure ([`Failures::First`]).
+    #[must_use]
+    pub const fn stops(self) -> bool {
+        matches!(self.failures, Failures::First)
+    }
+
+    /// Whether the findings that fail nothing wait for the end of the read
+    /// ([`Passes::AfterRead`]).
+    #[must_use]
+    pub const fn defers(self) -> bool {
+        matches!(self.passes, Passes::AfterRead)
+    }
+}
+
+/// The pass a finding told after the read belongs to ([`Passes::AfterRead`]), in the order the
+/// passes run.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum Pass {
@@ -662,6 +792,17 @@ pub enum Pass {
     /// A scalar read as another value than it is written: converted, beyond its float, or
     /// defaulted.
     Misread,
+}
+
+/// What a read knows of the document's versions ([`Read::versions`]): the members a struct
+/// reads from a format version on (`schema::since_format`) and from an engine version on
+/// (`schema::since_engine`) are judged by them; a read that knows neither reads every member.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Versions {
+    /// The format version the document is written at.
+    pub format: Option<crate::version::FormatVersion>,
+    /// The `min_engine_version` of the pack the document is in.
+    pub engine: Option<crate::version::FormatVersion>,
 }
 
 /// Where a read's findings go: the caller's list, or the read's own (a [fork](Read::fork)).
@@ -683,6 +824,10 @@ impl Sink<'_> {
 /// One read of a hand-walked document: the slice's [`Reading`], the [`Texts`] and where the
 /// findings go.
 #[derive(Debug)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the read's state: failed, stopped, a member read as absent, a map's value"
+)]
 pub struct Read<'d> {
     reading: Reading,
     texts: Texts,
@@ -691,13 +836,16 @@ pub struct Read<'d> {
     /// The note of the information a scalar read as another JSON type than written is told with
     /// ([`non_strict`](Self::non_strict)).
     rewrite_note: Option<&'static str>,
+    /// The format version the document is written at, and the pack's `min_engine_version`,
+    /// for the members a struct reads from a version on ([`versions`](Self::versions)).
+    versions: Versions,
     failed: bool,
-    order: Order,
-    /// The read met its first failure under [`Order::Door`].
+    profile: Profile,
+    /// The read met its first failure under [`Failures::First`].
     stopped: bool,
-    /// The findings of the passes after the read, under [`Order::Door`].
+    /// The findings of the passes after the read, under [`Passes::AfterRead`].
     deferred: Vec<(Pass, Diagnostic)>,
-    /// The last scalar read was a member read as absent ([`Order::Door`] under
+    /// The last scalar read was a member read as absent ([`Passes::AfterRead`] under
     /// `DefaultAndTell`), for the owner to take as absent.
     defaulted: bool,
     /// The `schema::unknown` of the field being read, for the object it holds.
@@ -705,6 +853,15 @@ pub struct Read<'d> {
     /// How many map values or boxes the read is inside: an unknown member there is told and
     /// never kept, as the door's walk cannot reach it.
     unkeepable: u32,
+    /// The value read is a map's value, not a struct's member: a `null` there its profile
+    /// refuses is not read as absent ([`Passes::AfterRead`] under `DefaultAndTell`).
+    map_value: bool,
+    /// The rules of the field whose member is being read, and the address of that member's
+    /// value: they hold at that value only, not at one inside it.
+    member: Option<(usize, &'static crate::schema::derive_support::MemberRules)>,
+    /// The load the document is read in, for a read that hands a part of it to another reader
+    /// (a component map's rows): [`load`](Self::load).
+    load: Option<&'d crate::load::LoadContext>,
 }
 
 impl<'d> Read<'d> {
@@ -717,17 +874,21 @@ impl<'d> Read<'d> {
             unknown_severity,
             findings: Sink::Borrowed(findings),
             rewrite_note: None,
+            versions: Versions::default(),
             failed: false,
-            order: Order::AsRead,
+            profile: Profile::EVERY_FAILURE,
             stopped: false,
             deferred: Vec::new(),
             defaulted: false,
             field_unknown: None,
             unkeepable: 0,
+            map_value: false,
+            member: None,
+            load: None,
         }
     }
 
-    /// The read telling in `order`.
+    /// The read telling by `profile` (a [`Read::new`] tells by [`Profile::EVERY_FAILURE`]).
     ///
     /// ```
     /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
@@ -737,37 +898,37 @@ impl<'d> Read<'d> {
     /// # fn told(d: &Diagnostics) -> Vec<String> {
     /// #     d.iter().map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code)).collect()
     /// # }
-    /// use bedrock_addon_core::json::kit::Order;
+    /// use bedrock_addon_core::json::kit::Profile;
     /// let json: Value = from_str_jsonc(r#"{"a": 1, "b": 2}"#).unwrap();
     /// let mut found = Diagnostics::default();
-    /// let mut read = Read::new(Reading::DOCUMENT, &mut found).order(Order::Door);
+    /// let mut read = Read::new(Reading::DOCUMENT, &mut found).profile(Profile::FIRST_FAILURE);
     /// let members = read.object(&Node::new(&json, JsonPath::new())).unwrap();
     /// for key in ["a", "b"] {
     ///     let node = read.required(&members, key).unwrap();
     ///     read.string(&node);
     /// }
-    /// // The door's read stops at its first failure.
+    /// // A read of the first failure stops there.
     /// assert!(read.stopped());
     /// assert_eq!(told(&found), ["Error a wrong JSON type"]);
     /// ```
     #[must_use]
-    pub fn order(mut self, order: Order) -> Self {
-        self.order = order;
+    pub fn profile(mut self, profile: Profile) -> Self {
+        self.profile = profile;
         self
     }
 
-    /// The order the read tells in.
-    pub fn telling(&self) -> Order {
-        self.order
+    /// The profile the read tells by.
+    pub fn telling(&self) -> Profile {
+        self.profile
     }
 
-    /// Whether the read stopped at its first failure ([`Order::Door`]): nothing more is read
-    /// or told, and every read returns `None`.
+    /// Whether the read stopped at its first failure ([`Failures::First`]): nothing more is
+    /// read or told, and every read returns `None`.
     pub fn stopped(&self) -> bool {
         self.stopped
     }
 
-    /// A read with this read's reading, texts, severities and order that tells into a list of
+    /// A read with this read's reading, texts, severities and profile that tells into a list of
     /// its own, for an attempt the caller may [`commit`](Self::commit) or drop: an arm of a
     /// one-of that is tried and may be given up for another.
     ///
@@ -795,30 +956,38 @@ impl<'d> Read<'d> {
     /// assert!(told(&found).is_empty());
     /// ```
     #[must_use]
-    pub fn fork(&self) -> Read<'static> {
+    pub fn fork(&self) -> Read<'d> {
         Read {
             reading: self.reading,
             texts: self.texts,
             unknown_severity: self.unknown_severity,
             findings: Sink::Owned(Diagnostics::default()),
             rewrite_note: self.rewrite_note,
+            versions: self.versions,
             failed: false,
-            order: self.order,
-            stopped: false,
+            profile: self.profile,
+            // A fork of a read that has stopped reads nothing either.
+            stopped: self.stopped,
             deferred: Vec::new(),
             defaulted: false,
             field_unknown: self.field_unknown,
             unkeepable: self.unkeepable,
+            map_value: self.map_value,
+            member: self.member,
+            load: self.load,
         }
     }
 
-    /// Takes `fork`'s findings, its kept unknown members and its failure as this read's own.
+    /// Takes `fork`'s findings (with the moves of the lists it shortened, so a member below
+    /// one is still named as the file has it), its kept unknown members, its failure and a
+    /// member it read as absent as this read's own.
     pub fn commit(&mut self, fork: Read<'_>) {
         let Read {
             findings,
             failed,
             stopped,
             deferred,
+            defaulted,
             ..
         } = fork;
         let findings = match findings {
@@ -826,31 +995,48 @@ impl<'d> Read<'d> {
             // A borrowed sink is not a fork's: its findings are already where they go.
             Sink::Borrowed(_) => Diagnostics::default(),
         };
-        self.findings.get().extend_with_unknown(findings);
+        self.findings.get().append(findings);
         self.deferred.extend(deferred);
         self.failed |= failed;
         self.stopped |= stopped;
+        self.defaulted |= defaulted;
     }
 
-    /// Tells `finding` in `pass`: now under [`Order::AsRead`], after the read under
-    /// [`Order::Door`] ([`finish`](Self::finish)). A finding that rejects the document fails the
-    /// read when it is told.
+    /// Takes `fork`'s findings and what it defers as this read's own, and nothing else: an
+    /// attempt whose value is given up and kept as written (`schema::or_kept`), whose failure
+    /// fails nothing and whose kept members go with it.
+    pub(crate) fn commit_findings(&mut self, fork: Read<'_>) {
+        let Read {
+            findings, deferred, ..
+        } = fork;
+        if let Sink::Owned(mut findings) = findings {
+            drop(findings.take_unknown());
+            self.findings.get().append(findings);
+        }
+        self.deferred.extend(deferred);
+    }
+
+    /// Tells `finding` in `pass`: now under [`Passes::WhereMet`], after the read under
+    /// [`Passes::AfterRead`] ([`finish`](Self::finish)). A finding that rejects the document
+    /// fails the read when it is told.
     pub fn defer(&mut self, pass: Pass, finding: Diagnostic) {
         if self.stopped {
             return;
         }
-        match self.order {
-            Order::Door => self.deferred.push((pass, finding)),
-            Order::AsRead | Order::UnknownFirst => self.push(finding),
+        if self.profile.defers() {
+            self.deferred.push((pass, finding));
+        } else {
+            self.push(finding);
         }
     }
 
-    /// Ends the read: under [`Order::Door`], tells what the passes after the read found, unless
-    /// the read failed (its failure is then all it tells), and only the [`Pass::Null`] errors
-    /// when there are any. Nothing under [`Order::AsRead`], which has told everything already.
+    /// Ends the read: under [`Passes::AfterRead`], tells what the passes after the read found,
+    /// unless the read stopped (its failure is then all it tells), and only the [`Pass::Null`]
+    /// errors when there are any. Nothing under [`Passes::WhereMet`], which has told everything
+    /// already.
     pub fn finish(&mut self) {
         let deferred = std::mem::take(&mut self.deferred);
-        if self.stopped || self.order != Order::Door {
+        if self.stopped || !self.profile.defers() {
             return;
         }
         let nulls = deferred.iter().any(|(pass, _)| *pass == Pass::Null);
@@ -866,43 +1052,38 @@ impl<'d> Read<'d> {
     }
 
     /// The findings of the read so far, the document's table of kept unknown members with them.
-    pub fn findings_mut(&mut self) -> &mut Diagnostics {
+    pub(crate) fn findings_mut(&mut self) -> &mut Diagnostics {
         self.findings.get()
     }
 
     /// What a failed member does under the read: the reading's
     /// [`on_member_failure`](Reading::on_member_failure) graded ([`schema::grade`](crate::schema::grade))
-    /// under [`Order::AsRead`] and [`Order::UnknownFirst`], an error that fails the owner
-    /// under [`Order::Door`].
+    /// under [`Failures::Every`], an error that fails the owner under [`Failures::First`].
     pub fn member_failure(&self) -> crate::schema::Grading {
-        match self.order {
-            Order::Door => crate::schema::grade(crate::versioning::MemberFailure::Refuse),
-            Order::AsRead | Order::UnknownFirst => {
-                crate::schema::grade(self.reading.on_member_failure)
-            }
+        if self.profile.stops() {
+            crate::schema::grade(crate::versioning::MemberFailure::Refuse)
+        } else {
+            crate::schema::grade(self.reading.on_member_failure)
         }
     }
 
-    /// Whether the last scalar read was a member read as absent ([`Order::Door`] under
+    /// Whether the last scalar read was a member read as absent ([`Passes::AfterRead`] under
     /// `DefaultAndTell`), clearing it: its owner takes it as absent.
-    // hidden: the derived reads' protocol with the scalar reads
-    #[doc(hidden)]
-    pub fn take_defaulted(&mut self) -> bool {
+    // the derived reads' protocol with the scalar reads
+    pub(crate) fn take_defaulted(&mut self) -> bool {
         std::mem::take(&mut self.defaulted)
     }
 
     /// The `schema::unknown` of the field being read, set by its owner around the read of
     /// its value.
-    // hidden: the derived reads' protocol
-    #[doc(hidden)]
-    pub fn field_unknown(&self) -> Option<crate::schema::UnknownRule> {
+    // the derived reads' protocol
+    pub(crate) fn field_unknown(&self) -> Option<crate::schema::UnknownRule> {
         self.field_unknown
     }
 
     /// Sets [`field_unknown`](Self::field_unknown), returning the one it replaces.
-    // hidden: the derived reads' protocol
-    #[doc(hidden)]
-    pub fn set_field_unknown(
+    // the derived reads' protocol
+    pub(crate) fn set_field_unknown(
         &mut self,
         rule: Option<crate::schema::UnknownRule>,
     ) -> Option<crate::schema::UnknownRule> {
@@ -911,19 +1092,59 @@ impl<'d> Read<'d> {
 
     /// Runs `read` inside a map value or a box, where an unknown member is told and never
     /// kept (the door's walk cannot reach it to keep it).
-    // hidden: the derived reads' protocol
-    #[doc(hidden)]
-    pub fn unkeepable<T>(&mut self, read: impl FnOnce(&mut Self) -> T) -> T {
+    // the derived reads' protocol
+    pub(crate) fn unkeepable<T>(&mut self, read: impl FnOnce(&mut Self) -> T) -> T {
         self.unkeepable += 1;
         let out = read(self);
         self.unkeepable -= 1;
         out
     }
 
+    /// The rules of the field whose member `node` is read (`schema::wrong_type` ..) for that
+    /// member, returning the ones they replace ([`restore_member_rules`](Self::restore_member_rules)).
+    pub(crate) fn set_member_rules(
+        &mut self,
+        node: &Node<'_>,
+        rules: &'static crate::schema::derive_support::MemberRules,
+    ) -> Option<(usize, &'static crate::schema::derive_support::MemberRules)> {
+        self.member.replace((address(node.value), rules))
+    }
+
+    /// Puts back the rules [`set_member_rules`](Self::set_member_rules) replaced.
+    pub(crate) fn restore_member_rules(
+        &mut self,
+        saved: Option<(usize, &'static crate::schema::derive_support::MemberRules)>,
+    ) {
+        self.member = saved;
+    }
+
+    /// The rules of the field whose member `node` is, when the read is at that member.
+    pub(crate) fn member_rules(
+        &self,
+        node: &Node<'_>,
+    ) -> Option<&'static crate::schema::derive_support::MemberRules> {
+        self.member
+            .filter(|(at, _)| *at == address(node.value))
+            .map(|(_, rules)| rules)
+    }
+
+    /// Runs `read` on a map's value (`true`) or a struct's member (`false`), restoring what
+    /// was read before after it.
+    // the derived reads' protocol
+    pub(crate) fn in_map_value<T>(
+        &mut self,
+        map_value: bool,
+        read: impl FnOnce(&mut Self) -> T,
+    ) -> T {
+        let saved = std::mem::replace(&mut self.map_value, map_value);
+        let out = read(self);
+        self.map_value = saved;
+        out
+    }
+
     /// Whether an unknown member read here can be kept ([`unkeepable`](Self::unkeepable)).
-    // hidden: the derived reads' protocol
-    #[doc(hidden)]
-    pub fn keepable(&self) -> bool {
+    // the derived reads' protocol
+    pub(crate) fn keepable(&self) -> bool {
         self.unkeepable == 0
     }
 
@@ -952,6 +1173,50 @@ impl<'d> Read<'d> {
     pub fn texts(mut self, texts: Texts) -> Self {
         self.texts = texts;
         self
+    }
+
+    /// The read of a document written at the format `versions.format` in a pack of
+    /// `versions.engine`: a member a struct reads from a later format on
+    /// (`schema::since_format`) is an unknown member, one from a later engine on
+    /// (`schema::since_engine`) is read and told. `versioning::read_payload` gives the
+    /// document's.
+    #[must_use]
+    pub fn versions(mut self, versions: Versions) -> Self {
+        self.versions = versions;
+        self
+    }
+
+    /// What the read knows of the document's versions.
+    pub fn known_versions(&self) -> Versions {
+        self.versions
+    }
+
+    /// The read of a document loaded in `load`, which a part read by another reader (a
+    /// component map's rows, `versioning::read_component_map`) is read in too.
+    /// `versioning::read_payload` gives the slice's.
+    #[must_use]
+    pub fn load(mut self, load: &'d crate::load::LoadContext) -> Self {
+        self.load = Some(load);
+        self
+    }
+
+    /// The load the document is read in, when the read knows it ([`load`](Self::load)).
+    pub fn load_context(&self) -> Option<&'d crate::load::LoadContext> {
+        self.load
+    }
+
+    /// Tells that the member `node`, which a struct reads from the engine version `since` on
+    /// (`schema::since_engine`), is written in a pack of an older `min_engine_version`: an
+    /// information (the game has no line for it), the member read as written.
+    pub(crate) fn since_engine(&mut self, node: &Node<'_>, since: crate::version::FormatVersion) {
+        if self.stopped || self.versions.engine.is_none_or(|engine| engine >= since) {
+            return;
+        }
+        let mut finding = Diagnostic::of(core_codes::FIELD_SINCE_ENGINE.with([since.to_string()]))
+            .severity(Severity::Info)
+            .at(node.path.clone());
+        finding.location.span = node.span();
+        self.push(finding);
     }
 
     /// The read with `null` for its null handling instead of the reading's: a reader the game
@@ -1031,6 +1296,12 @@ impl<'d> Read<'d> {
         self.reading
     }
 
+    /// Sets whether what is read has failed: a list that leaves a failed element out is as
+    /// failed as it was before the element.
+    pub(crate) fn set_failed(&mut self, failed: bool) {
+        self.failed = failed;
+    }
+
     /// Whether what is read has failed: a finding that rejects the document has been told, or a
     /// member failed under a rule that fails its owner (every [`MemberFailure`](crate::versioning::MemberFailure) but
     /// `DefaultAndTell`; the caller drops the document, the owner or the element).
@@ -1068,7 +1339,7 @@ impl<'d> Read<'d> {
 
     /// Tells `code` at `path` and `span`, graded by the reading's
     /// [`on_member_failure`](Reading::on_member_failure) ([`member_failure`](Self::member_failure)):
-    /// a failed member. Under [`Order::Door`] the read stops there; a read that has stopped
+    /// a failed member. Under [`Failures::First`] the read stops there; a read that has stopped
     /// tells nothing more.
     fn fail(&mut self, code: Code, path: JsonPath, span: Option<Span>) {
         if self.stopped {
@@ -1079,7 +1350,7 @@ impl<'d> Read<'d> {
         finding.location.span = span;
         self.failed |= grading.fails_owner;
         self.push(finding);
-        self.stopped = self.order == Order::Door;
+        self.stopped = self.profile.stops();
     }
 
     /// Tells that `node` holds a value its member refuses, with `code` (`INVALID_VALUE`, an
@@ -1103,6 +1374,10 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error size invalid value"]);
     /// ```
     pub fn refuse(&mut self, node: &Node<'_>, code: Code) {
+        let code = match self.member_rules(node).and_then(|rules| rules.invalid) {
+            Some(invalid) => Code::from(invalid),
+            None => code,
+        };
         self.fail(code, node.path.clone(), node.span());
     }
 
@@ -1117,7 +1392,7 @@ impl<'d> Read<'d> {
         let finding = finding.severity(grading.severity);
         self.failed |= grading.fails_owner;
         self.push(finding);
-        self.stopped = self.order == Order::Door;
+        self.stopped = self.profile.stops();
     }
 
     /// Tells that `node` holds a value of a JSON type its member does not take.
@@ -1142,6 +1417,9 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
+        if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
+            return self.fail(Code::from(code), node.path.clone(), node.span());
+        }
         let code = self.texts.wrong_type.map_or_else(
             || Code::from(&core_codes::INVALID_TYPE),
             |text| core_codes::INVALID_TYPE_WORDED.with([text]),
@@ -1174,6 +1452,12 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error root expected Object, found true"]);
     /// ```
     pub fn wrong_kind(&mut self, node: &Node<'_>, expected: Expected) {
+        if self
+            .member_rules(node)
+            .is_some_and(|rules| rules.wrong_type.is_some())
+        {
+            return self.wrong_type(node);
+        }
         match self.texts.wrong_kind {
             Some(WrongKind(word)) => {
                 let code = word(expected, node.value);
@@ -1328,6 +1612,12 @@ impl<'d> Read<'d> {
     /// as [`required`](Self::required) does: for a reader that found the member absent itself.
     pub fn missing_member(&mut self, members: &Members<'_>, key: &str) {
         self.missing(members, key);
+    }
+
+    /// Tells that the member `key` of `members` is required and missing, with `code` (a
+    /// field's `schema::missing`).
+    pub(crate) fn missing_member_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
+        self.fail(code, members.node.path.child(key), members.node.span());
     }
 
     /// Tells that the member `key` of `members` is required and missing.
@@ -1584,6 +1874,12 @@ impl<'d> Read<'d> {
         }
         read
     }
+}
+
+/// The address of a value, which names one node of a read (a transparent newtype or an
+/// `Option` reads the same node; an element or a member is another).
+fn address(value: &Value) -> usize {
+    std::ptr::from_ref(value).addr()
 }
 
 /// The byte range of `slice` in its file.

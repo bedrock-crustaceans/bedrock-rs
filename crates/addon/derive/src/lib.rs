@@ -223,7 +223,7 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   `schema::FromJson`: the object, then each member in file order by its JSON name, through
 ///   the field type's `FromJson` or its `schema::read_with`, an absent one by its declaration,
 ///   a failed one by the reading, the unknown ones by `schema::unknown`, an `extra: Extra` or
-///   `UnknownMembers` field and the reading) and the hidden `__read::Fields` (the same read
+///   `UnknownMembers` field and the reading) and the hidden `derive_support::Fields` (the same read
 ///   from an object it shares with a struct that flattens it); a transparent newtype reads as
 ///   its field;
 /// - on a unit-only enum: `ALL` (none with `schema::order = "game"`, where the enum states

@@ -29,7 +29,7 @@ mod scalars;
 pub(crate) mod untagged;
 
 use enums::walk_enum;
-pub(crate) use keep::door_unknown_members;
+pub(crate) use keep::{door_unknown_members, held_unknown_members};
 pub use keep::{
     keep_members, keep_members_and_range_members, keep_unknown_members, keep_unknown_members_with,
 };
@@ -170,6 +170,9 @@ pub(crate) struct Walk<'a, 'm, 'f> {
     rules: Option<ScalarRules>,
     /// Whether the walk without rules looks for misread scalars ([`WalkReport::misread`]).
     misreads: bool,
+    /// The `schema::unknown` of the field that holds the value walked, for the first object
+    /// below it (the bridge's read of a struct a derived field holds).
+    field_rule: Option<UnknownRule>,
 }
 
 impl<'a, 'm, 'f> Walk<'a, 'm, 'f> {
@@ -182,7 +185,14 @@ impl<'a, 'm, 'f> Walk<'a, 'm, 'f> {
             ranges: false,
             rules: None,
             misreads: false,
+            field_rule: None,
         }
+    }
+
+    /// The walk of a value held by a field that says `rule` (`schema::unknown`).
+    pub(crate) fn field_rule(mut self, rule: Option<UnknownRule>) -> Self {
+        self.field_rule = rule;
+        self
     }
 
     /// The walk of `json` as the shape of `target`, the value deserialised from it, with
@@ -244,7 +254,7 @@ impl<'a, 'm, 'f> Walk<'a, 'm, 'f> {
             rules: self.rules,
             scalars: Vec::new(),
             tell_misread: self.misreads,
-            field_rule: None,
+            field_rule: self.field_rule,
         };
         walk_value(self.shape, self.json, self.typed, &mut cursor, &mut out);
         WalkReport {
