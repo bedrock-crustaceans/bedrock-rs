@@ -9,14 +9,16 @@ use indexmap::{IndexMap, IndexSet};
 use super::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, Diagnostics, JsonPath, Location, Phase, Severity, builders,
+    Code, Diagnostic, Diagnostics, JsonPath, JsonPathSegment, Location, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::document::{Content, Document, JsonContent, Placed, Rejected};
-use bedrock_addon_core::json::jsoncpp::lenient::{root_end, skip_trivia, string_end};
-use bedrock_addon_core::json::{EncodeError, WriteStyle, strip_bom, write_json};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::parse::{Options, parse_partial};
+use bedrock_addon_core::json::{EncodeError, Winner, WriteStyle, strip_bom, write_json};
 use bedrock_addon_core::load::LoadContext;
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{FromJson, read_value};
 use bedrock_addon_shared_shapes::texture::files::{PackFiles, TEXTURE_SET, VERBATIM_OR_IMAGE};
 use bedrock_addon_shared_shapes::texture::image::ImageFormat;
 
@@ -74,13 +76,31 @@ pub enum TextureListMode {
     },
 }
 
-/// One top-level element of a list, as the scan of the text finds it.
-enum Element {
+/// One element of a list as the client keeps it: its text when it is a string; it skips any
+/// other value.
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet)]
+#[repr(u8)]
+pub(crate) enum Element {
+    /// A string.
     Text(String),
+    /// Any other value.
     Other,
 }
 
-/// What the scan of a list's text finds.
+impl FromJson for Element {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let text = node.value().as_string();
+        Some(text.map_or(Self::Other, |text| Self::Text(text.as_str().to_owned())))
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(Element);
+bedrock_addon_core::impl_no_molang!(Element);
+
+/// What the client's JSON library makes of a list's text.
 struct Scanned {
     root: TextureListRoot,
     elements: Vec<Element>,
@@ -90,114 +110,42 @@ struct Scanned {
     partial: bool,
 }
 
-/// The value that starts at `at`: its end, and its text when it is a string.
-fn value_at(text: &str, at: usize) -> Option<(usize, Element)> {
-    let rest = text.get(at..)?;
-    let end = at + root_end(rest)?;
-    let slice = text.get(at..end)?;
-    if slice.starts_with('"') {
-        return Some((
-            end,
-            Element::Text(bedrock_addon_core::json::parse::string_literal(slice)?),
-        ));
-    }
-    bedrock_addon_core::json::from_str_jsonc(slice).ok()?;
-    Some((end, Element::Other))
-}
-
-/// Reads `text` the way the client's JSON library leaves it: the top-level elements before
-/// the first error stay.
+/// Reads `text` the way the client's JSON library (jsoncpp's reader: comments, no trailing
+/// comma, the last of a repeated key) leaves it: what it read before the first error stays.
 ///
-/// The reader keeps what it read, and the failed element is appended as `null`.
+/// Of an array that breaks off, the element it broke off in is none of the list's: `partial`
+/// stands for it. Of an object, the member it broke off in is there, a `null`.
 fn scan(text: &str) -> Scanned {
-    let bytes = text.as_bytes();
-    let start = skip_trivia(bytes, 0);
-    let mut scanned = Scanned {
-        root: TextureListRoot::Invalid,
-        elements: Vec::new(),
-        malformed: true,
-        partial: false,
-    };
-    let (close, object) = match bytes.get(start) {
-        Some(b'[') => (b']', false),
-        Some(b'{') => (b'}', true),
-        _ => {
-            // A scalar root, `null`, or nothing readable.
-            if let Some((end, element)) = value_at(text, start) {
-                let literal = text.get(start..end).unwrap_or_default();
-                scanned.root = match element {
-                    Element::Other if literal == "null" => TextureListRoot::Null,
-                    _ => TextureListRoot::Scalar,
-                };
-                scanned.malformed = skip_trivia(bytes, end) < bytes.len();
-            }
-            return scanned;
+    let read = parse_partial(
+        text,
+        Options::winner(Winner::Last).without_trailing_commas(),
+    );
+    let value = &read.parsed.value;
+    let broke = read.fault.is_some();
+    let (root, elements) = if value.is_array() {
+        let mut elements = read_value::<Vec<Element>>(value).unwrap_or_default();
+        let broken = read.broken.as_ref().and_then(|path| path.segments().next());
+        if let Some(JsonPathSegment::Index(index)) = broken {
+            elements.truncate(index);
         }
-    };
-    scanned.root = if object {
-        TextureListRoot::Object
-    } else {
-        TextureListRoot::Array
-    };
-    let mut members: BTreeMap<Vec<u8>, Element> = BTreeMap::new();
-    let mut at = skip_trivia(bytes, start + 1);
-    let mut first = true;
-    let closed = loop {
-        if bytes.get(at) == Some(&close) && first {
-            break Some(at + 1);
-        }
-        let mut key = None;
-        if object {
-            // `"key" :`
-            let Some(end) = (bytes.get(at) == Some(&b'"'))
-                .then(|| string_end(bytes, at))
-                .flatten()
-            else {
-                break None;
-            };
-            let name = text.get(at..end).unwrap_or_default();
-            let Some(name) = bedrock_addon_core::json::parse::string_literal(name) else {
-                break None;
-            };
-            at = skip_trivia(bytes, end);
-            if bytes.get(at) != Some(&b':') {
-                // The member is there, with a `null` value.
-                members.insert(name.into_bytes(), Element::Other);
-                break None;
-            }
-            at = skip_trivia(bytes, at + 1);
-            key = Some(name.into_bytes());
-        }
-        let Some((end, element)) = value_at(text, at) else {
-            if let Some(key) = key {
-                members.insert(key, Element::Other);
-            }
-            break None;
-        };
-        match key {
-            // Of a repeated key the last value stands.
-            Some(key) => {
-                members.insert(key, element);
-            }
-            None => scanned.elements.push(element),
-        }
-        first = false;
-        at = skip_trivia(bytes, end);
-        match bytes.get(at) {
-            Some(b',') => at = skip_trivia(bytes, at + 1),
-            Some(byte) if *byte == close => break Some(at + 1),
-            _ => break None,
-        }
-    };
-    if object {
+        (TextureListRoot::Array, elements)
+    } else if value.is_object() {
         // `std::map` order: bytewise by key.
-        scanned.elements.extend(members.into_values());
+        let members = read_value::<BTreeMap<String, Element>>(value).unwrap_or_default();
+        (TextureListRoot::Object, members.into_values().collect())
+    } else if broke {
+        (TextureListRoot::Invalid, Vec::new())
+    } else if value.is_null() {
+        (TextureListRoot::Null, Vec::new())
+    } else {
+        (TextureListRoot::Scalar, Vec::new())
+    };
+    Scanned {
+        partial: broke && matches!(root, TextureListRoot::Array | TextureListRoot::Object),
+        malformed: broke || read.parsed.trailing.is_some(),
+        root,
+        elements,
     }
-    match closed {
-        Some(end) => scanned.malformed = skip_trivia(bytes, end) < bytes.len(),
-        None => scanned.partial = true,
-    }
-    scanned
 }
 
 /// The path of element `index`.

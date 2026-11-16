@@ -7,8 +7,11 @@
 //! which needs the packs' file listings and the layer paths of their texture sets; nothing of
 //! the texture set family itself.
 //!
-//! The reader stays a hand walk: the client keeps whatever its JSON library made of the file and
-//! validates nothing, so there is no schema to follow.
+//! The list is read as the client's JSON library leaves it, by `json::parse_partial` (what was
+//! read before a syntax error stays) under jsoncpp's dialect; its elements are read through
+//! the schema reader as a leaf (`list::Element`: a string's text, or a value the client
+//! skips), and the texture sets' layers by a derived `SetLayers`. The client validates
+//! nothing here: every finding is the crate's own lint over what was read.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -20,12 +23,13 @@ use indexmap::IndexMap;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::Document;
 
-use crate::list::PackLint;
+use crate::list::{Element, PackLint};
 use bedrock_addon_core::document::Origin;
 use bedrock_addon_core::document::unversioned;
 use bedrock_addon_core::json::jsoncpp::lenient::read_lenient;
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{Schema, read_value};
 use bedrock_addon_shared_shapes::texture::files::{
     IndexedFile, StackFiles, is_texture_file, listed_files,
 };
@@ -143,6 +147,14 @@ fn parse_walk_file(file: &WalkFile, _: &LoadContext) -> ListFileParsed {
     }
 }
 
+/// A texture set file as the client's scan reads it: the layers of `minecraft:texture_set`.
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
+struct SetLayers {
+    /// JSON `minecraft:texture_set`: each layer by its name.
+    #[facet(rename = "minecraft:texture_set")]
+    layers: Option<IndexMap<String, Element>>,
+}
+
 /// The image paths the layers of the texture set at `key` name: each string layer that is no
 /// hex colour, behind the set's folder. What the client's scan leaves out of its claims.
 fn layer_paths(key: &str, bytes: &[u8]) -> Vec<String> {
@@ -150,16 +162,14 @@ fn layer_paths(key: &str, bytes: &[u8]) -> Vec<String> {
     let Ok(read) = read_lenient(bytes) else {
         return Vec::new();
     };
-    let layers = read
-        .value
-        .as_object()
-        .and_then(|root| root.get("minecraft:texture_set"))
-        .and_then(bedrock_addon_core::json::Value::as_object);
+    let layers = read_value::<SetLayers>(&read.value).and_then(|set| set.layers);
     layers
         .into_iter()
         .flatten()
-        .filter_map(|(_, layer)| layer.as_string())
-        .map(facet_value::VString::as_str)
+        .filter_map(|(_, layer)| match layer {
+            Element::Text(layer) => Some(layer),
+            Element::Other => None,
+        })
         .filter(|layer| !layer.starts_with('#'))
         .map(|layer| format!("{folder}/{layer}"))
         .collect()
