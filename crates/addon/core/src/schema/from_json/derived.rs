@@ -684,6 +684,16 @@ impl<T> Slot<T> {
         None
     }
 
+    /// Whether the member of a field that `ends` its struct's read ends it: it failed, or it is
+    /// missing and was told so where a read in declared order asked for it.
+    pub fn ended(&self) -> bool {
+        match self.state {
+            State::Failed | State::Defaulted => true,
+            State::Absent => self.missing_told,
+            State::Null | State::Read(_) | State::Kept(_) => false,
+        }
+    }
+
     /// An `Option` field: the value, `None` when absent; a failed member is `None` where the
     /// reading resets it, else the owner fails.
     pub fn optional(self, read: &Read<'_>, ok: &mut bool) -> Option<T> {
@@ -713,7 +723,9 @@ impl<T> Slot<T> {
     /// (for a type of `kind`) and anything else by `with`. A value read is the field's, its
     /// findings told; a value that fails leaves the field absent and is kept as written
     /// ([`take_kept`](Self::take_kept)), its findings told when `told`, failing nothing. A
-    /// field that `reads_null` has a `null` read by `with` too, and kept when it fails.
+    /// field that `reads_null` has a `null` read by `with` too, and kept when it fails. A field
+    /// that `ends` its struct's read keeps only a value of another JSON kind than its type
+    /// takes: one of that kind that fails is a failure, told.
     #[allow(clippy::too_many_arguments)] // the derive's one call per field
     pub fn read_or_kept(
         &mut self,
@@ -723,6 +735,7 @@ impl<T> Slot<T> {
         kind: Kind,
         told: bool,
         reads_null: bool,
+        ends: bool,
         with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
     ) {
         if read.stopped() {
@@ -742,6 +755,12 @@ impl<T> Slot<T> {
             inner.read_option_with(node, &mut attempt, unknown, kind, with);
         }
         self.state = match inner.state {
+            State::Failed | State::Defaulted
+                if ends && kind.expected.is_some_and(|kind| kind.takes(node.value())) =>
+            {
+                read.commit(attempt);
+                State::Failed
+            }
             State::Failed | State::Defaulted => {
                 if told {
                     read.commit_findings(attempt);

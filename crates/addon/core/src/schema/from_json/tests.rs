@@ -1321,6 +1321,163 @@ fn a_dropping_list_names_the_elements_it_kept_as_the_file_has_them() {
     assert_eq!(at, ["list/1", "list/2"]);
 }
 
+/// A list a game reader iterates without a type test reads as jsoncpp iterates it and tells
+/// nothing of a member that is no array; the values an object gives are named by their keys for
+/// the findings told after the read.
+#[test]
+fn a_list_iterated_silently_names_an_object_s_values_by_their_keys() {
+    let element = |node: &Node<'_>, read: &mut Read<'_>| Part::from_json(node, read);
+    for text in ["3", "null", "\"x\""] {
+        let json: Value = from_str_jsonc(text).unwrap();
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::DOCUMENT, &mut found);
+        let node = Node::new(&json, JsonPath::of_keys(["list"]));
+        let list = crate::schema::read_iterated_silently(
+            &node,
+            &mut read,
+            crate::schema::ElementFailure::Drop,
+            element,
+        );
+        assert_eq!(list, Some(Vec::new()), "{text}");
+        drop(read);
+        assert!(found.is_empty(), "{text}");
+    }
+    let json: Value =
+        from_str_jsonc(r#"{"c": {"weight": 3}, "a": 7, "b": {"weight": 2}}"#).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let node = Node::new(&json, JsonPath::of_keys(["list"]));
+    let list = crate::schema::read_iterated_silently(
+        &node,
+        &mut read,
+        crate::schema::ElementFailure::Drop,
+        element,
+    );
+    let weights = list.map(|parts| parts.iter().map(|part| part.weight).collect::<Vec<_>>());
+    assert_eq!(weights, Some(vec![2, 3]));
+    for held in 0..2 {
+        read.findings_mut().push(
+            crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::INVALID_VALUE)
+                .at(JsonPath::of_keys(["list"]).index(held).child("weight")),
+        );
+    }
+    drop(read);
+    found.name_as_the_file_has_it();
+    let at: Vec<String> = found
+        .iter()
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(at, ["list/a", "list/b/weight", "list/c/weight"]);
+}
+
+/// A list that stops at its first failed element fails there, the elements after it unread.
+#[test]
+fn a_stopping_list_is_given_up_at_its_first_failed_element() {
+    let json: Value = from_str_jsonc(r#"[{"weight": 1}, 7, "x"]"#).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(lenient(), &mut found);
+    let node = Node::new(&json, JsonPath::of_keys(["list"]));
+    let list = crate::schema::read_list(
+        &node,
+        &mut read,
+        crate::schema::ElementFailure::Stop,
+        Part::from_json,
+    );
+    assert_eq!(list, None);
+    drop(read);
+    let told: Vec<String> = found
+        .iter()
+        .map(|f| f.location.json_path.to_string())
+        .collect();
+    assert_eq!(told, ["list/1"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Ended {
+    #[facet(schema::ends)]
+    first: String,
+    second: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct KeptOrEnded {
+    #[facet(schema::or_kept = "told", schema::ends)]
+    list: Option<Vec<u8>>,
+    after: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A member that `ends` its struct's read fails the struct where it fails or is told missing:
+/// nothing after it is read or told, the unknown members neither; with `or_kept` a value of
+/// another JSON kind than the type takes is kept, and one of that kind that fails ends the read.
+#[test]
+fn a_member_that_ends_the_read_fails_its_struct_there() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<Ended>(text, lenient().strict(), declared);
+    let (value, told) = read(r#"{"second": "x", "k": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Info root/first core/missing_required_field"]);
+    let (value, told) = read(r#"{"first": 3, "second": "x", "k": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Info root/first core/invalid_type"]);
+    let (value, told) = read(r#"{"first": "a", "second": "x", "k": 1}"#);
+    assert_eq!(
+        value.map(|v| (v.first, v.second)),
+        Some(("a".to_owned(), None))
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/second core/invalid_type",
+            "Warning root/k core/unrecognized_field"
+        ]
+    );
+    let read = |text: &str| read_as::<KeptOrEnded>(text, lenient().strict(), declared);
+    let (value, told) = read(r#"{"list": 3, "after": 1}"#);
+    let value = value.expect("read");
+    assert_eq!((value.list, value.after), (None, Some(1)));
+    assert_eq!(value.extra.get("list"), Some(&Value::from(3i64)));
+    assert_eq!(told, ["Info root/list core/invalid_type"]);
+    let (value, told) = read(r#"{"list": ["x"], "after": "y"}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Info root/list/0 core/invalid_type"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_members = name_rule)]
+struct Ruled {
+    name: Option<String>,
+    extra: crate::document::UnknownMembers,
+}
+
+fn name_rule(ruled: &mut Ruled, node: &Node<'_>, read: &mut Read<'_>) {
+    if ruled.name.as_deref() == Some("bad") {
+        read.push(
+            crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::INVALID_VALUE)
+                .severity(crate::diagnostic::Severity::Info)
+                .at(node.path().child("name")),
+        );
+    }
+}
+
+/// A struct's rule after its members (`schema::after_members`) runs on the value they built,
+/// before the unknown members a profile tells after them, which the value then keeps.
+#[test]
+fn a_rule_after_the_members_comes_before_the_unknown_members() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (value, told) = read_as::<Ruled>(r#"{"k": 1, "name": "bad"}"#, lenient(), declared);
+    let value = value.expect("read");
+    assert_eq!(value.extra.get("k"), Some(&Value::from(1i64)));
+    assert_eq!(
+        told,
+        [
+            "Info root/name core/invalid_value",
+            "Warning root/k core/unrecognized_field"
+        ]
+    );
+}
+
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "silent")]
 struct Quiet {

@@ -4,14 +4,16 @@ use std::collections::HashSet;
 
 use indexmap::IndexMap;
 
-use super::fields::{Fields, Written};
+use super::fields::Written;
 use super::{Emoticon, EmoticonList};
 use bedrock_addon_core::diagnostic::builders::{invalid, syntax};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::array;
-use bedrock_addon_core::json::kit::fixed_path::Authored;
+use bedrock_addon_core::json::kit::fixed_path::{Authored, strict_reader};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{ElementFailure, FromJson, read_document, read_list};
 
 /// A base-16 `strtol` narrowed to a 32-bit integer, as the game reads an emoticon code: white
 /// space, a sign and `0x` are skipped, the hex digits that follow are the number and the rest is
@@ -73,49 +75,55 @@ impl Emoticon {
     }
 }
 
+/// The elements of the root the game reads, each with its checks: a value that is no object, or
+/// whose `name` or `code` is no string, is skipped and told; the first entry of a name stands.
+struct Elements(Vec<Emoticon>);
+
+impl FromJson for Elements {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let mut seen: HashSet<String> = HashSet::new();
+        let list = read_list(node, read, ElementFailure::Drop, |element, read| {
+            let at = element.path();
+            let readable = element.value().as_object().is_some_and(|object| {
+                ["name", "code"]
+                    .into_iter()
+                    .all(|name| object.get(name).is_some_and(Value::is_string))
+            });
+            if !readable {
+                read.push(Diagnostic::info(invalid()).at(at.clone()));
+                return None;
+            }
+            let emoticon = Emoticon::from_json(element, read)?;
+            if emoticon.code_point().is_none() {
+                read.push(Diagnostic::info(invalid()).at(at.child("code")));
+            } else if !seen.insert(emoticon.name.clone()) {
+                // The first entry of a name stands.
+                read.push(Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("name")));
+            }
+            if !matchable(&emoticon.name) {
+                // A name that can never be matched in text.
+                read.push(Diagnostic::info(invalid()).at(at.child("name")));
+            }
+            Some(emoticon)
+        });
+        list.map(Self)
+    }
+}
+
 impl Authored for EmoticonList {
     /// Reads the file's root. A root that is no array has no emoticon.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
         let at = JsonPath::new();
-        let Some(elements) = root.as_array() else {
+        if !root.is_array() {
             // The game returns silently here, so the crate reports an information without the
             // "Malformed JSON" assert, which belongs to an empty file.
             diagnostics.push(Diagnostic::info(syntax("the root is not an array")).at(at));
             return Self::default();
-        };
-        let mut seen: HashSet<&str> = HashSet::new();
-        let mut list = Vec::new();
-        for (i, element) in elements.iter().enumerate() {
-            let at = at.index(i);
-            let mut fields = Fields::new(element, at.clone());
-            let (name, code) = (fields.raw("name"), fields.raw("code"));
-            let (Some(name), Some(code)) = (
-                name.and_then(Value::as_string),
-                code.and_then(Value::as_string),
-            ) else {
-                diagnostics.push(Diagnostic::info(invalid()).at(at));
-                continue;
-            };
-            let emoticon = Emoticon {
-                name: name.as_str().to_owned(),
-                code: code.as_str().to_owned(),
-                extra: fields.finish(diagnostics),
-            };
-            if emoticon.code_point().is_none() {
-                diagnostics.push(Diagnostic::info(invalid()).at(at.child("code")));
-            } else if !seen.insert(name.as_str()) {
-                // The first entry of a name stands.
-                diagnostics
-                    .push(Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("name")));
-            }
-            if !matchable(&emoticon.name) {
-                // A name that can never be matched in text.
-                diagnostics.push(Diagnostic::info(invalid()).at(at.child("name")));
-            }
-            list.push(emoticon);
         }
+        let mut read = strict_reader(diagnostics);
+        let elements = read_document::<Elements>(&Node::new(root, at), &mut read);
         Self {
-            emoticons: list,
+            emoticons: elements.map(|elements| elements.0).unwrap_or_default(),
             written: bedrock_addon_core::json::kit::Written::default(),
         }
     }

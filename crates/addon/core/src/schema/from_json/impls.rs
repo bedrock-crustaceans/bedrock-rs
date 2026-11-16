@@ -195,6 +195,9 @@ pub enum ElementFailure {
     /// The element is left out and the rest kept, whatever the reading: a game reader that
     /// skips an element it cannot read.
     Drop,
+    /// The list fails at its first failed element, and the elements after it are not read,
+    /// whatever the reading: a game reader that gives up the list there.
+    Stop,
 }
 
 impl ElementFailure {
@@ -202,6 +205,7 @@ impl ElementFailure {
     fn drops(self, read: &Read<'_>, node: &Node<'_>) -> bool {
         match self {
             Self::Drop => true,
+            Self::Stop => false,
             Self::ByReading => read.defaults_drop(node, true),
         }
     }
@@ -259,7 +263,8 @@ pub fn read_list<T>(
     }
     let elements = read.array(node)?;
     let drops = failure.drops(read, node);
-    let (out, kept) = read_elements(elements.iter(), read, drops, &mut element)?;
+    let stops = failure == ElementFailure::Stop;
+    let (out, kept) = read_elements(elements.iter(), read, drops, stops, &mut element)?;
     if let Some(kept) = kept {
         read.findings_mut().left_out(node.path(), &kept);
     }
@@ -268,12 +273,13 @@ pub fn read_list<T>(
 
 /// Each of `nodes` read by `element`, into a list: a failed one is told and the read goes on;
 /// one left out (`drops`, or failed without an error under a tree) fails nothing (the read is as
-/// failed as it was before the element). `None` when one failed or the read stopped; with the
+/// failed as it was before the element); one that `stops` the list ends it there. `None` when one failed or the read stopped; with the
 /// list, the indices of the elements kept once one is left out.
 fn read_elements<'v, T>(
     nodes: impl Iterator<Item = Node<'v>>,
     read: &mut Read<'_>,
     drops: bool,
+    stops: bool,
     element: &mut impl FnMut(&Node<'_>, &mut Read<'_>) -> Option<T>,
 ) -> Option<(Vec<T>, Option<Vec<usize>>)> {
     let mut out = Vec::new();
@@ -296,6 +302,7 @@ fn read_elements<'v, T>(
                 kept.get_or_insert_with(|| (0..index).collect());
                 read.set_failed(was_failed);
             }
+            None if stops => return None,
             None => failed = true,
         }
     }
@@ -311,7 +318,7 @@ pub fn read_iterated<T>(
     node: &Node<'_>,
     read: &mut Read<'_>,
     failure: ElementFailure,
-    mut element: impl FnMut(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    element: impl FnMut(&Node<'_>, &mut Read<'_>) -> Option<T>,
 ) -> Option<Vec<T>> {
     if read.stopped() {
         return None;
@@ -320,8 +327,22 @@ pub fn read_iterated<T>(
         return read_list(node, read, failure, element);
     }
     read.wrong_kind(node, Expected::Array);
+    read_iterated_silently(node, read, failure, element)
+}
+
+/// [`read_iterated`] with nothing told of a member that is no array: a game reader that iterates
+/// the member without a type test.
+pub fn read_iterated_silently<T>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    failure: ElementFailure,
+    mut element: impl FnMut(&Node<'_>, &mut Read<'_>) -> Option<T>,
+) -> Option<Vec<T>> {
     if read.stopped() {
         return None;
+    }
+    if node.value().is_array() {
+        return read_list(node, read, failure, element);
     }
     if !node.value().is_object() {
         return Some(Vec::new());
@@ -330,9 +351,19 @@ pub fn read_iterated<T>(
     let mut values: Vec<(&str, Node<'_>)> = members.iter().collect();
     values.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     let drops = failure.drops(read, node);
-    // The values are named by their keys: nothing to renumber.
+    let keys: Vec<&str> = values.iter().map(|(key, _)| *key).collect();
     let nodes = values.into_iter().map(|(_, at)| at);
-    read_elements(nodes, read, drops, &mut element).map(|(out, _)| out)
+    let stops = failure == ElementFailure::Stop;
+    let (out, kept) = read_elements(nodes, read, drops, stops, &mut element)?;
+    // The value held at an index is the member of its key: a finding told after the read at
+    // the index is named by the key.
+    let list = node.path();
+    let kept = kept.unwrap_or_else(|| (0..out.len()).collect());
+    for (now, was) in kept.into_iter().enumerate() {
+        read.findings_mut()
+            .held_at(list.child(keys[was]), list.index(now));
+    }
+    Some(out)
 }
 
 /// An array, each element read as `T` ([`read_each`]): a failed element fails the list (every

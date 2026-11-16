@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::ops::RangeInclusive;
 
 use super::codes;
-use super::fields::{Fields, Got, Written, real_value};
+use super::fields::{Written, real_value};
 use super::{
     BUILT_IN_FONTS, FontAlias, FontAliasRef, FontEntry, FontFormat, FontMetadata, FontRange,
     PageSpec,
@@ -15,18 +15,14 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{CodeDef, Diagnostic, Diagnostics, JsonPath};
 use bedrock_addon_core::json::Value;
 use bedrock_addon_core::json::build::array;
-use bedrock_addon_core::json::kit::fixed_path::{Authored, as_int, as_real, iterated};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, as_int, as_real, strict_reader};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{
+    ElementFailure, FromJson, read_document, read_each, read_iterated_silently, read_list,
+};
 
 /// The longest path the game's fixed buffers hold.
 const MAX_PATH: usize = 1023;
-
-fn missing(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
-    Diagnostic::of(line).at(at)
-}
-
-fn wrong_type(line: &'static CodeDef<0>, at: JsonPath) -> Diagnostic {
-    Diagnostic::of(line).at(at)
-}
 
 /// The game ignores a scale that is no JSON real (only a number written as a decimal counts)
 /// and resolves an unknown `font_reference` to an invalid font without a content-log line (its
@@ -39,6 +35,270 @@ fn silent(at: JsonPath) -> Diagnostic {
 /// The warning of a scale beyond a float, which is held as the largest finite float.
 pub(super) fn clamp_warning(at: JsonPath) -> Diagnostic {
     Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at)
+}
+
+/// An element of one of the lists, read as `T` when it is an object; any other value is an
+/// object without members to the game, so its first member, `first`, is missing (`code`).
+fn element<T: FromJson>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+    code: &'static CodeDef<0>,
+    first: &str,
+) -> Option<T> {
+    if node.value().is_object() {
+        return T::from_json(node, read);
+    }
+    read.push(Diagnostic::of(code).at(node.path().child(first)));
+    None
+}
+
+/// `fonts`: iterated without a type test, an entry the game skips left out.
+pub(super) fn fonts(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<FontEntry>> {
+    read_iterated_silently(node, read, ElementFailure::Drop, |entry, read| {
+        element(entry, read, &codes::NO_FORMAT, "font_format")
+    })
+}
+
+/// `font_aliases`: iterated without a type test, an alias the game drops left out.
+pub(super) fn aliases(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<FontAlias>> {
+    read_iterated_silently(node, read, ElementFailure::Drop, |alias, read| {
+        element(alias, read, &codes::NO_ALIAS, "alias")
+    })
+}
+
+/// An alias's `fonts`: a non-empty array, given up at its first font the game cannot take.
+pub(super) fn alias_fonts(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<FontAliasRef>> {
+    let Some(elements) = node.value().as_array() else {
+        read.push(Diagnostic::of(&codes::ALIAS_FONTS).at(node.path().clone()));
+        return None;
+    };
+    if elements.is_empty() {
+        read.push(Diagnostic::info(invalid()).at(node.path().clone()));
+        return None;
+    }
+    read_list(node, read, ElementFailure::Stop, |font, read| {
+        element(font, read, &codes::NO_REFERENCE, "font_reference")
+    })
+}
+
+/// A path that fits the game's buffer; a longer one is left empty (told by the entry's rule).
+pub(super) fn path(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    let text = node.value().as_string()?.as_str();
+    (text.len() <= MAX_PATH).then(|| text.to_owned())
+}
+
+/// A member the game tests with `isDouble`: a number written as a decimal (a `null` is no value
+/// and told nothing). A number beyond a float reads as the largest finite float of its sign, so
+/// that no infinity is held (and none fails the writer), told by a finding of its own.
+// What the game makes of such a scale is not observable, so it is clamped the same way as
+// every other number beyond a float.
+pub(super) fn real(node: &Node<'_>, read: &mut Read<'_>) -> Option<f64> {
+    if node.value().is_null() {
+        return None;
+    }
+    let Some(number) = as_real(node.value()) else {
+        read.push(silent(node.path().clone()));
+        return None;
+    };
+    let limit = f64::from(f32::MAX);
+    if (-limit..=limit).contains(&number) {
+        return Some(number);
+    }
+    read.push(clamp_warning(node.path().clone()));
+    Some(limit.copysign(number))
+}
+
+/// `font_language_code`: a string; another value but `null` is told (and read as the empty
+/// code by the font's rule).
+pub(super) fn language_code(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    if let Some(code) = node.value().as_string() {
+        return Some(code.as_str().to_owned());
+    }
+    if !node.value().is_null() {
+        read.push(Diagnostic::of(&codes::LANGUAGE_CODE).at(node.path().clone()));
+    }
+    None
+}
+
+/// `font_ranges`: an array whose every range has integer bounds (each other one told, and the
+/// alias then dropped); a value that is no array is told unless it is `null`, and the font kept
+/// without ranges.
+pub(super) fn ranges(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<FontRange>> {
+    if node.value().is_array() {
+        return read_each(node, read, FontRange::from_json);
+    }
+    if !node.value().is_null() {
+        read.push(Diagnostic::of(&codes::RANGES).at(node.path().clone()));
+    }
+    None
+}
+
+/// One range: `first` and `last` integers; its other members are not read.
+impl FromJson for FontRange {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let bound = |name: &str| node.value().as_object()?.get(name).and_then(as_int);
+        if let (Some(first), Some(last)) = (bound("first"), bound("last")) {
+            return Some(Self { first, last });
+        }
+        read.push(Diagnostic::of(&codes::RANGE_BOUNDS).at(node.path().clone()));
+        None
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(FontRange, PageSpec);
+bedrock_addon_core::impl_no_molang!(FontRange, PageSpec);
+
+/// One element of `generate_pages_on_start`: a page number, a range of exactly its two bounds,
+/// or anything else kept as written (the game skips it, or reads a range with other members
+/// beside its bounds as the range).
+impl FromJson for PageSpec {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let element = node.value();
+        let at = node.path();
+        if let Some(page) = as_int(element) {
+            return Some(Self::Page(page));
+        }
+        let Some(object) = element.as_object() else {
+            read.push(Diagnostic::of(&codes::PAGES_FORMAT).at(at.clone()));
+            return Some(Self::Other(element.clone()));
+        };
+        let bound = |name: &str| object.get(name).and_then(as_int);
+        let (Some(first_page), Some(last_page)) = (bound("first_page"), bound("last_page")) else {
+            // A bound that is no integer.
+            read.push(Diagnostic::info(invalid()).at(at.clone()));
+            return Some(Self::Other(element.clone()));
+        };
+        if first_page > last_page {
+            // The range holds no page.
+            read.push(Diagnostic::info(invalid()).at(at.clone()));
+        }
+        Some(if object.len() == 2 {
+            Self::Range {
+                first_page,
+                last_page,
+            }
+        } else {
+            // A range with other members is kept as written; it reads as the range.
+            Self::Other(element.clone())
+        })
+    }
+}
+
+/// The checks the game runs as it binds an entry's members, which the typed or kept members
+/// alone do not say, in its order; then `generate_pages_on_start`, read here after them
+/// (`schema::after_members` of [`FontEntry`]).
+pub(super) fn entry_rules(entry: &mut FontEntry, node: &Node<'_>, read: &mut Read<'_>) {
+    let at = node.path();
+    let format = entry.format();
+    if format.is_none() {
+        read.push(Diagnostic::info(invalid()).at(at.child("font_format")));
+    }
+    // A member kept as written is one the typed field cannot say.
+    let kept = |name: &str| entry.extra.get(name);
+    if kept("lowPerformanceCompatible").is_some() {
+        read.push(Diagnostic::info(invalid()).at(at.child("lowPerformanceCompatible")));
+    }
+    for name in ["ascii_font_file", "unicode_file_prefix", "font_file"] {
+        // A text kept is too long for the game's buffer: the game leaves the path empty.
+        if kept(name).is_some_and(Value::is_string) {
+            read.push(Diagnostic::info(invalid()).at(at.child(name)));
+        }
+    }
+    match format {
+        Some(FontFormat::Bitmap)
+            if entry.ascii_font_file.is_none() && entry.unicode_file_prefix.is_none() =>
+        {
+            read.push(Diagnostic::of(&codes::NO_BITMAP_FILE).at(at.clone()));
+        }
+        Some(FontFormat::Ttf | FontFormat::TtfMsdf) if entry.font_file.is_none() => {
+            read.push(Diagnostic::of(&codes::NO_TTF_FILE).at(at.child("font_file")));
+        }
+        Some(FontFormat::Msdf) if entry.font_file.is_none() => {
+            read.push(Diagnostic::of(&codes::NO_MSDF_FILE).at(at.child("font_file")));
+        }
+        _ => {}
+    }
+    let true_type = matches!(format, Some(FontFormat::Ttf | FontFormat::TtfMsdf));
+    if true_type && kept("version").is_some() {
+        read.push(Diagnostic::info(invalid()).at(at.child("version")));
+    }
+    if format == Some(FontFormat::Ttf)
+        && (kept("target_font_render_size").is_some()
+            || entry
+                .target_font_render_size
+                .is_some_and(|size| !(1..=255).contains(&size)))
+    {
+        read.push(Diagnostic::info(invalid()).at(at.child("target_font_render_size")));
+    }
+    let pages = read
+        .object(node)
+        .and_then(|members| members.get("generate_pages_on_start"));
+    if let Some(pages) = pages {
+        if pages.value().is_array() {
+            entry.generate_pages_on_start = read_each(&pages, read, PageSpec::from_json);
+        } else {
+            // The whole member is ignored.
+            entry.generate_pages_on_start = None;
+            read.push(Diagnostic::info(invalid()).at(pages.path().clone()));
+            let kept = pages.value().clone();
+            entry
+                .extra
+                .insert("generate_pages_on_start".to_owned(), kept);
+        }
+    }
+}
+
+/// A code of another type than a string (`null` aside) is the empty code to the game
+/// (`schema::after_read` of [`FontAliasRef`]).
+pub(super) fn reference_rules(font: &mut FontAliasRef, _: &Node<'_>, _: &mut Read<'_>) {
+    let coerced = font
+        .extra
+        .get("font_language_code")
+        .is_some_and(|code| !code.is_null());
+    if font.font_language_code.is_none() && coerced {
+        font.font_language_code = Some(String::new());
+    }
+}
+
+/// A font name written twice, told at the later entry, after both lists are read and before the
+/// unknown members of the file (`schema::after_members` of [`FontMetadata`]).
+pub(super) fn font_names(metadata: &mut FontMetadata, node: &Node<'_>, read: &mut Read<'_>) {
+    let fonts = node.path().child("fonts");
+    let mut names: HashSet<&str> = HashSet::new();
+    for (i, font) in metadata.fonts.iter().flatten().enumerate() {
+        if !names.insert(&font.font_name) {
+            // Named at the entry's place in the file.
+            let at = fonts.index(i).child("font_name");
+            read.push(Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at));
+        }
+    }
+}
+
+/// The alias checks, in the order the game registers the aliases, after the unknown members of
+/// the file; `version` is the file's, no member the value keeps (`schema::after_read` of
+/// [`FontMetadata`]).
+pub(super) fn alias_names(metadata: &mut FontMetadata, node: &Node<'_>, read: &mut Read<'_>) {
+    metadata.extra.remove("version");
+    let aliases_at = node.path().child("font_aliases");
+    let mut names: HashSet<&str> = metadata
+        .fonts
+        .iter()
+        .flatten()
+        .map(|font| font.font_name.as_str())
+        .collect();
+    for (i, alias) in metadata.font_aliases.iter().flatten().enumerate() {
+        let at = aliases_at.index(i);
+        for (j, font) in alias.fonts.iter().enumerate() {
+            let name = font.font_reference.as_str();
+            if !names.contains(name) && !BUILT_IN_FONTS.contains(&name) {
+                // The reference resolves to no font.
+                read.push(silent(at.child("fonts").index(j).child("font_reference")));
+            }
+        }
+        if !names.insert(&alias.alias) {
+            read.push(Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("alias")));
+        }
+    }
 }
 
 impl FontFormat {
@@ -151,86 +411,6 @@ impl FontEntry {
             .collect()
     }
 
-    /// Reads one element of `fonts`; `None` for an entry the game skips.
-    fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
-        let mut fields = Fields::new(element, at.clone());
-        let Some(font_format) = fields.string("font_format").into_typed() else {
-            diagnostics.push(missing(&codes::NO_FORMAT, fields.path("font_format")));
-            return None;
-        };
-        let Some(font_name) = fields.string("font_name").into_typed() else {
-            diagnostics.push(missing(&codes::NO_NAME, fields.path("font_name")));
-            return None;
-        };
-        let format = FontFormat::from_name(&font_format);
-        if format.is_none() {
-            diagnostics.push(Diagnostic::info(invalid()).at(fields.path("font_format")));
-        }
-        let low = fields.get("lowPerformanceCompatible", Value::as_bool);
-        if low.is_other(true) {
-            diagnostics
-                .push(Diagnostic::info(invalid()).at(fields.path("lowPerformanceCompatible")));
-        }
-        let mut path = |fields: &mut Fields<'_>, name: &'static str| {
-            let text = fields.string(name).into_typed()?;
-            if text.len() > MAX_PATH {
-                // The game leaves the path empty.
-                diagnostics.push(Diagnostic::info(invalid()).at(fields.path(name)));
-                fields.keep(name);
-                return None;
-            }
-            Some(text)
-        };
-        let ascii_font_file = path(&mut fields, "ascii_font_file");
-        let unicode_file_prefix = path(&mut fields, "unicode_file_prefix");
-        let font_file = path(&mut fields, "font_file");
-        match format {
-            Some(FontFormat::Bitmap)
-                if ascii_font_file.is_none() && unicode_file_prefix.is_none() =>
-            {
-                diagnostics.push(missing(&codes::NO_BITMAP_FILE, at.clone()));
-            }
-            Some(FontFormat::Ttf | FontFormat::TtfMsdf) if font_file.is_none() => {
-                diagnostics.push(missing(&codes::NO_TTF_FILE, fields.path("font_file")));
-            }
-            Some(FontFormat::Msdf) if font_file.is_none() => {
-                diagnostics.push(missing(&codes::NO_MSDF_FILE, fields.path("font_file")));
-            }
-            _ => {}
-        }
-        let true_type = matches!(format, Some(FontFormat::Ttf | FontFormat::TtfMsdf));
-        let version = fields.int("version");
-        if true_type && version.is_other(true) {
-            diagnostics.push(Diagnostic::info(invalid()).at(fields.path("version")));
-        }
-        let size = fields.int("target_font_render_size");
-        if format == Some(FontFormat::Ttf) {
-            match &size {
-                Got::Other(_) => diagnostics
-                    .push(Diagnostic::info(invalid()).at(fields.path("target_font_render_size"))),
-                Got::Typed(size) if !(1..=255).contains(size) => {
-                    diagnostics.push(
-                        Diagnostic::info(invalid()).at(fields.path("target_font_render_size")),
-                    );
-                }
-                _ => {}
-            }
-        }
-        let generate_pages_on_start = read_pages(&mut fields, diagnostics);
-        Some(Self {
-            font_format,
-            font_name,
-            low_performance_compatible: low.into_typed(),
-            generate_pages_on_start,
-            ascii_font_file,
-            unicode_file_prefix,
-            font_file,
-            version: version.into_typed(),
-            target_font_render_size: size.into_typed(),
-            extra: fields.finish(diagnostics),
-        })
-    }
-
     fn to_value(&self) -> Value {
         let text = |text: &Option<String>| text.as_deref().map(Value::from);
         let mut object = Written::default();
@@ -276,123 +456,7 @@ impl PageSpec {
     }
 }
 
-/// The `generate_pages_on_start` member.
-fn read_pages(fields: &mut Fields<'_>, diagnostics: &mut Diagnostics) -> Option<Vec<PageSpec>> {
-    let at = fields.path("generate_pages_on_start");
-    let pages = fields.get("generate_pages_on_start", |member| {
-        member.as_array().map(|elements| {
-            elements
-                .iter()
-                .enumerate()
-                .map(|(i, element)| {
-                    let at = at.index(i);
-                    read_page(element, at, diagnostics)
-                })
-                .collect::<Vec<_>>()
-        })
-    });
-    if pages.is_other(true) {
-        // The whole member is ignored.
-        diagnostics.push(Diagnostic::info(invalid()).at(at));
-    }
-    pages.into_typed()
-}
-
-fn read_page(element: &Value, at: JsonPath, diagnostics: &mut Diagnostics) -> PageSpec {
-    if let Some(page) = as_int(element) {
-        return PageSpec::Page(page);
-    }
-    if !element.is_object() {
-        diagnostics.push(Diagnostic::of(&codes::PAGES_FORMAT).at(at));
-        return PageSpec::Other(element.clone());
-    }
-    let bound = |name: &str| element.as_object()?.get(name).and_then(as_int);
-    let only_bounds = element.as_object().is_some_and(|object| object.len() == 2);
-    match (bound("first_page"), bound("last_page")) {
-        (Some(first_page), Some(last_page)) if only_bounds => {
-            if first_page > last_page {
-                // The range holds no page.
-                diagnostics.push(Diagnostic::info(invalid()).at(at));
-            }
-            PageSpec::Range {
-                first_page,
-                last_page,
-            }
-        }
-        (Some(first_page), Some(last_page)) => {
-            // A range with other members is kept as written; it reads as the range.
-            if first_page > last_page {
-                diagnostics.push(Diagnostic::info(invalid()).at(at));
-            }
-            PageSpec::Other(element.clone())
-        }
-        _ => {
-            // A bound that is no integer.
-            diagnostics.push(Diagnostic::info(invalid()).at(at));
-            PageSpec::Other(element.clone())
-        }
-    }
-}
-
 impl FontAliasRef {
-    /// Reads one element of an alias's `fonts`; `None` when the game drops the whole alias
-    /// entry.
-    fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
-        let mut fields = Fields::new(element, at.clone());
-        let Some(font_reference) = fields.string("font_reference").into_typed() else {
-            diagnostics.push(missing(&codes::NO_REFERENCE, fields.path("font_reference")));
-            return None;
-        };
-        let ranges_at = fields.path("font_ranges");
-        let mut bad_bound = false;
-        let ranges = fields.get("font_ranges", |member| {
-            let elements = member.as_array()?;
-            let mut ranges = Vec::with_capacity(elements.len());
-            for (i, element) in elements.iter().enumerate() {
-                let bound = |name: &str| element.as_object()?.get(name).and_then(as_int);
-                if let (Some(first), Some(last)) = (bound("first"), bound("last")) {
-                    ranges.push(FontRange { first, last });
-                } else {
-                    let at = ranges_at.index(i);
-                    diagnostics.push(wrong_type(&codes::RANGE_BOUNDS, at));
-                    bad_bound = true;
-                }
-            }
-            Some(ranges)
-        });
-        if bad_bound {
-            return None;
-        }
-        if ranges.is_other(false) {
-            // The font is kept without ranges.
-            diagnostics.push(wrong_type(&codes::RANGES, ranges_at));
-        }
-        let code = fields.string("font_language_code");
-        let coerced = code.is_other(false);
-        if coerced {
-            // The font is kept with the code "".
-            diagnostics.push(wrong_type(
-                &codes::LANGUAGE_CODE,
-                fields.path("font_language_code"),
-            ));
-        }
-        let (scale, clamped) = fields.real("font_scale");
-        if clamped {
-            // A number beyond a float is held at the float's width and told by a finding of its
-            // own, which the information for a scale that is no decimal is not.
-            diagnostics.push(clamp_warning(fields.path("font_scale")));
-        } else if scale.is_other(false) {
-            diagnostics.push(silent(fields.path("font_scale")));
-        }
-        Some(Self {
-            font_reference,
-            font_language_code: code.into_typed().or(coerced.then(String::new)),
-            font_ranges: ranges.into_typed(),
-            font_scale: scale.into_typed(),
-            extra: fields.finish(diagnostics),
-        })
-    }
-
     fn to_value(&self) -> Value {
         let mut object = Written::default();
         object.put(
@@ -425,41 +489,6 @@ impl FontAliasRef {
 }
 
 impl FontAlias {
-    /// Reads one element of `font_aliases`; `None` for an alias the game drops.
-    fn read(element: &Value, at: &JsonPath, diagnostics: &mut Diagnostics) -> Option<Self> {
-        let mut fields = Fields::new(element, at.clone());
-        let Some(alias) = fields.string("alias").into_typed() else {
-            diagnostics.push(missing(&codes::NO_ALIAS, fields.path("alias")));
-            return None;
-        };
-        let fonts_at = fields.path("fonts");
-        let Some(elements) = fields.raw("fonts").and_then(Value::as_array) else {
-            diagnostics.push(wrong_type(&codes::ALIAS_FONTS, fonts_at));
-            return None;
-        };
-        if elements.is_empty() {
-            diagnostics.push(Diagnostic::info(invalid()).at(fonts_at));
-            return None;
-        }
-        let mut fonts = Vec::with_capacity(elements.len());
-        for (i, element) in elements.iter().enumerate() {
-            let at = fonts_at.index(i);
-            fonts.push(FontAliasRef::read(element, &at, diagnostics)?);
-        }
-        let (scale, clamped) = fields.real("font_scale_factor_override");
-        if clamped {
-            diagnostics.push(clamp_warning(fields.path("font_scale_factor_override")));
-        } else if scale.is_other(false) {
-            diagnostics.push(silent(fields.path("font_scale_factor_override")));
-        }
-        Some(Self {
-            alias,
-            fonts,
-            font_scale_factor_override: scale.into_typed(),
-            extra: fields.finish(diagnostics),
-        })
-    }
-
     fn to_value(&self) -> Value {
         let mut object = Written::default();
         object.put("alias", Some(Value::from(self.alias.as_str())));
@@ -488,69 +517,8 @@ impl FontMetadata {
 impl Authored for FontMetadata {
     /// Reads the root of a file whose version is supported.
     fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
-        let mut fields = Fields::new(root, JsonPath::new());
-        fields.raw("version");
-        // Both lists are iterated without a type test: an object gives its member values.
-        // Each entry held with its place in the file.
-        let fonts = fields.raw("fonts").map(|member| {
-            iterated(member, &fields.at.child("fonts"))
-                .into_iter()
-                .filter_map(|(at, element)| {
-                    let font = FontEntry::read(element, &at, diagnostics)?;
-                    Some((at, font))
-                })
-                .collect::<Vec<_>>()
-        });
-        let font_aliases = fields.raw("font_aliases").map(|member| {
-            iterated(member, &fields.at.child("font_aliases"))
-                .into_iter()
-                .filter_map(|(at, element)| {
-                    let alias = FontAlias::read(element, &at, diagnostics)?;
-                    Some((at, alias))
-                })
-                .collect::<Vec<_>>()
-        });
-        let mut names: HashSet<String> = HashSet::new();
-        for (at, font) in fonts.iter().flatten() {
-            if !names.insert(font.font_name.clone()) {
-                // A repeated font name, reported at the entry's place in the file.
-                diagnostics.push(
-                    Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("font_name")),
-                );
-            }
-        }
-        let metadata = Self {
-            fonts: fonts.map(|fonts| fonts.into_iter().map(|(_, font)| font).collect()),
-            font_aliases: None,
-            extra: fields.finish(diagnostics),
-            written: bedrock_addon_core::json::kit::Written::default(),
-        };
-        // The alias checks run in the order the game registers the aliases.
-        let mut aliases = Vec::new();
-        if let Some(read) = &font_aliases {
-            for (at, alias) in read {
-                for (i, font) in alias.fonts.iter().enumerate() {
-                    let name = font.font_reference.as_str();
-                    if !names.contains(name) && !BUILT_IN_FONTS.contains(&name) {
-                        // The reference resolves to no font.
-                        let at = at.child("fonts").index(i);
-                        diagnostics.push(silent(at.child("font_reference")));
-                    }
-                }
-                if !names.insert(alias.alias.clone()) {
-                    diagnostics.push(
-                        Diagnostic::of(&core_codes::FONT_NAME_OVERRIDDEN).at(at.child("alias")),
-                    );
-                }
-            }
-            aliases = read.iter().map(|(_, alias)| alias.clone()).collect();
-        }
-        let has_aliases = font_aliases.is_some();
-        drop(names);
-        Self {
-            font_aliases: has_aliases.then_some(aliases),
-            ..metadata
-        }
+        let mut read = strict_reader(diagnostics);
+        read_document(&Node::new(root, JsonPath::new()), &mut read).unwrap_or_default()
     }
 
     /// The lists as the JSON object they are written as, with `"version": 1`.
@@ -653,7 +621,10 @@ mod tests {
     fn an_alias_font_without_a_reference_is_dropped() {
         let root = read(br#"{ "font_scale": 1.0 }"#).expect("JSON");
         let mut diagnostics = Diagnostics::default();
-        assert!(FontAliasRef::read(&root, &JsonPath::new(), &mut diagnostics).is_none());
+        let mut reader = strict_reader(&mut diagnostics);
+        let node = Node::new(&root, JsonPath::new());
+        assert!(read_document::<FontAliasRef>(&node, &mut reader).is_none());
+        drop(reader);
         assert_eq!(diagnostics.len(), 1);
     }
 

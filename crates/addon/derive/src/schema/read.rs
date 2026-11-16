@@ -101,6 +101,18 @@ fn has_extra(fields: &Fields) -> bool {
         .any(|field| named(&field.ty, "UnknownMembers"))
 }
 
+/// The field that holds the kept unknown members (an `UnknownMembers` field that is not
+/// `skip`), by its member.
+fn extra_member(infos: &[FieldInfo]) -> Option<TokenStream> {
+    infos
+        .iter()
+        .find(|info| !taken(info) && !info.attrs.skip)
+        .map(|info| {
+            let member = &info.member;
+            quote!(#member)
+        })
+}
+
 /// Whether `info` is the read's to take: not an `UnknownMembers` field (it holds the unknown
 /// members).
 fn taken(info: &FieldInfo) -> bool {
@@ -582,7 +594,8 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
                 quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json)
             });
             let reads_null = info.attrs.reads_null.is_some();
-            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #reads_null, #with);)
+            let ends = info.attrs.ends.is_some();
+            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #reads_null, #ends, #with);)
         }
         // An iterated list reads a `null` as a value that is no array, a `reads_null` field as
         // a value.
@@ -704,6 +717,7 @@ fn fields_body(
     infos: &[FieldInfo],
     rule: Option<&String>,
     quiet: &[String],
+    after_members: Option<&syn::Expr>,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -795,6 +809,16 @@ fn fields_body(
             let slot = format_ident!("__f{}", index_of(info));
             quote!(|| ::core::matches!(#slot, ::core::option::Option::Some(::core::option::Option::None)))
         })
+        // A member that `ends` the read, once it failed or was told missing.
+        .chain(
+            infos
+                .iter()
+                .filter(|info| info.attrs.ends.is_some() && taken(info) && !info.inline)
+                .map(|info| {
+                    let slot = format_ident!("__s{}", index_of(info));
+                    quote!(|| #slot.ended())
+                }),
+        )
         .collect::<Vec<_>>();
     let (give_up, unknown_last, abandon) = if abandoned.is_empty() {
         (quote!(), quote!(), quote!())
@@ -804,6 +828,7 @@ fn fields_body(
             quote!(let __abandoned = false #(#abandoned)*;),
             quote!(if __abandoned {
                 __object.abandon();
+                __ok = false;
             }),
         )
     };
@@ -813,6 +838,77 @@ fn fields_body(
         quote! {
             if !__abandoned {
                 #reader::read_unknown_last(__object, __read, __unknown, &__declared, #unknown_member);
+            }
+        }
+    };
+    let ending = match after_members {
+        None => quote! {
+            #unknown_after
+            // Under the game's schema tree an error raised while the members were read fails the
+            // struct, and its missing members are then not told.
+            let mut __ok = __object.settle(__read);
+            #abandon
+            #(#flattened)*
+            #(#finishes)*
+            if !__ok {
+                return ::core::option::Option::None;
+            }
+            ::core::option::Option::Some(#build)
+        },
+        Some(rule) => {
+            // The value is built and its rule run before the unknown members told after the
+            // members, which the value's own field then takes.
+            let (later_decl, later_arg, later_take) = match extra_member(infos) {
+                Some(member) => {
+                    let core = core();
+                    (
+                        quote!(let mut __later = #core::document::UnknownMembers::default();),
+                        quote!(::core::option::Option::Some(&mut __later)),
+                        quote! {
+                            if let ::core::option::Option::Some(__built) = &mut __built {
+                                __built.#member.extend(__later.iter().map(|(__key, __value)| {
+                                    (
+                                        ::std::borrow::ToOwned::to_owned(__key),
+                                        ::core::clone::Clone::clone(__value),
+                                    )
+                                }));
+                            }
+                        },
+                    )
+                }
+                None => (quote!(), quote!(::core::option::Option::None), quote!()),
+            };
+            let later_member = self::unknown_member(&later_arg, quiet);
+            let unknown_after = if abandoned.is_empty() {
+                quote!(#reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);)
+            } else {
+                quote! {
+                    if !__abandoned {
+                        #reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);
+                    }
+                }
+            };
+            quote! {
+                let mut __ok = __object.settle(__read);
+                #abandon
+                #(#flattened)*
+                #(#finishes)*
+                let mut __built = if __ok {
+                    (|| ::core::option::Option::Some(#build))()
+                } else {
+                    ::core::option::Option::None
+                };
+                if let ::core::option::Option::Some(__built) = &mut __built {
+                    (#rule)(__built, __object.node(), __read);
+                }
+                #later_decl
+                #unknown_after
+                #later_take
+                // Under the game's schema tree an error raised by an unknown member fails it too.
+                if !__object.settle(__read) {
+                    return ::core::option::Option::None;
+                }
+                __built
             }
         }
     };
@@ -847,17 +943,7 @@ fn fields_body(
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
         #unknown_last
-        #unknown_after
-        // Under the game's schema tree an error raised while the members were read fails the
-        // struct, and its missing members are then not told.
-        let mut __ok = __object.settle(__read);
-        #abandon
-        #(#flattened)*
-        #(#finishes)*
-        if !__ok {
-            return ::core::option::Option::None;
-        }
-        ::core::option::Option::Some(#build)
+        #ending
     }
 }
 
@@ -1029,6 +1115,7 @@ pub(super) fn struct_read(
         infos,
         container.unknown.as_ref(),
         &container.quiet,
+        container.after_members.as_ref().map(|(rule, _)| rule),
     );
     quote! {
         #[automatically_derived]
@@ -1316,6 +1403,7 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         variant.fields,
         variant.unknown.as_ref(),
         &[],
+        None,
     );
     quote! {
         #[allow(unused_variables, unused_mut, clippy::too_many_lines)]

@@ -640,6 +640,18 @@ impl Expected {
             Self::Bool => "bool",
         }
     }
+
+    /// Whether `value` is of this JSON kind.
+    #[must_use]
+    pub fn takes(self, value: &Value) -> bool {
+        match self {
+            Self::Object => value.is_object(),
+            Self::Array => value.is_array(),
+            Self::String => value.is_string(),
+            Self::Number => value.is_number(),
+            Self::Bool => value.is_bool(),
+        }
+    }
 }
 
 /// How a [`Read`] tells: how many failures, in which order it reads an object's members, where

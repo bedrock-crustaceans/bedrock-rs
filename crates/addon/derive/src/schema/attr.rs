@@ -213,6 +213,8 @@ pub(crate) struct FieldAttrs {
     pub iterated: Option<Span>,
     /// `schema::drop`: a failed element is left out alone, the rest of the list kept.
     pub drop: Option<Span>,
+    /// `schema::ends`: a member that fails or is missing ends the read of its struct there.
+    pub ends: Option<Span>,
     /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
     pub reads_null: Option<Span>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
@@ -238,6 +240,9 @@ pub(crate) struct ContainerAttrs {
     pub rule: Option<(Expr, Span)>,
     /// `schema::after_read = path`: a rule over the value the read has just built.
     pub after_read: Option<(Expr, Span)>,
+    /// `schema::after_members = path`: a rule over the value built from the members, before the
+    /// unknown members told after them.
+    pub after_members: Option<(Expr, Span)>,
     /// `schema::quiet = [..]`: the unknown members the read keeps and tells nothing of.
     pub quiet: Vec<String>,
     /// `schema::trigger`: the struct is an event trigger itself.
@@ -282,6 +287,7 @@ const FIELD_KEYS: &[&str] = &[
     "finite",
     "iterated",
     "drop",
+    "ends",
     "reads_null",
     "or_kept",
     "low_code",
@@ -293,7 +299,14 @@ const FIELD_KEYS: &[&str] = &[
 ];
 const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
-const STRUCT_KEYS: &[&str] = &["rule", "after_read", "quiet", "trigger", "arity"];
+const STRUCT_KEYS: &[&str] = &[
+    "rule",
+    "after_read",
+    "after_members",
+    "quiet",
+    "trigger",
+    "arity",
+];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -672,6 +685,7 @@ impl FieldAttrs {
                     "finite" => once(&mut out.finite, span, &key, span, errors),
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
                     "drop" => once(&mut out.drop, span, &key, span, errors),
+                    "ends" => once(&mut out.ends, span, &key, span, errors),
                     "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
                     "members" => {
                         let names = member_names(entry)?;
@@ -822,6 +836,17 @@ impl ContainerAttrs {
                             &mut out.after_read,
                             (expr, entry.span),
                             "after_read",
+                            entry.span,
+                            errors,
+                        );
+                    })
+                }
+                Some("after_members") if place == Place::Struct => {
+                    value_expr(entry, "after_members").map(|expr| {
+                        once(
+                            &mut out.after_members,
+                            (expr, entry.span),
+                            "after_members",
                             entry.span,
                             errors,
                         );

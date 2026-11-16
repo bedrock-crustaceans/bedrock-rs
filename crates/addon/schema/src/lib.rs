@@ -122,6 +122,11 @@ facet::define_attr_grammar! {
         /// typed value in the check (a `SchemaCx`, no JSON); this one runs in the read, with the
         /// object as written, in the order the read tells and in the phase it is given.
         AfterRead(arbitrary),
+        /// `after_members = path` (compile-time, on a struct): `after_read` run earlier, on the
+        /// value built from the members, before the unknown members a profile tells after them
+        /// (and only when the value is built): the checks a game's reader runs as it binds the
+        /// members, which come before the crate's word on the members it never reads.
+        AfterMembers(arbitrary),
         /// `trigger` (marker, on a struct): the struct is an event trigger itself (an entity's
         /// `on_*` component, `{event, filters, target}`): its trigger member is its own path,
         /// beside those of its fields.
@@ -198,6 +203,13 @@ facet::define_attr_grammar! {
         /// element: the game reads each element by itself and skips the one it cannot take. The
         /// file's later elements are named by the places they have in the file.
         Drop,
+        /// `ends` (marker): a member that fails to read, or a required one told missing where a
+        /// read in declared order asks for it, ends the read of its struct there: nothing after
+        /// it is read or told, its unknown members neither, and the struct fails, as a game reader
+        /// that gives up an element at its first bad member. With `or_kept`, a value of the JSON
+        /// kind the field's type takes that fails ends the read; one of another kind is kept as
+        /// written.
+        Ends,
         /// `reads_null` (marker, an `Option` field): a `null` member is a value like any other,
         /// read by the field's type (or `read_with`) as `Some`, where the reading's null rule
         /// would make it `None`: the game's reader asks for the member and takes what is there

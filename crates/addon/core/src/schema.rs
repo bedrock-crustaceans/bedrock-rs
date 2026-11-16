@@ -63,7 +63,8 @@ pub use from_json::FromMembers;
 pub use from_json::derived as derive_support;
 pub use from_json::{
     ElementFailure, FromJson, KeyPattern, Keys, MapKey, from_value, from_value_ref, read_document,
-    read_each, read_entries, read_iterated, read_keyed, read_later, read_list, read_value,
+    read_each, read_entries, read_iterated, read_iterated_silently, read_keyed, read_later,
+    read_list, read_value,
 };
 // hidden: emitted by the schema derives
 #[doc(hidden)]
