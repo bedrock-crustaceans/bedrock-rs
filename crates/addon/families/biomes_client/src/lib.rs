@@ -4,12 +4,15 @@
 //! has no version, is merged over the whole stack, and still overrides the water and fog a
 //! client biome sets.
 //!
-//! The reader stays a hand walk over the merged JSON, as the game reads it after its own merge
-//! strategy: no schema stands behind it. The walk reads with the reader kit
-//! (`json::kit`), every finding an information; the merge itself is the game's, by hand.
+//! The merge is the game's, by hand, over the packs' raw JSON (it acts on which members a file
+//! writes, not on their values), and so are the checks of each file against what the lower
+//! files merged to. Each entry of the merged JSON is then read by the derived reader (a private
+//! `Entry`, mapped into [`LegacyClientBiome`], whose old-style fog is built from four members
+//! behind a flag), every finding an information.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+use facet::Facet;
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
 
@@ -19,18 +22,20 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, Diagnostics, JsonPath, Phase, Severity, builders,
 };
 use bedrock_addon_core::document::{
-    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected, VersionInfo,
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+    UnknownMembers, VersionInfo,
 };
 use bedrock_addon_core::id::{BiomeId, FogId};
-use bedrock_addon_core::json::kit::{Members, Node, Read};
+use bedrock_addon_core::json::kit::{Members, Node, Profile, Read};
 use bedrock_addon_core::json::{
     EncodeError, PrepareError, Prepared, Value, WriteStyle, last_wins, write_json,
 };
 use bedrock_addon_core::load::{Accept, CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
-use bedrock_addon_core::schema::UnknownRule;
+use bedrock_addon_core::schema::derive_support::Fields;
+use bedrock_addon_core::schema::{self, Schema, UnknownRule};
 use bedrock_addon_core::version::SemVersion;
-use bedrock_addon_core::versioning::{MemberFailure, Reading};
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading, Scalars};
 
 use bedrock_addon_shared_shapes::color::hex_bytes;
 use bedrock_addon_support::biome_json::child;
@@ -43,20 +48,6 @@ const BIOMES: &str = "biomes";
 const DEFAULT: &str = "default";
 /// From this world base-game version on, the base-game packs' files are not read.
 const STOP_LOADING_VANILLA: SemVersion = SemVersion::new(1, 21, 40);
-/// Every member the game reads of an entry, in the merge or from the merged value (it looks
-/// at no other key).
-const MEMBERS: [&str; 10] = [
-    "water_surface_color",
-    "water_surface_transparency",
-    "fog_identifier",
-    "inherit_from_prior_fog",
-    "remove_all_prior_fog",
-    "fog_ids_to_merge",
-    "make_back_compat_fog",
-    "fog_color",
-    "water_fog_color",
-    "water_fog_distance",
-];
 /// The old-style fog members the merge keeps out of an entry that names a fog.
 const OLD_FOG: [&str; 3] = ["fog_color", "water_fog_color", "water_fog_distance"];
 
@@ -338,20 +329,28 @@ impl Notes<'_> {
             .push(Diagnostic::info(code).in_file(self.origin).at(at));
     }
 
-    /// A read with the reader kit under [`READING`], every finding an information in this
+    /// A read under [`READING`], in declaration order, every finding an information in this
     /// file.
     fn read<T>(&mut self, read: impl FnOnce(&mut Read<'_>) -> T) -> T {
         let mut found = Diagnostics::default();
-        let value = read(&mut Read::new(READING, &mut found).unknown_severity(Severity::Info));
+        let value = read(
+            &mut Read::new(READING, &mut found)
+                .profile(Profile::DECLARED_ORDER)
+                .unknown_severity(Severity::Info),
+        );
         found.locate(self.origin);
         self.diagnostics.extend(found);
         value
     }
 }
 
-/// How the kit reads the files and the merged value: a `null` member is absent, and a member of
-/// the wrong type is an information (the member reads as absent; the game says nothing).
-const READING: Reading = Reading::NULL_ABSENT.with_on_member_failure(MemberFailure::DefaultAndTell);
+/// How the files and the merged value are read: a `null` member is absent, told nothing; a
+/// scalar is read as written; and a member of the wrong type is an information (the member reads
+/// as absent; the game says nothing).
+const READING: Reading = Reading::NULL_ABSENT
+    .with_null(NullHandling::AbsentSilently)
+    .with_scalars(Scalars::Strict)
+    .with_on_member_failure(MemberFailure::DefaultAndTell);
 
 /// The member `key` of `members`, at its path through [`child`] (a key of digits is an index).
 fn member<'v>(members: &Members<'v>, key: &str, value: &'v Value) -> Node<'v> {
@@ -500,7 +499,7 @@ fn check_copy(file: &VObject, below: &VObject, read: &mut Read<'_>) {
             continue;
         };
         for (name, value) in entry.as_object().into_iter().flatten() {
-            if !MEMBERS.contains(&name.as_str()) {
+            if !Entry::knows(name) {
                 read.unknown_member(&member(&members, name, value), UnknownRule::Keep);
             }
         }
@@ -581,83 +580,88 @@ pub(crate) fn merge(copies: Vec<BiomesCopy>) -> Merged<LegacyClientBiomes, RawLa
 
 // ---- reading the merged value --------------------------------------------------------------
 
-/// `"#RRGGBB"` as RGBA from 0 to 1 (the form of every vanilla file).
-fn color(text: &str) -> Option<[f32; 4]> {
-    hex_bytes::<3>(text).map(|[r, g, b]| [unit(r), unit(g), unit(b), 1.0])
+/// One entry as written: every member the game reads of it, in the merge or from the merged
+/// value (it looks at no other key), those of the merged value in the order it reads them (the
+/// findings follow this order, not the members'), mapped into [`LegacyClientBiome`].
+#[derive(Debug, Default, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct Entry {
+    #[facet(schema::read_with = color)]
+    water_surface_color: Option<[f32; 4]>,
+    #[facet(schema::read_with = color)]
+    fog_color: Option<[f32; 4]>,
+    #[facet(schema::read_with = color)]
+    water_fog_color: Option<[f32; 4]>,
+    #[facet(schema::read_with = transparency)]
+    water_surface_transparency: Option<f32>,
+    #[facet(schema::read_with = float)]
+    water_fog_distance: Option<f32>,
+    /// An element of the wrong type is dropped alone.
+    #[facet(default, schema::drop)]
+    fog_ids_to_merge: Vec<FogId>,
+    #[facet(default)]
+    make_back_compat_fog: bool,
+    /// One of another type is silently none.
+    #[facet(schema::or_kept = "silent")]
+    fog_identifier: Option<FogId>,
+    /// The merge's alone.
+    #[facet(default, schema::read_with = schema::read_later)]
+    inherit_from_prior_fog: bool,
+    #[facet(default, schema::read_with = schema::read_later)]
+    remove_all_prior_fog: bool,
+    /// The members the read takes no value from.
+    rest: UnknownMembers,
 }
 
-/// The colour `key`: absent, or `"#RRGGBB"`; anything else is of the wrong type.
-fn color_of(read: &mut Read<'_>, members: &Members<'_>, key: &str) -> Option<[f32; 4]> {
-    let node = read.opt(members, key)?;
-    let color = color(read.string(&node)?);
+/// `"#RRGGBB"` as RGBA from 0 to 1 (the form of every vanilla file); anything else is of the
+/// wrong type.
+fn color(node: &Node<'_>, read: &mut Read<'_>) -> Option<[f32; 4]> {
+    let color =
+        hex_bytes::<3>(read.string(node)?).map(|[r, g, b]| [unit(r), unit(g), unit(b), 1.0]);
     if color.is_none() {
-        read.wrong_type(&node);
+        read.wrong_type(node);
     }
     color
 }
 
-/// The number `key`, read as a float.
-fn number_of(read: &mut Read<'_>, members: &Members<'_>, key: &str) -> Option<(f32, JsonPath)> {
-    let node = read.opt(members, key)?;
+/// A number, read as a float (beyond a float, the infinity it is).
+fn float(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
     #[allow(
         clippy::cast_possible_truncation,
         reason = "the game reads the member as a float"
     )]
-    read.number(&node)
-        .map(|number| (number as f32, node.path().clone()))
+    read.number(node).map(|number| number as f32)
 }
 
-/// Reads one entry of the merged value. The findings follow this order, not the members'.
-fn read_entry(read: &mut Read<'_>, members: &Members<'_>) -> LegacyClientBiome {
-    let water_surface_color = color_of(read, members, "water_surface_color");
-    let fog_color = color_of(read, members, "fog_color");
-    let water_fog_color = color_of(read, members, "water_fog_color");
-    // A value outside [0, 1] is clamped (the game does it silently).
-    let water_surface_transparency =
-        number_of(read, members, "water_surface_transparency").map(|(value, at)| {
-            if !(0.0..=1.0).contains(&value) {
-                read.push(Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at));
-            }
-            value.clamp(0.0, 1.0)
-        });
-    let water_fog_distance = number_of(read, members, "water_fog_distance").map(|(value, _)| value);
-    let mut fog_ids_to_merge = Vec::new();
-    if let Some(node) = read.opt(members, "fog_ids_to_merge")
-        && let Some(ids) = read.array(&node)
-    {
-        // An element of the wrong type is dropped alone.
-        for id in ids.iter() {
-            if let Some(id) = read.string(&id) {
-                fog_ids_to_merge.push(FogId::parse(id));
-            }
-        }
+/// A float clamped to `[0, 1]` (the game does it silently).
+fn transparency(node: &Node<'_>, read: &mut Read<'_>) -> Option<f32> {
+    let value = float(node, read)?;
+    if !(0.0..=1.0).contains(&value) {
+        read.push(Diagnostic::of(&core_codes::CLAMPED_VALUE).at(node.path().clone()));
     }
-    let back_compat = read
-        .opt(members, "make_back_compat_fog")
-        .and_then(|node| read.bool(&node))
-        .unwrap_or(false);
-    let old_fog = back_compat.then(|| OldFog {
-        fog_color,
-        water_fog_color,
-        water_fog_distance,
-        // A fog identifier without a namespace gets `minecraft:`; one of another type is
-        // silently none.
-        fog_identifier: members
-            .get("fog_identifier")
-            .and_then(|node| node.value().as_string())
-            .map(|id| {
-                if id.as_str().contains(':') {
-                    FogId::parse(id.as_str())
-                } else {
-                    FogId::parse(format!("minecraft:{}", id.as_str()))
-                }
+    Some(value.clamp(0.0, 1.0))
+}
+
+impl From<Entry> for LegacyClientBiome {
+    fn from(entry: Entry) -> Self {
+        Self {
+            old_fog: entry.make_back_compat_fog.then(|| OldFog {
+                fog_color: entry.fog_color,
+                water_fog_color: entry.water_fog_color,
+                water_fog_distance: entry.water_fog_distance,
+                // A fog identifier without a namespace gets `minecraft:`.
+                fog_identifier: entry.fog_identifier.map(|id| {
+                    if id.as_str().contains(':') {
+                        id
+                    } else {
+                        FogId::parse(format!("minecraft:{}", id.as_str()))
+                    }
+                }),
             }),
-    });
-    LegacyClientBiome {
-        old_fog,
-        fog_ids_to_merge,
-        water_surface_color,
-        water_surface_transparency,
+            fog_ids_to_merge: entry.fog_ids_to_merge,
+            water_surface_color: entry.water_surface_color,
+            water_surface_transparency: entry.water_surface_transparency,
+        }
     }
 }
 
@@ -682,10 +686,9 @@ fn read(
                     origin,
                     diagnostics,
                 };
-                let Some(read) = notes.read(|read| {
-                    let members = read.object(&node)?;
-                    Some(read_entry(read, &members))
-                }) else {
+                let Some(read) =
+                    notes.read(|read| schema::read_document::<Entry>(&node, read).map(Into::into))
+                else {
                     continue;
                 };
                 if key == DEFAULT {
