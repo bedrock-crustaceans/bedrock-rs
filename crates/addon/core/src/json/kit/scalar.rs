@@ -294,10 +294,11 @@ impl Read<'_> {
             .member_rules(node)
             .and_then(|rules| rules.negative)
             .filter(|_| i < 0)
+            .and_then(|code| self.member_code(code))
         else {
             return false;
         };
-        self.refuse(node, Code::from(code));
+        self.refuse(node, code);
         true
     }
 

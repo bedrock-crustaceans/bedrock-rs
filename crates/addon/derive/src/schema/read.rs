@@ -625,7 +625,7 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
     let code = |code: &Option<(syn::Expr, proc_macro2::Span)>| {
         code.as_ref().map_or_else(
             || quote!(::core::option::Option::None),
-            |(expr, _)| quote!(::core::option::Option::Some(&#expr)),
+            |(expr, _)| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
         )
     };
     let (wrong_type, missing, invalid, negative) = (

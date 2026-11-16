@@ -1,0 +1,19 @@
+error[E0080]: evaluation panicked: a member's code takes no argument or one, the read's subject (`Read::subject`)
+ --> tests/ui/schema/member_code_arity.rs:8:17
+  |
+8 | #[derive(Facet, Schema)]
+  |                 ^^^^^^ evaluation of `<Coded as bedrock_addon_core::schema::derive_support::Fields>::read_fields::__RULES` failed inside this call
+  |
+note: inside `bedrock_addon_core::schema::derive_support::MemberCode::of::<2>`
+ --> $RUST/core/src/panic.rs
+  |
+  |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+  |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+  |
+ ::: $WORKSPACE/crates/addon/core/src/schema/from_json/derived.rs
+  |
+  | /         assert!(
+  | |             N <= 1,
+  | |             "a member's code takes no argument or one, the read's subject (`Read::subject`)"
+  | |         );
+  | |_________- in this macro invocation

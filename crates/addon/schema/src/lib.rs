@@ -154,7 +154,11 @@ facet::define_attr_grammar! {
         /// its value is optional in the type: absence is a missing required member.
         Required,
         /// `wrong_type = CODE` (compile-time, a `CodeDef<0>` by its path): the code a value of
-        /// the wrong JSON type is told under at the member, in place of the read's.
+        /// the wrong JSON type is told under at the member, in place of the read's. This key,
+        /// `missing`, `invalid` and `negative` also take a `CodeDef<1>`, fed the read's subject
+        /// (`Read::subject`: the block an entry is read for, the file a document is in); a read
+        /// that names none tells its own code there, and a code of more arguments does not
+        /// compile.
         WrongType(arbitrary),
         /// `missing = CODE` (compile-time): the code the member is told missing under.
         Missing(arbitrary),

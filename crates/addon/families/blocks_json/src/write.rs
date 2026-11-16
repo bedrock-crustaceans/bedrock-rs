@@ -7,20 +7,17 @@ use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value, WriteStyle, write_json};
 
 impl BlocksJson {
-    /// The file: every entry in order, with `format_version`, when the file has one, after
-    /// `format_version_index` of them (after the last one when there are fewer). An entry
-    /// named `format_version` has no place in the file and is not written.
+    /// The file: `format_version` first, when the file has one, as vanilla's files have it,
+    /// then every entry in order. An entry named `format_version` has no place in the file and
+    /// is not written.
     fn document(&self) -> Result<Value, EncodeError> {
-        // Not core's `write_envelope`: the version is one member among the block keys, at
-        // the place it was read, not an envelope around one payload.
+        // Not core's `write_envelope`: the version is one member among the block keys, not an
+        // envelope around one payload.
         let mut object = VObject::new();
-        let version_at = self.format_version_index.min(self.entries.len());
-        for (index, (name, value)) in self.entries.iter().enumerate() {
-            if index == version_at
-                && let Some(version) = &self.format_version
-            {
-                object.insert("format_version", version.clone());
-            }
+        if let Some(version) = &self.format_version {
+            object.insert("format_version", version.clone());
+        }
+        for (name, value) in &self.entries {
             if name == "format_version" {
                 let at = JsonPath::new().child(name);
                 return Err(EncodeError::NotRepresentable {
@@ -29,11 +26,6 @@ impl BlocksJson {
                 });
             }
             object.insert(name.as_str(), value.clone());
-        }
-        if version_at == self.entries.len()
-            && let Some(version) = &self.format_version
-        {
-            object.insert("format_version", version.clone());
         }
         Ok(object.into())
     }

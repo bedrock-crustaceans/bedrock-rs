@@ -1025,6 +1025,9 @@ pub struct Read<'d> {
     /// The phase every finding of the read is told in, where it is not the default
     /// ([`phase`](Self::phase)).
     phase: Option<Phase>,
+    /// What the document is read for, fed to a field's code of one argument
+    /// ([`subject`](Self::subject)).
+    subject: Option<&'d str>,
     /// The format version the document is written at, for the members a struct reads from a
     /// version on ([`format`](Self::format)).
     format: Option<crate::version::FormatVersion>,
@@ -1083,6 +1086,7 @@ impl<'d> Read<'d> {
             findings: Sink::Borrowed(findings),
             rewrite_note: None,
             phase: None,
+            subject: None,
             format: None,
             failed: false,
             profile: Profile::EVERY_FAILURE,
@@ -1142,6 +1146,53 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The read naming `subject` (the block an entry is read for, the file a document is in) in
+    /// every code of one argument a field states for its member: `schema::wrong_type`,
+    /// `missing`, `invalid` or `negative` given a `CodeDef<1>`. A read without a subject tells
+    /// its own code where a field states one of those (a code of no argument is told either
+    /// way).
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::json::{Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// let json: Value = from_str_jsonc("{}").unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let read = Read::new(Reading::DOCUMENT, &mut found).subject("minecraft:stone");
+    /// assert_eq!(read.subject_text(), Some("minecraft:stone"));
+    /// ```
+    #[must_use]
+    pub fn subject(mut self, subject: &'d str) -> Self {
+        self.subject = Some(subject);
+        self
+    }
+
+    /// What the document is read for ([`subject`](Self::subject)), for a leaf that words its
+    /// own finding with it.
+    pub fn subject_text(&self) -> Option<&'d str> {
+        self.subject
+    }
+
+    /// The code `code` tells under this read: fed the subject when it takes one, `None` when it
+    /// does and the read names none.
+    pub(crate) fn member_code(
+        &self,
+        code: crate::schema::derive_support::MemberCode,
+    ) -> Option<Code> {
+        code.code(self.subject)
+    }
+
+    /// The code the field whose member is `node` states for a value its type refuses
+    /// (`schema::invalid`), fed the read's subject; `None` where it states none, or one of one
+    /// argument and the read has no subject. For a leaf that tells its refusal at the code's own
+    /// severity, as the game logs it, where [`refuse`](Self::refuse) grades it by the reading.
+    pub fn invalid_code(&self, node: &Node<'_>) -> Option<Code> {
+        self.member_rules(node)
+            .and_then(|rules| rules.invalid)
+            .and_then(|code| self.member_code(code))
+    }
+
     /// The profile the read tells by.
     pub fn telling(&self) -> Profile {
         self.profile
@@ -1197,6 +1248,7 @@ impl<'d> Read<'d> {
             findings: Sink::Owned(Diagnostics::default()),
             rewrite_note: self.rewrite_note,
             phase: self.phase,
+            subject: self.subject,
             format: self.format,
             failed: false,
             profile: self.profile,
@@ -1821,10 +1873,7 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error size invalid value"]);
     /// ```
     pub fn refuse(&mut self, node: &Node<'_>, code: Code) {
-        let code = match self.member_rules(node).and_then(|rules| rules.invalid) {
-            Some(invalid) => Code::from(invalid),
-            None => code,
-        };
+        let code = self.invalid_code(node).unwrap_or(code);
         self.fail(code, node.path.clone(), node.span());
     }
 
@@ -1871,8 +1920,12 @@ impl<'d> Read<'d> {
     /// told ([`Texts::wrong_at`]). One word for every wrong type of the member, a refused `null`
     /// included.
     pub(crate) fn worded_wrong_type(&self, node: &Node<'_>) -> Option<Code> {
-        if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
-            return Some(Code::from(code));
+        if let Some(code) = self
+            .member_rules(node)
+            .and_then(|rules| rules.wrong_type)
+            .and_then(|code| self.member_code(code))
+        {
+            return Some(code);
         }
         let WrongAt(word) = self.texts.wrong_at?;
         Some(word(&node.path))
@@ -1933,7 +1986,9 @@ impl<'d> Read<'d> {
     pub fn wrong_kind(&mut self, node: &Node<'_>, expected: Expected) {
         if self
             .member_rules(node)
-            .is_some_and(|rules| rules.wrong_type.is_some())
+            .and_then(|rules| rules.wrong_type)
+            .and_then(|code| self.member_code(code))
+            .is_some()
         {
             return self.wrong_type(node);
         }

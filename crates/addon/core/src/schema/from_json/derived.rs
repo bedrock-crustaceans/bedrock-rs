@@ -10,7 +10,7 @@ use facet::{Facet, Type, UserType};
 
 use super::FromJson;
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail};
+use crate::diagnostic::{Code, CodeDef, CodeMeta, Diagnostic, DiagnosticDetail};
 use crate::document::UnknownMembers;
 use crate::json::NULL_MEMBER_READ_AS_ABSENT;
 use crate::json::Token;
@@ -469,20 +469,60 @@ enum State<T> {
     Kept(crate::json::Value),
 }
 
+/// The code a field states for one of its member's findings (`schema::wrong_type`, `missing`,
+/// `invalid`, `negative`): a `CodeDef<0>`, told as it is, or a `CodeDef<1>`, fed the read's
+/// subject ([`Read::subject`]: the block an entry is read for, the file a document is in).
+#[derive(Clone, Copy, Debug)]
+pub struct MemberCode {
+    meta: &'static CodeMeta,
+    /// The code's one argument is the read's subject.
+    fed: bool,
+}
+
+impl MemberCode {
+    /// The code of `def`, of no argument or of one, the read's subject.
+    ///
+    /// # Panics
+    ///
+    /// When `def` takes more than one argument: at compile time, in the `static` the derive
+    /// emits for the field.
+    #[must_use]
+    pub const fn of<const N: usize>(def: &'static CodeDef<N>) -> Self {
+        assert!(
+            N <= 1,
+            "a member's code takes no argument or one, the read's subject (`Read::subject`)"
+        );
+        Self {
+            meta: def.meta(),
+            fed: N == 1,
+        }
+    }
+
+    /// The code told, fed `subject` when it takes one; `None` for a code of one argument where
+    /// the read names no subject: the read's own code is told then.
+    pub(crate) fn code(self, subject: Option<&str>) -> Option<Code> {
+        match (self.fed, subject) {
+            (false, _) => Some(Code::of_meta(self.meta, Box::new([]))),
+            (true, Some(subject)) => Some(Code::of_meta(self.meta, Box::new([subject.to_owned()]))),
+            (true, None) => None,
+        }
+    }
+}
+
 /// What a field says of its member's findings and numbers (`schema::wrong_type`, `missing`,
 /// `invalid`, `finite`): the codes in place of the read's, at the member itself (not at a
 /// value inside it), and whether a float beyond its width reads as its largest finite value.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MemberRules {
     /// The code of a value of the wrong JSON type at the member.
-    pub wrong_type: Option<&'static CodeDef<0>>,
+    pub wrong_type: Option<MemberCode>,
     /// The code of the member missing.
-    pub missing: Option<&'static CodeDef<0>>,
+    pub missing: Option<MemberCode>,
     /// The code of a value the member's type refuses.
-    pub invalid: Option<&'static CodeDef<0>>,
+    pub invalid: Option<MemberCode>,
     /// The code of a negative whole number given to an unsigned integer member, in place of the
     /// wrong type the strict profiles tell and the invalid value the converting one does.
-    pub negative: Option<&'static CodeDef<0>>,
+    pub negative: Option<MemberCode>,
     /// A number beyond the member's float reads as its largest finite value of that sign.
     pub finite: bool,
 }
@@ -610,8 +650,12 @@ impl<T> Slot<T> {
 
     /// Tells the member `key` missing, under the field's own code when it has one.
     fn tell_missing(&self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
-        match self.rules.and_then(|rules| rules.missing) {
-            Some(code) => read.missing_member_as(&object.members, key, Code::from(code)),
+        match self
+            .rules
+            .and_then(|rules| rules.missing)
+            .and_then(|code| read.member_code(code))
+        {
+            Some(code) => read.missing_member_as(&object.members, key, code),
             None => read.missing_member(&object.members, key),
         }
     }

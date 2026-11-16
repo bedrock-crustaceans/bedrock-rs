@@ -29,7 +29,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `trigger` | (marker) | stored as `()` | `#[derive(Schema)]` on a struct: it is an event trigger itself |
 | `foreign_event` | (marker) | stored as `()` | `#[derive(Schema)]` |
 | `required` | (marker) | stored as `()` | `#[derive(Schema)]` on an `Option` field |
-| `wrong_type`, `missing`, `invalid`, `negative` | a `Code` path | compile-time | `#[derive(Schema)]`: the code a wrong type, a missing member, a refused value or a negative number is told under |
+| `wrong_type`, `missing`, `invalid`, `negative` | a `CodeDef<0>` or `CodeDef<1>` path | compile-time | `#[derive(Schema)]`: the code a wrong type, a missing member, a refused value or a negative number is told under; a `CodeDef<1>` is fed the read's subject (`Read::subject`: the block, the file), and a read without one tells its own code |
 | `finite` | (marker) | stored as `()` | `#[derive(Schema)]` on a float field |
 | `iterated` | (marker) | stored as `()` | `#[derive(Schema)]` on a list field |
 | `drop` | (marker) | stored as `()` | `#[derive(Schema)]` on a list field: a failed element is left out alone |

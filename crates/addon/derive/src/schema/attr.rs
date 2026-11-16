@@ -192,7 +192,9 @@ pub(crate) struct FieldAttrs {
     /// `schema::required`: an `Option` field the document must write.
     pub required: Option<Span>,
     /// The read's codes: `schema::wrong_type`, `schema::missing`, `schema::invalid`,
-    /// `schema::negative`.
+    /// `schema::negative`; each a `CodeDef<0>`, or a `CodeDef<1>` fed the read's subject
+    /// (`Read::subject`), emitted as `MemberCode::of(&CODE)` (a code of more arguments fails
+    /// to compile there).
     pub wrong_type: Option<(Expr, Span)>,
     pub missing: Option<(Expr, Span)>,
     pub invalid: Option<(Expr, Span)>,

@@ -1142,6 +1142,84 @@ fn a_null_a_member_refuses_is_told_under_its_wrong_type_code() {
     assert_eq!(told, ["Error root/count core/dropped_field"]);
 }
 
+static WRONG_OF: crate::diagnostic::CodeDef<1> = crate::diagnostic::CodeDef::new(
+    "test/wrong_of",
+    crate::diagnostic::Kind::WrongType,
+    crate::diagnostic::Class::Error,
+    "a wrong type in {}",
+);
+static MISSING_OF: crate::diagnostic::CodeDef<1> = crate::diagnostic::CodeDef::new(
+    "test/missing_of",
+    crate::diagnostic::Kind::MissingRequired,
+    crate::diagnostic::Class::Error,
+    "a missing member in {}",
+);
+static INVALID_OF: crate::diagnostic::CodeDef<1> = crate::diagnostic::CodeDef::new(
+    "test/invalid_of",
+    crate::diagnostic::Kind::InvalidValue,
+    crate::diagnostic::Class::Error,
+    "an invalid value in {}",
+);
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Subjected {
+    #[facet(schema::wrong_type = WRONG_OF)]
+    count: Option<u8>,
+    #[facet(schema::missing = MISSING_OF)]
+    name: String,
+    #[facet(schema::invalid = INVALID_OF)]
+    bound: Option<Bound>,
+    #[facet(schema::wrong_type = crate::diagnostic::codes::DROPPED_FIELD)]
+    plain: Option<u8>,
+}
+
+/// Reads `text` as `Subjected` for `subject`: each finding as `path code text`.
+fn read_for(text: &str, subject: Option<&str>) -> Vec<String> {
+    let json = from_str_jsonc(text).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    if let Some(subject) = subject {
+        read = read.subject(subject);
+    }
+    let value = Subjected::from_json(&Node::new(&json, JsonPath::of_keys(["root"])), &mut read);
+    assert!(value.is_none());
+    read.finish();
+    found
+        .iter()
+        .map(|f| format!("{} {} {}", f.location.json_path, f.code.id(), f.code))
+        .collect()
+}
+
+/// A field's code of one argument is fed the read's subject; a read that names none tells its
+/// own code there, and a code of no argument is told either way.
+#[test]
+fn a_member_code_of_one_argument_is_fed_the_read_s_subject() {
+    let text = r#"{"count": "3", "bound": "neither", "plain": "4"}"#;
+    assert_eq!(
+        read_for(text, Some("minecraft:stone")),
+        [
+            "root/count test/wrong_of a wrong type in minecraft:stone",
+            "root/bound test/invalid_of an invalid value in minecraft:stone",
+            "root/plain core/dropped_field field dropped",
+            "root/name test/missing_of a missing member in minecraft:stone",
+        ]
+    );
+    let told = read_for(text, None);
+    let codes: Vec<&str> = told
+        .iter()
+        .map(|line| line.split(' ').nth(1).unwrap())
+        .collect();
+    assert_eq!(
+        codes,
+        [
+            "core/invalid_type",
+            "core/invalid_enum_value",
+            "core/dropped_field",
+            "core/missing_required_field"
+        ]
+    );
+}
+
 /// The reading of the fixed-path readers (`json::kit::fixed_path::reader`): every finding an
 /// information, nothing failing.
 fn lenient() -> Reading {

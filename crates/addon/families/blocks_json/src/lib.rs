@@ -1,10 +1,12 @@
 //! The client's `blocks.json` ([`BlocksJson`], [`ClientBlock`]): what the client draws and plays
 //! for each block, one file at the root of a resource pack.
 //!
-//! The reader stays hand-walked, not on the reader kit (`json::kit`): the client applies each
-//! member of an entry over the block it already has, testing the value's JSON type itself, and
-//! every finding is that apply's (told in `Phase::Validate`, most with the client's text for
-//! the block), where the kit's wrong-type, missing and unknown findings are a parse's.
+//! The file's keys are resolved by hand (`resolve`: bytewise key order, legacy names split by
+//! the format version, one entry applied to several blocks); each entry is then read by
+//! [`ClientBlock`]'s derived read (`#[derive(Schema)]`) under a read whose subject is the
+//! block's name, which vanilla's texts print, with hand leaves for the members whose JSON the
+//! client tests itself (`entry`: [`FaceTextures`], [`Isotropic`], `blockshape`, the exponent,
+//! `sound`). Every finding of an entry is told in `Phase::Validate`.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -27,6 +29,8 @@ mod cost;
 mod tests;
 
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 
 #[allow(unused_imports, reason = "the link stage reads them")]
 #[doc(hidden)]
@@ -57,36 +61,48 @@ use bedrock_addon_core::version::FormatVersion;
 /// JSON: `"<block name>": {"textures", "carried_textures", "isotropic", "blockshape",
 /// "ambient_occlusion_exponent", "sound"}`; every member is optional and no other member is
 /// read. A field whose value the client refuses is `None` here, with a finding.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 #[doc(alias = "blocks.json")]
 #[doc(alias = "BlockGraphics")]
 pub struct ClientBlock {
     /// The texture of each face, as keys of `terrain_texture.json` (JSON `textures`): one name
     /// for every face, `{up, down, side}`, or all six faces. `name:N` picks element `N` of the
     /// atlas entry. A block without textures is drawn with `missing_tile`.
+    #[facet(schema::invalid = codes::BAD_TEXTURES)]
     pub textures: Option<FaceTextures>,
     /// The textures of the block as an item (JSON `carried_textures`), same forms; a block
     /// without them is carried with its `textures`.
+    #[facet(schema::invalid = codes::BAD_CARRIED_TEXTURES)]
     pub carried_textures: Option<FaceTextures>,
     /// Which faces are drawn with a randomly rotated texture (JSON `isotropic`).
     pub isotropic: Option<Isotropic>,
     /// The shape the block is drawn with, one of [`BLOCK_SHAPES`] (JSON `blockshape`). Only a
     /// vanilla block takes one, and only from a pack that is not the base game's.
+    #[facet(
+        schema::reads_null,
+        schema::read_with = entry::blockshape,
+        schema::invalid = codes::BAD_BLOCKSHAPE
+    )]
     pub blockshape: Option<String>,
     /// The exponent of the block's ambient occlusion (JSON `ambient_occlusion_exponent`);
     /// [`ambient_occlusion_exponent`](Self::ambient_occlusion_exponent) gives the client's 1.0
     /// when no pack sets it. A boolean is read as 1.0 or 0.0.
+    #[facet(schema::read_with = entry::exponent)]
     pub ambient_occlusion_exponent: Option<f32>,
     /// The block's sound type, a key of `sounds.json` `block_sounds` (JSON `sound`);
     /// [`sound`](Self::sound) gives the client's `normal` when no pack sets it. A value that
     /// is not a string is read as `"true"`, `"false"` or `""`.
+    #[facet(schema::read_with = entry::sound)]
     pub sound: Option<String>,
-    /// The members the client never reads (`brightness_gamma`, `sounds`, `client_entity`, …).
+    /// The members the client never reads (`brightness_gamma`, `sounds`, `client_entity`, …),
+    /// kept without a word by the read (the file tells them once per entry).
     pub extra: UnknownMembers,
 }
 
 /// The textures of a block's six faces, in one of the three forms `blocks.json` has.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
+#[repr(u8)]
 pub enum FaceTextures {
     /// One texture for every face (JSON: a string).
     All(String),
@@ -121,7 +137,8 @@ pub enum FaceTextures {
 /// The client reads a boolean, or an object of face names: with a `side` member that is not
 /// `null` it reads `up`, `down` and `side`, otherwise the six faces. A face is isotropic only
 /// when its member is `true`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
+#[repr(u8)]
 pub enum Isotropic {
     /// Every face, or none (JSON: a boolean).
     All(bool),
@@ -132,7 +149,7 @@ pub enum Isotropic {
 }
 
 /// The faces of [`Isotropic::UpDownSide`]: each is `true` only when its member is `true`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 pub struct FaceBools3 {
     /// The top face (JSON `up`).
     pub up: bool,
@@ -143,7 +160,7 @@ pub struct FaceBools3 {
 }
 
 /// The faces of [`Isotropic::SixFaces`]: each is `true` only when its member is `true`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 #[allow(
     clippy::struct_excessive_bools,
     reason = "one flag per face, as the JSON object has one member per face"

@@ -95,7 +95,6 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
     }
     let mut file = BlocksJson {
         format_version: None,
-        format_version_index: 0,
         entries: IndexMap::new(),
     };
     for (key, value) in &root {
@@ -111,9 +110,6 @@ pub(super) fn read(bytes: &[u8], base_game: bool) -> FileRead {
             );
         }
         if key.as_str() == "format_version" {
-            // Its place among the entries is kept for the writer, so the file writes back with
-            // the version where its author put it.
-            file.format_version_index = file.entries.len();
             file.format_version = Some(value);
         } else {
             file.entries.insert(key.as_str().to_owned(), value);
@@ -345,8 +341,8 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
                 .at(at)
                 .phase(Phase::Validate),
         );
-        apply(cx, object, &lower, true, applied);
-        apply(cx, object, "mushroom_stem", false, applied);
+        apply(cx, value, &lower, true, applied);
+        apply(cx, value, "mushroom_stem", false, applied);
         return;
     }
     // `chalkboard` is ignored without a word.
@@ -363,7 +359,7 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
         // block.
         Some(alias) if alias.is_flattened_at(cx.version) => {
             if alias.is_still_a_block() {
-                apply(cx, object, &lower, true, applied);
+                apply(cx, value, &lower, true, applied);
             } else {
                 // The game logs this as an error, skips the entry and loads the file: a kept
                 // error, except in a base-game pack, where it is only a debug line.
@@ -378,7 +374,7 @@ fn resolve(cx: &KeyCx<'_>, value: &Value, d: &mut Diagnostics, applied: &mut Vec
         // Below its gate the entry is split onto the post-split blocks.
         Some(alias) => split(cx, alias, object, d, applied),
         // An ordinary name.
-        None => ordinary(cx, object, &lower, d, applied),
+        None => ordinary(cx, value, &lower, d, applied),
     }
 }
 
@@ -437,7 +433,7 @@ fn split(
                 copy.insert(member, rewritten);
             }
         }
-        apply(cx, &copy, name, index == 0, applied);
+        apply(cx, &copy.into(), name, index == 0, applied);
     }
 }
 
@@ -468,7 +464,7 @@ fn with_variant(value: &Value, variant: u32) -> Option<Value> {
 /// the block exists is the link stage's question.
 fn ordinary(
     cx: &KeyCx<'_>,
-    object: &VObject,
+    object: &Value,
     lower: &str,
     d: &mut Diagnostics,
     applied: &mut Vec<Applied>,
@@ -492,36 +488,30 @@ fn ordinary(
         return;
     }
     // A vanilla name is lower case; the registry lower-cases a name it does not find as written.
-    let vanilla = namespace.eq_ignore_ascii_case(MINECRAFT);
-    let id = if vanilla {
+    let id = if namespace.eq_ignore_ascii_case(MINECRAFT) {
         BlockId::parse(cx.key.to_lowercase())
     } else {
         BlockId::parse(cx.key)
     };
-    push(cx, object, id, vanilla, true, applied);
+    push(cx, object, id, true, applied);
 }
 
 /// Applies `object` to the vanilla block `name` (without namespace).
-fn apply(cx: &KeyCx<'_>, object: &VObject, name: &str, first: bool, applied: &mut Vec<Applied>) {
+fn apply(cx: &KeyCx<'_>, object: &Value, name: &str, first: bool, applied: &mut Vec<Applied>) {
     let id = BlockId::parse(format!("{MINECRAFT}:{name}"));
-    push(cx, object, id, true, first, applied);
+    push(cx, object, id, first, applied);
 }
 
-/// Reads `object` for the block `id`. The crate's own findings about the entry are raised once
-/// per key (`first`); vanilla's are raised for every block, as the client logs them.
-fn push(
-    cx: &KeyCx<'_>,
-    object: &VObject,
-    id: BlockId,
-    vanilla: bool,
-    first: bool,
-    applied: &mut Vec<Applied>,
-) {
+/// Reads `object` for the block `id`, which is in the `minecraft` namespace exactly when it can
+/// be a vanilla block (the entry's read tells them apart by it). The crate's own findings about
+/// the entry are raised once per key (`first`); vanilla's are raised for every block, as the
+/// client logs them.
+fn push(cx: &KeyCx<'_>, object: &Value, id: BlockId, first: bool, applied: &mut Vec<Applied>) {
     let mut diagnostics = Diagnostics::default();
     let ReadEntry {
         block,
         requested_shape,
-    } = entry::read(object, cx.key, id.as_str(), vanilla, &mut diagnostics);
+    } = entry::read(object, cx.key, id.as_str(), &mut diagnostics);
     if !first {
         let found = std::mem::take(&mut diagnostics);
         for diagnostic in found {
