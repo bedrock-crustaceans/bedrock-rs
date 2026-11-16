@@ -1,0 +1,189 @@
+== render/render_controller/armor_stand.render_controllers.json
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.armor_stand": {
+      "geometry": "geometry.default",
+      "part_visibility": [
+        {
+          "baseplate": "!query.is_in_ui"
+        }
+      ],
+      "materials": [
+        {
+          "*": "material.default"
+        }
+      ],
+      "textures": [
+        "texture.default"
+      ],
+      "overlay_color": {
+        "r": "this",
+        "g": "this",
+        "b": "this",
+        "a": "0.0"
+      }
+    }
+  }
+}
+
+== render/render_controller/bow.render_controllers.json
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.bow": {
+      "arrays": {
+        "geometries": {
+          "array.bow_geo_frames": [
+            "geometry.default",
+            "geometry.bow_pulling_0",
+            "geometry.bow_pulling_1",
+            "geometry.bow_pulling_2"
+          ]
+        },
+        "textures": {
+          "array.bow_texture_frames": [
+            "texture.default",
+            "texture.bow_pulling_0",
+            "texture.bow_pulling_1",
+            "texture.bow_pulling_2"
+          ]
+        }
+      },
+      "geometry": "array.bow_geo_frames[query.get_animation_frame]",
+      "materials": [
+        {
+          "*": "variable.is_enchanted ? material.enchanted : material.default"
+        }
+      ],
+      "textures": [
+        "array.bow_texture_frames[query.get_animation_frame]",
+        "texture.enchanted"
+      ]
+    }
+  }
+}
+
+== render/render_controller/creaking.render_controllers.json
+{
+  "format_version": "1.10.0",
+  "render_controllers": {
+    "controller.render.creaking": {
+      "geometry": "geometry.default",
+      "part_visibility": [
+        {
+          "*": "!query.is_invisible"
+        }
+      ],
+      "materials": [
+        {
+          "*": "material.default"
+        }
+      ],
+      "textures": [
+        "texture.default"
+      ]
+    },
+    "controller.render.creaking_eyes": {
+      "arrays": {
+        "materials": {
+          "array.materials": [
+            "material.default",
+            "material.eyes"
+          ]
+        }
+      },
+      "geometry": "geometry.default",
+      "part_visibility": [
+        {
+          "*": false
+        },
+        {
+          "head": "variable.has_emissive_eyes"
+        }
+      ],
+      "materials": [
+        {
+          "*": "\u0041rray.materials[query.is_invisible ? 0 : 1]"
+        }
+      ],
+      "textures": [
+        "\u0054exture.eyes"
+      ],
+      "ignore_lighting": true
+    }
+  }
+}
+
+== render/render_controller/determinism/resource_pack/render_controllers/determinism.render_controllers.json
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.determinism": {
+      "arrays": {
+        "textures": {
+          "array.skins": [
+            "texture.default",
+            "texture.brown"
+          ]
+        }
+      },
+      "geometry": "geometry.default",
+      "part_visibility": [
+        {
+          "saddle": "query.is_saddled"
+        }
+      ],
+      "materials": [
+        {
+          "*": "material.default"
+        }
+      ],
+      "textures": [
+        "array.skins[query.variant]"
+      ],
+      "color": {
+        "r": 1,
+        "g": "query.is_baby ? 0.8 : 1.0"
+      }
+    },
+    "controller.render.determinism_dropped": {
+      "geometry": "geometry.default"
+    }
+  }
+}
+
+== render/render_controller/rabbit.render_controllers.json
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.rabbit": {
+      "arrays": {
+        "textures": {
+          "array.skins": [
+            "texture.brown",
+            "texture.white",
+            "texture.black",
+            "texture.white_splotched",
+            "texture.gold",
+            "texture.salt"
+          ]
+        }
+      },
+      "geometry": "geometry.default",
+      "materials": [
+        {
+          "*": "material.default"
+        }
+      ],
+      "textures": [
+        "query.get_name == 'Toast' ? texture.toast : array.skins[query.variant]"
+      ]
+    }
+  }
+}
+
+== {"format_version": "1.8.0", "render_controllers": {"controller.render.z": {"arrays": {"geometries": {"Array.g": ["Geometry.a", "Geometry.b"]}, "materials": {"Array.m": ["Material.default"]}, "textures": {"Array.t": ["Texture.default"]}}, "geometry": "Array.g[q.variant]", "materials": [{"*": "Material.default"}, {"head": 0}], "textures": ["Texture.default", "Array.t[0]"], "part_visibility": [{"*": true}, {"leg*": "q.is_baby"}, {"arm": 1}, {"tail": {"expression": "q.x", "version": "1.20.0"}}], "color": {"r": 1, "g": 0.5, "b": "q.c", "a": 1.0}, "overlay_color": {"r": 0}, "on_fire_color": {"a": 0.25}, "is_hurt_color": {"g": 1}, "uv_anim": {"offset": [0, "q.t"], "scale": [1, 0.5]}, "light_color_multiplier": 1.5, "ignore_lighting": true, "filter_lighting": true, "rebuild_animation_matrices": false}, "controller.render.a": {"geometry": "Geometry.default"}}}
+rejected: ["core/invalid_type render_controllers/controller.render.z/materials/1/head", "core/unknown_child_option render_controllers/controller.render.z/part_visibility/3/tail"]
+== {"format_version": "1.10.0", "render_controllers": {"controller.render.b": {"geometry": "Geometry.default", "textures": [], "arrays": {"textures": {}}}}}
+rejected: ["core/invalid_value_worded render_controllers/controller.render.b/textures", "core/required_child render_controllers/controller.render.b/arrays/textures"]

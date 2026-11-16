@@ -7,5 +7,8 @@ mod common;
 #[path = "persona/write.rs"]
 mod write;
 
+#[path = "persona/written.rs"]
+mod written;
+
 #[path = "persona/vanilla.rs"]
 mod vanilla;

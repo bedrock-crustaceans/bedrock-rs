@@ -1,0 +1,1633 @@
+== persona_piece/vanilla/alex_hair/alex_hair.meta.json
+{
+  "piece_id": "70be0801-a93f-4ce0-8e3f-7fdeac1e03b9",
+  "piece_name": "alex_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "alex_hair_head.png",
+      "tint_map": "alex_hair_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "alex_hair_body.png",
+      "tint_map": "alex_hair_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/alex_pants/alex_pants.meta.json
+{
+  "piece_id": "96db6e5b-dc69-4ebc-bd36-cb1b08ffb0f4",
+  "piece_name": "alex_pants",
+  "piece_type": "persona_bottom",
+  "zone": [
+    "right_leg_upper",
+    "left_leg_upper",
+    "right_leg_middle",
+    "left_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "alex_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/alex_shirt/alex_shirt.meta.json
+{
+  "piece_id": "80eda582-cda7-4fce-9d6f-89a60f2448f1",
+  "piece_name": "alex_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "alex_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/alex_shoes/alex_shoes.meta.json
+{
+  "piece_id": "5f64b737-b88a-40ea-be1f-559840237146",
+  "piece_name": "alex_shoes",
+  "piece_type": "persona_feet",
+  "zone": [
+    "right_leg_lower",
+    "left_leg_lower"
+  ],
+  "texture_sources": [
+    {
+      "texture": "alex_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/alex_skin/alex_skin.meta.json
+{
+  "piece_id": "0948e089-6f9c-40c1-886b-cd37add03f69",
+  "piece_name": "alex_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "alex_head.png",
+      "tint_map": "alex_head_tintmap_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "alex_body.png",
+      "tint_map": "alex_body_tintmap_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/ari_hair/ari_hair.meta.json
+{
+  "piece_id": "16a40e66-7d58-b56d-9a4e-e5766ceff6a0",
+  "piece_name": "ari_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "ari_hair_head.png",
+      "tint_map": "ari_hair_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "ari_hair_body.png",
+      "tint_map": "ari_hair_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/ari_pants/ari_pants.meta.json
+{
+  "piece_id": "ef62e4af-63c4-276f-3e76-58027fef8358",
+  "piece_name": "ari_pants",
+  "piece_type": "persona_bottom",
+  "texture_sources": [
+    {
+      "texture": "ari_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/ari_shirt/ari_shirt.meta.json
+{
+  "piece_id": "66690c38-b6da-92aa-dd23-d1fab2b97423",
+  "piece_name": "ari_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "ari_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/ari_shoes/ari_shoes.meta.json
+{
+  "piece_id": "dd0b165f-cd5d-3588-db1e-ab2cea17cbad",
+  "piece_name": "ari_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "ari_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/ari_skin/ari_skin.meta.json
+{
+  "piece_id": "29ad05be-b99b-3a20-abd9-771fdd53eb0a",
+  "piece_name": "ari_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "ari_skin_head.png",
+      "tint_map": "ari_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "ari_skin_body.png",
+      "tint_map": "ari_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/body/medium/medium.meta.json
+{
+  "piece_id": "1042557f-d1f9-44e3-ba78-f404e8fb7363",
+  "piece_name": "medium",
+  "piece_type": "persona_body",
+  "body_variant": "medium",
+  "clothing_map": "clothing_map.tga",
+  "face_clothing_map": "face_clothing_map.tga",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.medium_body",
+      "arm_size": "",
+      "zone": "body"
+    },
+    {
+      "geometry": "geometry.medium_body_clothing",
+      "arm_size": "",
+      "zone": "body_clothing"
+    },
+    {
+      "geometry": "geometry.medium_head",
+      "arm_size": "",
+      "zone": "head",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.medium_head_clothing",
+      "arm_size": "",
+      "zone": "head_clothing",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.medium_left_wide_arm",
+      "arm_size": "wide",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.medium_left_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.medium_right_wide_arm",
+      "arm_size": "wide",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.medium_right_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.medium_left_slim_arm",
+      "arm_size": "slim",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.medium_left_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.medium_right_slim_arm",
+      "arm_size": "slim",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.medium_right_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.medium_left_leg",
+      "arm_size": "",
+      "zone": "left_leg"
+    },
+    {
+      "geometry": "geometry.medium_right_leg",
+      "arm_size": "",
+      "zone": "right_leg"
+    },
+    {
+      "geometry": "geometry.medium_left_leg_clothing",
+      "arm_size": "",
+      "zone": "left_leg_clothing"
+    },
+    {
+      "geometry": "geometry.medium_right_leg_clothing",
+      "arm_size": "",
+      "zone": "right_leg_clothing"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/medium_skeleton/medium_skeleton.meta.json
+{
+  "piece_id": "8f96d1f8-e9bb-40d2-acc8-eb79746c5d7c",
+  "piece_name": "medium_skeleton",
+  "piece_type": "persona_skeleton",
+  "body_variant": "medium",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.medium_body",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_head",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_left_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.medium_right_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.medium_left_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.medium_right_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.medium_left_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_right_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_right_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_left_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_armor",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.medium_armor_wide_arms",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.medium_armor_slim_arms",
+      "arm_size": "slim"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/small/small.meta.json
+{
+  "piece_id": "98ec3d94-064e-493f-b251-04761563c5a8",
+  "piece_name": "small",
+  "piece_type": "persona_body",
+  "body_variant": "small",
+  "clothing_map": "clothing_map.tga",
+  "face_clothing_map": "face_clothing_map.tga",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.small_body",
+      "arm_size": "",
+      "zone": "body"
+    },
+    {
+      "geometry": "geometry.small_body_clothing",
+      "arm_size": "",
+      "zone": "body_clothing"
+    },
+    {
+      "geometry": "geometry.small_head",
+      "arm_size": "",
+      "zone": "head",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.small_head_clothing",
+      "arm_size": "",
+      "zone": "head_clothing",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.small_left_wide_arm",
+      "arm_size": "wide",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.small_left_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.small_right_wide_arm",
+      "arm_size": "wide",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.small_right_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.small_left_slim_arm",
+      "arm_size": "slim",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.small_left_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.small_right_slim_arm",
+      "arm_size": "slim",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.small_right_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.small_left_leg",
+      "arm_size": "",
+      "zone": "left_leg"
+    },
+    {
+      "geometry": "geometry.small_right_leg",
+      "arm_size": "",
+      "zone": "right_leg"
+    },
+    {
+      "geometry": "geometry.small_left_leg_clothing",
+      "arm_size": "",
+      "zone": "left_leg_clothing"
+    },
+    {
+      "geometry": "geometry.small_right_leg_clothing",
+      "arm_size": "",
+      "zone": "right_leg_clothing"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/small_skeleton/small_skeleton.meta.json
+{
+  "piece_id": "05539998-c08b-408f-9211-4f42fd8bebc1",
+  "piece_name": "small_skeleton",
+  "piece_type": "persona_skeleton",
+  "body_variant": "small",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.small_body",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_head",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_left_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.small_right_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.small_left_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.small_right_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.small_left_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_right_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_right_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_left_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_armor",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.small_armor_wide_arms",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.small_armor_slim_arms",
+      "arm_size": "slim"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/smaller/smaller.meta.json
+{
+  "piece_id": "c3ea4527-e2d7-4aae-86a4-0bb3d1b98d84",
+  "piece_name": "smaller",
+  "piece_type": "persona_body",
+  "body_variant": "smaller",
+  "clothing_map": "clothing_map.tga",
+  "face_clothing_map": "face_clothing_map.tga",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.smaller_body",
+      "arm_size": "",
+      "zone": "body"
+    },
+    {
+      "geometry": "geometry.smaller_body_clothing",
+      "arm_size": "",
+      "zone": "body_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_head",
+      "arm_size": "",
+      "zone": "head",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.smaller_head_clothing",
+      "arm_size": "",
+      "zone": "head_clothing",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.smaller_left_wide_arm",
+      "arm_size": "wide",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.smaller_left_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_right_wide_arm",
+      "arm_size": "wide",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.smaller_right_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_left_slim_arm",
+      "arm_size": "slim",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.smaller_left_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_right_slim_arm",
+      "arm_size": "slim",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.smaller_right_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_left_leg",
+      "arm_size": "",
+      "zone": "left_leg"
+    },
+    {
+      "geometry": "geometry.smaller_right_leg",
+      "arm_size": "",
+      "zone": "right_leg"
+    },
+    {
+      "geometry": "geometry.smaller_left_leg_clothing",
+      "arm_size": "",
+      "zone": "left_leg_clothing"
+    },
+    {
+      "geometry": "geometry.smaller_right_leg_clothing",
+      "arm_size": "",
+      "zone": "right_leg_clothing"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/smaller_skeleton/smaller_skeleton.meta.json
+{
+  "piece_id": "142782c6-93bb-4e5a-af32-df6cd4164dca",
+  "piece_name": "smaller_skeleton",
+  "piece_type": "persona_skeleton",
+  "body_variant": "smaller",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.smaller_body",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_head",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_left_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.smaller_right_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.smaller_left_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.smaller_right_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.smaller_left_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_right_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_right_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_left_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_armor",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.smaller_armor_wide_arms",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.smaller_armor_slim_arms",
+      "arm_size": "slim"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/tall/tall.meta.json
+{
+  "piece_id": "7b75b1d1-1ff6-4ca7-a8d8-49e5f3b3ff97",
+  "piece_name": "tall",
+  "piece_type": "persona_body",
+  "body_variant": "tall",
+  "clothing_map": "clothing_map.tga",
+  "face_clothing_map": "face_clothing_map.tga",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.tall_body",
+      "arm_size": "",
+      "zone": "body"
+    },
+    {
+      "geometry": "geometry.tall_body_clothing",
+      "arm_size": "",
+      "zone": "body_clothing"
+    },
+    {
+      "geometry": "geometry.tall_head",
+      "arm_size": "",
+      "zone": "head",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.tall_head_clothing",
+      "arm_size": "",
+      "zone": "head_clothing",
+      "is_face": "true"
+    },
+    {
+      "geometry": "geometry.tall_left_wide_arm",
+      "arm_size": "wide",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.tall_left_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.tall_right_wide_arm",
+      "arm_size": "wide",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.tall_right_wide_clothing_arm",
+      "arm_size": "wide",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.tall_left_slim_arm",
+      "arm_size": "slim",
+      "zone": "left_arm"
+    },
+    {
+      "geometry": "geometry.tall_left_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "left_arm_clothing"
+    },
+    {
+      "geometry": "geometry.tall_right_slim_arm",
+      "arm_size": "slim",
+      "zone": "right_arm"
+    },
+    {
+      "geometry": "geometry.tall_right_slim_clothing_arm",
+      "arm_size": "slim",
+      "zone": "right_arm_clothing"
+    },
+    {
+      "geometry": "geometry.tall_left_leg",
+      "arm_size": "",
+      "zone": "left_leg"
+    },
+    {
+      "geometry": "geometry.tall_right_leg",
+      "arm_size": "",
+      "zone": "right_leg"
+    },
+    {
+      "geometry": "geometry.tall_left_leg_clothing",
+      "arm_size": "",
+      "zone": "left_leg_clothing"
+    },
+    {
+      "geometry": "geometry.tall_right_leg_clothing",
+      "arm_size": "",
+      "zone": "right_leg_clothing"
+    }
+  ]
+}
+
+== persona_piece/vanilla/body/tall_skeleton/tall_skeleton.meta.json
+{
+  "piece_id": "b6e896c8-a385-4284-b1f3-94696698d1e8",
+  "piece_name": "tall_skeleton",
+  "piece_type": "persona_skeleton",
+  "body_variant": "tall",
+  "geometry_sources": [
+    {
+      "geometry": "geometry.tall_body",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_head",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_left_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.tall_right_wide_arm",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.tall_left_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.tall_right_slim_arm",
+      "arm_size": "slim"
+    },
+    {
+      "geometry": "geometry.tall_left_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_right_leg",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_right_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_left_item",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_armor",
+      "arm_size": ""
+    },
+    {
+      "geometry": "geometry.tall_armor_wide_arms",
+      "arm_size": "wide"
+    },
+    {
+      "geometry": "geometry.tall_armor_slim_arms",
+      "arm_size": "slim"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_cardigan/efe_cardigan.meta.json
+{
+  "piece_id": "ba5b65fc-b5ae-1c71-5a9a-7137425f9dda",
+  "piece_name": "efe_cardigan",
+  "piece_type": "persona_outerwear",
+  "zone": [
+    "body_front_upper",
+    "body_back_upper",
+    "right_arm_upper",
+    "right_arm_middle",
+    "left_arm_upper",
+    "left_arm_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "efe_cardigan.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_earring/efe_earring.meta.json
+{
+  "piece_id": "6d4faba3-c8e0-6260-7f88-2bfcb4a0037a",
+  "piece_name": "efe_earring",
+  "piece_type": "persona_face_accessory",
+  "texture_sources": [
+    {
+      "texture": "efe_earring.png",
+      "use_face_uv": true
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_hair/efe_hair.meta.json
+{
+  "piece_id": "491dfbd8-fc6d-2f9d-8983-70bcbb626754",
+  "piece_name": "efe_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "efe_hair_head.png",
+      "tint_map": "efe_hair_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/efe_jewels/efe_jewelry.meta.json
+{
+  "piece_id": "7e45f152-4641-1041-2194-1522c7ad35f2",
+  "piece_name": "efe_jewelry",
+  "piece_type": "persona_hand",
+  "texture_sources": [
+    {
+      "texture": "efe_jewelry.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_pants/efe_pants.meta.json
+{
+  "piece_id": "c20ee35a-8013-0057-692f-35ec4d77d6ed",
+  "piece_name": "efe_pants",
+  "piece_type": "persona_high_pants",
+  "zone": [
+    "body_front_lower",
+    "body_back_lower",
+    "left_leg_upper",
+    "left_leg_middle",
+    "right_leg_upper",
+    "right_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "efe_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_shirt/efe_shirt.meta.json
+{
+  "piece_id": "74c2d026-33f0-f0b1-3f4f-670cb1fe6515",
+  "piece_name": "efe_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "efe_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_shoes/efe_shoes.meta.json
+{
+  "piece_id": "d3777d81-8b2b-d348-daed-710c15805976",
+  "piece_name": "efe_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "efe_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/efe_skin/efe_skin.meta.json
+{
+  "piece_id": "829e70a1-05ea-140e-c42e-3ef9d5894ffe",
+  "piece_name": "efe_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "efe_skin_head.png",
+      "tint_map": "efe_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "efe_skin_body.png",
+      "tint_map": "efe_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/emote_followMe/communication_follow_me.meta.json
+{
+  "piece_id": "17428c4c-3813-4ea1-b3a9-d6a32f83afca",
+  "piece_name": "communication_follow_me",
+  "piece_type": "persona_emote",
+  "animation_sources": [
+    {
+      "name": "animation.communication_follow_me",
+      "animationFile": "communication_follow_me.animation.json"
+    }
+  ]
+}
+
+== persona_piece/vanilla/emote_overThere/communication_point.meta.json
+{
+  "piece_id": "ce5c0300-7f03-455d-aaf1-352e4927b54d",
+  "piece_name": "communication_point",
+  "piece_type": "persona_emote",
+  "animation_sources": [
+    {
+      "name": "animation.communication_point",
+      "animationFile": "communication_point.animation.json"
+    }
+  ]
+}
+
+== persona_piece/vanilla/emote_simpleClap/basic_clap.meta.json
+{
+  "piece_id": "9a469a61-c83b-4ba9-b507-bdbe64430582",
+  "piece_name": "basic_clap",
+  "piece_type": "persona_emote",
+  "animation_sources": [
+    {
+      "name": "animation.basic_clap",
+      "animationFile": "basic_clap.animation.json"
+    }
+  ]
+}
+
+== persona_piece/vanilla/emote_wave/overhead_wave.meta.json
+{
+  "piece_id": "4c8ae710-df2e-47cd-814d-cc7bf21a3d67",
+  "piece_name": "overhead_wave",
+  "piece_type": "persona_emote",
+  "animation_sources": [
+    {
+      "name": "animation.overhead_wave",
+      "animationFile": "overhead_wave.animation.json"
+    }
+  ]
+}
+
+== persona_piece/vanilla/kai_dress/kai_dress.meta.json
+{
+  "piece_id": "97e3e925-6eef-a6db-8235-1f73f8a550fb",
+  "piece_name": "kai_dress",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "kai_dress.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/kai_hair/kai_hair.meta.json
+{
+  "piece_id": "5f49dfbb-1c5d-ec1a-814b-3b6898265d3c",
+  "piece_name": "kai_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "kai_hair_head.png",
+      "tint_map": "kai_hair_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/kai_jacket/kai_jacket.meta.json
+{
+  "piece_id": "a8bc771c-c5a5-7b32-bd03-ba169ec58284",
+  "piece_name": "kai_jacket",
+  "piece_type": "persona_outerwear",
+  "zone": [
+    "left_arm_upper",
+    "left_arm_middle",
+    "right_arm_upper",
+    "right_arm_middle",
+    "body_back_upper",
+    "body_back_lower"
+  ],
+  "texture_sources": [
+    {
+      "texture": "kai_jacket.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/kai_shoes/kai_shoes.meta.json
+{
+  "piece_id": "37ee7c77-6bf6-4de8-8f56-5dc6b6abc6ff",
+  "piece_name": "kai_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "kai_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/kai_skin/kai_skin.meta.json
+{
+  "piece_id": "aa8d3c95-f189-cf08-0ae3-5cc1e090343b",
+  "piece_name": "kai_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "kai_skin_head.png",
+      "tint_map": "kai_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "kai_skin_body.png",
+      "tint_map": "kai_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/makena_hair/makena_hair.meta.json
+{
+  "piece_id": "bb29fbdf-5331-ca8e-01a4-b352cd46a324",
+  "piece_name": "makena_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "makena_hair_head.png",
+      "tint_map": "makena_hair_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "makena_hair_body.png",
+      "tint_map": "makena_hair_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/makena_pants/makena_pants.meta.json
+{
+  "piece_id": "4fc639b3-0bb3-9443-0e2d-9332561edb68",
+  "piece_name": "makena_pants",
+  "piece_type": "persona_bottom",
+  "zone": [
+    "right_leg_upper",
+    "right_leg_middle",
+    "left_leg_upper",
+    "left_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "makena_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/makena_shirt/makena_shirt.meta.json
+{
+  "piece_id": "f76b43c4-052c-ec24-bbc9-389f8b612668",
+  "piece_name": "makena_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "makena_sweater.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/makena_shoes/makena_shoes.meta.json
+{
+  "piece_id": "446f1789-8b8d-755e-6660-672e30537854",
+  "piece_name": "makena_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "makena_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/makena_skin/makena_skin.meta.json
+{
+  "piece_id": "37788a67-0abb-fec7-4d9b-5dfdbf25e58c",
+  "piece_name": "makena_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "makena_skin_head.png",
+      "tint_map": "makena_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "makena_skin_body.png",
+      "tint_map": "makena_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/noor_hair/noor_hair.meta.json
+{
+  "piece_id": "f07544af-8bab-7ed6-fe9d-8ddde78e1e2a",
+  "piece_name": "noor_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "noor_hair_head.png",
+      "tint_map": "noor_hair_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "noor_hair_body.png",
+      "tint_map": "noor_hair_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/noor_jacket/noor_jacket.meta.json
+{
+  "piece_id": "01fc5519-bf48-b37c-fad1-d265ae7bc26a",
+  "piece_name": "noor_jacket",
+  "piece_type": "persona_outerwear",
+  "zone": [
+    "left_arm_upper",
+    "left_arm_middle",
+    "right_arm_upper",
+    "right_arm_middle",
+    "body_back_upper"
+  ],
+  "texture_sources": [
+    {
+      "texture": "noor_jacket.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/noor_pants/noor_pants.meta.json
+{
+  "piece_id": "2f7834d2-d0af-8110-fa75-28e59022b34b",
+  "piece_name": "noor_pants",
+  "piece_type": "persona_high_pants",
+  "zone": [
+    "body_front_lower",
+    "body_back_lower",
+    "left_leg_upper",
+    "left_leg_middle",
+    "right_leg_upper",
+    "right_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "noor_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/noor_shirt/noor_shirt.meta.json
+{
+  "piece_id": "e9be8a1f-c928-4b51-0bef-e8ea58cc9c42",
+  "piece_name": "noor_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "noor_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/noor_shoes/noor_shoes.meta.json
+{
+  "piece_id": "af5ca60b-dae7-3931-507e-1c6797481de1",
+  "piece_name": "noor_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "noor_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/noor_skin/noor_skin.meta.json
+{
+  "piece_id": "79100fd3-53a3-21e3-40d1-ff5447a8afd3",
+  "piece_name": "noor_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "noor_skin_head.png",
+      "tint_map": "noor_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "noor_skin_body.png",
+      "tint_map": "noor_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/standard_eyes/standard_eyes.meta.json
+{
+  "piece_id": "a0f263b3-e093-4c85-aadb-3759417898ff",
+  "piece_name": "standard_eyes",
+  "piece_type": "persona_eyes",
+  "texture_sources": [
+    {
+      "texture": "standard_neutral_and_blink.png",
+      "tint_map": "standard_neutral_and_blink.tga",
+      "animated": true,
+      "frames": 2,
+      "use_face_uv": true
+    }
+  ],
+  "tint_color": {
+    "r_color": "#0000F0",
+    "b_color": "#F7F7E0",
+    "a_color": "#FD6830"
+  },
+  "tint_base_color": {
+    "r_color": "#0000F0",
+    "b_color": "#F7F7E0",
+    "a_color": "#FD6830"
+  }
+}
+
+== persona_piece/vanilla/standard_mouth/standard_mouth.meta.json
+{
+  "piece_id": "83c940ce-d7b8-4603-8d73-c1234e322cce",
+  "piece_name": "standard_mouth",
+  "piece_type": "persona_mouth",
+  "texture_sources": [
+    {
+      "texture": "standard_neutral.png",
+      "tint_map": "standard_neutral.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_color": {
+    "b_color": "#4D1010",
+    "a_color": "#FF7F4A"
+  },
+  "tint_base_color": {
+    "b_color": "#4D1010",
+    "a_color": "#FF7F4A"
+  }
+}
+
+== persona_piece/vanilla/steve_beard/steve_beard.meta.json
+{
+  "piece_id": "08ae21a8-6157-1199-b6d8-5ce5dfdb73f4",
+  "piece_name": "steve_beard",
+  "piece_type": "persona_facial_hair",
+  "texture_sources": [
+    {
+      "texture": "steve_goatee.png",
+      "tint_map": "steve_goatee_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/steve_hair/steve_hair.meta.json
+{
+  "piece_id": "2bb1473b-9a5c-4eae-9fd5-82302a6aa3da",
+  "piece_name": "steve_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "steve_hair_head.png",
+      "tint_map": "steve_hair_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/steve_mouth/steve_mouth.meta.meta.json
+{
+  "piece_id": "2e4341c3-c014-4114-94b5-73968230aaaf",
+  "piece_name": "steve_mouth",
+  "piece_type": "persona_mouth",
+  "texture_sources": [
+    {
+      "texture": "steve_neutral.png",
+      "tint_map": "steve_neutral.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_color": {
+    "b_color": "#4D1010",
+    "a_color": "#FF7F40"
+  },
+  "tint_base_color": {
+    "b_color": "#4D1010",
+    "a_color": "#FF7F40"
+  }
+}
+
+== persona_piece/vanilla/steve_pants/steve_pants.meta.json
+{
+  "piece_id": "49f93789-a512-4c47-95cb-0606cdc1c2be",
+  "piece_name": "steve_pants",
+  "piece_type": "persona_bottom",
+  "zone": [
+    "right_leg_upper",
+    "right_leg_middle",
+    "left_leg_upper",
+    "left_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "steve_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/steve_shirt/steve_shirt.meta.json
+{
+  "piece_id": "b6702f0e-a4b5-497a-8820-6c8e3946bb55",
+  "piece_name": "steve_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "steve_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/steve_shoes/steve_shoes.meta.json
+{
+  "piece_id": "68bfe60d-f30a-422f-b32c-72374ebdd057",
+  "piece_name": "steve_shoes",
+  "piece_type": "persona_feet",
+  "zone": [
+    "left_leg_lower",
+    "right_leg_lower"
+  ],
+  "texture_sources": [
+    {
+      "texture": "steve_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/steve_skin/steve_skin.meta.json
+{
+  "piece_id": "f1e4c577-19ba-4d77-9222-47f145857f78",
+  "piece_name": "steve_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "steve_skin_head.png",
+      "tint_map": "steve_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "steve_skin_body.png",
+      "tint_map": "steve_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/straight/straight.meta.json
+{
+  "piece_id": "52dd0726-cd68-4d7d-8561-515a4866de39",
+  "piece_name": "straight",
+  "piece_type": "persona_mouth",
+  "texture_sources": [
+    {
+      "texture": "straight_head.png",
+      "tint_map": "straight_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_color": {
+    "r_color": "#000000",
+    "g_color": "#000000",
+    "b_color": "#91361F",
+    "a_color": "#000000"
+  },
+  "tint_base_color": {
+    "r_color": "#000000",
+    "g_color": "#000000",
+    "b_color": "#91361F",
+    "a_color": "#000000"
+  }
+}
+
+== persona_piece/vanilla/sunny_hair/sunny_hair.meta.json
+{
+  "piece_id": "36f3af09-1871-f074-148a-9f748ba3ca42",
+  "piece_name": "sunny_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "sunny_hair_head.png",
+      "tint_map": "sunny_hair_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/sunny_pants/sunny_pants.meta.json
+{
+  "piece_id": "a1f26368-ebfe-843a-e6ff-f2dc724108ec",
+  "piece_name": "sunny_pants",
+  "piece_type": "persona_high_pants",
+  "zone": [
+    "body_front_upper",
+    "body_front_lower",
+    "body_back_upper",
+    "body_back_lower",
+    "left_leg_upper",
+    "left_leg_middle",
+    "right_leg_upper",
+    "right_leg_middle"
+  ],
+  "texture_sources": [
+    {
+      "texture": "sunny_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/sunny_shirt/sunny_shirt.meta.json
+{
+  "piece_id": "e86ab12f-d79c-6e47-b3af-19a3c965505a",
+  "piece_name": "sunny_shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "sunny_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/sunny_shoes/sunny_shoes.meta.json
+{
+  "piece_id": "34524691-ff49-da97-8ae0-d07ef8a0c118",
+  "piece_name": "sunny_shoes",
+  "piece_type": "persona_feet",
+  "texture_sources": [
+    {
+      "texture": "sunny_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/sunny_skin/sunny_skin.meta.json
+{
+  "piece_id": "33c7a041-46be-73ad-55aa-7e1b18563364",
+  "piece_name": "sunny_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "sunny_skin_head.png",
+      "tint_map": "sunny_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "sunny_skin_body.png",
+      "tint_map": "sunny_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== persona_piece/vanilla/zuri_hair/zuri_hair.meta.json
+{
+  "piece_id": "99bdbaae-309b-d64b-42ad-0194a57db891",
+  "piece_name": "zuri_hair",
+  "piece_type": "persona_hair",
+  "texture_sources": [
+    {
+      "texture": "zuri_hair_head.png",
+      "tint_map": "zuri_hair_head_tintmap.tga",
+      "use_face_uv": true
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#862f0b"
+  }
+}
+
+== persona_piece/vanilla/zuri_pants/zuri_pants.meta.json
+{
+  "piece_id": "d42123c3-25b2-74e7-5720-b59e4280017a",
+  "piece_name": "zuri_pants",
+  "piece_type": "persona_high_pants",
+  "zone": [
+    "right_leg_upper",
+    "right_leg_middle",
+    "left_leg_upper",
+    "left_leg_middle",
+    "body_back_lower",
+    "body_back_upper"
+  ],
+  "texture_sources": [
+    {
+      "texture": "zuri_pants.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/zuri_shirt/zuri_Shirt.meta.json
+{
+  "piece_id": "bb0321e0-9712-e35a-52cc-f3c83e0065f4",
+  "piece_name": "zuri_Shirt",
+  "piece_type": "persona_top",
+  "texture_sources": [
+    {
+      "texture": "zuri_shirt.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/zuri_shoes/zuri_shoes.meta.json
+{
+  "piece_id": "6791bf52-fb55-3bdf-a20d-6bf9f6c83987",
+  "piece_name": "zuri_shoes",
+  "piece_type": "persona_feet",
+  "zone": [
+    "right_leg_lower",
+    "left_leg_lower"
+  ],
+  "texture_sources": [
+    {
+      "texture": "zuri_shoes.png"
+    }
+  ]
+}
+
+== persona_piece/vanilla/zuri_skin/zuri_skin.meta.json
+{
+  "piece_id": "69422c5a-60b1-25eb-cfdd-a45626416758",
+  "piece_name": "zuri_skin",
+  "piece_type": "persona_skin",
+  "texture_sources": [
+    {
+      "texture": "zuri_skin_head.png",
+      "tint_map": "zuri_skin_head_tintmap.tga",
+      "use_face_uv": true
+    },
+    {
+      "texture": "zuri_skin_body.png",
+      "tint_map": "zuri_skin_body_tintmap.tga"
+    }
+  ],
+  "tint_base_color": {
+    "r_color": "#ff7f4a"
+  }
+}
+
+== {"piece_id": "a", "piece_name": "n", "piece_type": "persona_skin", "piece_sub_type": "Odd", "body_variant": "small", "clothing_map": "c", "face_clothing_map": "f", "zone": ["z1", "z2"], "texture_sources": [{"texture": "t", "tint_map": "m", "animated": true, "frames": 3, "use_face_uv": false, "odd": 1}], "geometry_sources": [{"geometry": "g", "arm_size": "slim", "body_size": "Weird", "side": "left", "zone": "z", "is_face": "true", "texture": "t", "tint_map": "m", "animated": false, "frames": 1}], "tint_color": {"r_color": "#ff0000", "g_color": "#00ff00", "b_color": "#0000ff", "a_color": "#ffffffff", "x": null}, "tint_base_color": "#123456", "allow_tint_override": true, "extra": [1]}
+rejected: ["core/invalid_enum_line geometry_sources/0/body_size", "core/invalid_enum_line piece_sub_type", "core/unrecognized_field extra", "core/unrecognized_field texture_sources/0/odd", "core/unrecognized_field tint_color/x", "persona/meta_not_parsed ", "persona/side_not_arm_or_leg geometry_sources/0/side"]
+== {"piece_id": "e", "piece_name": "e", "piece_type": "persona_emote", "animation_sources": [{"name": "a", "animationFile": "f.json"}], "zone": "z", "piece_sub_type": 5, "allow_tint_override": "yes"}
+rejected: ["core/invalid_type allow_tint_override", "core/invalid_type piece_sub_type", "persona/meta_not_parsed "]
+== {"format_version": "1.26.40", "minecraft:persona_piece": {"piece_id": "v", "piece_name": "v", "piece_type": "persona_hat"}}
+rejected: ["core/missing_payload ", "persona/meta_not_parsed "]
+== {"piece_id": "b", "piece_name": "b", "piece_type": "persona_body", "geometry_sources": [{"geometry": "g", "is_face": true}], "tint_color": {"r_color": 3}}
+rejected: ["core/invalid_type geometry_sources/0/is_face", "core/invalid_type tint_color/r_color", "persona/meta_not_parsed "]
+== {"piece_store_name": "s", "piece_thumbnail": "t.png", "odd": {"a": 1}}
+{
+  "piece_store_name": "s",
+  "piece_thumbnail": "t.png",
+  "odd": {
+    "a": 1
+  }
+}
+
+== {"piece_store_name": null, "piece_thumbnail": 4}
+{
+  "piece_store_name": null,
+  "piece_thumbnail": 4
+}
+
+== {}
+{}
+

@@ -12,3 +12,5 @@ mod located;
 mod molang;
 #[path = "geometry/round_trip.rs"]
 mod round_trip;
+#[path = "geometry/written.rs"]
+mod written;

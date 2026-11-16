@@ -15,7 +15,6 @@ mod link;
 mod merge;
 mod read;
 mod stack;
-mod write;
 
 #[cfg(test)]
 mod tests;
@@ -156,13 +155,21 @@ pub struct GroupIdentifier {
 /// One item or block of the catalogue.
 ///
 /// JSON: `"ns:item"`, `"ns:item:1"` (with an aux value) or `{"name": "ns:item"}`. Both forms
-/// read to the same value; it is written as the string.
+/// read to the same value; it is written as the string (its `proxy`, the name).
 /// Two items are equal when their names are written the same, the aux value included.
 #[derive(Clone, Debug, Facet)]
+#[facet(proxy = ItemId)]
 pub struct CatalogItem {
     /// The item (JSON `name`, or the string itself): `namespace:name`, optionally followed
     /// by `:aux`. The namespace is required.
     pub name: ItemId,
+}
+
+/// The name an item is written as.
+impl From<&CatalogItem> for ItemId {
+    fn from(item: &CatalogItem) -> Self {
+        item.name.clone()
+    }
 }
 
 /// By the name as written: `ItemId` alone compares without the aux value.
@@ -243,7 +250,7 @@ impl VersionStruct for CraftingCatalog {
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        Ok(self.payload())
+        schema::write_value(self)
     }
 }
 

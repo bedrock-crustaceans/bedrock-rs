@@ -25,6 +25,7 @@ mod sealed {
 /// was read; what the game takes it for is on the owning struct's accessor
 /// ([`PieceMetadata::piece_type`](super::PieceMetadata::piece_type) and its like).
 #[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum Written<T> {
     /// A name of the set.
@@ -91,7 +92,7 @@ macro_rules! names {
         #[non_exhaustive]
         #[repr(u8)]
         pub enum $name {
-            $( $(#[$vmeta])* $variant = $value, )+
+            $( $(#[$vmeta])* #[facet(rename = $text)] $variant = $value, )+
         }
 
         impl $name {

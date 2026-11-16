@@ -1,0 +1,187 @@
+== {"serialize_name": "p", "localization_name": "p", "skins": [{"localization_name": "a", "geometry": "geometry.humanoid.custom", "texture": "a.png", "type": "free", "cape": "c.png", "animations": {"move.arms": "animation.x"}, "enable_attachables": false, "held_item_ignores_lighting": [1], "hide_armor": "yes", "tag": 7}]}
+{
+  "serialize_name": "p",
+  "localization_name": "p",
+  "skins": [
+    {
+      "localization_name": "a",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "a.png",
+      "type": "free",
+      "cape": "c.png",
+      "animations": {
+        "move.arms": "animation.x"
+      },
+      "enable_attachables": false,
+      "held_item_ignores_lighting": [
+        1
+      ],
+      "hide_armor": "yes",
+      "tag": 7
+    }
+  ]
+}
+
+== {"serialize_name": 5, "localization_name": true, "extra": 1, "skins": [{"localization_name": false, "geometry": 3, "texture": null, "cape": true, "type": []}]}
+{
+  "skins": [
+    {
+      "localization_name": false,
+      "geometry": 3,
+      "texture": null,
+      "type": [],
+      "cape": true
+    }
+  ],
+  "serialize_name": 5,
+  "localization_name": true,
+  "extra": 1
+}
+
+== {"skins": [{"localization_name": "a", "texture": "a.png"}, "x", 4]}
+{
+  "skins": [
+    {
+      "localization_name": "a",
+      "texture": "a.png"
+    },
+    "x",
+    4
+  ]
+}
+
+== {"skins": {"b": {"texture": "b.png"}, "a": {"texture": "a.png"}}}
+{
+  "skins": {
+    "b": {
+      "texture": "b.png"
+    },
+    "a": {
+      "texture": "a.png"
+    }
+  }
+}
+
+== {"skins": [{"texture": "a.png", "hide_armor": null, "animations": null}], "odd": [null]}
+{
+  "skins": [
+    {
+      "texture": "a.png",
+      "animations": null,
+      "hide_armor": null
+    }
+  ],
+  "odd": [
+    null
+  ]
+}
+
+== {"skins": 5}
+{
+  "skins": 5
+}
+
+== {"skins": []}
+{
+  "skins": []
+}
+
+== {}
+{}
+
+== {"serialize_name": "p", "localization_name": "p", "skins": [{"localization_name": "a", "geometry": "geometry.humanoid.custom", "texture": "a.png", "type": "free", "cape": "c.png", "animations": {"move.arms": "animation.x"}, "enable_attachables": false, "held_item_ignores_lighting": [1], "hide_armor": "yes", "tag": 7}]}, localization_name set to "edited"
+{
+  "serialize_name": "p",
+  "localization_name": "edited",
+  "skins": [
+    {
+      "localization_name": "a",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "a.png",
+      "type": "free",
+      "cape": "c.png",
+      "animations": {
+        "move.arms": "animation.x"
+      },
+      "enable_attachables": false,
+      "held_item_ignores_lighting": [
+        1
+      ],
+      "hide_armor": "yes",
+      "tag": 7
+    }
+  ]
+}
+
+== {"serialize_name": 5, "localization_name": true, "extra": 1, "skins": [{"localization_name": false, "geometry": 3, "texture": null, "cape": true, "type": []}]}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": [
+    {
+      "localization_name": false,
+      "geometry": 3,
+      "texture": null,
+      "type": [],
+      "cape": true
+    }
+  ],
+  "serialize_name": 5,
+  "extra": 1
+}
+
+== {"skins": [{"localization_name": "a", "texture": "a.png"}, "x", 4]}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": [
+    {
+      "localization_name": "a",
+      "texture": "a.png"
+    }
+  ]
+}
+
+== {"skins": {"b": {"texture": "b.png"}, "a": {"texture": "a.png"}}}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": [
+    {
+      "texture": "a.png"
+    },
+    {
+      "texture": "b.png"
+    }
+  ]
+}
+
+== {"skins": [{"texture": "a.png", "hide_armor": null, "animations": null}], "odd": [null]}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": [
+    {
+      "texture": "a.png",
+      "animations": null,
+      "hide_armor": null
+    }
+  ],
+  "odd": [
+    null
+  ]
+}
+
+== {"skins": 5}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": []
+}
+
+== {"skins": []}, localization_name set to "edited"
+{
+  "localization_name": "edited",
+  "skins": []
+}
+
+== {}, localization_name set to "edited"
+{
+  "localization_name": "edited"
+}
+

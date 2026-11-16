@@ -32,3 +32,6 @@ mod versions;
 
 #[path = "crafting_catalog/located.rs"]
 mod located;
+
+#[path = "crafting_catalog/written.rs"]
+mod written;

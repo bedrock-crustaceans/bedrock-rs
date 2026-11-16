@@ -696,8 +696,8 @@ impl FieldAttrs {
         out
     }
 
-    /// Reads one of facet's own keys the derive takes: `default`, `rename`, `alias`, `skip` and
-    /// `flatten`.
+    /// Reads one of facet's own keys the derive takes: `default`, `rename`, `alias`, `skip`
+    /// (`skip_deserializing` too: a member only the writer writes is not read) and `flatten`.
     fn read_builtin(&mut self, entry: &Entry, key: &str, errors: &mut Vec<Error>) {
         let string = || match entry.expr() {
             Some(Ok(Expr::Lit(syn::ExprLit {
@@ -722,7 +722,7 @@ impl FieldAttrs {
             }
             "rename" => self.rename = string().or(self.rename.take()),
             "alias" => self.alias = string().or(self.alias.take()),
-            "skip" => self.skip = true,
+            "skip" | "skip_deserializing" => self.skip = true,
             "flatten" => self.flatten = true,
             _ => {}
         }

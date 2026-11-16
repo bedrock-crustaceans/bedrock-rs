@@ -59,8 +59,13 @@ pub struct Geometry {
     /// `bones`.
     pub bones: Option<Vec<Bone>>,
     /// `__legacy`: what an upgraded file older than 1.12.0 carried that the newest schema has
-    /// no member for. Empty for a file written at 1.12.0 or later, and then not written.
-    #[facet(skip)]
+    /// no member for. Empty for a file written at 1.12.0 or later, and then not written. Never
+    /// read: a file of the newest shapes has no such member.
+    #[facet(
+        rename = "__legacy",
+        skip_deserializing,
+        skip_serializing_if = GeometryLegacy::is_empty
+    )]
     pub legacy: GeometryLegacy,
     /// The geometries this one inherits bones from (`legacy.parent` and its parents), filled
     /// when a pack stack is loaded. Never read from a file and never written.
@@ -150,7 +155,12 @@ pub struct Bone {
     /// `texture_meshes`.
     pub texture_meshes: Option<Vec<TextureMesh>>,
     /// `__legacy`: members of a file older than 1.12.0; empty otherwise, and then not written.
-    #[facet(skip)]
+    /// Never read.
+    #[facet(
+        rename = "__legacy",
+        skip_deserializing,
+        skip_serializing_if = BoneLegacy::is_empty
+    )]
     pub legacy: BoneLegacy,
 }
 
@@ -198,6 +208,7 @@ pub struct Cube {
 
 /// `uv` of a cube.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum CubeUv {
     /// `[u, v]`: the box layout from that texel. Vanilla reads whole texels; a fraction is cut
@@ -245,6 +256,7 @@ pub struct FaceUv {
 
 /// One locator (`locators.<name>`).
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum Locator {
     /// `[x, y, z]`.
@@ -282,6 +294,7 @@ pub struct PolyMesh {
 
 /// `polys` of a poly mesh.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum Polys {
     /// Polygons of three or four vertices, each vertex an index into positions, normals and

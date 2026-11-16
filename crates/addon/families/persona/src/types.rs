@@ -174,6 +174,7 @@ pub type Zones = OneOrMany<String>;
 /// `is_face` as written: the string vanilla's own files use (the type from 1.26.40), or a
 /// boolean in a model built by hand (1.26.20 read one; 1.26.40+ refuses it).
 #[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum FaceFlag {
     /// `true` or `false`.
@@ -196,6 +197,7 @@ impl FaceFlag {
 /// `tint_color` / `tint_base_color` as written: the four colour slots of the piece's tint
 /// map, or one colour for all four.
 #[derive(Clone, Debug, PartialEq, Facet)]
+#[facet(untagged)]
 #[repr(u8)]
 pub enum TintColorOrString {
     /// An object with a colour per slot.
@@ -258,6 +260,7 @@ impl TintColor {
 /// The text is kept as written. The game checks nothing: it drops the first character and
 /// reads the rest as a base-16 number `0xAARRGGBB`, so `#RRGGBB` has alpha 0.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
+#[facet(transparent)]
 pub struct HexColor(pub String);
 
 impl HexColor {

@@ -117,7 +117,7 @@ impl SkinPack {
                 read.unknown_by_rule(&Node::new(member, at), UnknownRule::Keep);
             }
         }
-        *pack.written = (pack.fields_value() != *root).then(|| root.clone());
+        *pack.written = (pack.fields_value().ok().as_ref() != Some(root)).then(|| root.clone());
         pack
     }
 }

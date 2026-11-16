@@ -22,6 +22,7 @@ mod molang_leaves;
 mod rows;
 mod sides;
 mod walk;
+mod write;
 
 // The grammar's dispatcher macros (`__attr`, `__parse_attr`) and its helper re-exports come
 // with the glob: facet's derive expands `schema::min` to `schema::__attr!(..)`. The derive
@@ -83,3 +84,4 @@ pub use sides::{Found, Side, Sides};
 #[doc(hidden)]
 pub use walk::{Bounded, End, Number, SchemaFields, member};
 pub use walk::{Schema, UnknownName};
+pub use write::{Floats, Writing, write_value, write_value_with};

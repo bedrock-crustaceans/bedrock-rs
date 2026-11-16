@@ -62,7 +62,7 @@ impl VersionStruct for CatalogV1_21_60 {
     }
 
     fn write(&self) -> Result<Value, EncodeError> {
-        Ok(self.0.payload())
+        bedrock_addon_core::schema::write_value(&self.0)
     }
 }
 

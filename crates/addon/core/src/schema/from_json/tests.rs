@@ -2317,3 +2317,25 @@ fn a_tuple_struct_tells_its_shape_under_its_own_codes() {
         ]
     );
 }
+
+/// A member the writer writes and no file holds (geometry's `__legacy` side-car).
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct WrittenOnly {
+    #[facet(schema::fallback = 0)]
+    v: Option<u8>,
+    #[facet(rename = "__side", skip_deserializing)]
+    side: Option<u8>,
+}
+
+#[test]
+fn a_skip_deserializing_field_is_not_read_and_its_member_is_an_unknown_one() {
+    let (value, told) = as_read::<WrittenOnly>(r#"{"v": 1, "__side": 2}"#);
+    assert_eq!(
+        value,
+        Some(WrittenOnly {
+            v: Some(1),
+            side: None
+        })
+    );
+    assert_eq!(told, ["Error root/__side core/unrecognized_field"]);
+}
