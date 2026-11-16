@@ -7,14 +7,15 @@ use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::Node;
 use bedrock_addon_core::json::{
-    self, EncodeError, JsonSlice, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
+    self, EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value, WriteStyle, write_json,
 };
 
-use super::read::{self, Sink};
+use super::read::folder_read;
 use super::{
-    CommandsConfig, NetModuleConfig, PERMISSIONS_FILE, PackPermissions, PackScriptConfig,
-    SERVER_NET_MODULE, ServerNet, net,
+    CommandsConfig, NetModuleConfig, PackPermissions, PackScriptConfig, SERVER_NET_MODULE,
+    ServerNet, net,
 };
 
 /// `value` as JSON text in the default style. Core's writer refuses a value nested past
@@ -72,17 +73,17 @@ fn meaning(entry: &VObject) -> Result<Option<ServerNet>, EncodeError> {
     if json::check_depth(text.as_bytes(), MAX_JSON_DEPTH - LEVELS_ABOVE_AN_ENTRY).is_err() {
         return Ok(None);
     }
-    let slice = JsonSlice {
-        text: &text,
-        offset: 0,
+    // The entry as a file holds it: the text written, read back.
+    let Ok(entry) = json::from_str_jsonc(&text) else {
+        return Ok(None);
     };
     // What the load has to say was said when the file was read.
     let mut unused = Diagnostics::default();
-    let mut sink = Sink::new(None, PERMISSIONS_FILE, &mut unused);
-    Ok(Some(match read::object(slice) {
-        Some(members) => net::read(slice, &members, &JsonPath::new(), &mut sink),
-        None => ServerNet::Denied,
-    }))
+    let mut read = folder_read(&mut unused);
+    Ok(Some(net::load(
+        &Node::new(&entry, JsonPath::new()),
+        &mut read,
+    )))
 }
 
 fn strings<'a>(items: impl IntoIterator<Item = &'a String>) -> Value {

@@ -6,8 +6,12 @@
 //! server's administrator writes it, a driver reads the files (`bedrock_addon_std`) and the
 //! functions here parse their contents.
 //!
-//! The readers stay hand walks: the server's config files are read from their slices with the
-//! server's own texts.
+//! Each JSON file is a type that derives its read (`#[derive(Facet, Schema)]`), read under
+//! the reading the server's own reader has: the per-folder files' jsoncpp walk, in which a
+//! member of the wrong type counts as absent, and the strict cereal loads of `commands.json`
+//! and the server-net entry. What stays by hand is the front every file shares (`read.rs`),
+//! the rules the server applies to a list's elements and a module's entries (`read_with`
+//! functions), and the server's wording of a few findings, which names the file.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -39,8 +43,11 @@ use indexmap::IndexMap;
 use uuid::Uuid;
 
 use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Expected, Node, Read};
+use bedrock_addon_core::schema::{FromJson, Schema};
 use bedrock_addon_core::version::FormatVersion;
 
 /// The folder a dedicated server reads its script configuration from, in its working
@@ -335,7 +342,7 @@ impl fmt::Display for SecretString {
 /// JSON: one of the lower-case names `any`, `game_directors`, `admin`, `host`, `owner`,
 /// `internal`.
 // The levels are numbered 0 to 5 in this order.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, facet::Facet)]
 #[non_exhaustive]
 #[repr(u8)]
 pub enum CommandPermissionLevel {
@@ -382,17 +389,35 @@ impl CommandPermissionLevel {
     }
 }
 
+/// A level is a string naming one: any other value is a wrong type, another name an
+/// invalid enum value.
+impl FromJson for CommandPermissionLevel {
+    const EXPECTED: Option<Expected> = Some(Expected::String);
+
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let level = Self::from_name(read.string(node)?);
+        if level.is_none() {
+            read.refuse(node, (&core_codes::INVALID_ENUM_VALUE).into());
+        }
+        level
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(CommandPermissionLevel);
+bedrock_addon_core::impl_no_molang!(CommandPermissionLevel);
+
 /// `config/commands.json`: the permission levels of the server's commands.
 ///
 /// JSON: `{"default_permission_level": "...", "permission_levels": {"<command>": "..."}}`.
 /// An invalid level name refuses the whole file. Of a member written twice the first stands.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "commands.json")]
 pub struct CommandsConfig {
     /// The level of every command `permission_levels` does not name (JSON
     /// `default_permission_level`); `None` leaves them at their normal level.
     pub default_permission_level: Option<CommandPermissionLevel>,
     /// Command name → level (JSON `permission_levels`), in the file's order.
+    #[facet(default)]
     pub permission_levels: IndexMap<String, CommandPermissionLevel>,
     /// Unknown members, kept for writing. The server accepts them silently.
     pub extra: UnknownMembers,

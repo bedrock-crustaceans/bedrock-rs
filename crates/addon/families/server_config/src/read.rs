@@ -1,20 +1,22 @@
 //! Reading the `config/` folder: the folders in name order, the shared front of every JSON
-//! file (byte-order mark, depth, members written twice, the root) and the helpers that read
-//! one level of a file at file offsets.
+//! file (byte-order mark, depth, members written twice, the root) and the reading of the
+//! per-folder files.
 
 use crate::codes;
 use std::collections::HashMap;
 
-use indexmap::IndexMap;
 use uuid::Uuid;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{
-    Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity, Span,
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Location, Phase, Severity,
+    Span,
 };
-use bedrock_addon_core::json::parse::{Options, elements_of, members_of, parse_slice};
-use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Value};
+use bedrock_addon_core::json::kit::{Node, Profile, Read, Recovery};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{self, JsonSlice, PrepareError, Prepared, Winner};
 use bedrock_addon_core::pack_identity::PackPath;
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading};
 
 use super::{
     COMMANDS_FILE, CONFIG_DIR, ConfigFolder, ConfigSource, DEFAULT_DIR, PERMISSIONS_FILE,
@@ -111,17 +113,6 @@ impl<'d> Sink<'d> {
         self.d.push(finding);
     }
 
-    /// A note of the crate's own: the server reads these silently, so it is an information.
-    pub fn warn(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
-        self.push(code, Severity::Info, at, span);
-    }
-
-    /// A line the dedicated server writes to its log at warning level (`Secret '%s' in file
-    /// '%s' is not a string…`): a warning.
-    pub fn warn_logged(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
-        self.push(code, Severity::Warning, at, span);
-    }
-
     /// An information of the crate's own.
     pub fn info(&mut self, code: Code, at: JsonPath, span: Option<Span>) {
         self.push(code, Severity::Info, at, span);
@@ -172,109 +163,49 @@ impl<'d> Sink<'d> {
     }
 }
 
-/// The JSON type of a value, from its first byte.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Kind {
-    Object,
-    Array,
-    String,
-    Number,
-    Bool,
-    Null,
+/// The per-folder files' reading, the server's jsoncpp walk: every member of the wrong type
+/// (a `null` too) counts as absent and is an information, as an unknown member is, an element
+/// or an entry that fails is left out, scalars are read as written, and a kept number no
+/// double holds is clamped and told.
+pub(super) const FOLDER_READING: Reading = Reading::OWN
+    .strict()
+    .with_null(NullHandling::Rejected)
+    .with_unknown(Severity::Info)
+    .with_on_member_failure(MemberFailure::DefaultAndTell);
+
+/// The order the per-folder files are read and told in: the file's, every member where it
+/// stands, the innermost value that fails given up.
+pub(super) const FOLDER_PROFILE: Profile = Profile::EVERY_FAILURE.with_recovery(Recovery::Value);
+
+/// A read of a per-folder file into `found`.
+pub(super) fn folder_read(found: &mut Diagnostics) -> Read<'_> {
+    Read::new(FOLDER_READING, found)
+        .profile(FOLDER_PROFILE)
+        .clamp_kept()
 }
 
-/// The JSON type of the value `slice` holds. The slice is a root that parsed, or a raw
-/// member of one, so its first byte decides.
-pub(super) fn kind(slice: JsonSlice<'_>) -> Kind {
-    // Comments may stand before the value.
-    let mut text = slice.text.trim_start();
-    loop {
-        let after = if text.starts_with("//") {
-            text.find('\n').map(|end| &text[end..])
-        } else if text.starts_with("/*") {
-            text.find("*/").map(|end| &text[end + 2..])
-        } else {
-            break;
-        };
-        text = after.unwrap_or("").trim_start();
-    }
-    match text.as_bytes().first() {
-        Some(b'{') => Kind::Object,
-        Some(b'[') => Kind::Array,
-        Some(b'"') => Kind::String,
-        Some(b't' | b'f') => Kind::Bool,
-        Some(b'n') => Kind::Null,
-        _ => Kind::Number,
-    }
+/// A note of the crate's own at `node`, an information: the server reads on in silence.
+pub(super) fn note(read: &mut Read<'_>, node: &Node<'_>, code: &'static CodeDef<0>) {
+    let mut finding = Diagnostic::of(code)
+        .severity(Severity::Info)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
-/// The file offsets of `slice`.
-pub(super) fn span(slice: JsonSlice<'_>) -> Option<Span> {
-    Some(Span {
-        offset: u32::try_from(slice.offset).ok()?,
-        len: u32::try_from(slice.text.len()).ok()?,
-    })
-}
-
-/// The members of the object `slice` holds, each a raw slice of the file; `None` when it is
-/// not an object.
-pub(super) fn object(slice: JsonSlice<'_>) -> Option<IndexMap<String, JsonSlice<'_>>> {
-    members_of(slice)
-}
-
-/// The elements of the array `slice` holds; `None` when it is not an array.
-pub(super) fn array(slice: JsonSlice<'_>) -> Option<Vec<JsonSlice<'_>>> {
-    elements_of(slice)
-}
-
-/// The string `slice` holds; `None` when it is not a string.
-pub(super) fn string(slice: JsonSlice<'_>) -> Option<String> {
-    (kind(slice) == Kind::String)
-        .then(|| {
-            let parsed = parse_slice(slice, Options::default()).ok()?;
-            Some(parsed.value.as_string()?.as_str().to_owned())
-        })
-        .flatten()
-}
-
-/// The value `slice` holds, untyped and as read.
-pub(super) fn raw_value(slice: JsonSlice<'_>) -> Option<Value> {
-    json::from_str_jsonc(slice.text).ok()
-}
-
-/// The value `slice` holds, untyped, for keeping. A number too large for a double
-/// (`1e999`) is kept as the largest finite double of its sign, with a warning at the number:
-/// it has no JSON spelling otherwise.
-pub(super) fn value(slice: JsonSlice<'_>, at: &JsonPath, sink: &mut Sink<'_>) -> Option<Value> {
-    let mut value = raw_value(slice)?;
-    for clamped in json::clamp_non_finite(&mut value, Some(slice)) {
-        let mut path = at.clone();
-        path.append(&clamped.path);
-        sink.warn(Code::from(&core_codes::INVALID_VALUE), path, clamped.span);
-    }
-    Some(value)
-}
-
-/// How a file treats a member written twice.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Twice {
-    /// The last value stands (jsoncpp: the per-folder files).
-    Last,
-    /// The first value stands (`commands.json`).
-    First,
-}
-
-/// Runs `with` on the root of the file `bytes` when it is JSON, and says whether it was.
+/// Runs `with` on the root of the file `bytes`, telling into the findings it is given, when
+/// the file is JSON, and says whether it was.
 ///
 /// The front every file shares: the byte-order mark is skipped, an empty file and a syntax
 /// error refuse the file (an error; `with` is not run), nesting past `MAX_JSON_DEPTH`
-/// too, members written twice are reduced to the one that stands, and content after the root
-/// is a warning. Offsets count from the start of the file, the mark included.
+/// too, of a member written twice the copy `winner` says stands, and content after the root
+/// is a warning. Offsets count from the start of the file, the mark included. Every finding
+/// is put in the file.
 pub(super) fn with_root(
     bytes: &[u8],
-    twice: Twice,
+    winner: Winner,
     sink: &mut Sink<'_>,
-    with: impl FnOnce(JsonSlice<'_>, &mut Sink<'_>),
+    with: impl FnOnce(&Node<'_>, &mut Diagnostics),
 ) -> bool {
     // The mark is blanked, so every offset is the file's own.
     let text = match Prepared::new(bytes) {
@@ -305,26 +236,15 @@ pub(super) fn with_root(
         sink.push(code, Severity::Error, JsonPath::new(), None);
         return false;
     }
-    let clean = match twice {
-        Twice::Last => json::last_wins(text),
-        Twice::First => json::first_wins(text),
+    let root = JsonSlice::new(text);
+    // The faults are the text's whichever copy stands: a copy that does not is text too.
+    let parsed = match parse_slice(root, Options::winner(winner)) {
+        Ok(parsed) => parsed,
+        Err(fault) => {
+            sink.malformed(fault.kind.to_string(), Some(fault.span));
+            return false;
+        }
     };
-    if twice == Twice::First
-        && matches!(clean, std::borrow::Cow::Owned(_))
-        && let Err(fault) = parse_slice(JsonSlice::new(text), Options::default())
-    {
-        // `first_wins` follows brackets and keys, not the grammar: a copy it blanked may
-        // hold the text's syntax fault. The server's reader reads the whole text, so the
-        // text as written is read once more, and its fault is the file's.
-        sink.malformed(fault.kind.to_string(), Some(fault.span));
-        return false;
-    }
-    let root = JsonSlice::new(&clean);
-    // The whole root is read once, so that every slice of it read later is known to parse.
-    if let Err(fault) = parse_slice(root, Options::default()) {
-        sink.malformed(fault.kind.to_string(), Some(fault.span));
-        return false;
-    }
     if let Some(mut finding) = json::trailing_content_finding(root) {
         finding.location.path.clone_from(&sink.path);
         if sink.secret {
@@ -332,7 +252,12 @@ pub(super) fn with_root(
         }
         sink.d.push(finding);
     }
-    with(root, sink);
+    let mut found = Diagnostics::default();
+    with(&Node::parsed(&parsed, JsonPath::new()), &mut found);
+    for finding in found.iter_mut() {
+        finding.location.path.clone_from(&sink.path);
+    }
+    sink.d.append(found);
     true
 }
 
@@ -458,7 +383,7 @@ fn shadowing(default: &PackScriptConfig, gaps: &[(&str, Gap)], d: &mut Diagnosti
             (gap.secrets && has.secrets, SECRETS_FILE),
         ];
         for (_, file) in parts.into_iter().filter(|(lacking, _)| *lacking) {
-            Sink::new(Some(name), file, d).warn(
+            Sink::new(Some(name), file, d).info(
                 Code::from(&core_codes::PACK_CONFIG_SHADOWS_DEFAULT),
                 JsonPath::new(),
                 None,

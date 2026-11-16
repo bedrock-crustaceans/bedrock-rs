@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 use super::FromJson;
 use crate::json::Declared;
 use crate::json::Value;
-use crate::json::kit::{Expected, Node, Read, Scalar};
+use crate::json::kit::{Expected, MemberOrder, Node, Read, Scalar};
 use crate::versioning::NullHandling;
 
 macro_rules! integers {
@@ -424,7 +424,8 @@ impl<K: crate::id::Kind> MapKey for crate::id::Id<K> {
     }
 }
 
-/// The entries of an object, each value read as `V` at its member's path, in file order. A
+/// The entries of an object, each value read as `V` at its member's path, in the profile's
+/// order (held in the file's under [`MemberOrder::SortedInPlace`]). A
 /// failed value fails the map (every value is still read and told); a value read as absent (a
 /// scalar its profile refuses, under [`Passes::AfterRead`](crate::json::kit::Passes::AfterRead) with `DefaultAndTell`: the old pre-pass
 /// blanked it) is left out and the rest kept. An unknown member inside a value is told and not
@@ -443,12 +444,22 @@ fn map_entries<K: MapKey, V>(
     let members = read.object(node)?;
     let keeps = read.field_unknown() == Some(crate::schema::UnknownRule::Keep);
     let drops = read.defaults_drop(node, false);
+    // Read in the keys' order, held in the file's: each entry with its place in the file.
+    let places: Option<HashMap<&str, usize>> =
+        (read.telling().members == MemberOrder::SortedInPlace).then(|| {
+            members
+                .iter()
+                .enumerate()
+                .map(|(place, (key, _))| (key, place))
+                .collect()
+        });
+    let mut held = Vec::new();
     let mut failed = false;
-    for (key, member) in read.ordered(&members) {
+    for (name, member) in read.ordered(&members) {
         if read.stopped() {
             return None;
         }
-        let Some(key) = K::from_key(key) else {
+        let Some(key) = K::from_key(name) else {
             read.wrong_type(&member);
             failed = true;
             continue;
@@ -459,14 +470,19 @@ fn map_entries<K: MapKey, V>(
         } else {
             read.unkeepable(|read| read.in_map_value(true, |read| entry(&member, read)))
         };
-        match value {
-            Some(value) => put(key, value),
-            None if read.take_defaulted() || drops || read.left_out_since(mark) => {
+        match (value, &places) {
+            (Some(value), Some(places)) => held.push((places.get(name).copied(), key, value)),
+            (Some(value), None) => put(key, value),
+            (None, _) if read.take_defaulted() || drops || read.left_out_since(mark) => {
                 // The entry is left out: what it kept of its own goes with it.
                 read.findings_mut().unknown_mut().forget(member.path());
             }
-            None => failed = true,
+            (None, _) => failed = true,
         }
+    }
+    held.sort_by_key(|(place, _, _)| *place);
+    for (_, key, value) in held {
+        put(key, value);
     }
     (!failed).then_some(())
 }

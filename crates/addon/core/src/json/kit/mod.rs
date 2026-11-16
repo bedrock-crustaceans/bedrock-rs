@@ -681,6 +681,8 @@ pub struct Profile {
     pub names: Names,
     /// Whether a number a float member does not hold exactly is told.
     pub lossy: Lossy,
+    /// Whether a finding of the read spans the bytes it is about.
+    pub spans: SpanRule,
 }
 
 /// When an object fails, and where and whether its missing members are told
@@ -726,6 +728,18 @@ pub enum Lossy {
     Told,
 }
 
+/// Whether a finding of the read spans the bytes of the value it is about ([`Profile::spans`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum SpanRule {
+    /// Every finding spans its value, as the one rule of the reader says.
+    Told,
+    /// No finding has a span: a file whose bytes no finding may address (the server's
+    /// `secrets.json`, whose findings are printed where the file is not), or a reader that
+    /// names a place by its path alone. What a finding says is unchanged.
+    Withheld,
+}
+
 /// How many failures a read tells ([`Profile::failures`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -759,6 +773,10 @@ pub enum MemberOrder {
     /// In the sorted order of the keys' bytes, jsoncpp's `std::map` (the render controller and
     /// older fog loaders); a map's entries too, which it then holds in that order.
     Sorted,
+    /// Read and told as [`Sorted`](Self::Sorted), a map holding its entries in the file's
+    /// order: a reader that walks jsoncpp's `std::map` (the server's `secrets.json`, whose
+    /// warnings come in the names' byte order) of a document the crate writes back as written.
+    SortedInPlace,
 }
 
 /// Where a struct tells the unknown members of its object ([`Profile::unknown`]), each in file
@@ -806,6 +824,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
     /// Every failure and every finding where the read meets it, in file order: a game reader
     /// that binds every member and tells each failure. [`Read::new`]'s.
@@ -818,6 +837,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
     /// As [`EVERY_FAILURE`](Self::EVERY_FAILURE), an object's unknown members told before its
     /// members.
@@ -874,6 +894,12 @@ impl Profile {
         Self { lossy, ..self }
     }
 
+    /// The profile spanning its findings as `spans` says.
+    #[must_use]
+    pub const fn with_spans(self, spans: SpanRule) -> Self {
+        Self { spans, ..self }
+    }
+
     /// The game's JSON schema node tree: every failure where it is met, in file order, an
     /// object failed by any error below it ([`Objects::Tree`]); a loader names its tree's
     /// order, names and floats with the builders.
@@ -891,6 +917,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
 
     /// Whether the read stops at its first failure ([`Failures::First`]).
@@ -1649,6 +1676,9 @@ impl<'d> Read<'d> {
         if let Some(phase) = self.phase {
             finding.phase = phase;
         }
+        if self.profile.spans == SpanRule::Withheld {
+            finding.location.span = None;
+        }
         let rejects = finding.rejects();
         self.failed |= rejects;
         self.errors += usize::from(rejects);
@@ -1703,10 +1733,13 @@ impl<'d> Read<'d> {
     }
 
     /// The members of `members` in the order the profile reads them: the file's, or the sorted
-    /// order of their keys ([`MemberOrder::Sorted`]).
+    /// order of their keys ([`MemberOrder::Sorted`], [`MemberOrder::SortedInPlace`]).
     pub fn ordered<'m, 'v>(&self, members: &'m Members<'v>) -> Vec<(&'v str, Node<'v>)> {
         let mut out: Vec<(&'v str, Node<'v>)> = members.iter().collect();
-        if self.profile.members == MemberOrder::Sorted {
+        if matches!(
+            self.profile.members,
+            MemberOrder::Sorted | MemberOrder::SortedInPlace
+        ) {
             out.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         }
         out

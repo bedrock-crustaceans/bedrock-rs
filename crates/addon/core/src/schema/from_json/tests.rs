@@ -2121,3 +2121,42 @@ fn a_told_kept_failure_is_not_the_first_failure_of_the_read() {
         );
     }
 }
+
+/// A map read in the sorted order of its keys' bytes tells its entries' findings in that order;
+/// in place, it holds the entries it read where the file has them.
+#[test]
+fn a_map_read_sorted_in_place_tells_by_key_and_holds_in_file_order() {
+    let text = r#"{"d": 4, "b": "x", "c": 3, "a": "y"}"#;
+    let reading = Reading::OWN
+        .strict()
+        .with_on_member_failure(MemberFailure::DefaultAndTell);
+    let profile = Profile::EVERY_FAILURE.with_recovery(Recovery::Value);
+    let keys =
+        |map: Option<IndexMap<String, u8>>| -> Vec<String> { map.unwrap().into_keys().collect() };
+    let (sorted, told) = read_as::<IndexMap<String, u8>>(
+        text,
+        reading,
+        profile.with_members(crate::json::kit::MemberOrder::Sorted),
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/a core/invalid_type",
+            "Info root/b core/invalid_type"
+        ]
+    );
+    assert_eq!(keys(sorted), ["c", "d"]);
+    let (in_place, told) = read_as::<IndexMap<String, u8>>(
+        text,
+        reading,
+        profile.with_members(crate::json::kit::MemberOrder::SortedInPlace),
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/a core/invalid_type",
+            "Info root/b core/invalid_type"
+        ]
+    );
+    assert_eq!(keys(in_place), ["d", "c"]);
+}
