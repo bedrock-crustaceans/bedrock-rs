@@ -9,7 +9,7 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{DataEnum, Error, Fields, Ident, Member, Type, Variant};
 
-use super::attr::{ContainerAttrs, FieldAttrs};
+use super::attr::{ContainerAttrs, DefaultDecl, FieldAttrs};
 use super::{FieldInfo, Target, core, json_name, ty, unknown_option};
 
 /// The paths the emitted read names.
@@ -107,6 +107,17 @@ fn taken(info: &FieldInfo) -> bool {
     !named(info.ty, "UnknownMembers")
 }
 
+/// The JSON names a field is read by: the members it is fed by (`schema::members`), else its
+/// own name and its alias.
+fn json_names<'a>(info: &'a FieldInfo<'_>) -> Vec<&'a String> {
+    match &info.attrs.members {
+        Some((names, _)) => names.iter().collect(),
+        None => std::iter::once(&info.json)
+            .chain(info.attrs.alias.as_ref())
+            .collect(),
+    }
+}
+
 /// `knows`: the JSON names of the fields, a flattened struct's included, of the member
 /// `__key`. A read (`dynamic`) asks the flattened types what they know of its object
 /// (`__object`), where an internally tagged enum knows the members of the variant it read.
@@ -116,8 +127,13 @@ pub(super) fn knows(infos: &[FieldInfo], dynamic: bool) -> TokenStream {
     let names: Vec<&String> = infos
         .iter()
         .filter(|info| taken(info) && !info.inline)
-        .flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()))
-        .collect();
+        .flat_map(json_names)
+        .fold(Vec::new(), |mut names, name| {
+            if !names.contains(&name) {
+                names.push(name);
+            }
+            names
+        });
     let own = if names.is_empty() {
         quote!(false)
     } else {
@@ -161,6 +177,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     }
     validate_drop(info, errors);
     validate_keys(info, errors);
+    validate_members(info, errors);
     if let Some(span) = attrs.reads_null
         && (info.option.is_none() || attrs.flatten)
     {
@@ -225,6 +242,50 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                  members no field takes",
             ));
         }
+    }
+}
+
+/// The refusals of `schema::members`: a field that shares its owner's object or holds its
+/// unknown members, a key that words or shapes one member of the field's own name, and a field
+/// with no value for an object that writes none of its members (no `default`, no `Option`).
+fn validate_members(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some((_, span)) = &attrs.members else {
+        return;
+    };
+    let one_member = attrs.flatten
+        || !taken(info)
+        || attrs.alias.is_some()
+        || attrs.since_format.is_some()
+        || attrs.or_kept.is_some()
+        || attrs.reads_null.is_some()
+        || attrs.required.is_some()
+        || attrs.iterated.is_some()
+        || attrs.drop.is_some()
+        || attrs.keys.is_some()
+        || attrs.finite.is_some()
+        || [
+            &attrs.wrong_type,
+            &attrs.missing,
+            &attrs.invalid,
+            &attrs.negative,
+        ]
+        .iter()
+        .any(|code| code.is_some());
+    if one_member {
+        errors.push(Error::new(
+            *span,
+            "`schema::members` feeds the field from several members, which its type's \
+             `FromMembers` (or its `read_with`) reads: a key of one member of the field's own \
+             name (`alias`, `since_format`, `or_kept`, `reads_null`, `required`, a list's or a \
+             code's), `flatten` and an `UnknownMembers` field have none",
+        ));
+    } else if info.option.is_none() && attrs.default.is_none() {
+        errors.push(Error::new(
+            *span,
+            "a field fed by `schema::members` is handed its value for a document that writes \
+             none of them: give it a `default` (or make it an `Option`)",
+        ));
     }
 }
 
@@ -366,6 +427,92 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         }),
         finish,
     }
+}
+
+/// The read of a field fed by several members of the object (`schema::members`), its value
+/// bound to `__v{index}`: read once, where the first of its names is asked for (or met in the
+/// file), else after the members, by its `read_with` or its type's `FromMembers`, given each
+/// member as written and the field's default. Its arm is not its own: a member may feed several
+/// fields, so the arms are by name ([`member_arms`]), each reading every field it feeds that is
+/// not read yet; `.1` is the field's slot and its read, for them.
+fn members_read(
+    info: &FieldInfo,
+    index: usize,
+    names: &[String],
+) -> (FieldRead, (Ident, TokenStream)) {
+    let core = core();
+    let slot = format_ident!("__s{index}");
+    let value = format_ident!("__v{index}");
+    let ty = info.ty;
+    let count = names.len();
+    let default = match &info.attrs.default {
+        Some(DefaultDecl {
+            value: Some(expr), ..
+        }) => super::typed(expr, ty),
+        Some(_) => quote!(<#ty as ::core::default::Default>::default()),
+        None => quote!(::core::option::Option::None),
+    };
+    let with = info.attrs.read_with.as_ref().map_or_else(
+        || quote_spanned!(ty.span()=> <#ty as #core::schema::FromMembers<#count>>::from_members),
+        |(with, _)| quote!(#with),
+    );
+    let read_now = quote! {{
+        let __members = [#(__object.member(#names)),*];
+        (#with)(__object.node(), &__members, #default, __read)
+    }};
+    let read = FieldRead {
+        slot: quote! {
+            let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
+                ::core::option::Option::None;
+        },
+        arm: TokenStream::new(),
+        kept: None,
+        finish: quote! {
+            let #value = match #slot {
+                ::core::option::Option::Some(__read_value) => __read_value,
+                ::core::option::Option::None => #read_now,
+            };
+            if #value.is_none() {
+                __ok = false;
+            }
+        },
+    };
+    (read, (slot.clone(), read_now))
+}
+
+/// The arms of the members that feed fields (`schema::members`): one per name, reading each
+/// field it feeds that is not read yet, in declaration order. `fed` is each such field's names,
+/// slot and read.
+fn member_arms(fed: &[(&[String], Ident, TokenStream)]) -> Vec<TokenStream> {
+    let mut names: Vec<&String> = Vec::new();
+    for (own, _, _) in fed {
+        for name in *own {
+            if !names.contains(&name) {
+                names.push(name);
+            }
+        }
+    }
+    names
+        .into_iter()
+        .map(|name| {
+            let reads =
+                fed.iter()
+                    .filter(|(own, _, _)| own.contains(name))
+                    .map(|(_, slot, read_now)| {
+                        quote! {
+                            if #slot.is_none() {
+                                #slot = ::core::option::Option::Some(#read_now);
+                            }
+                        }
+                    });
+            quote! {
+                #name => {
+                    #(#reads)*
+                    true
+                }
+            }
+        })
+        .collect()
 }
 
 /// The call that reads the member of field `info` into its slot: the field's `read_with`, the
@@ -534,6 +681,7 @@ fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) ->
         let value = format_ident!("__v{index}");
         let built = match infos.iter().find(|info| info.member == member) {
             Some(info) if !taken(info) => quote!(__extra),
+            Some(info) if info.attrs.members.is_some() => quote!(#value?),
             Some(info) if info.option.is_some() => quote!(#value),
             Some(_) => quote!(#value?),
             None => untaken_value(field, &own_names),
@@ -574,6 +722,7 @@ fn fields_body(
         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut flat_slots, mut flat_arms) = (Vec::new(), Vec::new());
     let mut kept = Vec::new();
+    let mut fed = Vec::new();
     for info in infos.iter().filter(|info| taken(info)) {
         let index = index_of(info);
         if info.inline {
@@ -615,12 +764,20 @@ fn fields_body(
             arm,
             kept: keep,
             finish,
-        } = field_read(info, index, &extra_arg);
+        } = match &info.attrs.members {
+            Some((names, _)) => {
+                let (read, (slot, read_now)) = members_read(info, index, names);
+                fed.push((names.as_slice(), slot, read_now));
+                read
+            }
+            None => field_read(info, index, &extra_arg),
+        };
         slots.push(slot);
         arms.push(arm);
         kept.extend(keep);
         finishes.push(finish);
     }
+    arms.extend(member_arms(&fed));
     let extra_decl = extra.then(|| {
         let core = core();
         quote!(let mut __extra = #core::document::UnknownMembers::default();)
@@ -729,8 +886,8 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
                 let ty = info.ty;
                 return vec![quote_spanned!(ty.span()=> #reader::tag_name(<#ty as #fields>::TAG))];
             }
-            std::iter::once(&info.json)
-                .chain(info.attrs.alias.as_ref())
+            json_names(info)
+                .into_iter()
                 .map(|name| quote!(#name))
                 .collect()
         })

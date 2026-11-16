@@ -57,6 +57,7 @@ pub use component::{
 };
 pub use cx::{BoundRules, SchemaCx, TreeWording, Verdict};
 // hidden: emitted by the schema derive
+pub use from_json::FromMembers;
 #[doc(hidden)]
 pub use from_json::derived as derive_support;
 pub use from_json::{

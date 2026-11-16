@@ -161,6 +161,12 @@ impl<'v> Object<'v> {
         self.members.node()
     }
 
+    /// The member `key`, as written (a `null` too): one of those a field is fed by
+    /// (`schema::members`).
+    pub fn member(&self, key: &str) -> Option<Node<'v>> {
+        self.members.get(key)
+    }
+
     /// What the object's unknown members are, for a struct that says `rule` (its
     /// `schema::unknown`) and is `marked` (an `extra: Extra` or `UnknownMembers` field keeps
     /// them): kept when marked, when the word (the field's before the struct's) is `keep`, or

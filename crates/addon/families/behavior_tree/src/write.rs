@@ -18,12 +18,7 @@
 
 use facet_value::{VArray, VObject};
 
-use super::read::{
-    ANCHOR_BLOCK_POS, BLOCK_NAME, BLOCK_POS, DIRECTION, DISTANCE_EPSILON, ENTITY_NAME,
-    FACING_STRING, MAX_ATTEMPTS, MAX_NUMBER_OF_TICKS, MAX_SEARCH_DISTANCE, NAME, NUM_OF_SHOTS,
-    NUM_OF_TICKS, PAYLOAD, Pair, ROOT, SEARCH_RADIUS, SECOND_DIRECTION, SHOULD_BE_FLYING,
-    SHOULD_THROW, TARGET_BLOCK_POS, WAIT_DEFAULT_KEY, WAIT_DURATION,
-};
+use super::read::{NAME, PAYLOAD, ROOT, WAIT_DEFAULT_KEY};
 use super::{BehaviorTree, Node, Param};
 use bedrock_addon_core::diagnostic::{Diagnostic, JsonPath};
 use bedrock_addon_core::document::{Content, Unknown};
@@ -350,3 +345,88 @@ fn put_child(body: &mut VObject, at: &JsonPath, node: Option<&Node>) -> Result<(
     }
     Ok(())
 }
+
+// The writer's table of the parameters: the members the reader is fed by are the field
+// attributes of `Node`, which a written tree reads back through.
+
+/// A literal member, its key member, the default key, and the key the parameter has when the
+/// literal was read.
+struct Pair {
+    literal: &'static str,
+    id: &'static str,
+    default_key: &'static str,
+    preset: &'static str,
+}
+
+const fn pair(literal: &'static str, id: &'static str, default_key: &'static str) -> Pair {
+    Pair {
+        literal,
+        id,
+        default_key,
+        preset: "",
+    }
+}
+
+const MAX_ATTEMPTS: Pair = pair(
+    "desired_max_number_of_attempts",
+    "max_number_of_attempts_id",
+    "max_number_of_attempts",
+);
+const BLOCK_POS: Pair = pair("block_pos", "block_pos_id", "target_block_pos");
+const NUM_OF_TICKS: Pair = pair("num_of_ticks", "num_of_ticks_id", "target_num_of_ticks");
+/// `find_block` sets its key to `block_name` before it reads the literal.
+const BLOCK_NAME: Pair = Pair {
+    literal: "block_name",
+    id: "block_name_id",
+    default_key: Node::BLOCK_NAME_KEY,
+    preset: Node::BLOCK_NAME_KEY,
+};
+const SEARCH_RADIUS: Pair = pair("search_radius", "search_radius_id", "target_search_radius");
+/// The key member of an entity name is `entity_type`.
+const ENTITY_NAME: Pair = pair("entity_name", "entity_type", "entity_name");
+const SHOULD_BE_FLYING: Pair = pair(
+    "should_be_flying_bool",
+    "should_be_flying_id",
+    "should_be_flying",
+);
+const SHOULD_THROW: Pair = pair(
+    "should_throw_event_if_no_state_change_necessary_bool",
+    "should_throw_event_if_no_state_change_necessary_id",
+    "should_throw_event_if_no_state_change_necessary",
+);
+const TARGET_BLOCK_POS: Pair = pair(
+    "target_block_pos",
+    "target_block_pos_id",
+    "target_block_pos",
+);
+const ANCHOR_BLOCK_POS: Pair = pair(
+    "anchor_block_pos",
+    "anchor_block_pos_id",
+    "anchor_block_pos",
+);
+const FACING_STRING: Pair = pair("facing_string", "facing_string_id", "facing_string");
+const MAX_SEARCH_DISTANCE: Pair = pair(
+    "max_search_distance",
+    "max_search_distance_id",
+    "max_search_distance",
+);
+const DIRECTION: Pair = pair("desired_direction", "direction_id", "direction");
+const SECOND_DIRECTION: Pair = pair(
+    "desired_second_direction",
+    "second_direction_id",
+    "second_direction",
+);
+const MAX_NUMBER_OF_TICKS: Pair = pair(
+    "max_number_of_ticks",
+    "number_of_ticks_id",
+    "number_of_ticks",
+);
+const DISTANCE_EPSILON: Pair = pair(
+    "distance_epsilon",
+    "distance_epsilon_id",
+    "target_distance_epsilon",
+);
+const NUM_OF_SHOTS: Pair = pair("num_of_shots", "num_of_shots_id", "target_num_of_shots");
+
+/// The one member of `minecraft:wait`: the literal as an integer, the key as a string.
+const WAIT_DURATION: &str = "wait_duration";

@@ -130,6 +130,18 @@ facet::define_attr_grammar! {
         /// `FromJson`: `fn(&Node<'_>, &mut Read<'_>) -> Option<T>`, `T` the field's type (an
         /// `Option` field's inner type), called for a member that is written.
         ReadWith(arbitrary),
+        /// `members = ["a", "b"]` (compile-time): the field is fed by these members of its
+        /// struct's object, not by one of its own name: a value the game reads from several keys
+        /// (a literal or the name of where to find it, one list under three spellings). Each is
+        /// a member of the struct, none an unknown one. The field is read once, at its place (in
+        /// file order where the file has the first of them, after the members when it has
+        /// none), whether or not any is written: `FromMembers<N>` on its type, or its
+        /// `read_with`, `fn(&Node<'_>, &[Option<Node<'_>>; N], T, &mut Read<'_>) -> Option<T>`,
+        /// `T` the field's type, given the object, each member as written and the field's
+        /// `default` (`None` for an `Option`), says what was read and how two written together
+        /// merge. A member may feed several fields; each is read where the first of its members
+        /// is.
+        Members(arbitrary),
         /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
         /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
         /// at the object, tells what it refuses (the game's own words for a name that is none)

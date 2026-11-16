@@ -29,6 +29,7 @@ pub mod derived;
 mod impls;
 mod keys;
 mod leaves;
+mod members;
 
 #[cfg(test)]
 mod tests;
@@ -36,6 +37,7 @@ mod tests;
 pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
 pub use keys::{KeyPattern, Keys, read_keyed};
 pub use leaves::{from_value, from_value_ref, read_later};
+pub use members::FromMembers;
 
 use crate::json::kit::{Expected, Node, Read};
 

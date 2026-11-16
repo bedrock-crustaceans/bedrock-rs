@@ -215,6 +215,8 @@ pub(crate) struct FieldAttrs {
     pub reads_null: Option<Span>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
+    /// `schema::members = ["a", "b"]`: the members of the struct's object the field is fed by.
+    pub members: Option<(Vec<String>, Span)>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -281,6 +283,7 @@ const FIELD_KEYS: &[&str] = &[
     "kept",
     "negative",
     "keys",
+    "members",
 ];
 const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
@@ -522,6 +525,42 @@ fn length(entry: &Entry, key: &str) -> Result<usize> {
     }
 }
 
+/// `schema::members`' names: an array of distinct string literals, at least one.
+fn member_names(entry: &Entry) -> Result<Vec<String>> {
+    let wrong = |span: Span| {
+        Error::new(
+            span,
+            "`schema::members` takes the names of the members, as in `schema::members = [\"a\", \"b\"]`",
+        )
+    };
+    let Some(value) = &entry.value else {
+        return Err(wrong(entry.span));
+    };
+    let bracketed = match value.clone().into_iter().collect::<Vec<_>>().as_slice() {
+        [TokenTree::Group(group)] if group.delimiter() == Delimiter::Bracket => group.stream(),
+        _ => return Err(wrong(entry.span)),
+    };
+    let lits = syn::parse::Parser::parse2(
+        syn::punctuated::Punctuated::<LitStr, syn::Token![,]>::parse_terminated,
+        bracketed,
+    )
+    .map_err(|error| wrong(error.span()))?;
+    let mut names: Vec<String> = Vec::new();
+    for lit in lits {
+        if names.contains(&lit.value()) {
+            return Err(Error::new(
+                lit.span(),
+                format!("`{}` is named twice in `schema::members`", lit.value()),
+            ));
+        }
+        names.push(lit.value());
+    }
+    if names.is_empty() {
+        return Err(wrong(entry.span));
+    }
+    Ok(names)
+}
+
 /// A key's value as an expression; facet already refuses a valued key written without one.
 fn value_expr(entry: &Entry, key: &str) -> Result<Expr> {
     match entry.expr() {
@@ -626,6 +665,10 @@ impl FieldAttrs {
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
                     "drop" => once(&mut out.drop, span, &key, span, errors),
                     "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
+                    "members" => {
+                        let names = member_names(entry)?;
+                        once(&mut out.members, (names, span), &key, span, errors);
+                    }
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
@@ -702,6 +745,7 @@ impl FieldAttrs {
             .or(self.drop)
             .or(self.reads_null)
             .or_else(|| self.or_kept.map(|(_, s)| s))
+            .or_else(|| self.members.as_ref().map(|(_, s)| *s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.low_code.as_ref().map(|(_, s)| *s))
             .or_else(|| self.high_code.as_ref().map(|(_, s)| *s))

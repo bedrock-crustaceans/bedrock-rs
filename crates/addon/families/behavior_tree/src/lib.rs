@@ -2,7 +2,9 @@
 //!
 //! Automation behavior trees: `behavior_trees/**/*.json` of a behaviour pack,
 //! `minecraft:behavior_tree`. Not a version chain: no file has a `format_version` and no loader
-//! reads one, so the family is one unversioned struct read by one hand-written walker.
+//! reads one, so the family is one unversioned struct: its file front is read by hand (`read`),
+//! its nodes by the derived read of [`Node`], each parameter fed by its literal and its key
+//! member (`schema::members`).
 //! Vanilla loads these files in development builds only; retail 1.26.45 has no loader.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -22,6 +24,8 @@ mod tests;
 
 use crate::read::parse_document;
 use bedrock_addon_core::id::BehaviorTreeId;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
 use std::collections::{HashMap, HashSet};
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
@@ -85,7 +89,7 @@ pub struct BehaviorTree {
 /// A literal of the wrong JSON type is ignored, not an error. An integer literal takes an
 /// integer or a bool (`true` is 1), never a real such as `1.0`; a float literal takes any
 /// number or a bool.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Facet)]
 pub struct Param<T> {
     /// The literal: the value as written, or the parameter's default when the literal member
     /// is absent or of the wrong type.
@@ -109,96 +113,125 @@ pub struct Param<T> {
 ///
 /// Because a node has its own `Drop`, a field cannot be moved out of a `Node` by pattern:
 /// match on a reference, or take the field with `std::mem::take`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum Node {
     /// `minecraft:sequence`: a composite over its children, in order.
+    #[facet(rename = "minecraft:sequence")]
     Sequence {
         /// `children`: an array of nodes. `None` when the member is absent or not an array;
         /// the node then has no children. An element that is not a one-member object, or
         /// whose type is unknown, is left out.
+        #[facet(schema::members = ["children"], schema::read_with = read::children)]
         children: Option<Vec<Node>>,
     },
     /// `minecraft:selector`: a composite over its children, in order.
+    #[facet(rename = "minecraft:selector")]
     Selector {
         /// `children`: an array of nodes. `None` when the member is absent or not an array;
         /// the node then has no children. An element that is not a one-member object, or
         /// whose type is unknown, is left out.
+        #[facet(schema::members = ["children"], schema::read_with = read::children)]
         children: Option<Vec<Node>>,
     },
     /// `minecraft:repeat_until_success`: a decorator that repeats its child.
+    #[facet(rename = "minecraft:repeat_until_success")]
     RepeatUntilSuccess {
-        /// `child`: one node. `None` when the member is absent, not a one-member object, or
-        /// of an unknown type.
-        child: Option<Box<Node>>,
         /// `desired_max_number_of_attempts` (default 0), or the key
         /// `max_number_of_attempts_id` (default key `max_number_of_attempts`).
+        #[facet(schema::members = ["desired_max_number_of_attempts", "max_number_of_attempts_id"], default = Param::<i32>::key("max_number_of_attempts"))]
         max_attempts: Param<i32>,
+        /// `child`: one node. `None` when the member is absent, not a one-member object, or
+        /// of an unknown type.
+        #[facet(schema::members = ["child"], schema::read_with = read::child)]
+        child: Option<Box<Node>>,
     },
     /// `minecraft:repeat_until_failure`: a decorator that repeats its child.
+    #[facet(rename = "minecraft:repeat_until_failure")]
     RepeatUntilFailure {
         /// `child`: one node. `None` when the member is absent, not a one-member object, or
         /// of an unknown type.
+        #[facet(schema::members = ["child"], schema::read_with = read::child)]
         child: Option<Box<Node>>,
     },
     /// `minecraft:inverter`: a decorator that inverts its child's result.
+    #[facet(rename = "minecraft:inverter")]
     Inverter {
         /// `child`: one node. `None` when the member is absent, not a one-member object, or
         /// of an unknown type.
+        #[facet(schema::members = ["child"], schema::read_with = read::child)]
         child: Option<Box<Node>>,
     },
     /// `minecraft:subtree`: runs another tree.
+    #[facet(rename = "minecraft:subtree")]
     Subtree {
         /// `subtree_id`: the `minecraft:name` of the other tree, resolved when the node runs;
         /// empty when the member is absent. Loading checks neither that the tree exists nor
         /// that subtrees form no cycle.
+        #[facet(default = BehaviorTreeId::parse(""), schema::read_with = read::subtree_id)]
         subtree_id: BehaviorTreeId,
         /// `data_items`: the blackboard entries copied into the subtree, as `(from, to)`. A
         /// string `s` is `(s, s)`; an object with both `from` and `to` is that pair; the
         /// member is one such item or an array of them. Any other item is left out.
+        #[facet(default, schema::read_with = read::data_items)]
         data_items: Vec<(String, String)>,
     },
     /// `minecraft:activate_tool`.
+    #[facet(rename = "minecraft:activate_tool")]
     ActivateTool {
         /// `block_pos` (default `[0, 0, 0]`), or the key `block_pos_id` (default key
         /// `target_block_pos`).
+        #[facet(schema::members = ["block_pos", "block_pos_id"], default = Param::<BlockPos>::key("target_block_pos"))]
         block_pos: Param<BlockPos>,
     },
     /// `minecraft:attack`.
+    #[facet(rename = "minecraft:attack")]
     Attack {
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
+        #[facet(schema::members = ["num_of_ticks", "num_of_ticks_id"], default = Param::<i32>::key("target_num_of_ticks"))]
         ticks: Param<i32>,
     },
     /// `minecraft:break_block`.
+    #[facet(rename = "minecraft:break_block")]
     BreakBlock {
         /// `block_pos` (default `[0, 0, 0]`), or the key `block_pos_id` (default key
         /// `target_block_pos`).
+        #[facet(schema::members = ["block_pos", "block_pos_id"], default = Param::<BlockPos>::key("target_block_pos"))]
         block_pos: Param<BlockPos>,
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
+        #[facet(schema::members = ["num_of_ticks", "num_of_ticks_id"], default = Param::<i32>::key("target_num_of_ticks"))]
         ticks: Param<i32>,
     },
     /// `minecraft:consume_item`: no parameters.
+    #[facet(rename = "minecraft:consume_item")]
     ConsumeItem {},
     /// `minecraft:find_block`.
+    #[facet(rename = "minecraft:find_block")]
     FindBlock {
         /// `block_name` (default empty), or the key `block_name_id`. The key is `block_name`
         /// from the start, so it is `block_name` also when the literal was read.
+        #[facet(schema::members = ["block_name", "block_name_id"], schema::read_with = read::block_name, default = Param::<String>::key(Node::BLOCK_NAME_KEY))]
         block_name: Param<String>,
         /// `search_radius`, or the key `search_radius_id` (default key
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type.
+        #[facet(schema::members = ["search_radius", "search_radius_id"], default = Param::<i32>::key_with("target_search_radius", Node::FAILED_SEARCH_RADIUS))]
         search_radius: Param<i32>,
     },
     /// `minecraft:find_entity`.
+    #[facet(rename = "minecraft:find_entity")]
     FindEntity {
         /// `entity_name` (default empty), or the key `entity_type` (default key
         /// `entity_name`).
+        #[facet(schema::members = ["entity_name", "entity_type"], default = Param::<String>::key("entity_name"))]
         entity_name: Param<String>,
         /// `search_radius`, or the key `search_radius_id` (default key
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type.
+        #[facet(schema::members = ["search_radius", "search_radius_id"], default = Param::<i32>::key_with("target_search_radius", Node::FAILED_SEARCH_RADIUS))]
         search_radius: Param<i32>,
     },
     /// `minecraft:fly`.
@@ -207,94 +240,124 @@ pub enum Node {
     /// necessary_bool`, when it is a bool, replaces the value of `should_be_flying_bool`, and
     /// the node uses that one value for both flags. Both `literal`s here are that value: the
     /// throw literal if it was read, else the flying literal, else `false`.
+    #[facet(rename = "minecraft:fly")]
     Fly {
         /// `should_be_flying_bool`, or the key `should_be_flying_id` (default key
         /// `should_be_flying`).
+        #[facet(schema::members = ["should_be_flying_bool", "should_be_flying_id", "should_throw_event_if_no_state_change_necessary_bool"], schema::read_with = read::flying, default = Param::<bool>::key("should_be_flying"))]
         should_be_flying: Param<bool>,
         /// `should_throw_event_if_no_state_change_necessary_bool`, or the key
         /// `should_throw_event_if_no_state_change_necessary_id` (default key
         /// `should_throw_event_if_no_state_change_necessary`).
+        #[facet(schema::members = ["should_throw_event_if_no_state_change_necessary_bool", "should_throw_event_if_no_state_change_necessary_id", "should_be_flying_bool"], schema::read_with = read::throw, default = Param::<bool>::key("should_throw_event_if_no_state_change_necessary"))]
         throw_if_no_change: Param<bool>,
     },
     /// `minecraft:get_interaction_position_for_block`.
+    #[facet(rename = "minecraft:get_interaction_position_for_block")]
     GetInteractionPositionForBlock {
         /// `target_block_pos` (default `[0, 0, 0]`), or the key `target_block_pos_id` (default
         /// key `target_block_pos`).
+        #[facet(schema::members = ["target_block_pos", "target_block_pos_id"], default = Param::<BlockPos>::key("target_block_pos"))]
         target: Param<BlockPos>,
         /// `anchor_block_pos` (default `[0, 0, 0]`), or the key `anchor_block_pos_id` (default
         /// key `anchor_block_pos`).
+        #[facet(schema::members = ["anchor_block_pos", "anchor_block_pos_id"], default = Param::<BlockPos>::key("anchor_block_pos"))]
         anchor: Param<BlockPos>,
         /// `facing_string` (default empty), or the key `facing_string_id` (default key
         /// `facing_string`).
+        #[facet(schema::members = ["facing_string", "facing_string_id"], default = Param::<String>::key("facing_string"))]
         facing: Param<String>,
         /// `max_search_distance` (default 0), or the key `max_search_distance_id` (default
         /// key `max_search_distance`).
+        #[facet(schema::members = ["max_search_distance", "max_search_distance_id"], default = Param::<i32>::key("max_search_distance"))]
         max_search_distance: Param<i32>,
     },
     /// `minecraft:interact`.
+    #[facet(rename = "minecraft:interact")]
     Interact {
         /// `num_of_ticks` (default 1), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
+        #[facet(schema::members = ["num_of_ticks", "num_of_ticks_id"], default = Param::<i32>::key_with("target_num_of_ticks", Node::INTERACT_DEFAULT_TICKS))]
         ticks: Param<i32>,
     },
     /// `minecraft:look_at`.
+    #[facet(rename = "minecraft:look_at")]
     LookAt {
         /// `block_pos` (default `[0, 0, 0]`), or the key `block_pos_id` (default key
         /// `target_block_pos`).
+        #[facet(schema::members = ["block_pos", "block_pos_id"], default = Param::<BlockPos>::key("target_block_pos"))]
         block_pos: Param<BlockPos>,
     },
     /// `minecraft:look_at_entity`.
+    #[facet(rename = "minecraft:look_at_entity")]
     LookAtEntity {
         /// `entity_name` (default empty), or the key `entity_type` (default key
         /// `entity_name`).
+        #[facet(schema::members = ["entity_name", "entity_type"], default = Param::<String>::key("entity_name"))]
         entity_name: Param<String>,
         /// `search_radius`, or the key `search_radius_id` (default key
         /// `target_search_radius`). The literal is 32 when the member is absent or of the
         /// wrong type. Loaded, but the node never uses it.
+        #[facet(schema::members = ["search_radius", "search_radius_id"], default = Param::<i32>::key_with("target_search_radius", Node::FAILED_SEARCH_RADIUS))]
         search_radius: Param<i32>,
     },
     /// `minecraft:move`.
+    #[facet(rename = "minecraft:move")]
     Move {
         /// `desired_direction` (default empty; `forward` in vanilla's files), or the key
         /// `direction_id` (default key `direction`).
+        #[facet(schema::members = ["desired_direction", "direction_id"], default = Param::<String>::key("direction"))]
         direction: Param<String>,
         /// `desired_second_direction` (default empty), or the key `second_direction_id`
         /// (default key `second_direction`).
+        #[facet(schema::members = ["desired_second_direction", "second_direction_id"], default = Param::<String>::key("second_direction"))]
         second_direction: Param<String>,
         /// `max_number_of_ticks` (default 0), or the key `number_of_ticks_id` (default key
         /// `number_of_ticks`).
+        #[facet(schema::members = ["max_number_of_ticks", "number_of_ticks_id"], default = Param::<i32>::key("number_of_ticks"))]
         ticks: Param<i32>,
     },
     /// `minecraft:move_to`.
+    #[facet(rename = "minecraft:move_to")]
     MoveTo {
         /// `block_pos`, a position of numbers (default `[0, 0, 0]`), or the key
         /// `block_pos_id` (default key `target_block_pos`). The blackboard entry may be a
         /// position of numbers or a block position.
+        #[facet(schema::members = ["block_pos", "block_pos_id"], default = Param::<Vec3>::key("target_block_pos"))]
         pos: Param<Vec3>,
         /// `distance_epsilon` (default 0), or the key `distance_epsilon_id` (default key
         /// `target_distance_epsilon`).
+        #[facet(schema::members = ["distance_epsilon", "distance_epsilon_id"], default = Param::<f32>::key("target_distance_epsilon"))]
         distance_epsilon: Param<f32>,
     },
     /// `minecraft:place_block`: no parameters.
+    #[facet(rename = "minecraft:place_block")]
     PlaceBlock {},
     /// `minecraft:shoot_bow`.
+    #[facet(rename = "minecraft:shoot_bow")]
     ShootBow {
         /// `num_of_shots` (default 0), or the key `num_of_shots_id` (default key
         /// `target_num_of_shots`).
+        #[facet(schema::members = ["num_of_shots", "num_of_shots_id"], default = Param::<i32>::key("target_num_of_shots"))]
         shots: Param<i32>,
     },
     /// `minecraft:use_entity`: no parameters.
+    #[facet(rename = "minecraft:use_entity")]
     UseEntity {},
     /// `minecraft:wait`: waits whole seconds.
+    #[facet(rename = "minecraft:wait")]
     Wait {
         /// `wait_duration` as an integer, in seconds (default 0), or the same member as a
         /// string, which is then the key (default key `duration`).
+        #[facet(rename = "wait_duration", default = Param::<i32>::key(read::WAIT_DEFAULT_KEY), schema::read_with = read::wait_duration)]
         seconds: Param<i32>,
     },
     /// `minecraft:wait_ticks`.
+    #[facet(rename = "minecraft:wait_ticks")]
     WaitTicks {
         /// `num_of_ticks` (default 0), or the key `num_of_ticks_id` (default key
         /// `target_num_of_ticks`).
+        #[facet(schema::members = ["num_of_ticks", "num_of_ticks_id"], default = Param::<i32>::key("target_num_of_ticks"))]
         ticks: Param<i32>,
     },
 }
@@ -364,6 +427,18 @@ impl<T> Param<T> {
             key: String::new(),
         }
     }
+}
+
+/// A parameter is read from two members of its node's body (`read`'s `FromMembers`); it has
+/// no bound to check and no Molang.
+impl<T> bedrock_addon_core::schema::SchemaFields for Param<T> {
+    fn check_fields(&mut self, _: &mut bedrock_addon_core::schema::SchemaCx<'_>) {}
+
+    fn trigger_members(_: &str, _: &mut Vec<String>) {}
+}
+
+impl<T> bedrock_addon_core::molang::MolangFields for Param<T> {
+    fn visit_molang(&mut self, _: &mut bedrock_addon_core::molang::MolangVisitor<'_>) {}
 }
 
 impl<T: Default> Param<T> {

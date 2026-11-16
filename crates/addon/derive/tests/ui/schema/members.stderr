@@ -1,0 +1,29 @@
+error: `schema::members` takes the names of the members, as in `schema::members = ["a", "b"]`
+  --> tests/ui/schema/members.rs:15:13
+   |
+15 |     #[facet(schema::members = "e", default)]
+   |             ^^^^^^
+
+error: `f` is named twice in `schema::members`
+  --> tests/ui/schema/members.rs:17:37
+   |
+17 |     #[facet(schema::members = ["f", "f"], default)]
+   |                                     ^^^
+
+error: `schema::members` feeds the field from several members, which its type's `FromMembers` (or its `read_with`) reads: a key of one member of the field's own name (`alias`, `since_format`, `or_kept`, `reads_null`, `required`, a list's or a code's), `flatten` and an `UnknownMembers` field have none
+  --> tests/ui/schema/members.rs:11:22
+   |
+11 |     #[facet(flatten, schema::members = ["a", "b"])]
+   |                      ^^^^^^
+
+error: a field fed by `schema::members` is handed its value for a document that writes none of them: give it a `default` (or make it an `Option`)
+  --> tests/ui/schema/members.rs:13:13
+   |
+13 |     #[facet(schema::members = ["c", "d"])]
+   |             ^^^^^^
+
+error: `schema::members` feeds the field from several members, which its type's `FromMembers` (or its `read_with`) reads: a key of one member of the field's own name (`alias`, `since_format`, `or_kept`, `reads_null`, `required`, a list's or a code's), `flatten` and an `UnknownMembers` field have none
+  --> tests/ui/schema/members.rs:19:13
+   |
+19 |     #[facet(schema::members = ["g"], schema::reads_null)]
+   |             ^^^^^^
