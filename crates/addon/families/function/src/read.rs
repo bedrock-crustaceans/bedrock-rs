@@ -1,5 +1,6 @@
 //! Reading a function file the way vanilla's function manager does, line by line, and a tick
-//! list the way it reads `tick.json`.
+//! list the way it reads `tick.json`: a derived document read by the kit, its one member's
+//! entries read by one function.
 
 use std::borrow::Cow;
 
@@ -10,11 +11,16 @@ use bedrock_addon_core::diagnostic::{
     Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Phase, Severity, Span,
     builders,
 };
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::FunctionPath;
+use bedrock_addon_core::json::kit::{Node, Read, Texts, WrongAt};
 use bedrock_addon_core::json::{MAX_JSON_DEPTH, TooDeep, Value, check_depth, strip_bom};
 use bedrock_addon_core::load::BuiltIns;
+use bedrock_addon_core::schema::{self, Schema, read_document, read_each};
 #[cfg(test)]
 use bedrock_addon_core::vanilla::Command;
+use bedrock_addon_core::versioning::{NullHandling, Reading};
+use facet::Facet;
 
 /// What vanilla removes from both ends of a line: ASCII whitespace.
 fn is_trimmed(c: char) -> bool {
@@ -267,54 +273,80 @@ pub(super) fn parse_tick(bytes: &[u8], command_version: u8) -> ParsedTick {
             return parsed;
         }
     };
-    // `values` is the only member vanilla reads.
-    // A missing member, `null` and a root that is no object all read as a null value; any
-    // other value that is no array fails the same check with the same text (Error).
-    let values = root
-        .as_object()
-        .and_then(|object| object.get(VALUES))
-        .filter(|value| !value.is_null());
-    let Some(values) = values else {
+    // The `values` of a root that is no object is a null value, which fails the check as a
+    // missing member does.
+    if !root.is_object() {
         parsed.diagnostics.push(at_values(
             codes::TICK_NO_VALUES.with([VALUES]),
             Severity::Error,
             None,
         ));
         return parsed;
+    }
+    let file = {
+        let mut read = Read::new(Reading::OWN, &mut parsed.diagnostics)
+            .null(NullHandling::AbsentSilently)
+            .texts(TICK_TEXTS)
+            .phase(Phase::Validate);
+        read_document::<TickFile>(&Node::new(&root, JsonPath::new()), &mut read)
     };
-    let Some(values) = values.as_array() else {
-        parsed.diagnostics.push(at_values(
-            codes::TICK_VALUES_NOT_ARRAY.with([VALUES]),
-            Severity::Error,
-            None,
-        ));
+    let Some(file) = file else {
         return parsed;
     };
-    let mut list = TickList::default();
-    for (index, entry) in values.iter().enumerate() {
-        if let Some(name) = entry.as_string() {
+    let mut list = TickList {
+        values: Vec::new(),
+        extra: file.extra,
+    };
+    for (index, name) in file.values.into_iter().enumerate() {
+        if let Some(name) = name {
+            let function = FunctionPath::parse(name.as_str());
             list.values.push(TickFunction {
-                function: FunctionPath::parse(name.as_str()),
+                function,
                 command_version,
             });
             parsed.indices.push(index);
-        } else {
-            // An entry that is no string reads as the empty name, which no function has, so it
-            // is looked up and not found; it cannot be kept as a name.
-            parsed.diagnostics.push(not_found("", Some(index)));
-        }
-    }
-    // Vanilla reads `values` only and says nothing of the other members; they are kept for
-    // write-back.
-    if let Some(object) = root.as_object() {
-        for (key, value) in object {
-            if key.as_str() != VALUES {
-                list.extra.insert(key.as_str().to_owned(), value.clone());
-            }
         }
     }
     parsed.list = Some(list);
     parsed
+}
+
+/// `tick.json` as written: `values`, the one member vanilla reads, and the members it does not
+/// read, kept for write-back and told nothing.
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct TickFile {
+    /// JSON `values`: each entry's name, `None` for an entry that is no string. A missing
+    /// member, `null` (read as absent) and a value that is no array fail the check with the
+    /// same text (Error).
+    #[facet(schema::read_with = entries)]
+    values: Vec<Option<String>>,
+    /// The other members.
+    extra: UnknownMembers,
+}
+
+/// The entries of `values`. An entry that is no string reads as the empty name, which no
+/// function has, so it is looked up and not found; it cannot be kept as a name.
+fn entries(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Option<String>>> {
+    read_each(node, read, |entry, read| {
+        if let Some(name) = entry.value().as_string() {
+            return Some(Some(name.as_str().to_owned()));
+        }
+        read.push(not_found("", entry.path().index_after(VALUES)));
+        Some(None)
+    })
+}
+
+/// The game's words for `values` missing or no array: one text under two codes.
+const TICK_TEXTS: Texts = Texts {
+    missing_named: Some(&codes::TICK_NO_VALUES),
+    wrong_at: Some(WrongAt(values_not_array)),
+    ..Texts::CODES
+};
+
+/// `values` that is no array: the one member whose type the read checks.
+fn values_not_array(_: &JsonPath) -> Code {
+    codes::TICK_VALUES_NOT_ARRAY.with([VALUES])
 }
 
 /// The one member of a tick list.
@@ -390,5 +422,98 @@ mod tests {
                 .to_string()
         );
         assert!(!read_json(b"{").unwrap_err().to_string().is_empty());
+    }
+
+    /// The kept entries' names and command versions, their indices in `values`, and the other
+    /// members' keys.
+    type Kept = (Vec<String>, Vec<usize>, Vec<String>);
+
+    /// The findings of `bytes` read as a tick list (code, severity, path, phase, span, detail),
+    /// and what the list keeps.
+    fn tick(bytes: &[u8]) -> (Vec<String>, Option<Kept>) {
+        let parsed = parse_tick(bytes, 46);
+        let found = parsed
+            .diagnostics
+            .iter()
+            .map(|finding| {
+                format!(
+                    "{} {:?} {} {:?} {:?} {:?} {:?}",
+                    finding.code.id(),
+                    finding.severity,
+                    finding.location.json_path,
+                    finding.phase,
+                    finding.location.span,
+                    finding.code.args(),
+                    finding.detail,
+                )
+            })
+            .collect();
+        let list = parsed.list.map(|list| {
+            let names = list
+                .values
+                .iter()
+                .map(|entry| format!("{} {}", entry.function.as_str(), entry.command_version))
+                .collect();
+            let extra = list.extra.iter().map(|(key, _)| key.to_owned()).collect();
+            (names, parsed.indices, extra)
+        });
+        (found, list)
+    }
+
+    #[test]
+    fn a_tick_list_without_a_values_array_is_one_error_at_values() {
+        let no_values = |code: &str| {
+            vec![format!(
+                "{code} Error values Validate None [\"values\"] None"
+            )]
+        };
+        for bytes in [&b"{}"[..], b"{\"values\": null}", b"[]", b"3", b"null"] {
+            assert_eq!(
+                tick(bytes),
+                (no_values("function/tick_no_values"), None),
+                "{}",
+                String::from_utf8_lossy(bytes)
+            );
+        }
+        for bytes in [
+            &b"{\"values\": \"a\"}"[..],
+            b"{\"values\": {}}",
+            b"{\"values\": 1}",
+        ] {
+            assert_eq!(
+                tick(bytes),
+                (no_values("function/tick_values_not_array"), None),
+                "{}",
+                String::from_utf8_lossy(bytes)
+            );
+        }
+    }
+
+    #[test]
+    fn a_tick_entry_that_is_no_string_is_told_at_its_index_and_left_out() {
+        let read = tick(br#"{"m": [1], "values": ["a", 5, null, "b", {}], "n": null}"#);
+        let not_found = |index: usize| {
+            format!("function/tick_not_found Warning values/{index} Validate None [\"\"] None")
+        };
+        assert_eq!(
+            read,
+            (
+                vec![not_found(1), not_found(2), not_found(4)],
+                Some((
+                    vec!["a 46".to_owned(), "b 46".to_owned()],
+                    vec![0, 3],
+                    vec!["m".to_owned(), "n".to_owned()],
+                )),
+            )
+        );
+    }
+
+    #[test]
+    fn the_last_of_a_member_written_twice_is_read() {
+        let read = tick(br#"{"values": 3, "values": ["a"]}"#);
+        assert_eq!(
+            read,
+            (vec![], Some((vec!["a 46".to_owned()], vec![0], vec![])))
+        );
     }
 }

@@ -6,8 +6,10 @@
 //! every function and tick entry carries. Command lines are kept raw; parsing them is the command
 //! system's (chorus).
 //!
-//! The reader stays text: command lines are kept raw, and `tick.json` is a list of names read by
-//! hand as vanilla's function manager reads it.
+//! A function file is read as text: its command lines are kept raw. `tick.json` is a derived
+//! document (`#[derive(Facet, Schema)]`) read by the kit as vanilla's function manager reads it:
+//! `values` by one `schema::read_with` function over its entries, the game's two texts as the
+//! read's `Texts`, the other members kept silently.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
