@@ -198,6 +198,18 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             "`schema::reads_null` reads a `null` as a value: an `Option` field",
         ));
     }
+    if let Some((_, span)) = &attrs.absent_with
+        && (info.option.is_none()
+            || attrs.flatten
+            || attrs.required.is_some()
+            || attrs.reads_null.is_some())
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::absent_with` gives the value of a member the object lacks: an `Option` \
+             field the document may leave out (not `required`, not `reads_null`)",
+        ));
+    }
     if let Some((_, span)) = attrs.or_kept
         && (info.option.is_none() || attrs.flatten)
     {
@@ -396,11 +408,20 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let required = !(info.option.is_some() && info.attrs.required.is_none())
         && info.attrs.default.is_none()
         && info.attrs.alias.is_none();
-    let when_absent = if required {
+    let missing_now = if required {
         quote!(#slot.missing_now(__object, #json, __read);)
     } else {
         quote!()
     };
+    // A member the object lacks is asked of the field's `absent_with` fn: in its place where the
+    // read asks for it (declared order, or a `null` read as absent), else after the members.
+    let absent = info
+        .attrs
+        .absent_with
+        .as_ref()
+        .map(|(with, _)| quote!(#slot.absent_with(__object, __read, #with);));
+    let when_absent = quote!(#missing_now #absent);
+    let scope = scope_put(info, &slot);
     FieldRead {
         slot: quote!(let mut #slot = #new_slot;),
         // A field that reads a `null` as a value reads it, whatever the reading does with a
@@ -410,9 +431,11 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                 #names => {
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
+                        #scope
                         return true;
                     };
                     #read_call
+                    #scope
                     true
                 }
             }
@@ -421,11 +444,15 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                 #names => {
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
+                        #scope
                         return true;
                     };
-                    if !__object.absent(__member, __read) {
+                    if __object.absent(__member, __read) {
+                        #absent
+                    } else {
                         #read_call
                     }
+                    #scope
                     true
                 }
             }
@@ -437,7 +464,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                 }
             }
         }),
-        finish,
+        finish: quote!(#absent #finish),
     }
 }
 
@@ -525,6 +552,29 @@ fn member_arms(fed: &[(&[String], Ident, TokenStream)]) -> Vec<TokenStream> {
             }
         })
         .collect()
+}
+
+/// What a `schema::scope` field puts in scope once its member is read or found absent: the value
+/// read, else the field's `default` (for an `Option`, the value read or nothing).
+fn scope_put(info: &FieldInfo, slot: &Ident) -> Option<TokenStream> {
+    info.attrs.scope?;
+    let json = &info.json;
+    let fallback = if let (Some(default), None) = (&info.attrs.default, info.option) {
+        let value = default.value.as_ref().map_or_else(
+            || quote!(::core::default::Default::default()),
+            |expr| super::typed(expr, info.ty),
+        );
+        quote!(::core::option::Option::Some(#value))
+    } else {
+        quote!(::core::option::Option::None)
+    };
+    Some(quote! {
+        if let ::core::option::Option::Some(__scoped) =
+            #slot.value().cloned().or_else(|| #fallback)
+        {
+            __read.put_in_scope(#json, __scoped);
+        }
+    })
 }
 
 /// The call that reads the member of field `info` into its slot: the field's `read_with`, the
@@ -841,6 +891,17 @@ fn fields_body(
             }
         }
     };
+    let scoped = infos
+        .iter()
+        .any(|info| taken(info) && info.attrs.scope.is_some());
+    let (scope_mark, scope_reset) = if scoped {
+        (
+            quote!(let __scope = __read.scope_mark();),
+            quote!(__read.scope_reset(__scope);),
+        )
+    } else {
+        (quote!(), quote!())
+    };
     let ending = match after_members {
         None => quote! {
             #unknown_after
@@ -850,6 +911,8 @@ fn fields_body(
             #abandon
             #(#flattened)*
             #(#finishes)*
+            // What the fields put in scope is for the members of this object alone.
+            #scope_reset
             if !__ok {
                 return ::core::option::Option::None;
             }
@@ -893,6 +956,8 @@ fn fields_body(
                 #abandon
                 #(#flattened)*
                 #(#finishes)*
+                // What the fields put in scope is for the members of this object alone.
+                #scope_reset
                 let mut __built = if __ok {
                     (|| ::core::option::Option::Some(#build))()
                 } else {
@@ -913,6 +978,7 @@ fn fields_body(
         }
     };
     quote! {
+        #scope_mark
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
         #(#slots)*

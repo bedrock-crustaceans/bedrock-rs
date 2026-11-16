@@ -87,6 +87,7 @@ use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 #[doc(hidden)]
 pub mod fixed_path;
 // hidden: API not yet reviewed
+mod dialect;
 mod misread;
 mod scalar;
 #[cfg(test)]
@@ -95,6 +96,7 @@ mod tests;
 pub mod write;
 mod written;
 
+pub use dialect::{Dialect, Dialects};
 pub use misread::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
 pub use scalar::Scalar;
 pub use written::{Present, Written};
@@ -575,6 +577,12 @@ pub struct Texts {
     /// not found"`), in place of [`missing`](Self::missing): the client's older schema tree words
     /// it with the name.
     pub missing_named: Option<&'static CodeDef<1>>,
+    /// The code of a missing required member, in place of
+    /// [`MISSING_REQUIRED_FIELD`](core_codes::MISSING_REQUIRED_FIELD) and
+    /// [`missing`](Self::missing) (not of [`missing_named`](Self::missing_named)): a reader of the
+    /// game whose report names the absence its own way (the legacy manifest parser's
+    /// `MissingProperty`).
+    pub missing_code: Option<&'static CodeDef<0>>,
     /// The code an unknown member told as an `UnrecognizedField` ([`UnknownRule::Keep`]) is told
     /// under, made from the member's key (`"child '%s' not valid here."`), in place of
     /// [`unknown_code`](Self::unknown_code) and [`unknown`](Self::unknown). Its severity is the
@@ -611,6 +619,7 @@ impl Texts {
         wrong_kind: None,
         wrong_at: None,
         missing_named: None,
+        missing_code: None,
         unknown_named: None,
         missing_in_object: false,
         invalid_enum: None,
@@ -1085,7 +1094,12 @@ pub struct Read<'d> {
     errors: usize,
     /// The members read as a declared name spelled in another case ([`Names::IgnoreAsciiCase`]).
     respelled: Vec<(JsonPath, Option<Span>)>,
+    /// What the reads above the one being made put in scope, innermost last ([`scope`](Self::scope)).
+    scopes: Vec<(&'static str, Scoped)>,
 }
+
+/// A value a read put in scope for the reads below it ([`Read::scope`]).
+type Scoped = std::sync::Arc<dyn std::any::Any + Send + Sync>;
 
 impl<'d> Read<'d> {
     /// A read under `reading`, telling into `findings`.
@@ -1117,6 +1131,7 @@ impl<'d> Read<'d> {
             clamp_kept: false,
             errors: 0,
             respelled: Vec::new(),
+            scopes: Vec::new(),
         }
     }
 
@@ -1280,6 +1295,7 @@ impl<'d> Read<'d> {
             clamp_kept: self.clamp_kept,
             errors: 0,
             respelled: Vec::new(),
+            scopes: self.scopes.clone(),
         }
     }
 
@@ -1610,6 +1626,65 @@ impl<'d> Read<'d> {
     /// The load the document is read in, when the read knows it ([`load`](Self::load)).
     pub fn load_context(&self) -> Option<&'d crate::load::LoadContext> {
         self.load
+    }
+
+    /// The value of type `T` the nearest read above this one put in scope under `name`
+    /// ([`scoped`](Self::scoped), or a field that says `schema::scope`): what a leaf reads
+    /// with that its own value does not say (the range of the table it is in, the file it is
+    /// read for). `None` when no read above put one, or the nearest under `name` is no `T`.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::Diagnostics;
+    /// # use bedrock_addon_core::json::kit::Read;
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::OWN, &mut found);
+    /// let inner = read.scoped("volume", 0.5_f32, |read| {
+    ///     read.scoped("volume", 2.0_f32, |read| read.scope::<f32>("volume").copied())
+    /// });
+    /// assert_eq!(inner, Some(2.0));
+    /// assert_eq!(read.scope::<f32>("volume"), None);
+    /// ```
+    pub fn scope<T: std::any::Any>(&self, name: &str) -> Option<&T> {
+        let (_, value) = self.scopes.iter().rev().find(|(key, _)| *key == name)?;
+        value.downcast_ref()
+    }
+
+    /// Makes the reads of `read` with `value` in scope under `name` ([`scope`](Self::scope)):
+    /// context a caller or a parent gives the leaves below it.
+    pub fn scoped<T: std::any::Any + Send + Sync, R>(
+        &mut self,
+        name: &'static str,
+        value: T,
+        read: impl FnOnce(&mut Self) -> R,
+    ) -> R {
+        let mark = self.scope_mark();
+        self.put_in_scope(name, value);
+        let out = read(self);
+        self.scope_reset(mark);
+        out
+    }
+
+    /// How many values are in scope: for [`scope_reset`](Self::scope_reset).
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn scope_mark(&self) -> usize {
+        self.scopes.len()
+    }
+
+    /// Puts `value` in scope under `name` until [`scope_reset`](Self::scope_reset): a field
+    /// that says `schema::scope`, for the members its struct reads after it.
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn put_in_scope<T: std::any::Any + Send + Sync>(&mut self, name: &'static str, value: T) {
+        self.scopes.push((name, std::sync::Arc::new(value)));
+    }
+
+    /// Ends the scope of every value put in it after `mark` ([`scope_mark`](Self::scope_mark)).
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn scope_reset(&mut self, mark: usize) {
+        self.scopes.truncate(mark);
     }
 
     /// The read with `null` for its null handling instead of the reading's: a reader the game
@@ -2246,10 +2321,15 @@ impl<'d> Read<'d> {
 
     /// Tells that the member `key` of `members` is required and missing.
     fn missing(&mut self, members: &Members<'_>, key: &str) {
-        let code = match (self.texts.missing_named, self.texts.missing) {
-            (Some(named), _) => named.with([key.to_owned()]),
-            (None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
-            (None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
+        let code = match (
+            self.texts.missing_named,
+            self.texts.missing_code,
+            self.texts.missing,
+        ) {
+            (Some(named), _, _) => named.with([key.to_owned()]),
+            (None, Some(code), _) => Code::from(code),
+            (None, None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
+            (None, None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
         };
         self.tell_missing(code, self.missing_at(members, key), members.node.span());
     }

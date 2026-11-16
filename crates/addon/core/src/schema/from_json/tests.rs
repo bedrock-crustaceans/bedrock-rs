@@ -2496,3 +2496,169 @@ fn a_skip_deserializing_field_is_not_read_and_its_member_is_an_unknown_one() {
     );
     assert_eq!(told, ["Error root/__side core/unrecognized_field"]);
 }
+
+/// The size a crate absent its member gets: 7 where the `kind` read before it is `big`, told
+/// as an information at the member it lacks; none otherwise.
+fn size_absent(object: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+    let big = object
+        .value()
+        .as_object()
+        .and_then(|members| members.get("kind"))
+        .and_then(|kind| kind.as_string())
+        .is_some_and(|kind| kind.as_str() == "big");
+    let mut finding =
+        crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::MISSING_PROPERTY)
+            .severity(crate::diagnostic::Severity::Info)
+            .at(object.path().child("size"));
+    finding.location.span = object.span();
+    read.push(finding);
+    big.then_some(7)
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Crate {
+    kind: Option<String>,
+    #[facet(schema::absent_with = size_absent)]
+    size: Option<u8>,
+    label: Option<String>,
+}
+
+/// A member the object lacks is asked of the field's `absent_with` fn, in its place where the
+/// read asks for members in declaration order (a `null` read as absent too), after the members
+/// where it reads them in file order; a member that is written is read as ever.
+#[test]
+fn an_absent_member_is_what_its_absent_with_fn_says() {
+    let declared = Reading::DOCUMENT
+        .strict()
+        .with_null(NullHandling::AbsentSilently);
+    let (value, told) = read_as::<Crate>(
+        r#"{"label": 5, "kind": "big"}"#,
+        declared,
+        Profile::DECLARED_ORDER,
+    );
+    assert_eq!(value.map(|c| c.size), None, "the label failed the crate");
+    assert_eq!(
+        told,
+        [
+            "Info root/size core/missing_property",
+            "Error root/label core/invalid_type",
+        ]
+    );
+    let (value, told) = read_as::<Crate>(
+        r#"{"kind": "big", "size": null}"#,
+        declared,
+        Profile::DECLARED_ORDER,
+    );
+    assert_eq!(value.and_then(|c| c.size), Some(7));
+    assert_eq!(told, ["Info root/size core/missing_property"]);
+    let (value, told) = read_as::<Crate>(
+        r#"{"label": 5, "kind": "small"}"#,
+        Reading::DOCUMENT.strict(),
+        Profile::EVERY_FAILURE,
+    );
+    assert!(value.is_none());
+    assert_eq!(
+        told,
+        [
+            "Error root/label core/invalid_type",
+            "Info root/size core/missing_property",
+        ]
+    );
+    let (value, told) = read_as::<Crate>(r#"{"size": 3}"#, declared, Profile::DECLARED_ORDER);
+    assert_eq!(value.and_then(|c| c.size), Some(3));
+    assert!(told.is_empty(), "{told:?}");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Ticket {
+    id: u8,
+    note: Option<String>,
+    #[facet(default)]
+    seats: u8,
+}
+
+/// Under `DefaultAndRefuse` a member that fails is told as an error and takes its default: the
+/// owner is read on and built, and fails only by a required member.
+#[test]
+fn a_member_that_fails_is_refused_and_left_at_its_default() {
+    let reading = Reading::DOCUMENT
+        .strict()
+        .with_on_member_failure(MemberFailure::DefaultAndRefuse);
+    let (value, told) = read_as::<Ticket>(
+        r#"{"id": 1, "note": 5, "seats": "x"}"#,
+        reading,
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(
+        value,
+        Some(Ticket {
+            id: 1,
+            note: None,
+            seats: 0
+        })
+    );
+    assert_eq!(
+        told,
+        [
+            "Error root/note core/invalid_type",
+            "Error root/seats core/invalid_type",
+        ]
+    );
+    let (value, told) = read_as::<Ticket>(r#"{"id": "x"}"#, reading, Profile::EVERY_FAILURE);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/id core/invalid_type"]);
+}
+
+/// A loudness of its own, or the `volume` its table put in scope; `-1` where none did.
+#[derive(Clone, Copy, Debug, PartialEq, Facet)]
+struct Loudness(f64);
+
+crate::impl_schema_leaf!(Loudness);
+crate::impl_no_molang!(Loudness);
+
+impl FromJson for Loudness {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let own = node
+            .value()
+            .as_number()
+            .map(facet_value::VNumber::to_f64_lossy);
+        let table = read.scope::<f64>("volume").copied();
+        Some(Self(own.or(table).unwrap_or(-1.0)))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Table {
+    #[facet(default = 1.0, schema::scope)]
+    volume: f64,
+    #[facet(default)]
+    sounds: IndexMap<String, Loudness>,
+    inner: Option<Box<Table>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Tables {
+    table: Table,
+    loose: Loudness,
+}
+
+/// A `schema::scope` field puts its value in scope for the members read after it and every
+/// read below them: its default where the member is absent, the nearest table's where tables
+/// nest, and nothing once its struct is read.
+#[test]
+fn a_scope_field_is_what_the_reads_after_it_see() {
+    let text = r#"{"table": {"volume": 0.5, "sounds": {"a": "x", "b": 2},
+        "inner": {"sounds": {"c": "x"}}}, "loose": "x"}"#;
+    let (value, told) = read_as::<Tables>(text, Reading::OWN, Profile::DECLARED_ORDER);
+    assert!(told.is_empty(), "{told:?}");
+    let value = value.expect("read");
+    assert_eq!(value.table.sounds["a"], Loudness(0.5));
+    assert_eq!(value.table.sounds["b"], Loudness(2.0));
+    let inner = value.table.inner.expect("inner");
+    assert_eq!(
+        inner.sounds["c"],
+        Loudness(1.0),
+        "the inner table's default"
+    );
+    assert_eq!(value.loose, Loudness(-1.0), "no table is in scope after it");
+}

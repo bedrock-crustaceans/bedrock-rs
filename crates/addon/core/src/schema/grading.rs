@@ -23,6 +23,7 @@ pub struct Grading {
 /// |---|---|---|---|
 /// | `Refuse` | `Error` | yes | no |
 /// | `DefaultAndTell` | `Info` | no | yes |
+/// | `DefaultAndRefuse` | `Error` | no | yes |
 ///
 /// `DefaultAndTell` tells at `Info`, as today's lenient readers do: the game writes no line
 /// for a member it reads past.
@@ -32,6 +33,11 @@ pub const fn grade(failure: MemberFailure) -> Grading {
             severity: Severity::Error,
             fails_owner: true,
             resets: false,
+        },
+        MemberFailure::DefaultAndRefuse => Grading {
+            severity: Severity::Error,
+            fails_owner: false,
+            resets: true,
         },
         MemberFailure::DefaultAndTell => Grading {
             severity: Severity::Info,
@@ -53,6 +59,14 @@ mod tests {
                 severity: Severity::Error,
                 fails_owner: true,
                 resets: false
+            }
+        );
+        assert_eq!(
+            grade(MemberFailure::DefaultAndRefuse),
+            Grading {
+                severity: Severity::Error,
+                fails_owner: false,
+                resets: true
             }
         );
         assert_eq!(

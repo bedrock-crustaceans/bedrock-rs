@@ -98,6 +98,12 @@ pub enum MemberFailure {
     Refuse,
     /// The member takes its default and the reader tells.
     DefaultAndTell,
+    /// The member takes its default, its failure is an error and the read goes on: a game
+    /// reader that reports each member it cannot read and reads the others (the manifest's
+    /// parsers): the document is refused with every failure told, and what was read beside a
+    /// failure is what the reader held (a module whose description fails still decides the pack
+    /// type).
+    DefaultAndRefuse,
 }
 
 /// How one slice of a family reads its payload: the axes that vary between slices, each on

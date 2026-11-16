@@ -22,6 +22,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `molang` | a `MolangFieldSpec` path | compile-time | `#[derive(Schema)]` |
 | `molang_with` | a function path | compile-time | `#[derive(Schema)]` |
 | `read_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` | compile-time | `#[derive(Schema)]`: the field's read in place of its type's `FromJson` |
+| `absent_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` given the object | compile-time | `#[derive(Schema)]`: an `Option` field's value when the object lacks the member (asked in its place in a declared-order read, after the members in a file-order one) |
 | `check_with` | a function path, `fn(&mut T, &mut SchemaCx)` | compile-time | `#[derive(Schema)]`: the field's check |
 | `rule` | a function path, `fn(&mut Self, &mut SchemaCx)` | compile-time | `#[derive(Schema)]` on a struct: a rule across its fields at the check |
 | `after_read` | a function path, `fn(&mut Self, &Node, &mut Read)` | compile-time | `#[derive(Schema)]` on a struct: a rule at the read, with the object as written |

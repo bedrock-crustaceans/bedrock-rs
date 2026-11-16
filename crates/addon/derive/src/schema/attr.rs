@@ -182,6 +182,9 @@ pub(crate) struct FieldAttrs {
     pub molang_with: Option<(Expr, Span)>,
     /// `schema::read_with = path`: the field's read, `fn(&Node, &mut Read) -> Option<T>`.
     pub read_with: Option<(Expr, Span)>,
+    /// `schema::absent_with = path`: the field's value when the object lacks the member,
+    /// `fn(&Node, &mut Read) -> Option<T>` given the object.
+    pub absent_with: Option<(Expr, Span)>,
     /// `schema::check_with = path`: the field's check, `fn(&mut T, &mut SchemaCx)`, in place of
     /// the walk into its type.
     pub check_with: Option<(Expr, Span)>,
@@ -217,6 +220,8 @@ pub(crate) struct FieldAttrs {
     pub ends: Option<Span>,
     /// `schema::reads_null`: a `null` member of an `Option` field is read as a value.
     pub reads_null: Option<Span>,
+    /// `schema::scope`: the field's value is in scope for the members read after it.
+    pub scope: Option<Span>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
     /// `schema::members = ["a", "b"]`: the members of the struct's object the field is fed by.
@@ -276,6 +281,7 @@ const FIELD_KEYS: &[&str] = &[
     "molang",
     "molang_with",
     "read_with",
+    "absent_with",
     "check_with",
     "min_len",
     "max_len",
@@ -289,6 +295,7 @@ const FIELD_KEYS: &[&str] = &[
     "drop",
     "ends",
     "reads_null",
+    "scope",
     "or_kept",
     "low_code",
     "high_code",
@@ -646,9 +653,9 @@ impl FieldAttrs {
                         let word = unknown_word(entry)?;
                         once(&mut out.unknown, word, &key, span, errors);
                     }
-                    "fallback" | "molang" | "molang_with" | "read_with" | "check_with"
-                    | "wrong_type" | "missing" | "invalid" | "low_code" | "high_code"
-                    | "negative" | "keys" => {
+                    "fallback" | "molang" | "molang_with" | "read_with" | "absent_with"
+                    | "check_with" | "wrong_type" | "missing" | "invalid" | "low_code"
+                    | "high_code" | "negative" | "keys" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -662,6 +669,7 @@ impl FieldAttrs {
                             "high_code" => &mut out.high_code,
                             "check_with" => &mut out.check_with,
                             "keys" => &mut out.keys,
+                            "absent_with" => &mut out.absent_with,
                             _ => &mut out.read_with,
                         };
                         once(slot, (expr, span), &key, span, errors);
@@ -691,6 +699,7 @@ impl FieldAttrs {
                         let names = member_names(entry)?;
                         once(&mut out.members, (names, span), &key, span, errors);
                     }
+                    "scope" => once(&mut out.scope, span, &key, span, errors),
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
@@ -752,6 +761,7 @@ impl FieldAttrs {
             .or_else(|| self.molang.as_ref().map(|(_, s)| *s))
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.absent_with.as_ref().map(|(_, s)| *s))
             .or_else(|| {
                 [
                     &self.wrong_type,
@@ -766,6 +776,7 @@ impl FieldAttrs {
             .or(self.iterated)
             .or(self.drop)
             .or(self.reads_null)
+            .or(self.scope)
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.members.as_ref().map(|(_, s)| *s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))

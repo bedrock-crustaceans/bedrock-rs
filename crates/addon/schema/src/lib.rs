@@ -147,6 +147,14 @@ facet::define_attr_grammar! {
         /// merge. A member may feed several fields; each is read where the first of its members
         /// is.
         Members(arbitrary),
+        /// `absent_with = path` (compile-time, an `Option` field): the field's value when the
+        /// object lacks the member (or holds a `null` the reading takes for absence),
+        /// `fn(&Node<'_>, &mut Read<'_>) -> Option<T>` given the object: what the game's reader
+        /// does with a member it does not find by what it read before (a member a pack of one
+        /// type must write, a default another member decides). It tells what it must; `None`
+        /// leaves the field absent. Asked in the member's place where the read asks for members
+        /// in declaration order, after the members where it reads them in file order.
+        AbsentWith(arbitrary),
         /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
         /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
         /// at the object, tells what it refuses (the game's own words for a name that is none)
@@ -217,6 +225,12 @@ facet::define_attr_grammar! {
         /// is kept as written. Without it a `null` is the reading's null rule's, whatever reads
         /// the member: a `read_with` fn never sees one.
         ReadsNull,
+        /// `scope` (marker, a field): once its member is read (or, in a read in declaration
+        /// order, found absent: the field's default), the field's value is in scope under its JSON
+        /// name for the members the struct reads after it and every read below them, until the
+        /// struct's read ends (`Read::scope`): the context the game's reader holds while it reads
+        /// on (the range of the table a sound of it starts from, the base of a block sound type).
+        Scope,
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
         /// (with the struct's unknown members), its failure told (or not) and failing nothing.

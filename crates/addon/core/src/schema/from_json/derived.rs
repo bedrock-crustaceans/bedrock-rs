@@ -552,6 +552,8 @@ pub struct Slot<T> {
     left_out: bool,
     /// Whether the member's absence was told where it was asked for ([`missing_now`](Self::missing_now)).
     missing_told: bool,
+    /// Whether the field's `schema::absent_with` was asked ([`absent_with`](Self::absent_with)).
+    absent_asked: bool,
 }
 
 impl<T> Default for Slot<T> {
@@ -562,6 +564,7 @@ impl<T> Default for Slot<T> {
             depth: 0,
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         }
     }
 }
@@ -582,6 +585,7 @@ impl<T> Slot<T> {
             depth: 0,
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         }
     }
 
@@ -613,6 +617,15 @@ impl<T> Slot<T> {
             // A value that is not read keeps none of the unknown members it held: the owner
             // fails, or the member is reset, and the default carries none.
             read.findings_mut().unknown_mut().forget(node.path());
+        }
+    }
+
+    /// The value read, while the slot holds one: what a `schema::scope` field puts in scope
+    /// for the members after it.
+    pub fn value(&self) -> Option<&T> {
+        match &self.state {
+            State::Read(value) => Some(value),
+            _ => None,
         }
     }
 
@@ -694,6 +707,24 @@ impl<T> Slot<T> {
         }
     }
 
+    /// Asks `with` (`schema::absent_with`), once, for the value of the member `object` lacks
+    /// (or holds as a `null` the reading takes for absence): the field's value when it gives
+    /// one; it tells what it must. Nothing for a member that is written, or a read that stopped.
+    pub fn absent_with(
+        &mut self,
+        object: &Object<'_>,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if self.absent_asked || !matches!(self.state, State::Absent) || read.stopped() {
+            return;
+        }
+        self.absent_asked = true;
+        if let Some(value) = with(object.node(), read) {
+            self.state = State::Read(value);
+        }
+    }
+
     /// An `Option` field: the value, `None` when absent; a failed member is `None` where the
     /// reading resets it, else the owner fails.
     pub fn optional(self, read: &Read<'_>, ok: &mut bool) -> Option<T> {
@@ -748,6 +779,7 @@ impl<T> Slot<T> {
             depth: node.path().len(),
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         };
         if reads_null {
             inner.read_with(node, &mut attempt, unknown, with);
