@@ -2238,3 +2238,82 @@ fn a_map_read_sorted_in_place_tells_by_key_and_holds_in_file_order() {
     );
     assert_eq!(keys(in_place), ["d", "c"]);
 }
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(transparent)]
+struct Weights(#[facet(schema::iterated, schema::drop)] Vec<u8>);
+
+/// A transparent newtype reads its list by its field's keys: iterated as jsoncpp iterates its
+/// value, a failed element left out alone.
+#[test]
+fn a_transparent_list_reads_as_its_field_s_keys_say() {
+    let (value, told) = read_as::<Weights>(
+        r#"{"b": 2, "a": "x", "c": 3}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(value, Some(Weights(vec![2, 3])));
+    assert_eq!(
+        told,
+        [
+            "Info root core/invalid_type",
+            "Info root/a core/invalid_type"
+        ]
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Point(u8, Option<String>);
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(
+    schema::wrong_type = crate::diagnostic::codes::INVALID_VALUE,
+    schema::arity = crate::diagnostic::codes::DROPPED_FIELD
+)]
+struct Entry(#[facet(default)] String, #[facet(default = 9)] u8);
+
+/// A tuple struct reads an array, each field the element at its place: another length is a
+/// wrong type, and a failed element fails the struct.
+#[test]
+fn a_tuple_struct_reads_an_array_by_position() {
+    let (value, told) = as_read::<Point>(r#"[3, "a"]"#);
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(value, Some(Point(3, Some("a".to_owned()))));
+    for text in ["[3]", r#"[3, "a", 4]"#, "{}"] {
+        let (value, told) = as_read::<Point>(text);
+        assert_eq!(value, None, "{text}");
+        assert_eq!(told, ["Error root core/invalid_type"], "{text}");
+    }
+    let (value, told) = as_read::<Point>(r#"["x", 2]"#);
+    assert_eq!(value, None);
+    assert_eq!(
+        told,
+        [
+            "Error root/0 core/invalid_type",
+            "Error root/1 core/invalid_type"
+        ]
+    );
+}
+
+/// A tuple struct's own codes: a value that is no array under `schema::wrong_type`; an array of
+/// another length under `schema::arity`, told after its elements and read on, a missing element
+/// absent and one past the fields not read.
+#[test]
+fn a_tuple_struct_tells_its_shape_under_its_own_codes() {
+    let read = |text: &str| read_as::<Entry>(text, lenient(), Profile::EVERY_FAILURE);
+    let (value, told) = read(r#"{"a": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Info root core/invalid_value"]);
+    let (value, told) = read(r#"["a"]"#);
+    assert_eq!(value, Some(Entry("a".to_owned(), 9)));
+    assert_eq!(told, ["Info root core/dropped_field"]);
+    let (value, told) = read(r#"[[1], 2, "x"]"#);
+    assert_eq!(value, Some(Entry(String::new(), 2)));
+    assert_eq!(
+        told,
+        [
+            "Info root/0 core/invalid_type",
+            "Info root core/dropped_field"
+        ]
+    );
+}

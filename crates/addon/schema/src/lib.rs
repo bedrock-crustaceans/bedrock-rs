@@ -158,8 +158,15 @@ facet::define_attr_grammar! {
         /// `missing`, `invalid` and `negative` also take a `CodeDef<1>`, fed the read's subject
         /// (`Read::subject`: the block an entry is read for, the file a document is in); a read
         /// that names none tells its own code there, and a code of more arguments does not
-        /// compile.
+        /// compile. On a tuple struct, the code of a value that is no array, where the member
+        /// holding it states none.
         WrongType(arbitrary),
+        /// `arity = CODE` (compile-time, a tuple struct, a `CodeDef<0>` by its path): an array of
+        /// another length than the struct's fields is told under CODE after its elements and
+        /// read on, as the game asserts and reads its first elements: an element past the
+        /// fields is not read, a missing one is absent (each field an `Option` or with a
+        /// `default`). Without it another length is a wrong type.
+        Arity(arbitrary),
         /// `missing = CODE` (compile-time): the code the member is told missing under.
         Missing(arbitrary),
         /// `invalid = CODE` (compile-time): the code a value the member's type refuses (an

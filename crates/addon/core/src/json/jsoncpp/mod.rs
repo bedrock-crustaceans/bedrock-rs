@@ -1,6 +1,7 @@
 //! Reading the way jsoncpp does, for the families that read a file as vanilla's JSON reader
 //! does: a BOM skipped, comments accepted, the last of repeated members kept.
 
+pub mod accessors;
 pub mod fork;
 pub mod lenient;
 

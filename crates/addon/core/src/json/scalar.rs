@@ -5,6 +5,8 @@
 
 use facet::Facet;
 
+use crate::diagnostic::Severity;
+
 /// How a scalar token is read against the field's declared type: one profile per reader the
 /// game has. A slice picks one in its `Reading` (`versioning::Reading::scalars`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -48,6 +50,16 @@ pub enum Scalars {
     /// number, a string member for a string. A `null` that reaches the read is told (the owner
     /// that reads a `null` member as absent never asks).
     Lenient,
+    /// The jsoncpp accessors as the spawn files' hand parsers read every member (`asInt`,
+    /// `asUInt`, `asInt64`, `asFloat`, `asBool`, `asString`; the trade table's legacy reader
+    /// too): every member is coerced, no token is refused, and the crate tells at the severity
+    /// it carries what the game reads in silence: a value of another JSON type than the
+    /// member's `INVALID_TYPE` (a real for an integer, truncated and saturating, an `asInt64`
+    /// one through 32 bits; a bool 0 or 1; a number for a bool `!= 0`; a bool for a text its
+    /// name; anything else the type's zero, a `null` that reaches the read included), an
+    /// integer the member's width does not hold `INVALID_VALUE` (it keeps its low bits), a
+    /// number beyond a float `INVALID_VALUE` too (the largest finite one).
+    Accessors(Severity),
 }
 
 /// What a number beyond the width of its float member does (`1e39` for an `f32`): the reading
@@ -351,7 +363,7 @@ pub fn judge(declared: Declared, token: Token<'_>, rules: ScalarRules) -> Verdic
         Scalars::NonStrict => non_strict(declared, token),
         Scalars::ConvertAndTell => convert_and_tell(declared, token),
         // Read by `Read::scalar` over the value, whose coercions are not tokens.
-        Scalars::Fork | Scalars::Lenient => Verdict::Keep,
+        Scalars::Fork | Scalars::Lenient | Scalars::Accessors(_) => Verdict::Keep,
     };
     match verdict {
         Verdict::Refused(Refusal::BeyondWidth)

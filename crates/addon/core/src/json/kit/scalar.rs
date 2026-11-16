@@ -6,7 +6,8 @@ use std::borrow::Cow;
 
 use super::{Expected, Node, Pass, Read};
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, Diagnostic, DiagnosticDetail, JsonPath, Severity};
+use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail, JsonPath, Severity};
+use crate::json::jsoncpp::accessors::{self, Integer};
 use crate::json::jsoncpp::fork::{self, Stored};
 use crate::json::jsoncpp::lenient;
 use crate::json::scalar::{BeyondWidth, Declared, Respelt, Scalars, Token, Verdict, fits, judge};
@@ -105,6 +106,11 @@ impl Read<'_> {
     ///   keeps its low 32 bits, a number beyond a float is the largest finite one), told at the
     ///   member where the value is not of the kind the member reads without a word, a `null`
     ///   that reaches the read included;
+    /// - [`Scalars::Accessors`]: the same for the spawn files' hand parsers (an integer of any
+    ///   width keeps its low bits, a 64-bit one from a real through 32 bits), told at the
+    ///   flavour's severity at the member: `INVALID_TYPE` where the value is of another JSON
+    ///   type than the member's (a `null` that reaches the read too), `INVALID_VALUE` where it is
+    ///   an integer the width does not hold or a number beyond a float;
     /// - a number beyond its float read as the infinity it is, and an information that says so
     ///   (`BEYOND_FLOAT_MEMBER`, [`BeyondWidth::ClampAndTell`]: the versioned load clamps it in
     ///   the text and reads again) or a wrong type ([`BeyondWidth::Error`]);
@@ -142,6 +148,9 @@ impl Read<'_> {
         match self.reading.scalars {
             Scalars::Fork => return Some(self.fork_scalar(node, declared)),
             Scalars::Lenient => return Some(self.lenient_scalar(node, declared)),
+            Scalars::Accessors(severity) => {
+                return Some(self.accessor_scalar(node, declared, severity));
+            }
             _ => {}
         }
         let Some(token) = Token::of(node.value) else {
@@ -274,11 +283,60 @@ impl Read<'_> {
         scalar
     }
 
+    /// The value `node` holds as the jsoncpp accessors of the spawn files' hand parsers coerce
+    /// it for a member of `declared` ([`Scalars::Accessors`]: `accessors::as_integer` for an
+    /// integer of any width, `jsoncpp::lenient`'s `asFloat`, `asBool` and `asString`), told at
+    /// `severity`: `INVALID_TYPE` where the value is of another JSON type than the member's,
+    /// `INVALID_VALUE` where it is a number the member does not hold.
+    fn accessor_scalar(
+        &mut self,
+        node: &Node<'_>,
+        declared: Declared,
+        severity: Severity,
+    ) -> Scalar<'static> {
+        let value = node.value;
+        let other_type = Some(&core_codes::INVALID_TYPE);
+        let (scalar, told) = match declared {
+            Declared::Float { .. } => (
+                Scalar::Real(f64::from(lenient::as_float(Some(value), 0.0))),
+                if !value.is_number() {
+                    other_type
+                } else if lenient::float_is_clamped(value) {
+                    Some(&core_codes::INVALID_VALUE)
+                } else {
+                    None
+                },
+            ),
+            Declared::Bool => (
+                Scalar::Bool(lenient::as_bool(Some(value), false)),
+                other_type.filter(|_| !value.is_bool()),
+            ),
+            Declared::Int { bits, signed } => match accessors::as_integer(value, bits, signed) {
+                Integer::Fits(read) => (integer(read), None),
+                Integer::Beyond(read) => (integer(read), Some(&core_codes::INVALID_VALUE)),
+                Integer::Coerced(read) => (integer(read), other_type),
+            },
+            Declared::Text => (
+                Scalar::Text(Cow::Owned(lenient::to_text(Some(value)))),
+                other_type.filter(|_| !value.is_string()),
+            ),
+        };
+        if let Some(code) = told {
+            self.tell_at(node, code, severity);
+        }
+        scalar
+    }
+
     /// Tells that `node` was coerced for its member: an information of the crate's own, the
     /// game's reader being silent.
     fn tell_coerced(&mut self, node: &Node<'_>) {
-        let mut finding = Diagnostic::of(&core_codes::INVALID_VALUE)
-            .severity(Severity::Info)
+        self.tell_at(node, &core_codes::INVALID_VALUE, Severity::Info);
+    }
+
+    /// Tells `code` at `severity` at `node`, spanning its value, failing nothing.
+    fn tell_at(&mut self, node: &Node<'_>, code: &'static CodeDef<0>, severity: Severity) {
+        let mut finding = Diagnostic::of(code)
+            .severity(severity)
             .at(node.path.clone());
         finding.location.span = node.span();
         self.push(finding);

@@ -956,15 +956,32 @@ pub(super) fn struct_read(
             return TokenStream::new();
         };
         let ty = info.ty;
+        // A list the field iterates or drops from is read as its keys say.
+        let iterated = info.attrs.iterated.is_some();
+        let dropping = info.attrs.drop.is_some();
+        let list = (iterated || dropping).then(|| ty::elements(ty)).flatten();
         // A field read by its own function takes no wording or `null` of the type's.
-        let (inner, kind) = match &info.attrs.read_with {
-            Some((with, _)) => (
+        let (inner, kind) = match (&info.attrs.read_with, list) {
+            (None, Some(element)) => (
+                quote_spanned!(ty.span()=> #reader::list::<#element>(__node, __read, #iterated, #dropping)),
+                // An iterated list takes any value.
+                if iterated {
+                    quote! {
+                        const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
+                    }
+                } else {
+                    quote_spanned! {ty.span()=>
+                        const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
+                    }
+                },
+            ),
+            (Some((with, _)), _) => (
                 quote!((#with)(__node, __read)),
                 quote! {
                     const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
                 },
             ),
-            None => (
+            (None, None) => (
                 quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(__node, __read)),
                 quote_spanned! {ty.span()=>
                     const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
@@ -1049,6 +1066,175 @@ pub(super) fn struct_read(
                 __tag: ::core::option::Option<&'static str>,
             ) -> ::core::option::Option<Self> {
                 #body
+            }
+        }
+    }
+}
+
+/// The refusals of a tuple struct's fields, each read from the element at its place: no field
+/// that would move the places (`skip`) or names a member (`flatten`, `rename`, `alias`, an
+/// `UnknownMembers` field), none of the keys about a member's presence; under `schema::arity`
+/// each field says what a missing element is (an `Option`, or a `default`).
+pub(super) fn validate_positional(
+    fields: &Fields,
+    container: &ContainerAttrs,
+    infos: &[FieldInfo],
+    errors: &mut Vec<Error>,
+) {
+    for field in fields {
+        let mut scratch = Vec::new();
+        if FieldAttrs::read(&field.attrs, &mut scratch).skip {
+            errors.push(Error::new_spanned(
+                field,
+                "a tuple struct reads each field from the element at its place: a `skip` field \
+                 would move the places of the ones after it",
+            ));
+        }
+    }
+    for info in infos {
+        let attrs = &info.attrs;
+        let named =
+            attrs.flatten || attrs.rename.is_some() || attrs.alias.is_some() || !taken(info);
+        let presence = [
+            attrs.or_kept.map(|(_, span)| span),
+            attrs.reads_null,
+            attrs.required,
+            attrs.missing.as_ref().map(|(_, span)| *span),
+            attrs.stored.filter(|_| attrs.since_format.is_some()),
+        ]
+        .into_iter()
+        .flatten()
+        .next();
+        if named {
+            errors.push(Error::new_spanned(
+                info.ty,
+                "a tuple struct's field is the element at its place: it has no member name to \
+                 rename, alias or flatten, and no unknown members",
+            ));
+        }
+        if let Some(span) = presence {
+            errors.push(Error::new(
+                span,
+                "a tuple struct's element is there by its array's length: `or_kept`, \
+                 `reads_null`, `required`, `missing` and `since_format` are about a member",
+            ));
+        }
+        if container.arity.is_some() && info.option.is_none() && attrs.default.is_none() {
+            errors.push(Error::new_spanned(
+                info.ty,
+                "under `schema::arity` an element the array lacks is absent: the field is an \
+                 `Option` or has a `default`",
+            ));
+        }
+    }
+}
+
+/// The read of a tuple struct: an array (else a wrong type, under the struct's
+/// `schema::wrong_type`), each field the element at its place, read as a member of its field
+/// is; another length a wrong type, or under `schema::arity` told after the elements and read
+/// on. A failed element fails the struct where its field does not reset; the struct's
+/// `after_read` runs on the value built.
+pub(super) fn tuple_read(
+    target: &Target,
+    container: &ContainerAttrs,
+    infos: &[FieldInfo],
+) -> TokenStream {
+    let Paths {
+        node,
+        read,
+        from_json,
+        fields: fields_trait,
+        reader,
+        expected,
+        ..
+    } = paths();
+    let from_json_impl = target.impl_flat(&from_json, &quote!(#from_json), &[], &fields_trait);
+    let count = infos.len();
+    let wrong_type = container.wrong_type.as_ref().map_or_else(
+        || quote!(::core::option::Option::None),
+        |(code, _)| quote!(::core::option::Option::Some(&#code)),
+    );
+    let (length, tell_length) = match &container.arity {
+        Some((code, _)) => (
+            quote!(let __other = __elements.len() != #count;),
+            quote! {
+                if __other && !__read.stopped() {
+                    #reader::tell_at(__node, &#code, __read);
+                }
+            },
+        ),
+        None => (
+            quote! {
+                if __elements.len() != #count {
+                    __read.wrong_type(__node);
+                    return ::core::option::Option::None;
+                }
+            },
+            TokenStream::new(),
+        ),
+    };
+    let reads = infos.iter().enumerate().map(|(index, info)| {
+        let slot = format_ident!("__s{index}");
+        let value = format_ident!("__v{index}");
+        let held = info.option.unwrap_or(info.ty);
+        let new_slot = member_rules(info).map_or_else(
+            || quote!(#reader::Slot::<#held>::new()),
+            |rules| {
+                quote! {{
+                    static __RULES: #reader::MemberRules = #rules;
+                    #reader::Slot::<#held>::ruled(&__RULES)
+                }}
+            },
+        );
+        let read_call = member_read(info, &slot);
+        let finish = if info.option.is_some() {
+            quote!(let #value = #slot.optional(__read, &mut __ok);)
+        } else if let Some(default) = &info.attrs.default {
+            let default = default.value.as_ref().map_or_else(
+                || quote!(::core::default::Default::default()),
+                |expr| super::typed(expr, info.ty),
+            );
+            quote!(let #value = #slot.or_default(__read, &mut __ok, || #default);)
+        } else {
+            quote!(let #value = #slot.element(&mut __ok);)
+        };
+        quote! {
+            let mut #slot = #new_slot;
+            if let ::core::option::Option::Some(__member) = __elements.element(#index) {
+                let __member = &__member;
+                #read_call
+            }
+            #finish
+        }
+    });
+    let build = infos.iter().enumerate().map(|(index, info)| {
+        let value = format_ident!("__v{index}");
+        if info.option.is_some() {
+            quote!(#value)
+        } else {
+            quote!(#value?)
+        }
+    });
+    let after_read = after_read(container);
+    quote! {
+        #[automatically_derived]
+        #from_json_impl {
+            const EXPECTED: ::core::option::Option<#expected> =
+                ::core::option::Option::Some(#expected::Array);
+
+            #[allow(unused_mut)]
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                let __elements = #reader::elements(__node, __read, #wrong_type)?;
+                #length
+                let mut __ok = true;
+                #(#reads)*
+                #tell_length
+                if !__ok {
+                    return ::core::option::Option::None;
+                }
+                let mut __value = ::core::option::Option::Some(Self(#(#build),*));
+                #after_read
+                __value
             }
         }
     }

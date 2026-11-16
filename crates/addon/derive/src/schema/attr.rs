@@ -252,6 +252,10 @@ pub(crate) struct ContainerAttrs {
     /// `schema::tag_with = path` on an internally tagged enum: the function that names the
     /// variant of an object.
     pub tag_with: Option<(Expr, Span)>,
+    /// `schema::wrong_type = CODE` on a tuple struct: the code of a value that is no array.
+    pub wrong_type: Option<(Expr, Span)>,
+    /// `schema::arity = CODE` on a tuple struct: the code of an array of another length.
+    pub arity: Option<(Expr, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -289,7 +293,7 @@ const FIELD_KEYS: &[&str] = &[
 ];
 const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
-const STRUCT_KEYS: &[&str] = &["rule", "after_read", "quiet", "trigger"];
+const STRUCT_KEYS: &[&str] = &["rule", "after_read", "quiet", "trigger", "arity"];
 
 /// Where the attributes stand, for the placement errors.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -350,7 +354,9 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             Place::UntaggedVariant | Place::TaggedVariant if struct_key => {
                 format!("a variant takes no `schema::{key}`: it is a struct's key")
             }
-            Place::Struct if key == "molang" || key == "molang_with" => continue,
+            Place::Struct if key == "molang" || key == "molang_with" || key == "wrong_type" => {
+                continue;
+            }
             Place::Untagged | Place::Tagged if key == "invalid" => continue,
             Place::Tagged if key == "tag_with" => continue,
             _ if key == "tag_with" => {
@@ -864,6 +870,16 @@ impl ContainerAttrs {
                             entry.span,
                             errors,
                         );
+                    })
+                }
+                Some(key @ ("wrong_type" | "arity")) if place == Place::Struct => {
+                    value_expr(entry, key).map(|expr| {
+                        let slot = if key == "arity" {
+                            &mut out.arity
+                        } else {
+                            &mut out.wrong_type
+                        };
+                        once(slot, (expr, entry.span), key, entry.span, errors);
                     })
                 }
                 Some("tag_with") if place == Place::Tagged => {

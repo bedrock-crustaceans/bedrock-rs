@@ -371,12 +371,10 @@ fn field_infos<'a>(
 
 fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) -> TokenStream {
     let container = ContainerAttrs::read(&input.attrs, Place::Struct, errors);
-    if matches!(fields, Fields::Unnamed(_)) && !container.transparent {
-        errors.push(Error::new_spanned(
-            fields,
-            "`#[derive(Schema)]` applies to a struct with named fields or a \
-             `#[facet(transparent)]` newtype",
-        ));
+    // A tuple struct is an array, each field the element at its place.
+    let positional = matches!(fields, Fields::Unnamed(_)) && !container.transparent;
+    if !positional {
+        refuse_tuple_keys(&container, errors);
     }
     let infos = field_infos(
         fields,
@@ -389,6 +387,9 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         validate_field(info, &infos, errors);
         read::validate(info, errors);
     }
+    if positional {
+        read::validate_positional(fields, &container, &infos, errors);
+    }
 
     let core = core();
     let ident = &input.ident;
@@ -396,7 +397,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         ident,
         generics: &input.generics,
     };
-    let from_json = read::struct_read(&target, fields, &container, &infos);
+    let from_json = if positional {
+        read::tuple_read(&target, &container, &infos)
+    } else {
+        read::struct_read(&target, fields, &container, &infos)
+    };
     let rows = infos.iter().map(|info| field_row(info));
     let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
         infos
@@ -431,8 +436,13 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         // A `schema::required` option is told missing by `{}` and by the written default: the
         // reader's rule, not facet's.
         let required = infos.iter().any(|info| info.attrs.required.is_some());
-        let test = (!target.is_generic())
-            .then(|| default_test(ident, !container.transparent && !required, required));
+        let test = (!target.is_generic()).then(|| {
+            default_test(
+                ident,
+                !container.transparent && !positional && !required,
+                required,
+            )
+        });
         let default = default_impl(&target, fields, &infos);
         quote!(#default #test)
     });
@@ -468,6 +478,25 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         #default
         #getters
         #from_json
+    }
+}
+
+/// The refusals of a tuple struct's keys (`schema::wrong_type`, `schema::arity`) on a struct
+/// with named fields.
+fn refuse_tuple_keys(container: &ContainerAttrs, errors: &mut Vec<Error>) {
+    for (given, key) in [
+        (&container.wrong_type, "wrong_type"),
+        (&container.arity, "arity"),
+    ] {
+        if let Some((_, span)) = given {
+            errors.push(Error::new(
+                *span,
+                format!(
+                    "a struct's `schema::{key}` is a tuple struct's, an array read by position: \
+                     put it on the field it is about"
+                ),
+            ));
+        }
     }
 }
 
@@ -1048,17 +1077,31 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
     }})
 }
 
-/// `body` at the field's path: inside `enter`/`leave`, or at the owner's for an inline field.
+/// The index of a tuple struct's field, which its path steps by in place of a key.
+fn place(info: &FieldInfo) -> Option<usize> {
+    match &info.member {
+        Member::Unnamed(index) if !info.inline => Some(index.index as usize),
+        _ => None,
+    }
+}
+
+/// `body` at the field's path: inside `enter`/`leave` (a tuple struct's field at its index),
+/// or at the owner's for an inline field.
 fn at_field(info: &FieldInfo, body: TokenStream) -> TokenStream {
     if info.inline {
-        body
-    } else {
-        let json = &info.json;
-        quote! {
-            cx.enter(#json);
-            #body
-            cx.leave();
-        }
+        return body;
+    }
+    let enter = place(info).map_or_else(
+        || {
+            let json = &info.json;
+            quote!(cx.enter(#json);)
+        },
+        |index| quote!(cx.enter_index(#index);),
+    );
+    quote! {
+        #enter
+        #body
+        cx.leave();
     }
 }
 
@@ -1155,13 +1198,20 @@ fn field_cross_check(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream>
 fn field_molang(info: &FieldInfo) -> TokenStream {
     let core = core();
     let access = &info.access;
-    let json = &info.json;
+    // The step into the field: its key, or a tuple struct's index.
+    let json = place(info).map_or_else(
+        || {
+            let json = &info.json;
+            quote!(#core::molang::Step::Key(#json))
+        },
+        |index| quote!(#core::molang::Step::Index(#index)),
+    );
     if let Some((walk, _)) = &info.attrs.molang_with {
         return if info.inline {
             quote!((#walk)(&mut #access, visitor);)
         } else {
             quote! {
-                visitor.enter(#core::molang::Step::Key(#json));
+                visitor.enter(#json);
                 (#walk)(&mut #access, visitor);
                 visitor.leave();
             }

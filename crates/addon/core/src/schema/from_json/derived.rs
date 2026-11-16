@@ -17,7 +17,7 @@ use crate::json::Token;
 use crate::json::arms::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::json::kit::Mark;
 use crate::json::kit::{
-    Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
+    Elements, Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
 };
 use crate::schema::UnknownRule;
 use crate::version::FormatVersion;
@@ -674,6 +674,16 @@ impl<T> Slot<T> {
         }
     }
 
+    /// A plain field of a tuple struct, whose element the array has: the value, or the owner
+    /// fails.
+    pub fn element(self, ok: &mut bool) -> Option<T> {
+        if let State::Read(value) = self.state {
+            return Some(value);
+        }
+        *ok = false;
+        None
+    }
+
     /// An `Option` field: the value, `None` when absent; a failed member is `None` where the
     /// reading resets it, else the owner fails.
     pub fn optional(self, read: &Read<'_>, ok: &mut bool) -> Option<T> {
@@ -909,6 +919,36 @@ pub fn list<E: FromJson>(
     } else {
         super::read_list(node, read, failure, E::from_json)
     }
+}
+
+/// The elements of the array a tuple struct reads, or a wrong type: under the member's own
+/// `schema::wrong_type` when it states one, else the struct's (`wrong_type`), else the read's.
+pub fn elements<'v>(
+    node: &Node<'v>,
+    read: &mut Read<'_>,
+    wrong_type: Option<&'static CodeDef<0>>,
+) -> Option<Elements<'v>> {
+    if read.stopped() {
+        return None;
+    }
+    if let Some(code) = wrong_type
+        && !node.value().is_array()
+        && read
+            .member_rules(node)
+            .is_none_or(|rules| rules.wrong_type.is_none())
+    {
+        read.refuse(node, Code::from(code));
+        return None;
+    }
+    read.array(node)
+}
+
+/// Tells `code` at `node`, over it, failing nothing: what the game tells of a value it reads on
+/// (a tuple struct's array of another length, `schema::arity`).
+pub fn tell_at(node: &Node<'_>, code: &'static CodeDef<0>, read: &mut Read<'_>) {
+    let mut finding = Diagnostic::of(code).at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.

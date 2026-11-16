@@ -1,0 +1,43 @@
+error: a struct's `schema::arity` is a tuple struct's, an array read by position: put it on the field it is about
+ --> tests/ui/schema/tuple_struct.rs:6:9
+  |
+6 | #[facet(schema::arity = codes::DROPPED_FIELD)]
+  |         ^^^^^^
+
+error: under `schema::arity` an element the array lacks is absent: the field is an `Option` or has a `default`
+  --> tests/ui/schema/tuple_struct.rs:13:16
+   |
+13 | struct Lacking(i32, Option<i32>);
+   |                ^^^
+
+error: a tuple struct reads each field from the element at its place: a `skip` field would move the places of the ones after it
+  --> tests/ui/schema/tuple_struct.rs:16:14
+   |
+16 | struct Moved(#[facet(skip)] i32, i32);
+   |              ^^^^^^^^^^^^^^^^^^
+
+error: a tuple struct's field is the element at its place: it has no member name to rename, alias or flatten, and no unknown members
+  --> tests/ui/schema/tuple_struct.rs:19:38
+   |
+19 | struct Member(#[facet(rename = "a")] i32, #[facet(schema::required)] Option<i32>);
+   |                                      ^^^
+
+error: a tuple struct's element is there by its array's length: `or_kept`, `reads_null`, `required`, `missing` and `since_format` are about a member
+  --> tests/ui/schema/tuple_struct.rs:19:51
+   |
+19 | struct Member(#[facet(rename = "a")] i32, #[facet(schema::required)] Option<i32>);
+   |                                                   ^^^^^^
+
+error: `schema::arity` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/tuple_struct.rs:22:25
+   |
+22 | struct OnAField(#[facet(schema::arity = codes::DROPPED_FIELD)] i32);
+   |                         ^^^^^^
+
+warning: unused import: `bedrock_addon_core::diagnostic::codes`
+ --> tests/ui/schema/tuple_struct.rs:1:5
+  |
+1 | use bedrock_addon_core::diagnostic::codes;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
