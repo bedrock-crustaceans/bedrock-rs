@@ -2,10 +2,12 @@
 
 use std::fmt;
 
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::SemVersion;
 
 /// One `.material` file (`materials/entity.material`): named materials, each of which may
@@ -191,36 +193,51 @@ impl<T> Listed<T> {
 }
 
 /// One face of the stencil test (`frontFace`, `backFace`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(rename_all = "camelCase", schema::unknown_with = super::read::face_unknown)]
 pub struct StencilFace {
     /// `stencilFunc`: a comparison function ([`COMPARISON_FUNCS`](super::COMPARISON_FUNCS));
     /// `Always` when nothing sets it.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::comparison)]
     pub stencil_func: Option<String>,
     /// `stencilFailOp`: a stencil operation ([`STENCIL_OPS`](super::STENCIL_OPS)); `Keep` when
     /// nothing sets it.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::stencil_op)]
     pub stencil_fail_op: Option<String>,
     /// `stencilDepthFailOp`; `Keep` when nothing sets it.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::stencil_op)]
     pub stencil_depth_fail_op: Option<String>,
     /// `stencilPassOp`; `Keep` when nothing sets it.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::stencil_op)]
     pub stencil_pass_op: Option<String>,
     /// The members the client does not read (vanilla's own `stencilPass` among them).
     pub extra: UnknownMembers,
 }
 
 /// One entry of `samplerStates`: what it sets on the sampler slot `samplerIndex`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(
+    rename_all = "camelCase",
+    schema::unknown_with = super::read::sampler_unknown,
+    schema::after_read = super::read::sampler_rules
+)]
 pub struct SamplerState {
     /// `samplerIndex`: the slot, below [`SAMPLER_SLOTS`](super::SAMPLER_SLOTS). The client
     /// skips an entry without one.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::unsigned)]
     pub sampler_index: Option<u32>,
     /// `textureFilter` ([`TEXTURE_FILTERS`](super::TEXTURE_FILTERS)).
+    #[facet(schema::or_kept = "told", schema::read_beside = super::read::texture_filter)]
     pub texture_filter: Option<String>,
     /// `textureWrap` ([`TEXTURE_WRAPS`](super::TEXTURE_WRAPS)), applied to all three axes.
+    #[facet(schema::or_kept = "told", schema::read_beside = super::read::texture_wrap)]
     pub texture_wrap: Option<String>,
     /// `shaderStage` ([`SHADER_STAGES`](super::SHADER_STAGES)); not read in a legacy material.
+    #[facet(schema::or_kept = "told", schema::read_beside = super::read::shader_stage)]
     pub shader_stage: Option<String>,
     /// `comparisonFunc` ([`COMPARISON_FUNCS`](super::COMPARISON_FUNCS)); not read in a legacy
     /// material.
+    #[facet(schema::or_kept = "told", schema::read_beside = super::read::sampler_comparison)]
     pub comparison_func: Option<String>,
     /// The members the client does not read.
     pub extra: UnknownMembers,
@@ -230,7 +247,8 @@ pub struct SamplerState {
 /// which takes a boolean or a number and reads a number as "not zero"; vanilla's own
 /// `ui.material` writes `0`. The spelling is kept so that the file is written back as it was
 /// written; [`is_on`](Self::is_on) is what the client reads.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum StencilRefOverride {
     /// Written as `true` or `false`.
     Flag(bool),
@@ -255,9 +273,11 @@ impl From<bool> for StencilRefOverride {
 }
 
 /// One entry of `vertexFields`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 pub struct VertexField {
     /// `field` ([`VERTEX_FIELDS`](super::VERTEX_FIELDS)); an entry without one adds `Position`.
+    #[facet(schema::or_kept = "told", schema::read_with = super::read::vertex_field)]
     pub field: Option<String>,
     /// The members the client does not read.
     pub extra: UnknownMembers,

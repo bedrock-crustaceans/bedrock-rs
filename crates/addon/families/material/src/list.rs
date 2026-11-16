@@ -1,6 +1,9 @@
 //! A material list file (`materials/common.json`): which `.material` files a group loads.
 
+use facet::Facet;
+
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// Which list file a [`MaterialList`] is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -55,15 +58,19 @@ pub struct MaterialList {
 }
 
 /// One entry of a list file.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown_with = super::read::entry_unknown)]
 pub struct ListEntry {
     /// `path`: the `.material` file (`materials/entity.material`).
     pub path: String,
     /// `defines`: defines every parentless material of the file starts with.
+    #[facet(schema::or_kept = "told")]
     pub defines: Option<Vec<String>>,
     /// `+defines`: added after `defines` (vanilla's `fancy.json` adds `FANCY` this way).
+    #[facet(rename = "+defines", schema::or_kept = "told")]
     pub add_defines: Option<Vec<String>>,
     /// `-defines`: removed after the other two are added.
+    #[facet(rename = "-defines", schema::or_kept = "told")]
     pub sub_defines: Option<Vec<String>>,
     /// Every other member, as written. The client rejects `tag` with an error.
     pub extra: UnknownMembers,

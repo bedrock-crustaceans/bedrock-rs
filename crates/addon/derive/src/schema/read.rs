@@ -225,6 +225,12 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             "`schema::finite` applies to an `f32` or `f64` field (or an `Option` of one)",
         ));
     }
+    validate_read_with(info, errors);
+}
+
+/// The refusals of a field's own read: `read_with` on a field that reads no one member (a
+/// flattened one, an `UnknownMembers` one), `read_beside` there or beside a `read_with`.
+fn validate_read_with(info: &FieldInfo, errors: &mut Vec<Error>) {
     if let Some((_, span)) = &info.attrs.read_with {
         if info.attrs.flatten {
             errors.push(Error::new(
@@ -239,6 +245,15 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                  members no field takes",
             ));
         }
+    }
+    if let Some((_, span)) = &info.attrs.read_beside
+        && (info.attrs.read_with.is_some() || info.attrs.flatten || !taken(info))
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::read_beside` is a member's read given its object: a field with its own \
+             `read_with`, a flattened field and an `UnknownMembers` field have none",
+        ));
     }
 }
 
@@ -656,7 +671,7 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
     // What the type says of its `null`. A `schema::read_with` fn never sees one (the null rule
     // reads it first), so the type's `HOLDS_NULL` is not for it: a member that fn reads refuses a
     // `null` as every other member does.
-    let kind = if info.attrs.read_with.is_some() {
+    let kind = if info.attrs.read_with.is_some() || info.attrs.read_beside.is_some() {
         quote! {{
             #[allow(unused_imports)]
             use #reader::{KindOfNone as _, KindOfRead as _};
@@ -697,11 +712,18 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
             }
         })
     });
+    // A read given the object the member is in: what its siblings say decides it.
+    let beside = info.attrs.read_beside.as_ref().map(|(beside, _)| {
+        quote! {
+            |__node: &#node<'_>, __read: &mut #read<'_>| (#beside)(__node, __object.node(), __read)
+        }
+    });
     let with = info
         .attrs
         .read_with
         .as_ref()
         .map(|(with, _)| quote!(#with))
+        .or(beside)
         .or(list)
         .or(keyed);
     match (info.attrs.or_kept, with, info.option.is_some()) {
@@ -787,14 +809,27 @@ fn extra_arg(extra: bool) -> TokenStream {
 
 /// The disposal of an unknown member `__key`: the struct's, and for the members it says are
 /// `quiet` the same members kept and told nothing.
-fn disposal(quiet: &[String]) -> TokenStream {
+fn disposal(
+    quiet: &[String],
+    unknown_with: Option<&syn::Expr>,
+    marked: &TokenStream,
+) -> TokenStream {
+    let disposal = unknown_with.map_or_else(
+        || quote!(__disposal),
+        |with| {
+            quote!({
+                let __rule = (#with)(__key, __member, __read);
+                __object.disposal(__read, ::core::option::Option::Some(__rule), #marked)
+            })
+        },
+    );
     if quiet.is_empty() {
-        return quote!(__disposal);
+        return disposal;
     }
     quote!(if ::core::matches!(__key, #(#quiet)|*) {
-        __disposal.silenced()
+        (#disposal).silenced()
     } else {
-        __disposal
+        #disposal
     })
 }
 
@@ -838,6 +873,7 @@ fn fields_body(
     after_members: Option<&syn::Expr>,
     after_read: Option<&TokenStream>,
     guard: Option<&syn::Expr>,
+    unknown_with: Option<&syn::Expr>,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -921,10 +957,12 @@ fn fields_body(
         let core = core();
         quote!(let mut __extra = #core::document::UnknownMembers::default();)
     });
+    // What the struct kept takes the order of its object where the read keeps it so.
+    let in_file_order = extra.then(|| quote!(__object.in_file_order(__read, &mut __extra);));
     let build = built_value(construct, fields, infos);
     let (names, gates) = member_names_and_gates(infos);
     let knows = knows(infos, true);
-    let unknown_member = unknown_member(&extra_arg, quiet);
+    let unknown_member = unknown_member(&extra_arg, quiet, unknown_with, &quote!(#marked));
     // A flattened enum whose variant failed (a tag that names none) fails the read of its owner
     // there: the members after it, the unknown ones and the missing ones are not told.
     let abandoned = infos
@@ -1019,6 +1057,7 @@ fn fields_body(
         None => quote! {
             #guard_after
             #unknown_after
+            #in_file_order
             // Under the game's schema tree an error raised while the members were read fails the
             // struct, and its missing members are then not told.
             let mut __ok = __object.settle(__read);
@@ -1058,7 +1097,8 @@ fn fields_body(
                 }
                 None => (quote!(), quote!(::core::option::Option::None), quote!()),
             };
-            let later_member = self::unknown_member(&later_arg, quiet);
+            let later_member =
+                self::unknown_member(&later_arg, quiet, unknown_with, &quote!(#marked));
             let unknown_after = unguarded(if abandoned.is_empty() {
                 quote!(#reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);)
             } else {
@@ -1131,6 +1171,7 @@ fn fields_body(
         #(#absent_afters)*
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
+        __object.keep_nulls(__read, #extra_arg);
         #unknown_last
         #ending
     }
@@ -1138,13 +1179,19 @@ fn fields_body(
 
 /// The tell of one unknown member, given to the read twice: for the unknown members told with the
 /// members and for the ones told after the keeps of what the members could not read.
-fn unknown_member(extra_arg: &TokenStream, quiet: &[String]) -> TokenStream {
+fn unknown_member(
+    extra_arg: &TokenStream,
+    quiet: &[String],
+    unknown_with: Option<&syn::Expr>,
+    marked: &TokenStream,
+) -> TokenStream {
     let p = paths();
     let (node, read) = (&p.node, &p.read);
-    let disposal = disposal(quiet);
+    let disposal = disposal(quiet, unknown_with, marked);
     quote! {
         |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
-            __object.unknown(__key, __member, __read, #disposal, #extra_arg);
+            let __told = #disposal;
+            __object.unknown(__key, __member, __read, __told, #extra_arg);
         }
     }
 }
@@ -1317,6 +1364,7 @@ pub(super) fn struct_read(
         container.after_members.as_ref().map(|(rule, _)| rule),
         after_read.as_ref(),
         container.guard.as_ref().map(|(guard, _)| guard),
+        container.unknown_with.as_ref().map(|(with, _)| with),
     );
     quote! {
         #[automatically_derived]
@@ -1603,6 +1651,7 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         variant.fields,
         variant.unknown.as_ref(),
         &[],
+        None,
         None,
         None,
         None,

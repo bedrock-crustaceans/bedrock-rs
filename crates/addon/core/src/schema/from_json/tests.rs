@@ -1880,6 +1880,170 @@ fn a_required_field_that_keeps_what_it_cannot_read_is_not_missing() {
     assert_eq!(told, ["Error root/size core/missing_required_field"]);
 }
 
+/// A read that keeps the members as the object has them puts what a field could not read among
+/// the unknown members, in file order, as a walk that took each member in turn kept them.
+#[test]
+fn a_member_kept_as_written_takes_its_place_among_the_unknown_members() {
+    let json: Value =
+        from_str_jsonc(r#"{"size": "big", "zz": 1, "shade": "dark", "aa": 2}"#).unwrap();
+    let mut found = Diagnostics::default();
+    let mut read = Read::new(Reading::DOCUMENT, &mut found).keep_in_file_order();
+    let value = Kept::from_json(&Node::new(&json, JsonPath::new()), &mut read).expect("read");
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["size", "zz", "shade", "aa"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct NullsKept {
+    size: Option<u8>,
+    #[facet(default = 3)]
+    depth: u8,
+    extra: crate::document::UnknownMembers,
+}
+
+/// Under `AbsentKept` a member written `null` is absent, and kept as written where the file has
+/// it, told nothing.
+#[test]
+fn a_null_member_is_absent_and_kept_as_written() {
+    let json: Value = from_str_jsonc(r#"{"zz": 1, "size": null, "depth": null}"#).unwrap();
+    let mut found = Diagnostics::default();
+    let reading = Reading::DOCUMENT.with_null(NullHandling::AbsentKept);
+    let mut read = Read::new(reading, &mut found).keep_in_file_order();
+    let value = NullsKept::from_json(&Node::new(&json, JsonPath::new()), &mut read).expect("read");
+    assert_eq!((value.size, value.depth), (None, 3));
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["zz", "size", "depth"]);
+    assert!(value.extra.get("size").is_some_and(Value::is_null));
+    assert!(found.is_empty(), "{:?}", found.iter().collect::<Vec<_>>());
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct Named {
+    name: String,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A required member written `null` under a rule that reads a `null` member as absent is
+/// missing, told where a missing member is, at the member; under `AbsentKept` it is kept too.
+#[test]
+fn a_required_member_written_null_is_missing_where_a_null_is_absent() {
+    let json: Value = from_str_jsonc(r#"{"name": null}"#).unwrap();
+    for null in [NullHandling::AbsentSilently, NullHandling::AbsentKept] {
+        let mut found = Diagnostics::default();
+        let reading = lenient().with_null(null);
+        let mut read = Read::new(reading, &mut found);
+        let value = Named::from_json(&Node::new(&json, JsonPath::new()), &mut read);
+        assert_eq!(value, None, "{null:?}");
+        let told: Vec<String> = found
+            .iter()
+            .map(|f| format!("{:?} {} {}", f.severity, f.location.json_path, f.code.id()))
+            .collect();
+        assert_eq!(told, ["Info name core/missing_required_field"], "{null:?}");
+    }
+}
+
+/// Tells an unknown member only when it is a `+` spelling.
+fn plus_only(key: &str, _: &Node<'_>, _: &mut Read<'_>) -> crate::schema::UnknownRule {
+    if key.starts_with('+') {
+        crate::schema::UnknownRule::Keep
+    } else {
+        crate::schema::UnknownRule::Silent
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown_with = plus_only)]
+struct Picked {
+    name: Option<String>,
+    extra: crate::document::UnknownMembers,
+}
+
+/// A struct whose unknown members are told by a rule of their names tells those it picks, in
+/// place, and keeps them all.
+#[test]
+fn unknown_members_are_told_only_where_a_rule_picks_them_by_name() {
+    let (value, told) = read_as::<Picked>(
+        r#"{"zz": 1, "+name": "a", "name": "n", "yy": 2}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    let value = value.expect("read");
+    let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+    assert_eq!(kept, ["zz", "+name", "yy"]);
+    assert_eq!(told, ["Warning root/+name core/unrecognized_field"]);
+}
+
+/// Keeps every unknown member in silence, and tells `tag` as the kept error of a removed key.
+fn removed_tag(key: &str, node: &Node<'_>, read: &mut Read<'_>) -> crate::schema::UnknownRule {
+    if key == "tag" {
+        let code = crate::diagnostic::Code::from(&crate::diagnostic::codes::INVALID_VALUE);
+        let line = crate::diagnostic::Diagnostic::error(code).at(node.path().clone());
+        read.push(line.into_kept());
+    }
+    crate::schema::UnknownRule::Silent
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown_with = removed_tag)]
+struct Tagged {
+    path: String,
+    extra: crate::document::UnknownMembers,
+}
+
+/// An unknown member told as a kept error is told where the file has it, the element it is in
+/// read on, and told when that element is then left out for a member it lacks.
+#[test]
+fn an_unknown_member_told_as_a_kept_error_is_told_in_place() {
+    let profile = Profile::EVERY_FAILURE.with_recovery(Recovery::Value);
+    let (value, told) = read_as::<Vec<Tagged>>(
+        r#"[{"tag": 1, "path": 5}, {"path": "a", "tag": null}, {"tag": "x"}]"#,
+        lenient().strict(),
+        profile,
+    );
+    let value = value.expect("read");
+    assert_eq!(value.len(), 1);
+    assert!(value[0].extra.get("tag").is_some());
+    assert_eq!(
+        told,
+        [
+            "Error root/0/tag core/invalid_value",
+            "Info root/0/path core/invalid_type",
+            "Error root/1/tag core/invalid_value",
+            "Error root/2/tag core/invalid_value",
+            "Info root/2/path core/missing_required_field",
+        ]
+    );
+}
+
+/// The size, doubled when the object says `"double": true`.
+fn sized(node: &Node<'_>, owner: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+    let size = u8::from_json(node, read)?;
+    let double = owner
+        .value()
+        .as_object()
+        .and_then(|object| object.get("double"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    Some(if double { size * 2 } else { size })
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Beside {
+    #[facet(schema::read_beside = sized)]
+    size: Option<u8>,
+    double: Option<bool>,
+}
+
+/// A member read beside its object sees its siblings, the later ones too.
+#[test]
+fn a_member_read_beside_its_object_sees_its_siblings() {
+    let (value, told) = as_read::<Beside>(r#"{"size": 3, "double": true}"#);
+    assert_eq!(value.expect("read").size, Some(6));
+    assert!(told.is_empty(), "{told:?}");
+}
+
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct Versioned {
     #[facet(schema::since_format = "1.21.0")]

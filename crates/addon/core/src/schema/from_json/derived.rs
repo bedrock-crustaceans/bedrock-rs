@@ -108,6 +108,9 @@ pub struct Object<'v> {
     /// What the variant of a flattened internally tagged enum, once read from the object, knows
     /// ([`choose`](Self::choose)).
     chosen: std::cell::Cell<Option<Knows>>,
+    /// The members written `null` read as absent and kept as written
+    /// ([`NullHandling::AbsentKept`]), for [`keep_nulls`](Self::keep_nulls).
+    nulls: std::cell::RefCell<Vec<String>>,
 }
 
 impl<'v> Object<'v> {
@@ -126,6 +129,7 @@ impl<'v> Object<'v> {
             mark: read.mark(),
             failed: std::cell::Cell::new(false),
             chosen: std::cell::Cell::new(None),
+            nulls: std::cell::RefCell::new(Vec::new()),
         })
     }
 
@@ -199,13 +203,19 @@ impl<'v> Object<'v> {
     }
 
     /// Whether the member `node` is read as absent for its `null` ([`NullHandling::Absent`],
-    /// which is then told ([`Pass::Absent`]); [`NullHandling::AbsentSilently`], which is not).
+    /// which is then told ([`Pass::Absent`]); [`NullHandling::AbsentSilently`], which is not;
+    /// [`NullHandling::AbsentKept`], which keeps it as written).
     pub fn absent(&self, node: &Node<'_>, read: &mut Read<'_>) -> bool {
         if !node.value().is_null() {
             return false;
         }
         match read.reading().null {
             NullHandling::AbsentSilently => return true,
+            NullHandling::AbsentKept => {
+                let key = node.path().last_key().unwrap_or_default().to_owned();
+                self.nulls.borrow_mut().push(key);
+                return true;
+            }
             NullHandling::Absent => {}
             _ => return false,
         }
@@ -236,6 +246,14 @@ impl<'v> Object<'v> {
                 read.findings_mut().unknown_mut().put(&owner, key, value);
             }
             None => {}
+        }
+    }
+
+    /// Keeps each member written `null` that a field read as absent under
+    /// [`NullHandling::AbsentKept`], as written, told nothing.
+    pub fn keep_nulls(&self, read: &mut Read<'_>, mut extra: Option<&mut UnknownMembers>) {
+        for key in self.nulls.take() {
+            self.keep(&key, crate::json::Value::NULL, read, extra.as_deref_mut());
         }
     }
 
@@ -275,6 +293,24 @@ impl<'v> Object<'v> {
             }
             None => {}
         }
+    }
+}
+
+impl Object<'_> {
+    /// Puts what the struct kept in `extra` (its unknown members, what a field could not read, a
+    /// `null` kept as written) in the order the object has them, where the read keeps them so
+    /// ([`Read::keep_in_file_order`]); else what the fields kept stays after the unknown members.
+    pub fn in_file_order(&self, read: &Read<'_>, extra: &mut UnknownMembers) {
+        if !read.keeps_in_file_order() || extra.len() < 2 {
+            return;
+        }
+        let places: std::collections::HashMap<&str, usize> = read
+            .ordered(&self.members)
+            .iter()
+            .enumerate()
+            .map(|(place, (key, _))| (*key, place))
+            .collect();
+        extra.sort_by_place(|key| places.get(key).copied().unwrap_or(usize::MAX));
     }
 }
 

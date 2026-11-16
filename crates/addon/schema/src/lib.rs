@@ -137,6 +137,13 @@ facet::define_attr_grammar! {
         /// function told (or nothing: a value the game drops without a word). `after_read` is
         /// the rule that cannot fail it.
         Guard(arbitrary),
+        /// `unknown_with = path` (compile-time, on a struct): the rule each unknown member is
+        /// told and kept by, from its name, in place of the struct's `unknown` word:
+        /// `fn(&str, &Node<'_>, &mut Read<'_>) -> UnknownRule`, called where the read tells the
+        /// member. For a reader that tells only the names it picks (a spelling the game asserts
+        /// on) and keeps the others in silence; the function may tell a line of its own at the
+        /// member (a kept error for a key the game no longer reads) and return `Silent`.
+        UnknownWith(arbitrary),
         /// `trigger` (marker, on a struct): the struct is an event trigger itself (an entity's
         /// `on_*` component, `{event, filters, target}`): its trigger member is its own path,
         /// beside those of its fields.
@@ -165,6 +172,12 @@ facet::define_attr_grammar! {
         /// leaves the field absent. Asked in the member's place where the read asks for members
         /// in declaration order, after the members where it reads them in file order.
         AbsentWith(arbitrary),
+        /// `read_beside = path` (compile-time, a struct's field): the field's read given the
+        /// object the member is in, `fn(&Node<'_>, &Node<'_>, &mut Read<'_>) -> Option<T>`
+        /// (the member, its object, the read): `read_with` for a member whose read follows what
+        /// its siblings are (a list the game skips beside its plain spelling, a sampler's
+        /// keyword the game does not look up once its index is out of range).
+        ReadBeside(arbitrary),
         /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
         /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
         /// at the object, tells what it refuses (the game's own words for a name that is none)
@@ -261,6 +274,8 @@ facet::define_attr_grammar! {
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
         /// (with the struct's unknown members), its failure told (or not) and failing nothing.
+        /// A read that keeps the object's order (`Read::keep_in_file_order`) puts it among the
+        /// struct's own unknown members where the file has it; otherwise after them.
         OrKept(arbitrary),
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.

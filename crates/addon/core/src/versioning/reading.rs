@@ -36,6 +36,11 @@ pub enum NullHandling {
     /// kin take the default for a `null` without a word (the sound files). The old reader had
     /// no such rule.
     AbsentSilently,
+    /// As [`AbsentSilently`](Self::AbsentSilently), and the member is kept as written beside the
+    /// typed value (its struct's unknown members, or the document's table), for write-back: a
+    /// reader that skips a `null` and keeps the file as it is (the material files, whose merge
+    /// reads a `null` as "no change").
+    AbsentKept,
     /// The framework applies no rule: the family's hand-written reader takes `null` as it
     /// does (a `FirstRun` family, a legacy slice, an MCB source).
     Own,
@@ -53,7 +58,7 @@ impl NullHandling {
         match self {
             Self::Rejected => Some(NullRule::Rejected),
             Self::Absent => Some(NullRule::Absent),
-            Self::AbsentSilently | Self::Own | Self::AsValue => None,
+            Self::AbsentSilently | Self::AbsentKept | Self::Own | Self::AsValue => None,
         }
     }
 }

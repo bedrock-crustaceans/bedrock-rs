@@ -1136,6 +1136,9 @@ pub struct Read<'d> {
     respelled: Vec<(JsonPath, Option<Span>)>,
     /// What the reads above the one being made put in scope, innermost last ([`scope`](Self::scope)).
     scopes: Vec<(&'static str, Scoped)>,
+    /// A struct's own unknown members hold what it kept in the order its object has them
+    /// ([`keep_in_file_order`](Self::keep_in_file_order)).
+    in_file_order: bool,
 }
 
 /// A value a read put in scope for the reads below it ([`Read::scope`]).
@@ -1172,6 +1175,7 @@ impl<'d> Read<'d> {
             errors: 0,
             respelled: Vec::new(),
             scopes: Vec::new(),
+            in_file_order: false,
         }
     }
 
@@ -1336,6 +1340,7 @@ impl<'d> Read<'d> {
             errors: 0,
             respelled: Vec::new(),
             scopes: self.scopes.clone(),
+            in_file_order: self.in_file_order,
         }
     }
 
@@ -1742,6 +1747,23 @@ impl<'d> Read<'d> {
     pub fn scalars(mut self, scalars: crate::versioning::Scalars) -> Self {
         self.reading = self.reading.with_scalars(scalars);
         self
+    }
+
+    /// The read keeping, in a struct's own unknown members (an `UnknownMembers` field), what it
+    /// keeps in the order its object has it: a member a field could not read (`schema::or_kept`),
+    /// a `null` kept as written, and the unknown members, as a walk that takes each member in
+    /// turn keeps them. Without it what the fields kept comes after the unknown members.
+    #[must_use]
+    pub fn keep_in_file_order(mut self) -> Self {
+        self.in_file_order = true;
+        self
+    }
+
+    /// Whether a struct's own unknown members keep the order of its object
+    /// ([`keep_in_file_order`](Self::keep_in_file_order)).
+    // the derived reads' protocol
+    pub(crate) fn keeps_in_file_order(&self) -> bool {
+        self.in_file_order
     }
 
     /// The read with `keeps_unknown` for whether a struct that says nothing keeps its unknown
@@ -2304,7 +2326,7 @@ impl<'d> Read<'d> {
         let absent = node.value.is_null()
             && matches!(
                 self.reading.null,
-                NullHandling::Absent | NullHandling::AbsentSilently
+                NullHandling::Absent | NullHandling::AbsentSilently | NullHandling::AbsentKept
             );
         (!absent).then_some(node)
     }

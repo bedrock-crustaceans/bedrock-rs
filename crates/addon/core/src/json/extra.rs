@@ -49,6 +49,11 @@ impl UnknownMembers {
         self.0.iter().map(|(key, value)| (key.as_str(), value))
     }
 
+    /// Puts the members in the order of `place`, the place of a member's name.
+    pub(crate) fn sort_by_place(&mut self, mut place: impl FnMut(&str) -> usize) {
+        self.0.sort_by_cached_key(|key, _| place(key));
+    }
+
     /// How many unknown members.
     pub fn len(&self) -> usize {
         self.0.len()

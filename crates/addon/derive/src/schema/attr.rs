@@ -185,6 +185,9 @@ pub(crate) struct FieldAttrs {
     /// `schema::absent_with = path`: the field's value when the object lacks the member,
     /// `fn(&Node, &mut Read) -> Option<T>` given the object.
     pub absent_with: Option<(Expr, Span)>,
+    /// `schema::read_beside = path`: the field's read given its object,
+    /// `fn(&Node, &Node, &mut Read) -> Option<T>`.
+    pub read_beside: Option<(Expr, Span)>,
     /// `schema::check_with = path`: the field's check, `fn(&mut T, &mut SchemaCx)`, in place of
     /// the walk into its type.
     pub check_with: Option<(Expr, Span)>,
@@ -256,6 +259,8 @@ pub(crate) struct ContainerAttrs {
     pub after_members: Option<(Expr, Span)>,
     /// `schema::quiet = [..]`: the unknown members the read keeps and tells nothing of.
     pub quiet: Vec<String>,
+    /// `schema::unknown_with = path`: the rule of each unknown member, from its name.
+    pub unknown_with: Option<(Expr, Span)>,
     /// `schema::trigger`: the struct is an event trigger itself.
     pub trigger: bool,
     /// `schema::molang = SPEC` on a struct: the default spec of the Molang walk below it.
@@ -291,6 +296,7 @@ const FIELD_KEYS: &[&str] = &[
     "molang_with",
     "read_with",
     "absent_with",
+    "read_beside",
     "check_with",
     "min_len",
     "max_len",
@@ -324,6 +330,7 @@ const STRUCT_KEYS: &[&str] = &[
     "quiet",
     "trigger",
     "arity",
+    "unknown_with",
 ];
 
 /// Where the attributes stand, for the placement errors.
@@ -677,8 +684,8 @@ impl FieldAttrs {
                         once(&mut out.unknown, word, &key, span, errors);
                     }
                     "fallback" | "molang" | "molang_with" | "read_with" | "absent_with"
-                    | "check_with" | "wrong_type" | "missing" | "invalid" | "low_code"
-                    | "high_code" | "negative" | "keys" | "guard" => {
+                    | "read_beside" | "check_with" | "wrong_type" | "missing" | "invalid"
+                    | "low_code" | "high_code" | "negative" | "keys" | "guard" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -694,6 +701,7 @@ impl FieldAttrs {
                             "keys" => &mut out.keys,
                             "absent_with" => &mut out.absent_with,
                             "guard" => &mut out.guard,
+                            "read_beside" => &mut out.read_beside,
                             _ => &mut out.read_with,
                         };
                         once(slot, (expr, span), &key, span, errors);
@@ -788,6 +796,7 @@ impl FieldAttrs {
             .or_else(|| self.molang_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.read_with.as_ref().map(|(_, s)| *s))
             .or_else(|| self.absent_with.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.read_beside.as_ref().map(|(_, s)| *s))
             .or_else(|| {
                 [
                     &self.wrong_type,
@@ -892,6 +901,16 @@ impl ContainerAttrs {
                         );
                     })
                 }
+                Some("unknown_with") if place == Place::Struct => value_expr(entry, "unknown_with")
+                    .map(|expr| {
+                        once(
+                            &mut out.unknown_with,
+                            (expr, entry.span),
+                            "unknown_with",
+                            entry.span,
+                            errors,
+                        );
+                    }),
                 Some("quiet") if place == Place::Struct => {
                     string_value(entry, "quiet").map(|names| {
                         out.quiet = names
