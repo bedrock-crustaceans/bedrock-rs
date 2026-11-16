@@ -21,3 +21,9 @@ error: `schema::drop` reads a list: a `Vec` field (or an `Option` of one)
    |
 12 |     #[facet(schema::drop)]
    |             ^^^^^^
+
+error: `schema::if_kind` reads a member of another kind as absent: an `Option` field
+  --> tests/ui/schema/shape_keys.rs:14:13
+   |
+14 |     #[facet(schema::if_kind)]
+   |             ^^^^^^

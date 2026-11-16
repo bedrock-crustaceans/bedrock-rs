@@ -1872,6 +1872,30 @@ impl<'d> Read<'d> {
         self.findings.get().push(finding);
     }
 
+    /// Reads one unit of a game reader that logs the first rule a unit breaks and goes on
+    /// without it ([`ElementFailure::Unit`](crate::schema::ElementFailure::Unit)): `read` stops
+    /// at its first failure whatever the profile, and when it fails the read is as failed and
+    /// as stopped as before it, and every error it told is kept.
+    pub(crate) fn unit<T>(&mut self, read: impl FnOnce(&mut Self) -> Option<T>) -> Option<T> {
+        let (profile, failed, errors) = (self.profile, self.failed, self.errors);
+        let (told, stopped) = (self.findings.len(), self.stopped);
+        self.profile.failures = Failures::First;
+        let value = read(self);
+        self.profile = profile;
+        if value.is_some() && !self.stopped {
+            return value;
+        }
+        self.stopped = stopped;
+        self.failed = failed;
+        self.errors = errors;
+        for finding in self.findings.get().iter_mut().skip(told) {
+            if finding.rejects() {
+                finding.kept = true;
+            }
+        }
+        None
+    }
+
     /// What the read has told so far, to ask afterwards what was told since
     /// ([`raised_since`](Self::raised_since), [`left_out_since`](Self::left_out_since)).
     pub(crate) fn mark(&self) -> Mark {

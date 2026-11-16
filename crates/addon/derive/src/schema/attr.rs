@@ -224,6 +224,10 @@ pub(crate) struct FieldAttrs {
     pub scope: Option<Span>,
     /// `schema::reads_absent`: a member the object lacks is read, as the `null` jsoncpp gives.
     pub reads_absent: Option<Span>,
+    /// `schema::if_kind`: a member of another JSON kind than the field's type takes is absent.
+    pub if_kind: Option<Span>,
+    /// `schema::guard = path`: a rule run before the member is read; `false` ends the struct.
+    pub guard: Option<(Expr, Span)>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
     /// `schema::members = ["a", "b"]`: the members of the struct's object the field is fed by.
@@ -268,6 +272,9 @@ pub(crate) struct ContainerAttrs {
     pub wrong_type: Option<(Expr, Span)>,
     /// `schema::arity = CODE` on a tuple struct: the code of an array of another length.
     pub arity: Option<(Expr, Span)>,
+    /// `schema::guard = path` on a struct: a rule run after the members, before
+    /// `after_members` and the unknown ones; `false` ends the read.
+    pub guard: Option<(Expr, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -296,6 +303,7 @@ const FIELD_KEYS: &[&str] = &[
     "iterated",
     "drop",
     "ends",
+    "if_kind",
     "reads_null",
     "scope",
     "reads_absent",
@@ -421,6 +429,18 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
                 "`schema::{key}` is a string enum's key: a tagged enum with data names its \
                  variants by facet's `rename`"
             ),
+            Place::Enum
+            | Place::Untagged
+            | Place::Tagged
+            | Place::Variant
+            | Place::UntaggedVariant
+            | Place::TaggedVariant
+                if key == "guard" =>
+            {
+                "`schema::guard` is a rule of a struct's read: put it on the struct or on one of \
+                 its fields"
+                    .to_owned()
+            }
             Place::TaggedVariant if field_key || enum_key => format!(
                 "a variant of a tagged enum takes no `schema::{key}`: put it on the field it is \
                  about"
@@ -658,7 +678,7 @@ impl FieldAttrs {
                     }
                     "fallback" | "molang" | "molang_with" | "read_with" | "absent_with"
                     | "check_with" | "wrong_type" | "missing" | "invalid" | "low_code"
-                    | "high_code" | "negative" | "keys" => {
+                    | "high_code" | "negative" | "keys" | "guard" => {
                         let expr = value_expr(entry, &key)?;
                         let slot = match key.as_str() {
                             "fallback" => &mut out.fallback,
@@ -673,6 +693,7 @@ impl FieldAttrs {
                             "check_with" => &mut out.check_with,
                             "keys" => &mut out.keys,
                             "absent_with" => &mut out.absent_with,
+                            "guard" => &mut out.guard,
                             _ => &mut out.read_with,
                         };
                         once(slot, (expr, span), &key, span, errors);
@@ -697,6 +718,7 @@ impl FieldAttrs {
                     "iterated" => once(&mut out.iterated, span, &key, span, errors),
                     "drop" => once(&mut out.drop, span, &key, span, errors),
                     "ends" => once(&mut out.ends, span, &key, span, errors),
+                    "if_kind" => once(&mut out.if_kind, span, &key, span, errors),
                     "reads_null" => once(&mut out.reads_null, span, &key, span, errors),
                     "members" => {
                         let names = member_names(entry)?;
@@ -782,6 +804,8 @@ impl FieldAttrs {
             .or(self.reads_null)
             .or(self.scope)
             .or(self.reads_absent)
+            .or(self.if_kind)
+            .or_else(|| self.guard.as_ref().map(|(_, s)| *s))
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.members.as_ref().map(|(_, s)| *s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))
@@ -923,6 +947,15 @@ impl ContainerAttrs {
                         once(slot, (expr, entry.span), key, entry.span, errors);
                     })
                 }
+                Some("guard") if place == Place::Struct => value_expr(entry, "guard").map(|expr| {
+                    once(
+                        &mut out.guard,
+                        (expr, entry.span),
+                        "guard",
+                        entry.span,
+                        errors,
+                    );
+                }),
                 Some("tag_with") if place == Place::Tagged => {
                     value_expr(entry, "tag_with").map(|expr| {
                         once(

@@ -1679,6 +1679,46 @@ fn a_rule_after_the_members_comes_before_the_unknown_members() {
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::guard = latch_named, schema::after_members = guarded_rule)]
+struct GuardedRuled {
+    name: Option<String>,
+    extra: crate::document::UnknownMembers,
+}
+
+fn guarded_rule(ruled: &mut GuardedRuled, node: &Node<'_>, read: &mut Read<'_>) {
+    if ruled.name.as_deref() == Some("bad") {
+        read.push(
+            crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::INVALID_VALUE)
+                .severity(crate::diagnostic::Severity::Info)
+                .at(node.path().child("name")),
+        );
+    }
+}
+
+/// A struct's guard runs after its members and before its `after_members` rule: once it says
+/// `false`, neither the rule nor the unknown members are told and the struct fails.
+#[test]
+fn a_struct_guard_comes_before_its_rule_after_the_members() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<GuardedRuled>(text, lenient(), declared);
+    let (value, told) = read(r#"{"k": 1, "name": ""}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, Vec::<String>::new());
+    let (value, told) = read(r#"{"k": 1, "name": "bad"}"#);
+    assert_eq!(
+        value.expect("read").extra.get("k"),
+        Some(&Value::from(1i64))
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/name core/invalid_value",
+            "Warning root/k core/unrecognized_field"
+        ]
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[facet(schema::unknown = "silent")]
 struct Quiet {
     name: Option<String>,
@@ -2968,4 +3008,151 @@ fn a_flattened_struct_is_read_where_it_is_declared_with_its_rule() {
             "Info root/noted core/invalid_value",
         ]
     );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Hinge {
+    left: u8,
+    right: u8,
+}
+
+/// A list of units tells, of each element it leaves out, the first rule the element breaks, as
+/// an error the document keeps, and reads on: under a profile that stops at the first failure
+/// too, and under one that tells every failure the element still stops at its first.
+#[test]
+fn a_list_of_units_tells_the_first_failure_of_each_left_out_element_kept_and_reads_on() {
+    let json: Value =
+        from_str_jsonc(r#"[{"left": "a", "right": "b"}, {"left": 1, "right": 2}, 3]"#).unwrap();
+    for profile in [Profile::FIRST_FAILURE, Profile::EVERY_FAILURE] {
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::DOCUMENT, &mut found).profile(profile);
+        let list = super::read_list(
+            &Node::new(&json, JsonPath::of_keys(["list"])),
+            &mut read,
+            super::ElementFailure::Unit,
+            Hinge::from_json,
+        );
+        assert_eq!(list, Some(vec![Hinge { left: 1, right: 2 }]), "{profile:?}");
+        assert!(!read.stopped() && !read.failed(), "{profile:?}");
+        drop(read);
+        let told: Vec<String> = found
+            .iter()
+            .map(|f| {
+                format!(
+                    "{:?} {} {} kept={}",
+                    f.severity,
+                    f.location.json_path,
+                    f.code.id(),
+                    f.kept
+                )
+            })
+            .collect();
+        assert_eq!(
+            told,
+            [
+                "Error list/0/left core/invalid_type kept=true",
+                "Error list/2 core/invalid_type kept=true",
+            ],
+            "{profile:?}"
+        );
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Errand {
+    #[facet(schema::if_kind)]
+    steps: Option<Vec<u8>>,
+    #[facet(schema::if_kind, schema::read_with = errand_note)]
+    note: Option<String>,
+}
+
+/// The note of an errand, upper-cased.
+fn errand_note(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    read.string(node).map(str::to_uppercase)
+}
+
+/// A member that says `if_kind` is read only when it is of the kind its type takes (by its
+/// `read_with` too): of another kind it is absent and told nothing; of its kind it is read as
+/// ever, its elements' failures told.
+#[test]
+fn a_member_read_if_of_its_kind_is_absent_when_of_another() {
+    let (value, told) = as_read::<Errand>(r#"{"steps": 5, "note": ["x"]}"#);
+    assert_eq!(told, Vec::<String>::new());
+    assert_eq!(
+        value,
+        Some(Errand {
+            steps: None,
+            note: None
+        })
+    );
+    let (value, told) = as_read::<Errand>(r#"{"steps": [1, "x"], "note": "a"}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/steps/1 core/invalid_type"]);
+    let (value, _) = as_read::<Errand>(r#"{"steps": [1], "note": "a"}"#);
+    assert_eq!(
+        value,
+        Some(Errand {
+            steps: Some(vec![1]),
+            note: Some("A".to_owned())
+        })
+    );
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::guard = latch_named)]
+struct Latch {
+    name: String,
+    #[facet(schema::guard = latch_one_way)]
+    open: Option<u8>,
+    shut: Option<u8>,
+}
+
+/// A latch is opened or shut, not both: told before either is read.
+fn latch_one_way(node: &Node<'_>, read: &mut Read<'_>) -> bool {
+    let both = ["open", "shut"].iter().all(|key| {
+        node.value()
+            .as_object()
+            .is_some_and(|o| o.contains_key(key))
+    });
+    if both {
+        read.refuse(node, (&crate::diagnostic::codes::INVALID_VALUE).into());
+    }
+    !both
+}
+
+/// A latch with an empty name is dropped without a word.
+fn latch_named(node: &Node<'_>, _: &mut Read<'_>) -> bool {
+    node.value()
+        .as_object()
+        .and_then(|o| o.get("name"))
+        .and_then(Value::as_string)
+        .is_none_or(|name| !name.is_empty())
+}
+
+/// A guard is a rule at its place in the read: on a field before the member, on the struct after
+/// the members and before the unknown ones. `false` ends the struct's read there, nothing after
+/// it read or told, and the struct fails with what the guard told, or with nothing.
+#[test]
+fn a_guard_ends_the_read_of_its_struct_at_its_place() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<Latch>(text, Reading::DOCUMENT, declared);
+    let (value, told) = read(r#"{"name": "a", "open": "x", "shut": 1, "z": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root core/invalid_value"]);
+    let (value, told) = read(r#"{"name": "", "open": "x", "z": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Error root/open core/invalid_type"]);
+    let (value, told) = read(r#"{"name": "", "open": 1, "z": 1}"#);
+    assert_eq!(value, None);
+    assert_eq!(told, Vec::<String>::new());
+    let (value, told) = read(r#"{"name": "a", "shut": 2, "z": 1}"#);
+    assert_eq!(
+        value,
+        Some(Latch {
+            name: "a".to_owned(),
+            open: None,
+            shut: Some(2)
+        })
+    );
+    assert_eq!(told, ["Error root/z core/unrecognized_field"]);
 }

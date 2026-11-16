@@ -190,34 +190,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     validate_drop(info, errors);
     validate_keys(info, errors);
     validate_members(info, errors);
-    if let Some(span) = attrs.reads_null
-        && (info.option.is_none() || attrs.flatten)
-    {
-        errors.push(Error::new(
-            span,
-            "`schema::reads_null` reads a `null` as a value: an `Option` field",
-        ));
-    }
-    if let Some((_, span)) = &attrs.absent_with
-        && (info.option.is_none()
-            || attrs.flatten
-            || attrs.required.is_some()
-            || attrs.reads_null.is_some())
-    {
-        errors.push(Error::new(
-            *span,
-            "`schema::absent_with` gives the value of a member the object lacks: an `Option` \
-             field the document may leave out (not `required`, not `reads_null`)",
-        ));
-    }
-    if let Some((_, span)) = attrs.or_kept
-        && (info.option.is_none() || attrs.flatten)
-    {
-        errors.push(Error::new(
-            span,
-            "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
-        ));
-    }
+    validate_option_keys(info, errors);
     let ruled = [
         &attrs.wrong_type,
         &attrs.missing,
@@ -266,6 +239,49 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                  members no field takes",
             ));
         }
+    }
+}
+
+/// The refusals of the keys of an `Option` field: `reads_null`, `absent_with`, `if_kind` and
+/// `or_kept` on a field that is no `Option` or is flattened (`absent_with` also with `required`
+/// or `reads_null`).
+fn validate_option_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    if let Some(span) = attrs.reads_null
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_null` reads a `null` as a value: an `Option` field",
+        ));
+    }
+    if let Some((_, span)) = &attrs.absent_with
+        && (info.option.is_none()
+            || attrs.flatten
+            || attrs.required.is_some()
+            || attrs.reads_null.is_some())
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::absent_with` gives the value of a member the object lacks: an `Option` \
+             field the document may leave out (not `required`, not `reads_null`)",
+        ));
+    }
+    if let Some(span) = attrs.if_kind
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::if_kind` reads a member of another kind as absent: an `Option` field",
+        ));
+    }
+    if let Some((_, span)) = attrs.or_kept
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
+        ));
     }
 }
 
@@ -378,6 +394,33 @@ fn absent_read(info: &FieldInfo, held: &syn::Type) -> Option<TokenStream> {
     })
 }
 
+/// `read_call` where the field reads a member of another JSON kind than its type takes as absent
+/// (`schema::if_kind`): run only when the member is of that kind.
+fn if_kind(info: &FieldInfo, read_call: TokenStream) -> TokenStream {
+    if info.attrs.if_kind.is_none() {
+        return read_call;
+    }
+    let reader = paths().reader;
+    let held = info.option.unwrap_or(info.ty);
+    quote! {
+        if #reader::of_kind::<#held>(__member) {
+            #read_call
+        }
+    }
+}
+
+/// A rule at the member's place (`schema::guard`): `false` ends the struct's read there.
+fn field_guard(info: &FieldInfo) -> Option<TokenStream> {
+    info.attrs.guard.as_ref().map(|(guard, _)| {
+        quote! {
+            if !(#guard)(__object.node(), __read) {
+                __guarded.set(true);
+                return true;
+            }
+        }
+    })
+}
+
 /// The read of the field `info`, its value bound to `__v{index}`. The calls that need the
 /// field's type to have a read are spanned at the type, so a type without one is the error
 /// there.
@@ -387,7 +430,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let rules = member_rules(info);
     let value = format_ident!("__v{index}");
     let held = info.option.unwrap_or(info.ty);
-    let read_call = member_read(info, &slot);
+    let read_call = if_kind(info, member_read(info, &slot));
     let json = &info.json;
     let names = info
         .attrs
@@ -441,6 +484,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         .map(|(with, _)| quote!(#slot.absent_with(__object, __read, #with);));
     let when_absent = quote!(#missing_now #absent);
     let scope = scope_put(info, &slot);
+    let guard = field_guard(info);
     FieldRead {
         absent_after,
         slot: quote!(let mut #slot = #new_slot;),
@@ -449,6 +493,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         arm: if info.attrs.reads_null.is_some() {
             quote! {
                 #names => {
+                    #guard
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
                         #scope
@@ -462,6 +507,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         } else {
             quote! {
                 #names => {
+                    #guard
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
                         #scope
@@ -780,7 +826,8 @@ fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) ->
 /// `knows` is the function that names the fields' members.
 #[allow(
     clippy::too_many_lines,
-    reason = "one arm per kind of field and variant"
+    clippy::too_many_arguments,
+    reason = "one arm per kind of field and variant; one argument per struct-level rule"
 )]
 fn fields_body(
     construct: &TokenStream,
@@ -790,6 +837,7 @@ fn fields_body(
     quiet: &[String],
     after_members: Option<&syn::Expr>,
     after_read: Option<&TokenStream>,
+    guard: Option<&syn::Expr>,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -918,6 +966,44 @@ fn fields_body(
             }
         }
     };
+    // The rules at their places (`schema::guard`): one that says `false` ends the read there,
+    // the struct's after its members, before its `after_members` rule and the unknown members.
+    let guarded = guard.is_some() || infos.iter().any(|info| info.attrs.guard.is_some());
+    let (guard_decl, give_up, guard_after, guard_end) = if guarded {
+        let after = guard.map(|guard| {
+            quote! {
+                if !__guarded.get() && !__read.stopped() && !(#guard)(__object.node(), __read) {
+                    __guarded.set(true);
+                }
+            }
+        });
+        (
+            quote!(let __guarded = ::core::cell::Cell::new(false);),
+            quote!(if __guarded.get() { return true; } #give_up),
+            quote!(#after),
+            quote! {
+                if __guarded.get() {
+                    __object.abandon();
+                    __ok = false;
+                }
+            },
+        )
+    } else {
+        (quote!(), give_up, quote!(), quote!())
+    };
+    // The unknown members are not read once a guard ended the struct.
+    let unguarded = |unknown_after: TokenStream| {
+        if guarded {
+            quote! {
+                if !__guarded.get() {
+                    #unknown_after
+                }
+            }
+        } else {
+            unknown_after
+        }
+    };
+    let unknown_after = unguarded(unknown_after);
     let scoped = infos
         .iter()
         .any(|info| taken(info) && info.attrs.scope.is_some());
@@ -931,11 +1017,13 @@ fn fields_body(
     };
     let ending = match after_members {
         None => quote! {
+            #guard_after
             #unknown_after
             // Under the game's schema tree an error raised while the members were read fails the
             // struct, and its missing members are then not told.
             let mut __ok = __object.settle(__read);
             #abandon
+            #guard_end
             #(#flattened)*
             #(#finishes)*
             // What the fields put in scope is for the members of this object alone.
@@ -971,7 +1059,7 @@ fn fields_body(
                 None => (quote!(), quote!(::core::option::Option::None), quote!()),
             };
             let later_member = self::unknown_member(&later_arg, quiet);
-            let unknown_after = if abandoned.is_empty() {
+            let unknown_after = unguarded(if abandoned.is_empty() {
                 quote!(#reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);)
             } else {
                 quote! {
@@ -979,10 +1067,12 @@ fn fields_body(
                         #reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);
                     }
                 }
-            };
+            });
             quote! {
+                #guard_after
                 let mut __ok = __object.settle(__read);
                 #abandon
+                #guard_end
                 #(#flattened)*
                 #(#finishes)*
                 // What the fields put in scope is for the members of this object alone.
@@ -1014,6 +1104,7 @@ fn fields_body(
         #extra_decl
         #(#slots)*
         #(#flat_slots)*
+        #guard_decl
         let __declared = #reader::Declared {
             names: &[#(#names),*],
             gates: &[#(#gates),*],
@@ -1225,6 +1316,7 @@ pub(super) fn struct_read(
         &container.quiet,
         container.after_members.as_ref().map(|(rule, _)| rule),
         after_read.as_ref(),
+        container.guard.as_ref().map(|(guard, _)| guard),
     );
     quote! {
         #[automatically_derived]
@@ -1511,6 +1603,7 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         variant.fields,
         variant.unknown.as_ref(),
         &[],
+        None,
         None,
         None,
     );

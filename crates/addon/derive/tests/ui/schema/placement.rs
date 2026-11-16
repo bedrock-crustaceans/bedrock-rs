@@ -18,4 +18,15 @@ enum Slot {
     Head,
 }
 
+fn always(_: &bedrock_addon_core::json::kit::Node<'_>, _: &mut bedrock_addon_core::json::kit::Read<'_>) -> bool {
+    true
+}
+
+#[derive(Facet, Schema)]
+#[facet(schema::guard = always)]
+#[repr(u8)]
+enum Side {
+    Left,
+}
+
 fn main() {}

@@ -26,6 +26,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `check_with` | a function path, `fn(&mut T, &mut SchemaCx)` | compile-time | `#[derive(Schema)]`: the field's check |
 | `rule` | a function path, `fn(&mut Self, &mut SchemaCx)` | compile-time | `#[derive(Schema)]` on a struct: a rule across its fields at the check |
 | `after_read` | a function path, `fn(&mut Self, &Node, &mut Read)` | compile-time | `#[derive(Schema)]` on a struct: a rule at the read, with the object as written |
+| `guard` | a function path, `fn(&Node, &mut Read) -> bool` | compile-time | `#[derive(Schema)]` on a field (before the member is read) or a struct (after the members, before the unknown ones): `false` ends the struct's read there |
 | `tag_with` | a function path | compile-time | `#[derive(Schema)]` on an internally tagged enum: names the variant |
 | `trigger` | (marker) | stored as `()` | `#[derive(Schema)]` on a struct: it is an event trigger itself |
 | `foreign_event` | (marker) | stored as `()` | `#[derive(Schema)]` |
@@ -34,6 +35,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `finite` | (marker) | stored as `()` | `#[derive(Schema)]` on a float field |
 | `iterated` | (marker) | stored as `()` | `#[derive(Schema)]` on a list field |
 | `drop` | (marker) | stored as `()` | `#[derive(Schema)]` on a list field: a failed element is left out alone |
+| `if_kind` | (marker) | stored as `()` | `#[derive(Schema)]` on an `Option` field: a member of another JSON kind than its type takes is absent, told nothing |
 | `reads_null` | (marker) | stored as `()` | `#[derive(Schema)]` on an `Option` field: a `null` is read as a value |
 | `or_kept` | `"told"` or `"silent"` | compile-time | `#[derive(Schema)]` on an `Option` field: a value that fails is kept as written |
 | `string_only` | (marker) | stored as `()` | `#[derive(Schema)]` on a string enum |

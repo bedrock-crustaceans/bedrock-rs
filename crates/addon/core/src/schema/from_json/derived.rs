@@ -1053,6 +1053,21 @@ pub fn tell_at(node: &Node<'_>, code: &'static CodeDef<0>, read: &mut Read<'_>) 
     read.push(finding);
 }
 
+/// Whether the member `node` is of the JSON kind `T` takes (`FromJson::EXPECTED`; any kind when
+/// `T` names none): a field that says `schema::if_kind` reads it only then, and is absent for a
+/// member of another kind.
+pub fn of_kind<T: FromJson>(node: &Node<'_>) -> bool {
+    let value = node.value();
+    match T::EXPECTED {
+        None => true,
+        Some(Expected::Object) => value.is_object(),
+        Some(Expected::Array) => value.is_array(),
+        Some(Expected::String) => value.as_string().is_some(),
+        Some(Expected::Number) => value.as_number().is_some(),
+        Some(Expected::Bool) => value.as_bool().is_some(),
+    }
+}
+
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.
 pub fn flattened<T>(value: Option<T>, ok: &mut bool) -> Option<T> {
     if value.is_none() {

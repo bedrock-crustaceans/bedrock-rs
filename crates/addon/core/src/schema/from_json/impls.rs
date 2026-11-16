@@ -198,13 +198,19 @@ pub enum ElementFailure {
     /// The list fails at its first failed element, and the elements after it are not read,
     /// whatever the reading: a game reader that gives up the list there.
     Stop,
+    /// Each element is a unit of a game reader that logs the first rule an element breaks and
+    /// goes on without it: the element's read stops at its first failure (whatever the
+    /// profile's [`Failures`](crate::json::kit::Failures)), which is told as an error the
+    /// document keeps; the element is left out as [`Drop`](Self::Drop) leaves it, and the list
+    /// and its owner read on (a read that stops at its first failure is not stopped by it).
+    Unit,
 }
 
 impl ElementFailure {
     /// Whether a failed element of the list at `node` is left out of it under `read`.
     fn drops(self, read: &Read<'_>, node: &Node<'_>) -> bool {
         match self {
-            Self::Drop => true,
+            Self::Drop | Self::Unit => true,
             Self::Stop => false,
             Self::ByReading => read.defaults_drop(node, true),
         }
@@ -263,6 +269,14 @@ pub fn read_list<T>(
     }
     let elements = read.array(node)?;
     let drops = failure.drops(read, node);
+    let unit = failure == ElementFailure::Unit;
+    let mut element = |at: &Node<'_>, read: &mut Read<'_>| {
+        if unit {
+            read.unit(|read| element(at, read))
+        } else {
+            element(at, read)
+        }
+    };
     let stops = failure == ElementFailure::Stop;
     let (out, kept) = read_elements(elements.iter(), read, drops, stops, &mut element)?;
     if let Some(kept) = kept {
@@ -351,6 +365,14 @@ pub fn read_iterated_silently<T>(
     let mut values: Vec<(&str, Node<'_>)> = members.iter().collect();
     values.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
     let drops = failure.drops(read, node);
+    let unit = failure == ElementFailure::Unit;
+    let mut element = |at: &Node<'_>, read: &mut Read<'_>| {
+        if unit {
+            read.unit(|read| element(at, read))
+        } else {
+            element(at, read)
+        }
+    };
     let keys: Vec<&str> = values.iter().map(|(key, _)| *key).collect();
     let nodes = values.into_iter().map(|(_, at)| at);
     let stops = failure == ElementFailure::Stop;

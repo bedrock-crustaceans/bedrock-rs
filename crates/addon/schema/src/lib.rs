@@ -127,6 +127,16 @@ facet::define_attr_grammar! {
         /// (and only when the value is built): the checks a game's reader runs as it binds the
         /// members, which come before the crate's word on the members it never reads.
         AfterMembers(arbitrary),
+        /// `guard = path` (compile-time, on a field or a struct): a rule of the game's reader at
+        /// its place in the read, `fn(&Node<'_>, &mut Read<'_>) -> bool` over the object as
+        /// written. On a field it runs where the read comes to the member (in a read in declared
+        /// order always, in file order where the file has it), before the member is read; on a
+        /// struct after the members, before `after_members` and the unknown ones. `false` ends
+        /// the struct's read there: what is still to come (members, `after_members`, unknown
+        /// members, missing ones) is neither read nor told and the struct fails, with what the
+        /// function told (or nothing: a value the game drops without a word). `after_read` is
+        /// the rule that cannot fail it.
+        Guard(arbitrary),
         /// `trigger` (marker, on a struct): the struct is an event trigger itself (an entity's
         /// `on_*` component, `{event, filters, target}`): its trigger member is its own path,
         /// beside those of its fields.
@@ -223,6 +233,11 @@ facet::define_attr_grammar! {
         /// kind the field's type takes that fails ends the read; one of another kind is kept as
         /// written.
         Ends,
+        /// `if_kind` (marker, an `Option` field): the member is read only when it is of the JSON
+        /// kind the field's type takes (`FromJson::EXPECTED`, `read_with` or not); of another
+        /// kind it is absent, told nothing: jsoncpp's `isArray()` / `isString()` asked before a
+        /// read, a member of another type ignored (dialogue's command lists and buttons).
+        IfKind,
         /// `reads_null` (marker, an `Option` field): a `null` member is a value like any other,
         /// read by the field's type (or `read_with`) as `Some`, where the reading's null rule
         /// would make it `None`: the game's reader asks for the member and takes what is there
