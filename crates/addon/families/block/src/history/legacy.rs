@@ -6,60 +6,81 @@
 use crate::codes;
 use bedrock_addon_core::diagnostic::CodeDef;
 use bedrock_addon_core::diagnostic::Severity;
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Phase};
-use bedrock_addon_core::json::parse::{Options, SpanKind, parse};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::json::parse::{Options, SpanKind, members_of, parse};
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
+use bedrock_addon_core::molang::MolangVisitor;
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_each};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::versioning::ops;
 pub(crate) use bedrock_addon_core::versioning::ops::{number, rename_key, same, string, to_object};
-use bedrock_addon_core::versioning::{LegacyPayload, ParseCx};
+use bedrock_addon_core::versioning::{LegacyPayload, NullHandling, ParseCx, read_payload_with};
 
 /// A block document below 1.26.20: the payload's members as JSON, in the shapes of the version
 /// of the struct that holds it (`Legacy<BlockPayload, A, B, C>`).
 ///
 /// `description`, the `components` of the base and of each permutation, and the legacy `events`
 /// are held as written; each upgrade step rewrites them as vanilla's JSON fixer of that version
-/// does. The 1.26.20 step parses the result into [`Block`](crate::Block).
-#[derive(Clone, Debug, Default, PartialEq)]
+/// does. The 1.26.20 step parses the result into [`Block`](crate::Block). The read refuses the
+/// shapes the game's legacy reader refuses, each in its own words, and keeps the members it does
+/// not read without a word.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent", schema::molang_with = no_molang)]
 pub struct BlockPayload {
     /// `description`: `identifier`, `menu_category`, `states`, `traits`, … as written.
+    #[facet(
+        schema::read_with = description,
+        schema::wrong_type = codes::MEMBER_MISSING,
+        schema::missing = codes::MEMBER_MISSING
+    )]
     pub description: IndexMap<String, Value>,
     /// The base `components`, in file order; a duplicate key keeps its first value.
+    #[facet(
+        default,
+        schema::read_with = components,
+        schema::wrong_type = codes::COMPONENTS_OBJECT
+    )]
     pub components: IndexMap<String, Value>,
     /// `permutations`.
+    #[facet(default, schema::read_with = permutations)]
     pub permutations: Vec<LegacyPermutation>,
     /// The legacy `events` object, as written.
     pub events: Option<Value>,
     /// The names of the 1.21.60 `minecraft:custom_components` list, in order (from 1.21.90).
+    #[facet(default, schema::read_with = strings)]
     pub ordered_v1_custom_components: Vec<String>,
     /// The components a step inserted, as `(section, name)` (`None`: the base); not JSON.
+    #[facet(skip)]
     pub synthesized: Vec<(Option<usize>, String)>,
     /// The section whose `minecraft:creative_category` component the 1.19.10 step made
     /// `description.menu_category` of (`Some(None)`: the base; `Some(Some(i))`: permutation
     /// `i`; `None`: the file has the member itself, or none), so that the step that judges
     /// the category tells of it at the member the file has; not JSON.
+    #[facet(skip)]
     pub category_from: Option<Option<usize>>,
 }
 
 /// One entry of a legacy document's `permutations`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent", schema::molang_with = no_molang)]
 pub struct LegacyPermutation {
     /// `condition`, as written.
     pub condition: Option<Value>,
     /// `components`, in file order.
+    #[facet(default, schema::read_with = permutation_components)]
     pub components: IndexMap<String, Value>,
     /// The names of the permutation's 1.21.60 `custom_components` list (from 1.21.90).
+    #[facet(default, schema::read_with = strings)]
     pub ordered_v1_custom_components: Vec<String>,
 }
 
-impl MolangFields for BlockPayload {
-    /// The legacy members are JSON; their Molang is read when the 1.26.20 step parses them.
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
-}
+/// The legacy members are JSON; their Molang is read when the 1.26.20 step parses them.
+fn no_molang<T>(_: &mut T, _: &mut MolangVisitor<'_>) {}
 
 impl BlockPayload {
     /// Every component section: the base first, then each permutation's, as `(index, map)`.
@@ -229,6 +250,26 @@ pub(crate) fn object(value: &Value) -> Option<IndexMap<String, Value>> {
 
 // ---- reading -----------------------------------------------------------------------------
 
+/// A legacy document with its payload under the key: the payload, `format_version` (the
+/// struct's version, read by the envelope) and the root members the legacy reader ignores with
+/// no log, which the crate tells as an information and keeps.
+#[derive(Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::molang_with = no_molang)]
+struct LegacyDocument {
+    /// `minecraft:block`.
+    #[facet(rename = "minecraft:block", schema::wrong_type = codes::MEMBER_MISSING)]
+    block: BlockPayload,
+    /// `format_version`, read by the envelope.
+    #[facet(rename = "format_version")]
+    _version: Option<Value>,
+}
+
+/// The read of a legacy document: a `null` is a value like any other, which the member's read
+/// takes (kept as written) or refuses in its own words.
+fn legacy_read(read: Read<'_>) -> Read<'_> {
+    read.null(NullHandling::AsValue)
+}
+
 /// Each legacy struct is the payload at its version.
 impl LegacyPayload for BlockPayload {
     /// Reads the whole document (the raw-text path below 1.26.20) or the payload alone
@@ -239,37 +280,25 @@ impl LegacyPayload for BlockPayload {
         cx: &ParseCx<'_>,
         d: &mut Diagnostics,
     ) -> Option<Self> {
+        let Some(root) = members_of(text) else {
+            d.push(Diagnostic::of(&codes::MEMBER_MISSING).at(cx.at.clone()));
+            return None;
+        };
+        if root.contains_key("minecraft:block") {
+            let document: LegacyDocument = read_payload_with(text, cx, d, |read| {
+                legacy_read(read).unknown_severity(Severity::Info)
+            })?;
+            return Some(document.block);
+        }
         // A document without the payload key is read as the payload itself; its unknown
         // members are kept where it is written, below the payload key.
-        let below = cx.at.child("minecraft:block");
-        let Some(root) = object_members(text.text) else {
-            return Self::parse_payload(text.text, &cx.at, &below, d);
-        };
-        let Some(payload) = root
-            .iter()
-            .find(|(key, _)| key == "minecraft:block")
-            .map(|(_, raw)| *raw)
-        else {
-            return Self::parse_payload(text.text, &cx.at, &below, d);
-        };
-        let at = cx.at.child("minecraft:block");
-        let block = Self::parse_payload(payload, &at, &at, d)?;
-        for (key, raw) in root {
-            if key == "minecraft:block" || key == "format_version" {
-                continue;
-            }
-            let path = cx.at.child(&key);
-            // The legacy reader ignores it with no log, so the crate reports it as an information.
-            d.push(
-                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
-                    .severity(Severity::Info)
-                    .at(path),
-            );
-            if let Some(value) = read_value(raw) {
-                d.unknown_mut().put(&cx.at, &key, value);
-            }
-        }
-        Some(block)
+        let mut found = Diagnostics::default();
+        let block = read_payload_with(text, cx, &mut found, legacy_read);
+        found
+            .unknown_mut()
+            .rebase(&cx.at, &cx.at.child("minecraft:block"));
+        d.append(found);
+        block
     }
 
     /// The whole document: `format_version` (the struct's version), the payload and the other
@@ -283,109 +312,120 @@ impl LegacyPayload for BlockPayload {
     }
 }
 
-impl BlockPayload {
-    /// Reads the payload object `text`, its findings below `base` and its unknown members
-    /// below `kept` (the payload's place in the written document).
-    fn parse_payload(
-        text: &str,
-        base: &JsonPath,
-        kept: &JsonPath,
-        d: &mut Diagnostics,
-    ) -> Option<Self> {
-        let payload = JsonSlice::new(text);
-        let at = |key: Option<&str>| {
-            let mut path = base.clone();
-            if let Some(key) = key {
-                path.push(key);
-            }
-            path
-        };
-        let structural = |d: &mut Diagnostics, code: &'static CodeDef<0>, path: JsonPath| {
-            d.push(Diagnostic::of(code).at(path));
-        };
-        let Some(members) = object_members(payload.text) else {
-            structural(d, &codes::MEMBER_MISSING, at(None));
-            return None;
-        };
-        let mut block = Self::default();
-        let mut found_description = false;
-        for (key, raw) in members {
-            match key.as_str() {
-                "description" => {
-                    found_description = true;
-                    let Some(description) = read_value(raw).as_ref().and_then(object) else {
-                        structural(d, &codes::MEMBER_MISSING, at(Some("description")));
-                        return None;
-                    };
-                    // The legacy description reader requires `states` to be an object.
-                    if description.get("states").is_some_and(|s| !s.is_object()) {
-                        let mut path = at(Some("description"));
-                        path.push("states");
-                        structural(d, &codes::STATES_OBJECT, path);
-                        let identifier = description
-                            .get("identifier")
-                            .and_then(string)
-                            .unwrap_or_default()
-                            .to_owned();
-                        d.push(
-                            Diagnostic::of(codes::PARSE_BLOCK_FAILED.with([&identifier]))
-                                .at(at(Some("description"))),
-                        );
-                        return None;
-                    }
-                    block.description = description;
-                }
-                "components" => {
-                    let Some(components) = read_components(raw, &at(Some("components")), d) else {
-                        structural(d, &codes::COMPONENTS_OBJECT, at(Some("components")));
-                        return None;
-                    };
-                    block.components = components;
-                }
-                "permutations" => {
-                    let Some(entries) = array_elements(raw) else {
-                        structural(d, &codes::PERMUTATIONS_ARRAY, at(Some("permutations")));
-                        structural(
-                            d,
-                            &codes::PERMUTATIONS_ARRAY_OBJECT,
-                            at(Some("permutations")),
-                        );
-                        return None;
-                    };
-                    for (index, entry) in entries.into_iter().enumerate() {
-                        let mut path = at(Some("permutations"));
-                        path.push_index(index);
-                        let mut kept_at = kept.child("permutations");
-                        kept_at.push_index(index);
-                        let Some(permutation) = read_permutation(entry, &path, &kept_at, d) else {
-                            structural(d, &codes::PERMUTATION_OBJECT, path.clone());
-                            if object_members(entry).is_none() {
-                                structural(d, &codes::PERMUTATIONS_OBJECTS, path);
-                            }
-                            return None;
-                        };
-                        block.permutations.push(permutation);
-                    }
-                }
-                "events" => block.events = read_value(raw),
-                "ordered_v1_custom_components" => {
-                    let at = at(Some("ordered_v1_custom_components"));
-                    block.ordered_v1_custom_components = read_strings(raw, &at, d);
-                }
-                _ => {
-                    if let Some(value) = read_value(raw) {
-                        d.unknown_mut().put(kept, &key, value);
-                    }
-                }
-            }
-        }
-        if !found_description {
-            structural(d, &codes::MEMBER_MISSING, at(Some("description")));
-            return None;
-        }
-        Some(block)
+/// `description`: an object whose `states`, when written, is one too ("Block description states
+/// must be an object", then "Failed to parse block '…'": the block is not loaded).
+fn description(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, Value>> {
+    read.object(node)?;
+    let description = object(node.value())?;
+    if description.get("states").is_some_and(|s| !s.is_object()) {
+        read.push(Diagnostic::of(&codes::STATES_OBJECT).at(node.path().child("states")));
+        let identifier = description
+            .get("identifier")
+            .and_then(string)
+            .unwrap_or_default();
+        read.refuse_with(
+            Diagnostic::of(codes::PARSE_BLOCK_FAILED.with([identifier])).at(node.path().clone()),
+        );
+        return None;
     }
+    Some(description)
+}
 
+/// The base's `components`: an object ([`first_of_twice`]).
+fn components(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, Value>> {
+    read.object(node)?;
+    first_of_twice(node, read)
+}
+
+/// A permutation's `components`: an object ([`first_of_twice`]); of another type it makes no
+/// permutation the game takes, told at the permutation.
+fn permutation_components(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, Value>> {
+    if !node.value().is_object() {
+        let mut at = node.path().clone();
+        at.pop();
+        read.refuse_with(Diagnostic::of(&codes::PERMUTATION_OBJECT).at(at));
+        return None;
+    }
+    first_of_twice(node, read)
+}
+
+/// The members of the `components` object `node`, keeping the first of duplicate keys with
+/// "Duplicate component {} found. Please remove one of the duplicates." (a kept error, before
+/// the first step; vanilla rule 11): the envelope leaves every copy of a component in the text.
+fn first_of_twice(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, Value>> {
+    // A node without its text has only the last copy of each.
+    let Some(members) = node.text().and_then(|text| object_members(text.text)) else {
+        return object(node.value());
+    };
+    let mut components = IndexMap::new();
+    for (key, raw) in members {
+        if components.contains_key(&key) {
+            // The game logs a duplicate component at the content log's error level and goes
+            // on: a kept error.
+            read.push(
+                Diagnostic::of(codes::DUPLICATE_COMPONENT.with([key.as_str()]))
+                    .at(node.path().child(&key))
+                    .into_kept(),
+            );
+            continue;
+        }
+        if let Ok(value) = bedrock_addon_core::json::from_str_jsonc(raw) {
+            components.insert(key, value);
+        }
+    }
+    Some(components)
+}
+
+/// `permutations`: an array of objects, each with an object `components`; anything else makes
+/// no block the game loads, told in the game's two lines (one, for a permutation without its
+/// `components`, after the permutation's members).
+fn permutations(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<LegacyPermutation>> {
+    let refuse = |read: &mut Read<'_>, lines: [&'static CodeDef<0>; 2], at: &JsonPath| {
+        read.push(Diagnostic::of(lines[0]).at(at.clone()));
+        read.refuse_with(Diagnostic::of(lines[1]).at(at.clone()));
+    };
+    if !node.value().is_array() {
+        let lines = [
+            &codes::PERMUTATIONS_ARRAY,
+            &codes::PERMUTATIONS_ARRAY_OBJECT,
+        ];
+        refuse(read, lines, node.path());
+        return None;
+    }
+    read_each(node, read, |entry, read| {
+        if !entry.value().is_object() {
+            let lines = [&codes::PERMUTATION_OBJECT, &codes::PERMUTATIONS_OBJECTS];
+            refuse(read, lines, entry.path());
+            return None;
+        }
+        let permutation = LegacyPermutation::from_json(entry, read)?;
+        if !entry
+            .value()
+            .as_object()
+            .is_some_and(|entry| entry.contains_key("components"))
+        {
+            read.refuse_with(Diagnostic::of(&codes::PERMUTATION_OBJECT).at(entry.path().clone()));
+            return None;
+        }
+        Some(permutation)
+    })
+}
+
+/// A list of names (`ordered_v1_custom_components`): a value that is no array is the empty
+/// list, an element that is no string is left out; each is told where it stands (`misread`).
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the `read_with` signature: no list is refused"
+)]
+fn strings(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    let Some(list) = node.value().as_array() else {
+        misread(node.path(), read.findings_mut());
+        return Some(Vec::new());
+    };
+    Some(strings_told(list, node.path(), read.findings_mut()))
+}
+
+impl BlockPayload {
     /// The payload as JSON.
     pub(crate) fn payload_json(&self) -> Value {
         let mut object = facet_value::VObject::new();
@@ -436,69 +476,6 @@ pub(crate) fn strings_value(strings: &[String]) -> Value {
     array.into()
 }
 
-/// A permutation object; `None` when it is not an object with an object `components`.
-fn read_permutation(
-    text: &str,
-    at: &JsonPath,
-    kept: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<LegacyPermutation> {
-    let members = object_members(text)?;
-    let mut permutation = LegacyPermutation::default();
-    let mut has_components = false;
-    for (key, raw) in members {
-        match key.as_str() {
-            "condition" => permutation.condition = read_value(raw),
-            "components" => {
-                let path = at.child("components");
-                permutation.components = read_components(raw, &path, d)?;
-                has_components = true;
-            }
-            "ordered_v1_custom_components" => {
-                let path = at.child("ordered_v1_custom_components");
-                permutation.ordered_v1_custom_components = read_strings(raw, &path, d);
-            }
-            _ => {
-                if let Some(value) = read_value(raw) {
-                    d.unknown_mut().put(kept, &key, value);
-                }
-            }
-        }
-    }
-    has_components.then_some(permutation)
-}
-
-/// A `components` object, keeping the first of duplicate keys with "Duplicate component {}
-/// found. Please remove one of the duplicates." (a warning, before the first step; vanilla
-/// rule 11). `None` when it is not an object.
-fn read_components(
-    text: &str,
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> Option<IndexMap<String, Value>> {
-    let mut components = IndexMap::new();
-    for (key, raw) in object_members(text)? {
-        if components.contains_key(&key) {
-            let path = at.child(&key);
-            // The game logs a duplicate component at the content log's error level and goes
-            // on: a kept error.
-            d.push_kept_error(
-                Diagnostic::of(codes::DUPLICATE_COMPONENT.with([key.as_str()])).at(path),
-            );
-            continue;
-        }
-        if let Some(value) = read_value(raw) {
-            components.insert(key, value);
-        }
-    }
-    Some(components)
-}
-
-/// A JSON value from its text.
-fn read_value(text: &str) -> Option<Value> {
-    bedrock_addon_core::json::from_str_jsonc(text).ok()
-}
-
 /// A member a step or the legacy reader reads as its fallback because it has another JSON
 /// type than the one converted (a list that is no array, a name that is no string): the value
 /// is what it always was, and the member is told (`InvalidType`, an information of the
@@ -510,17 +487,6 @@ pub(crate) fn misread(at: &JsonPath, d: &mut Diagnostics) {
             .at(at.clone())
             .phase(Phase::Upgrade),
     );
-}
-
-/// The strings of the list at `at`: a value that is no array is the empty list, an element
-/// that is no string is left out; each is told where it stands (`misread`).
-fn read_strings(text: &str, at: &JsonPath, d: &mut Diagnostics) -> Vec<String> {
-    let value = read_value(text);
-    let Some(list) = value.as_ref().and_then(Value::as_array) else {
-        misread(at, d);
-        return Vec::new();
-    };
-    strings_told(list, at, d)
 }
 
 /// The strings of `list`, which stands at `at`; an element that is no string is left out and
@@ -557,14 +523,6 @@ pub(crate) fn object_members(text: &str) -> Option<Vec<(String, &str)>> {
     })
 }
 
-/// The elements of the array `text` as raw texts; `None` when it is not an array.
-pub(crate) fn array_elements(text: &str) -> Option<Vec<&str>> {
-    let parsed = parse(text, Options::default()).ok()?;
-    let root = parsed.spans.root();
-    (root.kind() == SpanKind::Array)
-        .then(|| root.elements().map(|element| element.text().text).collect())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -582,9 +540,5 @@ mod tests {
     #[test]
     fn the_scanner_refuses_a_non_object() {
         assert!(object_members("[1]").is_none());
-        assert_eq!(
-            array_elements("[1, {\"a\": 2}]").unwrap(),
-            ["1", "{\"a\": 2}"]
-        );
     }
 }
