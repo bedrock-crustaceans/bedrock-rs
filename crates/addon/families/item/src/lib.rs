@@ -11,13 +11,15 @@
 //! [`component`], an old shape of [`history`]), so one that fails is dropped alone. The slices'
 //! readings say what is told: a member of a range that the range does not read is told in every
 //! slice (`Reading::range_members`). What stays hand code is what the game's own readers do by
-//! hand, each beside its type: the legacy item format of 1.10 (`history::v1_10_0`, read from
-//! the nodes of its `components` object as the game's hand-written parser reads it, every
-//! finding an information), the legacy reading of a component-based document's keys
-//! (`legacy::read_legacy`, a rule over the values of the components that decides what the
-//! game's legacy reader takes and tells), the release gates (`history::gates`), the members a
-//! format does not bind yet (`history::document::unbind_members`) and the checks that drop a
-//! component (`check_component`, which asks the derived check for the bounds).
+//! hand, each beside its type: the jsoncpp accessors of the legacy item format of 1.10
+//! (`history::v1_10_0`: its key set is derived, each member read by `schema::read_with` through
+//! the accessor the game's hand-written parser reads it with, every finding an information; the
+//! effect lists read as that parser asks for their members), the legacy reading of a
+//! component-based document's keys (`legacy::read_legacy`, a rule over the values of the
+//! components that decides what the game's legacy reader takes and tells), the release gates
+//! (`history::gates`), the members a format does not bind yet
+//! (`history::document::unbind_members`) and the checks that drop a component
+//! (`check_component`, which asks the derived check for the bounds).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

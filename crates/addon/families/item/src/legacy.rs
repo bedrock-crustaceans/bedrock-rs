@@ -2,7 +2,9 @@
 //! component-based document (at every version) and the legacy item format of 1.10.
 
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, known};
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Severity};
@@ -10,6 +12,9 @@ use bedrock_addon_core::json::Value;
 use bedrock_addon_core::load::{LoadContext, LoadRequirement};
 
 use super::codes;
+use crate::history::v1_10_0::{
+    as_bool, as_float, as_int, as_string, client_keys, effects, object, remove_effects,
+};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 
 /// Which reader an item went through (vanilla `ItemVersion`).
@@ -416,31 +421,47 @@ fn truncate(n: f64) -> i32 {
 
 /// An item in the legacy item format of 1.10: the fixed key set of `minecraft:item ›
 /// components` vanilla's legacy readers take (no format version changes it).
-#[derive(Clone, Debug, PartialEq)]
+///
+/// Read by the derived reader as the game's hand-written parser reads it: each member through
+/// the jsoncpp accessor the game reads it with (`history::v1_10_0`), which takes any JSON value
+/// and says what it makes of it in an information; a member it gives no value is its default.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent", schema::after_read = client_keys)]
 #[non_exhaustive]
 pub struct LegacyFormatItem {
     /// `minecraft:max_damage` (default 0).
+    #[facet(rename = "minecraft:max_damage", default, schema::read_with = as_int)]
     pub max_damage: i32,
     /// `minecraft:hand_equipped` (default false).
+    #[facet(rename = "minecraft:hand_equipped", default, schema::read_with = as_bool)]
     pub hand_equipped: bool,
     /// `minecraft:stacked_by_data` (default false).
+    #[facet(rename = "minecraft:stacked_by_data", default, schema::read_with = as_bool)]
     pub stacked_by_data: bool,
     /// `minecraft:foil` (default false; no gate in this format).
+    #[facet(rename = "minecraft:foil", default, schema::read_with = as_bool)]
     pub foil: bool,
     /// `minecraft:block`: the block the item places or stands for.
+    #[facet(rename = "minecraft:block", schema::read_with = as_string)]
     pub block: Option<String>,
     /// `minecraft:use_duration` in ticks (an integer; a real number is truncated; default 0).
+    #[facet(rename = "minecraft:use_duration", default, schema::read_with = as_int)]
     pub use_duration: i32,
     /// `minecraft:max_stack_size` (default 64).
+    #[facet(rename = "minecraft:max_stack_size", default = 64, schema::read_with = as_int)]
     pub max_stack_size: i32,
     /// `minecraft:food`.
+    #[facet(rename = "minecraft:food", schema::read_with = object)]
     pub food: Option<LegacyFood>,
     /// `minecraft:seed`.
+    #[facet(rename = "minecraft:seed", schema::read_with = object)]
     pub seed: Option<LegacySeed>,
     /// `minecraft:camera`.
+    #[facet(rename = "minecraft:camera", schema::read_with = object)]
     pub camera: Option<LegacyCamera>,
     /// The client keys (`minecraft:icon`, `icon_variant`, `icon_atlas`, `use_animation`,
     /// `hover_text_color`, `rarity`), as written.
+    #[facet(skip)]
     pub client: IndexMap<String, Value>,
     /// Every other key, ignored by vanilla (`minecraft:is_meat`), kept for write-back.
     pub extra: UnknownMembers,
@@ -466,29 +487,38 @@ impl Default for LegacyFormatItem {
 }
 
 /// `minecraft:food` of the legacy item format.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 #[non_exhaustive]
 pub struct LegacyFood {
     /// `nutrition`.
+    #[facet(default, schema::read_with = as_int)]
     pub nutrition: i32,
     /// `saturation_modifier`: a number, or a name (`poor` 0.1, `low` 0.3, `normal` 0.6, `good`
     /// 0.8, `max` 1.0, `supernatural` 1.2; any other name 0.6), as written.
     pub saturation_modifier: Option<Value>,
     /// `using_converts_to`.
+    #[facet(schema::read_with = as_string)]
     pub using_converts_to: Option<String>,
     /// `on_use_action` (`chorus_teleport`, `suspicious_stew_effect`).
+    #[facet(schema::read_with = as_string)]
     pub on_use_action: Option<String>,
     /// `on_use_range`.
     pub on_use_range: Option<Value>,
     /// `cooldown_type`.
+    #[facet(schema::read_with = as_string)]
     pub cooldown_type: Option<String>,
     /// `cooldown_time`.
+    #[facet(default, schema::read_with = as_int)]
     pub cooldown_time: i32,
     /// `can_always_eat`.
+    #[facet(default, schema::read_with = as_bool)]
     pub can_always_eat: bool,
     /// `effects`.
+    #[facet(default, schema::read_with = effects)]
     pub effects: Vec<LegacyEffect>,
     /// `remove_effects`.
+    #[facet(default, schema::read_with = remove_effects)]
     pub remove_effects: Vec<String>,
     /// Other members.
     pub extra: UnknownMembers,
@@ -522,8 +552,9 @@ fn saturation_of(name: &str) -> Option<f32> {
     })
 }
 
-/// One effect of a [`LegacyFood`].
-#[derive(Clone, Debug, Default, PartialEq)]
+/// One effect of a [`LegacyFood`], read by its list (`history::v1_10_0::effects`): the game
+/// asks for its four members by name, and checks the name before it reads the others.
+#[derive(Clone, Debug, Default, PartialEq, Facet)]
 #[non_exhaustive]
 pub struct LegacyEffect {
     /// `name`.
@@ -536,37 +567,51 @@ pub struct LegacyEffect {
     pub amplifier: i32,
 }
 
+bedrock_addon_core::impl_schema_leaf!(LegacyEffect);
+bedrock_addon_core::impl_no_molang!(LegacyEffect);
+
 /// `minecraft:seed` of the legacy item format.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 #[non_exhaustive]
 pub struct LegacySeed {
     /// `crop_result`: the block planted.
+    #[facet(schema::read_with = as_string)]
     pub crop_result: Option<String>,
     /// `plant_at`: a descriptor or a list of them, as written.
     pub plant_at: Option<Value>,
     /// `plant_at_any_solid_surface`.
+    #[facet(default, schema::read_with = as_bool)]
     pub plant_at_any_solid_surface: bool,
     /// `plant_at_face`.
+    #[facet(schema::read_with = as_string)]
     pub plant_at_face: Option<String>,
     /// Other members.
     pub extra: UnknownMembers,
 }
 
 /// `minecraft:camera` of the legacy item format.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
 #[non_exhaustive]
 pub struct LegacyCamera {
     /// `black_bars_duration`.
+    #[facet(default, schema::read_with = as_float)]
     pub black_bars_duration: f32,
     /// `black_bars_screen_ratio`.
+    #[facet(default, schema::read_with = as_float)]
     pub black_bars_screen_ratio: f32,
     /// `shutter_duration`.
+    #[facet(default, schema::read_with = as_float)]
     pub shutter_duration: f32,
     /// `shutter_screen_ratio`.
+    #[facet(default, schema::read_with = as_float)]
     pub shutter_screen_ratio: f32,
     /// `picture_duration`.
+    #[facet(default, schema::read_with = as_float)]
     pub picture_duration: f32,
     /// `slide_away_duration`.
+    #[facet(default, schema::read_with = as_float)]
     pub slide_away_duration: f32,
     /// Other members.
     pub extra: UnknownMembers,
