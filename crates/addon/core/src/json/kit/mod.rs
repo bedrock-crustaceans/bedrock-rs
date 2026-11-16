@@ -1153,6 +1153,14 @@ impl<'d> Read<'d> {
         self.stopped
     }
 
+    /// Stops the read whatever its profile: nothing more is read or told, and every read
+    /// returns `None`, as after the first failure of a [`Failures::First`] read. For a game
+    /// reader that returns at a message of its own and gives up the document there (a trade
+    /// table's legacy parser returns an empty table), after it has told that message.
+    pub fn stop(&mut self) {
+        self.stopped = true;
+    }
+
     /// A read with this read's reading, texts, severities and profile that tells into a list of
     /// its own, for an attempt the caller may [`commit`](Self::commit) or drop: an arm of a
     /// one-of that is tried and may be given up for another.

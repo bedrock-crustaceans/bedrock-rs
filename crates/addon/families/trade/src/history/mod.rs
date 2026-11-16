@@ -33,8 +33,6 @@ bedrock_addon_core::version_chain! {
     }
 }
 
-bedrock_addon_core::impl_no_molang!(v0::TradeTable);
-
 /// Runs the remaining upgrade step of a document
 /// [`TradeTable::parse_as_written`](bedrock_addon_core::document::JsonDocument::parse_as_written)
 /// gave: the same result [`TradeTable::parse`](bedrock_addon_core::document::Content::parse)

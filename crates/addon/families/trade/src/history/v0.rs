@@ -9,6 +9,7 @@ use bedrock_addon_core::diagnostic::{
 };
 use bedrock_addon_core::id::ItemId;
 use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::schema::{self, Schema, read_later};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use bedrock_addon_core::versioning::{
@@ -21,53 +22,70 @@ pub const VERSION: FormatVersion = known::V0_0_0;
 /// A legacy trade table: the document as written.
 ///
 /// JSON: `{"format_version"?: "<version>", "tiers": [tier, …]}`.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::after_read = read::table_rules)]
 pub struct TradeTable {
     /// `format_version`, when it is a string (the legacy parser reads no other form).
+    #[facet(schema::read_with = read::text)]
     pub format_version: Option<String>,
     /// The tiers (JSON `tiers`).
+    #[facet(default, schema::read_with = read::tiers)]
     pub tiers: Vec<Tier>,
 }
 
 /// A legacy tier: groups, or one flat list of trades that are all offered.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::after_read = read::tier_rules)]
 pub struct Tier {
     /// JSON `total_exp_required`; absent = the tier's 0-based index.
+    #[facet(schema::read_with = read::fits::<u32>)]
     pub total_exp_required: Option<u32>,
     /// JSON `groups`; when present, `trades` is not read.
+    #[facet(schema::read_with = read::groups)]
     pub groups: Option<Vec<Group>>,
     /// JSON `trades`: one group that offers every trade.
+    #[facet(schema::read_with = read_later)]
     pub trades: Option<Vec<Trade>>,
 }
 
 /// A legacy group.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+///
+/// Read by `history::read`'s list of groups, which reads its `trades`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Group {
     /// JSON `num_to_select`; absent = -1 (every trade).
+    #[facet(schema::read_with = read::fits::<i32>)]
     pub num_to_select: Option<i32>,
     /// JSON `trades`.
+    #[facet(default, schema::read_with = read_later)]
     pub trades: Vec<Trade>,
 }
 
 /// A legacy trade; the defaults are the newest ones.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct Trade {
     /// JSON `wants`.
+    #[facet(default, schema::read_with = read::entries)]
     pub wants: Vec<ItemList>,
     /// JSON `gives`.
+    #[facet(default, schema::read_with = read::entries)]
     pub gives: Vec<ItemList>,
     /// JSON `trader_exp` (default 1).
+    #[facet(schema::read_with = read::fits::<u32>)]
     pub trader_exp: Option<u32>,
     /// JSON `max_uses` (default 7).
+    #[facet(schema::read_with = read::fits::<i32>)]
     pub max_uses: Option<i32>,
     /// JSON `reward_exp` (default `true`).
+    #[facet(schema::read_with = read::boolean)]
     pub reward_exp: Option<bool>,
     /// JSON `weight` (default 1).
+    #[facet(schema::read_with = read::fits::<i32>)]
     pub weight: Option<i32>,
 }
 
-/// A legacy `wants` / `gives` entry.
-#[derive(Clone, Debug, PartialEq, facet::Facet)]
+/// A legacy `wants` / `gives` entry (read by `history::read`'s list of entries).
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[facet(untagged)]
 #[repr(u8)]
 #[allow(
@@ -85,19 +103,25 @@ pub enum ItemList {
 }
 
 /// A legacy trade item, its members as written.
-#[derive(Clone, Debug, Default, PartialEq, facet::Facet)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 pub struct TradeItem {
     /// JSON `quantity`: a number, `"a-b"`, `[a, b]` or `{"min", "max"}`; absent = 1.
+    #[facet(schema::read_with = read::quantity)]
     pub quantity: Option<Value>,
     /// JSON `price_multiplier` (default 0.0).
+    #[facet(schema::read_with = read::float)]
     pub price_multiplier: Option<f32>,
     /// JSON `item`, read as a string (`"name"` or `"name:aux"`).
+    #[facet(schema::read_with = read::string)]
     pub item: Option<String>,
     /// JSON `functions`: loot-table item functions, kept as written.
+    #[facet(schema::read_with = read::kept)]
     pub functions: Option<Value>,
     /// JSON `filters`: a legacy filter, kept as written.
+    #[facet(schema::read_with = read::kept)]
     pub filters: Option<Value>,
     /// JSON `biomes`: a biome name or a list of them, read only by the documents below 1.20.30.
+    #[facet(schema::read_with = read::kept)]
     pub biomes: Option<Value>,
 }
 

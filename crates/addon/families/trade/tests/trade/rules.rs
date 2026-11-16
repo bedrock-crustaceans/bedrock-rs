@@ -182,6 +182,42 @@ fn a_trade_without_wants_reports_the_offers_only() {
 }
 
 #[test]
+fn a_legacy_trade_dropped_at_wants_or_gives_tells_nothing_of_the_members_after_them() {
+    // The game returns at the first of the two that holds no entry: the members after it are
+    // not read, so nothing is told of them.
+    for (trade, side) in [
+        (
+            r#"{"wants": [], "gives": [{"item": "x:y", "price_multiplier": "p"}], "trader_exp": "x"}"#,
+            "wants",
+        ),
+        (
+            r#"{"wants": [{"item": "x:y"}], "gives": [{"choice": []}], "max_uses": true, "weight": 0.5}"#,
+            "gives",
+        ),
+    ] {
+        let document = loads(&doc(None, &flat(&[trade.to_owned(), a_trade("")])));
+        let told: Vec<String> = document
+            .diagnostics()
+            .iter()
+            .map(|f| format!("{} {}", f.code.id(), f.location.json_path))
+            .collect();
+        let code = if side == "wants" {
+            "trade/no_offers"
+        } else {
+            "trade/no_receives"
+        };
+        assert_eq!(
+            told,
+            [
+                format!("{code} tiers/0/trades/0/{side}"),
+                "core/dropped_field tiers/0/trades/0".to_owned()
+            ],
+            "{trade}"
+        );
+    }
+}
+
+#[test]
 fn t12_a_legacy_weight_of_zero_or_less_drops_the_trade_with_vanillas_text() {
     for (weight, text) in [
         (0, "Invalid weight value: 0"),

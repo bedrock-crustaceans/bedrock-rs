@@ -671,3 +671,23 @@ fn a_read_that_withholds_spans_tells_every_finding_without_one() {
         "a withheld read spans no finding: {withheld:?}"
     );
 }
+
+#[test]
+fn a_read_its_reader_stops_reads_and_tells_nothing_more() {
+    let json = value(r#"{"a": "x", "b": "y"}"#);
+    let mut found = Diagnostics::default();
+    // Every failure told: the profile never stops by itself.
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let members = read
+        .object(&Node::new(&json, JsonPath::new()))
+        .expect("an object");
+    let a = members.get("a").expect("written");
+    read.error(&a, Code::from(&core_codes::INVALID_VALUE));
+    assert!(!read.stopped());
+    read.stop();
+    assert!(read.stopped(), "stop ends the read");
+    let b = members.get("b").expect("written");
+    assert_eq!(read.bool(&b), None);
+    read.refuse(&b, Code::from(&core_codes::INVALID_VALUE));
+    assert_eq!(rendered(&found).len(), 1, "{:?}", rendered(&found));
+}
