@@ -4,6 +4,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
+use rayon::prelude::*;
+
 use bedrock_addon::diagnostic::{Code, Disposition, Kind as FindingKind};
 use bedrock_addon::json::Value;
 use bedrock_addon::load::{LoadContext, LoadOptions};
@@ -566,7 +568,10 @@ const LARGE: &[&str] = &[
 // --- the families ------------------------------------------------------------------------------
 
 /// One way to read a family's document: a name, and the reader.
-type Reader = (&'static str, Box<dyn Fn(&str) -> Outcome>);
+type Reader = (&'static str, Box<ReadFn>);
+
+/// A family's load and write of one text, shared by the threads of the probe.
+type ReadFn = dyn Fn(&str) -> Outcome + Send + Sync;
 
 /// A family of the probe.
 struct Family {
@@ -1246,34 +1251,33 @@ fn carried_in(class: Class) -> &'static [&'static str] {
     }
 }
 
-/// The read of the document without the member at a node, once judged.
-enum Without {
-    /// Not asked for yet.
-    Unknown,
-    /// Refused, or not written.
-    Unread,
-    /// Loaded and written.
-    Read(Read),
-}
+/// The read of the document without the member at a node, read once and shared by the
+/// judgements of the node, which run on several threads. `None` once read: refused, or not
+/// written.
+#[derive(Default)]
+struct Without(std::sync::OnceLock<Option<Read>>);
 
 impl Without {
     /// The read, when the document without the member at `node` loads and is written; the
     /// document is read the first time this is asked.
-    fn get(
-        &mut self,
-        read: &dyn Fn(&str) -> Outcome,
-        base: &Base<'_>,
-        node: &Node,
-    ) -> Option<&Read> {
-        if matches!(self, Without::Unknown) {
-            *self = without(base.text, node)
-                .and_then(|text| read_text(read, &text).ok())
-                .map_or(Without::Unread, |read| Without::Read(read.0));
-        }
-        match self {
-            Without::Read(read) => Some(read),
-            Without::Unknown | Without::Unread => None,
-        }
+    fn get(&self, read: &dyn Fn(&str) -> Outcome, base: &Base<'_>, node: &Node) -> Option<&Read> {
+        self.0
+            .get_or_init(|| {
+                without(base.text, node)
+                    .and_then(|text| read_text(read, &text).ok())
+                    .map(|read| read.0)
+            })
+            .as_ref()
+    }
+
+    /// Records the read `judge_removed` made, before any other judgement asks for it.
+    fn record(&self, read: Option<Read>) {
+        self.0.get_or_init(|| read);
+    }
+
+    /// The read, when it was made and the document loads and is written.
+    fn known(&self) -> Option<&Read> {
+        self.0.get().and_then(Option::as_ref)
     }
 }
 
@@ -1289,7 +1293,7 @@ struct Base<'a> {
     /// The scalars of the text, keys left out.
     scalars: Vec<String>,
     /// Whether the member at a path is not read as a whole (see [`told_not_read`]), once asked.
-    ignored: std::cell::RefCell<BTreeMap<Vec<String>, bool>>,
+    ignored: std::sync::Mutex<BTreeMap<Vec<String>, bool>>,
     /// What the document is written as with nothing of the author's but its identifier
     /// ([`bare_text`]): the members the steps put into every document of its version.
     /// `None` when that document does not load or is not written.
@@ -1338,7 +1342,7 @@ fn base_of<'a>(
         value,
         nodes,
         read: written,
-        ignored: std::cell::RefCell::default(),
+        ignored: std::sync::Mutex::default(),
     }
 }
 
@@ -1421,8 +1425,9 @@ fn told_not_read(
         {
             return true;
         }
-        if let Some(known) = base.ignored.borrow().get(&at) {
-            if *known {
+        let known = base.ignored.lock().unwrap().get(&at).copied();
+        if let Some(known) = known {
+            if known {
                 return true;
             }
             continue;
@@ -1446,7 +1451,7 @@ fn told_not_read(
                 read_text(read, &text).is_ok_and(|(other, _)| same_but_order(&other, &base.read))
             })
         });
-        base.ignored.borrow_mut().insert(at, ignored);
+        base.ignored.lock().unwrap().insert(at, ignored);
         if ignored {
             return true;
         }
@@ -1833,7 +1838,7 @@ fn judge(
     base: &Base<'_>,
     node: &Node,
     (replacement, twin, class): (&str, &str, Class),
-    removed: &mut Without,
+    removed: &Without,
 ) -> Result<&'static str, Fault> {
     let (ours, outcome) = match read_text(read, &replaced(base, node, replacement)) {
         Ok(read) => (Some(read.0), read.1),
@@ -2173,19 +2178,19 @@ fn judge_removed(
     read: &dyn Fn(&str) -> Outcome,
     base: &Base<'_>,
     node: &Node,
-    removed: &mut Without,
-) -> Result<&'static str, (&'static str, String)> {
+    removed: &Without,
+) -> Result<&'static str, Fault> {
     let Some(text) = without(base.text, node) else {
         return Ok("no member");
     };
     let (ours, outcome) = match read_text(read, &text) {
         Ok(read) => read,
         Err(None) => {
-            *removed = Without::Unread;
+            removed.record(None);
             return Ok("refused");
         }
         Err(Some(outcome)) => {
-            *removed = Without::Unread;
+            removed.record(None);
             let found: Vec<String> = outcome.findings.iter().map(finding_text).collect();
             if fresh(&base.read.findings, &found).is_empty() {
                 return Err(("not-written", outcome.written.err().unwrap_or_default()));
@@ -2250,7 +2255,7 @@ fn judge_removed(
         .filter(|leaf| count(&ours.leaves, leaf) < count(&outside, leaf).min(count(held, leaf)))
         .collect();
     lost.dedup();
-    *removed = Without::Read(ours);
+    removed.record(Some(ours));
     if lost.is_empty() {
         return Ok("removed");
     }
@@ -2484,56 +2489,39 @@ fn note_unstable(
     }
 }
 
-/// Probes the document at one of its members: the document without it, and with each
-/// replacement of another class.
-fn probe_node(
-    family: &Family,
-    name: &str,
-    read: &dyn Fn(&str) -> Outcome,
-    legacy: &Legacy,
-    base: &Base<'_>,
-    node: &Node,
-    tally: &mut Tally,
-) {
+/// The judgements of the probe of the document at one of its members: the document without
+/// it, and with each replacement of another class. Planned in the order of the places, so that
+/// the budget and the counts are what one thread makes of them; judged on many threads.
+struct Place<'n> {
+    node: &'n Node,
+    /// Whether the document without the member is judged.
+    removed: bool,
+    /// The replacements judged, in the order of [`REPLACEMENTS`].
+    replacements: Vec<(&'static str, &'static str, Class)>,
+}
+
+/// What became of the judgements of a [`Place`].
+struct Judged {
+    /// The document without the member, when judged.
+    removed: Option<Result<&'static str, Fault>>,
+    /// What the member's presence costs the author elsewhere, when it costs.
+    displaced: Option<String>,
+    /// One per replacement of the place, in its order.
+    replacements: Vec<Result<&'static str, Fault>>,
+}
+
+/// Plans the probe of the document at one of its members: takes what it loads out of the
+/// budget, and counts the judgements it does not make.
+fn plan_place<'n>(family: &Family, legacy: &Legacy, node: &'n Node, tally: &mut Tally) -> Place<'n> {
     let class = class_of(&legacy.text, node);
-    let mut removed = Without::Unknown;
-    let fault = |replacement: &str, kind: &str, detail: &str| -> String {
-        let detail: String = detail.replace('\n', " ").chars().take(420).collect();
-        format!(
-            "{} | {} | {} | {replacement} | {kind} | {detail} | in {} ({name})",
-            family.name,
-            legacy.version,
-            node.shown(),
-            legacy.from
-        )
-    };
+    let mut removed = false;
     if exempt(family.name, node, "(removed)") {
         *tally.outcomes.entry("exempt").or_default() += 1;
     } else if tally.texts < BUDGET {
         tally.texts += 1;
-        match judge_removed(read, base, node, &mut removed) {
-            Ok(outcome) => *tally.outcomes.entry(outcome).or_default() += 1,
-            Err((kind, detail)) => {
-                *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
-                tally.faults.push(fault("(removed)", kind, &detail));
-            }
-        }
-        // What the member's presence costs the author elsewhere (the version the file
-        // names is no member of the kind: without it the file is another document).
-        if let Without::Read(without) = &removed
-            && node.path != ["format_version"]
-            && !exempt(family.name, node, "(present)")
-            && let Err(detail) = judge_displaced(base, node, without)
-        {
-            *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
-            tally.faults.push(fault("(present)", "displaced", &detail));
-        }
+        removed = true;
     }
-    // A `null`, `[]` or `{}` that is written as the unchanged document is no fault
-    // where the member is read (another replacement of it is told, held or refused):
-    // the document had the defaults there.
-    let mut nothing: Vec<String> = Vec::new();
-    let mut read_at_all = false;
+    let mut replacements = Vec::new();
     for replacement in REPLACEMENTS {
         if replacement.2 == class {
             continue;
@@ -2555,7 +2543,78 @@ fn probe_node(
             continue;
         }
         tally.texts += 1;
-        match judge(read, base, node, *replacement, &mut removed) {
+        replacements.push(*replacement);
+    }
+    Place {
+        node,
+        removed,
+        replacements,
+    }
+}
+
+/// Makes the judgements of a place, the replacements side by side.
+fn judge_place(family: &str, read: &ReadFn, base: &Base<'_>, place: &Place<'_>) -> Judged {
+    let node = place.node;
+    let without = Without::default();
+    let removed = place
+        .removed
+        .then(|| judge_removed(read, base, node, &without));
+    // What the member's presence costs the author elsewhere (the version the file
+    // names is no member of the kind: without it the file is another document).
+    let displaced = without
+        .known()
+        .filter(|_| node.path != ["format_version"] && !exempt(family, node, "(present)"))
+        .and_then(|without| judge_displaced(base, node, without).err());
+    let replacements = place
+        .replacements
+        .par_iter()
+        .map(|replacement| judge(read, base, node, *replacement, &without))
+        .collect();
+    Judged {
+        removed,
+        displaced,
+        replacements,
+    }
+}
+
+/// Counts what became of the judgements of a place, and notes its faults.
+fn note_place(
+    family: &Family,
+    name: &str,
+    legacy: &Legacy,
+    place: &Place<'_>,
+    judged: Judged,
+    tally: &mut Tally,
+) {
+    let fault = |replacement: &str, kind: &str, detail: &str| -> String {
+        let detail: String = detail.replace('\n', " ").chars().take(420).collect();
+        format!(
+            "{} | {} | {} | {replacement} | {kind} | {detail} | in {} ({name})",
+            family.name,
+            legacy.version,
+            place.node.shown(),
+            legacy.from
+        )
+    };
+    match judged.removed {
+        Some(Ok(outcome)) => *tally.outcomes.entry(outcome).or_default() += 1,
+        Some(Err((kind, detail))) => {
+            *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
+            tally.faults.push(fault("(removed)", kind, &detail));
+        }
+        None => {}
+    }
+    if let Some(detail) = judged.displaced {
+        *tally.by_version.entry(legacy.version.clone()).or_default() += 1;
+        tally.faults.push(fault("(present)", "displaced", &detail));
+    }
+    // A `null`, `[]` or `{}` that is written as the unchanged document is no fault
+    // where the member is read (another replacement of it is told, held or refused):
+    // the document had the defaults there.
+    let mut nothing: Vec<String> = Vec::new();
+    let mut read_at_all = false;
+    for (replacement, judged) in place.replacements.iter().zip(judged.replacements) {
+        match judged {
             Ok(outcome) => {
                 read_at_all |= !matches!(outcome, "absent" | "empty");
                 *tally.outcomes.entry(outcome).or_default() += 1;
@@ -2588,7 +2647,7 @@ fn probe_node(
 fn probe_made_members(
     family: &Family,
     name: &str,
-    read: &dyn Fn(&str) -> Outcome,
+    read: &ReadFn,
     legacy: &Legacy,
     base: &Base<'_>,
     all: &[Node],
@@ -2644,7 +2703,7 @@ fn probe_made_members(
 fn probe_with(
     family: &Family,
     name: &str,
-    read: &dyn Fn(&str) -> Outcome,
+    read: &ReadFn,
     legacy: &Legacy,
     tally: &mut Tally,
 ) -> bool {
@@ -2673,6 +2732,7 @@ fn probe_with(
     note_unstable(family, name, read, legacy, &base, tally);
     let base = base_of(family.name, &legacy.text, value, &all, base, read);
     let mut counted = false;
+    let mut planned = Vec::new();
     for node in &all {
         if node.path.is_empty() {
             continue;
@@ -2703,7 +2763,14 @@ fn probe_with(
             }
             *tally.versions.entry(legacy.version.clone()).or_default() += 1;
         }
-        probe_node(family, name, read, legacy, &base, node, tally);
+        planned.push(plan_place(family, legacy, node, tally));
+    }
+    let judged: Vec<Judged> = planned
+        .par_iter()
+        .map(|place| judge_place(family.name, read, &base, place))
+        .collect();
+    for (place, judged) in planned.iter().zip(judged) {
+        note_place(family, name, legacy, place, judged, tally);
     }
     if legacy.only.is_none() {
         probe_made_members(family, name, read, legacy, &base, &all, tally);
@@ -2722,7 +2789,7 @@ const EXTRA: &str = "with one more element";
 fn add(
     family: &Family,
     name: &str,
-    read: &dyn Fn(&str) -> Outcome,
+    read: &ReadFn,
     known: &Read,
     added: &Legacy,
     tally: &mut Tally,
