@@ -152,6 +152,7 @@ impl ProtoVersionPackets for Unknown {
     type CameraSplinePacket = ();
     type ChangeDimensionPacket = ();
     type ChangeMobPropertyPacket = ();
+    type ChatPacket = ();
     type ChunkRadiusUpdatedPacket = ();
     type ClientBoundAttributeLayerSyncPacket = ();
     type ClientBoundCloseFormPacket = ();
@@ -164,6 +165,8 @@ impl ProtoVersionPackets for Unknown {
     type ClientBoundDebugRendererPacket = ();
     type ClientBoundMapItemDataPacket = ();
     type ClientBoundMatchmakingStatePacket = ();
+    type ClientBoundMusicPlaybackFailurePacket = ();
+    type ClientBoundOnlineMusicPlaybackResponsePacket = ();
     type ClientBoundPlayAudioContentPacket = ();
     type ClientBoundStonecutterSetRecipePacket = ();
     type ClientBoundTextureShiftPacket = ();
@@ -265,6 +268,7 @@ impl ProtoVersionPackets for Unknown {
     type PlayerLocationPacket = ();
     type PlayerSkinPacket = ();
     type PlayerStartItemCooldownPacket = ();
+    type PlayerToggleArmorVisibilityRequestPacket = ();
     type PlayerToggleCrafterSlotRequestPacket = ();
     type PlayerUpdateEntityOverridesPacket = ();
     type PlayerVideoCapturePacket = ();
@@ -298,6 +302,7 @@ impl ProtoVersionPackets for Unknown {
     type ServerBoundMatchmakingCancelPacket = ();
     type ServerBoundPackSettingChangePacket = ();
     type ServerBoundRegisterAudioContentPacket = ();
+    type ServerBoundRequestOnlineMusicPlaybackPacket = ();
     type ServerBoundStonecutterSetRecipePacket = ();
     type ServerPlayerPostMovePositionPacket = ();
     type ServerPresenceInfoPacket = ();
@@ -365,6 +370,8 @@ impl ProtoVersionPackets for Unknown {
     type UpdateSoftEnumPacket = ();
     type UpdateSubChunkBlocksPacket = ();
     type UpdateTradePacket = ();
+    type VirtualContainerClosePacket = ();
+    type VirtualContainerOpenPacket = ();
     type VoxelShapesPacket = ();
 }
 impl ProtoVersionTypes for Unknown {

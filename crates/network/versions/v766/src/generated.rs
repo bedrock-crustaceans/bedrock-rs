@@ -7970,6 +7970,7 @@ impl ProtoVersionPackets for V766 {
     type ChangeDimensionPacket = bedrock_network_version_v712::packets::ChangeDimensionPacket;
     type ChangeMobPropertyPacket =
         bedrock_network_version_v662::packets::ChangeMobPropertyPacket<Self>;
+    type ChatPacket = ();
     type ChunkRadiusUpdatedPacket = bedrock_network_version_v662::packets::ChunkRadiusUpdatedPacket;
     type ClientBoundAttributeLayerSyncPacket = ();
     type ClientBoundCloseFormPacket =
@@ -7985,6 +7986,8 @@ impl ProtoVersionPackets for V766 {
     type ClientBoundMapItemDataPacket =
         bedrock_network_version_v662::packets::ClientBoundMapItemDataPacket<Self>;
     type ClientBoundMatchmakingStatePacket = ();
+    type ClientBoundMusicPlaybackFailurePacket = ();
+    type ClientBoundOnlineMusicPlaybackResponsePacket = ();
     type ClientBoundPlayAudioContentPacket = ();
     type ClientBoundStonecutterSetRecipePacket = ();
     type ClientBoundTextureShiftPacket = ();
@@ -8120,6 +8123,7 @@ impl ProtoVersionPackets for V766 {
     type PlayerSkinPacket = bedrock_network_version_v662::packets::PlayerSkinPacket<Self>;
     type PlayerStartItemCooldownPacket =
         bedrock_network_version_v662::packets::PlayerStartItemCooldownPacket;
+    type PlayerToggleArmorVisibilityRequestPacket = ();
     type PlayerToggleCrafterSlotRequestPacket =
         bedrock_network_version_v662::packets::PlayerToggleCrafterSlotRequestPacket;
     type PlayerUpdateEntityOverridesPacket = ();
@@ -8167,6 +8171,7 @@ impl ProtoVersionPackets for V766 {
     type ServerBoundMatchmakingCancelPacket = ();
     type ServerBoundPackSettingChangePacket = ();
     type ServerBoundRegisterAudioContentPacket = ();
+    type ServerBoundRequestOnlineMusicPlaybackPacket = ();
     type ServerBoundStonecutterSetRecipePacket = ();
     type ServerPlayerPostMovePositionPacket =
         bedrock_network_version_v662::packets::ServerPlayerPostMovePositionPacket;
@@ -8257,6 +8262,8 @@ impl ProtoVersionPackets for V766 {
     type UpdateSubChunkBlocksPacket =
         bedrock_network_version_v662::packets::UpdateSubChunkBlocksPacket<Self>;
     type UpdateTradePacket = bedrock_network_version_v662::packets::UpdateTradePacket<Self>;
+    type VirtualContainerClosePacket = ();
+    type VirtualContainerOpenPacket = ();
     type VoxelShapesPacket = ();
 }
 impl ProtoVersionTypes for V766 {

@@ -4,7 +4,7 @@ use bedrock_auth::{
     AsyncHttpClient, AuthData, AuthOIDC, AuthPayload, AuthType, ClientData, ConnectionRequest,
     HttpClient, HttpError, encode_public_key,
 };
-use bedrock_network_protocol::V2225;
+use bedrock_network_protocol::V2259;
 use bedrock_network_protocol::v662::enums::PlayStatus;
 use bedrock_network_protocol::v662::packets::PlayStatusPacket;
 use p384::SecretKey;
@@ -171,8 +171,8 @@ pub(crate) fn self_signed_login(display_name: &str) -> Vec<u8> {
     request.to_bytes().unwrap()
 }
 
-pub(crate) fn login_success() -> V2225 {
-    V2225::PlayStatusPacket(Box::new(PlayStatusPacket {
+pub(crate) fn login_success() -> V2259 {
+    V2259::PlayStatusPacket(Box::new(PlayStatusPacket {
         status: PlayStatus::LoginSuccess,
     }))
 }

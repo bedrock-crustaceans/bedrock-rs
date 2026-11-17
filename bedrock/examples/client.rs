@@ -5,11 +5,11 @@ use bedrock::protocol::v662::enums::PlayStatus;
 use bedrock::protocol::v662::packets::{
     ClientToServerHandshakePacket, LoginPacket, RequestNetworkSettingsPacket,
 };
-use bedrock::protocol::{ProtoVersion, V2225};
+use bedrock::protocol::{ProtoVersion, V2259};
 use std::net::SocketAddr;
 use std::time::Duration;
 
-type Protocol = V2225;
+type Protocol = V2259;
 
 const PROTOCOL: i32 = Protocol::PROTOCOL_VERSION.cast_signed();
 

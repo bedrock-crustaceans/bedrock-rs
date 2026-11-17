@@ -1,0 +1,19 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{ProtoCodec, packet};
+
+#[packet(id = 7, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ResourcePackStackPacket<V: ProtoVersion> {
+    pub texture_pack_required: bool,
+    pub addon_list: Vec<PackEntry>,
+    pub base_game_version: V::BaseGameVersion,
+    pub experiments: V::Experiments,
+    pub editor_pack_types: u8,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct PackEntry {
+    pub id: String,
+    pub version: String,
+    pub sub_pack_name: String,
+}

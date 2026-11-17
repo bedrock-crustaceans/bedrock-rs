@@ -107,3 +107,7 @@ pub use bedrock_network_version_v2193::V2193;
 pub use bedrock_network_version_v2225 as v2225;
 #[cfg(feature = "v2225")]
 pub use bedrock_network_version_v2225::V2225;
+#[doc(inline)]
+pub use bedrock_network_version_v2259 as v2259;
+#[cfg(feature = "v2259")]
+pub use bedrock_network_version_v2259::V2259;

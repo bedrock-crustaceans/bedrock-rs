@@ -7614,6 +7614,7 @@ impl ProtoVersionPackets for V662 {
     type CameraSplinePacket = ();
     type ChangeDimensionPacket = crate::packets::ChangeDimensionPacket;
     type ChangeMobPropertyPacket = crate::packets::ChangeMobPropertyPacket<Self>;
+    type ChatPacket = ();
     type ChunkRadiusUpdatedPacket = crate::packets::ChunkRadiusUpdatedPacket;
     type ClientBoundAttributeLayerSyncPacket = ();
     type ClientBoundCloseFormPacket = ();
@@ -7626,6 +7627,8 @@ impl ProtoVersionPackets for V662 {
     type ClientBoundDebugRendererPacket = crate::packets::ClientBoundDebugRendererPacket;
     type ClientBoundMapItemDataPacket = crate::packets::ClientBoundMapItemDataPacket<Self>;
     type ClientBoundMatchmakingStatePacket = ();
+    type ClientBoundMusicPlaybackFailurePacket = ();
+    type ClientBoundOnlineMusicPlaybackResponsePacket = ();
     type ClientBoundPlayAudioContentPacket = ();
     type ClientBoundStonecutterSetRecipePacket = ();
     type ClientBoundTextureShiftPacket = ();
@@ -7729,6 +7732,7 @@ impl ProtoVersionPackets for V662 {
     type PlayerLocationPacket = ();
     type PlayerSkinPacket = crate::packets::PlayerSkinPacket<Self>;
     type PlayerStartItemCooldownPacket = crate::packets::PlayerStartItemCooldownPacket;
+    type PlayerToggleArmorVisibilityRequestPacket = ();
     type PlayerToggleCrafterSlotRequestPacket =
         crate::packets::PlayerToggleCrafterSlotRequestPacket;
     type PlayerUpdateEntityOverridesPacket = ();
@@ -7765,6 +7769,7 @@ impl ProtoVersionPackets for V662 {
     type ServerBoundMatchmakingCancelPacket = ();
     type ServerBoundPackSettingChangePacket = ();
     type ServerBoundRegisterAudioContentPacket = ();
+    type ServerBoundRequestOnlineMusicPlaybackPacket = ();
     type ServerBoundStonecutterSetRecipePacket = ();
     type ServerPlayerPostMovePositionPacket = crate::packets::ServerPlayerPostMovePositionPacket;
     type ServerPresenceInfoPacket = ();
@@ -7833,6 +7838,8 @@ impl ProtoVersionPackets for V662 {
     type UpdateSoftEnumPacket = crate::packets::UpdateSoftEnumPacket<Self>;
     type UpdateSubChunkBlocksPacket = crate::packets::UpdateSubChunkBlocksPacket<Self>;
     type UpdateTradePacket = crate::packets::UpdateTradePacket<Self>;
+    type VirtualContainerClosePacket = ();
+    type VirtualContainerOpenPacket = ();
     type VoxelShapesPacket = ();
 }
 impl ProtoVersionTypes for V662 {
