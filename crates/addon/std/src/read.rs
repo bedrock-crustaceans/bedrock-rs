@@ -98,6 +98,14 @@ pub(crate) fn read_optional(path: &Path) -> Result<Option<Vec<u8>>, ReadError> {
     match fs::read(path) {
         Ok(bytes) => Ok(Some(bytes)),
         Err(source) if source.kind() == ErrorKind::NotFound => Ok(None),
+        // Windows refuses to open a directory with `PermissionDenied`, where Unix says
+        // `IsADirectory`; the caller sees the Unix kind on both.
+        Err(_) if path.is_dir() => Err(HostIoError::new(
+            HostOp::Read,
+            path,
+            ErrorKind::IsADirectory.into(),
+        )
+        .into()),
         Err(source) => Err(HostIoError::new(HostOp::Read, path, source).into()),
     }
 }
