@@ -9,11 +9,11 @@ workspace = true
 [dependencies]
 bedrock_auth = { path = "../crates/auth", optional = true }
 bedrock_shared = { path = "../crates/shared" }
-bedrock_macros = { path = "../crates/macros", optional = true }
+bedrock_network_macros = { path = "../crates/network/macros", optional = true }
 bedrock_form = { path = "../crates/form", optional = true }
-bedrock_protocol = { path = "../crates/protocol", optional = true }
-bedrock_protocol_core = { path = "../crates/protocol_core", optional = true }
-bedrock_network = { path = "../crates/network", optional = true, default-features = false }
+bedrock_network_protocol = { path = "../crates/network/protocol", optional = true }
+bedrock_network_core = { path = "../crates/network/core", optional = true }
+bedrock_network = { path = "../crates/network/network", optional = true, default-features = false }
 bedrock_level = { path = "../crates/level", optional = true }
 bedrock_addon = { path = "../crates/addon/addon", optional = true }
 bedrock_addon_std = { path = "../crates/addon/std", optional = true }
@@ -27,9 +27,9 @@ tracing-subscriber.workspace = true
 [features]
 auth = ["dep:bedrock_auth"]
 protocol = [
-    "dep:bedrock_protocol",
-    "dep:bedrock_protocol_core",
-    "dep:bedrock_macros",
+    "dep:bedrock_network_protocol",
+    "dep:bedrock_network_core",
+    "dep:bedrock_network_macros",
 ]
 network = ["dep:bedrock_network", "protocol", "auth"]
 network-tokio = ["network", "bedrock_network/tokio"]
@@ -55,38 +55,38 @@ addon-std = ["addon", "dep:bedrock_addon_std"]
 auth-ureq = ["auth", "bedrock_auth/ureq"]
 auth-reqwest = ["auth", "bedrock_auth/reqwest"]
 
-protocol-unknown = ["bedrock_protocol/unknown"]
-protocol-v662 = ["bedrock_protocol/v662"]
-protocol-v671 = ["bedrock_protocol/v671"]
-protocol-v685 = ["bedrock_protocol/v685"]
-protocol-v686 = ["bedrock_protocol/v686"]
-protocol-v712 = ["bedrock_protocol/v712"]
-protocol-v729 = ["bedrock_protocol/v729"]
-protocol-v748 = ["bedrock_protocol/v748"]
-protocol-v766 = ["bedrock_protocol/v766"]
-protocol-v776 = ["bedrock_protocol/v776"]
-protocol-v786 = ["bedrock_protocol/v786"]
-protocol-v800 = ["bedrock_protocol/v800"]
-protocol-v818 = ["bedrock_protocol/v818"]
-protocol-v819 = ["bedrock_protocol/v819"]
-protocol-v827 = ["bedrock_protocol/v827"]
-protocol-v844 = ["bedrock_protocol/v844"]
-protocol-v859 = ["bedrock_protocol/v859"]
-protocol-v898 = ["bedrock_protocol/v898"]
-protocol-v924 = ["bedrock_protocol/v924"]
-protocol-v944 = ["bedrock_protocol/v944"]
-protocol-v975 = ["bedrock_protocol/v975"]
-protocol-v1001 = ["bedrock_protocol/v1001"]
-protocol-v2168 = ["bedrock_protocol/v2168"]
-protocol-v2168hotfix4 = ["bedrock_protocol/v2168hotfix4"]
-protocol-v2169 = ["bedrock_protocol/v2169"]
-protocol-v2193 = ["bedrock_protocol/v2193", "bedrock_network?/v2193"]
-protocol-v2225 = ["bedrock_protocol/v2225"]
-protocol-all = ["bedrock_protocol/all"]
+protocol-unknown = ["bedrock_network_protocol/unknown"]
+protocol-v662 = ["bedrock_network_protocol/v662"]
+protocol-v671 = ["bedrock_network_protocol/v671"]
+protocol-v685 = ["bedrock_network_protocol/v685"]
+protocol-v686 = ["bedrock_network_protocol/v686"]
+protocol-v712 = ["bedrock_network_protocol/v712"]
+protocol-v729 = ["bedrock_network_protocol/v729"]
+protocol-v748 = ["bedrock_network_protocol/v748"]
+protocol-v766 = ["bedrock_network_protocol/v766"]
+protocol-v776 = ["bedrock_network_protocol/v776"]
+protocol-v786 = ["bedrock_network_protocol/v786"]
+protocol-v800 = ["bedrock_network_protocol/v800"]
+protocol-v818 = ["bedrock_network_protocol/v818"]
+protocol-v819 = ["bedrock_network_protocol/v819"]
+protocol-v827 = ["bedrock_network_protocol/v827"]
+protocol-v844 = ["bedrock_network_protocol/v844"]
+protocol-v859 = ["bedrock_network_protocol/v859"]
+protocol-v898 = ["bedrock_network_protocol/v898"]
+protocol-v924 = ["bedrock_network_protocol/v924"]
+protocol-v944 = ["bedrock_network_protocol/v944"]
+protocol-v975 = ["bedrock_network_protocol/v975"]
+protocol-v1001 = ["bedrock_network_protocol/v1001"]
+protocol-v2168 = ["bedrock_network_protocol/v2168"]
+protocol-v2168hotfix4 = ["bedrock_network_protocol/v2168hotfix4"]
+protocol-v2169 = ["bedrock_network_protocol/v2169"]
+protocol-v2193 = ["bedrock_network_protocol/v2193", "bedrock_network?/v2193"]
+protocol-v2225 = ["bedrock_network_protocol/v2225"]
+protocol-all = ["bedrock_network_protocol/all"]
 
-protocol-packet-dyn = ["bedrock_protocol/packet-dyn"]
-protocol-packet-meta = ["bedrock_protocol/packet-meta"]
-protocol-packet-trace = ["bedrock_protocol/packet-trace"]
+protocol-packet-dyn = ["bedrock_network_protocol/packet-dyn"]
+protocol-packet-meta = ["bedrock_network_protocol/packet-meta"]
+protocol-packet-trace = ["bedrock_network_protocol/packet-trace"]
 
 [[example]]
 name = "server"

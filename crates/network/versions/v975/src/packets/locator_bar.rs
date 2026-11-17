@@ -1,0 +1,49 @@
+use uuid::Uuid;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 341, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LocatorBarPacket {
+    pub waypoints: Vec<LocatorBarPayload>
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LocatorBarPayload {
+    pub group_handle: Uuid,
+    pub waypoint: LocatorBarWaypoint,
+    pub action: LocatorBarPayloadAction
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+#[enum_repr(u8)]
+#[repr(u8)]
+pub enum LocatorBarPayloadAction {
+    None = 0,
+    Add = 1,
+    Remove = 2,
+    Update = 3,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LocatorBarWaypoint {
+    #[endianness(le)]
+    pub update_flag: u32,
+    pub visible: Option<bool>,
+    pub world_position: Option<LocatorBarWaypointWorldPosition>,
+    pub texture_path: Option<String>,
+    #[endianness(le)]
+    pub icon_size: Option<(f32, f32)>,
+    #[endianness(le)]
+    pub color: Option<i32>,
+    pub client_authority: Option<bool>,
+    #[endianness(var)]
+    pub entity_unique_id: Option<i64>
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LocatorBarWaypointWorldPosition {
+    #[endianness(le)]
+    pub position: (f32, f32, f32),
+    #[endianness(var)]
+    pub dimension: i32,
+}

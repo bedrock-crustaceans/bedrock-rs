@@ -1,0 +1,8 @@
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 309, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct AwardAchievementPacket {
+    #[endianness(le)]
+    achievement_id: i32,
+}

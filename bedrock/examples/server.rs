@@ -24,8 +24,8 @@ use bedrock::protocol::v944::types::NetworkBlockPosition;
 use bedrock::protocol::v2168::enums::EducationEditionOffer;
 use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
 use bedrock::protocol::{ProtoVersion, Unknown, V2225};
-use bedrock_protocol::v2168::packets::StartGamePacket;
-use bedrock_protocol::v2225::types::{
+use bedrock_network_protocol::v2168::packets::StartGamePacket;
+use bedrock_network_protocol::v2225::types::{
     EditorLevelMigrationVersion, GameRuleLegacyData, LevelSettings,
 };
 use std::collections::HashMap;

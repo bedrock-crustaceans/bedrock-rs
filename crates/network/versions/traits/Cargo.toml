@@ -1,0 +1,10 @@
+[package]
+name = "bedrock_network_version_traits"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bedrock_network_core = { path = "../../core" }
