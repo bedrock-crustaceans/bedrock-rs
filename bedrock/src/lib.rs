@@ -24,7 +24,7 @@ pub use ::bedrock_network as network;
 
 #[cfg(feature = "protocol")]
 pub mod protocol {
-    pub use ::bedrock_network_protocol::*;
     pub use ::bedrock_network_core as codec;
     pub use ::bedrock_network_core::error;
+    pub use ::bedrock_network_protocol::*;
 }
