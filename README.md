@@ -59,6 +59,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), and come say hi on [Discord][discord_url
 
 bedrock-rs is licensed under the [Apache License, Version 2.0](LICENSE).
 
-Unless you explicitly state otherwise, any contribution you intentionally submit for inclusion
+Unless you explicitly state otherwise, any contribution you submit for inclusion
 in this project, as defined in the Apache-2.0 license, shall be licensed as above, without any
 additional terms or conditions.
