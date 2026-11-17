@@ -238,6 +238,9 @@ mod read_file {
         ));
     }
 
+    // The host decides what a path below a file is: Unix fails the lookup with `ENOTDIR`, and
+    // Windows answers that the path does not exist.
+    #[cfg(unix)]
     #[test]
     fn a_file_below_a_file_is_failed() {
         let (temp, roots, root) = rooted_temp_dir();
@@ -253,6 +256,22 @@ mod read_file {
                 ..
             }
         ));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_file_below_a_file_is_missing() {
+        let (temp, roots, root) = rooted_temp_dir();
+        write(temp.path(), "manifest.json", b"{}");
+        let answer = read(
+            &roots,
+            &place(root, "manifest.json/inner"),
+            ReadRange::Whole,
+        );
+        assert!(
+            matches!(answer, Input::Missing { .. }),
+            "a path below a file on Windows answered {answer:?}"
+        );
     }
 
     #[test]
