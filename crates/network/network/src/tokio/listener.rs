@@ -291,14 +291,14 @@ impl Listener {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     fn unbound_builder() -> ListenerBuilder {
         Listener::builder()
             .raknet("127.0.0.1:19132".parse().unwrap())
             .name("Before")
             .sub_name("Sub")
-            .protocol::<V2225>()
+            .protocol::<V2259>()
             .max_players(20)
             .player_count(3)
             .nintendo_limited(true)
@@ -318,8 +318,8 @@ mod tests {
 
         assert_eq!(motd.name, "Before");
         assert_eq!(motd.sub_name, "Sub");
-        assert_eq!(motd.version, V2225::GAME_VERSION);
-        assert_eq!(motd.protocol, V2225::PROTOCOL_VERSION);
+        assert_eq!(motd.version, V2259::GAME_VERSION);
+        assert_eq!(motd.protocol, V2259::PROTOCOL_VERSION);
         assert_eq!((motd.player_max, motd.player_count), (20, 3));
         assert_eq!(motd.nintendo_limited, Some(true));
         assert_eq!(motd.port_v4, Some(19132));

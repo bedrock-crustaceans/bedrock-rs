@@ -1,7 +1,7 @@
 use super::Connection;
 use super::error::TransportLayerError;
 use super::transport::Transport;
-use bedrock_network_protocol::V2225;
+use bedrock_network_protocol::V2259;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -73,7 +73,7 @@ impl Transport for MemoryTransport {
     }
 }
 
-pub(crate) type MemoryConnection = Connection<V2225, MemoryTransport>;
+pub(crate) type MemoryConnection = Connection<V2259, MemoryTransport>;
 
 pub(crate) fn memory_connections() -> (MemoryConnection, MemoryConnection) {
     let (a, b) = MemoryTransport::pair();

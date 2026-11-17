@@ -153,7 +153,7 @@ mod tests {
     use crate::codec::encode_packets;
     use crate::test_helpers::login_success;
     use crate::tokio::memory::memory_connections;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     fn header(sender: u8, target: u8) -> PacketHeader {
         PacketHeader {
@@ -229,7 +229,7 @@ mod tests {
         sender.send().await.unwrap();
 
         let expected =
-            encode_packets::<V2225>(&[login_success(), login_success()], None, None).unwrap();
+            encode_packets::<V2259>(&[login_success(), login_success()], None, None).unwrap();
         assert_eq!(b.recv_raw().await.unwrap(), expected);
     }
 

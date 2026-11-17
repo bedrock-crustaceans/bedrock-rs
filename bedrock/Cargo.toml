@@ -82,6 +82,7 @@ protocol-v2168hotfix4 = ["bedrock_network_protocol/v2168hotfix4"]
 protocol-v2169 = ["bedrock_network_protocol/v2169"]
 protocol-v2193 = ["bedrock_network_protocol/v2193", "bedrock_network?/v2193"]
 protocol-v2225 = ["bedrock_network_protocol/v2225"]
+protocol-v2259 = ["bedrock_network_protocol/v2259"]
 protocol-all = ["bedrock_network_protocol/all"]
 
 protocol-packet-dyn = ["bedrock_network_protocol/packet-dyn"]
@@ -91,9 +92,9 @@ protocol-packet-trace = ["bedrock_network_protocol/packet-trace"]
 [[example]]
 name = "server"
 path = "examples/server.rs"
-required-features = ["network-tokio", "protocol-v2225", "protocol-unknown"]
+required-features = ["network-tokio", "protocol-v2259", "protocol-unknown"]
 
 [[example]]
 name = "client"
 path = "examples/client.rs"
-required-features = ["network-tokio", "protocol-v2225", "protocol-unknown"]
+required-features = ["network-tokio", "protocol-v2259", "protocol-unknown"]

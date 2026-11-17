@@ -356,10 +356,10 @@ mod frame_tests {
 mod unread_tests {
     use super::*;
     use crate::test_helpers::login_success;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     fn frame_with_a_trailing_byte() -> Vec<u8> {
-        let batch = encode_packets::<V2225>(&[login_success()], None, None).unwrap();
+        let batch = encode_packets::<V2259>(&[login_success()], None, None).unwrap();
         let mut frame = split_batch(&batch).unwrap()[0].to_vec();
         frame.push(0);
         frame
@@ -367,13 +367,13 @@ mod unread_tests {
 
     #[test]
     fn unread_bytes_are_tolerated_when_warning() {
-        assert!(decode_packet::<V2225>(&frame_with_a_trailing_byte(), UnreadBytes::Warn).is_ok());
+        assert!(decode_packet::<V2259>(&frame_with_a_trailing_byte(), UnreadBytes::Warn).is_ok());
     }
 
     #[test]
     fn unread_bytes_are_an_error_when_rejecting() {
         assert!(matches!(
-            decode_packet::<V2225>(&frame_with_a_trailing_byte(), UnreadBytes::Reject),
+            decode_packet::<V2259>(&frame_with_a_trailing_byte(), UnreadBytes::Reject),
             Err(NetworkCodecError::ProtoCodecError(
                 ProtoCodecError::LeftOvers(1)
             ))
@@ -385,7 +385,7 @@ mod unread_tests {
 mod header_tests {
     use super::*;
     use crate::test_helpers::login_success;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     fn split_screen_header() -> PacketHeader {
         PacketHeader {
@@ -399,11 +399,11 @@ mod header_tests {
     fn sub_client_ids_survive_encode_then_decode() {
         let packet = login_success();
         let batch =
-            encode_packets_with_header::<V2225>(&[packet], &split_screen_header(), None, None)
+            encode_packets_with_header::<V2259>(&[packet], &split_screen_header(), None, None)
                 .unwrap();
 
         let decoded =
-            decode_packets::<V2225>(batch, None, None, MAX_BATCH_LEN, UnreadBytes::Reject).unwrap();
+            decode_packets::<V2259>(batch, None, None, MAX_BATCH_LEN, UnreadBytes::Reject).unwrap();
 
         assert_eq!(decoded.len(), 1);
         let (header, _) = &decoded[0];
@@ -416,11 +416,11 @@ mod header_tests {
     fn every_frame_in_a_batch_carries_the_chosen_ids() {
         let packets = vec![login_success(); 3];
         let batch =
-            encode_packets_with_header::<V2225>(&packets, &split_screen_header(), None, None)
+            encode_packets_with_header::<V2259>(&packets, &split_screen_header(), None, None)
                 .unwrap();
 
         let decoded =
-            decode_packets::<V2225>(batch, None, None, MAX_BATCH_LEN, UnreadBytes::Reject).unwrap();
+            decode_packets::<V2259>(batch, None, None, MAX_BATCH_LEN, UnreadBytes::Reject).unwrap();
 
         assert!(decoded.iter().all(
             |(header, _)| header.sender_sub_client_id == 1 && header.target_sub_client_id == 2
@@ -431,7 +431,7 @@ mod header_tests {
     fn default_encoding_keeps_the_zero_sub_client_bytes() {
         let packet = login_success();
 
-        let batch = encode_packets::<V2225>(&[packet], None, None).unwrap();
+        let batch = encode_packets::<V2259>(&[packet], None, None).unwrap();
 
         assert_eq!(batch, [5, 2, 0, 0, 0, 0]);
     }
@@ -441,7 +441,7 @@ mod header_tests {
         let packet = login_success();
 
         let batch =
-            encode_packets_with_header::<V2225>(&[packet], &split_screen_header(), None, None)
+            encode_packets_with_header::<V2259>(&[packet], &split_screen_header(), None, None)
                 .unwrap();
 
         assert_eq!(batch, [6, 0x82, 0x48, 0, 0, 0, 0]);
@@ -452,17 +452,17 @@ mod header_tests {
 mod each_tests {
     use super::*;
     use crate::test_helpers::login_success;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     const GARBAGE: [u8; 2] = [2, 1];
 
     fn good_frame() -> Vec<u8> {
-        let batch = encode_packets::<V2225>(&[login_success()], None, None).unwrap();
+        let batch = encode_packets::<V2259>(&[login_success()], None, None).unwrap();
         split_batch(&batch).unwrap()[0].to_vec()
     }
 
-    fn decode_each(frames: &[Vec<u8>]) -> Vec<(PacketHeader, Result<V2225, NetworkCodecError>)> {
-        decode_packets_each::<V2225>(
+    fn decode_each(frames: &[Vec<u8>]) -> Vec<(PacketHeader, Result<V2259, NetworkCodecError>)> {
+        decode_packets_each::<V2259>(
             join_batch(frames),
             None,
             None,
@@ -518,7 +518,7 @@ mod each_tests {
     #[test]
     fn framing_errors_still_fail_the_whole_batch() {
         assert!(matches!(
-            decode_packets_each::<V2225>(
+            decode_packets_each::<V2259>(
                 vec![5, 1, 2],
                 None,
                 None,

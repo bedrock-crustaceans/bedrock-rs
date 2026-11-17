@@ -203,6 +203,12 @@ pub trait ProtoVersionPackets {
         + Send
         + Sync
         + 'static;
+    type ChatPacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type ChunkRadiusUpdatedPacket: bedrock_network_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -270,6 +276,18 @@ pub trait ProtoVersionPackets {
         + Sync
         + 'static;
     type ClientBoundMatchmakingStatePacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ClientBoundMusicPlaybackFailurePacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ClientBoundOnlineMusicPlaybackResponsePacket: bedrock_network_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -881,6 +899,12 @@ pub trait ProtoVersionPackets {
         + Send
         + Sync
         + 'static;
+    type PlayerToggleArmorVisibilityRequestPacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
     type PlayerToggleCrafterSlotRequestPacket: bedrock_network_core::ProtoCodec
         + Clone
         + std::fmt::Debug
@@ -1074,6 +1098,12 @@ pub trait ProtoVersionPackets {
         + Sync
         + 'static;
     type ServerBoundRegisterAudioContentPacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type ServerBoundRequestOnlineMusicPlaybackPacket: bedrock_network_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
@@ -1476,6 +1506,18 @@ pub trait ProtoVersionPackets {
         + Sync
         + 'static;
     type UpdateTradePacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type VirtualContainerClosePacket: bedrock_network_core::ProtoCodec
+        + Clone
+        + std::fmt::Debug
+        + Send
+        + Sync
+        + 'static;
+    type VirtualContainerOpenPacket: bedrock_network_core::ProtoCodec
         + Clone
         + std::fmt::Debug
         + Send
