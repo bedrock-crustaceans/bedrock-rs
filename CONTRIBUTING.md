@@ -14,7 +14,7 @@ are; `AGENTS.md` is the working method for agents and reads as a good one for pe
 ```sh
 rustup toolchain install stable
 rustup component add rustfmt clippy
-cargo install --locked cargo-nextest
+cargo install --locked cargo-nextest just
 git clone https://github.com/bedrock-crustaceans/bedrock-rs.git
 cd bedrock-rs
 cargo build --workspace
@@ -47,20 +47,30 @@ deserializes a capture from a real client and serializes back to the same bytes.
 
 ## Checks
 
-Run before opening a PR. CI runs the same checks on every push and pull request: formatting
-once, clippy and the tests on Linux, Windows and macOS.
+Each check CI runs is a recipe in the `justfile`, and CI calls those recipes on every push and
+pull request: formatting once, clippy and the tests on Linux, Windows and macOS. Run them all
+before you commit:
 
 ```sh
-cargo fmt --all
-cargo clippy --workspace --all-targets --all-features   # CI sets RUSTFLAGS=-Dwarnings
-cargo nextest run --workspace
-cargo test --doc --workspace
+just ready
+```
+
+`ready` fails on the first check that fails. Each check also runs alone. `just` lists them:
+
+```sh
+just fmt              # format every crate, `ready` only checks (`just fmt-check`)
+just clippy           # every target and feature, warnings as errors
+just test             # nextest over the workspace, `just test -p bedrock_level` for one crate
+just check-versions   # each version crate as the facade builds it
+just doctest          # doctests, takes `-p` like `test`
 ```
 
 Tests run under [nextest](https://nexte.st), configured in `.config/nextest.toml`; plain
 `cargo test` is used only for doctests, which nextest does not run. CI splits the tests into
 groups by crate, one job per group and OS (`.github/workflows/ci.yml`), so no job has to build
-every test binary of the workspace.
+every test binary of the workspace; each job passes its group's `-p` flags to `just test` and
+`just doctest`. Locally, `just ready` tests the whole workspace at once. A change to a check goes
+in the `justfile`, so CI and `ready` stay the same.
 
 Narrow the loop while you work:
 
@@ -143,9 +153,7 @@ too: `fix: PlayerAuthInput move_vector should be (f32, f32)`,
 
 Before requesting review:
 
-- [ ] `cargo fmt --all` leaves no diff.
-- [ ] `cargo clippy --workspace --all-targets --all-features` is warning-free.
-- [ ] `cargo nextest run --workspace` and `cargo test --doc --workspace` pass (state any excluded crate).
+- [ ] `just ready` passes (state any excluded crate).
 - [ ] A protocol change has a test that failed before it and passes after.
 - [ ] Docs and `bedrock/examples/server.rs` were updated if behaviour changed.
 

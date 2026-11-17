@@ -24,8 +24,8 @@ a compile error is not red.
    test and its own commit.
 4. **Refactor** with the test guarding: names, extracted functions, a derive instead of a hand
    impl. Rerun the one test after each step.
-5. **Widen**: the crate's suite, then the checks in `CONTRIBUTING.md`. Done when fmt, clippy and
-   the tests are clean, with any excluded crate named in your report.
+5. **Widen**: the crate's suite, then `just ready`, which runs every check CI runs. Done when it
+   passes, with any excluded crate named in your report.
 6. **Commit** the one change, test included.
 
 Code with no test is not a licence to skip step 2. When the behaviour you inherit is unclear,
@@ -188,7 +188,10 @@ four loader kinds (registry, files, merged, hand-written); run it before and aft
 - Tests run under `cargo nextest run` (`.config/nextest.toml`); each test is its own process.
   `cargo test` is only for doctests (`cargo test --doc`), which nextest does not run. CI tests
   in crate groups, one job per group and OS; a new crate has to join a group in `ci.yml`.
-- `cargo nextest run --workspace` is red on a stale `Cargo.lock` because of `bedrock_network`.
+- CI runs the recipes of the `justfile`, and `just ready` runs them all. A new check, or a change
+  to one, is a recipe edit; `ci.yml` calls the recipe and only adds the `-p` flags of a group.
+- `just ready` and `cargo nextest run --workspace` are red on a stale `Cargo.lock` because of
+  `bedrock_network`.
   `CONTRIBUTING.md` has the workaround (`cargo update -p raknet-tokio`). Report what you
   excluded; never present an excluded crate as passing.
 - `raknet-tokio` is an unpinned git dependency and the lock file is not committed. An API
