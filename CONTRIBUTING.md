@@ -75,11 +75,11 @@ in the `justfile`, so CI and `ready` stay the same.
 Narrow the loop while you work:
 
 ```sh
-cargo check -p bedrock_network_version_v2225                   # one version crate and the older ones it uses
-cargo nextest run -p bedrock_network_version_v2225 <test_name> # one test beside a packet of that version
+cargo check -p bedrock_network_version_v2259                   # one version crate and the older ones it uses
+cargo nextest run -p bedrock_network_version_v2259 <test_name> # one test beside a packet of that version
 cargo nextest run -p bedrock_network_protocol <test_name>      # one test of the facade's tests/, default feature = newest version only
 cargo nextest run -p bedrock_network_protocol --all-features   # the packet enum of every version
-cargo run --example server --features network-tokio,protocol-v2225,protocol-unknown
+cargo run --example server --features network-tokio,protocol-v2259,protocol-unknown
 ```
 
 ## Protocol changes

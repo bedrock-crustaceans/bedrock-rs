@@ -1,11 +1,11 @@
 use bedrock_network_core::ProtoCodec;
 use bedrock_network_protocol::ProtoVersionPackets;
-use bedrock_network_protocol::V2225;
+use bedrock_network_protocol::V2259;
 use bedrock_network_protocol::v662::enums::EasingType;
 use bedrock_network_protocol::v924::types::{AttachInstruction, FieldOfViewInstruction};
 use std::io::Cursor;
 
-type Packet = <V2225 as ProtoVersionPackets>::CameraInstructionPacket;
+type Packet = <V2259 as ProtoVersionPackets>::CameraInstructionPacket;
 
 fn empty() -> Packet {
     Packet {

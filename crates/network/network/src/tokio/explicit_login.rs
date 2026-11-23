@@ -8,15 +8,16 @@ use crate::test_helpers::{identity_key, self_signed_request_bytes};
 use bedrock_auth::Login;
 use bedrock_network_protocol::v662::enums::{PacketCompressionAlgorithm, PlayStatus};
 use bedrock_network_protocol::v662::packets::{
-    ClientToServerHandshakePacket, LoginPacket, NetworkSettingsPacket, PlayStatusPacket,
-    RequestNetworkSettingsPacket, ServerToClientHandshakePacket,
+    ClientToServerHandshakePacket, LoginPacket, PlayStatusPacket, RequestNetworkSettingsPacket,
+    ServerToClientHandshakePacket,
 };
-use bedrock_network_protocol::{ProtoVersion, V2225};
+use bedrock_network_protocol::v2259::packets::{NetworkSettingsPacket, SctpRecoveryProfile};
+use bedrock_network_protocol::{ProtoVersion, V2259};
 
-const PROTOCOL: i32 = V2225::PROTOCOL_VERSION.cast_signed();
+const PROTOCOL: i32 = V2259::PROTOCOL_VERSION.cast_signed();
 
-fn play_status(status: PlayStatus) -> V2225 {
-    V2225::PlayStatusPacket(Box::new(PlayStatusPacket { status }))
+fn play_status(status: PlayStatus) -> V2259 {
+    V2259::PlayStatusPacket(Box::new(PlayStatusPacket { status }))
 }
 
 fn compression_algorithm(settings: &NetworkSettings) -> PacketCompressionAlgorithm {
@@ -34,31 +35,32 @@ async fn serve(mut conn: MemoryConnection) -> Login {
     });
     let options = LoginOptions::default().require_authentication(false);
 
-    let V2225::RequestNetworkSettingsPacket(request) = conn.recv().await.unwrap().remove(0) else {
+    let V2259::RequestNetworkSettingsPacket(request) = conn.recv().await.unwrap().remove(0) else {
         panic!("a client opens with a network settings request");
     };
     check_protocol(request.client_network_version, PROTOCOL).unwrap();
-    conn.send(&[V2225::NetworkSettingsPacket(Box::new(
+    conn.send(&[V2259::NetworkSettingsPacket(Box::new(
         NetworkSettingsPacket {
             compression_threshold: settings.threshold(),
             compression_algorithm: compression_algorithm(&settings),
             client_throttle_enabled: false,
             client_throttle_threshold: 0,
             client_throttle_scalar: 0.0,
+            sctp_recovery_profile: SctpRecoveryProfile::Default,
         },
     ))])
     .await
     .unwrap();
     conn.enable_compression(settings.compression);
 
-    let V2225::LoginPacket(packet) = conn.recv().await.unwrap().remove(0) else {
+    let V2259::LoginPacket(packet) = conn.recv().await.unwrap().remove(0) else {
         panic!("the login follows the network settings");
     };
     check_protocol(packet.client_network_version, PROTOCOL).unwrap();
 
     let login = options.verify(&packet.connection_request).unwrap();
     let (token, encryption) = begin_encryption(&login).unwrap();
-    conn.send(&[V2225::ServerToClientHandshakePacket(Box::new(
+    conn.send(&[V2259::ServerToClientHandshakePacket(Box::new(
         ServerToClientHandshakePacket {
             handshake_web_token: token,
         },
@@ -67,7 +69,7 @@ async fn serve(mut conn: MemoryConnection) -> Login {
     .unwrap();
     conn.enable_encryption(encryption);
 
-    let V2225::ClientToServerHandshakePacket(_) = conn.recv().await.unwrap().remove(0) else {
+    let V2259::ClientToServerHandshakePacket(_) = conn.recv().await.unwrap().remove(0) else {
         panic!("the client answers the handshake");
     };
     conn.send(&[play_status(PlayStatus::LoginSuccess)])
@@ -84,7 +86,7 @@ async fn serve(mut conn: MemoryConnection) -> Login {
 }
 
 async fn dial(mut conn: MemoryConnection, identity: ClientIdentity) -> Vec<u8> {
-    conn.send(&[V2225::RequestNetworkSettingsPacket(Box::new(
+    conn.send(&[V2259::RequestNetworkSettingsPacket(Box::new(
         RequestNetworkSettingsPacket {
             client_network_version: PROTOCOL,
         },
@@ -92,7 +94,7 @@ async fn dial(mut conn: MemoryConnection, identity: ClientIdentity) -> Vec<u8> {
     .await
     .unwrap();
 
-    let V2225::NetworkSettingsPacket(settings) = conn.recv().await.unwrap().remove(0) else {
+    let V2259::NetworkSettingsPacket(settings) = conn.recv().await.unwrap().remove(0) else {
         panic!("the server answers with network settings");
     };
     let settings = NetworkSettings::from_wire(
@@ -101,14 +103,14 @@ async fn dial(mut conn: MemoryConnection, identity: ClientIdentity) -> Vec<u8> {
     )
     .unwrap();
     conn.enable_compression(settings.compression);
-    conn.send(&[V2225::LoginPacket(Box::new(LoginPacket {
+    conn.send(&[V2259::LoginPacket(Box::new(LoginPacket {
         client_network_version: PROTOCOL,
         connection_request: identity.request().to_vec(),
     }))])
     .await
     .unwrap();
 
-    let V2225::ServerToClientHandshakePacket(handshake) = conn.recv().await.unwrap().remove(0)
+    let V2259::ServerToClientHandshakePacket(handshake) = conn.recv().await.unwrap().remove(0)
     else {
         panic!("the server asks for encryption");
     };
@@ -117,13 +119,13 @@ async fn dial(mut conn: MemoryConnection, identity: ClientIdentity) -> Vec<u8> {
             .finish_encryption(&handshake.handshake_web_token)
             .unwrap(),
     );
-    conn.send(&[V2225::ClientToServerHandshakePacket(Box::new(
+    conn.send(&[V2259::ClientToServerHandshakePacket(Box::new(
         ClientToServerHandshakePacket {},
     ))])
     .await
     .unwrap();
 
-    let V2225::PlayStatusPacket(status) = conn.recv().await.unwrap().remove(0) else {
+    let V2259::PlayStatusPacket(status) = conn.recv().await.unwrap().remove(0) else {
         panic!("the server confirms the login");
     };
     assert!(matches!(status.status, PlayStatus::LoginSuccess));
@@ -145,7 +147,7 @@ async fn client_and_server_log_in_explicitly_and_exchange_an_encrypted_compresse
     assert_eq!(claimed.display_name, "Alex");
     assert_eq!(claimed.public_key().unwrap(), identity_key().public_key());
     let plain =
-        encode_packets::<V2225>(&vec![play_status(PlayStatus::PlayerSpawn); 200], None, None)
+        encode_packets::<V2259>(&vec![play_status(PlayStatus::PlayerSpawn); 200], None, None)
             .unwrap();
     assert_ne!(on_the_wire, plain);
     assert!(on_the_wire.len() < plain.len());

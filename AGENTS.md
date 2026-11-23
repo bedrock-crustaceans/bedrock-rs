@@ -117,7 +117,7 @@ default feature being the new version now, whatever named the old newest without
 (tests in `network/protocol/tests/` and `network/network`, the examples). The external crates a
 version crate can use are `EXTERNAL` in `xtask/src/codegen/protocol/manifest.rs`. An edit to one
 version rebuilds it and what depends on it (the later versions that use it, the facade), nothing
-older; `cargo check -p bedrock_network_version_v2225` checks one. The facade's default feature is
+older; `cargo check -p bedrock_network_version_v2259` checks one. The facade's default feature is
 the newest version alone, so also check with `--all-features`.
 
 **`network/network`** (`bedrock_network`): `codec.rs` (batching), `compression.rs` and

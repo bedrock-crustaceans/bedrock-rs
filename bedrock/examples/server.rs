@@ -9,22 +9,21 @@ use bedrock::protocol::v662::enums::{
     ChatRestrictionLevel, Difficulty, EditorWorldType, GamePublishSetting, GameType, GeneratorType,
     PlayStatus, SpawnBiomeType,
 };
-use bedrock::protocol::v662::packets::{
-    NetworkSettingsPacket, PlayStatusPacket, ServerToClientHandshakePacket,
-};
+use bedrock::protocol::v662::packets::{PlayStatusPacket, ServerToClientHandshakePacket};
 use bedrock::protocol::v662::types::{
     ActorRuntimeID, ActorUniqueID, BaseGameVersion, EduSharedUriResource, Experiments,
     NetworkPermissions, SpawnSettings,
 };
 use bedrock::protocol::v818::types::SyncedPlayerMovementSettings;
-use bedrock::protocol::v898::packets::ResourcePackStackPacket;
 use bedrock::protocol::v944::packets::VoxelShapesPacket;
 use bedrock::protocol::v944::types::NetworkBlockPosition;
 use bedrock::protocol::v2168::enums::EducationEditionOffer;
 use bedrock::protocol::v2168::packets::ResourcePacksInfoPacket;
-use bedrock::protocol::{ProtoVersion, Unknown, V2225};
+use bedrock::protocol::v2259::packets::{
+    NetworkSettingsPacket, ResourcePackStackPacket, SctpRecoveryProfile, StartGamePacket,
+};
+use bedrock::protocol::{ProtoVersion, Unknown, V2259};
 use bedrock::shared::world::dimension::Dimension;
-use bedrock_network_protocol::v2168::packets::StartGamePacket;
 use bedrock_network_protocol::v2225::types::{
     EditorLevelMigrationVersion, GameRuleLegacyData, LevelSettings,
 };
@@ -32,7 +31,7 @@ use std::collections::HashMap;
 use tokio::time::Instant;
 use uuid::Uuid;
 
-type Protocol = V2225;
+type Protocol = V2259;
 
 const PROTOCOL: i32 = Protocol::PROTOCOL_VERSION.cast_signed();
 
@@ -79,6 +78,7 @@ async fn login(
             client_throttle_enabled: false,
             client_throttle_threshold: 0,
             client_throttle_scalar: 0.0,
+            sctp_recovery_profile: SctpRecoveryProfile::Default,
         },
     ))])
     .await?;
@@ -268,7 +268,7 @@ async fn handle_login(unknown_conn: Connection<Unknown>) {
                 experiments: vec![],
                 ever_toggled: false,
             },
-            include_editor_packs: false,
+            editor_pack_types: 0,
         })),
     ])
     .await

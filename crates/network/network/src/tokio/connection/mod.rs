@@ -237,7 +237,7 @@ mod tests {
     use crate::codec::{encode_packets, join_batch, split_batch};
     use crate::test_helpers::login_success;
     use crate::tokio::memory::memory_connections;
-    use bedrock_network_protocol::V2225;
+    use bedrock_network_protocol::V2259;
 
     #[::tokio::test]
     async fn zlib_enabled_on_both_ends_carries_a_large_batch() {
@@ -293,7 +293,7 @@ mod tests {
     }
 
     fn batch_with_a_bad_packet_at(position: usize) -> Vec<u8> {
-        let good = encode_packets::<V2225>(&[login_success()], None, None).unwrap();
+        let good = encode_packets::<V2259>(&[login_success()], None, None).unwrap();
         let good = split_batch(&good).unwrap()[0].to_vec();
         let mut frames = vec![good.clone(), good.clone(), good];
         frames[position] = vec![2, 1];
