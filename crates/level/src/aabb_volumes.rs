@@ -51,11 +51,9 @@ pub struct AabbVolumesEntry {
 const ENTRY_LEN: usize = 4 + 6 * 4;
 
 impl AabbVolumesEntry {
-    fn decode(bytes: &[u8]) -> Self {
-        debug_assert_eq!(bytes.len(), ENTRY_LEN);
-        let mut ints = bytes
-            .chunks_exact(4)
-            .map(|c| i32::from_le_bytes(c.try_into().expect("chunk is exactly 4 bytes")));
+    fn decode(bytes: &[u8; ENTRY_LEN]) -> Self {
+        let (ints, _) = bytes.as_chunks::<4>();
+        let mut ints = ints.iter().map(|c| i32::from_le_bytes(*c));
         let id = ints.next().expect("28 bytes is at least one i32");
         let mut fields = [0i32; 6];
         for (slot, value) in fields.iter_mut().zip(ints) {
@@ -72,7 +70,7 @@ impl AabbVolumesEntry {
     }
 }
 
-/// A decoded `0x77` AabbVolumes value. See the module docs for what each
+/// A decoded `0x77` `AabbVolumes` value. See the module docs for what each
 /// field does and does not commit to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AabbVolumes {
@@ -102,31 +100,39 @@ fn expected_trailer_len(entry_count: usize) -> Option<usize> {
         .checked_mul(4)
 }
 
-/// Decodes a `0x77` AabbVolumes value. See the module docs for the grammar.
+/// Decodes a `0x77` `AabbVolumes` value. See the module docs for the grammar.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is too short for the header, the
+/// structure-id length prefix or the entry count; if the structure id or the
+/// entries overrun the value; if the entry count is negative or overflows;
+/// or if the trailer is not exactly `4 * (3*N + 2)` bytes.
 pub fn decode_aabb_volumes(bytes: &[u8]) -> Result<AabbVolumes> {
     const HEADER_LEN: usize = 12;
     const STRING_LEN_LEN: usize = 2;
     const COUNT_LEN: usize = 4;
 
-    if bytes.len() < HEADER_LEN {
+    let Some((header_bytes, after_header)) = bytes.split_first_chunk::<HEADER_LEN>() else {
         return Err(Error::Invalid(
             "aabbVolumes value is shorter than its header",
         ));
-    }
+    };
+    let (header_ints, _) = header_bytes.as_chunks::<4>();
     let header = (
-        i32::from_le_bytes(bytes[0..4].try_into().unwrap()),
-        i32::from_le_bytes(bytes[4..8].try_into().unwrap()),
-        i32::from_le_bytes(bytes[8..12].try_into().unwrap()),
+        i32::from_le_bytes(header_ints[0]),
+        i32::from_le_bytes(header_ints[1]),
+        i32::from_le_bytes(header_ints[2]),
     );
 
-    let after_header = &bytes[HEADER_LEN..];
-    if after_header.len() < STRING_LEN_LEN {
+    let Some((string_len_bytes, after_string_len)) =
+        after_header.split_first_chunk::<STRING_LEN_LEN>()
+    else {
         return Err(Error::Invalid(
             "aabbVolumes value is shorter than its structure-id length prefix",
         ));
-    }
-    let string_len = u16::from_le_bytes(after_header[0..2].try_into().unwrap()) as usize;
-    let after_string_len = &after_header[STRING_LEN_LEN..];
+    };
+    let string_len = usize::from(u16::from_le_bytes(*string_len_bytes));
     if after_string_len.len() < string_len {
         return Err(Error::Invalid(
             "aabbVolumes structure-id length prefix overruns the value",
@@ -135,16 +141,15 @@ pub fn decode_aabb_volumes(bytes: &[u8]) -> Result<AabbVolumes> {
     let structure_id = after_string_len[..string_len].to_vec();
 
     let after_string = &after_string_len[string_len..];
-    if after_string.len() < COUNT_LEN {
+    let Some((count_bytes, after_count)) = after_string.split_first_chunk::<COUNT_LEN>() else {
         return Err(Error::Invalid(
             "aabbVolumes value is shorter than its entry count",
         ));
-    }
-    let count = i32::from_le_bytes(after_string[0..4].try_into().unwrap());
+    };
+    let count = i32::from_le_bytes(*count_bytes);
     let count = usize::try_from(count)
         .map_err(|_| Error::Invalid("aabbVolumes entry count is negative"))?;
 
-    let after_count = &after_string[COUNT_LEN..];
     let entries_len = count
         .checked_mul(ENTRY_LEN)
         .ok_or(Error::Invalid("aabbVolumes entry count overflows"))?;
@@ -152,7 +157,9 @@ pub fn decode_aabb_volumes(bytes: &[u8]) -> Result<AabbVolumes> {
         return Err(Error::Invalid("aabbVolumes entry count overruns the value"));
     }
     let entries = after_count[..entries_len]
-        .chunks_exact(ENTRY_LEN)
+        .as_chunks::<ENTRY_LEN>()
+        .0
+        .iter()
         .map(AabbVolumesEntry::decode)
         .collect();
 
@@ -173,10 +180,15 @@ pub fn decode_aabb_volumes(bytes: &[u8]) -> Result<AabbVolumes> {
     })
 }
 
-/// Encodes a `0x77` AabbVolumes value: the inverse of
+/// Encodes a `0x77` `AabbVolumes` value: the inverse of
 /// [`decode_aabb_volumes`]. Every field this crate does not interpret
 /// (`structure_id`, the entries' `fields`, `trailer`) is written back
 /// verbatim, so a decoded real record re-encodes byte-identically.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `structure_id` is longer than `u16::MAX`
+/// bytes or there are more than `i32::MAX` entries.
 pub fn encode_aabb_volumes(value: &AabbVolumes) -> Result<Vec<u8>> {
     let string_len = u16::try_from(value.structure_id.len())
         .map_err(|_| Error::Invalid("aabbVolumes structure id is too long to encode"))?;

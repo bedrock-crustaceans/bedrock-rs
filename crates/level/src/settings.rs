@@ -10,6 +10,10 @@ use std::io::{Read, Write};
     not(feature = "deny-unknown-fields"),
     facet(nbtx::allow_unknown_fields)
 )]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the abilities compound in level.dat"
+)]
 pub struct Abilities {
     #[facet(rename = "attackmobs")]
     pub attack_mobs: bool,
@@ -49,6 +53,10 @@ pub struct Abilities {
     not(feature = "deny-unknown-fields"),
     facet(nbtx::allow_unknown_fields)
 )]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the experiments compound in level.dat"
+)]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
@@ -78,261 +86,277 @@ pub struct Policies {
     // Not sure what is supposed to be in here
 }
 
-#[derive(Facet, Debug, PartialEq)]
-#[facet(rename_all = "camelCase")]
-#[cfg_attr(
-    not(feature = "deny-unknown-fields"),
-    facet(nbtx::allow_unknown_fields)
+/// Holds only the [`LevelSettings`] struct, so that the lint expectation below covers the code the
+/// `Facet` derive generates for it, which an attribute on the struct itself does not reach.
+#[expect(
+    clippy::large_stack_arrays,
+    reason = "the Facet derive builds a field table with one entry per field of this large compound"
 )]
-pub struct LevelSettings {
-    // The i32 storage version from the 8-byte level.dat header, not part of
-    // the NBT payload itself. Kept alongside `storage_version` (the NBT
-    // `StorageVersion` field) since the two are set independently and can in
-    // principle disagree.
-    //
-    // `#[facet(default)]` because the key is never present in the payload; it is
-    // patched in by `read` afterwards. Typed `i32` rather than `u32` because NBT
-    // has no unsigned tag and nbtx refuses to encode a `u32` field at all.
-    #[facet(default)]
-    pub header_storage_version: i32,
-    // Absent on worlds saved before the world-editor feature existed.
-    pub editor_world_type: Option<i32>,
-    #[facet(rename = "isCreatedInEditor", default)]
-    pub created_in_editor: bool,
-    #[facet(rename = "isExportedFromEditor", default)]
-    pub exported_from_editor: bool,
-    #[facet(rename = "isRandomSeedAllowed", default)]
-    pub random_seed_allowed: bool,
-    // Absent on worlds saved before this rule was introduced.
-    #[facet(rename = "playerssleepingpercentage")]
-    pub sleeping_percentage: Option<i32>,
-    #[facet(rename = "recipesunlock", default)]
-    pub recipes_unlock: bool,
-    #[facet(default)]
-    pub cheats_enabled: bool,
-    pub lightning_level: f32,
-    pub lightning_time: i32,
-    pub rain_level: f32,
-    pub rain_time: i32,
-    #[facet(rename = "Difficulty")]
-    pub difficulty: i32,
-    #[facet(rename = "GameType")]
-    pub game_mode: i32,
-    #[facet(rename = "Generator")]
-    pub generator: i32,
-    #[facet(rename = "LimitedWorldOriginX")]
-    pub limited_world_origin_x: i32,
-    #[facet(rename = "LimitedWorldOriginY")]
-    pub limited_world_origin_y: i32,
-    #[facet(rename = "LimitedWorldOriginZ")]
-    pub limited_world_origin_z: i32,
-    // Absent on worlds saved before the limited-world generator existed.
-    pub limited_world_depth: Option<i32>,
-    pub limited_world_width: Option<i32>,
-    // Absent on worlds saved before this field was introduced.
-    #[facet(rename = "MinimumCompatibleClientVersion")]
-    pub minimum_compatible_client_version: Option<GameVersion>,
-    #[facet(rename = "NetherScale")]
-    pub nether_scale: i32,
-    // Protocol version of the network codec the world was last saved with.
-    // Absent on worlds saved before this field was introduced.
-    #[facet(rename = "NetworkVersion")]
-    pub network_version: Option<i32>,
-    #[facet(rename = "Platform")]
-    pub platform: i32,
-    #[facet(rename = "PlatformBroadcastIntent")]
-    pub platform_broadcast_intent: i32,
-    #[facet(rename = "RandomSeed")]
-    pub random_seed: i64,
-    #[facet(rename = "SpawnV1Villagers")]
-    pub spawn_v1_villagers: bool,
-    #[facet(rename = "SpawnX")]
-    pub spawn_x: i32,
-    #[facet(rename = "SpawnY")]
-    pub spawn_y: i32,
-    #[facet(rename = "SpawnZ")]
-    pub spawn_z: i32,
-    // The NBT `StorageVersion` field, distinct from the header's storage
-    // version stored in `header_storage_version`.
-    #[facet(rename = "StorageVersion")]
-    pub storage_version: i32,
-    #[facet(rename = "Time")]
-    pub time: i64,
-    // Absent on worlds saved before this field was introduced.
-    #[facet(rename = "WorldVersion")]
-    pub world_version: Option<i32>,
-    #[facet(rename = "XBLBroadcastIntent")]
-    pub xbox_broadcast_intent: i32,
-    pub current_tick: i64,
-    // Absent on the oldest worlds, which instead write the single
-    // `experimentalgameplay` flag below rather than a compound of
-    // individually named experiments.
-    pub experiments: Option<Experiments>,
-    // Predecessor to `experiments`: one flag standing in for all
-    // experimental toggles at once, on worlds saved before the compound
-    // existed.
-    #[facet(rename = "experimentalgameplay", default)]
-    pub experimental_gameplay: bool,
-    pub abilities: Abilities,
-    // Absent on worlds saved before this field was introduced; `eduLevel`
-    // is what the same setting was called before.
-    pub edu_offer: Option<i32>,
-    pub edu_level: Option<i8>,
-    pub education_features_enabled: bool,
-    #[facet(rename = "lastOpenedWithVersion")]
-    pub last_opened_with_version: GameVersion,
-    pub bonus_chest_enabled: bool,
-    pub bonus_chest_spawned: bool,
-    #[facet(rename = "commandblockoutput")]
-    pub command_block_output: bool,
-    #[facet(rename = "CenterMapsToOrigin")]
-    pub center_maps_to_origin: bool,
-    #[facet(rename = "commandblocksenabled")]
-    pub command_blocks_enabled: bool,
-    pub commands_enabled: bool,
-    #[facet(rename = "ConfirmedPlatformLockedContent")]
-    pub confirmed_platform_locked_content: bool,
-    // Absent on worlds saved before this field was introduced.
-    pub daylight_cycle: Option<i32>,
-    #[facet(rename = "dodaylightcycle")]
-    pub daylight_lock: bool,
-    #[facet(rename = "dolimitedcrafting", default)]
-    pub limited_crafting: bool,
-    #[facet(rename = "doentitydrops")]
-    pub entity_drops: bool,
-    #[facet(rename = "dofiretick")]
-    pub fire_tick: bool,
-    #[facet(rename = "doimmediaterespawn")]
-    pub immediate_respawn: bool,
-    #[facet(rename = "doinsomnia")]
-    pub insomnia: bool,
-    #[facet(rename = "domobloot")]
-    pub mob_loot: bool,
-    #[facet(rename = "domobspawning")]
-    pub mob_spawning: bool,
-    #[facet(rename = "dotiledrops")]
-    pub tile_drops: bool,
-    #[facet(rename = "doweathercycle")]
-    pub weather_cycle: bool,
-    // Absent on worlds saved before this rule was introduced.
-    #[facet(rename = "projectilescanbreakblocks", default)]
-    pub projectiles_can_break_blocks: bool,
-    #[facet(rename = "drowningdamage")]
-    pub drowning_damage: bool,
-    #[facet(rename = "falldamage")]
-    pub fall_damage: bool,
-    #[facet(rename = "firedamage")]
-    pub fire_damage: bool,
-    #[facet(rename = "freezedamage", default)]
-    pub freeze_damage: bool,
-    #[facet(rename = "keepinventory")]
-    pub keep_inventory: bool,
-    #[facet(rename = "maxcommandchainlength")]
-    pub max_command_chain_length: i32,
-    #[facet(rename = "mobgriefing")]
-    pub mob_griefing: bool,
-    #[facet(rename = "naturalregeneration")]
-    pub natural_regeneration: bool,
-    #[facet(rename = "functioncommandlimit")]
-    pub function_command_limit: i32,
-    pub pvp: bool,
-    #[facet(rename = "randomtickspeed")]
-    pub random_tick_speed: i32,
-    #[facet(rename = "respawnblocksexplode", default)]
-    pub respawn_blocks_explode: bool,
-    #[facet(rename = "sendcommandfeedback")]
-    pub send_command_feedback: bool,
-    #[facet(rename = "showbordereffect", default)]
-    pub show_border_effect: bool,
-    #[facet(rename = "showcoordinates")]
-    pub show_coordinates: bool,
-    #[facet(rename = "showdeathmessages")]
-    pub show_death_messages: bool,
-    #[facet(rename = "showtags", default)]
-    pub show_tags: bool,
-    // Absent on worlds saved before these settings were introduced.
-    #[facet(rename = "showdaysplayed", default)]
-    pub show_days_played: bool,
-    #[facet(rename = "showrecipemessages", default)]
-    pub show_recipe_messages: bool,
-    #[facet(rename = "locatorbar", default)]
-    pub locator_bar: bool,
-    #[facet(rename = "spawnradius")]
-    pub spawn_radius: i32,
-    #[facet(rename = "tntexplodes")]
-    pub tnt_explodes: bool,
-    #[facet(rename = "tntexplosiondropdecay", default)]
-    pub tnt_explosion_drop_decay: bool,
-    #[facet(rename = "ForceGameType")]
-    pub force_game_mode: bool,
-    pub has_been_loaded_in_creative: bool,
-    pub has_locked_behavior_pack: bool,
-    pub has_locked_resource_pack: bool,
-    pub immutable_world: bool,
-    pub is_from_locked_template: bool,
-    pub is_from_world_template: bool,
-    #[facet(default)]
-    pub is_single_use_world: bool,
-    pub is_world_template_option_locked: bool,
-    pub requires_copied_pack_removal_check: bool,
-    pub texture_packs_required: bool,
-    // Absent on worlds saved before these fields were introduced.
-    #[facet(rename = "IsHardcore", default)]
-    pub is_hardcore: bool,
-    #[facet(rename = "PlayerHasDied", default)]
-    pub player_has_died: bool,
-    #[facet(rename = "HasUncompleteWorldFileOnDisk", default)]
-    pub has_uncomplete_world_file_on_disk: bool,
-    #[facet(rename = "LANBroadcast")]
-    pub lan_broadcast: bool,
-    #[facet(rename = "LANBroadcastIntent")]
-    pub lan_broadcast_intent: i8,
-    #[facet(rename = "MultiplayerGame")]
-    pub multiplayer_game: bool,
-    #[facet(rename = "MultiplayerGameIntent")]
-    pub multiplayer_game_intent: i8,
-    #[facet(rename = "LastPlayed")]
-    pub last_played: i64,
-    // Absent on worlds saved before this field was introduced; holds "*" or
-    // a version string like "1.17" once present.
-    pub base_game_version: Option<String>,
-    // Every fixture that writes this key writes it as an empty string when
-    // no override is set; only the oldest worlds, which predate the
-    // per-world biome override feature, omit the key. Absence and "" are
-    // therefore the same state, so defaulting to "" loses nothing.
-    #[facet(rename = "BiomeOverride", default)]
-    pub biome_override: String,
-    #[facet(rename = "FlatWorldLayers")]
-    pub flat_world_layers: String,
-    // Absent on worlds saved before this field was introduced.
-    #[facet(rename = "InventoryVersion")]
-    pub inventory_version: Option<String>,
-    #[facet(rename = "LevelName")]
-    pub level_name: String,
-    pub use_msa_gamertags_only: bool,
-    pub world_start_count: i64,
-    pub start_with_map_enabled: bool,
-    pub spawn_mobs: bool,
-    pub server_chunk_tick_range: i32,
-    // Absent at the root on worlds that instead write these two inside
-    // `abilities` (see `Abilities::permissions_level`).
-    pub permissions_level: Option<i32>,
-    pub player_permissions_level: Option<i32>,
-    pub prid: String,
-    // Absent on worlds saved before this key was introduced.
-    #[facet(rename = "world_policies")]
-    pub world_policies: Option<Policies>,
-    // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
-    // newer worlds, which no longer write these.
-    #[facet(rename = "PlatformBroadcast")]
-    pub platform_broadcast: Option<i8>,
-    #[facet(rename = "PlatformBroadcastMode")]
-    pub platform_broadcast_mode: Option<i32>,
-    #[facet(rename = "XBLBroadcast")]
-    pub xbl_broadcast: Option<i8>,
-    #[facet(rename = "XBLBroadcastMode")]
-    pub xbl_broadcast_mode: Option<i32>,
+mod level_settings {
+    use super::{Abilities, Experiments, Facet, GameVersion, Policies};
+
+    #[derive(Facet, Debug, PartialEq)]
+    #[facet(rename_all = "camelCase")]
+    #[cfg_attr(
+        not(feature = "deny-unknown-fields"),
+        facet(nbtx::allow_unknown_fields)
+    )]
+    #[expect(
+        clippy::struct_excessive_bools,
+        reason = "mirrors the level.dat compound"
+    )]
+    pub struct LevelSettings {
+        // The i32 storage version from the 8-byte level.dat header, not part of
+        // the NBT payload itself. Kept alongside `storage_version` (the NBT
+        // `StorageVersion` field) since the two are set independently and can in
+        // principle disagree.
+        //
+        // `#[facet(default)]` because the key is never present in the payload; it is
+        // patched in by `read` afterwards. Typed `i32` rather than `u32` because NBT
+        // has no unsigned tag and nbtx refuses to encode a `u32` field at all.
+        #[facet(default)]
+        pub header_storage_version: i32,
+        // Absent on worlds saved before the world-editor feature existed.
+        pub editor_world_type: Option<i32>,
+        #[facet(rename = "isCreatedInEditor", default)]
+        pub created_in_editor: bool,
+        #[facet(rename = "isExportedFromEditor", default)]
+        pub exported_from_editor: bool,
+        #[facet(rename = "isRandomSeedAllowed", default)]
+        pub random_seed_allowed: bool,
+        // Absent on worlds saved before this rule was introduced.
+        #[facet(rename = "playerssleepingpercentage")]
+        pub sleeping_percentage: Option<i32>,
+        #[facet(rename = "recipesunlock", default)]
+        pub recipes_unlock: bool,
+        #[facet(default)]
+        pub cheats_enabled: bool,
+        pub lightning_level: f32,
+        pub lightning_time: i32,
+        pub rain_level: f32,
+        pub rain_time: i32,
+        #[facet(rename = "Difficulty")]
+        pub difficulty: i32,
+        #[facet(rename = "GameType")]
+        pub game_mode: i32,
+        #[facet(rename = "Generator")]
+        pub generator: i32,
+        #[facet(rename = "LimitedWorldOriginX")]
+        pub limited_world_origin_x: i32,
+        #[facet(rename = "LimitedWorldOriginY")]
+        pub limited_world_origin_y: i32,
+        #[facet(rename = "LimitedWorldOriginZ")]
+        pub limited_world_origin_z: i32,
+        // Absent on worlds saved before the limited-world generator existed.
+        pub limited_world_depth: Option<i32>,
+        pub limited_world_width: Option<i32>,
+        // Absent on worlds saved before this field was introduced.
+        #[facet(rename = "MinimumCompatibleClientVersion")]
+        pub minimum_compatible_client_version: Option<GameVersion>,
+        #[facet(rename = "NetherScale")]
+        pub nether_scale: i32,
+        // Protocol version of the network codec the world was last saved with.
+        // Absent on worlds saved before this field was introduced.
+        #[facet(rename = "NetworkVersion")]
+        pub network_version: Option<i32>,
+        #[facet(rename = "Platform")]
+        pub platform: i32,
+        #[facet(rename = "PlatformBroadcastIntent")]
+        pub platform_broadcast_intent: i32,
+        #[facet(rename = "RandomSeed")]
+        pub random_seed: i64,
+        #[facet(rename = "SpawnV1Villagers")]
+        pub spawn_v1_villagers: bool,
+        #[facet(rename = "SpawnX")]
+        pub spawn_x: i32,
+        #[facet(rename = "SpawnY")]
+        pub spawn_y: i32,
+        #[facet(rename = "SpawnZ")]
+        pub spawn_z: i32,
+        // The NBT `StorageVersion` field, distinct from the header's storage
+        // version stored in `header_storage_version`.
+        #[facet(rename = "StorageVersion")]
+        pub storage_version: i32,
+        #[facet(rename = "Time")]
+        pub time: i64,
+        // Absent on worlds saved before this field was introduced.
+        #[facet(rename = "WorldVersion")]
+        pub world_version: Option<i32>,
+        #[facet(rename = "XBLBroadcastIntent")]
+        pub xbox_broadcast_intent: i32,
+        pub current_tick: i64,
+        // Absent on the oldest worlds, which instead write the single
+        // `experimentalgameplay` flag below rather than a compound of
+        // individually named experiments.
+        pub experiments: Option<Experiments>,
+        // Predecessor to `experiments`: one flag standing in for all
+        // experimental toggles at once, on worlds saved before the compound
+        // existed.
+        #[facet(rename = "experimentalgameplay", default)]
+        pub experimental_gameplay: bool,
+        pub abilities: Abilities,
+        // Absent on worlds saved before this field was introduced; `eduLevel`
+        // is what the same setting was called before.
+        pub edu_offer: Option<i32>,
+        pub edu_level: Option<i8>,
+        pub education_features_enabled: bool,
+        #[facet(rename = "lastOpenedWithVersion")]
+        pub last_opened_with_version: GameVersion,
+        pub bonus_chest_enabled: bool,
+        pub bonus_chest_spawned: bool,
+        #[facet(rename = "commandblockoutput")]
+        pub command_block_output: bool,
+        #[facet(rename = "CenterMapsToOrigin")]
+        pub center_maps_to_origin: bool,
+        #[facet(rename = "commandblocksenabled")]
+        pub command_blocks_enabled: bool,
+        pub commands_enabled: bool,
+        #[facet(rename = "ConfirmedPlatformLockedContent")]
+        pub confirmed_platform_locked_content: bool,
+        // Absent on worlds saved before this field was introduced.
+        pub daylight_cycle: Option<i32>,
+        #[facet(rename = "dodaylightcycle")]
+        pub daylight_lock: bool,
+        #[facet(rename = "dolimitedcrafting", default)]
+        pub limited_crafting: bool,
+        #[facet(rename = "doentitydrops")]
+        pub entity_drops: bool,
+        #[facet(rename = "dofiretick")]
+        pub fire_tick: bool,
+        #[facet(rename = "doimmediaterespawn")]
+        pub immediate_respawn: bool,
+        #[facet(rename = "doinsomnia")]
+        pub insomnia: bool,
+        #[facet(rename = "domobloot")]
+        pub mob_loot: bool,
+        #[facet(rename = "domobspawning")]
+        pub mob_spawning: bool,
+        #[facet(rename = "dotiledrops")]
+        pub tile_drops: bool,
+        #[facet(rename = "doweathercycle")]
+        pub weather_cycle: bool,
+        // Absent on worlds saved before this rule was introduced.
+        #[facet(rename = "projectilescanbreakblocks", default)]
+        pub projectiles_can_break_blocks: bool,
+        #[facet(rename = "drowningdamage")]
+        pub drowning_damage: bool,
+        #[facet(rename = "falldamage")]
+        pub fall_damage: bool,
+        #[facet(rename = "firedamage")]
+        pub fire_damage: bool,
+        #[facet(rename = "freezedamage", default)]
+        pub freeze_damage: bool,
+        #[facet(rename = "keepinventory")]
+        pub keep_inventory: bool,
+        #[facet(rename = "maxcommandchainlength")]
+        pub max_command_chain_length: i32,
+        #[facet(rename = "mobgriefing")]
+        pub mob_griefing: bool,
+        #[facet(rename = "naturalregeneration")]
+        pub natural_regeneration: bool,
+        #[facet(rename = "functioncommandlimit")]
+        pub function_command_limit: i32,
+        pub pvp: bool,
+        #[facet(rename = "randomtickspeed")]
+        pub random_tick_speed: i32,
+        #[facet(rename = "respawnblocksexplode", default)]
+        pub respawn_blocks_explode: bool,
+        #[facet(rename = "sendcommandfeedback")]
+        pub send_command_feedback: bool,
+        #[facet(rename = "showbordereffect", default)]
+        pub show_border_effect: bool,
+        #[facet(rename = "showcoordinates")]
+        pub show_coordinates: bool,
+        #[facet(rename = "showdeathmessages")]
+        pub show_death_messages: bool,
+        #[facet(rename = "showtags", default)]
+        pub show_tags: bool,
+        // Absent on worlds saved before these settings were introduced.
+        #[facet(rename = "showdaysplayed", default)]
+        pub show_days_played: bool,
+        #[facet(rename = "showrecipemessages", default)]
+        pub show_recipe_messages: bool,
+        #[facet(rename = "locatorbar", default)]
+        pub locator_bar: bool,
+        #[facet(rename = "spawnradius")]
+        pub spawn_radius: i32,
+        #[facet(rename = "tntexplodes")]
+        pub tnt_explodes: bool,
+        #[facet(rename = "tntexplosiondropdecay", default)]
+        pub tnt_explosion_drop_decay: bool,
+        #[facet(rename = "ForceGameType")]
+        pub force_game_mode: bool,
+        pub has_been_loaded_in_creative: bool,
+        pub has_locked_behavior_pack: bool,
+        pub has_locked_resource_pack: bool,
+        pub immutable_world: bool,
+        pub is_from_locked_template: bool,
+        pub is_from_world_template: bool,
+        #[facet(default)]
+        pub is_single_use_world: bool,
+        pub is_world_template_option_locked: bool,
+        pub requires_copied_pack_removal_check: bool,
+        pub texture_packs_required: bool,
+        // Absent on worlds saved before these fields were introduced.
+        #[facet(rename = "IsHardcore", default)]
+        pub is_hardcore: bool,
+        #[facet(rename = "PlayerHasDied", default)]
+        pub player_has_died: bool,
+        #[facet(rename = "HasUncompleteWorldFileOnDisk", default)]
+        pub has_uncomplete_world_file_on_disk: bool,
+        #[facet(rename = "LANBroadcast")]
+        pub lan_broadcast: bool,
+        #[facet(rename = "LANBroadcastIntent")]
+        pub lan_broadcast_intent: i8,
+        #[facet(rename = "MultiplayerGame")]
+        pub multiplayer_game: bool,
+        #[facet(rename = "MultiplayerGameIntent")]
+        pub multiplayer_game_intent: i8,
+        #[facet(rename = "LastPlayed")]
+        pub last_played: i64,
+        // Absent on worlds saved before this field was introduced; holds "*" or
+        // a version string like "1.17" once present.
+        pub base_game_version: Option<String>,
+        // Every fixture that writes this key writes it as an empty string when
+        // no override is set; only the oldest worlds, which predate the
+        // per-world biome override feature, omit the key. Absence and "" are
+        // therefore the same state, so defaulting to "" loses nothing.
+        #[facet(rename = "BiomeOverride", default)]
+        pub biome_override: String,
+        #[facet(rename = "FlatWorldLayers")]
+        pub flat_world_layers: String,
+        // Absent on worlds saved before this field was introduced.
+        #[facet(rename = "InventoryVersion")]
+        pub inventory_version: Option<String>,
+        #[facet(rename = "LevelName")]
+        pub level_name: String,
+        pub use_msa_gamertags_only: bool,
+        pub world_start_count: i64,
+        pub start_with_map_enabled: bool,
+        pub spawn_mobs: bool,
+        pub server_chunk_tick_range: i32,
+        // Absent at the root on worlds that instead write these two inside
+        // `abilities` (see `Abilities::permissions_level`).
+        pub permissions_level: Option<i32>,
+        pub player_permissions_level: Option<i32>,
+        pub prid: String,
+        // Absent on worlds saved before this key was introduced.
+        #[facet(rename = "world_policies")]
+        pub world_policies: Option<Policies>,
+        // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
+        // newer worlds, which no longer write these.
+        #[facet(rename = "PlatformBroadcast")]
+        pub platform_broadcast: Option<i8>,
+        #[facet(rename = "PlatformBroadcastMode")]
+        pub platform_broadcast_mode: Option<i32>,
+        #[facet(rename = "XBLBroadcast")]
+        pub xbl_broadcast: Option<i8>,
+        #[facet(rename = "XBLBroadcastMode")]
+        pub xbl_broadcast_mode: Option<i32>,
+    }
 }
+
+pub use level_settings::LevelSettings;
 
 /// How a world was written, gathered from level.dat's header and NBT
 /// version fields. Does not decide anything on its own; version-dispatch
@@ -500,13 +524,19 @@ fn sort_list_keys(items: &mut nbtx::ValueList) {
 /// a claimed one back -- so they are factored here once rather than
 /// repeated at each call site.
 fn session_id_from_stored(stored: i64) -> i32 {
-    (stored as u32) as i32
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the counter lives in the low 32 bits; the high bits are zero-extension"
+    )]
+    let low = stored as u32;
+    low.cast_signed()
 }
 
 /// The inverse of [`session_id_from_stored`]: packs a session id back into
 /// `world_start_count`'s on-disk zero-extended form.
 fn session_id_to_stored(id: i32) -> i64 {
-    (id as u32) as i64
+    i64::from(id.cast_unsigned())
 }
 
 impl LevelSettings {
@@ -562,6 +592,12 @@ impl LevelSettings {
     /// clients, not the tag width changing — `random_seed` is `i64` on this
     /// struct unconditionally, so this is automatic rather than something
     /// this method branches on.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the settings cannot be encoded as NBT, if the
+    /// encoded payload is longer than `i32::MAX` bytes, or if writing to
+    /// `writer` fails.
     pub fn write<W: Write>(&self, mut writer: W) -> Result<()> {
         let mut value = nbtx::to_value(self)?;
 
@@ -589,6 +625,12 @@ impl LevelSettings {
         Ok(())
     }
 
+    /// Decodes a level.dat: the 8-byte header followed by little-endian NBT.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from `data` fails, if the payload is not
+    /// valid NBT, or if the NBT does not match the [`LevelSettings`] shape.
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
         let header_storage_version = data.read_u32::<LittleEndian>()?;
         let _file_size = data.read_u32::<LittleEndian>()?;
@@ -600,7 +642,7 @@ impl LevelSettings {
         unpack_game_versions(&mut value);
 
         let mut settings: Self = nbtx::from_value(value)?;
-        settings.header_storage_version = header_storage_version as i32;
+        settings.header_storage_version = header_storage_version.cast_signed();
 
         Ok(settings)
     }
@@ -692,7 +734,7 @@ impl LevelSettings {
     /// paired method that persists immediately rather than deferring to
     /// [`Self::write`]/`Level::save` -- see its doc comment.
     ///
-    /// # Exhaustion
+    /// # Errors
     ///
     /// Returns [`Error::Invalid`], leaving `self` unmodified, if the
     /// current session id is already `i32::MIN`: there is no further

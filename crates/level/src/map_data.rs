@@ -386,6 +386,11 @@ impl MapRecord {
 
 /// Decodes a `map_<id>` value: one uncompressed little-endian NBT compound
 /// with no trailing bytes.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` does not start with a valid NBT document, or
+/// [`Error::Invalid`] if any bytes follow that document.
 pub fn decode(bytes: &[u8]) -> Result<MapRecord> {
     let mut cursor = Cursor::new(bytes);
     let value: nbtx::Value = nbtx::from_le_bytes(&mut cursor)?;
@@ -403,6 +408,11 @@ pub fn decode(bytes: &[u8]) -> Result<MapRecord> {
 /// `RetainedNbt`'s doc comment for how a decoded-but-unmodified record's
 /// original bytes are preferred over a re-derivation, and why that matters
 /// for this record's `decorations` field specifically.
+///
+/// # Errors
+///
+/// Returns an error if the record was edited (or built rather than decoded)
+/// and its value cannot be encoded as NBT.
 pub fn encode(record: &MapRecord) -> Result<Vec<u8>> {
     record.inner.encode()
 }
@@ -413,6 +423,10 @@ pub fn encode(record: &MapRecord) -> Result<Vec<u8>> {
 /// [`crate::position_track`]), so there is no cheaper way to enumerate
 /// them. Order matches the database's own iteration order, not numeric or
 /// insertion order.
+///
+/// # Errors
+///
+/// Returns an error if the database cannot create a key iterator.
 pub fn ids(db: &Database) -> Result<Vec<i64>> {
     let mut out = Vec::new();
     let mut keys = db.keys()?;
@@ -430,8 +444,8 @@ mod tests {
 
     fn sample_record() -> nbtx::Value {
         let mut compound = nbtx::Compound::new();
-        compound.insert("mapId".into(), nbtx::Value::Long(-64424509182));
-        compound.insert("parentMapId".into(), nbtx::Value::Long(-64424509182));
+        compound.insert("mapId".into(), nbtx::Value::Long(-64_424_509_182));
+        compound.insert("parentMapId".into(), nbtx::Value::Long(-64_424_509_182));
         compound.insert("scale".into(), nbtx::Value::Byte(3));
         compound.insert("dimension".into(), nbtx::Value::Byte(0));
         compound.insert("width".into(), nbtx::Value::Short(128));
@@ -454,9 +468,9 @@ mod tests {
 
     #[test]
     fn key_and_id_from_key_round_trip_negative_ids() {
-        let k = key(-64424509182);
+        let k = key(-64_424_509_182);
         assert_eq!(k, b"map_-64424509182".to_vec());
-        assert_eq!(id_from_key(&k), Some(-64424509182));
+        assert_eq!(id_from_key(&k), Some(-64_424_509_182));
     }
 
     #[test]
@@ -493,8 +507,8 @@ mod tests {
     #[test]
     fn accessors_read_every_field() {
         let record = MapRecord::new(sample_record());
-        assert_eq!(record.map_id(), Some(-64424509182));
-        assert_eq!(record.parent_map_id(), Some(-64424509182));
+        assert_eq!(record.map_id(), Some(-64_424_509_182));
+        assert_eq!(record.parent_map_id(), Some(-64_424_509_182));
         assert_eq!(record.scale(), Some(3));
         assert_eq!(record.dimension(), Some(Dimension::Overworld));
         assert_eq!(record.width(), Some(128));
@@ -505,7 +519,7 @@ mod tests {
         assert_eq!(record.map_locked(), Some(false));
         assert_eq!(record.fully_explored(), Some(true));
         assert_eq!(record.decorations(), Some(&nbtx::ValueList::End));
-        assert_eq!(record.colors().map(|c| c.len()), Some(128 * 128 * 4));
+        assert_eq!(record.colors().map(<[u8]>::len), Some(128 * 128 * 4));
     }
 
     #[test]
@@ -524,7 +538,7 @@ mod tests {
         assert_eq!(re_encoded, bytes);
     }
 
-    /// From the corpus: `v1_18_30`'s `map_-17179868860`, the
+    /// From the corpus: `v1_18_30`'s `map_-17_179_868_860`, the
     /// `colors, decorations, dimension, ...` field ordering. Only the
     /// first 64 bytes of the 65732-byte value are asserted -- the rest is
     /// 65536 bytes of mostly-zero color data -- but decode-then-encode
@@ -543,9 +557,9 @@ mod tests {
         compound.insert("dimension".into(), nbtx::Value::Byte(0));
         compound.insert("fullyExplored".into(), nbtx::Value::Byte(0));
         compound.insert("height".into(), nbtx::Value::Short(128));
-        compound.insert("mapId".into(), nbtx::Value::Long(-17179868861));
+        compound.insert("mapId".into(), nbtx::Value::Long(-17_179_868_861));
         compound.insert("mapLocked".into(), nbtx::Value::Byte(0));
-        compound.insert("parentMapId".into(), nbtx::Value::Long(-17179868860));
+        compound.insert("parentMapId".into(), nbtx::Value::Long(-17_179_868_860));
         compound.insert("scale".into(), nbtx::Value::Byte(3));
         compound.insert("unlimitedTracking".into(), nbtx::Value::Byte(0));
         compound.insert("width".into(), nbtx::Value::Short(128));

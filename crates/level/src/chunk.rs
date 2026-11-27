@@ -1,7 +1,7 @@
 //! The raw layer's chunk record group: every on-disk key that belongs to one
 //! chunk position, grouped without interpreting any of the value bytes.
 //!
-//! A chunk is not one LevelDB record, it is a family of them sharing an
+//! A chunk is not one `LevelDB` record, it is a family of them sharing an
 //! `(x, z, dimension)` prefix -- the version stamp, each subchunk, the
 //! heightmap/biomes, the finalized-state byte, blending data, checksums, and
 //! whatever else the format has stapled to a chunk position over its
@@ -148,6 +148,10 @@ impl ChunkRecords {
     /// position and dimension. Passing a key from a different chunk or
     /// dimension is a caller bug, not a data-quality question, so it panics
     /// rather than silently misfiling the record.
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "public API: takes the key by value like a map insert"
+    )]
     pub fn insert(&mut self, key: Key, bytes: Vec<u8>) -> Option<Vec<u8>> {
         assert_eq!(
             key.chunk, self.position,
@@ -181,9 +185,14 @@ impl ChunkRecords {
     /// `digp` record, which is an ordinary member. `actorprefix` records are
     /// outside this group entirely (see the module docs) and this never
     /// touches them, in either direction.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a key cannot be serialized or a database write or
+    /// delete fails. Records written before the failure stay written.
     pub fn write(&self, db: &Database) -> Result<()> {
         let mut key_buf = Vec::new();
-        for (key, bytes) in self.iter() {
+        for (key, bytes) in self {
             key_buf.clear();
             key.serialize(&mut key_buf)?;
             db.insert(&key_buf, bytes)?;
@@ -217,6 +226,10 @@ impl ChunkRecords {
     /// returned group includes this chunk's `digp` record if it has one, but
     /// never `actorprefix` records: see the module docs for why the two are
     /// treated differently.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create a key iterator.
     pub fn read(
         db: &Database,
         position: ChunkPosition,
@@ -234,6 +247,10 @@ impl ChunkRecords {
     /// cost is paid once for the whole call, not once per chunk. As with
     /// [`read`](Self::read), a returned group includes its `digp` record but
     /// never `actorprefix` records -- see the module docs.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create a key iterator.
     pub fn read_many<I>(
         db: &Database,
         wanted: I,
@@ -255,6 +272,10 @@ impl ChunkRecords {
     /// scan without materializing the rest of the world. A returned group
     /// includes its `digp` record but never `actorprefix` records -- see the
     /// module docs.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create a key iterator.
     pub fn read_all(db: &Database) -> Result<HashMap<(ChunkPosition, Dimension), Self>> {
         Self::scan(db, |_| true)
     }

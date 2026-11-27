@@ -105,6 +105,10 @@ pub struct Attribute {
 // unrecognised key is an error unless the record opts out.
 #[facet(nbtx::allow_unknown_fields)]
 #[facet(rename_all = "PascalCase")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the player NBT compound"
+)]
 pub struct PlayerData {
     pub inventory_version: String,
     pub is_swimming: bool,
@@ -198,6 +202,11 @@ pub struct PlayerData {
 
 impl PlayerData {
     /// Reads a player record from little-endian (on-disk) NBT.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from `data` fails or the NBT does not
+    /// match the [`PlayerData`] shape.
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
         Ok(nbtx::from_le_bytes(&mut data)?)
     }
@@ -224,6 +233,11 @@ pub struct PlayerClient {
 
 impl PlayerClient {
     /// Reads a `player_<client-id>` record from little-endian (on-disk) NBT.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if reading from `data` fails or the NBT does not
+    /// match the [`PlayerClient`] shape.
     pub fn read<R: Read>(mut data: R) -> Result<Self> {
         Ok(nbtx::from_le_bytes(&mut data)?)
     }
@@ -249,6 +263,10 @@ pub fn parse_player_client_key(key: &[u8]) -> Option<&[u8]> {
 /// operation. Returns the raw id bytes (the part of the key after
 /// [`PLAYER_CLIENT_PREFIX`]), in whatever order the underlying scan visits
 /// them.
+///
+/// # Errors
+///
+/// Returns an error if the database cannot create a key iterator.
 pub fn remote_player_client_ids(db: &Database) -> Result<Vec<Vec<u8>>> {
     let mut keys = db.keys()?;
     let mut ids = Vec::new();
@@ -276,6 +294,11 @@ pub fn remote_player_client_ids(db: &Database) -> Result<Vec<Vec<u8>>> {
 /// server id) in its return type -- there is no real record in this
 /// crate's corpus to say a caller needs that distinction, so it collapses
 /// both into one `None` rather than preserving it on spec alone.
+///
+/// # Errors
+///
+/// Returns an error if either database read fails, or if either record is
+/// present but does not decode as its NBT type.
 pub fn read_remote_player(db: &Database, client_id: &[u8]) -> Result<Option<PlayerData>> {
     let mut key = PLAYER_CLIENT_PREFIX.to_vec();
     key.extend_from_slice(client_id);
@@ -440,6 +463,10 @@ mod tests {
     /// The minimal set of [`PlayerData`] fields, NBT-encoded, so the
     /// two-hop tests above can decode a real (if minimal) record at the end
     /// of the chain rather than an arbitrary compound.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one line per required PlayerData field"
+    )]
     fn minimal_player_data_bytes() -> Vec<u8> {
         nbtx::to_le_bytes(&Value::Compound(Compound::from_iter([
             ("InventoryVersion".into(), Value::String("1.0.0".into())),

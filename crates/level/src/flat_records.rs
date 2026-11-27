@@ -152,6 +152,11 @@ macro_rules! flat_record {
         }
 
         #[doc = concat!("Decodes a [`", stringify!($name), "`] value.")]
+        ///
+        /// # Errors
+        ///
+        /// Returns an error if `bytes` does not start with a valid NBT document, or
+        /// [`Error::Invalid`] if any bytes follow that document.
         pub fn $decode(bytes: &[u8]) -> Result<$name> {
             let (value, original) = decode_compound(bytes)?;
             Ok($name {
@@ -163,6 +168,11 @@ macro_rules! flat_record {
             "Encodes a [`", stringify!($name), "`] value. The inverse of [`",
             stringify!($decode), "`]."
         )]
+        ///
+        /// # Errors
+        ///
+        /// Returns an error if the record was edited (or built rather than decoded) and its
+        /// value cannot be encoded as NBT.
         pub fn $encode(record: &$name) -> Result<Vec<u8>> {
             record.inner.encode()
         }
@@ -180,6 +190,13 @@ macro_rules! flat_record {
         flat_record!($(#[$struct_meta])* $name, $decode, $encode);
 
         #[doc = concat!("Reads the [`", stringify!($name), "`] record from `db`, if present.")]
+        ///
+        /// # Errors
+        ///
+        #[doc = concat!(
+            "Returns an error if the database read fails or the stored value does not [`",
+            stringify!($decode), "`]."
+        )]
         pub fn $read(db: &Database) -> Result<Option<$name>> {
             match db.get($key.as_bytes())? {
                 Some(bytes) => Ok(Some($decode(&bytes)?)),
@@ -190,6 +207,13 @@ macro_rules! flat_record {
         #[doc = concat!(
             "Encodes and writes `record` at the [`", stringify!($name),
             "`] key, overwriting whatever is there."
+        )]
+        ///
+        /// # Errors
+        ///
+        #[doc = concat!(
+            "Returns an error if `record` does not [`", stringify!($encode),
+            "`] or the database write fails."
         )]
         pub fn $write(db: &Database, record: &$name) -> Result<()> {
             db.insert($key.as_bytes(), $encode(record)?)
@@ -447,6 +471,10 @@ impl AutonomousEntities {
 /// A `TheEnd` dimension record's `data.DragonFight` compound. Present on
 /// every `TheEnd` record found (5/5); see [`DimensionRecord::dragon_fight`].
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the flags of the on-disk DragonFight compound"
+)]
 pub struct DragonFight {
     pub version: i8,
     pub killed: bool,
@@ -537,6 +565,11 @@ impl DimensionRecord {
 /// `Ok(None)` both when the record is absent and when `dimension` has no
 /// fixed key name (see [`raw_keys::dimension_key_name`]) -- neither case
 /// has data to report.
+///
+/// # Errors
+///
+/// Returns an error if the database read fails or the stored value does not
+/// [`decode_dimension_record`].
 pub fn read_dimension_record(
     db: &Database,
     dimension: Dimension,
@@ -554,6 +587,12 @@ pub fn read_dimension_record(
 /// overwriting whatever is there. Fails if `dimension` has no fixed key
 /// name (see [`raw_keys::dimension_key_name`]) -- there is nowhere to write
 /// it.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `dimension` has no fixed key name, or an
+/// error if `record` does not [`encode_dimension_record`] or the database
+/// write fails.
 pub fn write_dimension_record(
     db: &Database,
     dimension: Dimension,
@@ -621,7 +660,10 @@ mod tests {
         let mut compound = nbtx::Compound::new();
         compound.insert("daysSinceLastWTSpawn".into(), nbtx::Value::Int(2));
         compound.insert("isSpawningWT".into(), nbtx::Value::Byte(0));
-        compound.insert("nextWTSpawnCheckTick".into(), nbtx::Value::Long(123456789));
+        compound.insert(
+            "nextWTSpawnCheckTick".into(),
+            nbtx::Value::Long(123_456_789),
+        );
         if let Some(wt) = existing_wt {
             compound.insert("existingWT".into(), nbtx::Value::Long(wt));
         }
@@ -634,16 +676,16 @@ mod tests {
         let record = decode_scheduler_wt(&bytes).unwrap();
         assert_eq!(record.days_since_last_wt_spawn(), Some(2));
         assert_eq!(record.is_spawning_wt(), Some(false));
-        assert_eq!(record.next_wt_spawn_check_tick(), Some(123456789));
+        assert_eq!(record.next_wt_spawn_check_tick(), Some(123_456_789));
         assert_eq!(record.existing_wt(), None);
         assert_eq!(encode_scheduler_wt(&record).unwrap(), bytes);
     }
 
     #[test]
     fn scheduler_wt_decode_then_encode_round_trips_with_existing_wt() {
-        let bytes = nbtx::to_le_bytes(&scheduler_wt_sample(Some(987654321))).unwrap();
+        let bytes = nbtx::to_le_bytes(&scheduler_wt_sample(Some(987_654_321))).unwrap();
         let record = decode_scheduler_wt(&bytes).unwrap();
-        assert_eq!(record.existing_wt(), Some(987654321));
+        assert_eq!(record.existing_wt(), Some(987_654_321));
         assert_eq!(encode_scheduler_wt(&record).unwrap(), bytes);
     }
 
@@ -762,10 +804,7 @@ mod tests {
         let mut dragon_fight = nbtx::Compound::new();
         dragon_fight.insert("DragonFightVersion".into(), nbtx::Value::Byte(1));
         dragon_fight.insert("DragonKilled".into(), nbtx::Value::Byte(0));
-        dragon_fight.insert(
-            "DragonSpawned".into(),
-            nbtx::Value::Byte(if spawned { 1 } else { 0 }),
-        );
+        dragon_fight.insert("DragonSpawned".into(), nbtx::Value::Byte(i8::from(spawned)));
         dragon_fight.insert("DragonUUID".into(), nbtx::Value::Long(-1));
         dragon_fight.insert(
             "Gateways".into(),

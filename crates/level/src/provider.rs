@@ -1,6 +1,6 @@
 //! Content-mapping hook.
 //!
-//! This crate parses the LevelDB world format only; it has no knowledge of what a
+//! This crate parses the `LevelDB` world format only; it has no knowledge of what a
 //! particular block, item, or biome *is*. Anything that requires that knowledge —
 //! translating a legacy numeric or named id, applying a block-state schema upgrade,
 //! resolving neighbour-dependent state, naming a biome — is delegated to a
@@ -224,7 +224,7 @@ pub trait ContentProvider {
 
     /// Resolves a pre-palette numeric block id plus its 4-bit metadata nibble —
     /// [`PaletteEntry::Numeric`](crate::subchunk::PaletteEntry::Numeric)'s on-disk
-    /// shape, also the shape `0x30` LegacyTerrain and `0x34` LegacyBlockExtraData
+    /// shape, also the shape `0x30` `LegacyTerrain` and `0x34` `LegacyBlockExtraData`
     /// store — to the modern name-plus-properties form.
     ///
     /// Kept as a distinct lookup from [`legacy_block_state`](Self::legacy_block_state)
@@ -406,6 +406,10 @@ mod tests {
             }
         }
 
+        #[expect(
+            clippy::match_same_arms,
+            reason = "each arm models a distinct upgrade-table case"
+        )]
         fn upgrade_block_state(&self, state: BlockDef, source: i32, target: i32) -> StateUpgrade {
             if state.name == "malformed:entry" {
                 return StateUpgrade::Malformed(
@@ -428,6 +432,10 @@ mod tests {
             state.name == "minecraft:oak_stairs"
         }
 
+        #[expect(
+            clippy::match_same_arms,
+            reason = "a non-air neighbour and a missing neighbour are distinct cases"
+        )]
         fn resolve_with_neighbours<'n>(
             &self,
             state: BlockDef,

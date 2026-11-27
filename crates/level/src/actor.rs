@@ -140,7 +140,7 @@ pub fn actorprefix_key_bytes(storage_key: &ActorStorageKey) -> Vec<u8> {
     out
 }
 
-/// Parses a raw LevelDB key as an `actorprefix` key, returning its storage
+/// Parses a raw `LevelDB` key as an `actorprefix` key, returning its storage
 /// key if it has that shape (`ACTOR_PREFIX_KEY_LEN` bytes, `ACTOR_PREFIX`
 /// prefix). Returns `None` -- not an error -- for anything else: like
 /// `Key::deserialize`'s string-key fallback, a key that is not this shape is
@@ -182,15 +182,24 @@ pub fn parse_actorprefix_key(bytes: &[u8]) -> Option<ActorStorageKey> {
 /// rather than panicking (decision 11: malformed *records* are an error,
 /// but a wide, in-range `i64` is not malformed).
 pub fn derive_storage_key(unique_id: i64, has_internal_components: bool) -> ActorStorageKey {
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "both formulas keep only the low 32 bits of the UniqueID"
+    )]
+    let low = unique_id as i32;
     if has_internal_components {
-        let session = -(unique_id >> 32);
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the negated session half fits in 32 bits, except for i32::MIN, which wraps on \
+                      purpose (see above)"
+        )]
+        let session = (-(unique_id >> 32)) as i32;
         let mut out = [0u8; ACTOR_STORAGE_KEY_LEN];
-        out[..4].copy_from_slice(&(session as i32).to_be_bytes());
-        out[4..].copy_from_slice(&(unique_id as i32).to_be_bytes());
+        out[..4].copy_from_slice(&session.to_be_bytes());
+        out[4..].copy_from_slice(&low.to_be_bytes());
         out
     } else {
-        let low = ((unique_id as i32) as u32) as u64;
-        low.to_le_bytes()
+        u64::from(low.cast_unsigned()).to_le_bytes()
     }
 }
 
@@ -277,6 +286,12 @@ fn embedded_storage_key(record: &nbtx::Value) -> Option<ActorStorageKey> {
 /// only the `StorageKey` leaf itself is ever written. A non-compound value
 /// already occupying `internalComponents` or `EntityStorageKeyComponent`
 /// is malformed input this function reports rather than overwrites.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `value` is not a compound, already has a
+/// `UniqueID`, or has an `internalComponents` or `EntityStorageKeyComponent`
+/// field that is not a compound.
 pub fn stamp_new_actor(value: &mut nbtx::Value, unique_id: i64) -> Result<ActorStorageKey> {
     let nbtx::Value::Compound(root) = value else {
         return Err(Error::Invalid("actor record is not an NBT compound"));
@@ -321,6 +336,10 @@ pub fn stamp_new_actor(value: &mut nbtx::Value, unique_id: i64) -> Result<ActorS
 /// Per decision 11, a length that is not a multiple of 8 is malformed (not
 /// merely unmodelled) and is an error rather than a truncated or padded
 /// result.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if the length of `bytes` is not a multiple of 8.
 pub fn decode_actor_digest(bytes: &[u8]) -> Result<Vec<ActorStorageKey>> {
     if !bytes.len().is_multiple_of(ACTOR_STORAGE_KEY_LEN) {
         return Err(Error::Invalid(
@@ -345,6 +364,10 @@ pub fn encode_actor_digest(storage_keys: &[ActorStorageKey]) -> Vec<u8> {
 /// compound, decoded to raw [`nbtx::Value`] rather than a typed struct --
 /// per architecture decision 8, an actor's fields are game content this
 /// crate stays independent of, not format this crate models.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` does not start with a valid NBT document.
 pub fn decode_actor_record(bytes: &[u8]) -> Result<nbtx::Value> {
     let mut cursor = Cursor::new(bytes);
     Ok(nbtx::from_le_bytes(&mut cursor)?)
@@ -355,6 +378,10 @@ pub fn decode_actor_record(bytes: &[u8]) -> Result<nbtx::Value> {
 /// suite has checked (`tests/nbt_actor_storage_key.rs`,
 /// `tests/actor.rs`) because `Value` preserves NBT compound field order and
 /// raw `BString` string payloads rather than normalizing either.
+///
+/// # Errors
+///
+/// Returns an error if `value` cannot be encoded as NBT.
 pub fn encode_actor_record(value: &nbtx::Value) -> Result<Vec<u8>> {
     Ok(nbtx::to_le_bytes(value)?)
 }
@@ -362,6 +389,11 @@ pub fn encode_actor_record(value: &nbtx::Value) -> Result<Vec<u8>> {
 /// Decodes a legacy inline `0x32` ([`KeyVariant::Entity`]) value: a bare
 /// concatenation of little-endian NBT compounds with no count prefix, read
 /// until the buffer is exhausted.
+///
+/// # Errors
+///
+/// Returns an error if any compound in `bytes`, including a truncated last
+/// one, does not decode as NBT.
 pub fn decode_legacy_entities(bytes: &[u8]) -> Result<Vec<nbtx::Value>> {
     let mut cursor = Cursor::new(bytes);
     let len = bytes.len() as u64;
@@ -376,6 +408,10 @@ pub fn decode_legacy_entities(bytes: &[u8]) -> Result<Vec<nbtx::Value>> {
 /// Encodes a legacy inline `0x32` value: the inverse of
 /// [`decode_legacy_entities`], concatenating each compound's encoding with
 /// no separator or count prefix, in the same order.
+///
+/// # Errors
+///
+/// Returns an error if any of `values` cannot be encoded as NBT.
 pub fn encode_legacy_entities(values: &[nbtx::Value]) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     for value in values {
@@ -396,6 +432,10 @@ pub fn encode_legacy_entities(values: &[nbtx::Value]) -> Result<Vec<u8>> {
 /// rather than unmodelled, since "the version marker" is definitionally a
 /// single byte and nothing about a different length is a recognizable
 /// variant of it.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is not exactly one byte long.
 pub fn decode_actor_digest_version(bytes: &[u8]) -> Result<u8> {
     match bytes {
         [version] => Ok(*version),
@@ -467,6 +507,11 @@ impl ChunkActors {
     /// decode as NBT is an error, since those are malformed records rather
     /// than a pre-existing index/referent disagreement -- decision 11's
     /// other half.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the `digp` value is malformed, if a database read
+    /// fails, or if an `actorprefix` or `0x32` value does not decode as NBT.
     pub fn read(records: &ChunkRecords, db: &Database) -> Result<Self> {
         let mut out = Self::default();
 
@@ -541,6 +586,11 @@ impl ChunkActors {
     /// `UniqueID` `Long` field to derive one from. Per decision 11, that is
     /// a genuinely unmodelled input this method reports rather than guesses
     /// past.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if [`storage_key_for_record`] cannot produce
+    /// a key for `value`.
     pub fn add_with_derived_key(&mut self, value: nbtx::Value) -> Result<ActorStorageKey> {
         let storage_key = storage_key_for_record(&value).ok_or(Error::Invalid(
             "actor record has no embedded storage key and no UniqueID to derive one from",
@@ -571,6 +621,11 @@ impl ChunkActors {
     /// unlike [`Self::add_with_derived_key`], which is for a record that
     /// already carries its own identity, this is specifically for a caller
     /// handing over a record with none yet.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if `session`'s low-word counter is exhausted
+    /// or [`stamp_new_actor`] refuses `value`.
     pub fn add_new(
         &mut self,
         session: &mut ActorSession,
@@ -637,6 +692,10 @@ impl ChunkActors {
     /// policy is scoped to what *this* index used to assert, not to the
     /// database's `actorprefix` keyspace as a whole, which no single
     /// chunk's encode has enough information to reason about.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an added actor record cannot be encoded as NBT.
     pub fn write_plan(&self, original_digest: &[ActorStorageKey]) -> Result<ActorWriteSet> {
         let new_keys: HashSet<ActorStorageKey> = self
             .resolved
@@ -695,6 +754,11 @@ impl ActorWriteSet {
     /// by construction (see [`ChunkActors::write_plan`]: every upsert key is
     /// in the new digest, and no deletion key is), so the order the two
     /// loops below run in can never matter.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a database write or delete fails. Operations applied
+    /// before the failure stay applied.
     pub fn apply(&self, db: &Database) -> Result<()> {
         for (storage_key, bytes) in &self.upserts {
             db.insert(actorprefix_key_bytes(storage_key), bytes.as_slice())?;
@@ -807,7 +871,7 @@ impl ActorSession {
         if self.next_low == u32::MAX {
             return None;
         }
-        let unique_id = ((self.session as i64) << 32) | (self.next_low as i64);
+        let unique_id = (i64::from(self.session) << 32) | i64::from(self.next_low);
         self.next_low += 1;
         Some(unique_id)
     }
@@ -1018,7 +1082,7 @@ mod tests {
         // implicitly dropped by the recompute) are gone from the new
         // digest, so both are GC'd.
         let mut deletions = plan.deletions.clone();
-        deletions.sort();
+        deletions.sort_unstable();
         assert_eq!(deletions, vec![[1; 8], [2; 8]]);
         assert!(plan.upserts.is_empty());
     }
@@ -1051,7 +1115,7 @@ mod tests {
     /// long does: the session (typically negative) in the high 32 bits, the
     /// low word's raw bit pattern (zero-extended) in the low 32 bits.
     fn pack_unique_id(session: i32, low: i32) -> i64 {
-        ((session as i64) << 32) | (low as u32 as i64)
+        (i64::from(session) << 32) | i64::from(low.cast_unsigned())
     }
 
     #[test]
@@ -1089,7 +1153,7 @@ mod tests {
         // an `i32` -- the final cast wraps it back to `i32::MIN` rather than
         // panicking. Per decision 11 this is a wide but well-formed `i64`
         // input, not malformed data, so it must never panic.
-        let unique_id = (i32::MIN as i64) << 32;
+        let unique_id = i64::from(i32::MIN) << 32;
         assert_eq!(
             derive_storage_key(unique_id, true),
             [0x80, 0, 0, 0, 0, 0, 0, 0]
@@ -1245,7 +1309,7 @@ mod tests {
         };
 
         let last = session.next_unique_id();
-        assert_eq!(last, Some(((-1i64) << 32) | (u32::MAX - 1) as i64));
+        assert_eq!(last, Some(((-1i64) << 32) | i64::from(u32::MAX - 1)));
         assert_eq!(session.next_unique_id(), None);
     }
 }

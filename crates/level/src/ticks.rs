@@ -74,7 +74,7 @@ impl<'a> TickEntry<'a> {
         self.value
     }
 
-    fn field(&self, name: &str) -> Option<&'a nbtx::Value> {
+    fn field(self, name: &str) -> Option<&'a nbtx::Value> {
         self.value.get(bstr::BStr::new(name))
     }
 
@@ -152,7 +152,7 @@ impl DoubleEndedIterator for TickEntries<'_> {
     }
 }
 
-/// A decoded `0x33` PendingTicks or `0x3a` RandomTicks value -- the two
+/// A decoded `0x33` `PendingTicks` or `0x3a` `RandomTicks` value -- the two
 /// tags share this exact schema (see the module docs), so one type serves
 /// both; which tag a given value came from is tracked by the [`crate::key::Key`]
 /// it was read under, not by this type.
@@ -211,10 +211,15 @@ impl TickList {
 /// trailing bytes after the document are malformed rather than ignored --
 /// no real record found has any, and a value with trailing bytes should not
 /// have them silently discarded.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` does not start with a valid NBT document, or
+/// [`Error::Invalid`] if any bytes follow that document.
 pub fn decode_tick_list(bytes: &[u8]) -> Result<TickList> {
     let mut cursor = std::io::Cursor::new(bytes);
     let value: nbtx::Value = nbtx::from_le_bytes(&mut cursor)?;
-    if cursor.position() as usize != bytes.len() {
+    if cursor.position() != bytes.len() as u64 {
         return Err(Error::Invalid(
             "tick list value has trailing bytes past its NBT document",
         ));
@@ -225,6 +230,10 @@ pub fn decode_tick_list(bytes: &[u8]) -> Result<TickList> {
 /// Encodes a `0x33`/`0x3a` value: the inverse of [`decode_tick_list`]. The
 /// wrapped [`nbtx::Value`] is order-preserving (see the module docs), so
 /// this reproduces a decoded real record byte-identically.
+///
+/// # Errors
+///
+/// Returns an error if the wrapped value cannot be encoded as NBT.
 pub fn encode_tick_list(value: &TickList) -> Result<Vec<u8>> {
     Ok(nbtx::to_le_bytes(&value.value)?)
 }

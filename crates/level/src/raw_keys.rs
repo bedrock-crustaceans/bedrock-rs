@@ -197,6 +197,11 @@ impl RawCompound {
 /// Decodes one of this module's records: one uncompressed little-endian
 /// NBT compound with no trailing bytes. Shared by every key this module
 /// names except [`GAME_FLATWORLDLAYERS`], whose value is JSON, not NBT.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` does not start with a valid NBT document, or
+/// [`Error::Invalid`] if any bytes follow that document.
 pub fn decode(bytes: &[u8]) -> Result<RawCompound> {
     let mut cursor = Cursor::new(bytes);
     let value: nbtx::Value = nbtx::from_le_bytes(&mut cursor)?;
@@ -214,11 +219,21 @@ pub fn decode(bytes: &[u8]) -> Result<RawCompound> {
 /// `RetainedNbt`'s doc comment for how a decoded-but-unmodified record's
 /// original bytes are preferred over a re-derivation from `value`, and why
 /// [`crate::map_data`] uses the same mechanism for the same reason.
+///
+/// # Errors
+///
+/// Returns an error if the record was edited (or built rather than decoded)
+/// and its value cannot be encoded as NBT.
 pub fn encode(record: &RawCompound) -> Result<Vec<u8>> {
     record.inner.encode()
 }
 
 /// Reads and decodes the record at `key`, or `None` if it is absent.
+///
+/// # Errors
+///
+/// Returns an error if the database read fails or the stored value does not
+/// [`decode`].
 pub fn read(db: &Database, key: &[u8]) -> Result<Option<RawCompound>> {
     let Some(bytes) = db.get(key)? else {
         return Ok(None);
@@ -227,6 +242,11 @@ pub fn read(db: &Database, key: &[u8]) -> Result<Option<RawCompound>> {
 }
 
 /// Encodes and writes `record` at `key`, overwriting whatever is there.
+///
+/// # Errors
+///
+/// Returns an error if `record` does not [`encode`] or the database write
+/// fails.
 pub fn write(db: &Database, key: &[u8], record: &RawCompound) -> Result<()> {
     db.insert(key, encode(record)?)
 }
@@ -236,6 +256,10 @@ pub fn write(db: &Database, key: &[u8], record: &RawCompound) -> Result<()> {
 /// names the way `PositionTrackDB-LastId` indexes lodestone tracking
 /// entries (see [`crate::position_track`]), so there is no cheaper way to
 /// enumerate them. Order matches the database's own iteration order.
+///
+/// # Errors
+///
+/// Returns an error if the database cannot create a key iterator.
 pub fn keys_with_prefix(db: &Database, prefix: &[u8]) -> Result<Vec<Vec<u8>>> {
     let mut out = Vec::new();
     let mut keys = db.keys()?;
@@ -252,16 +276,28 @@ pub fn keys_with_prefix(db: &Database, prefix: &[u8]) -> Result<Vec<Vec<u8>>> {
 /// (the prefix is not stripped, since the corpus offers no real record to
 /// confirm `<name>`'s own encoding, e.g. whether it may itself contain
 /// `/`-separated path segments as public documentation suggests).
+///
+/// # Errors
+///
+/// Returns an error under the same conditions as [`keys_with_prefix`].
 pub fn structure_template_keys(db: &Database) -> Result<Vec<Vec<u8>>> {
     keys_with_prefix(db, STRUCTURE_TEMPLATE_PREFIX.as_bytes())
 }
 
 /// Every `tickingarea_<id>` key present in `db`, full key bytes.
+///
+/// # Errors
+///
+/// Returns an error under the same conditions as [`keys_with_prefix`].
 pub fn ticking_area_keys(db: &Database) -> Result<Vec<Vec<u8>>> {
     keys_with_prefix(db, TICKING_AREA_PREFIX.as_bytes())
 }
 
 /// Every `VILLAGE_*` key present in `db`, full key bytes.
+///
+/// # Errors
+///
+/// Returns an error under the same conditions as [`keys_with_prefix`].
 pub fn village_keys(db: &Database) -> Result<Vec<Vec<u8>>> {
     keys_with_prefix(db, VILLAGE_PREFIX.as_bytes())
 }

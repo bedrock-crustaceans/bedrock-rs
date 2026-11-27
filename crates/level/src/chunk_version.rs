@@ -22,7 +22,7 @@ use crate::version::GameVersion;
 /// Where a chunk's terrain lives on disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TerrainLocation {
-    /// `0x30` LegacyTerrain: one 16x16x128 column blob covering the whole
+    /// `0x30` `LegacyTerrain`: one 16x16x128 column blob covering the whole
     /// chunk, split into 8 vertical sections of 16 blocks each. Versions
     /// 0-2.
     LegacyTerrain,
@@ -37,7 +37,7 @@ pub enum TerrainLocation {
 /// How a chunk's biomes are stored on disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum BiomeForm {
-    /// `0x2d` HeightMap: one biome id per column, packed alongside the
+    /// `0x2d` `HeightMap`: one biome id per column, packed alongside the
     /// 16x16 heightmap.
     Columns2d,
     /// `0x2b` Biome3d: a paletted volume per subchunk section, one section
@@ -220,6 +220,10 @@ impl FormatProfile {
     /// [`KNOWN_CHUNK_VERSION_CEILING`] inherits the newest known facts with
     /// [`FormatProfile::extrapolated`] set, rather than either case being an
     /// error.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the expect is unreachable: FACT_BOUNDARIES has an entry starting at version 0"
+    )]
     pub fn for_version(chunk_version: u8) -> Self {
         // `FACT_BOUNDARIES` starts at 0, so this always matches.
         let boundary = FACT_BOUNDARIES
@@ -266,6 +270,10 @@ impl FormatProfile {
     /// change -- no fact boundary exists at 39, and the subchunk key-index offset window
     /// (25-28 only, [`subchunk_key_index_is_offset`]) is a target-dependent detail *within*
     /// this one family, not a family split of its own.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the expect is unreachable: FACT_BOUNDARIES has an entry starting at version 0"
+    )]
     pub fn version_family(chunk_version: u8) -> RangeInclusive<u8> {
         let idx = FACT_BOUNDARIES
             .iter()
@@ -274,8 +282,7 @@ impl FormatProfile {
         let start = FACT_BOUNDARIES[idx].from_version;
         let end = FACT_BOUNDARIES
             .get(idx + 1)
-            .map(|boundary| boundary.from_version - 1)
-            .unwrap_or(u8::MAX);
+            .map_or(u8::MAX, |boundary| boundary.from_version - 1);
         start..=end
     }
 }
@@ -313,6 +320,10 @@ impl FormatProfile {
 /// 25+ family, and no fixture below 25 writes `0x2b` at all): such a call falls through to
 /// the oldest known boundary (32) as a harmless placeholder rather than panicking, since
 /// nothing in this crate ever calls it that way.
+#[expect(
+    clippy::missing_panics_doc,
+    reason = "the expect is unreachable: every count is a nonzero literal or the nonzero fallback"
+)]
 pub fn fragment_count_for(target_version: u8) -> NonZeroUsize {
     const BOUNDARIES: &[(u8, usize)] = &[(25, 32), (39, 25), (40, 24)];
     let count = BOUNDARIES
@@ -360,7 +371,7 @@ impl DecodeVersion {
 
     /// The chunk version to decode with. [`DecodeVersion::Unversioned`]
     /// resolves to `0` -- the oldest known chunk version, matching the
-    /// baseline `0x30` LegacyTerrain / 2D-biome format that predates
+    /// baseline `0x30` `LegacyTerrain` / 2D-biome format that predates
     /// version keys existing on disk at all.
     pub fn chunk_version(&self) -> u8 {
         match self {

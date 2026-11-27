@@ -167,6 +167,12 @@ impl LastId {
 }
 
 /// Decodes a `PosTrackDB-0x<id>` value.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` is not a valid NBT [`Entry`], or
+/// [`Error::Invalid`] if bytes follow the compound or its `pos` list is not
+/// exactly three `Int`s.
 pub fn decode_entry(bytes: &[u8]) -> Result<Entry> {
     let mut cursor = Cursor::new(bytes);
     let entry: Entry = nbtx::from_le_bytes(&mut cursor)?;
@@ -184,11 +190,20 @@ pub fn decode_entry(bytes: &[u8]) -> Result<Entry> {
 }
 
 /// Encodes a `PosTrackDB-0x<id>` value. The inverse of [`decode_entry`].
+///
+/// # Errors
+///
+/// Returns an error if `entry` cannot be encoded as NBT.
 pub fn encode_entry(entry: &Entry) -> Result<Vec<u8>> {
     Ok(nbtx::to_le_bytes(entry)?)
 }
 
 /// Decodes a `PositionTrackDB-LastId` value.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` is not a valid NBT [`LastId`], or
+/// [`Error::Invalid`] if bytes follow the compound.
 pub fn decode_last_id(bytes: &[u8]) -> Result<LastId> {
     let mut cursor = Cursor::new(bytes);
     let last_id: LastId = nbtx::from_le_bytes(&mut cursor)?;
@@ -202,11 +217,20 @@ pub fn decode_last_id(bytes: &[u8]) -> Result<LastId> {
 
 /// Encodes a `PositionTrackDB-LastId` value. The inverse of
 /// [`decode_last_id`].
+///
+/// # Errors
+///
+/// Returns an error if `last_id` cannot be encoded as NBT.
 pub fn encode_last_id(last_id: &LastId) -> Result<Vec<u8>> {
     Ok(nbtx::to_le_bytes(last_id)?)
 }
 
 /// Reads the `PositionTrackDB-LastId` counter from `db`, if present.
+///
+/// # Errors
+///
+/// Returns an error if the database read fails or the stored value does not
+/// [`decode_last_id`].
 pub fn read_last_id(db: &Database) -> Result<Option<LastId>> {
     match db.get(LAST_ID_KEY)? {
         Some(bytes) => Ok(Some(decode_last_id(&bytes)?)),
@@ -215,6 +239,11 @@ pub fn read_last_id(db: &Database) -> Result<Option<LastId>> {
 }
 
 /// Reads tracking entry `id` from `db`, if present.
+///
+/// # Errors
+///
+/// Returns an error if the database read fails or the stored value does not
+/// [`decode_entry`].
 pub fn read_entry(db: &Database, id: u32) -> Result<Option<Entry>> {
     match db.get(key(id))? {
         Some(bytes) => Ok(Some(decode_entry(&bytes)?)),
@@ -237,6 +266,12 @@ pub fn read_entry(db: &Database, id: u32) -> Result<Option<Entry>> {
 /// database-level error (as opposed to a malformed record) still
 /// propagates immediately through the outer `Result`, matching
 /// [`crate::db::Database::keys`]'s own iterator.
+///
+/// # Errors
+///
+/// Returns an error if a database read fails or the [`LAST_ID_KEY`] value
+/// does not [`decode_last_id`]. A malformed entry is reported in its own
+/// item instead.
 pub fn read_all(db: &Database) -> Result<Vec<(u32, Result<Entry>)>> {
     let Some(last_id) = read_last_id(db)?.and_then(|l| l.last_id()) else {
         return Ok(Vec::new());
@@ -260,8 +295,8 @@ mod tests {
         assert_eq!(k, b"PosTrackDB-0x00000001".to_vec());
         assert_eq!(id_from_key(&k), Some(1));
 
-        let k = key(0xdeadbeef);
-        assert_eq!(id_from_key(&k), Some(0xdeadbeef));
+        let k = key(0xdead_beef);
+        assert_eq!(id_from_key(&k), Some(0xdead_beef));
     }
 
     #[test]

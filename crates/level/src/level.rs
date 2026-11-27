@@ -27,7 +27,7 @@ use crate::subchunk::BlockDef;
 use crate::types::ChunkPosition;
 use crate::upgrade::EARLIEST_BLOCK_STATE_VERSION;
 
-/// One opened Bedrock world: `level.dat` (metadata) plus the `db/` LevelDB
+/// One opened Bedrock world: `level.dat` (metadata) plus the `db/` `LevelDB`
 /// store (chunks and everything else), opened together from the world
 /// directory that contains both.
 ///
@@ -108,14 +108,19 @@ impl Level {
     /// directly.
     ///
     /// Builds the position index in one scan; see the struct docs for what
-    /// that costs. Returns an error if `level.dat` cannot be read or
-    /// decoded, or if the database fails to open -- both fatal, unlike a
-    /// missing chunk, which [`Level::chunk`] reports as `Ok(None)`.
+    /// that costs.
     ///
     /// The returned handle is read-only: [`Level::save`], [`Level::put_chunk`],
     /// and [`Level::remove_chunk`] all return [`Error::Invalid`] on it rather
     /// than writing, to `level.dat`/`levelname.txt` or to `db/` alike. Use
     /// [`Level::open_rw`] for a handle that actually writes through.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `path` is not valid UTF-8, if the database fails to
+    /// open or its key scan fails, if `level.dat` cannot be read or decoded, or if
+    /// a present metadata dictionary record does not decode -- all fatal, unlike a
+    /// missing chunk, which [`Level::chunk`] reports as `Ok(None)`.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_impl(path.as_ref(), true)
     }
@@ -131,6 +136,10 @@ impl Level {
     /// this constructor will actually write through [`Level::save`]
     /// (`level.dat`/`levelname.txt`), [`Level::put_chunk`], or
     /// [`Level::remove_chunk`] (`db/`) -- see their doc comments.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`Level::open`].
     pub fn open_rw(path: impl AsRef<Path>) -> Result<Self> {
         Self::open_impl(path.as_ref(), false)
     }
@@ -154,7 +163,7 @@ impl Level {
 
         let mut dimensions: HashSet<Dimension> = positions.keys().copied().collect();
         if let Some(dictionary) = &dictionary {
-            for (_, entry) in dictionary.iter() {
+            for (_, entry) in dictionary {
                 if let Some(dimension) = entry.dimension_name().and_then(dimension_from_name) {
                     dimensions.insert(dimension);
                 }
@@ -181,6 +190,7 @@ impl Level {
     /// borrow, and `crate::provider`'s module docs for what attaching one changes -- most
     /// concretely, [`Level::chunk`]/[`Level::chunks`] start running the content-upgrade pass
     /// automatically once this has been called.
+    #[must_use]
     pub fn with_provider(mut self, provider: impl ContentProvider + 'static) -> Self {
         self.provider = Some(Box::new(provider));
         self
@@ -316,8 +326,7 @@ impl Level {
         let positions = self
             .positions
             .get(&dimension)
-            .map(Vec::as_slice)
-            .unwrap_or(&[]);
+            .map_or(&[][..], Vec::as_slice);
         ChunkPositions {
             inner: positions.iter(),
         }
@@ -326,6 +335,11 @@ impl Level {
     /// Reads and decodes the chunk at `position` in `dimension`.
     /// `Ok(None)` if no chunk exists there at all -- an ordinary outcome in
     /// a sparse world -- and `Err` only for a read or decode failure.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database scan fails or the chunk's records do not
+    /// decode.
     pub fn chunk(&self, dimension: Dimension, position: ChunkPosition) -> Result<Option<Chunk>> {
         match ChunkRecords::read(&self.db, position, dimension)? {
             Some(records) => {
@@ -364,6 +378,11 @@ impl Level {
     /// scan, which can fail with an I/O error independent of any single
     /// chunk's own decode, so this returns `Result<Chunks<'_>>` instead of
     /// deferring that failure into the first yielded item.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database scan that gathers the records fails. A
+    /// chunk that fails to decode is yielded as an `Err` item instead.
     pub fn chunks(&self, dimension: Dimension) -> Result<Chunks<'_>> {
         let empty = Vec::new();
         let positions = self.positions.get(&dimension).unwrap_or(&empty);
@@ -450,6 +469,12 @@ impl Level {
     /// read-modify-write is always safe; a cross-level move at coinciding
     /// coordinates is not guaranteed to be -- pick a position this level
     /// has nothing at, or accept that stray records may survive.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] on a read-only handle. Otherwise returns an
+    /// error if `chunk` cannot be encoded for the target version, if its actor
+    /// writes cannot be built, or if a database read, write or delete fails.
     pub fn put_chunk(
         &mut self,
         dimension: Dimension,
@@ -470,6 +495,10 @@ impl Level {
     /// a caller pinning a version this chunk cannot structurally reach (a different format
     /// family -- see [`Chunk::encode_as`]'s doc comment) can tell it fell short without a
     /// second call.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`Level::put_chunk`].
     pub fn put_chunk_at(
         &mut self,
         dimension: Dimension,
@@ -489,7 +518,7 @@ impl Level {
 
         if !same_spot && let Some(existing) = ChunkRecords::read(&self.db, position, dimension)? {
             let mut key_buf = Vec::new();
-            for (key, _) in existing.iter() {
+            for (key, _) in &existing {
                 if !encoded.contains(key.data) {
                     key_buf.clear();
                     key.serialize(&mut key_buf)?;
@@ -533,6 +562,12 @@ impl Level {
     /// Returns [`Error::Invalid`] without removing anything on a
     /// [`Level::open`] handle -- see [`Level::open`]'s doc comment. Use
     /// [`Level::open_rw`] for a handle this actually writes through.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] on a read-only handle. Otherwise returns an
+    /// error if the chunk's `digp` record does not decode or a database read,
+    /// write or delete fails.
     pub fn remove_chunk(&mut self, dimension: Dimension, position: ChunkPosition) -> Result<()> {
         if self.read_only {
             return Err(Error::Invalid(
@@ -596,6 +631,12 @@ impl Level {
     /// Widening the mutation surface further is deferred until a caller
     /// need motivates which field to expose next, rather than opening every
     /// field speculatively.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] on a read-only handle (see below). Otherwise
+    /// returns an error if the settings cannot be encoded or either file
+    /// cannot be written and renamed into place.
     ///
     /// # Read-only handles
     ///
@@ -669,6 +710,11 @@ impl Level {
     /// [`LevelSettings::reserve_actor_session_id`]'s own error -- the
     /// counter reaching `i32::MIN` with nothing further to hand out -- in
     /// which case nothing is written either.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] on a read-only handle or when the session
+    /// counter is exhausted, or an error if writing `level.dat` fails.
     pub fn reserve_actor_session_id(&mut self) -> Result<i32> {
         if self.read_only {
             return Err(Error::Invalid(
@@ -710,6 +756,11 @@ impl Level {
     /// a [`Level::open`] handle, or once the session counter is exhausted
     /// at `i32::MIN` -- both exactly [`Self::reserve_actor_session_id`]'s
     /// own failure modes; see its doc comment.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as
+    /// [`Self::reserve_actor_session_id`].
     pub fn begin_actor_session(&mut self) -> Result<ActorSession> {
         let session = self.reserve_actor_session_id()?;
         Ok(ActorSession::new(session))
@@ -885,11 +936,19 @@ impl<'a> DimensionRef<'a> {
     }
 
     /// See [`Level::chunk`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`Level::chunk`].
     pub fn chunk(&self, position: ChunkPosition) -> Result<Option<Chunk>> {
         self.level.chunk(self.dimension, position)
     }
 
     /// See [`Level::chunks`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`Level::chunks`].
     pub fn chunks(&self) -> Result<Chunks<'a>> {
         self.level.chunks(self.dimension)
     }
