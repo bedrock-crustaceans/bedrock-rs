@@ -35,6 +35,10 @@ pub struct OpenOptions {
     /// Deflate level from 0 (store) to 10 (slowest). Level 1 writes about three times faster than
     /// level 6 for roughly 7% more disk space.
     pub compression_level: u8,
+    /// Bytes of decompressed table blocks kept in memory. The game writes blocks of about
+    /// 160 KiB, and reading a chunk decompresses a block in every level the chunk is in, so
+    /// `LevelDB`'s 8 MiB default holds the blocks of only a few chunks.
+    pub block_cache_bytes: usize,
 }
 
 impl Default for OpenOptions {
@@ -42,6 +46,7 @@ impl Default for OpenOptions {
         Self {
             compaction_mode: CompactionMode::Background,
             compression_level: 1,
+            block_cache_bytes: 40 << 20,
         }
     }
 }
@@ -119,6 +124,7 @@ fn options(open: OpenOptions) -> Options {
         block_size: BLOCK_SIZE,
         create_if_missing: true,
         compaction_mode: open.compaction_mode,
+        block_cache_capacity_bytes: open.block_cache_bytes,
         ..Default::default()
     }
 }
