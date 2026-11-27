@@ -167,6 +167,11 @@ pub struct FieldRow {
     pub foreign_event: bool,
     /// facet's `flatten`: the field's members are members of this struct's object.
     pub flatten: bool,
+    /// `schema::read_by`: the parts of the game that read the member, as the struct names them
+    /// (empty when it names none).
+    pub read_by: &'static [&'static str],
+    /// `schema::getter`: the getter the game reads the member with, as the struct names it.
+    pub getter: Option<&'static str>,
 }
 
 impl FieldRow {
@@ -194,6 +199,8 @@ impl FieldRow {
             unknown: None,
             foreign_event: false,
             flatten: false,
+            read_by: &[],
+            getter: None,
         }
     }
 }

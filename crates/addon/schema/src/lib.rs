@@ -280,6 +280,15 @@ facet::define_attr_grammar! {
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,
+        /// `read_by = "sprite text"` (compile-time, a field): the parts of the game that read the
+        /// member, names separated by spaces, in the field's row (`FieldRow::read_by`): for code
+        /// that asks at run time which part reads a member, as a lint of the members no part of
+        /// a control reads. It names at least one, none twice. The read does not look at it.
+        ReadBy(arbitrary),
+        /// `getter = "bool"` (compile-time, a field): the getter the game reads the member with,
+        /// by the name the family gives it, in the field's row (`FieldRow::getter`); not the
+        /// accessor the derive makes for a `fallback`. The read does not look at it.
+        Getter(arbitrary),
         /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
         /// the game's order, and the derive emits none; it checks at compile time that `ALL`
         /// names every variant once. `NAMES` and `EXPECTED` stay in declaration order.

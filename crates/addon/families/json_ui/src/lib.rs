@@ -4,8 +4,12 @@
 //! `GlobalVariables`). The family is unversioned: no file carries a `format_version` and
 //! nothing is gated on an engine version.
 //!
-//! The reader stays a hand walk, because the client reads a control's members by hand when a screen
-//! builds it, each with a text of its own: no schema stands behind it.
+//! The files are held as the JSON they were written as: the client merges the copies of a file
+//! as JSON before it reads a member, a definition inherits its base's members key by key, and
+//! the write gives back every member in the order and with the numbers read. What the client's
+//! control factory reads is declared: one struct whose fields are the keys its components read,
+//! each naming the components and the getter (`schema::read_by`, `schema::getter`), and the checks
+//! a screen runs when it builds a control look a key up in that struct's rows.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -20,6 +24,7 @@ pub use key::{DefKey, DefRef};
 mod chain;
 pub mod codes;
 mod control;
+mod definition;
 mod expr;
 mod globals;
 mod key;

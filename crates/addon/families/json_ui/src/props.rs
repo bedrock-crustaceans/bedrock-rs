@@ -1,11 +1,15 @@
 //! The property tables of the control factory: which internal component reads which key, with
-//! what getter, and which components each control type is made of.
+//! what getter (the rows of [`Definition`], one field per key), and which components each control
+//! type is made of.
 
 use super::codes;
 use super::control::{AnimationType, ControlType};
+use super::definition::Definition;
 use bedrock_addon_core::diagnostic::CodeDef;
+use bedrock_addon_core::schema::Schema;
 
-/// An internal UI component: a fixed set of keys the factory reads.
+/// An internal UI component: a fixed set of keys the factory reads, the fields of [`Definition`]
+/// that name it in `schema::read_by`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Component {
     /// Read for every type: the keys of the definition itself and of `_postCreate`.
@@ -158,391 +162,74 @@ pub(crate) const INPUT_MODE: EnumRule = EnumRule {
     miss: Miss::CrateOwn,
 };
 
-use Kind::{Any, Array, ArrayOrNumber, ArrayOrString, Axes, Bool, Number, Object, Str};
-
-type Keys = &'static [(&'static str, Kind)];
-
-const COMMON: Keys = &[
-    ("type", Any),
-    ("controls", Array),
-    ("ignored", Any),
-    ("variables", Any),
-    ("bindings", Any),
-    ("anims", Array),
-    ("disable_anim_fast_forward", Bool),
-    ("animation_reset_name", Str),
-    ("modifications", Any),
-    ("factory", Object),
-    ("grid_position", Array),
-    ("collection_index", Number),
-    ("ignoreCollectionItem", Bool),
-    ("toggle_manager_behavior", Kind::Enum(&TOGGLE_MANAGER)),
-    ("toggle_manage_groups", Array),
-    ("slider_manager_behavior", Kind::Enum(&SLIDER_MANAGER)),
-    ("slider_manage_groups", Array),
-    ("use_anchored_offset", Bool),
-    ("focus_container", Bool),
-    ("use_last_focus", Bool),
-    ("focus_wrap_enabled", Bool),
-    ("focus_navigation_mode_up", Kind::Enum(&FOCUS_NAVIGATION)),
-    ("focus_navigation_mode_down", Kind::Enum(&FOCUS_NAVIGATION)),
-    ("focus_navigation_mode_left", Kind::Enum(&FOCUS_NAVIGATION)),
-    ("focus_navigation_mode_right", Kind::Enum(&FOCUS_NAVIGATION)),
-    ("focus_container_custom_up", Array),
-    ("focus_container_custom_down", Array),
-    ("focus_container_custom_left", Array),
-    ("focus_container_custom_right", Array),
-    ("debug", Kind::Enum(&DEBUG_COLOR)),
-    ("tts_section_header", Str),
-];
-const CONTROL: Keys = &[
-    ("visible", Bool),
-    ("enabled", Bool),
-    ("layer", Number),
-    ("alpha", Number),
-    ("propagate_alpha", Bool),
-    ("clips_children", Bool),
-    ("clip_offset", Array),
-    ("allow_clipping", Bool),
-    ("enable_scissor_test", Bool),
-    ("property_bag", Object),
-    ("property_bag_for_children", Object),
-    ("clip_state_change_event", Str),
-    ("selected", Bool),
-];
-const LAYOUT: Keys = &[
-    ("size", Axes),
-    ("offset", Axes),
-    ("min_size", Axes),
-    ("max_size", Axes),
-    ("anchor_from", Kind::Enum(&ANCHOR)),
-    ("anchor_to", Kind::Enum(&ANCHOR)),
-    ("contained", Bool),
-    ("draggable", Kind::Enum(&DRAGGABLE)),
-    ("follows_cursor", Bool),
-    ("follows_cursor_inside_parent", Bool),
-    ("inherit_max_sibling_width", Bool),
-    ("inherit_max_sibling_height", Bool),
-    ("priority", Number),
-    ("priority_rule", Kind::Enum(&PRIORITY_RULE)),
-    ("ttsSectionContainer", Bool),
-];
-const SPRITE: Keys = &[
-    ("texture", Str),
-    ("texture_file_system", Str),
-    ("uv", Array),
-    ("uv_size", Array),
-    ("color", ArrayOrString),
-    ("nineslice_size", ArrayOrNumber),
-    ("tiled", Any),
-    ("tiled_scale", Array),
-    ("clip_direction", Kind::Enum(&CLIP_DIRECTION)),
-    ("clip_ratio", Number),
-    ("clip_pixelperfect", Bool),
-    ("pixel_perfect", Bool),
-    ("keep_ratio", Bool),
-    ("fill", Bool),
-    ("default_size_scales_to_ratio", Bool),
-    ("zip_folder", Str),
-    ("grayscale", Bool),
-    ("bilinear", Bool),
-    ("force_texture_reload", Bool),
-    ("allow_debug_missing_texture", Bool),
-    ("color_corrected", Bool),
-];
-const TEXT: Keys = &[
-    ("text", Str),
-    ("text_tts", Str),
-    ("color", ArrayOrString),
-    ("locked_color", ArrayOrString),
-    ("shadow", Bool),
-    ("hide_hyphen", Bool),
-    ("locked_alpha", Number),
-    ("font_size", Kind::Enum(&FONT_SIZE)),
-    ("font_scale_factor", Number),
-    ("localize", Bool),
-    ("line_padding", Number),
-    ("enable_profanity_filter", Bool),
-    ("notify_on_ellipses", Array),
-    ("notify_ellipses_sibling", Bool),
-    ("font_type", Any),
-    ("backup_font_type", Any),
-    ("text_alignment", Kind::Enum(&TEXT_ALIGNMENT)),
-];
-const BUTTON: Keys = &[
-    ("default_control", Str),
-    ("hover_control", Str),
-    ("pressed_control", Str),
-    ("locked_control", Str),
-    ("consume_event", Bool),
-];
-const TOGGLE: Keys = &[
-    ("radio_toggle_group", Bool),
-    ("toggle_name", Str),
-    ("descriptive_text", Str),
-    ("toggle_default_state", Bool),
-    ("toggle_group_forced_index", Number),
-    ("toggle_group_default_selected", Number),
-    ("toggle_on_hover", Bool),
-    ("enable_directional_toggling", Bool),
-    ("toggle_on_button", Str),
-    ("toggle_off_button", Str),
-    ("toggle_grid_collection_name", Str),
-    ("tts_toggle_on", Str),
-    ("tts_toggle_off", Str),
-    ("checked_control", Str),
-    ("unchecked_control", Str),
-    ("checked_hover_control", Str),
-    ("unchecked_hover_control", Str),
-    ("checked_locked_control", Str),
-    ("unchecked_locked_control", Str),
-    ("checked_locked_hover_control", Str),
-    ("unchecked_locked_hover_control", Str),
-];
-const INPUT: Keys = &[
-    ("button_mappings", Array),
-    ("modal", Bool),
-    ("inline_modal", Bool),
-    ("gamepad_deflection_mode", Bool),
-    ("always_listen_to_input", Bool),
-    ("always_handle_pointer", Bool),
-    ("always_handle_controller_direction", Bool),
-    ("hover_enabled", Bool),
-    ("consume_hover_events", Bool),
-    ("prevent_touch_input", Bool),
-];
-const FOCUS: Keys = &[
-    ("default_focus_precedence", Number),
-    ("focus_enabled", Bool),
-    ("focus_wrap_enabled", Bool),
-    ("focus_magnet_enabled", Bool),
-    ("focus_identifier", Str),
-    ("reset_on_focus_lost", Bool),
-    ("focus_change_up", Str),
-    ("focus_change_down", Str),
-    ("focus_change_left", Str),
-    ("focus_change_right", Str),
-    ("focus_mapping", Any),
-];
-const SOUND: Keys = &[
-    ("sound_name", Str),
-    ("sound_volume", Number),
-    ("sound_pitch", Number),
-    ("sounds", Array),
-];
-const GRID: Keys = &[
-    ("grid_dimensions", Array),
-    ("maximum_grid_items", Number),
-    ("grid_dimension_binding", Str),
-    ("collection_name", Str),
-    ("grid_rescaling_type", Kind::Enum(&ORIENTATION)),
-    ("grid_fill_direction", Kind::Enum(&ORIENTATION)),
-    ("grid_item_template", Str),
-];
-const STACK_PANEL: Keys = &[
-    ("orientation", Kind::Enum(&ORIENTATION)),
-    ("use_child_anchors", Bool),
-    ("use_priority", Bool),
-];
-const COLLECTION: Keys = &[("collection_name", Str)];
-const SCREEN: Keys = &[
-    ("screen_not_flushable", Bool),
-    ("always_accepts_input", Bool),
-    ("render_game_behind", Bool),
-    ("absorbs_input", Bool),
-    ("is_showing_menu", Bool),
-    ("is_modal", Bool),
-    ("should_steal_mouse", Bool),
-    ("low_frequency_rendering", Bool),
-    ("screen_draws_last", Bool),
-    ("force_render_below", Bool),
-    ("send_telemetry", Bool),
-    ("close_on_player_hurt", Bool),
-    ("use_custom_pocket_toast", Bool),
-    ("cache_screen", Bool),
-    ("gamepad_cursor", Bool),
-    ("gamepad_cursor_deflection_mode", Bool),
-    ("vertical_scroll_delta", Number),
-    ("load_screen_immediately", Bool),
-    ("render_only_when_topmost", Bool),
-    ("should_be_skipped_during_automation", Bool),
-];
-const CUSTOM: Keys = &[
-    ("renderer", Str),
-    ("text_color", ArrayOrString),
-    ("background_color", ArrayOrString),
-    ("primary_color", ArrayOrString),
-    ("secondary_color", ArrayOrString),
-    ("full_storage_color", ArrayOrString),
-    ("foreground_color", ArrayOrString),
-    ("gradient_direction", Kind::Enum(&GRADIENT_DIRECTION)),
-    ("color1", ArrayOrString),
-    ("color2", ArrayOrString),
-    ("use_selected_skin", Bool),
-    ("use_uuid", Bool),
-    ("use_player_paperdoll", Bool),
-    ("use_skin_gui_scale", Bool),
-    ("camera_tilt_degrees", Number),
-    ("rotation", Kind::Enum(&ROTATION)),
-    ("starting_rotation", Number),
-    ("rotation_x", Number),
-    ("rotation_y", Number),
-    ("hover_text_max_width", Number),
-    ("replaced_while_inactive", Bool),
-    ("end_event", Str),
-];
-const SCROLL_VIEW: Keys = &[
-    ("scrollbar_track_button", Any),
-    ("scrollbar_touch_button", Any),
-    ("scroll_speed", Number),
-    ("gesture_control_enabled", Bool),
-    ("always_handle_scrolling", Bool),
-    ("touch_mode", Bool),
-    ("allow_scroll_even_when_content_fits", Bool),
-    ("scrollbar_always_visible", Bool),
-    ("scrollbar_box", Any),
-    ("scrollbar_track", Any),
-    ("scroll_view_port", Any),
-    ("scroll_content", Any),
-    ("scroll_box_and_track_panel", Any),
-    ("jump_to_bottom_on_update", Any),
-];
-const SLIDER: Keys = &[
-    ("slider_track_button", Any),
-    ("slider_small_decrease_button", Any),
-    ("slider_small_increase_button", Any),
-    ("slider_selected_button", Any),
-    ("slider_deselected_button", Any),
-    ("slider_steps", Number),
-    ("slider_direction", Kind::Enum(&ORIENTATION)),
-    ("slider_inverted", Bool),
-    ("slider_speed", Number),
-    ("slider_timeout", Number),
-    ("slider_collection_name", Any),
-    ("slider_name", Any),
-    ("slider_select_on_hover", Bool),
-    ("slider_box_control", Any),
-    ("tts_value_changed", Any),
-    ("default_control", Str),
-    ("hover_control", Str),
-    ("background_control", Any),
-    ("background_hover_control", Any),
-    ("progress_control", Any),
-    ("progress_hover_control", Any),
-];
-const SLIDER_BOX: Keys = &[
-    ("default_control", Str),
-    ("hover_control", Str),
-    ("locked_control", Str),
-    ("indent_control", Any),
-];
-const TEXT_EDIT: Keys = &[
-    ("text_box_name", Any),
-    ("text_edit_box_grid_collection_name", Any),
-    ("constrain_to_rect", Bool),
-    ("enabled_newline", Bool),
-    ("text_type", Any),
-    ("max_length", Number),
-    ("virtual_keyboard_buffer_control", Any),
-    ("text_control", Any),
-    ("place_holder_control", Any),
-    ("can_be_deselected", Bool),
-    ("always_listening", Bool),
-    ("place_holder_text_hover_color", ArrayOrString),
-];
-const DROPDOWN: Keys = &[
-    ("dropdown_name", Any),
-    ("dropdown_content_control", Any),
-    ("dropdown_area", Any),
-];
-const GESTURE: Keys = &[("gesture_tracking_button", Any)];
-const TEXT_TO_SPEECH: Keys = &[
-    ("tts_name", Any),
-    ("tts_control_header", Any),
-    ("tts_section_header", Any),
-    ("tts_override_control_value", Any),
-    ("tts_inherit_siblings", Any),
-    ("tts_message_interruptible", Bool),
-    ("tts_message_interruptible_id", Any),
-    ("tts_index_order", Any),
-    ("tts_index_priority", Number),
-    ("tts_ignore_subsections", Any),
-    ("tts_ignore_count", Any),
-    ("tts_skip_message", Any),
-    ("tts_skip_children", Any),
-    ("tts_play_on_unchanged_focus_control", Any),
-    ("tts_control_type_order_priority", Number),
-    ("tts_value_order_priority", Number),
-];
-const SELECTION_WHEEL: Keys = &[
-    ("consume_event", Bool),
-    ("slice_count", Number),
-    ("inner_radius", Number),
-    ("outer_radius", Number),
-    ("state_controls", Any),
-    ("analog_button_name", Any),
-    ("hover_button_name", Any),
-    ("select_button_name", Any),
-    ("iterate_left_button_name", Any),
-    ("iterate_right_button_name", Any),
-    ("initial_button_slice", Number),
-];
-// With the PageIndicatorManager both cyclers also get.
-const IMAGE_CYCLING: Keys = &[
-    ("images", Any),
-    ("next_sub_page_button_name", Any),
-    ("prev_sub_page_button_name", Any),
-    ("target_cycler_to_compare", Any),
-];
-const TEXT_CYCLING: Keys = &[
-    ("text_labels", Array),
-    ("next_sub_page_button_name", Any),
-    ("prev_sub_page_button_name", Any),
-    ("target_cycler_to_compare", Any),
-];
-const PAGE_INDICATOR_GRID: Keys = &[
-    ("cycler_manager_size_control_target", Any),
-    ("grid_item_when_current", Any),
-    ("grid_item_when_not_current", Any),
-];
-const TOOLTIP_TRIGGER: Keys = &[
-    ("tooltip_name", Any),
-    ("tooltip_tts_value", Any),
-    ("tooltip_top_content_control", Any),
-    ("tooltip_bottom_content_control", Any),
-    ("tooltip_area", Any),
+/// The components by the names the declaration gives them in `schema::read_by`.
+const COMPONENTS: &[(Component, &str)] = &[
+    (Component::Common, "common"),
+    (Component::Control, "control"),
+    (Component::Layout, "layout"),
+    (Component::Sprite, "sprite"),
+    (Component::Text, "text"),
+    (Component::Button, "button"),
+    (Component::Toggle, "toggle"),
+    (Component::Input, "input"),
+    (Component::Focus, "focus"),
+    (Component::Sound, "sound"),
+    (Component::Grid, "grid"),
+    (Component::StackPanel, "stack_panel"),
+    (Component::Collection, "collection"),
+    (Component::Screen, "screen"),
+    (Component::Custom, "custom"),
+    (Component::ScrollView, "scroll_view"),
+    (Component::Slider, "slider"),
+    (Component::SliderBox, "slider_box"),
+    (Component::TextEdit, "text_edit"),
+    (Component::Dropdown, "dropdown"),
+    (Component::Gesture, "gesture"),
+    (Component::TextToSpeech, "text_to_speech"),
+    (Component::SelectionWheel, "selection_wheel"),
+    (Component::ImageCycling, "image_cycling"),
+    (Component::TextCycling, "text_cycling"),
+    (Component::PageIndicatorGrid, "page_indicator_grid"),
+    (Component::TooltipTrigger, "tooltip_trigger"),
 ];
 
-/// Every component with its keys.
-const TABLE: &[(Component, Keys)] = &[
-    (Component::Common, COMMON),
-    (Component::Control, CONTROL),
-    (Component::Layout, LAYOUT),
-    (Component::Sprite, SPRITE),
-    (Component::Text, TEXT),
-    (Component::Button, BUTTON),
-    (Component::Toggle, TOGGLE),
-    (Component::Input, INPUT),
-    (Component::Focus, FOCUS),
-    (Component::Sound, SOUND),
-    (Component::Grid, GRID),
-    (Component::StackPanel, STACK_PANEL),
-    (Component::Collection, COLLECTION),
-    (Component::Screen, SCREEN),
-    (Component::Custom, CUSTOM),
-    (Component::ScrollView, SCROLL_VIEW),
-    (Component::Slider, SLIDER),
-    (Component::SliderBox, SLIDER_BOX),
-    (Component::TextEdit, TEXT_EDIT),
-    (Component::Dropdown, DROPDOWN),
-    (Component::Gesture, GESTURE),
-    (Component::TextToSpeech, TEXT_TO_SPEECH),
-    (Component::SelectionWheel, SELECTION_WHEEL),
-    (Component::ImageCycling, IMAGE_CYCLING),
-    (Component::TextCycling, TEXT_CYCLING),
-    (Component::PageIndicatorGrid, PAGE_INDICATOR_GRID),
-    (Component::TooltipTrigger, TOOLTIP_TRIGGER),
-];
+/// The component a `schema::read_by` name names.
+fn component(name: &str) -> Option<Component> {
+    COMPONENTS
+        .iter()
+        .find(|(_, known)| *known == name)
+        .map(|(component, _)| *component)
+}
+
+/// The getter a `schema::getter` name names; `None` for a row without one (the members no
+/// component reads) and for a name that is none.
+fn kind(getter: Option<&str>) -> Option<Kind> {
+    Some(match getter? {
+        "any" => Kind::Any,
+        "bool" => Kind::Bool,
+        "number" => Kind::Number,
+        "string" => Kind::Str,
+        "array" => Kind::Array,
+        "object" => Kind::Object,
+        "array_or_string" => Kind::ArrayOrString,
+        "array_or_number" => Kind::ArrayOrNumber,
+        "axes" => Kind::Axes,
+        "anchor" => Kind::Enum(&ANCHOR),
+        "orientation" => Kind::Enum(&ORIENTATION),
+        "text_alignment" => Kind::Enum(&TEXT_ALIGNMENT),
+        "draggable" => Kind::Enum(&DRAGGABLE),
+        "priority_rule" => Kind::Enum(&PRIORITY_RULE),
+        "toggle_manager" => Kind::Enum(&TOGGLE_MANAGER),
+        "slider_manager" => Kind::Enum(&SLIDER_MANAGER),
+        "clip_direction" => Kind::Enum(&CLIP_DIRECTION),
+        "font_size" => Kind::Enum(&FONT_SIZE),
+        "focus_navigation" => Kind::Enum(&FOCUS_NAVIGATION),
+        "debug_color" => Kind::Enum(&DEBUG_COLOR),
+        "gradient_direction" => Kind::Enum(&GRADIENT_DIRECTION),
+        "rotation" => Kind::Enum(&ROTATION),
+        _ => return None,
+    })
+}
 
 /// The components the factory populates for a control type, besides the ones every type gets.
 // The game builds a control from a jump table over its type; this is that table.
@@ -613,24 +300,22 @@ pub(crate) enum Lookup {
     Unknown,
 }
 
-/// Looks `key` up for a control of type `control`; without a type, a key is read as the first
-/// component that has it reads it.
+/// Looks `key` up for a control of type `control` in [`Definition`]'s rows; without a type, a
+/// key is read as any component that has it reads it.
 pub(crate) fn lookup(control: Option<ControlType>, key: &str) -> Lookup {
-    let mut known = None;
-    for (component, keys) in TABLE {
-        if let Some((_, kind)) = keys.iter().find(|(name, _)| *name == key) {
-            if control.is_none() || has(control, *component) {
-                return Lookup::Read(*kind);
-            }
-            // A renderer's own keys are exempt: only `renderer` itself is the factory's.
-            if *component != Component::Custom || key == "renderer" {
-                known = Some(());
-            }
-        }
+    let row = Definition::FIELDS.iter().find(|row| row.json == key);
+    let Some((row, getter)) = row.and_then(|row| Some((row, kind(row.getter)?))) else {
+        return Lookup::Unknown;
+    };
+    let mut readers = row.read_by.iter().filter_map(|name| component(name));
+    if control.is_none() || readers.any(|reader| has(control, reader)) {
+        return Lookup::Read(getter);
     }
-    match known {
-        Some(()) => Lookup::Unused,
-        None => Lookup::Unknown,
+    // A renderer's own keys are exempt: only `renderer` itself is the factory's.
+    if key == "renderer" || row.read_by.iter().any(|name| *name != "custom") {
+        Lookup::Unused
+    } else {
+        Lookup::Unknown
     }
 }
 
@@ -760,6 +445,58 @@ mod tests {
         assert!(!components(ControlType::Grid).contains(&Component::Input));
         assert!(components(ControlType::StackPanel).contains(&Component::Collection));
         assert!(!components(ControlType::CollectionPanel).contains(&Component::StackPanel));
+    }
+
+    #[test]
+    fn every_row_names_known_components_and_a_known_getter() {
+        for row in Definition::FIELDS.iter().filter(|row| row.json != "extra") {
+            assert!(
+                kind(row.getter).is_some(),
+                "{}: getter {:?}",
+                row.json,
+                row.getter
+            );
+            assert!(!row.read_by.is_empty(), "{}: no component", row.json);
+            for name in row.read_by {
+                assert!(component(name).is_some(), "{}: component {name}", row.json);
+            }
+        }
+        assert_eq!(
+            Definition::FIELDS.len(),
+            287,
+            "286 keys and the unread members"
+        );
+    }
+
+    /// Characterization of the rows' edges: the renamed keys, the first component's getter of
+    /// a key two components read, a renderer's own keys, and the member that holds the rest.
+    #[test]
+    fn the_rows_keep_the_tables_edges() {
+        let read = |control, key| matches!(lookup(control, key), Lookup::Read(_));
+        assert!(read(Some(ControlType::Panel), "ignoreCollectionItem"));
+        assert!(read(Some(ControlType::Panel), "ttsSectionContainer"));
+        assert!(matches!(
+            lookup(Some(ControlType::Panel), "ignore_collection_item"),
+            Lookup::Unknown
+        ));
+        assert!(matches!(
+            lookup(Some(ControlType::Label), "tts_section_header"),
+            Lookup::Read(Kind::Str)
+        ));
+        assert!(matches!(
+            lookup(Some(ControlType::Panel), "use_uuid"),
+            Lookup::Unknown
+        ));
+        assert!(matches!(
+            lookup(Some(ControlType::Panel), "renderer"),
+            Lookup::Unused
+        ));
+        assert!(read(Some(ControlType::Custom), "use_uuid"));
+        assert!(matches!(lookup(None, "extra"), Lookup::Unknown));
+        assert!(matches!(
+            lookup(Some(ControlType::Panel), "type"),
+            Lookup::Read(Kind::Any)
+        ));
     }
 
     #[test]

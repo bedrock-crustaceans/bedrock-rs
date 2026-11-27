@@ -235,6 +235,10 @@ pub(crate) struct FieldAttrs {
     pub or_kept: Option<(bool, Span)>,
     /// `schema::members = ["a", "b"]`: the members of the struct's object the field is fed by.
     pub members: Option<(Vec<String>, Span)>,
+    /// `schema::read_by`: the parts of the game that read the member.
+    pub read_by: Option<(Vec<String>, Span)>,
+    /// `schema::getter`: the getter the game reads the member with.
+    pub getter: Option<(String, Span)>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -320,6 +324,8 @@ const FIELD_KEYS: &[&str] = &[
     "negative",
     "keys",
     "members",
+    "read_by",
+    "getter",
 ];
 const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
@@ -619,6 +625,28 @@ fn member_names(entry: &Entry) -> Result<Vec<String>> {
     Ok(names)
 }
 
+/// The names of `schema::read_by = "a b"`, split at spaces: at least one, none twice.
+fn read_by_names(lit: &LitStr) -> Result<Vec<String>> {
+    let mut names: Vec<String> = Vec::new();
+    for name in lit.value().split_whitespace() {
+        if names.iter().any(|known| known == name) {
+            return Err(Error::new(
+                lit.span(),
+                format!("`{name}` is named twice in `schema::read_by`"),
+            ));
+        }
+        names.push(name.to_owned());
+    }
+    if names.is_empty() {
+        return Err(Error::new(
+            lit.span(),
+            "`schema::read_by` names the parts that read the member, as in \
+             `schema::read_by = \"sprite text\"`: give at least one",
+        ));
+    }
+    Ok(names)
+}
+
 /// A key's value as an expression; facet already refuses a valued key written without one.
 fn value_expr(entry: &Entry, key: &str) -> Result<Expr> {
     match entry.expr() {
@@ -738,6 +766,7 @@ impl FieldAttrs {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
                     }
+                    "read_by" | "getter" => out.read_row_key(entry, &key, errors)?,
                     other => {
                         if let Some(op) = Op::from_key(other) {
                             push_bound(&mut out, entry, op)?;
@@ -751,6 +780,18 @@ impl FieldAttrs {
             }
         }
         out
+    }
+
+    /// Reads `schema::read_by` or `schema::getter`, the keys that only fill the field's row.
+    fn read_row_key(&mut self, entry: &Entry, key: &str, errors: &mut Vec<Error>) -> Result<()> {
+        let (value, span) = (string_value(entry, key)?, entry.span);
+        if key == "read_by" {
+            let names = read_by_names(&value)?;
+            once(&mut self.read_by, (names, span), key, span, errors);
+        } else {
+            once(&mut self.getter, (value.value(), span), key, span, errors);
+        }
+        Ok(())
     }
 
     /// Reads one of facet's own keys the derive takes: `default`, `rename`, `alias`, `skip`
@@ -826,6 +867,8 @@ impl FieldAttrs {
             .or_else(|| self.max_len.as_ref().map(|(_, s)| *s))
             .or(self.foreign_event)
             .or(self.required)
+            .or_else(|| self.read_by.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.getter.as_ref().map(|(_, s)| *s))
             .or(self.stored)
     }
 }

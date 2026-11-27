@@ -218,9 +218,10 @@ pub fn derive_components(input: TokenStream) -> TokenStream {
 ///   `#[cfg(test)]` test beside it that the default is the value `{}` reads (but for a
 ///   transparent newtype) and reads back unchanged from what the writer makes of it (the
 ///   test's module reaches the struct through `super::`, so a struct declared inside a
-///   function body does not compile in a test build: declare it at module level); a getter
-///   `fn x(&self) -> T` per `Option` field with a `schema::fallback` (`-> &str` for a text
-///   fallback, the two ends a range resolves to for a pair `(low, high)`); `impl FromJson` (core's
+///   function body does not compile in a test build: declare it at module level); an accessor
+///   `fn x(&self) -> T` (not the game's getter `schema::getter` names) per `Option` field
+///   with a `schema::fallback` (`-> &str` for a text fallback, the two ends a range resolves
+///   to for a pair `(low, high)`); `impl FromJson` (core's
 ///   `schema::FromJson`: the object, then each member in file order by its JSON name, through
 ///   the field type's `FromJson` or its `schema::read_with`, an absent one by its declaration,
 ///   a failed one by the reading, the unknown ones by `schema::unknown`, an `extra: Extra` or

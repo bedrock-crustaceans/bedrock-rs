@@ -715,6 +715,12 @@ fn field_row(info: &FieldInfo) -> TokenStream {
     if attrs.flatten {
         parts.push(quote!(flatten: true));
     }
+    if let Some((names, _)) = &attrs.read_by {
+        parts.push(quote!(read_by: &[#(#names),*]));
+    }
+    if let Some((getter, _)) = &attrs.getter {
+        parts.push(quote!(getter: ::core::option::Option::Some(#getter)));
+    }
     quote! {
         #core::schema::FieldRow {
             #(#parts,)*

@@ -40,6 +40,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `or_kept` | `"told"` or `"silent"` | compile-time | `#[derive(Schema)]` on an `Option` field: a value that fails is kept as written |
 | `string_only` | (marker) | stored as `()` | `#[derive(Schema)]` on a string enum |
 | `order` | `"game"` | compile-time | `#[derive(Schema)]` on a string enum |
+| `read_by`, `getter` | a string: names split at spaces (at least one, none twice), a name | compile-time | `#[derive(Schema)]`: the parts of the game that read the member and its getter, in the field's row; the read does not look at them |
 
 
 A compile-time key is checked by name by facet and stored as nothing; its value is read from the tokens by `#[derive(Schema)]`, which also checks each stored key's string (a version, or one of the words) at compile time.

@@ -1573,6 +1573,31 @@ fn the_rows_state_the_length_bounds() {
     );
 }
 
+/// Members that say which parts of the game read them, and with what getter.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct ReadByParts {
+    #[facet(schema::read_by = "sprite text", schema::getter = "array_or_string")]
+    pub color: Option<i32>,
+    #[facet(schema::getter = "bool")]
+    pub visible: Option<bool>,
+    pub layer: Option<i32>,
+}
+
+#[test]
+fn the_rows_name_the_parts_that_read_a_member_and_its_getter() {
+    let rows = ReadByParts::FIELDS;
+    let read: Vec<(&[&str], Option<&str>)> = rows.iter().map(|r| (r.read_by, r.getter)).collect();
+    assert_eq!(
+        read,
+        [
+            (&["sprite", "text"][..], Some("array_or_string")),
+            (&[][..], Some("bool")),
+            (&[][..], None),
+        ],
+        "the rows carry `schema::read_by` and `schema::getter`"
+    );
+}
+
 /// A member the engine may not have yet, and a hook across the fields and one in place of the
 /// walk.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]

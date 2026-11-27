@@ -1,0 +1,11 @@
+error: `schema::read_by` names the parts that read the member, as in `schema::read_by = "sprite text"`: give at least one
+ --> tests/ui/schema/read_by.rs:6:31
+  |
+6 |     #[facet(schema::read_by = "")]
+  |                               ^^
+
+error: `sprite` is named twice in `schema::read_by`
+ --> tests/ui/schema/read_by.rs:8:31
+  |
+8 |     #[facet(schema::read_by = "sprite text sprite")]
+  |                               ^^^^^^^^^^^^^^^^^^^^
