@@ -79,15 +79,20 @@ impl ChecksumRecord {
 /// establishes, not to change how a write path handles the key, since what
 /// is hashed and with what seed remain unknown and this crate does not
 /// regenerate the hash bytes.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is shorter than the 4-byte count, if
+/// the count is negative or overflows, or if the bytes after the count are
+/// not exactly `count` records long.
 pub fn decode_checksums(bytes: &[u8]) -> Result<Vec<ChecksumRecord>> {
-    if bytes.len() < 4 {
+    let Some((count, rest)) = bytes.split_first_chunk::<4>() else {
         return Err(Error::Invalid("checksums value is shorter than its count"));
-    }
-    let count = i32::from_le_bytes(bytes[0..4].try_into().unwrap());
+    };
+    let count = i32::from_le_bytes(*count);
     let count =
         usize::try_from(count).map_err(|_| Error::Invalid("checksums count is negative"))?;
 
-    let rest = &bytes[4..];
     let expected_len = count
         .checked_mul(RECORD_LEN)
         .ok_or(Error::Invalid("checksums count overflows"))?;
@@ -98,14 +103,21 @@ pub fn decode_checksums(bytes: &[u8]) -> Result<Vec<ChecksumRecord>> {
     }
 
     Ok(rest
-        .chunks_exact(RECORD_LEN)
-        .map(ChecksumRecord::decode)
+        .as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
+        .map(|record| ChecksumRecord::decode(record))
         .collect())
 }
 
 /// Encodes a `0x3b` Checksums value: the inverse of [`decode_checksums`].
 /// Every field -- including the opaque hash -- is written back verbatim, so
 /// a decoded real record re-encodes byte-identically.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if there are more records than an `i32` count
+/// can express.
 pub fn encode_checksums(records: &[ChecksumRecord]) -> Result<Vec<u8>> {
     let count = i32::try_from(records.len())
         .map_err(|_| Error::Invalid("too many checksum records to encode"))?;

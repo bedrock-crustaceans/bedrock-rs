@@ -87,9 +87,13 @@ impl FinalizedState {
 /// the module docs); any other length is malformed per architecture
 /// decision 11, since the record's width is its only structural
 /// constraint.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is neither 1 nor 4 bytes long.
 pub fn decode_finalized_state(bytes: &[u8]) -> Result<FinalizedState> {
     match bytes {
-        &[b] => Ok(FinalizedState::Byte(b as i8)),
+        &[b] => Ok(FinalizedState::Byte(b.cast_signed())),
         [a, b, c, d] => Ok(FinalizedState::Int(i32::from_le_bytes([*a, *b, *c, *d]))),
         _ => Err(Error::Invalid(
             "finalizedState value is neither 1 nor 4 bytes",
@@ -101,7 +105,7 @@ pub fn decode_finalized_state(bytes: &[u8]) -> Result<FinalizedState> {
 /// reproducing whichever width the value carries.
 pub fn encode_finalized_state(value: &FinalizedState) -> Vec<u8> {
     match value {
-        FinalizedState::Byte(v) => vec![*v as u8],
+        FinalizedState::Byte(v) => vec![v.cast_unsigned()],
         FinalizedState::Int(v) => v.to_le_bytes().to_vec(),
     }
 }

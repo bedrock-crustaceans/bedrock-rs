@@ -44,7 +44,7 @@
 //! in this module's tests against reference vectors: `init_genrand(5489)`
 //! against the published reference vector from `mt19937ar.c`'s own
 //! `mt19937ar.out` sample output (5489 is that reference implementation's
-//! documented default seed), and `init_by_array([5489])` against CPython's
+//! documented default seed), and `init_by_array([5489])` against `CPython`'s
 //! `random` module, whose C implementation is a direct, independently
 //! maintained port of the same reference algorithm and seeds an integer
 //! the same way -- an independent cross-check that both seeding routines
@@ -96,9 +96,11 @@ impl Mt19937 {
         let mut state = [0u32; N];
         state[0] = seed;
         for i in 1..N {
+            #[expect(clippy::cast_possible_truncation, reason = "i is below N = 624")]
+            let i_u32 = i as u32;
             state[i] = 1_812_433_253u32
                 .wrapping_mul(state[i - 1] ^ (state[i - 1] >> 30))
-                .wrapping_add(i as u32);
+                .wrapping_add(i_u32);
         }
         Self { state, index: N }
     }
@@ -123,10 +125,15 @@ impl Mt19937 {
         let mut i = 1usize;
         let mut j = 0usize;
         for _ in 0..N.max(key.len()) {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "the reference adds j in 32-bit unsigned arithmetic, so it is taken mod 2^32"
+            )]
+            let j_u32 = j as u32;
             rng.state[i] = (rng.state[i]
                 ^ (rng.state[i - 1] ^ (rng.state[i - 1] >> 30)).wrapping_mul(1_664_525))
             .wrapping_add(key[j])
-            .wrapping_add(j as u32);
+            .wrapping_add(j_u32);
             i += 1;
             j += 1;
             if i >= N {
@@ -138,9 +145,11 @@ impl Mt19937 {
             }
         }
         for _ in 0..N - 1 {
+            #[expect(clippy::cast_possible_truncation, reason = "i stays in 1..N, N = 624")]
+            let i_u32 = i as u32;
             rng.state[i] = (rng.state[i]
                 ^ (rng.state[i - 1] ^ (rng.state[i - 1] >> 30)).wrapping_mul(1_566_083_941))
-            .wrapping_sub(i as u32);
+            .wrapping_sub(i_u32);
             i += 1;
             if i >= N {
                 rng.state[0] = rng.state[N - 1];
@@ -212,7 +221,7 @@ mod tests {
     }
 
     /// `init_by_array([5489])`'s first outputs, cross-checked against
-    /// CPython's `random` module (`random.seed(5489)`;
+    /// `CPython`'s `random` module (`random.seed(5489)`;
     /// `random.getrandbits(32)`) -- an independent implementation of the
     /// same reference algorithm, not derived from this module's own code.
     #[test]

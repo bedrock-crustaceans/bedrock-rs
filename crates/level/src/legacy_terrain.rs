@@ -1,4 +1,4 @@
-//! `0x30` LegacyTerrain: the pre-subchunk terrain record, one blob per chunk
+//! `0x30` `LegacyTerrain`: the pre-subchunk terrain record, one blob per chunk
 //! covering the whole 16x16x128 column rather than one `0x2f` record per
 //! vertical slice. Written by chunk versions 0 through 2, before terrain
 //! moved to per-subchunk records at version 3.
@@ -18,7 +18,7 @@ pub const SLICE_COUNT: usize = COLUMN_HEIGHT / 16;
 /// `16*16*128` raw block ids followed by `16*16*128/2` metadata nibbles.
 pub const ESTABLISHED_LEN: usize = 16 * 16 * COLUMN_HEIGHT + 16 * 16 * COLUMN_HEIGHT / 2;
 
-/// A decoded `0x30` LegacyTerrain record.
+/// A decoded `0x30` `LegacyTerrain` record.
 ///
 /// Only [`ESTABLISHED_LEN`] bytes are actually decoded: 32,768 raw block ids followed by
 /// 16,384 metadata nibbles, in the same X-major/then-Z/then-Y-fastest order and even-low/
@@ -52,6 +52,11 @@ impl LegacyTerrain {
 
     /// Decodes a `0x30` record's value. `reader` is read to the end: everything past the
     /// established 49,152 bytes becomes [`tail`](Self::tail), whatever its length.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `reader` holds fewer than the established 49,152 bytes, or if
+    /// reading from it fails.
     pub fn from_disk<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
         Cursor<R>: Read,
@@ -70,6 +75,11 @@ impl LegacyTerrain {
 
     /// Encodes this record's value, reproducing the original bytes exactly for a value that
     /// came from [`from_disk`](Self::from_disk).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`](crate::error::Error::Invalid) if a slice holds a block
+    /// that is not a numeric id/data pair, or an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,

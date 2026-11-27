@@ -1,7 +1,7 @@
 //! Resolving a dimension's block-Y bounds.
 //!
 //! Bedrock has never written an explicit "height range" record for the two
-//! dimensions whose bounds have stayed fixed since LevelDB saves began
+//! dimensions whose bounds have stayed fixed since `LevelDB` saves began
 //! (Nether, End); it only started recording one for the Overworld, and only
 //! after the Overworld's own bounds stopped being a compile-time constant.
 //! Resolving a dimension's range is therefore a precedence chain: prefer
@@ -117,6 +117,7 @@ impl HeightRange {
     }
 
     /// The smallest range containing both `self` and `other`.
+    #[must_use]
     pub fn union(self, other: Self) -> Self {
         Self {
             min: self.min.min(other.min),
@@ -147,7 +148,7 @@ pub const OVERWORLD_AFTER_CAVES_AND_CLIFFS: HeightRange = HeightRange::new(-64, 
 /// so no dictionary entry has ever been observed recording one -- see the
 /// module docs.
 pub const NETHER: HeightRange = HeightRange::new(0, 128);
-/// The End's height range. Also unchanged since LevelDB saves began, but
+/// The End's height range. Also unchanged since `LevelDB` saves began, but
 /// unlike the Nether, worlds that carry a dictionary at all have been seen
 /// recording a `TheEnd` entry for it -- the dictionary records a generation
 /// context per dimension a chunk was saved in, not only ones whose bounds
@@ -244,6 +245,10 @@ mod tests {
     use crate::metadata_dictionary::MetadataDictionaryEntry;
     use crate::settings::Experiments;
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "spells out every LevelSettings field so each test's baseline is explicit"
+    )]
     fn base_settings(
         last_opened_with_version: GameVersion,
         caves_and_cliffs: bool,

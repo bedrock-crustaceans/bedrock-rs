@@ -74,6 +74,10 @@ impl KeyVariant {
     /// [`Self::discriminant`] just below -- a variant added later must be
     /// placed here explicitly rather than silently inheriting `true` from a
     /// catch-all.
+    #[expect(
+        clippy::match_same_arms,
+        reason = "one arm per variant keeps each variant's chunk scoping an explicit decision"
+    )]
     pub const fn is_chunk_scoped(&self) -> bool {
         match self {
             KeyVariant::Biome3d => true,
@@ -146,8 +150,7 @@ impl KeyVariant {
             // `Key::serialize`/`Key::deserialize`, so this value is never
             // actually written to disk for either -- it only exists to keep
             // this match exhaustive.
-            KeyVariant::LocalPlayer => u8::MAX,
-            KeyVariant::ActorDigest => u8::MAX,
+            KeyVariant::LocalPlayer | KeyVariant::ActorDigest => u8::MAX,
         }
     }
 }
@@ -316,6 +319,11 @@ impl Key {
         }
     }
 
+    /// Writes this key in its on-disk form.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn serialize<W: Write>(&self, mut writer: W) -> Result<()> {
         // Both of these are string-shaped keys with no tag byte, not the
         // generic `x | z | dimension? | tag | index?` layout every other
@@ -403,6 +411,14 @@ impl Key {
         })
     }
 
+    /// Parses a key from its on-disk form: a `digp` actor-digest key, a
+    /// fixed-shape chunk key, or a known string key, tried in that order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if the bytes match none of those shapes, or
+    /// an error if reading from `reader` fails, including when the bytes that
+    /// fall through to the string-key check are not valid UTF-8.
     pub fn deserialize<R>(reader: &mut Cursor<R>) -> Result<Key>
     where
         Cursor<R>: Seek + Read,
@@ -504,6 +520,10 @@ impl Key {
         // Not a structurally valid chunk key: fall back to the known string keys.
         reader.set_position(start_position);
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the reader is an in-memory cursor, so its length fits in usize"
+        )]
         let mut string = String::with_capacity(len as usize);
         reader.read_to_string(&mut string)?;
 
@@ -615,7 +635,7 @@ mod tests {
         buf.extend_from_slice(&(-2i32).to_le_bytes());
         buf.extend_from_slice(&2i32.to_le_bytes()); // End
         buf.push(0x2f); // SubChunk
-        buf.push((-3i8) as u8);
+        buf.push((-3i8).cast_unsigned());
 
         let mut cursor = Cursor::new(buf.as_slice());
         let key = Key::deserialize(&mut cursor).unwrap();

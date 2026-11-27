@@ -27,7 +27,7 @@
 //! before `name`, the one reference that commits to an order.
 //!
 //! `DimensionNameIdTable`, grouped with this key under the same original
-//! task ("BiomeIdsTable / DimensionNameIdTable custom-biome registry"), is
+//! task ("`BiomeIdsTable` / `DimensionNameIdTable` custom-biome registry"), is
 //! **not** implemented here. It resolves a different thing entirely --
 //! addon-registered *dimension* names to dimension ids
 //! (`{entries: {<dimension name>: id, ...}}`), not biome names -- and
@@ -80,6 +80,11 @@ pub struct BiomeIdsTable {
 }
 
 /// Decodes a `BiomeIdsTable` value.
+///
+/// # Errors
+///
+/// Returns an error if `bytes` is not a valid little-endian NBT compound of
+/// the expected shape, or [`Error::Invalid`] if bytes remain after it.
 pub fn decode(bytes: &[u8]) -> Result<BiomeIdsTable> {
     let mut cursor = Cursor::new(bytes);
     let root: BiomeIdsTableRoot = nbtx::from_le_bytes(&mut cursor)?;
@@ -93,6 +98,10 @@ pub fn decode(bytes: &[u8]) -> Result<BiomeIdsTable> {
 
 /// Encodes a `BiomeIdsTable` value. The inverse of [`decode`] -- see the
 /// module docs for why `id` is written before `name` within each entry.
+///
+/// # Errors
+///
+/// Returns an error if NBT serialization of the table fails.
 pub fn encode(table: &BiomeIdsTable) -> Result<Vec<u8>> {
     let root = BiomeIdsTableRoot {
         list: table.entries.clone(),
@@ -101,6 +110,11 @@ pub fn encode(table: &BiomeIdsTable) -> Result<Vec<u8>> {
 }
 
 /// Reads the `BiomeIdsTable` record from `db`, if present.
+///
+/// # Errors
+///
+/// Returns an error if reading from `db` fails or if the stored value does
+/// not [`decode`].
 pub fn read(db: &Database) -> Result<Option<BiomeIdsTable>> {
     match db.get(KEY)? {
         Some(bytes) => Ok(Some(decode(&bytes)?)),

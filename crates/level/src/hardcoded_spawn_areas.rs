@@ -58,24 +58,29 @@ impl HardcodedSpawnArea {
     }
 }
 
-/// Decodes a `0x39` HardcodedSpawnAreas value. See the module docs for the
+/// Decodes a `0x39` `HardcodedSpawnAreas` value. See the module docs for the
 /// grammar.
 ///
 /// Per decision 11, a count that disagrees with the number of bytes actually
 /// present -- including a negative count, or a value too short to hold even
 /// the count field -- is malformed rather than merely unmodelled, and is an
 /// error rather than a truncated or padded result.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is shorter than the 4-byte count, if
+/// the count is negative or overflows, or if the bytes after the count are
+/// not exactly `count` records long.
 pub fn decode_hardcoded_spawn_areas(bytes: &[u8]) -> Result<Vec<HardcodedSpawnArea>> {
-    if bytes.len() < 4 {
+    let Some((count, rest)) = bytes.split_first_chunk::<4>() else {
         return Err(Error::Invalid(
             "hardcodedSpawnAreas value is shorter than its count",
         ));
-    }
-    let count = i32::from_le_bytes(bytes[0..4].try_into().unwrap());
+    };
+    let count = i32::from_le_bytes(*count);
     let count = usize::try_from(count)
         .map_err(|_| Error::Invalid("hardcodedSpawnAreas count is negative"))?;
 
-    let rest = &bytes[4..];
     let expected_len = count
         .checked_mul(RECORD_LEN)
         .ok_or(Error::Invalid("hardcodedSpawnAreas count overflows"))?;
@@ -86,14 +91,21 @@ pub fn decode_hardcoded_spawn_areas(bytes: &[u8]) -> Result<Vec<HardcodedSpawnAr
     }
 
     Ok(rest
-        .chunks_exact(RECORD_LEN)
-        .map(HardcodedSpawnArea::decode)
+        .as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
+        .map(|area| HardcodedSpawnArea::decode(area))
         .collect())
 }
 
-/// Encodes a `0x39` HardcodedSpawnAreas value: the inverse of
+/// Encodes a `0x39` `HardcodedSpawnAreas` value: the inverse of
 /// [`decode_hardcoded_spawn_areas`]. Every field is written back verbatim,
 /// so a decoded real record re-encodes byte-identically.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if there are more areas than an `i32` count can
+/// express.
 pub fn encode_hardcoded_spawn_areas(areas: &[HardcodedSpawnArea]) -> Result<Vec<u8>> {
     let count = i32::try_from(areas.len())
         .map_err(|_| Error::Invalid("too many hardcodedSpawnAreas entries to encode"))?;

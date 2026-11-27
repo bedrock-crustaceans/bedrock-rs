@@ -79,7 +79,7 @@
 //! 64-bit hash candidates over the entry's own stored NBT bytes (as-is, and
 //! with the trailing `TAG_End` dropped), over a canonical field subset
 //! (`DimensionName` plus both height-range compounds), and over
-//! `DimensionName` alone: FNV-1a 64, xxHash64 (seed 0), MurmurHash64A (seed
+//! `DimensionName` alone: FNV-1a 64, `xxHash64` (seed 0), `MurmurHash64A` (seed
 //! 0), CRC-64/XZ, SipHash-1-3 and SipHash-2-4 (zero key), and plain
 //! truncation to the first 8 bytes, each checked both little- and
 //! big-endian. **Every candidate matches zero of the 23 real entries in the
@@ -325,6 +325,12 @@ impl MetadataDictionary {
     /// bogus `count` fails on the first entry it cannot actually read
     /// (at the latest, once the buffer is exhausted) rather than driving an
     /// upfront allocation sized off a number nothing has validated yet.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `bytes` is too short for the count, runs out
+    /// mid-entry, or holds an entry whose value is not a valid NBT compound,
+    /// and [`Error::Invalid`] if bytes remain after the declared entries.
     pub fn decode(bytes: &[u8]) -> Result<Self> {
         let mut cursor = Cursor::new(bytes);
         let count = cursor.read_u32::<LittleEndian>()?;
@@ -352,9 +358,18 @@ impl MetadataDictionary {
     /// which is what makes this byte-identical for every real dictionary
     /// this crate's test suite has checked
     /// (`decode_then_encode_reproduces_every_real_dictionary_byte_for_byte`).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if NBT serialization of an entry's value fails.
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut out = Vec::new();
-        out.write_u32::<LittleEndian>(self.entries.len() as u32)?;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a dictionary holds one entry per dimension generation context, far below u32::MAX"
+        )]
+        let count = self.entries.len() as u32;
+        out.write_u32::<LittleEndian>(count)?;
         for (key, entry) in &self.entries {
             out.extend_from_slice(key);
             nbtx::to_le_bytes_in(&mut out, &entry.value)?;

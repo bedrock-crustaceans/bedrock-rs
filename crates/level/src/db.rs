@@ -292,6 +292,11 @@ mod tests {
     fn compressible_value(seed: u8) -> Vec<u8> {
         let mut v = Vec::with_capacity(64 * 1024);
         for i in 0..(64 * 1024) {
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "i is non-negative and only its low nibble is kept"
+            )]
             v.push(seed ^ (i as u8 & 0x0f));
         }
         v
@@ -306,6 +311,10 @@ mod tests {
             state ^= state << 13;
             state ^= state >> 7;
             state ^= state << 17;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "each step contributes the low byte of the xorshift state"
+            )]
             v.push(state as u8);
         }
         v

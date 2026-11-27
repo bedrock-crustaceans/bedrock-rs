@@ -11,7 +11,7 @@ const HEIGHTS_SIZE: usize = COLUMNS * size_of::<i16>();
 const BIOMES_SIZE: usize = COLUMNS;
 const PAYLOAD_SIZE: usize = HEIGHTS_SIZE + BIOMES_SIZE;
 
-/// Pre-1.18 per-chunk column data (LevelDB key tag `0x2d`).
+/// Pre-1.18 per-chunk column data (`LevelDB` key tag `0x2d`).
 ///
 /// Holds a 16x16 column heightmap paired with a single biome id per column
 /// ([`Biomes2d`]). Chunks using this record predate 3D biomes (`0x2b`),
@@ -64,6 +64,11 @@ impl HeightMap {
         PAYLOAD_SIZE
     }
 
+    /// Writes the 256 heights followed by the 256 biome ids.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -74,6 +79,13 @@ impl HeightMap {
         Ok(())
     }
 
+    /// Reads a `0x2d` record: 256 heights followed by 256 biome ids.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if the bytes remaining in `reader` are not
+    /// exactly the 768-byte payload, or an error if reading from `reader`
+    /// fails.
     pub fn from_disk<R>(reader: &mut Cursor<R>) -> Result<HeightMap>
     where
         Cursor<R>: Read + Seek,
@@ -102,8 +114,16 @@ mod tests {
         let mut heights = Box::new([0i16; COLUMNS]);
         let mut ids = Box::new([0u8; COLUMNS]);
         for (i, (h, b)) in heights.iter_mut().zip(ids.iter_mut()).enumerate() {
-            *h = (i as i16) * 3 - 128;
-            *b = (i % 256) as u8;
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_possible_wrap,
+                reason = "i indexes one of the 256 columns"
+            )]
+            let i16_index = i as i16;
+            *h = i16_index * 3 - 128;
+            #[expect(clippy::cast_possible_truncation, reason = "reduced modulo 256 first")]
+            let id = (i % 256) as u8;
+            *b = id;
         }
 
         HeightMap {

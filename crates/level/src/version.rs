@@ -52,6 +52,10 @@ impl From<GameVersion> for [i32; 5] {
     }
 }
 
+#[expect(
+    clippy::infallible_try_from,
+    reason = "public conversion kept as TryFrom; switching to From is an API change"
+)]
 impl TryFrom<[i32; 5]> for GameVersion {
     type Error = std::convert::Infallible;
 

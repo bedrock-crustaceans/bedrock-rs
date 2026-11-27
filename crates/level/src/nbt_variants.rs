@@ -20,7 +20,7 @@
 //! connection, distinct from the little-endian disk format this crate
 //! otherwise handles exclusively: short/float fields stay little-endian,
 //! but `int`/`long` fields become LEB128 varints). Neither is reachable
-//! from `bedrock_level`'s own read/write paths -- nothing in a LevelDB
+//! from `bedrock_level`'s own read/write paths -- nothing in a `LevelDB`
 //! world or a `level.dat` is ever big-endian or varint-encoded -- so this
 //! module is a thin, opt-in wrapper around what `nbtx` already implements,
 //! named and documented for the two situations a caller of this crate
@@ -56,12 +56,21 @@ use crate::error::Result;
 /// Reads a value from big-endian NBT (fixed-width big-endian integers,
 /// Java Edition's own disk/network format). Bedrock never writes this on
 /// disk; this exists for a caller bridging to Java-format data.
+///
+/// # Errors
+///
+/// Returns an error if reading from `reader` fails or if its bytes are not
+/// big-endian NBT matching `T`'s shape.
 pub fn from_big_endian_bytes<'f, T: Facet<'f>>(reader: &mut impl std::io::Read) -> Result<T> {
     Ok(nbtx::from_be_bytes(reader)?)
 }
 
 /// Serializes `value` as big-endian NBT -- the inverse of
 /// [`from_big_endian_bytes`].
+///
+/// # Errors
+///
+/// Returns an error if `value` cannot be serialized as NBT.
 pub fn to_big_endian_bytes<'f>(value: &'f (impl Facet<'f> + ?Sized)) -> Result<Vec<u8>> {
     Ok(nbtx::to_be_bytes(value)?)
 }
@@ -71,12 +80,21 @@ pub fn to_big_endian_bytes<'f>(value: &'f (impl Facet<'f> + ?Sized)) -> Result<V
 /// encoding `ClientboundPacket`/`ServerboundPacket` NBT payloads use over
 /// the wire, distinct from the fixed-width little-endian this crate's own
 /// disk format uses exclusively.
+///
+/// # Errors
+///
+/// Returns an error if reading from `reader` fails or if its bytes are not
+/// network NBT matching `T`'s shape.
 pub fn from_network_bytes<'f, T: Facet<'f>>(reader: &mut impl std::io::Read) -> Result<T> {
     Ok(nbtx::from_varint_bytes(reader)?)
 }
 
 /// Serializes `value` as Bedrock network NBT -- the inverse of
 /// [`from_network_bytes`].
+///
+/// # Errors
+///
+/// Returns an error if `value` cannot be serialized as NBT.
 pub fn to_network_bytes<'f>(value: &'f (impl Facet<'f> + ?Sized)) -> Result<Vec<u8>> {
     Ok(nbtx::to_varint_bytes(value)?)
 }

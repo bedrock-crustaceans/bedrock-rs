@@ -17,13 +17,18 @@
 
 use crate::error::{Error, Result};
 
-/// Decodes a `0x38` BorderBlocks value: a one-byte count followed by that
+/// Decodes a `0x38` `BorderBlocks` value: a one-byte count followed by that
 /// many single-byte positions, in on-disk order.
 ///
 /// Per decision 11, a count byte that disagrees with the number of bytes
 /// that follow it is malformed (not merely unmodelled) and is an error
 /// rather than a truncated or padded result. An empty value (missing even
 /// the count byte) is likewise malformed.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `bytes` is empty or if its count byte does
+/// not equal the number of position bytes that follow it.
 pub fn decode_border_blocks(bytes: &[u8]) -> Result<Vec<u8>> {
     let Some((&count, positions)) = bytes.split_first() else {
         return Err(Error::Invalid("borderBlocks value is empty"));
@@ -36,11 +41,15 @@ pub fn decode_border_blocks(bytes: &[u8]) -> Result<Vec<u8>> {
     Ok(positions.to_vec())
 }
 
-/// Encodes a `0x38` BorderBlocks value: the inverse of
+/// Encodes a `0x38` `BorderBlocks` value: the inverse of
 /// [`decode_border_blocks`]. Errors rather than silently truncating if
 /// `positions` is longer than a `u8` count can express -- no real chunk
 /// needs more than 256 border-block positions (a 16x16 chunk has only 256
 /// columns total), so this bound is never expected to bite in practice.
+///
+/// # Errors
+///
+/// Returns [`Error::Invalid`] if `positions` holds more than 255 entries.
 pub fn encode_border_blocks(positions: &[u8]) -> Result<Vec<u8>> {
     let count = u8::try_from(positions.len()).map_err(|_| {
         Error::Invalid("too many positions to encode as a borderBlocks value (max 255)")
