@@ -9,7 +9,8 @@
 //!   that is `None` are not written; a `flatten`ed struct writes its members in the place of
 //!   the field, a `flatten`ed internally tagged enum its tag and its variant's members there;
 //!   the members of an [`UnknownMembers`] field come after every member the struct wrote, each
-//!   whose key no member took (the typed member stands); an [`Extra`] marker writes nothing;
+//!   whose key no member took (the typed member stands; [`Writing::unknown`] may refuse one
+//!   named like a member, or every one); an [`Extra`] marker writes nothing;
 //!   a `transparent` struct is its field, a tuple struct an array;
 //! - an enum: a unit variant by its JSON name; an internally tagged one (`tag`) as an object
 //!   with the tag first; an `untagged` one as its variant's value; any other as facet's
@@ -17,7 +18,8 @@
 //! - a list, an array, a set and a tuple as an array; a map as an object, in its order, its
 //!   keys written as strings;
 //! - a leaf: a container or field `proxy` as its proxy, a `Value` as itself, a Molang value
-//!   in the form it was read (`molang::write`), a bool, an integer, a string; a float by the
+//!   in the form it was read (`molang::write`; a Molang bool refused where
+//!   [`Writing::refuse_molang_bools`] says so), a bool, an integer, a string; a float by the
 //!   [`Writing`]'s rule: no JSON spells a float that is not finite, which is refused at its
 //!   path.
 //!
@@ -34,23 +36,63 @@ use facet_value::{VArray, VObject};
 
 use crate::document::{Extra, UnknownMembers};
 
-/// How the writer spells what the Shape leaves open: the form of a float.
+/// How the writer spells what the Shape leaves open: the form of a float; and what it refuses
+/// that a reader would not read back: an unknown member, a Molang bool.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Writing {
     /// How an `f32` is written.
     pub floats: Floats,
+    /// What becomes of the members of an [`UnknownMembers`] field.
+    pub unknown: Unknowns,
+    /// Whether a Molang bool is refused at its path: a reader that takes no bool for a Molang
+    /// member (particle's 1.20.80 reader) reads none back.
+    pub refuse_molang_bools: bool,
+}
+
+/// What the writer makes of the members of an [`UnknownMembers`] field.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Unknowns {
+    /// Written after the struct's members, each whose key no member took; the typed member
+    /// stands.
+    #[default]
+    KnownWins,
+    /// Written after the struct's members; one named like a member of the struct (written or
+    /// not) is refused at its key, since it would replace that member in the text.
+    NoneNamedKnown,
+    /// Each refused at its key: a document a strict reader reads has no place for one
+    /// (particle's 1.20.80 reader).
+    Refused,
 }
 
 impl Writing {
     /// Floats as reals (`1.0`): what `json::write_json` writes for a float.
     pub const REAL: Self = Self {
         floats: Floats::Real,
+        unknown: Unknowns::KnownWins,
+        refuse_molang_bools: false,
     };
     /// A whole float as an integer (`1`): the node-tree families (geometry).
     pub const WHOLE: Self = Self {
         floats: Floats::Whole,
+        ..Self::REAL
     };
+
+    /// The same writing, with the members of an [`UnknownMembers`] field as `unknown` says.
+    #[must_use]
+    pub const fn unknown(self, unknown: Unknowns) -> Self {
+        Self { unknown, ..self }
+    }
+
+    /// The same writing, refusing a Molang bool at its path.
+    #[must_use]
+    pub const fn refusing_molang_bools(self) -> Self {
+        Self {
+            refuse_molang_bools: true,
+            ..self
+        }
+    }
 }
 
 /// How an `f32` is written; either way the shortest decimal that reads back as the same `f32`
@@ -120,10 +162,18 @@ impl Walk {
             return peek.get::<Value>().cloned().map_err(unsupported);
         }
         if shape.id == Molang::SHAPE.id {
-            return crate::molang::write(peek.get::<Molang>().map_err(unsupported)?);
+            let value = peek.get::<Molang>().map_err(unsupported)?;
+            if self.writing.refuse_molang_bools && matches!(value, Molang::Bool(_)) {
+                return Err(Unrepresentable::Unsupported);
+            }
+            return crate::molang::write(value);
         }
         if shape.id == MolangList::SHAPE.id {
-            return crate::molang::write_list(peek.get::<MolangList>().map_err(unsupported)?);
+            let list = peek.get::<MolangList>().map_err(unsupported)?;
+            if self.writing.refuse_molang_bools {
+                self.no_molang_bool(list)?;
+            }
+            return crate::molang::write_list(list);
         }
         let peek = peek.innermost_peek();
         let shape = peek.shape();
@@ -284,9 +334,55 @@ impl Walk {
             StructKind::Struct => {
                 let mut object = Object::default();
                 self.members(&item, &mut object)?;
-                Ok(object.finish())
+                let fields = item.ty().fields;
+                self.object(object, |key| {
+                    fields
+                        .iter()
+                        .any(|field| !field.is_flattened() && field.effective_name() == key)
+                })
             }
         }
+    }
+
+    /// A Molang list without a bool, or the refusal at the first one's path.
+    fn no_molang_bool(&mut self, list: &MolangList) -> Result<(), Unrepresentable> {
+        match list {
+            MolangList::One(Molang::Bool(_)) => Err(Unrepresentable::Unsupported),
+            MolangList::One(_) => Ok(()),
+            MolangList::Many(elements) => {
+                for (index, element) in elements.iter().enumerate() {
+                    self.path.push_index(index);
+                    self.no_molang_bool(element)?;
+                    self.path.pop();
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// The object of `object`'s members and then its unknown members, as the writing says;
+    /// `known` names the members of the struct written (an unknown member named like one is
+    /// refused under [`Unknowns::NoneNamedKnown`]).
+    fn object(&mut self, object: Object, known: impl Fn(&str) -> bool) -> Wrote {
+        let Object {
+            mut members,
+            unknown,
+        } = object;
+        for (key, value) in unknown {
+            let refused = match self.writing.unknown {
+                Unknowns::KnownWins => false,
+                Unknowns::NoneNamedKnown => known(&key) || members.contains_key(&key),
+                Unknowns::Refused => true,
+            };
+            if refused {
+                self.path.push(&key);
+                return Err(Unrepresentable::Unsupported);
+            }
+            if !members.contains_key(&key) {
+                members.insert(key, value);
+            }
+        }
+        Ok(members.into())
     }
 
     /// The members of `item` into `object`.
@@ -385,14 +481,14 @@ impl Walk {
         if let Some(tag) = shape.get_tag_attr() {
             let mut object = Object::default();
             self.tagged(tag, &item, &mut object)?;
-            return Ok(object.finish());
+            return self.object(object, |_| false);
         }
         let payload = match variant.data.kind {
             StructKind::Unit => return Ok(Value::from(name)),
             StructKind::Struct => {
                 let mut object = Object::default();
                 self.members(&item, &mut object)?;
-                object.finish()
+                self.object(object, |_| false)?
             }
             StructKind::Tuple | StructKind::TupleStruct => {
                 let fields: Vec<_> = item.fields().collect();
@@ -433,17 +529,6 @@ impl Walk {
 struct Object {
     members: VObject,
     unknown: Vec<(String, Value)>,
-}
-
-impl Object {
-    fn finish(mut self) -> Value {
-        for (key, value) in self.unknown {
-            if !self.members.contains_key(&key) {
-                self.members.insert(key, value);
-            }
-        }
-        self.members.into()
-    }
 }
 
 /// Whether `field` (holding `value`) of `owner` is not written: `skip`, `skip_serializing`, or

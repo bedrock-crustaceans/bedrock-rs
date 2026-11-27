@@ -191,6 +191,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     validate_keys(info, errors);
     validate_members(info, errors);
     validate_option_keys(info, errors);
+    validate_eras(info, errors);
     let ruled = [
         &attrs.wrong_type,
         &attrs.missing,
@@ -344,6 +345,22 @@ fn validate_members(info: &FieldInfo, errors: &mut Vec<Error>) {
     }
 }
 
+/// The refusals of `schema::era`: a field with no member of its own name (flattened, fed by
+/// several members, the one that holds the unknown members).
+fn validate_eras(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some(era) = attrs.eras.first() else {
+        return;
+    };
+    if attrs.flatten || !taken(info) || attrs.members.is_some() {
+        errors.push(Error::new(
+            era.span,
+            "`schema::era` words one member of the field's own name: a flattened field, one fed \
+             by `schema::members` and an `UnknownMembers` field have none",
+        ));
+    }
+}
+
 /// The refusals of `schema::drop`: a field that is no list, or one with its own read.
 fn validate_drop(info: &FieldInfo, errors: &mut Vec<Error>) {
     let attrs = &info.attrs;
@@ -440,7 +457,6 @@ fn field_guard(info: &FieldInfo) -> Option<TokenStream> {
 /// field's type to have a read are spanned at the type, so a type without one is the error
 /// there.
 fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldRead {
-    let reader = paths().reader;
     let slot = format_ident!("__s{index}");
     let rules = member_rules(info);
     let value = format_ident!("__v{index}");
@@ -465,15 +481,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         // is the field's own, `Some(..)` for the `Option`.
         quote!(let #value = #slot.required(__object, #json, __read, &mut __ok);)
     };
-    let new_slot = rules.map_or_else(
-        || quote!(#reader::Slot::<#held>::new()),
-        |rules| {
-            quote! {{
-                static __RULES: #reader::MemberRules = #rules;
-                #reader::Slot::<#held>::ruled(&__RULES)
-            }}
-        },
-    );
+    let new_slot = new_slot(info, held, rules);
     // A required field with one name tells its absence where a read in declared order asks for
     // the member.
     let required = !(info.option.is_some() && info.attrs.required.is_none())
@@ -483,12 +491,13 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let absent_after = absent_read
         .as_ref()
         .map(|with| quote!(#slot.read_absent_after(__object, #json, __read, #with);));
+    let (absent_told, finish) = era_absence(info, &slot, required, finish);
     let missing_now = if let Some(with) = &absent_read {
         quote!(#slot.read_absent(__object, #json, __read, #with);)
     } else if required {
         quote!(#slot.missing_now(__object, #json, __read);)
     } else {
-        quote!()
+        absent_told
     };
     // A member the object lacks is asked of the field's `absent_with` fn: in its place where the
     // read asks for it (declared order, or a `null` read as absent), else after the members.
@@ -761,6 +770,129 @@ fn format_version(version: crate::attr::Version) -> TokenStream {
     quote!(::bedrock_addon_core::version::FormatVersion::new(#major, #minor, #patch))
 }
 
+/// The slot a field's member is read into: ruled by the field's member rules, or by an era's.
+fn new_slot(info: &FieldInfo, held: &syn::Type, rules: Option<TokenStream>) -> TokenStream {
+    let reader = paths().reader;
+    if !info.attrs.eras.is_empty() {
+        return era_slot(info, held, rules.as_ref());
+    }
+    rules.map_or_else(
+        || quote!(#reader::Slot::<#held>::new()),
+        |rules| {
+            quote! {{
+                static __RULES: #reader::MemberRules = #rules;
+                #reader::Slot::<#held>::ruled(&__RULES)
+            }}
+        },
+    )
+}
+
+/// A field an era words the absence of (`schema::era(.., missing = CODE)`) and that is not
+/// required: what it tells where it finds the member absent, and its finish, which tells it
+/// once more before the field takes its default in a read in file order (told once).
+fn era_absence(
+    info: &FieldInfo,
+    slot: &Ident,
+    required: bool,
+    finish: TokenStream,
+) -> (TokenStream, TokenStream) {
+    let json = &info.json;
+    let absent_told = info
+        .attrs
+        .eras
+        .iter()
+        .any(|era| era.missing.is_some())
+        .then(|| quote!(#slot.absent_told(__object, #json, __read);));
+    if required {
+        return (TokenStream::new(), finish);
+    }
+    let told = absent_told.unwrap_or_default();
+    (told.clone(), quote!(#told #finish))
+}
+
+/// The slot of a field with `schema::era` keys: the rules of the first era the document's
+/// format is in (`Read::known_format`), each era's codes in place of the field's own and told
+/// at their own severity, else the field's own (`base`, `None` for none).
+fn era_slot(info: &FieldInfo, held: &syn::Type, base: Option<&TokenStream>) -> TokenStream {
+    let core = core();
+    let reader = paths().reader;
+    let attrs = &info.attrs;
+    let era_code = |code: &Option<syn::Expr>| {
+        code.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |expr| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
+        )
+    };
+    let field_code = |code: &Option<(syn::Expr, proc_macro2::Span)>| {
+        code.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |(expr, _)| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
+        )
+    };
+    let negative = field_code(&attrs.negative);
+    let finite = attrs.finite.is_some();
+    let (statics, arms): (Vec<TokenStream>, Vec<TokenStream>) = attrs
+        .eras
+        .iter()
+        .enumerate()
+        .map(|(index, era)| {
+            let name = format_ident!("__ERA{index}");
+            // An era that states no code keeps the field's own, graded as they are.
+            let own = era.has_codes();
+            let (wrong_type, missing, invalid) = if own {
+                (
+                    era_code(&era.wrong_type),
+                    era_code(&era.missing),
+                    era_code(&era.invalid),
+                )
+            } else {
+                (
+                    field_code(&attrs.wrong_type),
+                    field_code(&attrs.missing),
+                    field_code(&attrs.invalid),
+                )
+            };
+            let molang = era.molang.as_ref().map_or_else(
+                || quote!(::core::option::Option::None),
+                |spec| quote!(::core::option::Option::Some(#spec)),
+            );
+            let expr = &era.era;
+            let rules = quote! {
+                static #name: #reader::MemberRules = #reader::MemberRules {
+                    wrong_type: #wrong_type,
+                    missing: #missing,
+                    invalid: #invalid,
+                    negative: #negative,
+                    finite: #finite,
+                    own_severity: #own,
+                    molang: #molang,
+                };
+            };
+            let arm = quote! {
+                if #core::schema::Era::holds(#expr, __format) {
+                    ::core::option::Option::Some(&#name)
+                } else
+            };
+            (rules, arm)
+        })
+        .unzip();
+    let (base_static, base) = base.map_or_else(
+        || (quote!(), quote!(::core::option::Option::None)),
+        |rules| {
+            (
+                quote!(static __RULES: #reader::MemberRules = #rules;),
+                quote!(::core::option::Option::Some(&__RULES)),
+            )
+        },
+    );
+    quote! {{
+        #base_static
+        #(#statics)*
+        let __format = __read.known_format();
+        #reader::Slot::<#held>::with_rules(#(#arms)* { #base })
+    }}
+}
+
 /// The field's rules for its member (`schema::wrong_type`, `missing`, `invalid`, `finite`), a
 /// `MemberRules` value; `None` when it states none.
 fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
@@ -794,6 +926,8 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
             invalid: #invalid,
             negative: #negative,
             finite: #finite,
+            own_severity: false,
+            molang: ::core::option::Option::None,
         }
     })
 }
@@ -1436,6 +1570,7 @@ pub(super) fn validate_positional(
             attrs.required,
             attrs.missing.as_ref().map(|(_, span)| *span),
             attrs.stored.filter(|_| attrs.since_format.is_some()),
+            attrs.eras.first().map(|era| era.span),
         ]
         .into_iter()
         .flatten()
@@ -1451,7 +1586,7 @@ pub(super) fn validate_positional(
             errors.push(Error::new(
                 span,
                 "a tuple struct's element is there by its array's length: `or_kept`, \
-                 `reads_null`, `required`, `missing` and `since_format` are about a member",
+                 `reads_null`, `required`, `missing`, `since_format` and `era` are about a member",
             ));
         }
         if container.arity.is_some() && info.option.is_none() && attrs.default.is_none() {

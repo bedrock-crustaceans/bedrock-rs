@@ -4,11 +4,14 @@ use facet_value::VArray;
 use indexmap::IndexMap;
 
 use crate::codes;
-use crate::read::{Era, Members, Node, Opt, Reader, Writer, object};
+use crate::derived::{L0, LEGACY, STRICT, hand};
+use crate::read::{Era, KEPT, Members, Node, Opt, Reader, Writer};
 use bedrock_addon_core::diagnostic::Code;
 use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_shared_shapes::OneOrMany;
 
 /// The events a component fires: one event name, or a list of them.
@@ -56,14 +59,27 @@ impl Node for VectorEvents {
     }
 }
 
+/// `timeline` (an emitter's and a particle's): the legacy parser's line for a value that is no
+/// object is its own.
+pub(crate) fn timeline(
+    node: &bedrock_addon_core::json::kit::Node<'_>,
+    read: &mut bedrock_addon_core::json::kit::Read<'_>,
+) -> Option<IndexMap<String, VectorEvents>> {
+    crate::derived::hand_with(node, read, Opt::NONE.wrong(&codes::TIMELINE))
+}
+
 /// The direction particles leave an emitter shape in.
 ///
 /// JSON: `"inwards"`, `"outwards"`, or an array of three Molang values.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum EmitterDirection {
     /// Towards the centre of the shape.
+    #[facet(rename = "inwards")]
     Inwards,
     /// Away from the centre of the shape.
+    #[facet(rename = "outwards")]
     Outwards,
     /// A direction of its own, `[x, y, z]`.
     Custom([Molang; 3]),
@@ -107,16 +123,29 @@ impl Node for EmitterDirection {
     }
 }
 
+crate::derived::hand_leaf!(
+    EmitterDirection,
+    PlaneNormal,
+    ColorExpr,
+    Gradient,
+    TintColor
+);
+
 /// The normal of the plane a disc emitter lies in.
 ///
 /// JSON: `"x"`, `"y"`, `"z"`, or an array of three Molang values.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum PlaneNormal {
     /// The x axis.
+    #[facet(rename = "x")]
     X,
     /// The y axis.
+    #[facet(rename = "y")]
     Y,
     /// The z axis.
+    #[facet(rename = "z")]
     Z,
     /// A normal of its own, `[x, y, z]`.
     Custom([Molang; 3]),
@@ -166,7 +195,9 @@ impl Node for PlaneNormal {
 ///
 /// JSON: an array of four Molang values (red, green, blue, alpha, each 0 to 1), an array of
 /// three (alpha is 1), or a string `"#AARRGGBB"` / `"#RRGGBB"`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum ColorExpr {
     /// `[red, green, blue, alpha]`.
     Rgba([Molang; 4]),
@@ -254,7 +285,9 @@ impl Node for ColorExpr {
 ///
 /// JSON: an array of colours (evenly spaced from 0 to 1), or an object whose keys are the
 /// positions as decimal strings (`"0.0"`, `"0.5"`).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum Gradient {
     /// Evenly spaced colours.
     List(Vec<ColorExpr>),
@@ -339,24 +372,42 @@ impl Node for Gradient {
     }
 }
 
-object! {
-    /// A tint that changes over a particle's life: the gradient form of
-    /// `minecraft:particle_appearance_tinting/color`.
-    ///
-    /// JSON: `{"gradient": …, "interpolant": …}`, both required.
-    pub struct ColorGradient {
-        /// The colours (JSON `gradient`).
-        req gradient: Gradient = "gradient", Opt::NONE.missing(&codes::GRADIENT);
-        /// Where in the gradient the particle is, 0 to 1 for a list (JSON `interpolant`).
-        req interpolant: Molang = "interpolant", Opt::required(0.0);
-    }
+/// A tint that changes over a particle's life: the gradient form of
+/// `minecraft:particle_appearance_tinting/color`.
+///
+/// JSON: `{"gradient": …, "interpolant": …}`, both required.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct ColorGradient {
+    /// The colours (JSON `gradient`).
+    #[facet(
+        default = Gradient::List(Vec::new()),
+        schema::read_with = hand,
+        schema::era(LEGACY, missing = codes::GRADIENT),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub gradient: Gradient,
+    /// Where in the gradient the particle is, 0 to 1 for a list (JSON `interpolant`).
+    #[facet(
+        default = Molang::Const(0.0),
+        schema::era(LEGACY, missing = codes::REQUIRED_MISSING, molang = L0),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub interpolant: Molang,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+crate::read::derived_node!(ColorGradient);
 
 /// `minecraft:particle_appearance_tinting/color`: one colour, or a gradient with the Molang
 /// that picks from it.
 ///
 /// JSON: a colour ([`ColorExpr`]), or `{"gradient", "interpolant"}`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
+#[facet(untagged)]
+#[repr(u8)]
 pub enum TintColor {
     /// One colour.
     Color(ColorExpr),

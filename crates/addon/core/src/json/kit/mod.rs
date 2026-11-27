@@ -1139,6 +1139,8 @@ pub struct Read<'d> {
     /// A struct's own unknown members hold what it kept in the order its object has them
     /// ([`keep_in_file_order`](Self::keep_in_file_order)).
     in_file_order: bool,
+    /// The family's own read of Molang ([`molang_leaf`](Self::molang_leaf)).
+    molang_leaf: Option<crate::schema::MolangLeaf>,
 }
 
 /// A value a read put in scope for the reads below it ([`Read::scope`]).
@@ -1176,6 +1178,7 @@ impl<'d> Read<'d> {
             respelled: Vec::new(),
             scopes: Vec::new(),
             in_file_order: false,
+            molang_leaf: None,
         }
     }
 
@@ -1264,6 +1267,27 @@ impl<'d> Read<'d> {
             .and_then(|code| self.member_code(code))
     }
 
+    /// The read reading every `Molang` and `[Molang; N]` member by `leaf`, the family's own read
+    /// of Molang, in place of core's.
+    #[must_use]
+    pub fn molang_leaf(mut self, leaf: crate::schema::MolangLeaf) -> Self {
+        self.molang_leaf = Some(leaf);
+        self
+    }
+
+    /// The family's own read of Molang the read reads by ([`molang_leaf`](Self::molang_leaf)).
+    pub fn reads_molang_by(&self) -> Option<crate::schema::MolangLeaf> {
+        self.molang_leaf
+    }
+
+    /// The Molang spec the era the document is in states for the field whose member is `node`
+    /// (`schema::era(.., molang = SPEC)`), at that member; `None` where no era the read is in
+    /// states one. For a Molang leaf that reads as the spec's reader does (the value its
+    /// `on_failure` replaces a value with).
+    pub fn member_molang(&self, node: &Node<'_>) -> Option<crate::molang::MolangFieldSpec> {
+        self.member_rules(node).and_then(|rules| rules.molang)
+    }
+
     /// The profile the read tells by.
     pub fn telling(&self) -> Profile {
         self.profile
@@ -1341,6 +1365,7 @@ impl<'d> Read<'d> {
             respelled: Vec::new(),
             scopes: self.scopes.clone(),
             in_file_order: self.in_file_order,
+            molang_leaf: self.molang_leaf,
         }
     }
 
@@ -2061,8 +2086,47 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error size invalid value"]);
     /// ```
     pub fn refuse(&mut self, node: &Node<'_>, code: Code) {
+        if let Some(code) = self.own_code(node, |rules| rules.invalid) {
+            return self.fail_as_told(code, node.path.clone(), node.span());
+        }
         let code = self.invalid_code(node).unwrap_or(code);
         self.fail(code, node.path.clone(), node.span());
+    }
+
+    /// The code `pick` takes from the rules of the field whose member `node` is, where those
+    /// rules are a game reader's lines (`schema::era`: [`MemberRules::own_severity`]), fed the
+    /// read's subject.
+    ///
+    /// [`MemberRules::own_severity`]: crate::schema::derive_support::MemberRules::own_severity
+    fn own_code(
+        &self,
+        node: &Node<'_>,
+        pick: fn(
+            &crate::schema::derive_support::MemberRules,
+        ) -> Option<crate::schema::derive_support::MemberCode>,
+    ) -> Option<Code> {
+        self.member_rules(node)
+            .filter(|rules| rules.own_severity)
+            .and_then(pick)
+            .and_then(|code| self.member_code(code))
+    }
+
+    /// A failed member told under `code` at the code's own severity (a game reader's line,
+    /// [`Diagnostic::of`]): it fails the owner, or resets, as the reading grades a failed
+    /// member, whatever severity the line has.
+    fn fail_as_told(&mut self, code: Code, path: JsonPath, span: Option<Span>) {
+        if self.stopped {
+            return;
+        }
+        let grading = self.member_failure();
+        self.failed |= grading.fails_owner;
+        if self.silent_failure() {
+            return;
+        }
+        let mut finding = Diagnostic::of(code).at(path);
+        finding.location.span = span;
+        self.push(finding);
+        self.stopped = self.profile.stops();
     }
 
     /// Tells that `node` is a value its enum has no variant for, under `code` (the enum's
@@ -2141,6 +2205,9 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
+        if let Some(code) = self.own_code(node, |rules| rules.wrong_type) {
+            return self.fail_as_told(code, node.path.clone(), node.span());
+        }
         let code = self
             .worded_wrong_type(node)
             .unwrap_or_else(|| Code::from(&core_codes::INVALID_TYPE));
@@ -2383,6 +2450,19 @@ impl<'d> Read<'d> {
     /// field's `schema::missing`).
     pub(crate) fn missing_member_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
         self.tell_missing(code, self.missing_at(members, key), members.node.span());
+    }
+
+    /// Tells, under `code` and at that code's own severity, that the member `key` of `members` is
+    /// absent: the line a game reader writes where it finds no member (a field's
+    /// `schema::era(.., missing = CODE)`). Told at the member, over the object; it fails nothing
+    /// itself (a required field's slot fails its owner).
+    pub(crate) fn absent_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
+        if self.stopped {
+            return;
+        }
+        let mut finding = Diagnostic::of(code).at(members.node.path.child(key));
+        finding.location.span = members.node.span();
+        self.push(finding);
     }
 
     /// Tells a missing member: a failed member, or under the game's schema tree an error

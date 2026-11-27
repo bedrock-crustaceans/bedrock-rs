@@ -289,6 +289,21 @@ facet::define_attr_grammar! {
         /// by the name the family gives it, in the field's row (`FieldRow::getter`); not the
         /// accessor the derive makes for a `fallback`. The read does not look at it.
         Getter(arbitrary),
+        /// `era(ERA, key = value, ..)` (compile-time, a field; repeatable): keys that hold in a
+        /// document whose format version is in `ERA` (an expression of type `schema::Era`, a
+        /// range of formats: `Era::below(v)`, `Era::since(v)`), in place of the field's own:
+        /// one of the game's readers reads the format's documents (particle's legacy parser
+        /// below 1.20.80, its strict reader from it). The first era the format is in holds; a
+        /// read that knows no format (`Read::format`) is in none. The keys: `wrong_type`,
+        /// `missing`, `invalid` (the codes, each the reader's line, told at the code's own
+        /// severity where a field's own codes are graded by the reading; the member fails or
+        /// takes its default as the reading says). A `missing` code on a field that has a
+        /// `default` or is an `Option` is told where the member is absent, before the field
+        /// takes its default. `molang = SPEC`: the field's Molang spec in the era, for the walk
+        /// of a document of that format (`MolangVisitor::format`; a hand walk of a part of
+        /// another era's document sets it with `MolangVisitor::at_format`) and for the read of
+        /// the member (`Read::member_molang`).
+        Era(arbitrary),
         /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
         /// the game's order, and the derive emits none; it checks at compile time that `ALL`
         /// names every variant once. `NAMES` and `EXPECTED` stay in declaration order.

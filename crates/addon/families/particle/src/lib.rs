@@ -16,6 +16,7 @@ pub use event::{
 };
 
 mod curve;
+mod derived;
 mod event;
 #[cfg(test)]
 mod linear;
@@ -36,6 +37,7 @@ use bedrock_addon_core::load::{
     self, CollectionLoader, DocumentSource, LoadContext, StackCx, Walk,
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, known};
 use bedrock_addon_core::versioning::{
     BelowFloor, ComponentSection, ComponentTable, DocumentRead, Envelope, EnvelopeCheck, Family,
@@ -44,7 +46,6 @@ use bedrock_addon_core::versioning::{
 use component::ParticleComponent;
 use history::{ParticleFamily, ParticleHistory};
 use read::CEREAL;
-use read::{Opt, object};
 use write::PAYLOAD_KEY;
 
 /// A particle effect (`particle_effect`), at the newest format version.
@@ -104,29 +105,53 @@ impl ParticleEffect {
     }
 }
 
-object! {
-    /// `particle_effect/description`.
-    pub struct Description {
-        /// The effect's identifier, as other files name it (JSON `identifier`, required).
-        req identifier: ParticleId = "identifier", Opt::NONE;
-        /// How the particles are drawn (JSON `basic_render_parameters`, required).
-        req basic_render_parameters: BasicRenderParameters = "basic_render_parameters",
-            Opt::NONE;
-    }
+/// `particle_effect/description`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report")]
+pub struct Description {
+    /// The effect's identifier, as other files name it (JSON `identifier`, required).
+    #[facet(
+        default = ParticleId::parse(String::new()),
+        schema::read_with = derived::hand,
+        schema::era(derived::STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub identifier: ParticleId,
+    /// How the particles are drawn (JSON `basic_render_parameters`, required).
+    #[facet(
+        default,
+        schema::era(derived::STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub basic_render_parameters: BasicRenderParameters,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: bedrock_addon_core::document::UnknownMembers,
 }
 
-object! {
-    /// `description/basic_render_parameters`: the material and the texture of every particle
-    /// of the effect.
-    pub struct BasicRenderParameters finish = read::render_parameters {
-        /// The material, a name of the pack stack's material files (JSON `material`,
-        /// required).
-        req material: String = "material", Opt::NONE;
-        /// The texture, a path in the pack without its extension, at most 256 characters
-        /// (JSON `texture`, required).
-        req texture: String = "texture", Opt::NONE;
-    }
+/// `description/basic_render_parameters`: the material and the texture of every particle
+/// of the effect.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report", schema::after_read = read::render_parameters)]
+pub struct BasicRenderParameters {
+    /// The material, a name of the pack stack's material files (JSON `material`,
+    /// required).
+    #[facet(
+        default,
+        schema::era(derived::STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub material: String,
+    /// The texture, a path in the pack without its extension, at most 256 characters
+    /// (JSON `texture`, required).
+    #[facet(
+        default,
+        schema::era(derived::STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub texture: String,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: bedrock_addon_core::document::UnknownMembers,
 }
+
+read::derived_node!(Description, BasicRenderParameters);
 
 impl Family for ParticleFamily {
     const NAME: &'static str = "particle";

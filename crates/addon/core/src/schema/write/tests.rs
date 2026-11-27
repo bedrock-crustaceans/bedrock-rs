@@ -287,3 +287,75 @@ fn a_flattened_struct_writes_in_place_and_skip_serializing_if_is_honoured() {
         r#"{"a":1,"b":2,"full":[3],"c":{"a":4,"b":5,"empty":[6]},"u":true}"#
     );
 }
+
+/// `value` written by `writing`: the path and kind of its refusal.
+fn refused<'f, T: Facet<'f>>(value: &T, writing: Writing) -> (String, Unrepresentable) {
+    match write_value_with(value, writing) {
+        Err(EncodeError::NotRepresentable { at, what }) => (at.to_string(), what),
+        other => panic!("written: {other:?}"),
+    }
+}
+
+#[derive(Facet, Default)]
+struct Strict {
+    rate: Option<Molang>,
+    nested: Option<Box<Strict>>,
+    extra: UnknownMembers,
+}
+
+#[test]
+fn a_writing_for_a_strict_reader_refuses_an_unknown_member_and_a_molang_bool_at_its_path() {
+    let strict = Writing::REAL
+        .unknown(super::Unknowns::Refused)
+        .refusing_molang_bools();
+    let mut extra = UnknownMembers::default();
+    extra.insert("later".to_owned(), Value::from(1_i64));
+    let inner = Strict {
+        extra,
+        ..Strict::default()
+    };
+    let value = Strict {
+        nested: Some(Box::new(inner)),
+        ..Strict::default()
+    };
+    assert_eq!(written(&value), r#"{"nested":{"later":1}}"#);
+    assert_eq!(
+        refused(&value, strict),
+        ("nested/later".to_owned(), Unrepresentable::Unsupported)
+    );
+    let value = Strict {
+        rate: Some(Molang::Bool(true)),
+        ..Strict::default()
+    };
+    assert_eq!(written(&value), r#"{"rate":true}"#);
+    assert_eq!(
+        refused(&value, strict),
+        ("rate".to_owned(), Unrepresentable::Unsupported)
+    );
+    let value = Strict {
+        rate: Some(Molang::Const(1.0)),
+        ..Strict::default()
+    };
+    assert_eq!(text(&value, strict), r#"{"rate":1}"#);
+}
+
+#[test]
+fn a_writing_may_refuse_an_unknown_member_named_like_a_member_and_write_the_others() {
+    let named_known = Writing::REAL.unknown(super::Unknowns::NoneNamedKnown);
+    let mut extra = UnknownMembers::default();
+    extra.insert("z".to_owned(), Value::from(1_i64));
+    let value = Members {
+        extra,
+        ..Members::default()
+    };
+    assert_eq!(text(&value, named_known), r#"{"Count":0,"z":1}"#);
+    for key in ["first_name", "Count", "absent"] {
+        let mut value = Members::default();
+        value.extra.insert(key.to_owned(), Value::from(1_i64));
+        assert_eq!(
+            refused(&value, named_known),
+            (key.to_owned(), Unrepresentable::Unsupported),
+            "{key}"
+        );
+    }
+}

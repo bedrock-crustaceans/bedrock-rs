@@ -576,6 +576,14 @@ pub struct MemberRules {
     pub negative: Option<MemberCode>,
     /// A number beyond the member's float reads as its largest finite value of that sign.
     pub finite: bool,
+    /// The codes are one of the game's readers' lines (`schema::era`): each is told at its own
+    /// severity, as [`Diagnostic::of`](crate::diagnostic::Diagnostic::of) grades it (a kept
+    /// error kept), where the others are graded by the reading; the member fails or resets as
+    /// the reading says all the same.
+    pub own_severity: bool,
+    /// The Molang spec of the member in the era the document is in (`schema::era(.., molang =
+    /// SPEC)`), for a leaf that reads by it ([`Read::member_molang`]).
+    pub molang: Option<crate::molang::MolangFieldSpec>,
 }
 
 impl MemberRules {
@@ -586,6 +594,8 @@ impl MemberRules {
         invalid: None,
         negative: None,
         finite: false,
+        own_severity: false,
+        molang: None,
     };
 }
 
@@ -716,6 +726,35 @@ impl<T> Slot<T> {
         }
     }
 
+    /// An empty slot of a field whose rules for its member are `rules`, `None` for none: the
+    /// rules of the era the document is in (`schema::era`), else the field's own.
+    #[must_use]
+    pub fn with_rules(rules: Option<&'static MemberRules>) -> Self {
+        Self {
+            rules,
+            ..Self::default()
+        }
+    }
+
+    /// Where the member `key` is absent and the field takes its default: tells its absence
+    /// under the era's `missing` code, at the code's own severity, once (a field with an era's
+    /// `missing` code, `schema::era`, where the era does not require it: the game's line before
+    /// it goes on with the default). Nothing without an era's code.
+    pub fn absent_told(&mut self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
+        if !matches!(self.state, State::Absent) || self.missing_told {
+            return;
+        }
+        self.missing_told = true;
+        if let Some(code) = self
+            .rules
+            .filter(|rules| rules.own_severity)
+            .and_then(|rules| rules.missing)
+            .and_then(|code| read.member_code(code))
+        {
+            read.absent_as(&object.members, key, code);
+        }
+    }
+
     /// A required field: the value, or the owner fails (a missing member told, unless the
     /// object of a tree failed: [`Object::settle`]).
     pub fn required(
@@ -750,11 +789,13 @@ impl<T> Slot<T> {
 
     /// Tells the member `key` missing, under the field's own code when it has one.
     fn tell_missing(&self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
+        let own = self.rules.is_some_and(|rules| rules.own_severity);
         match self
             .rules
             .and_then(|rules| rules.missing)
             .and_then(|code| read.member_code(code))
         {
+            Some(code) if own => read.absent_as(&object.members, key, code),
             Some(code) => read.missing_member_as(&object.members, key, code),
             None => read.missing_member(&object.members, key),
         }

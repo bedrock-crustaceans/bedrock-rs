@@ -22,7 +22,7 @@ error: a tuple struct's field is the element at its place: it has no member name
 19 | struct Member(#[facet(rename = "a")] i32, #[facet(schema::required)] Option<i32>);
    |                                      ^^^
 
-error: a tuple struct's element is there by its array's length: `or_kept`, `reads_null`, `required`, `missing` and `since_format` are about a member
+error: a tuple struct's element is there by its array's length: `or_kept`, `reads_null`, `required`, `missing`, `since_format` and `era` are about a member
   --> tests/ui/schema/tuple_struct.rs:19:51
    |
 19 | struct Member(#[facet(rename = "a")] i32, #[facet(schema::required)] Option<i32>);

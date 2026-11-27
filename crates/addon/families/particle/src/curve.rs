@@ -10,12 +10,17 @@ use facet_value::VObject;
 use indexmap::IndexMap;
 
 use super::codes;
-use super::read::{Era, Fields, Members, Node, Opt, Reader, Writer, object, put, req, walk};
+use super::derived::{L0, L1, LEGACY, STRICT, hand, read_derived};
+use super::read::{
+    Era, Fields, KEPT, Members, Node, Opt, Reader, Writer, defaults, derived_node, put, req, walk,
+};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, CodeDef, Severity};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// One curve of an effect, keyed in `curves` by the Molang variable it sets
 /// (`"variable.fade"`).
@@ -30,16 +35,22 @@ pub enum Curve {
 }
 
 /// The kind of a [`SimpleCurve`] (JSON `type`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum SimpleCurveType {
     /// Straight lines between the nodes (JSON `"linear"`): 1 to 100 nodes.
+    #[facet(rename = "linear")]
     Linear,
     /// One cubic Bézier segment (JSON `"bezier"`): exactly 4 nodes.
+    #[facet(rename = "bezier")]
     Bezier,
     /// A Catmull-Rom spline (JSON `"catmull_rom"`): 4 to 100 nodes.
+    #[facet(rename = "catmull_rom")]
     CatmullRom,
 }
+
+crate::derived::hand_leaf!(SimpleCurveType);
 
 impl SimpleCurveType {
     /// The JSON spelling.
@@ -84,21 +95,48 @@ impl Node for SimpleCurveType {
     }
 }
 
-object! {
-    /// A `linear`, `bezier` or `catmull_rom` curve.
-    pub struct SimpleCurve finish = simple_curve {
-        /// The kind (JSON `type`, required).
-        req kind: SimpleCurveType = "type", Opt::NONE;
-        /// The value the curve is looked up at (JSON `input`, required).
-        req input: Molang = "input", Opt::required(0.0);
-        /// The input range the nodes are spread over, from 0 (JSON `horizontal_range`;
-        /// default 1).
-        opt horizontal_range: Molang = "horizontal_range", Opt::with_default(1.0),
-            default Molang::Const(1.0);
-        /// The control nodes, as written (JSON `nodes`, required).
-        req nodes: Vec<Molang> = "nodes", Opt::NONE.wrong(&codes::CURVE_NODES);
-    }
+/// A `linear`, `bezier` or `catmull_rom` curve.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    schema::unknown = "report",
+    schema::molang = KEPT,
+    schema::after_read = simple_curve
+)]
+pub struct SimpleCurve {
+    /// The kind (JSON `type`, required).
+    #[facet(
+        rename = "type",
+        default = SimpleCurveType::Linear,
+        schema::read_with = hand,
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub kind: SimpleCurveType,
+    /// The value the curve is looked up at (JSON `input`, required).
+    #[facet(
+        default = Molang::Const(0.0),
+        schema::era(LEGACY, missing = codes::REQUIRED_MISSING, molang = L0),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub input: Molang,
+    /// The input range the nodes are spread over, from 0 (JSON `horizontal_range`;
+    /// default 1).
+    #[facet(schema::era(LEGACY, molang = L1))]
+    pub horizontal_range: Option<Molang>,
+    /// The control nodes, as written (JSON `nodes`, required).
+    #[facet(
+        default,
+        schema::era(LEGACY, wrong_type = codes::CURVE_NODES, molang = L0),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub nodes: Vec<Molang>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+defaults!(SimpleCurve {
+    horizontal_range: Molang = "horizontal_range", Molang::Const(1.0);
+});
 
 impl SimpleCurve {
     /// Whether the number of nodes is one the game takes for the kind.
@@ -121,33 +159,43 @@ impl SimpleCurve {
 }
 
 /// The node count of the kind, in both eras.
-fn simple_curve(curve: &mut SimpleCurve, m: Members<'_>, r: &mut Reader<'_>) {
-    let listed = m.get("nodes").is_some_and(Value::is_array);
+fn simple_curve(curve: &mut SimpleCurve, node: &kit::Node<'_>, read: &mut kit::Read<'_>) {
+    let listed = node
+        .value()
+        .as_object()
+        .and_then(|members| members.get("nodes"))
+        .is_some_and(Value::is_array);
+    let r = &mut Reader::of(node, read);
     if listed && !curve.has_valid_node_count() {
         r.key("nodes", |r| r.warn(&codes::CURVE_NODE_COUNT));
     }
 }
 
-object! {
-    /// One node of a `bezier_chain` curve: the value and the slope on each side of it.
-    ///
-    /// JSON: `value` or both of `left_value` and `right_value`; `slope` or both of
-    /// `left_slope` and `right_slope`.
-    pub struct BezierChainNode finish = chain_node {
-        /// The value on both sides (JSON `value`).
-        opt value: f32 = "value", Opt::NONE;
-        /// The value left of the node (JSON `left_value`).
-        opt left_value: f32 = "left_value", Opt::NONE;
-        /// The value right of the node (JSON `right_value`).
-        opt right_value: f32 = "right_value", Opt::NONE;
-        /// The slope on both sides (JSON `slope`).
-        opt slope: f32 = "slope", Opt::NONE;
-        /// The slope left of the node (JSON `left_slope`).
-        opt left_slope: f32 = "left_slope", Opt::NONE;
-        /// The slope right of the node (JSON `right_slope`).
-        opt right_slope: f32 = "right_slope", Opt::NONE;
-    }
+/// One node of a `bezier_chain` curve: the value and the slope on each side of it.
+///
+/// JSON: `value` or both of `left_value` and `right_value`; `slope` or both of
+/// `left_slope` and `right_slope`.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report", schema::after_read = chain_node)]
+pub struct BezierChainNode {
+    /// The value on both sides (JSON `value`).
+    pub value: Option<f32>,
+    /// The value left of the node (JSON `left_value`).
+    pub left_value: Option<f32>,
+    /// The value right of the node (JSON `right_value`).
+    pub right_value: Option<f32>,
+    /// The slope on both sides (JSON `slope`).
+    pub slope: Option<f32>,
+    /// The slope left of the node (JSON `left_slope`).
+    pub left_slope: Option<f32>,
+    /// The slope right of the node (JSON `right_slope`).
+    pub right_slope: Option<f32>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+derived_node!(SimpleCurve, BezierChainNode);
 
 impl BezierChainNode {
     /// The values left and right of the node: the one-sided member, else `value`, else 0.
@@ -170,7 +218,8 @@ impl BezierChainNode {
 }
 
 /// Each side needs its value and its slope, shared or one-sided.
-fn chain_node(node: &mut BezierChainNode, _: Members<'_>, r: &mut Reader<'_>) {
+fn chain_node(node: &mut BezierChainNode, at: &kit::Node<'_>, read: &mut kit::Read<'_>) {
+    let r = &mut Reader::of(at, read);
     let both = |shared: Option<f32>, left: Option<f32>, right: Option<f32>| {
         shared.is_some() || (left.is_some() && right.is_some())
     };
@@ -275,7 +324,7 @@ impl Node for Curve {
         if !legacy_shape(nodes.is_some_and(Value::is_array), &codes::CURVE_NODES, r) {
             return left_out(r, true);
         }
-        Some(Self::Simple(SimpleCurve::read_members(members, r)))
+        read_derived(value, r, Opt::NONE).map(Self::Simple)
     }
 
     fn fallback(o: Opt) -> Self {

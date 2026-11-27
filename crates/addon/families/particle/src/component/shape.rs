@@ -2,47 +2,92 @@
 
 use super::types::{EmitterDirection, PlaneNormal};
 use crate::codes;
-use crate::read::{Members, Opt, Reader, object};
+use crate::derived::{L0, L1, LEGACY, STRICT, hand};
+use crate::read::{KEPT, Reader, defaults, derived_node};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::molang::Molang;
+use bedrock_addon_core::schema::{self, Schema};
+use facet::Facet;
+
+/// A Molang field that is 0 when the document does not write it.
+const ZERO: Molang = Molang::Const(0.0);
+
+/// Three Molang fields that are 0.
+const ZEROS: [Molang; 3] = [ZERO, ZERO, ZERO];
 
 /// The offset or direction a shape has when the document does not write one.
 fn zeros() -> [Molang; 3] {
-    [Molang::Const(0.0), Molang::Const(0.0), Molang::Const(0.0)]
+    ZEROS
 }
 
-object! {
-    /// `minecraft:emitter_shape_point`: every particle appears at one point.
-    pub struct EmitterShapePoint {
-        /// The point, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
-        opt offset: [Molang; 3] = "offset", Opt::NONE, default zeros();
-        /// The direction particles leave in (JSON `direction`). A document below format
-        /// 1.20.80 that does not write it gets three `math.random(-1, 1)`; a newer one has
-        /// no default.
-        opt direction: [Molang; 3] = "direction", Opt::NONE;
-    }
+/// `minecraft:emitter_shape_point`: every particle appears at one point.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct EmitterShapePoint {
+    /// The point, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub offset: Option<[Molang; 3]>,
+    /// The direction particles leave in (JSON `direction`). A document below format
+    /// 1.20.80 that does not write it gets three `math.random(-1, 1)`; a newer one has
+    /// no default.
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub direction: Option<[Molang; 3]>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
 
-object! {
-    /// `minecraft:emitter_shape_box`: particles appear in a box.
-    pub struct EmitterShapeBox finish = box_shape {
-        /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
-        opt offset: [Molang; 3] = "offset", Opt::NONE, default zeros();
-        /// Half the box's size on each axis (JSON `half_dimensions`, required).
-        /// A document below format 1.20.80 without it logs "offset field required!" and the
-        /// legacy parser reads neither `surface_only` nor `direction`.
-        req half_dimensions: [Molang; 3] = "half_dimensions", Opt::with_default(0.0);
-        /// Particles appear on the surface only (JSON `surface_only`; default `false`).
-        opt surface_only: bool = "surface_only", Opt::NONE, default false;
-        /// The direction particles leave in (JSON `direction`).
-        opt direction: EmitterDirection = "direction", Opt::NONE;
-    }
+defaults!(EmitterShapePoint {
+    offset: [Molang; 3] = "offset", zeros();
+});
+
+/// `minecraft:emitter_shape_box`: particles appear in a box.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(
+    schema::unknown = "report",
+    schema::molang = KEPT,
+    schema::after_read = box_shape
+)]
+pub struct EmitterShapeBox {
+    /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub offset: Option<[Molang; 3]>,
+    /// Half the box's size on each axis (JSON `half_dimensions`, required).
+    /// A document below format 1.20.80 without it logs "offset field required!" and the
+    /// legacy parser reads neither `surface_only` nor `direction`.
+    #[facet(
+        default = ZEROS,
+        schema::era(LEGACY, molang = L0),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub half_dimensions: [Molang; 3],
+    /// Particles appear on the surface only (JSON `surface_only`; default `false`).
+    pub surface_only: Option<bool>,
+    /// The direction particles leave in (JSON `direction`).
+    #[facet(schema::read_with = hand)]
+    pub direction: Option<EmitterDirection>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+defaults!(EmitterShapeBox {
+    offset: [Molang; 3] = "offset", zeros();
+    surface_only: bool = "surface_only", false;
+});
 
 /// The legacy box parser returns at a missing `half_dimensions`, after logging its line, so
 /// `surface_only` and `direction` are never read: the crate leaves them out and reports them
 /// as unread, because the game says nothing of them.
-fn box_shape(shape: &mut EmitterShapeBox, m: Members<'_>, r: &mut Reader<'_>) {
-    if !r.legacy() || m.get("half_dimensions").is_some() {
+fn box_shape(shape: &mut EmitterShapeBox, node: &Node<'_>, read: &mut Read<'_>) {
+    let written = node
+        .value()
+        .as_object()
+        .is_some_and(|object| object.contains_key("half_dimensions"));
+    let r = &mut Reader::of(node, read);
+    if !r.legacy() || written {
         return;
     }
     // The game writes this line to the content log at the error level.
@@ -57,59 +102,107 @@ fn box_shape(shape: &mut EmitterShapeBox, m: Members<'_>, r: &mut Reader<'_>) {
     }
 }
 
-object! {
-    /// `minecraft:emitter_shape_sphere`: particles appear in a sphere.
-    pub struct EmitterShapeSphere {
-        /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
-        opt offset: [Molang; 3] = "offset", Opt::NONE, default zeros();
-        /// The radius (JSON `radius`; default 1).
-        opt radius: Molang = "radius", Opt::with_default(1.0), default Molang::Const(1.0);
-        /// Particles appear on the surface only (JSON `surface_only`; default `false`).
-        opt surface_only: bool = "surface_only", Opt::NONE, default false;
-        /// The direction particles leave in (JSON `direction`).
-        opt direction: EmitterDirection = "direction", Opt::NONE;
-    }
+/// `minecraft:emitter_shape_sphere`: particles appear in a sphere.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct EmitterShapeSphere {
+    /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub offset: Option<[Molang; 3]>,
+    /// The radius (JSON `radius`; default 1).
+    #[facet(schema::era(LEGACY, molang = L1))]
+    pub radius: Option<Molang>,
+    /// Particles appear on the surface only (JSON `surface_only`; default `false`).
+    pub surface_only: Option<bool>,
+    /// The direction particles leave in (JSON `direction`).
+    #[facet(schema::read_with = hand)]
+    pub direction: Option<EmitterDirection>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
 
-object! {
-    /// `minecraft:emitter_shape_disc`: particles appear in a disc.
-    pub struct EmitterShapeDisc {
-        /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
-        opt offset: [Molang; 3] = "offset", Opt::NONE, default zeros();
-        /// The radius (JSON `radius`; default 1).
-        opt radius: Molang = "radius", Opt::with_default(1.0), default Molang::Const(1.0);
-        /// Particles appear on the edge only (JSON `surface_only`; default `false`).
-        opt surface_only: bool = "surface_only", Opt::NONE, default false;
-        /// The direction particles leave in (JSON `direction`).
-        opt direction: EmitterDirection = "direction", Opt::NONE;
-        /// The normal of the disc's plane (JSON `plane_normal`; default `[0, 1, 0]`).
-        opt plane_normal: PlaneNormal = "plane_normal", Opt::NONE,
-            default PlaneNormal::Custom([
-                Molang::Const(0.0),
-                Molang::Const(1.0),
-                Molang::Const(0.0),
-            ]);
-    }
+defaults!(EmitterShapeSphere {
+    offset: [Molang; 3] = "offset", zeros();
+    radius: Molang = "radius", Molang::Const(1.0);
+    surface_only: bool = "surface_only", false;
+});
+
+/// `minecraft:emitter_shape_disc`: particles appear in a disc.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct EmitterShapeDisc {
+    /// The centre, relative to the emitter (JSON `offset`; default `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub offset: Option<[Molang; 3]>,
+    /// The radius (JSON `radius`; default 1).
+    #[facet(schema::era(LEGACY, molang = L1))]
+    pub radius: Option<Molang>,
+    /// Particles appear on the edge only (JSON `surface_only`; default `false`).
+    pub surface_only: Option<bool>,
+    /// The direction particles leave in (JSON `direction`).
+    #[facet(schema::read_with = hand)]
+    pub direction: Option<EmitterDirection>,
+    /// The normal of the disc's plane (JSON `plane_normal`; default `[0, 1, 0]`).
+    #[facet(schema::read_with = hand)]
+    pub plane_normal: Option<PlaneNormal>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
 
-object! {
-    /// `minecraft:emitter_shape_custom`: the document gives the position and the direction.
-    pub struct EmitterShapeCustom {
-        /// Where particles appear, relative to the emitter (JSON `offset`; default
-        /// `[0, 0, 0]`).
-        opt offset: [Molang; 3] = "offset", Opt::NONE, default zeros();
-        /// The direction particles leave in (JSON `direction`; default `[0, 0, 0]`).
-        opt direction: [Molang; 3] = "direction", Opt::NONE, default zeros();
-    }
+defaults!(EmitterShapeDisc {
+    offset: [Molang; 3] = "offset", zeros();
+    radius: Molang = "radius", Molang::Const(1.0);
+    surface_only: bool = "surface_only", false;
+    plane_normal: PlaneNormal = "plane_normal", PlaneNormal::Custom([ZERO, Molang::Const(1.0), ZERO]);
+});
+
+/// `minecraft:emitter_shape_custom`: the document gives the position and the direction.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct EmitterShapeCustom {
+    /// Where particles appear, relative to the emitter (JSON `offset`; default
+    /// `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub offset: Option<[Molang; 3]>,
+    /// The direction particles leave in (JSON `direction`; default `[0, 0, 0]`).
+    #[facet(schema::era(LEGACY, molang = L0))]
+    pub direction: Option<[Molang; 3]>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
 
-object! {
-    /// `minecraft:emitter_shape_entity_aabb`: particles appear in the bounding box of the
-    /// entity the emitter is attached to.
-    pub struct EmitterShapeEntityAabb {
-        /// Particles appear on the surface only (JSON `surface_only`; default `false`).
-        opt surface_only: bool = "surface_only", Opt::NONE, default false;
-        /// The direction particles leave in (JSON `direction`).
-        opt direction: EmitterDirection = "direction", Opt::NONE;
-    }
+defaults!(EmitterShapeCustom {
+    offset: [Molang; 3] = "offset", zeros();
+    direction: [Molang; 3] = "direction", zeros();
+});
+
+/// `minecraft:emitter_shape_entity_aabb`: particles appear in the bounding box of the
+/// entity the emitter is attached to.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "report")]
+pub struct EmitterShapeEntityAabb {
+    /// Particles appear on the surface only (JSON `surface_only`; default `false`).
+    pub surface_only: Option<bool>,
+    /// The direction particles leave in (JSON `direction`).
+    #[facet(schema::read_with = hand)]
+    pub direction: Option<EmitterDirection>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+defaults!(EmitterShapeEntityAabb {
+    surface_only: bool = "surface_only", false;
+});
+
+derived_node!(
+    EmitterShapePoint,
+    EmitterShapeBox,
+    EmitterShapeSphere,
+    EmitterShapeDisc,
+    EmitterShapeCustom,
+    EmitterShapeEntityAabb,
+);

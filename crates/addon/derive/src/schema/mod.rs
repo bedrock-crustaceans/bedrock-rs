@@ -608,6 +608,21 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
         )),
         _ => {}
     }
+    if let Some(era) = attrs.eras.iter().find(|era| era.molang.is_some()) {
+        if attrs.molang_with.is_some() {
+            errors.push(Error::new(
+                era.span,
+                "an era's `molang` names the spec of the derived walk, and the field is walked \
+                 by its `schema::molang_with`",
+            ));
+        } else if ty::is_plain_value(info.ty) {
+            errors.push(Error::new(
+                era.span,
+                "an era's `molang` names the spec of a Molang field, or the default spec of a \
+                 nested walk, and this field holds a plain value",
+            ));
+        }
+    }
     for bound in &attrs.bounds {
         if let LimitDecl::Field(other) = &bound.limit {
             if *other == info.rust {
@@ -1203,8 +1218,26 @@ fn field_cross_check(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream>
     is_cross(info).then(|| at_field(info, field_bounds(info, all)))
 }
 
-/// A field's part of the Molang walk.
+/// A field's part of the Molang walk: under the spec the first era the walk's format is in
+/// states (`schema::era(.., molang = SPEC)`), else under the field's own.
 fn field_molang(info: &FieldInfo) -> TokenStream {
+    let core = core();
+    let own = info.attrs.molang.as_ref().map(|(spec, _)| spec);
+    let base = field_molang_under(info, own);
+    let eras = &info.attrs.eras;
+    if eras.iter().all(|era| era.molang.is_none()) {
+        return base;
+    }
+    let arms = eras.iter().map(|era| {
+        let walk = field_molang_under(info, era.molang.as_ref().or(own));
+        let expr = &era.era;
+        quote!(if #core::schema::Era::holds(#expr, visitor.format()) { #walk } else)
+    });
+    quote!(#(#arms)* { #base })
+}
+
+/// A field's part of the Molang walk under `spec`, the field's own when `None`.
+fn field_molang_under(info: &FieldInfo, spec: Option<&syn::Expr>) -> TokenStream {
     let core = core();
     let access = &info.access;
     // The step into the field: its key, or a tuple struct's index.
@@ -1227,7 +1260,6 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
         };
     }
     if ty::is_molang_slot(info.ty) {
-        let spec = info.attrs.molang.as_ref().map(|(spec, _)| spec);
         return match (info.inline, spec) {
             (false, Some(spec)) => quote!(visitor.field(#json, &#spec, &mut #access);),
             (false, None) => quote!(visitor.field_default(#json, &mut #access);),
@@ -1241,10 +1273,7 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
         };
     }
     // A spec on a nested walk is that walk's default.
-    match (
-        info.inline,
-        info.attrs.molang.as_ref().map(|(spec, _)| spec),
-    ) {
+    match (info.inline, spec) {
         (true, None) => quote!(#core::molang::MolangFields::visit_molang(&mut #access, visitor);),
         (false, None) => quote!(visitor.nested(#json, &mut #access);),
         (true, Some(spec)) => quote! {

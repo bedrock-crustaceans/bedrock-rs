@@ -9,27 +9,40 @@
 use facet_value::{VArray, VObject};
 
 use super::codes;
-use super::read::{Era, Members, Node, Opt, Reader, Writer, float, object, opt, put_opt, walk};
+use super::derived::{EVENT, LEGACY, STRICT, hand_with};
+use super::read::{
+    Era, KEPT, Members, Node, Opt, Reader, Writer, defaults, derived_node, float, opt, put_opt,
+    walk,
+};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Code, Severity};
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit;
 use bedrock_addon_core::json::{EncodeError, MAX_JSON_DEPTH, Unrepresentable, Value};
 use bedrock_addon_core::molang::{Molang, MolangVisitor, Step};
+use bedrock_addon_core::schema::{self, Schema};
 
 /// What kind of effect an event starts (`particle_effect.type`).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum ParticleEffectType {
     /// A single particle at the event's position (JSON `"particle"`).
+    #[facet(rename = "particle")]
     Particle,
     /// A single particle that takes the velocity of what fired the event (JSON
     /// `"particle_with_velocity"`).
+    #[facet(rename = "particle_with_velocity")]
     ParticleWithVelocity,
     /// A new emitter at the event's position (JSON `"emitter"`).
+    #[facet(rename = "emitter")]
     Emitter,
     /// A new emitter bound to the same entity (JSON `"emitter_bound"`).
+    #[facet(rename = "emitter_bound")]
     EmitterBound,
 }
+
+crate::derived::hand_leaf!(ParticleEffectType);
 
 impl ParticleEffectType {
     /// The type a JSON spelling names, compared byte for byte; the reverse of
@@ -84,30 +97,65 @@ impl Node for ParticleEffectType {
 /// and keeps an expression that does not compile.
 const EXPRESSION: Opt = Opt::NONE.event();
 
-object! {
-    /// `particle_effect` of an event: another effect the event starts.
-    pub struct VisualEffectEvent {
-        /// The identifier of the effect (JSON `effect`, required).
-        req effect: String = "effect",
-            Opt::NONE.missing(&codes::EFFECT_MISSING).wrong(&codes::EFFECT_MISSING);
-        /// How it is started (JSON `type`, required).
-        req kind: ParticleEffectType = "type",
-            Opt::NONE.missing(&codes::TYPE_MISSING).wrong(&codes::TYPE_MISSING);
-        /// Molang run on the new emitter before it starts (JSON `pre_effect_expression`;
-        /// default 0).
-        opt pre_effect_expression: Molang = "pre_effect_expression", EXPRESSION,
-            default Molang::Const(0.0);
-    }
+/// `particle_effect.type`, with the legacy parser's line for a value that is no type.
+fn effect_type(node: &kit::Node<'_>, read: &mut kit::Read<'_>) -> Option<ParticleEffectType> {
+    hand_with(node, read, Opt::NONE.wrong(&codes::TYPE_MISSING))
 }
 
-object! {
-    /// `sound_effect` of an event: a sound the event plays.
-    pub struct SoundEffectEvent {
-        /// The level sound event (JSON `event_name`, required).
-        req event_name: String = "event_name",
-            Opt::NONE.missing(&codes::SOUND_NAME).wrong(&codes::SOUND_NAME);
-    }
+/// `particle_effect` of an event: another effect the event starts.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report", schema::molang = KEPT)]
+pub struct VisualEffectEvent {
+    /// The identifier of the effect (JSON `effect`, required).
+    #[facet(
+        default,
+        schema::era(
+            LEGACY,
+            missing = codes::EFFECT_MISSING,
+            wrong_type = codes::EFFECT_MISSING
+        ),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub effect: String,
+    /// How it is started (JSON `type`, required).
+    #[facet(
+        rename = "type",
+        default = ParticleEffectType::Particle,
+        schema::read_with = effect_type,
+        schema::era(LEGACY, missing = codes::TYPE_MISSING),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub kind: ParticleEffectType,
+    /// Molang run on the new emitter before it starts (JSON `pre_effect_expression`;
+    /// default 0).
+    #[facet(schema::era(LEGACY, molang = EVENT))]
+    pub pre_effect_expression: Option<Molang>,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
 }
+
+defaults!(VisualEffectEvent {
+    pre_effect_expression: Molang = "pre_effect_expression", Molang::Const(0.0);
+});
+
+/// `sound_effect` of an event: a sound the event plays.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(schema::unknown = "report")]
+pub struct SoundEffectEvent {
+    /// The level sound event (JSON `event_name`, required).
+    #[facet(
+        default,
+        schema::era(LEGACY, missing = codes::SOUND_NAME, wrong_type = codes::SOUND_NAME),
+        schema::era(STRICT, missing = core_codes::MISSING_REQUIRED_FIELD)
+    )]
+    pub event_name: String,
+    /// Unknown members.
+    #[facet(skip_deserializing)]
+    pub extra: UnknownMembers,
+}
+
+derived_node!(VisualEffectEvent, SoundEffectEvent);
 
 /// One node of an event: it may run Molang, start an effect, play a sound, log a line, run
 /// further nodes in order, and pick one of several nodes at random.

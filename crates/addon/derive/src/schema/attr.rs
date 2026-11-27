@@ -162,6 +162,93 @@ pub(crate) struct DefaultDecl {
     pub span: Span,
 }
 
+/// One `schema::era(ERA, key = value, ..)` on a field: the keys that hold in a document whose
+/// format is in `era` (an expression of type `schema::Era`), in place of the field's own.
+pub(crate) struct EraDecl {
+    pub era: Expr,
+    pub wrong_type: Option<Expr>,
+    pub missing: Option<Expr>,
+    pub invalid: Option<Expr>,
+    /// `molang = SPEC`: the field's Molang spec in the era, for the walk of a document of that
+    /// format and for the read of the member.
+    pub molang: Option<Expr>,
+    pub span: Span,
+}
+
+impl EraDecl {
+    /// Whether the era states a code for the member, in place of the field's own.
+    pub(crate) fn has_codes(&self) -> bool {
+        self.wrong_type.is_some() || self.missing.is_some() || self.invalid.is_some()
+    }
+}
+
+/// The keys `schema::era(..)` takes after its era.
+const ERA_KEYS: &[&str] = &["wrong_type", "missing", "invalid", "molang"];
+
+/// Reads `schema::era(ERA, key = value, ..)`: the era's expression, then its keys.
+fn era_decl(outer: &Entry) -> Result<EraDecl> {
+    let span = outer.span;
+    let usage = "`schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then \
+                 `wrong_type`, `missing`, `invalid` or `molang`";
+    let Some(tokens) = outer.value.clone() else {
+        return Err(Error::new(span, usage));
+    };
+    let mut parts: Vec<Vec<TokenTree>> = vec![Vec::new()];
+    for token in tokens {
+        if matches!(&token, TokenTree::Punct(p) if p.as_char() == ',') {
+            parts.push(Vec::new());
+        } else if let Some(part) = parts.last_mut() {
+            part.push(token);
+        }
+    }
+    let mut parts = parts.into_iter().filter(|part| !part.is_empty());
+    let Some(era) = parts.next() else {
+        return Err(Error::new(span, usage));
+    };
+    let era: Expr = syn::parse2(era.into_iter().collect())?;
+    let mut out = EraDecl {
+        era,
+        wrong_type: None,
+        missing: None,
+        invalid: None,
+        molang: None,
+        span,
+    };
+    let mut any = false;
+    for part in parts {
+        let Some(inner) = entry(part) else {
+            return Err(Error::new(span, usage));
+        };
+        let key = inner.builtin().unwrap_or_default();
+        if !ERA_KEYS.contains(&key.as_str()) {
+            return Err(Error::new(inner.span, usage));
+        }
+        let Some(expr) = inner.expr() else {
+            return Err(Error::new(
+                inner.span,
+                format!("`{key}` in `schema::era` takes a value"),
+            ));
+        };
+        let slot = match key.as_str() {
+            "wrong_type" => &mut out.wrong_type,
+            "missing" => &mut out.missing,
+            "invalid" => &mut out.invalid,
+            _ => &mut out.molang,
+        };
+        if slot.replace(expr?).is_some() {
+            return Err(Error::new(
+                inner.span,
+                format!("duplicate `{key}` in `schema::era`"),
+            ));
+        }
+        any = true;
+    }
+    if !any {
+        return Err(Error::new(span, usage));
+    }
+    Ok(out)
+}
+
 /// What a field declares.
 #[derive(Default)]
 pub(crate) struct FieldAttrs {
@@ -239,6 +326,8 @@ pub(crate) struct FieldAttrs {
     pub read_by: Option<(Vec<String>, Span)>,
     /// `schema::getter`: the getter the game reads the member with.
     pub getter: Option<(String, Span)>,
+    /// `schema::era(ERA, ..)`, each: the keys that hold in one era of the document's format.
+    pub eras: Vec<EraDecl>,
     /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
     pub stored: Option<Span>,
 }
@@ -326,6 +415,7 @@ const FIELD_KEYS: &[&str] = &[
     "members",
     "read_by",
     "getter",
+    "era",
 ];
 const ENUM_KEYS: &[&str] = &["order", "string_only"];
 /// The keys of a struct alone.
@@ -762,6 +852,7 @@ impl FieldAttrs {
                     }
                     "scope" => once(&mut out.scope, span, &key, span, errors),
                     "reads_absent" => once(&mut out.reads_absent, span, &key, span, errors),
+                    "era" => out.eras.push(era_decl(entry)?),
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
@@ -869,6 +960,7 @@ impl FieldAttrs {
             .or(self.required)
             .or_else(|| self.read_by.as_ref().map(|(_, s)| *s))
             .or_else(|| self.getter.as_ref().map(|(_, s)| *s))
+            .or_else(|| self.eras.first().map(|era| era.span))
             .or(self.stored)
     }
 }

@@ -1,0 +1,35 @@
+error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then `wrong_type`, `missing`, `invalid` or `molang`
+  --> tests/ui/schema/era.rs:19:30
+   |
+19 |     #[facet(schema::era(OLD, colour = LINE))]
+   |                              ^^^^^^
+
+error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then `wrong_type`, `missing`, `invalid` or `molang`
+  --> tests/ui/schema/era.rs:21:13
+   |
+21 |     #[facet(schema::era(OLD))]
+   |             ^^^^^^
+
+error: duplicate `missing` in `schema::era`
+  --> tests/ui/schema/era.rs:23:46
+   |
+23 |     #[facet(schema::era(OLD, missing = LINE, missing = LINE))]
+   |                                              ^^^^^^^
+
+error: `schema::era` words one member of the field's own name: a flattened field, one fed by `schema::members` and an `UnknownMembers` field have none
+  --> tests/ui/schema/era.rs:17:22
+   |
+17 |     #[facet(flatten, schema::era(OLD, wrong_type = LINE))]
+   |                      ^^^^^^
+
+error: `schema::era` words one member of the field's own name: a flattened field, one fed by `schema::members` and an `UnknownMembers` field have none
+  --> tests/ui/schema/era.rs:25:13
+   |
+25 |     #[facet(schema::era(OLD, wrong_type = LINE))]
+   |             ^^^^^^
+
+error: an era's `molang` names the spec of a Molang field, or the default spec of a nested walk, and this field holds a plain value
+  --> tests/ui/schema/era.rs:27:13
+   |
+27 |     #[facet(schema::era(OLD, molang = bedrock_addon_core::molang::MolangFieldSpec::KEPT))]
+   |             ^^^^^^

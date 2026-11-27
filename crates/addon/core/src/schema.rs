@@ -15,6 +15,7 @@
 mod component;
 mod cx;
 mod default;
+mod era;
 mod from_json;
 mod goal;
 mod grading;
@@ -57,14 +58,15 @@ pub use component::{
     shorthand_shape,
 };
 pub use cx::{BoundRules, SchemaCx, TreeWording, Verdict};
+pub use era::Era;
 // hidden: emitted by the schema derive
 pub use from_json::FromMembers;
 #[doc(hidden)]
 pub use from_json::derived as derive_support;
 pub use from_json::{
-    ElementFailure, FromJson, KeyPattern, Keys, MapKey, from_value, from_value_ref, read_document,
-    read_each, read_entries, read_iterated, read_iterated_silently, read_keyed, read_later,
-    read_list, read_value,
+    ElementFailure, FromJson, KeyPattern, Keys, MapKey, MolangLeaf, from_value, from_value_ref,
+    read_document, read_each, read_entries, read_iterated, read_iterated_silently, read_keyed,
+    read_later, read_list, read_value,
 };
 // hidden: emitted by the schema derives
 #[doc(hidden)]
@@ -85,4 +87,4 @@ pub use sides::{Found, Side, Sides};
 #[doc(hidden)]
 pub use walk::{Bounded, End, Number, SchemaFields, member};
 pub use walk::{Schema, UnknownName};
-pub use write::{Floats, Writing, write_value, write_value_with};
+pub use write::{Floats, Unknowns, Writing, write_value, write_value_with};

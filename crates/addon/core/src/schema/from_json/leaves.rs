@@ -180,11 +180,28 @@ impl FromJson for FormatVersion {
 /// A number as the `f32` it is (a wrong type where that is not finite), a bool, or an
 /// expression: a string, or the object form `{"expression", "version"}`. `null` and an array
 /// are a wrong type.
+/// A family's own read of Molang, in place of core's [`Molang`] leaf for every `Molang` and
+/// `[Molang; N]` member a read meets ([`Read::molang_leaf`]): a reader that takes Molang its own
+/// way (particle: the legacy parser takes a bool and a string at the pack's version and keeps a
+/// value it cannot read as the member's default, `Read::member_molang`; the 1.20.80 reader
+/// takes the versioned object form).
+#[derive(Clone, Copy, Debug)]
+pub struct MolangLeaf {
+    /// Reads one Molang value; tells what it refuses and returns `None`.
+    pub one: fn(&Node<'_>, &mut Read<'_>) -> Option<Molang>,
+    /// Reads an array of `len` Molang values (a `[Molang; len]` member): exactly `len` of them,
+    /// or `None` with what it refuses told.
+    pub array: fn(&Node<'_>, &mut Read<'_>, usize) -> Option<Vec<Molang>>,
+}
+
 impl FromJson for Molang {
     #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
         if read.stopped() {
             return None;
+        }
+        if let Some(leaf) = read.reads_molang_by() {
+            return (leaf.one)(node, read);
         }
         if read.telling().objects == crate::json::kit::Objects::Tree {
             return expression_node(node, read);
@@ -208,6 +225,17 @@ impl FromJson for Molang {
         }
         read.wrong_type(node);
         None
+    }
+
+    /// By the read's Molang leaf where it has one: the leaf's array of `N`.
+    fn array_from_json<const N: usize>(node: &Node<'_>, read: &mut Read<'_>) -> Option<[Self; N]> {
+        let Some(leaf) = read.reads_molang_by() else {
+            return super::impls::array_by_element(node, read);
+        };
+        if read.stopped() {
+            return None;
+        }
+        (leaf.array)(node, read, N).and_then(|values| values.try_into().ok())
     }
 }
 

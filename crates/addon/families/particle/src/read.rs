@@ -3,10 +3,13 @@
 //! A particle document has the same members in both eras; what differs is how a value that is
 //! missing or of the wrong type is treated. The legacy parser (`format_version` below 1.20.80)
 //! logs a line and goes on with the field's default; the reader of 1.20.80 and later
-//! documents refuses the document. [`Era`] says which, and every type of the document reads
-//! itself from a JSON value under it ([`Node`]), writes itself back, and hands its Molang
-//! fields to the walk. [`ParticleEffect`] is read here as the game reads a 1.20.80 document,
-//! with the parts of that read the legacy struct shares.
+//! documents refuses the document. [`Era`] says which. The objects of the document derive
+//! their read, write and walk (`#[derive(Facet, Schema)]`, the era's lines and specs as
+//! `schema::era` keys, `derived.rs`); the values the derive has no form for (the curves, the
+//! events, the colours, the leaves of several forms, the root of each struct) read themselves
+//! here from a JSON value under the era ([`Node`]), write themselves back, and hand their
+//! Molang fields to the walk. [`ParticleEffect`] is read here as the game reads a 1.20.80
+//! document, with the parts of that read the legacy struct shares.
 
 #![allow(
     clippy::single_match_else,
@@ -178,6 +181,27 @@ impl<'d> Reader<'d> {
     /// Whether the legacy parser reads the document.
     pub(crate) fn legacy(&self) -> bool {
         self.era == Era::Legacy
+    }
+
+    /// The era, the Molang version, the unknown members' severity and the path: what a read of
+    /// a derived struct below the reader is under.
+    pub(crate) fn state(&self) -> (Era, RawVersion, Severity, JsonPath) {
+        (
+            self.era,
+            self.molang_version,
+            self.unknown,
+            self.path.clone(),
+        )
+    }
+
+    /// Where a read below the reader tells: the reader's findings, or `scratch` while the
+    /// reader is muted.
+    pub(crate) fn findings<'s>(&'s mut self, scratch: &'s mut Diagnostics) -> &'s mut Diagnostics {
+        if self.muted > 0 {
+            scratch
+        } else {
+            &mut *self.d
+        }
     }
 
     /// A finding at the current path.
@@ -397,6 +421,16 @@ impl Writer {
             legacy: true,
             ..Self::default()
         }
+    }
+
+    /// Whether the document written is of the legacy era.
+    pub(crate) fn legacy(&self) -> bool {
+        self.legacy
+    }
+
+    /// The current path.
+    pub(crate) fn path(&self) -> &JsonPath {
+        &self.path
     }
 
     /// The error of a value at the current path that cannot be written.
@@ -922,127 +956,58 @@ impl<T: Node> Node for indexmap::IndexMap<String, T> {
     }
 }
 
-/// Declares an object of a particle document: the struct, its reader, its writer, its Molang
-/// walk and an accessor for each member that has a default.
-///
-/// A member is `req` (the struct holds the value) or `opt` (it holds an `Option`, `None` when
-/// the document does not write the member); after its JSON key comes its [`Opt`] and, for an
-/// `opt` member, `default <expr>` to generate the accessor. `finish = <fn>` names a hook that
-/// runs after the members are read.
-macro_rules! object {
-    (
-        $(#[$meta:meta])*
-        pub struct $name:ident $(finish = $finish:path)? {
-            $(
-                $(#[$fmeta:meta])*
-                $kind:ident $field:ident : $ty:ty = $json:literal, $opt:expr $(, default $default:expr)? ;
-            )*
-        }
-    ) => {
-        $(#[$meta])*
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct $name {
-            $(
-                $(#[$fmeta])*
-                pub $field: object!(@ty $kind $ty),
-            )*
-            /// Unknown members.
-            pub extra: ::bedrock_addon_core::document::UnknownMembers,
-        }
+/// The [`Node`] of a struct that derives its read, its write and its walk: the bridge the hand
+/// reader reads it through.
+macro_rules! derived_node {
+    ($($ty:ty),* $(,)?) => {$(
+        impl $crate::read::Node for $ty {
+            fn read(
+                value: &::bedrock_addon_core::json::Value,
+                r: &mut $crate::read::Reader<'_>,
+                o: $crate::read::Opt,
+            ) -> Option<Self> {
+                $crate::derived::read_derived(value, r, o)
+            }
 
+            fn fallback(_: $crate::read::Opt) -> Self {
+                ::core::default::Default::default()
+            }
+
+            fn write(
+                &self,
+                w: &mut $crate::read::Writer,
+            ) -> Result<::bedrock_addon_core::json::Value, ::bedrock_addon_core::json::EncodeError> {
+                $crate::derived::write_derived(self, w)
+            }
+
+            fn walk(
+                &mut self,
+                era: $crate::read::Era,
+                _: $crate::read::Opt,
+                v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>,
+            ) {
+                $crate::derived::walk_derived(self, era, v);
+            }
+        }
+    )*};
+}
+pub(crate) use derived_node;
+
+/// An accessor for each optional member of a derived struct that has a default: the member, or
+/// that default when the document does not write it.
+macro_rules! defaults {
+    ($name:ident { $($field:ident: $ty:ty = $json:literal, $default:expr;)* }) => {
         impl $name {
-            $($(
+            $(
                 #[doc = concat!("JSON `", $json, "`, or its default when the document does not write it.")]
                 pub fn $field(&self) -> $ty {
                     self.$field.clone().unwrap_or_else(|| $default)
                 }
-            )?)*
-        }
-
-        /// No optional member; each required one at the value the legacy parser gives it
-        /// when the document does not write it.
-        impl Default for $name {
-            fn default() -> Self {
-                <Self as $crate::read::Node>::fallback($crate::read::Opt::NONE)
-            }
-        }
-
-        impl ::bedrock_addon_core::molang::MolangFields for $name {
-            fn visit_molang(&mut self, v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>) {
-                $crate::read::Fields::walk_members(
-                    self,
-                    $crate::read::Era::Cereal,
-                    v,
-                );
-            }
-        }
-
-        impl $crate::read::Fields for $name {
-            fn known(key: &str) -> bool {
-                $(if key == $json {
-                    return true;
-                })*
-                let _ = key;
-                false
-            }
-
-            #[allow(unused_variables, unused_mut)]
-            fn read_members(
-                m: $crate::read::Members<'_>,
-                r: &mut $crate::read::Reader<'_>,
-            ) -> Self {
-                let mut read = Self {
-                    $($field: object!(@read $kind m, $json, $opt, r),)*
-                    extra: m.extra(<Self as $crate::read::Fields>::known, r),
-                };
-                $($finish(&mut read, m, r);)?
-                read
-            }
-
-            #[allow(unused_variables)]
-            fn write_members(
-                &self,
-                out: &mut facet_value::VObject,
-                w: &mut $crate::read::Writer,
-            ) -> Result<(), ::bedrock_addon_core::json::EncodeError> {
-                $(object!(@write $kind out, $json, self.$field, w);)*
-                w.extra(out, &self.extra, <Self as $crate::read::Fields>::known)
-            }
-
-            #[allow(unused_variables)]
-            fn walk_members(
-                &mut self,
-                era: $crate::read::Era,
-                v: &mut ::bedrock_addon_core::molang::MolangVisitor<'_>,
-            ) {
-                $(object!(@walk $kind $json, self.$field, era, $opt, v);)*
-            }
-        }
-    };
-    (@ty req $ty:ty) => { $ty };
-    (@ty opt $ty:ty) => { Option<$ty> };
-    (@read req $m:ident, $json:literal, $opt:expr, $r:ident) => {
-        $crate::read::req($m, $json, $opt, $r)
-    };
-    (@read opt $m:ident, $json:literal, $opt:expr, $r:ident) => {
-        $crate::read::opt($m, $json, $opt, $r)
-    };
-    (@write req $out:ident, $json:literal, $value:expr, $w:ident) => {
-        $crate::read::put($out, $json, &$value, $w)?
-    };
-    (@write opt $out:ident, $json:literal, $value:expr, $w:ident) => {
-        $crate::read::put_opt($out, $json, $value.as_ref(), $w)?
-    };
-    (@walk req $json:literal, $value:expr, $era:ident, $opt:expr, $v:ident) => {
-        $crate::read::walk($json, &mut $value, $era, $opt, $v)
-    };
-    (@walk opt $json:literal, $value:expr, $era:ident, $opt:expr, $v:ident) => {
-        if let Some(value) = &mut $value {
-            $crate::read::walk($json, value, $era, $opt, $v);
+            )*
         }
     };
 }
-pub(crate) use object;
+pub(crate) use defaults;
 
 // ---- the 1.20.80 document, and the parts of its read the legacy struct shares ----------
 
@@ -1075,9 +1040,10 @@ impl Node for ParticleId {
 /// comes here: the legacy description is read member by member.
 pub(super) fn render_parameters(
     parameters: &mut BasicRenderParameters,
-    _: Members<'_>,
-    r: &mut Reader<'_>,
+    node: &kit::Node<'_>,
+    read: &mut Read<'_>,
 ) {
+    let r = &mut Reader::of(node, read);
     if parameters.texture.chars().count() > MAX_TEXTURE {
         r.key("texture", |r| {
             r.error(Code::from(&core_codes::INVALID_VALUE));

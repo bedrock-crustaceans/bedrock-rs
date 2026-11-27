@@ -24,7 +24,7 @@ use crate::read::{
     Entry, json, known, read_components, read_curves, read_events, walk_legacy_component,
     walk_named,
 };
-use crate::read::{Era, Fields, Members, Reader, Writer};
+use crate::read::{Era, Members, Reader, Writer};
 use crate::write::{PAYLOAD_KEY, document, payload_of};
 use crate::{BasicRenderParameters, Curve, Description, EventNode, codes};
 #[cfg(feature = "molang")]
@@ -167,7 +167,7 @@ impl ParticleEffect {
                         (&codes::NO_TEXTURE, &codes::TEXTURE_NOT_STRING, false),
                         r,
                     );
-                    let extra = parameters.extra(BasicRenderParameters::known, r);
+                    let extra = parameters.extra(|key| matches!(key, "material" | "texture"), r);
                     (material, texture, no_material || no_texture, extra)
                 });
             let description = Description {
@@ -177,7 +177,10 @@ impl ParticleEffect {
                     texture,
                     extra: parameters_extra,
                 },
-                extra: description.extra(Description::known, r),
+                extra: description.extra(
+                    |key| matches!(key, "identifier" | "basic_render_parameters"),
+                    r,
+                ),
             };
             Some((description, stopped))
         })

@@ -405,27 +405,35 @@ impl<T: FromJson, const N: usize> FromJson for [T; N] {
     const EXPECTED: Option<Expected> = Some(Expected::Array);
 
     fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
-        if read.stopped() {
-            return None;
-        }
-        let elements = read.array(node)?;
-        if elements.len() != N {
-            read.wrong_type(node);
-            return None;
-        }
-        let mut out = Vec::with_capacity(N);
-        let mut failed = false;
-        for element in elements.iter() {
-            match read.unkeepable(|read| T::from_json(&element, read)) {
-                Some(value) => out.push(value),
-                None => failed = true,
-            }
-        }
-        if failed {
-            return None;
-        }
-        out.try_into().ok()
+        T::array_from_json::<N>(node, read)
     }
+}
+
+/// An array of exactly `N` elements, each read as `T` ([`FromJson::array_from_json`]'s own).
+pub(crate) fn array_by_element<T: FromJson, const N: usize>(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) -> Option<[T; N]> {
+    if read.stopped() {
+        return None;
+    }
+    let elements = read.array(node)?;
+    if elements.len() != N {
+        read.wrong_type(node);
+        return None;
+    }
+    let mut out = Vec::with_capacity(N);
+    let mut failed = false;
+    for element in elements.iter() {
+        match read.unkeepable(|read| T::from_json(&element, read)) {
+            Some(value) => out.push(value),
+            None => failed = true,
+        }
+    }
+    if failed {
+        return None;
+    }
+    out.try_into().ok()
 }
 
 /// The boxed value (a recursive type holds itself in a `Box`). An unknown member inside is
