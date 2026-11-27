@@ -3,6 +3,7 @@ pub mod actor;
 pub mod biome;
 pub mod biome_ids_table;
 pub mod bits;
+pub mod block_entity;
 pub mod border_blocks;
 pub mod checksums;
 pub mod chunk;

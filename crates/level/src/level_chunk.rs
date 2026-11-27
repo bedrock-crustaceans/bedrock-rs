@@ -859,6 +859,26 @@ impl Chunk {
         &self.records
     }
 
+    /// This chunk's block entities (chests, signs, spawners...), decoded from its `0x31`
+    /// record, in on-disk order. A chunk without the record has none.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the record is not a sequence of NBT compounds.
+    pub fn block_entities(&self) -> Result<Vec<nbtx::Value>> {
+        crate::block_entity::read_block_entities(&self.records)
+    }
+
+    /// Replaces this chunk's block entities; [`Chunk::encode`] writes them. An empty list
+    /// empties the `0x31` record if the chunk has one, and adds none if it does not.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a value cannot be encoded as NBT.
+    pub fn set_block_entities(&mut self, values: &[nbtx::Value]) -> Result<()> {
+        crate::block_entity::write_block_entities(&mut self.records, values)
+    }
+
     /// Walks every palette entry of every layer in this chunk's terrain and asks
     /// `provider` to bring each one forward toward `target` (a packed block-state
     /// version), then revisits every position whose entry `provider` flags via
