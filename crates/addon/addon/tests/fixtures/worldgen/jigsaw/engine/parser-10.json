@@ -1,0 +1,18 @@
+{
+				"description": {
+				  "identifier": "minecraft:trail_ruins"
+				},
+				"placement": {
+				  "type": "minecraft:random_spread",
+				  "salt": 83469867,
+				  "separation": 8,
+				  "spacing": 34,
+				  "spread_type": "linear"
+				},
+				"structures": [
+				  {
+					"structure": "minecraft:trail_ruins",
+					"weight": 1
+				  }
+				]
+			}

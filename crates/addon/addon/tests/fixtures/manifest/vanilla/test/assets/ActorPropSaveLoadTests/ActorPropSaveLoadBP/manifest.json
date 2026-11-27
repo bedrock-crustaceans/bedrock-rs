@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Actor Property Save Load Functional Tests BP",
+    "description": "Actor Property Save Load Functional Tests BP",
+    "uuid": "ebe90311-a220-44ef-92d0-47375459483d",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 16, 100]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "fcff8f6f-74d8-495c-b050-6873992e7a5a",
+      "version": [0, 0, 1]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# Probe: Q28
+scope = "none"
+resolved = ["@minecraft/server 2.8.0"]
+script_eval = true

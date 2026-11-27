@@ -1,0 +1,10 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "", "text": "Dropped without a message." },
+      { "scene_tag": 3, "text": "A number is not a tag." },
+      { "scene_tag": "kept", "text": "Kept." }
+    ]
+  }
+}

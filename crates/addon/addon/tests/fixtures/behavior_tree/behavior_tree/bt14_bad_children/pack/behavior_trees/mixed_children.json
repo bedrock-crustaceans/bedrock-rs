@@ -1,0 +1,14 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "mixed_children",
+    "minecraft:root": {
+      "minecraft:selector": {
+        "children": [
+          5,
+          { "minecraft:wait": {}, "minecraft:attack": {} },
+          { "minecraft:attack": {} }
+        ]
+      }
+    }
+  }
+}

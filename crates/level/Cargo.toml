@@ -1,7 +1,10 @@
 [package]
 name = "bedrock_level"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
 
 [features]
 deny-unknown-fields = []
@@ -16,38 +19,34 @@ name = "unpack"
 harness = false
 
 [dependencies]
-rusty-leveldb = { git = "https://github.com/bedrock-crustaceans/rusty-leveldb", rev = "3365b32b747ad50fefdd8b6a6f988dacf357a114" }
-miniz_oxide = { version = "0.9.0" }
+leveldb = { git = "https://github.com/bedrock-crustaceans/leveldb" }
+miniz_oxide = { version = "0.9" }
 
 bedrock_shared = { path = "../shared" }
-nbtx = { workspace = true }
-# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so a crate that
-# derives it needs facet directly, at the rev nbtx pins.
-facet = { workspace = true }
+nbtx.workspace = true
+# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so a crate that derives it needs
+# facet directly.
+facet.workspace = true
 # `nbtx::Value::String` and `Compound` keys are raw bytes (`bstr::BString`).
-bstr = { workspace = true }
-# Order-preserving map for `BlockDef::states`: the pinned `facet`/`facet-core`
-# already implement `Facet` for it (nbtx's own default `preserve_order`
-# feature turns that on in the shared dependency graph), so this only needs
-# to be nameable here. Version pinned to what nbtx itself depends on.
-indexmap = "2.2"
+bstr.workspace = true
+# Order-preserving map for `BlockDef::states`; facet implements `Facet` for it through the
+# workspace's `indexmap` feature.
+indexmap.workspace = true
 
-thiserror = { workspace = true }
-byteorder = { workspace = true }
-bytemuck = { workspace = true }
+thiserror.workspace = true
+byteorder.workspace = true
+bytemuck.workspace = true
 smallvec = "1.15.1"
 rustc-hash = "2.1.1"
 nohash-hasher = "0.2.0"
 paste.workspace = true
 
 [dev-dependencies]
-tar = { workspace = true }
-flate2 = { workspace = true }
-tempfile = { workspace = true }
-criterion = { workspace = true }
-proptest = { workspace = true }
-# Parses the test-fixture index (`tests/fixtures/index.json`) through the
-# same `#[derive(Facet)]` machinery `nbtx` uses, rather than adding a second
-# JSON stack. Pinned to the exact rev `facet` uses above, so the graph keeps
-# one `facet-core` rather than two incompatible `Shape` types.
-facet-json = { git = "https://github.com/facet-rs/facet", rev = "bbce10cbd1ddd535b0d812ccbf9456f7ff7d58cf" }
+tar.workspace = true
+flate2.workspace = true
+tempfile.workspace = true
+criterion.workspace = true
+proptest.workspace = true
+# Parses the test-fixture index (`tests/fixtures/index.json`) through the same
+# `#[derive(Facet)]` machinery `nbtx` uses, rather than adding a second JSON stack.
+facet-json.workspace = true

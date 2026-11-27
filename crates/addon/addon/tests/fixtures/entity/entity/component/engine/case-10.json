@@ -1,0 +1,10 @@
+{
+					"base_buoyancy": 0.5,
+					"apply_gravity": false,
+					"movement_type": "bobbing",
+					"big_wave_probability": 0.8,
+					"big_wave_speed": 5.2,
+					"liquid_blocks": ["minecraft:water"],
+					"drag_down_on_buoyancy_removed": 0.7,
+					"can_auto_step_from_liquid": true
+				}

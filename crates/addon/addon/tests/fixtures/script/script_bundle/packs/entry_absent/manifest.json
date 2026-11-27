@@ -1,0 +1,36 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_entry_absent",
+    "description": "script_bundle fixture",
+    "uuid": "79abb799-50dc-53cb-a9df-74e492f3a8f1",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "55b59611-1573-5837-be9a-62b7ad90fd7a",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# p1's tree is replaced by p0's (README "How several packs combine").
+
+[[diagnostic]]
+kind = "core/shadowed_definition"
+severity = "info"
+pack = 1
+file = "behavior_trees/chop_wood.json"
+path = ""

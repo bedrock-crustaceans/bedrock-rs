@@ -1,0 +1,5 @@
+error: duplicate `name`
+  --> tests/ui/duplicate_key.rs:13:17
+   |
+13 |     #[component(name = "minecraft:friction_v2")]
+   |                 ^^^^

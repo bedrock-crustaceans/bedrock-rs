@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_crash_dotslash",
+    "description": "script_bundle fixture",
+    "uuid": "0ddb95ff-c172-5efe-80a0-1f7bc5ef1cc5",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "d4d3c1bd-6c35-5d83-a98f-b9c00e597614",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+					"add_effects": [{
+						"effect": "regeneration",
+						"duration": "infinite",
+						"amplifier": 2,
+						"ambient": true,
+						"visible": false,
+						"display_on_screen_animation": true
+					}],
+					"remove_effects": ["poison"]
+				}

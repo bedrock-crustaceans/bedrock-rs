@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_crash_dot",
+    "description": "script_bundle fixture",
+    "uuid": "602d9fde-97cc-5a0e-b141-e64bf13c20f8",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "ceec24cc-27b1-5a5c-9e80-217f86f0fc14",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

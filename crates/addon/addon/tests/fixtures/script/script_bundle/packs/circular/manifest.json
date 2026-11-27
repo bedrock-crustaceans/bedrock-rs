@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_circular",
+    "description": "script_bundle fixture",
+    "uuid": "65be4c06-5d02-596d-8335-6012e4f681b8",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "9fd1c62b-37bf-5034-9cf7-24affd55bfc8",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

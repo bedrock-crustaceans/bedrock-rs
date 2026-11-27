@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:aim_assist_categories": {
+    "categories": [
+      {
+        "name": "determinism:ranged",
+        "priorities": { "entities": { "minecraft:pig": 60 }, "entity_default": 30 }
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+// fixtures.md w01: a 1.21.40 file with waves.sampleWidth
+{
+  "format_version": "1.21.40",
+  "minecraft:water_settings": {
+    "description": {
+      "identifier": "test:w01"
+    },
+    "particle_concentrations": {
+      "chlorophyll": 1.0,
+      "suspended_sediment": 2.0,
+      "cdom": 3.0
+    },
+    "waves": {
+      "enabled": true,
+      "frequency": 1.5,
+      "octaves": 10,
+      "depth": 0.5,
+      "sampleWidth": 0.25,
+      "speed": 3.0,
+      "pull": -0.5,
+      "mix": 0.4,
+      "frequency_scaling": 1.1,
+      "speed_scaling": 1.2,
+      "shape": 2.0
+    }
+  }
+}

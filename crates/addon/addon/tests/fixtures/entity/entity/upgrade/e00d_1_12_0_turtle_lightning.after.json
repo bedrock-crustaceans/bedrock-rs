@@ -1,0 +1,44 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:turtle"
+    },
+    "components": {
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "cause": "lightning",
+            "damage_multiplier": 2000.0
+          }
+        ]
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": {
+              "test": "in_lava",
+              "subject": "self",
+              "operator": "==",
+              "value": true
+            },
+            "cause": "lava",
+            "damage_per_tick": 4
+          }
+        ]
+      }
+    },
+    "component_groups": {
+      "minecraft:adult": {
+        "minecraft:experience_reward": {
+          "on_bred": "Math.Random(1,7)",
+          "on_death": "query.last_hit_by_player ? Math.Random(1,4) : 0"
+        }
+      }
+    }
+  }
+}

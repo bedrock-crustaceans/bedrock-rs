@@ -1,0 +1,29 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "sm08",
+    "description": "families/script_module fixture sm08_version_array_v3",
+    "uuid": "d162933b-899b-5601-b510-11719be8d43e",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "0707834e-ad6a-5fc5-87cc-afce0ba2c61a",
+      "version": "3.2.1",
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": [
+        2,
+        0,
+        0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "loaded": {
+    "structures": [
+      "demo:a",
+      "demo:b",
+      "demo:c"
+    ],
+    "pools": [
+      "demo:empty",
+      "demo:start"
+    ],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": []
+}

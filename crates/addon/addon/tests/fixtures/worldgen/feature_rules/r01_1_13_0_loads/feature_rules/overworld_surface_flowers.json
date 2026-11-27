@@ -1,0 +1,22 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "demo:overworld_surface_flowers",
+      "places_feature": "demo:flower_patch_feature"
+    },
+    "conditions": {
+      "placement_pass": "surface_pass",
+      "minecraft:biome_filter": [
+        { "test": "has_biome_tag", "operator": "==", "value": "overworld" }
+      ]
+    },
+    "distribution": {
+      "iterations": 4,
+      "scatter_chance": 50.0,
+      "x": { "distribution": "uniform", "extent": [0, 15] },
+      "y": "query.heightmap(variable.worldx, variable.worldz)",
+      "z": { "distribution": "uniform", "extent": [0, 15] }
+    }
+  }
+}

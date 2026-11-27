@@ -1,0 +1,18 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:salmon"
+    },
+    "components": {
+      "minecraft:flocking": {
+        "goal_weight": 9.0
+      },
+      "minecraft:type_family": {
+        "family": [
+          "fish"
+        ]
+      }
+    }
+  }
+}

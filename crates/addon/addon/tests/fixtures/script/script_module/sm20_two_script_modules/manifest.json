@@ -1,0 +1,48 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm20",
+    "description": "families/script_module fixture sm20_two_script_modules",
+    "uuid": "babc6b8b-c197-5e45-8bfb-b8e210fe5db5",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "e441a0be-615c-5745-9c33-eafd5c53f3f4",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    },
+    {
+      "type": "script",
+      "uuid": "8afc2460-6729-56e2-b7a1-e611db3e9f0e",
+      "version": [
+        3,
+        2,
+        2
+      ],
+      "language": "javascript",
+      "entry": "scripts/other.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

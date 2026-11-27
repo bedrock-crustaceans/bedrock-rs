@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.0",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:helm",
+      "category": "equipment"
+    },
+    "components": {
+      "minecraft:armor": {
+        "protection": 3,
+        "texture_type": "iron"
+      },
+      "minecraft:wearable": {
+        "slot": "slot.armor.head"
+      },
+      "minecraft:foil": true
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {
+					"subtitle_sound" : {
+						"category": "neutral",
+						"sounds": [
+							"sounds/random/click"
+						],
+						"subtitle": "a subtitle"
+					},
+					"no_subtitle_sound" : {
+						"category": "neutral",
+						"sounds": [
+							"sounds/random/click"
+						]
+					},
+					"special_chars_subtitle_sound" : {
+						"category": "neutral",
+						"sounds": [
+							"sounds/random/click"
+						],
+						"subtitle": "Special chars: !@#$%^&*()_+-={}[]|\\:;\"'<>?,./"
+					}	
+				}
+			}

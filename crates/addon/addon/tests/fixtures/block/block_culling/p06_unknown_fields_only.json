@@ -1,0 +1,16 @@
+
+			{
+				"format_version": "1.20.60",
+				"minecraft:block_culling_rules": {
+					"description": {
+						"identifier": "test:culling_parsing"
+					},
+					"rules": [ 
+						{
+							"unrecognized_field1": "foo",
+							"unrecognized_field2": "bar"
+						}
+					]
+				}
+			}
+			

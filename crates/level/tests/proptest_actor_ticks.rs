@@ -64,7 +64,9 @@ fn nbt_list(depth: u32) -> impl Strategy<Value = nbtx::Value> {
             };
             proptest::collection::vec(strat, 0..4)
         })
-        .prop_map(nbtx::Value::List)
+        .prop_map(|values| {
+            nbtx::Value::List(nbtx::ValueList::try_from(values).expect("a homogeneous list"))
+        })
 }
 
 fn nbt_leaf_or_compound(depth: u32) -> impl Strategy<Value = nbtx::Value> {

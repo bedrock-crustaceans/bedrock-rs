@@ -1,0 +1,15 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "button",
+    "button_mappings": [
+      {
+        "from_button_id": "button.menu_select",
+        "to_button_id": "button.x",
+        "mapping_type": "pressed",
+        "scope": "controller",
+        "input_mode_condition": "gamepad_and_not_gaze"
+      }
+    ]
+  }
+}

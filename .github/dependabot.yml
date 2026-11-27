@@ -1,65 +1,65 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+# Dependency updates, once a week. One entry per ecosystem, so no update is proposed twice.
 version: 2
+
 updates:
-  # Main crate dependencies
-  - package-ecosystem: "cargo" # See documentation for possible values
-    labels: ["C-Dependencies"]
-    directory: "/" # Location of main package manifest
-    target-branch: "main"
+  # Every hand-written manifest of the workspace. Most versions live in the root's
+  # `[workspace.dependencies]`; the rest are a member's own. Of `crates/network/versions/*` only
+  # `traits` is listed: the manifests of the version crates are generator output and name only
+  # workspace and path dependencies. `Cargo.lock` is not committed, so a pull request comes only
+  # when a release falls outside a requirement, and it raises the requirement.
+  - package-ecosystem: cargo
+    directories:
+      - "/"
+      - "/bedrock"
+      - "/crates/*"
+      - "/crates/network/*"
+      - "/crates/network/versions/traits"
+      - "/crates/addon/*"
+      - "/crates/addon/families/*"
+      - "/crates/addon/shared/*"
+      - "/xtask"
     schedule:
-      interval: "daily"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    # Let a release sit before proposing it; a yanked or broken one rarely lasts that long.
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    open-pull-requests-limit: 10
+    labels: [C-Dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    # The first group a crate matches wins.
+    groups:
+      facet:
+        patterns: ["facet", "facet-*"]
+      rustcrypto:
+        patterns: ["aes", "cfb8", "ctr", "p384", "sha2"]
+      proc-macro:
+        patterns: ["syn", "quote", "proc-macro2", "prettyplease"]
+      strum:
+        patterns: ["strum", "strum_macros"]
+      # Any other crate: one pull request per crate, however many manifests name it.
+      per-crate:
+        group-by: dependency-name
 
-# INTERNAL CRATES DEPENDABOT CHECKS:
-# (Fix issue #57)
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/addon" # Location of internal crate "addon"
-    target-branch: "main"
+  # The actions of the workflows, all in one pull request.
+  - package-ecosystem: github-actions
+    directory: "/"
     schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/core" # Location of internal crate "core"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/form" # Location of internal crate "form"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/proto" # Location of internal crate "proto"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/proto_core" # Location of internal crate "proto_core"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/macros" # Location of internal crate "macros"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/shared" # Location of internal crate "shared"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "cargo"
-    directory: "/crates/level" # Location of internal crate "level"
-    target-branch: "main"
-    schedule:
-      interval: "daily"
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    cooldown:
+      default-days: 3
+    labels: [C-Dependencies]
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]

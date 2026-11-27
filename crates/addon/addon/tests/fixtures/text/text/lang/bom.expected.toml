@@ -1,0 +1,4 @@
+# fixtures.md BOM file: a UTF-8 BOM at offset 0 is skipped.
+
+[entries]
+"a" = "b"

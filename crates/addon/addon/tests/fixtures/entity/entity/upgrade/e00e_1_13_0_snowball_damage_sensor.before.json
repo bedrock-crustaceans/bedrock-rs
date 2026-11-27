@@ -1,0 +1,18 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:snowball"
+    },
+    "components": {
+      "minecraft:damage_sensor": {
+        "triggers": []
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:damage_sensor": {}
+      }
+    }
+  }
+}

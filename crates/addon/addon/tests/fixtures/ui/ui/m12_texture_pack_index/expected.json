@@ -1,0 +1,35 @@
+{
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "img": {
+        "type": "image",
+        "texture": "t1",
+        "uv": [
+          0,
+          0
+        ],
+        "uv_size": [
+          8,
+          8
+        ],
+        "texture:1": "t2"
+      }
+    }
+  },
+  "defs": {
+    "a.img": {
+      "type": "image",
+      "texture": "t1",
+      "uv": [
+        0,
+        0
+      ],
+      "uv_size": [
+        8,
+        8
+      ],
+      "texture:1": "t2"
+    }
+  }
+}

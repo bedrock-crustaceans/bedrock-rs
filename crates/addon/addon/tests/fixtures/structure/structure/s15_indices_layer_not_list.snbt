@@ -1,0 +1,17 @@
+// The layers of block_indices are IntArrays, not Lists. (An NBT list holds one tag
+// type, so layer 1 cannot be an Int beside a List layer 0: the first layer is the one reported.)
+{
+  format_version: 1,
+  size: [1, 1, 1],
+  structure: {
+    block_indices: [[I; 0], [I; -1]],
+    palette: {
+      default: {
+        block_palette: [{name: "minecraft:stone", states: {}, version: 18168865}],
+        block_position_data: {}
+      }
+    },
+    entities: []
+  },
+  structure_world_origin: [0, 0, 0]
+}

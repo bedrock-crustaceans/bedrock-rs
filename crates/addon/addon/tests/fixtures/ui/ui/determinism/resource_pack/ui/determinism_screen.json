@@ -1,0 +1,9 @@
+{
+  "namespace": "determinism",
+  "label": { "type": "label", "text": "determinism" },
+  "title_label@determinism.label": { "layer": 2 },
+  "determinism_screen": {
+    "type": "screen",
+    "controls": [ { "title@determinism.label": { "layer": 1 } } ]
+  }
+}

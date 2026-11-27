@@ -1,0 +1,15 @@
+error: unused return value of `Herd::min` that must be used
+  --> tests/ui/schema/getter_must_use.rs:15:5
+   |
+15 |     herd.min();
+   |     ^^^^^^^^^^
+   |
+note: the lint level is defined here
+  --> tests/ui/schema/getter_must_use.rs:2:9
+   |
+ 2 | #![deny(unused_must_use)]
+   |         ^^^^^^^^^^^^^^^
+help: use `let _ = ...` to ignore the resulting value
+   |
+15 |     let _ = herd.min();
+   |     +++++++

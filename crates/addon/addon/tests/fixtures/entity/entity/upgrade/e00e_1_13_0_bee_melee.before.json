@@ -1,0 +1,18 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:bee"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "priority": 2,
+        "look_distance": 1,
+        "untrackable_cooldown_delay": 2,
+        "target_tracking": 3,
+        "target_dist": 4,
+        "speed_multiplier": 1.4
+      }
+    }
+  }
+}

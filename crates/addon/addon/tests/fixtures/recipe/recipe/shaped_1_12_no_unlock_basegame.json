@@ -1,0 +1,22 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:basegame"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

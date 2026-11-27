@@ -1,0 +1,3 @@
+bogus
+say ok
+worse

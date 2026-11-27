@@ -1,0 +1,47 @@
+{
+  "format_version": "beta",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "minecraft:sulfur_caves"
+    },
+    "components": {
+      "minecraft:climate": {
+        "downfall": 0.4,
+        "temperature": 0.8
+      },
+      "minecraft:overworld_height": {
+        "noise_type": "default"
+      },
+
+      "minecraft:tags": {
+        "tags": [
+          "caves",
+          "sulfur_caves",
+          "overworld",
+          "monster"
+        ]
+      },
+      "minecraft:subsurface_builder": {
+        "builder": {
+          "type": "minecraft:noise_gradient",
+          "noise_seed_string": "minecraft:sulfur_cave_gradient",
+          "first_octave": -5,
+          "amplitudes": [1.0, 0.0, 1.0],
+          "non_replaceable_blocks": [],
+          "gradient_blocks": [
+            "minecraft:air",
+            "minecraft:air",
+            "minecraft:air",
+            "minecraft:air",
+            "minecraft:air",
+            "minecraft:cinnabar",
+            "minecraft:sulfur",
+            "minecraft:cinnabar",
+            "minecraft:cinnabar",
+            "minecraft:cinnabar"
+          ]
+        }
+      }
+    }
+  }
+}

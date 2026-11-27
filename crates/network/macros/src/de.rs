@@ -1,0 +1,211 @@
+use crate::attr::{ProtoCodecEndianness, extract_inner_type_from_vec, get_attrs, is_enum_fallback};
+use proc_macro2::{Ident, Span, TokenStream};
+use quote::quote;
+use syn::{Attribute, DataEnum, DataStruct, Field, Fields, Type, Variant};
+
+fn build_de_instance(endianness: Option<ProtoCodecEndianness>, f_type: &Type) -> TokenStream {
+    match endianness {
+        None => {
+            quote! { <#f_type as ::bedrock_network_core::ProtoCodec>::deserialize(stream)? }
+        }
+        Some(ProtoCodecEndianness::Le) => {
+            quote! { <#f_type as ::bedrock_network_core::ProtoCodecLE>::deserialize(stream)? }
+        }
+        Some(ProtoCodecEndianness::Be) => {
+            quote! { <#f_type as ::bedrock_network_core::ProtoCodecBE>::deserialize(stream)? }
+        }
+        Some(ProtoCodecEndianness::Var) => {
+            quote! { <#f_type as ::bedrock_network_core::ProtoCodecVAR>::deserialize(stream)? }
+        }
+    }
+}
+
+fn build_de_field(fields: &[&Field]) -> TokenStream {
+    let code = fields
+        .iter()
+        .enumerate()
+        .map(|(i, f)| {
+            let name = f.ident.clone().unwrap_or(Ident::new(&format!("e{i}"), Span::call_site()));
+            let ty = f.ty.clone();
+            let label = match &f.ident {
+                Some(ident) => ident.to_string().trim_start_matches("r#").to_string(),
+                None => i.to_string(),
+            };
+            let flags = get_attrs(f.attrs.as_slice()).expect("Error while getting attrs");
+
+            if let Some(repr) = flags.vec_repr {
+                let vec_des = build_de_instance(flags.vec_endianness, &repr);
+                let inner_ty = extract_inner_type_from_vec(&ty).expect("Failed to get inner Vec type").clone();
+                let des = build_de_instance(flags.endianness, &inner_ty);
+
+                return quote! {
+                    let #name = {
+                        let _span = ::bedrock_network_core::trace::field(#label, None);
+                        let len: #repr = #vec_des;
+
+                        let len: usize = len.try_into()?;
+                        let mut vec = Vec::new();
+
+                        for _ in 0..len {
+                            let _span = ::bedrock_network_core::trace::field(#label, Some(vec.len()));
+                            vec.push(#des);
+                        };
+
+                        vec
+                    };
+                };
+            }
+
+            if flags.nbt {
+                return quote! {
+                    let #name: #ty = {
+                        let _span = ::bedrock_network_core::trace::field(#label, None);
+                        ::nbtx::from_varint_bytes(stream)?
+                    };
+                };
+            }
+
+            if flags.str {
+                return quote! {
+                    let #name: #ty = {
+                        let _span = ::bedrock_network_core::trace::field(#label, None);
+                        let string = <String as ::bedrock_network_core::ProtoCodec>::deserialize(stream)?;
+                        <#ty as std::str::FromStr>::from_str(string.as_str())?
+                    };
+                };
+            }
+
+            let des = build_de_instance(flags.endianness, &ty);
+
+            quote! {
+                let #name: #ty = {
+                    let _span = ::bedrock_network_core::trace::field(#label, None);
+                    #des
+                };
+            }
+        });
+
+    quote! {
+        #(#code)*
+    }
+}
+
+fn build_de_fields(fields: &Fields) -> (TokenStream, Option<TokenStream>) {
+    let i_fields = match fields {
+        Fields::Named(v) => Some(v.named.iter().clone()),
+        Fields::Unnamed(v) => Some(v.unnamed.iter().clone()),
+        Fields::Unit => None,
+    };
+
+    let de = if let Some(i_fields) = i_fields {
+        build_de_field(Vec::from_iter(i_fields).as_slice())
+    } else {
+        quote! {}
+    };
+
+    let ctor_fields = match fields {
+        Fields::Named(v) => {
+            let ctor = v.named.iter().enumerate().map(|(i, f)| {
+                f.ident
+                    .clone()
+                    .unwrap_or(Ident::new(&format!("e{i}"), Span::call_site()))
+            });
+
+            Some(quote! { {#(#ctor),*} })
+        }
+        Fields::Unnamed(v) => {
+            let ctor = v.unnamed.iter().enumerate().map(|(i, f)| {
+                f.ident
+                    .clone()
+                    .unwrap_or(Ident::new(&format!("e{i}"), Span::call_site()))
+            });
+
+            Some(quote! { (#(#ctor),*) })
+        }
+        Fields::Unit => None,
+    };
+
+    (de, ctor_fields)
+}
+
+pub fn build_de_struct(data_struct: &DataStruct) -> TokenStream {
+    let (de, ctor_fields) = build_de_fields(&data_struct.fields);
+
+    if let Some(ctor) = ctor_fields {
+        quote! {
+            #de
+            let val = Self #ctor;
+        }
+    } else {
+        quote! {
+            #de
+            let val = Self;
+        }
+    }
+}
+
+pub fn build_de_enum(
+    data_enum: &DataEnum,
+    attrs: &[Attribute],
+    name: &Ident,
+    fallback: Option<&Variant>,
+) -> TokenStream {
+    let flags = get_attrs(attrs).expect("Error while getting attrs");
+
+    if let (Some(repr), endian) = (flags.enum_repr, flags.enum_endianness) {
+        let enum_type_de = build_de_instance(endian, &repr);
+
+        let variants = data_enum
+            .variants
+            .iter()
+            .filter(|var| !is_enum_fallback(var))
+            .map(|var| {
+                let desc = var
+                    .discriminant
+                    .clone()
+                    .unwrap_or_else(|| panic!("Missing discriminant for {:?}", var.ident))
+                    .1;
+
+                let name = var.ident.clone();
+                let (de, ctor_fields) = build_de_fields(&var.fields);
+
+                if let Some(ctor) = ctor_fields {
+                    quote! {
+                        #desc => {
+                            #de
+
+                            Self::#name #ctor
+                        }
+                    }
+                } else {
+                    quote! {
+                        #desc => {
+                            #de
+
+                            Self::#name
+                        }
+                    }
+                }
+            });
+
+        let otherwise = if let Some(var) = fallback {
+            let fallback_name = &var.ident;
+            quote! { _ => Self::#fallback_name(enum_type) }
+        } else {
+            quote! {
+                _ => { return Err(bedrock_network_core::error::ProtoCodecError::InvalidEnumID(format!("{enum_type:?}"), stringify!(#name))) }
+            }
+        };
+
+        quote! {
+            let enum_type = #enum_type_de;
+
+            let val = match enum_type {
+                #(#variants,)*
+                #otherwise,
+            };
+        }
+    } else {
+        panic!("Missing attr `enum_repr` or `enum_endianness` on enum")
+    }
+}

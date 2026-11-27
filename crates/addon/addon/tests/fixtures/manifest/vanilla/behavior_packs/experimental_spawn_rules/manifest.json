@@ -1,0 +1,48 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "behaviorPack.spawn_rules.description",
+        "name": "behaviorPack.spawn_rules.name",
+        "uuid": "e3ab7251-987f-4367-bd92-02c66d77cdf5",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            21,
+            70
+        ]
+    },
+    "modules": [
+        {
+            "description": "behaviorPack.spawn_rules.description",
+            "type": "data",
+            "uuid": "14212160-5b86-42e5-8c07-4c06ae968734",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        },
+        {
+            "description": "behaviorPack.spawn_rules.description",
+            "type": "script",
+            "uuid": "1ea04e6d-bc4d-41cf-9bd2-77922f302aca",
+            "version": [
+                0,
+                0,
+                1
+            ],
+            "language": "javascript",
+            "entry": "scripts/ExperimentalSpawnRules.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "2.2.0-internal"
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "ticks",
+    "minecraft:root": { "minecraft:wait_ticks": { "num_of_ticks": 2, "ticks": 3 } }
+  }
+}

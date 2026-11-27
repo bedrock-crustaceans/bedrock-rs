@@ -1,0 +1,21 @@
+{
+  "format_version": "1.19.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:cat"
+    },
+    "components": {
+      "minecraft:behavior.sleep": {
+        "priority": 2,
+        "can_sleep_while_riding": true
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.sleep": {
+          "can_sleep_while_riding": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "cooked_chicken_test",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at": {
+              "block_pos": [1, 4, 1]
+            }
+          },
+          {
+            "minecraft:activate_tool": {
+              "block_pos": [1, 4, 1]
+            }
+          },
+          {
+            "minecraft:break_block": {
+              "block_pos": [1, 4, 1],
+              "num_of_ticks": 1
+            }
+          },
+          {
+            "minecraft:wait": { 
+              "wait_duration": 10
+            }
+          }
+        ]
+      }
+    }
+  }
+}

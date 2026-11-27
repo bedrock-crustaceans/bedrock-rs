@@ -1,0 +1,11 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "insert_back"
+      }
+    ],
+    "layer": 5
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Dirt trees in the overworld",
+    "name": "Custom Feature Tests",
+    "uuid": "92e5320b-860f-6b25-9b8e-545979d10700",
+    "version": [ 1, 0, 0 ],
+    "min_engine_version": [ 1, 20, 20 ]
+  },
+  "modules": [
+    {
+      "description": "Desc",
+      "type": "data",
+      "uuid": "0968e38e-210c-4fc9-b291-3aad3d8d83a3",
+      "version": [ 1, 0, 0 ]
+    }
+  ]
+}

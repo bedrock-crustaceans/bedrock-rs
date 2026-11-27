@@ -1,0 +1,26 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "sm42",
+    "description": "families/script_module fixture sm42_optional_unshipped_v3",
+    "uuid": "7832002f-cee6-5130-bb31-b5723429e8c9",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "33a4c336-45db-5f83-a17e-76fb562225a0",
+      "version": "3.2.1",
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "9.0.0",
+      "optional": true
+    }
+  ]
+}

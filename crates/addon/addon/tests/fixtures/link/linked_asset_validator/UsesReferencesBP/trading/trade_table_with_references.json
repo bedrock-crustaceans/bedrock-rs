@@ -1,0 +1,34 @@
+{
+  "format_version": "1.21.90",
+  "tiers": [
+    {
+      "total_exp_required": 2,
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "item": "test:item",
+                  "quantity": 14,
+                  "price_multiplier": 0.05
+                }
+              ],
+              "gives": [
+                {
+                  "item": "test:item",
+                  "quantity": 1
+                }
+              ],
+              "trader_exp": 1,
+              "max_uses": 5,
+              "reward_exp": true
+            }
+          ]
+        }
+      ]
+    }
+
+  ]
+}

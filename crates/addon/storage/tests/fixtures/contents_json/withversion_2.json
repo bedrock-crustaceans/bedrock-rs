@@ -1,0 +1,20 @@
+{
+  "content" : [
+    {
+      "path" : "manifest.json"
+    },
+    {
+      "path" : "blocks/gen.block.json"
+    },
+    {
+      "path" : "features/surface_block.json"
+    },
+    {
+      "path" : "feature_rules/surface_feat.json"
+    },
+    {
+      "path" : "contents.json"
+    }
+  ],
+  "version" : 1
+}

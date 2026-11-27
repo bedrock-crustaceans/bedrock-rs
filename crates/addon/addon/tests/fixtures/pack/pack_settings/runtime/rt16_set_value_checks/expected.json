@@ -1,0 +1,8 @@
+{
+  "banana:slider": 3.0,
+  "banana:toggle": false,
+  "banana:dropdown": "cherry",
+  "banana:fruits": [
+    "cherry"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with over 65536 block permutations",
+    "name": "Over 65536 permutations",
+    "uuid":"d1d70283-2bf4-4fc9-b543-187c9fa79313",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 19, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "My First Add-On!",
+          "type": "data",
+          "uuid": "55186ea1-c741-4b42-8b93-5e3dc7e0d037",
+          "version": [1, 0, 0]
+      }
+    ]
+}

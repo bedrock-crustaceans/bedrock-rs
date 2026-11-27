@@ -1,0 +1,1 @@
+{ "beginner_loading_messages": ["tips.determinism.1"], "mid_game_loading_messages": [{ "message": "tips.determinism.2", "condition": "$marketplace_not_disabled" }], "late_game_loading_messages": [], "realms_loading_messages": [], "addons_loading_messages": [], "creative_loading_messages": [], "editor_loading_messages": [], "store_progress_tooltips": ["store.determinism"] }

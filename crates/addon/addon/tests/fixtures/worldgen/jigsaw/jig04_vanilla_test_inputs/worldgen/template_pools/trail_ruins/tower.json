@@ -1,0 +1,25 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:template_pool": {
+    "description": {
+      "identifier": "minecraft:trail_ruins/tower"
+    },
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "trail_ruins/tower/tower_1",
+          "processors": "minecraft:trail_ruins_roads_archaeology"
+        },
+        "weight": 1
+      },
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "trail_ruins/tower/tower_2"
+        }
+      }
+    ],
+    "fallback": "minecraft:fallback"
+  }
+}

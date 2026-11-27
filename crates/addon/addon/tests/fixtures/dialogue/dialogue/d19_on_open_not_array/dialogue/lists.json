@@ -1,0 +1,8 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "lists", "text": "Text.", "on_open_commands": "say hi", "on_close_commands": [] }
+    ]
+  }
+}

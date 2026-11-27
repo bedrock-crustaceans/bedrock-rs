@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Molang Anim Test Behavior Pack",
+    "name": "Molang Anim Test Behavior Pack",
+    "uuid": "912f73a5-13d8-4a95-8729-802ef67cb4ff",
+    "version": [1,0,0],
+    "min_engine_version": [1,16,0]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "1a22ed00-0090-4491-9571-482a1a97c4a4",
+      "version": [1,0,0]
+    }
+  ]
+}

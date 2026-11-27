@@ -1,0 +1,18 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": [
+      "worldgen/metadata/a.dat"
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "core/skipped_cache_document",
+      "severity": "info",
+      "path": "worldgen/metadata/a.dat"
+    }
+  ]
+}

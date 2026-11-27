@@ -1,4 +1,4 @@
-use bedrock_macros::ProtoCodec;
+use bedrock_network_macros::ProtoCodec;
 
 #[derive(ProtoCodec, Debug, Clone)]
 // TODO: Give more specialized name, find out if u32 or i32

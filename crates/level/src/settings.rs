@@ -437,13 +437,9 @@ fn pack_game_versions(value: &mut Value) {
         ) else {
             continue;
         };
-        *entry = Value::List(vec![
-            Value::Int(major),
-            Value::Int(minor),
-            Value::Int(patch),
-            Value::Int(revision),
-            Value::Int(beta),
-        ]);
+        *entry = Value::List(nbtx::ValueList::Int(vec![
+            major, minor, patch, revision, beta,
+        ]));
     }
 }
 
@@ -469,9 +465,25 @@ fn sort_compound_keys(value: &mut Value) {
             }
             entries.sort_unstable_keys();
         }
-        Value::List(items) => {
-            for item in items {
-                sort_compound_keys(item);
+        Value::List(items) => sort_list_keys(items),
+        _ => {}
+    }
+}
+
+/// [`sort_compound_keys`] for every compound a list holds, at any depth.
+fn sort_list_keys(items: &mut nbtx::ValueList) {
+    match items {
+        nbtx::ValueList::Compound(compounds) => {
+            for entries in compounds {
+                for child in entries.values_mut() {
+                    sort_compound_keys(child);
+                }
+                entries.sort_unstable_keys();
+            }
+        }
+        nbtx::ValueList::List(lists) => {
+            for list in lists {
+                sort_list_keys(list);
             }
         }
         _ => {}

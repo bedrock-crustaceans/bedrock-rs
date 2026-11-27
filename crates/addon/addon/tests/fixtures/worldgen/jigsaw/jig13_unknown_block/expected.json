@@ -1,0 +1,12 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [
+      "test:unknown_block"
+    ],
+    "metadata": []
+  },
+  "diagnostics": []
+}

@@ -1,0 +1,55 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:item": {
+    "description": {
+	    "identifier": "test:item_with_references"
+    },
+    "components": {
+      "minecraft:icon": "test_icon",
+      "minecraft:block_placer": {
+        "block": "test:block",
+        "use_on": [
+          { "name": "test:block" }
+        ]
+      },
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "test:block",
+            "speed": 2
+          }
+        ]
+      },
+      "minecraft:entity_placer": {
+        "entity": "test:entity<test:event>",
+        "dispense_on": [ "test:block" ],
+        "use_on": [ "test:block" ]
+      },
+      "minecraft:food": {
+        "using_converts_to": "test:item"
+      },
+      "minecraft:projectile": {
+        "projectile_entity": "test:entity",
+        "minimum_critical_power": 4.2
+      },
+      "minecraft:repairable": {
+        "repair_items": [
+          {
+            "items": [ "test:item" ]
+          }
+        ]
+      },
+      "minecraft:shooter": {
+        "ammunition": [
+          {
+            "item": "test:item"
+          }
+        ]
+      },
+      "minecraft:use_modifiers": {
+        "use_duration": 1.0
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "format_version": "1.26.50",
+  "minecraft:entity": {
+    "description": { "identifier": "demo:determinism", "is_spawnable": true },
+    "components": { "minecraft:health": { "value": 10 }, "minecraft:physics": {} },
+    "events": { "demo:go": { "add": { "component_groups": [] } } }
+  }
+}

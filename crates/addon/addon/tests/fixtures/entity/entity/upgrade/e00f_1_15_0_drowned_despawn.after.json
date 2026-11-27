@@ -1,0 +1,40 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:drowned"
+    },
+    "components": {
+      "minecraft:despawn": {
+        "filters": [
+          {
+            "all_of": [
+              {
+                "test": "is_persistent",
+                "value": false
+              },
+              {
+                "test": "is_daytime",
+                "value": true
+              },
+              {
+                "test": "inactivity_timer",
+                "subject": "self",
+                "value": 600
+              },
+              {
+                "test": "random_chance",
+                "value": 50
+              },
+              {
+                "test": "distance_to_nearest_player",
+                "operator": ">",
+                "value": 54
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

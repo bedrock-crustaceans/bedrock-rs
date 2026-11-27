@@ -1,0 +1,17 @@
+{
+  "materials": {
+    "version": "1.0.0",
+    "determinism_base": {
+      "vertexShader": "shaders/entity.vertex",
+      "fragmentShader": "shaders/entity.fragment",
+      "vertexFields": [ { "field": "Position" }, { "field": "UV0" } ],
+      "variants": [ { "skinning": { "+defines": [ "USE_SKINNING" ] } } ],
+      "+samplerStates": [ { "samplerIndex": 0, "textureFilter": "Point" } ],
+      "msaaSupport": "Both"
+    },
+    "determinism_child:determinism_base": {
+      "+defines": [ "USE_OVERLAY" ],
+      "+states": [ "Blending" ]
+    }
+  }
+}

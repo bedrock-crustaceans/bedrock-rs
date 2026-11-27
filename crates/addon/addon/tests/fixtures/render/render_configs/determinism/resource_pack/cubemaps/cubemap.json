@@ -1,0 +1,11 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:cubemap_settings": {
+    "description": {
+      "identifier": "determinism:cubemap"
+    },
+    "lighting": {
+      "sky_light_contribution": 0.5
+    }
+  }
+}

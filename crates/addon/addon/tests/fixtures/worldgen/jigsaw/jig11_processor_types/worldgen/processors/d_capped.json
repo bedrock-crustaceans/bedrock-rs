@@ -1,0 +1,53 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:capped"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:capped",
+        "limit": 2,
+        "delegate": {
+          "processor_type": "minecraft:rule",
+          "rules": [
+            {
+              "output_state": "minecraft:stone"
+            }
+          ]
+        }
+      },
+      {
+        "processor_type": "minecraft:capped",
+        "limit": {
+          "type": "constant",
+          "value": 2
+        },
+        "delegate": {
+          "processor_type": "minecraft:rule",
+          "rules": [
+            {
+              "output_state": "minecraft:stone"
+            }
+          ]
+        }
+      },
+      {
+        "processor_type": "minecraft:capped",
+        "limit": {
+          "type": "uniform",
+          "min_inclusive": 1,
+          "max_inclusive": 3
+        },
+        "delegate": {
+          "processor_type": "minecraft:rule",
+          "rules": [
+            {
+              "output_state": "minecraft:stone"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

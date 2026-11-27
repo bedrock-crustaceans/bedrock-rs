@@ -1,0 +1,26 @@
+// fixtures.md l02: sky.intensity inserted at 1.0, then keyframed
+{
+  "format_version": "1.26.0",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l02"
+    },
+    "ambient": {
+      "color": {
+        "0.0": [
+          16,
+          32,
+          48
+        ]
+      },
+      "illuminance": {
+        "0.0": 1.5
+      }
+    },
+    "sky": {
+      "intensity": {
+        "0.0": 1.0
+      }
+    }
+  }
+}

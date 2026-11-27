@@ -1,0 +1,67 @@
+{
+  "loaded": {
+    "structures": [],
+    "pools": [],
+    "structure_sets": [],
+    "processors": [],
+    "metadata": []
+  },
+  "diagnostics": [
+    {
+      "code": "jigsaw/no_namespace",
+      "severity": "error",
+      "path": "worldgen/processors/invalid.json",
+      "json_path": "minecraft:processor_list/description/identifier",
+      "text": "Identifier must have a namespace"
+    },
+    {
+      "code": "jigsaw/processors_register",
+      "severity": "error",
+      "path": "worldgen/processors/invalid.json",
+      "json_path": "minecraft:processor_list/description/identifier",
+      "text": "Identifier 'invalid' failed validation when registering jigsaw structure processor list json"
+    },
+    {
+      "code": "jigsaw/no_namespace",
+      "severity": "error",
+      "path": "worldgen/structures/invalid.json",
+      "json_path": "minecraft:jigsaw/description/identifier",
+      "text": "Identifier must have a namespace"
+    },
+    {
+      "code": "jigsaw/structure_register",
+      "severity": "error",
+      "path": "worldgen/structures/invalid.json",
+      "json_path": "minecraft:jigsaw/description/identifier",
+      "text": "Identifier 'invalid' failed validation when registering jigsaw structure json"
+    },
+    {
+      "code": "jigsaw/no_namespace",
+      "severity": "error",
+      "path": "worldgen/template_pools/invalid.json",
+      "json_path": "minecraft:template_pool/description/identifier",
+      "text": "Identifier must have a namespace"
+    },
+    {
+      "code": "jigsaw/pool_register",
+      "severity": "error",
+      "path": "worldgen/template_pools/invalid.json",
+      "json_path": "minecraft:template_pool/description/identifier",
+      "text": "Identifier 'invalid' failed validation when registering jigsaw structure template pool json"
+    },
+    {
+      "code": "jigsaw/no_namespace",
+      "severity": "error",
+      "path": "worldgen/structure_sets/invalid.json",
+      "json_path": "minecraft:structure_set/description/identifier",
+      "text": "Identifier must have a namespace"
+    },
+    {
+      "code": "jigsaw/set_register",
+      "severity": "error",
+      "path": "worldgen/structure_sets/invalid.json",
+      "json_path": "minecraft:structure_set/description/identifier",
+      "text": "Identifier 'invalid' failed validation when registering jigsaw structure set json"
+    }
+  ]
+}

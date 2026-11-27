@@ -159,7 +159,10 @@ impl BitArray {
 
         match self {
             BitArray::Greedy(array) => array.to_disk(writer, bits as u32),
-            BitArray::Lazy(array) => array.to_disk(writer),
+            // A lazy array keeps whatever width it was read or repacked at, which can be wider
+            // than the header just written; only its own words are valid when the widths match.
+            BitArray::Lazy(array) if array.bits() == bits => array.to_disk(writer),
+            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, bits as u32),
             BitArray::Empty => unreachable!("handled above"),
         }
     }

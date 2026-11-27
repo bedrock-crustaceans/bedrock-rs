@@ -1,0 +1,67 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "minecraft:trail_ruins_roads_archaeology"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:gravel",
+              "probability": 0.2
+            },
+            "output_state": {
+              "name": "minecraft:dirt"
+            }
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:gravel",
+              "probability": 0.1
+            },
+            "output_state": {
+              "name": "minecraft:gravel"
+            }
+          },
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:mud_bricks",
+              "probability": 0.1
+            },
+            "output_state": {
+              "name": "minecraft:packed_mud"
+            }
+          }
+        ]
+      },
+      {
+        "processor_type": "minecraft:capped",
+        "limit": 2,
+        "delegate": {
+          "processor_type": "minecraft:rule",
+          "rules": [
+            {
+              "input_predicate": {
+                "predicate_type": "minecraft:block_match",
+                "block": "minecraft:gravel"
+              },
+              "output_state": {
+                "name": "minecraft:suspicious_gravel"
+              },
+              "block_entity_modifier": {
+                "type": "minecraft:append_loot",
+                "loot_table": "loot_tables/entities/trail_ruins_brushable_block_common.json"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

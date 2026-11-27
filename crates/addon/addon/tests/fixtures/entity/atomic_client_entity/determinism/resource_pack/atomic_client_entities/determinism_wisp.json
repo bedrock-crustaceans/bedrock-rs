@@ -1,0 +1,11 @@
+{
+  "format_version": "beta",
+  "minecraft:atomic_client_entity": {
+    "description": {
+      "identifier": "determinism:wisp",
+      "geometry": { "default": "geometry.wisp" },
+      "render_controllers": ["controller.render.wisp"]
+    },
+    "components": { "minecraft:aabb_dimensions": { "width": 0.5, "height": 0.5 } }
+  }
+}

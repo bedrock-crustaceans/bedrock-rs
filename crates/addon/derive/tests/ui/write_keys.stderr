@@ -1,0 +1,17 @@
+error: `write` and `write_with` both emit the write dispatch: keep one
+  --> tests/ui/write_keys.rs:10:47
+   |
+10 | #[component(family = Toy, write, write_with = written)]
+   |                                               ^^^^^^^
+
+error: a `from_only` enum has no rows: `write`, `write_with`, `versioned`, `typed_table` and `triggers` belong to the family's newest enum
+  --> tests/ui/write_keys.rs:17:24
+   |
+17 | #[component(from_only, write, triggers)]
+   |                        ^^^^^
+
+error: a `from_only` enum has no rows: `write`, `write_with`, `versioned`, `typed_table` and `triggers` belong to the family's newest enum
+  --> tests/ui/write_keys.rs:17:31
+   |
+17 | #[component(from_only, write, triggers)]
+   |                               ^^^^^^^^

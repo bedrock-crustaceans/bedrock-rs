@@ -1,0 +1,18 @@
+{
+				"format_version": "1.10.0",
+				"particle_effect": {
+					"description": {
+						"identifier": "test:actor_null",
+						"basic_render_parameters": {
+							"material": "particles_alpha",
+							"texture": "textures/particle/particles"
+						}
+					},
+					"components": {
+						"minecraft:emitter_rate_steady": { "spawn_rate": 1, "max_particles": 1 },
+						"minecraft:emitter_lifetime_expression": {
+							"activation_expression": "!query.is_in_water"
+						}
+					}
+				}
+			}

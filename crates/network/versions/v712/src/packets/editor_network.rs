@@ -1,0 +1,9 @@
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 190, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct EditorNetworkPacket {
+    pub route_to_manager: bool,
+    #[nbt]
+    pub binary_payload: nbtx::Value,
+}

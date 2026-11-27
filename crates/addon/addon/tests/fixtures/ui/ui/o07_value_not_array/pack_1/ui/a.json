@@ -1,0 +1,13 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "insert_front",
+        "value": {
+          "w@a.leaf": {}
+        }
+      }
+    ]
+  }
+}

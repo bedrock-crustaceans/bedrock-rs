@@ -1,0 +1,52 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_material_reduction": {
+    "description": {
+      "identifier": "demo:ten_outputs"
+    },
+    "tags": "material_reducer",
+    "input": "minecraft:stone",
+    "output": [
+      {
+        "item": "minecraft:element_1",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_2",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_3",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_4",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_5",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_6",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_7",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_8",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_9",
+        "count": 1
+      },
+      {
+        "item": "minecraft:element_10",
+        "count": 1
+      }
+    ]
+  }
+}

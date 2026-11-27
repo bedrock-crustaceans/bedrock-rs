@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm44",
+    "description": "families/script_module fixture sm44_cross_major_conflict",
+    "uuid": "c98d634f-63ef-553a-8c4b-5d76244e2537",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "1f96db67-61b0-5719-be95-569f9f6ef11d",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.5.0"
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

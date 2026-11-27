@@ -1,0 +1,10 @@
+[
+  {
+    "atlas_tile": "x",
+    "atlas_index": 1
+  },
+  {
+    "atlas_tile": "y",
+    "atlas_tile_variant": 2
+  }
+]

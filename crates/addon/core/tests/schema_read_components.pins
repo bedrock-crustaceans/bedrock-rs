@@ -1,0 +1,1141 @@
+component document damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component document explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component document count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component document maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component document blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component document friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component document pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }, Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }, Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component document count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component document explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component document count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component document maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component document blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction 1e39	Outcome { value: "Some(Friction(Friction(inf)))", told: [Told { severity: Info, code: "core/beyond_float_member", path: "" }], kept: [] }
+component document count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component document friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component document pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component document damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component document explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component document blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component document explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component document blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component document blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component document explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component document count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component document maybe {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component document blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component document explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component document count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "count" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component document maybe {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component document blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component document explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component document friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component document count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component document blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component document explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component document count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component document blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component document pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component document explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component document count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component document blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component document pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component document tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component document explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component document count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component document blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component document tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component document explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component document friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component document count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component document maybe {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component document blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component document pair {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component document tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component document pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component document tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component strict explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component strict count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component strict maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component strict blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component strict friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component strict pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component strict count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component strict explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component strict count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component strict blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component strict pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component strict explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component strict blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component strict explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component strict blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component strict blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component strict explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component strict count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component strict maybe {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component strict blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component strict explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component strict count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component strict maybe {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component strict blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component strict explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component strict friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component strict count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component strict blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component strict explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component strict count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component strict blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component strict pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component strict explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component strict count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component strict blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component strict pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component strict tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component strict explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component strict count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component strict blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component strict tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component strict explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component strict friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component strict count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component strict maybe {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component strict blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component strict pair {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component strict tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component strict pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component strict tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component null_absent explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component null_absent count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component null_absent maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component null_absent blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component null_absent friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent maybe true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component null_absent pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage null	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "" }], kept: [] }
+component null_absent explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component null_absent maybe null	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "" }], kept: [] }
+component null_absent blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component null_absent pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component null_absent count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent maybe 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component null_absent explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component null_absent count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component null_absent maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component null_absent blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction 1e39	Outcome { value: "Some(Friction(Friction(inf)))", told: [Told { severity: Info, code: "core/beyond_float_member", path: "" }], kept: [] }
+component null_absent count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent maybe 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component null_absent friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component null_absent pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component null_absent damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component null_absent explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component null_absent blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component null_absent explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component null_absent count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component null_absent blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component null_absent explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component null_absent count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component null_absent blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"value": null}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "value" }], kept: [] }
+component null_absent explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component null_absent count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"value": null}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "value" }], kept: [] }
+component null_absent blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"count": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component null_absent explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component null_absent count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component null_absent maybe {"count": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component null_absent blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"count": 300}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component null_absent explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component null_absent count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "count" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component null_absent maybe {"count": 300}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component null_absent blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"resistance": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component null_absent explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component null_absent friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component null_absent count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"resistance": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component null_absent blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"mode": true}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component null_absent explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component null_absent count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"mode": true}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component null_absent blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component null_absent pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"mode": "no"}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component null_absent explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component null_absent count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"mode": "no"}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component null_absent blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component null_absent pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component null_absent tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"a": 1, "b": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component null_absent explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component null_absent count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"a": 1, "b": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component null_absent blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component null_absent tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage {"a": 1, "zz": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component null_absent explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component null_absent friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component null_absent count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component null_absent maybe {"a": 1, "zz": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component null_absent blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component null_absent pair {"a": 1, "zz": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component null_absent tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component null_absent pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component null_absent tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component own explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component own count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component own maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component own blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component own friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component own pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe null	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component own blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component own count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component own explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component own count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component own maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component own blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction 1e39	Outcome { value: "Some(Friction(Friction(inf)))", told: [Told { severity: Info, code: "core/beyond_float_member", path: "" }], kept: [] }
+component own count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component own friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component own pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component own damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component own explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component own blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component own explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component own blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component own count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"value": null}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component own blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"count": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component own explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component own count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component own maybe {"count": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component own blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"count": 300}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component own explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component own count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "count" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component own maybe {"count": 300}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component own blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"resistance": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component own explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component own friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component own count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"resistance": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component own blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"mode": true}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component own explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component own count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"mode": true}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component own blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component own pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"mode": "no"}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component own explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component own count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"mode": "no"}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component own blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component own pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component own tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"a": 1, "b": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component own explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component own count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"a": 1, "b": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component own blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component own tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage {"a": 1, "zz": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component own explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component own friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component own count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component own maybe {"a": 1, "zz": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component own blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component own pair {"a": 1, "zz": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component own tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component own pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component own tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component non_strict explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component non_strict count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component non_strict maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component non_strict blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage true	Outcome { value: "Some(Damage(Damage { value: 1 }))", told: [], kept: [] }
+component non_strict explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component non_strict friction true	Outcome { value: "Some(Friction(Friction(1.0)))", told: [], kept: [] }
+component non_strict count true	Outcome { value: "Some(Count(Count { count: 1 }))", told: [], kept: [] }
+component non_strict maybe true	Outcome { value: "Some(Maybe(Maybe { value: Some(1) }))", told: [], kept: [] }
+component non_strict blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component non_strict pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict maybe null	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component non_strict blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage 0.5	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component non_strict explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component non_strict count 0.5	Outcome { value: "Some(Count(Count { count: 0 }))", told: [], kept: [] }
+component non_strict maybe 0.5	Outcome { value: "Some(Maybe(Maybe { value: Some(0) }))", told: [], kept: [] }
+component non_strict blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component non_strict explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component non_strict count 300	Outcome { value: "Some(Count(Count { count: 44 }))", told: [], kept: [] }
+component non_strict maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component non_strict blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage 1e39	Outcome { value: "Some(Damage(Damage { value: 2147483647 }))", told: [], kept: [] }
+component non_strict explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict count 1e39	Outcome { value: "Some(Count(Count { count: 255 }))", told: [], kept: [] }
+component non_strict maybe 1e39	Outcome { value: "Some(Maybe(Maybe { value: Some(2147483647) }))", told: [], kept: [] }
+component non_strict blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component non_strict pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component non_strict explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component non_strict blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component non_strict explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component non_strict blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component non_strict count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"value": null}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component non_strict blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"count": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component non_strict explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component non_strict count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component non_strict maybe {"count": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component non_strict blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"count": 300}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component non_strict explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component non_strict count {"count": 300}	Outcome { value: "Some(Count(Count { count: 44 }))", told: [], kept: [] }
+component non_strict maybe {"count": 300}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component non_strict blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"resistance": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component non_strict explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component non_strict friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component non_strict count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"resistance": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component non_strict blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"mode": true}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component non_strict explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component non_strict count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"mode": true}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component non_strict blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component non_strict pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"mode": "no"}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component non_strict explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component non_strict count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"mode": "no"}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component non_strict blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component non_strict pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component non_strict tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"a": 1, "b": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component non_strict explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component non_strict count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"a": 1, "b": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component non_strict blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component non_strict tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage {"a": 1, "zz": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component non_strict explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component non_strict friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component non_strict count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component non_strict maybe {"a": 1, "zz": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component non_strict blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component non_strict pair {"a": 1, "zz": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component non_strict tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component non_strict pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component non_strict tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component default_and_tell explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component default_and_tell count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component default_and_tell maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component default_and_tell blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage "5"	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe "5"	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage true	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component default_and_tell friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe true	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component default_and_tell pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage 0.5	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component default_and_tell count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe 0.5	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component default_and_tell explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component default_and_tell count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component default_and_tell blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage 1e39	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction 1e39	Outcome { value: "Some(Friction(Friction(inf)))", told: [Told { severity: Info, code: "core/beyond_float_member", path: "" }], kept: [] }
+component default_and_tell count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe 1e39	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component default_and_tell pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component default_and_tell explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component default_and_tell blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component default_and_tell explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component default_and_tell count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component default_and_tell blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"value": "x"}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "value" }], kept: [] }
+component default_and_tell explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component default_and_tell count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"value": "x"}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "value" }], kept: [] }
+component default_and_tell blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component default_and_tell explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component default_and_tell count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component default_and_tell blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component default_and_tell explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component default_and_tell count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component default_and_tell maybe {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component default_and_tell blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component default_and_tell explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component default_and_tell count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "count" }], kept: [] }
+component default_and_tell blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component default_and_tell explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component default_and_tell friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component default_and_tell count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "resistance" }], kept: [] }
+component default_and_tell blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component default_and_tell explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component default_and_tell count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component default_and_tell blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component default_and_tell pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component default_and_tell explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component default_and_tell count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "mode" }], kept: [] }
+component default_and_tell blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component default_and_tell tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component default_and_tell explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component default_and_tell count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "b" }], kept: [] }
+component default_and_tell blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component default_and_tell tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component default_and_tell explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component default_and_tell friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component default_and_tell count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component default_and_tell maybe {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "a" }, Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component default_and_tell blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component default_and_tell pair {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/unrecognized_field", path: "zz" }], kept: [] }
+component default_and_tell tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell damage "no"	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component default_and_tell count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell maybe "no"	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/invalid_value", path: "" }], kept: [] }
+component default_and_tell blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component default_and_tell pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component default_and_tell tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage 5	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component keeps explode 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction 5	Outcome { value: "Some(Friction(Friction(5.0)))", told: [], kept: [] }
+component keeps count 5	Outcome { value: "Some(Count(Count { count: 5 }))", told: [], kept: [] }
+component keeps maybe 5	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component keeps blast 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags 5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps explode "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps count "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps maybe "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps blast "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags "5"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps explode true	Outcome { value: "Some(Explode(Enabled(true)))", told: [], kept: [] }
+component keeps friction true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps count true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps maybe true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps blast true	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component keeps pair true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags true	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage null	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "" }], kept: [] }
+component keeps explode null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps count null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component keeps maybe null	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "" }], kept: [] }
+component keeps blast null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "" }], kept: [] }
+component keeps pair null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags null	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps explode 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction 0.5	Outcome { value: "Some(Friction(Friction(0.5)))", told: [], kept: [] }
+component keeps count 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps maybe 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps blast 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags 0.5	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage 300	Outcome { value: "Some(Damage(Damage { value: 300 }))", told: [], kept: [] }
+component keeps explode 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction 300	Outcome { value: "Some(Friction(Friction(300.0)))", told: [], kept: [] }
+component keeps count 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component keeps maybe 300	Outcome { value: "Some(Maybe(Maybe { value: Some(300) }))", told: [], kept: [] }
+component keeps blast 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags 300	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps explode 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction 1e39	Outcome { value: "Some(Friction(Friction(inf)))", told: [Told { severity: Info, code: "core/beyond_float_member", path: "" }], kept: [] }
+component keeps count 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps maybe 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps blast 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags 1e39	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps explode [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component keeps friction [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps count [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps maybe [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps blast [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component keeps pair [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags [1]	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "0" }], kept: [] }
+component keeps damage {}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [], kept: [] }
+component keeps explode {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps count {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [], kept: [] }
+component keeps blast {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"value": 5}	Outcome { value: "Some(Damage(Damage { value: 5 }))", told: [], kept: [] }
+component keeps explode {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component keeps count {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"value": 5}	Outcome { value: "Some(Maybe(Maybe { value: Some(5) }))", told: [], kept: [] }
+component keeps blast {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"value": 5}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component keeps explode {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component keeps count {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component keeps blast {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"value": "x"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"value": null}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "value" }], kept: [] }
+component keeps explode {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "value" }], kept: [] }
+component keeps count {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"value": null}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Info, code: "core/value_rewritten", path: "value" }], kept: [] }
+component keeps blast {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"value": null}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"count": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: ["/count"] }
+component keeps explode {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component keeps count {"count": 2}	Outcome { value: "Some(Count(Count { count: 2 }))", told: [], kept: [] }
+component keeps maybe {"count": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: ["/count"] }
+component keeps blast {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"count": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"count": 300}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: ["/count"] }
+component keeps explode {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "count" }], kept: [] }
+component keeps count {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "count" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_value", path: "" }], kept: [] }
+component keeps maybe {"count": 300}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "count" }], kept: ["/count"] }
+component keeps blast {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"count": 300}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"resistance": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: ["/resistance"] }
+component keeps explode {"resistance": 2}	Outcome { value: "Some(Explode(Params(Params { resistance: 2.0 })))", told: [], kept: [] }
+component keeps friction {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "resistance" }], kept: [] }
+component keeps count {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"resistance": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "resistance" }], kept: ["/resistance"] }
+component keeps blast {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"resistance": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"mode": true}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: ["/mode"] }
+component keeps explode {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component keeps count {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"mode": true}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: ["/mode"] }
+component keeps blast {"mode": true}	Outcome { value: "Some(Blast(Blast { mode: Enabled(true) }))", told: [], kept: [] }
+component keeps pair {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"mode": true}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"mode": "no"}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: ["/mode"] }
+component keeps explode {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component keeps count {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"mode": "no"}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "mode" }], kept: ["/mode"] }
+component keeps blast {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "mode" }], kept: [] }
+component keeps pair {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "a" }], kept: [] }
+component keeps tags {"mode": "no"}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"a": 1, "b": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: ["/a", "/b"] }
+component keeps explode {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "b" }], kept: [] }
+component keeps count {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"a": 1, "b": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "b" }], kept: ["/a", "/b"] }
+component keeps blast {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"a": 1, "b": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: Some(2) }))", told: [], kept: [] }
+component keeps tags {"a": 1, "b": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage {"a": 1, "zz": 2}	Outcome { value: "Some(Damage(Damage { value: 0 }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: ["/a", "/zz"] }
+component keeps explode {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "resistance" }], kept: [] }
+component keeps friction {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "zz" }], kept: [] }
+component keeps count {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "count" }], kept: [] }
+component keeps maybe {"a": 1, "zz": 2}	Outcome { value: "Some(Maybe(Maybe { value: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "a" }, Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: ["/a", "/zz"] }
+component keeps blast {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/missing_required_field", path: "mode" }], kept: [] }
+component keeps pair {"a": 1, "zz": 2}	Outcome { value: "Some(Pair(Pair { a: 1, b: None }))", told: [Told { severity: Warning, code: "core/unrecognized_field", path: "zz" }], kept: ["/zz"] }
+component keeps tags {"a": 1, "zz": 2}	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps damage "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps explode "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps friction "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps count "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps maybe "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps blast "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/invalid_type", path: "" }], kept: [] }
+component keeps pair "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+component keeps tags "no"	Outcome { value: "rejected", told: [Told { severity: Error, code: "core/syntax", path: "" }], kept: [] }
+map document {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Error core/component_not_in_schema components/minecraft:zz] kept []
+map document {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false } rejected [Error core/unrecognized_field components/minecraft:pair/zz; Error core/invalid_type components/minecraft:maybe] kept []
+map document {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []
+map strict {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Error core/component_not_in_schema components/minecraft:zz] kept []
+map strict {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false } rejected [Error core/unrecognized_field components/minecraft:pair/zz; Error core/invalid_type components/minecraft:maybe] kept []
+map strict {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []
+map null_absent {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Warning core/component_not_in_schema components/minecraft:zz] kept []
+map null_absent {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false }, Typed { name: "minecraft:maybe", value: Maybe(Maybe { value: None }), synthesized: false } Some(()) [Warning core/unrecognized_field components/minecraft:pair/zz; Info core/value_rewritten components/minecraft:maybe] kept []
+map null_absent {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []
+map own {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Warning core/component_not_in_schema components/minecraft:zz] kept []
+map own {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false }, Typed { name: "minecraft:maybe", value: Maybe(Maybe { value: None }), synthesized: false } Some(()) [Warning core/unrecognized_field components/minecraft:pair/zz] kept []
+map own {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []
+map non_strict {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Warning core/component_not_in_schema components/minecraft:zz] kept []
+map non_strict {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false }, Typed { name: "minecraft:maybe", value: Maybe(Maybe { value: None }), synthesized: false } Some(()) [Warning core/unrecognized_field components/minecraft:pair/zz] kept []
+map non_strict {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []
+map default_and_tell {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/missing_required_field components/minecraft:count; Error core/component_not_in_schema components/minecraft:zz] kept []
+map default_and_tell {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false } rejected [Error core/unrecognized_field components/minecraft:pair/zz; Error core/invalid_type components/minecraft:maybe] kept []
+map default_and_tell {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/missing_required_field components/minecraft:explode/resistance] kept []
+map keeps {"minecraft:damage": 5, "minecraft:count": "x", "demo:glow": {"a": 1}, "minecraft:zz": 1}	Typed { name: "minecraft:damage", value: Damage(Damage { value: 5 }), synthesized: false }, Custom(CustomComponent { name: "demo:glow", parameters: {"a": 1}, from_v1_list: false }), Unknown { name: "minecraft:zz", json: 1 } rejected [Error core/invalid_type components/minecraft:count; Warning core/component_not_in_schema components/minecraft:zz] kept []
+map keeps {"minecraft:pair": {"a": 1, "zz": 2}, "minecraft:maybe": null}	Typed { name: "minecraft:pair", value: Pair(Pair { a: 1, b: None }), synthesized: false }, Typed { name: "minecraft:maybe", value: Maybe(Maybe { value: None }), synthesized: false } Some(()) [Warning core/unrecognized_field components/minecraft:pair/zz; Info core/value_rewritten components/minecraft:maybe] kept [components/minecraft:pair/zz]
+map keeps {"minecraft:friction": 0.5, "minecraft:explode": {"resistance": "x"}}	Typed { name: "minecraft:friction", value: Friction(Friction(0.5)), synthesized: false } rejected [Error core/invalid_type components/minecraft:explode/resistance] kept []

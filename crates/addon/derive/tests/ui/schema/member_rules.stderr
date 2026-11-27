@@ -1,0 +1,37 @@
+error: `schema::finite` applies to an `f32` or `f64` field (or an `Option` of one)
+  --> tests/ui/schema/member_rules.rs:12:13
+   |
+12 |     #[facet(schema::finite)]
+   |             ^^^^^^
+
+error: `schema::missing` words a member the document must write: an `Option` field (without `schema::required`) or one with a `default` is never missing
+  --> tests/ui/schema/member_rules.rs:14:13
+   |
+14 |     #[facet(schema::missing = codes::INVALID_VALUE)]
+   |             ^^^^^^
+
+error: `schema::missing` words a member the document must write: an `Option` field (without `schema::required`) or one with a `default` is never missing
+  --> tests/ui/schema/member_rules.rs:16:26
+   |
+16 |     #[facet(default = 1, schema::missing = codes::INVALID_VALUE)]
+   |                          ^^^^^^
+
+error: a member's code or rule is for a field that reads one member: a flattened field or an `UnknownMembers` one has none
+  --> tests/ui/schema/member_rules.rs:18:22
+   |
+18 |     #[facet(flatten, schema::wrong_type = codes::INVALID_VALUE)]
+   |                      ^^^^^^
+
+error: `schema::string_only` is a string enum's key: a struct has no names to read
+  --> tests/ui/schema/member_rules.rs:23:9
+   |
+23 | #[facet(schema::string_only)]
+   |         ^^^^^^
+
+warning: unused import: `bedrock_addon_core::diagnostic::codes`
+ --> tests/ui/schema/member_rules.rs:1:5
+  |
+1 | use bedrock_addon_core::diagnostic::codes;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default

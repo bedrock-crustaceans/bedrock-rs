@@ -1,0 +1,38 @@
+{
+				"format_version" : "1.21.80",
+				"minecraft:block_culling_rules" : {
+					"description" : {
+						"identifier": "puv_perf:block_culling_test"
+					},
+					"rules" : [
+						{
+							"geometry_part": {
+								"bone": "root_bone",
+								"cube": 0,
+								"face": "south"
+							},
+							"direction": "south"
+						},
+						{
+							"geometry_part": { "bone": "root_bone", "cube": 0, "face": "north" },
+							"direction": "north"
+						},
+						{
+							"geometry_part": { "bone": "root_bone", "cube": 1, "face": "south" },
+							"direction": "east"
+						},
+						{
+							"geometry_part": { "bone": "root_bone", "cube": 0, "face": "west" },
+							"direction": "west"
+						},
+						{
+							"geometry_part": { "bone": "root_bone", "cube": 0, "face": "up" },
+							"direction": "up"
+						},
+						{
+							"geometry_part": { "bone": "root_bone", "cube": 0, "face": "down" },
+							"direction": "down"
+						}
+					]
+				}
+			}

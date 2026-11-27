@@ -1,0 +1,25 @@
+
+        {
+            "format_version": "1.26.20",
+            "minecraft:block": {
+                "description": {
+                    "identifier": "test:snow_logging_multi_block",
+                    "traits": {
+                        "minecraft:multi_block": {
+                            "enabled_states": ["minecraft:multi_block_part"],
+                            "parts": 3, "direction": "up"
+                        }
+                    }
+                },
+                "components": {
+                    "minecraft:geometry": "minecraft:geometry.cross",
+                    "minecraft:material_instances": {
+                        "*": {"texture": "red_concrete_powder"}
+                    },
+					"minecraft:movable": {"movement_type": "immovable"},
+                    "minecraft:collision_box": false,
+                    "minecraft:precipitation_interactions": {"precipitation_behavior": "snowlogging"}
+                }
+            }
+        }
+		

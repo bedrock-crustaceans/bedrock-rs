@@ -1,0 +1,5 @@
+error: `schema::required` is for an `Option` field the document must write: a plain field is required already
+ --> tests/ui/schema/required_on_plain.rs:6:13
+  |
+6 |     #[facet(schema::required)]
+  |             ^^^^^^

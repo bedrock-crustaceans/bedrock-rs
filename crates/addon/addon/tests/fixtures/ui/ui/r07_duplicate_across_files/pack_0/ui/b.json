@@ -1,0 +1,7 @@
+{
+  "namespace": "a",
+  "leaf": {
+    "type": "label",
+    "text": "second"
+  }
+}

@@ -1,0 +1,12 @@
+
+				{
+					"places_feature": "feature_0",
+					"project_input_to_floor": true,
+					"distribution": {
+						"iterations": 3,
+						"scatter_chance": { "numerator": 1, "denominator": 1 },
+						"x": { "extent": [ 0, 1 ], "distribution": "uniform" },
+						"y": { "extent": [ -8, 5 ], "distribution": "uniform" },
+						"z": { "extent": [ 2, 6 ], "distribution": "gaussian" }
+					}
+				}

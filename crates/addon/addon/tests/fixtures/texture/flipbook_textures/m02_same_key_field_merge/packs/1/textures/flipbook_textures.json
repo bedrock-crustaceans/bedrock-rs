@@ -1,0 +1,10 @@
+[
+  {
+    "atlas_tile": "x",
+    "flipbook_texture": "textures/blocks/y",
+    "frames": [
+      2,
+      1
+    ]
+  }
+]

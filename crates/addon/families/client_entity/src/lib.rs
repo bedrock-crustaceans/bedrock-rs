@@ -1,0 +1,585 @@
+//! Client entities (`ClientEntity`, `SpawnEgg`): what a client draws for an entity, from the
+//! resource packs.
+//!
+//! Read by the derived reader of core (`schema::FromJson`) with the texts vanilla's schema logs per
+//! member (`unknown child schema option type`): the description, its eras, the file around it and
+//! the rules between files are the shared `visual` crate's, which attachables read too. What is
+//! this family's is its identifier and its loader's hand-off of attachables to the other family.
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
+pub mod history;
+#[cfg(test)]
+mod peek_tests;
+#[cfg(test)]
+mod scalar_tests;
+mod validate;
+
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath};
+use bedrock_addon_core::document::{
+    CombineRule, Contribution, Definition, Document, JsonDocument, JsonPlaced, NoBeta, Origin,
+    Registry, RegistryBuilder, Rejected, default_path,
+};
+use bedrock_addon_core::id::{EntityId, kind};
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value, strip_bom};
+use bedrock_addon_core::load::DocumentSource;
+use bedrock_addon_core::load::{
+    AppDataPlace, CollectionLoader, LoadContext, StackCx, Walk, WalkFile,
+};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::FromJson;
+use bedrock_addon_core::version::known;
+use bedrock_addon_core::version::{FormatVersion, SemVersion};
+use bedrock_addon_core::versioning::{
+    DocumentRead, Envelope, Family, Loaded, NoComponents, ParseCx, Reading, StructIndex,
+    ValidateCx, VersionStruct, Versioned,
+};
+// One enum serves client entities and attachables; the shared `visual` crate declares it.
+pub use bedrock_addon_shared_visual::AnimationKind;
+use bedrock_addon_shared_visual::family::{
+    ENVELOPE, READING, Shadowed, Visual, document, parse_newest,
+};
+use bedrock_addon_shared_visual::file as shared;
+use bedrock_addon_shared_visual::history::v1_8_0::ControllerList;
+use bedrock_addon_shared_visual::history::v1_10_0::FoldedLiterals;
+use bedrock_addon_shared_visual::{
+    ClientEntityRoot, HasVisuals, NoOwn, SharedDescription, VisualSlots, Visuals,
+    description_min_engine_version,
+};
+
+use crate::history::{ClientEntityFamily, ClientEntityHistory};
+
+/// The payload key.
+const PAYLOAD: &str = "minecraft:client_entity";
+/// The payload key of the attachable family, which the same root schema declares.
+const ATTACHABLE: &str = "minecraft:attachable";
+
+/// A resource-pack client entity definition (`entity/**/*.json`, payload
+/// `minecraft:client_entity`): what a client draws for an entity, in the newest shape (format
+/// version 1.26.0 and up).
+///
+/// Everything is in [`description`](Self::description); the document has no components. Older
+/// documents (1.8.0 and 1.10.0) are upgraded to this shape step by step ([`history`]).
+///
+/// Built from [`ClientEntity::new`] with struct-update syntax:
+///
+/// ```
+/// use bedrock_addon_family_client_entity::{ClientEntity, Description};
+/// use bedrock_addon_core::id::{EntityId, GeometryId};
+///
+/// let id = EntityId::parse("demo:ghost");
+/// let mut description = Description::new(id.clone());
+/// description
+///     .slots
+///     .geometry
+///     .insert("default".to_owned(), GeometryId::parse("geometry.ghost"));
+/// let entity = ClientEntity {
+///     description,
+///     ..ClientEntity::new(id)
+/// };
+/// assert_eq!(entity.identifier().as_str(), "demo:ghost");
+/// ```
+#[doc(alias = "minecraft:client_entity")]
+#[doc(alias = "client_entity")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClientEntity {
+    /// `format_version`: the version the document is written with, 1.26.0 or newer. A document
+    /// upgraded from an older version has 1.26.0.
+    pub format_version: FormatVersion,
+    /// `description`: the identifier and everything the client draws the entity with.
+    pub description: Description,
+}
+
+/// `description` of a client entity (format version 1.26.0 and up).
+///
+/// Every member is kept as written. Vanilla lower-cases the identifier, every slot name and
+/// the values of `materials`, `geometry`, `animations` and `particle_effects` when it loads
+/// them; the accessors of [`ClientEntity`] give that reading. No member beyond these is
+/// allowed: vanilla skips a file that has one.
+///
+/// `description.slots` holds the members client entities share with attachables.
+pub type Description = bedrock_addon_shared_visual::Description<EntityId, NoOwn>;
+
+impl ClientEntity {
+    /// The identifier as vanilla keys it: in ASCII lower case.
+    pub fn identifier(&self) -> EntityId {
+        EntityId::parse(self.description.identifier.as_str().to_ascii_lowercase())
+    }
+
+    /// The version this definition competes with across packs: `description.min_engine_version`
+    /// read as a version, or 0.0.0 when it is absent or does not read.
+    pub fn min_engine_version(&self) -> SemVersion {
+        description_min_engine_version(
+            self.format_version,
+            self.description.min_engine_version.as_ref(),
+        )
+    }
+
+    /// `enable_attachables`, `false` when absent.
+    pub fn enable_attachables(&self) -> bool {
+        self.description.slots.enable_attachables()
+    }
+
+    /// `held_item_ignores_lighting`, `false` when absent.
+    pub fn held_item_ignores_lighting(&self) -> bool {
+        self.description.slots.held_item_ignores_lighting()
+    }
+
+    /// `hide_armor`, `false` when absent.
+    pub fn hide_armor(&self) -> bool {
+        self.description.slots.hide_armor()
+    }
+
+    /// The constant scale of held items: the written number when it is above 0, else 1.0
+    /// (also for a Molang scale, which only a client evaluates).
+    pub fn held_item_scale(&self) -> f32 {
+        self.description.slots.held_item_scale()
+    }
+
+    /// What the `animations` entry `name` is, by its value's prefix in lower case; `None` for
+    /// an unknown name and for a value vanilla ignores.
+    pub fn animation_kind(&self, name: &str) -> Option<AnimationKind> {
+        self.description.slots.animation_kind(name)
+    }
+
+    /// The text vanilla parses for `initialize`: the strings joined with no separator; `None`
+    /// when the member is absent or the text is empty.
+    pub fn initialize(&self) -> Option<String> {
+        self.description.slots.initialize()
+    }
+
+    /// The text vanilla parses for `pre_animation`: the strings joined with no separator;
+    /// `None` when the member is absent or the text is empty.
+    pub fn pre_animation(&self) -> Option<String> {
+        self.description.slots.pre_animation()
+    }
+}
+
+impl HasVisuals for ClientEntity {
+    fn visuals(&self) -> Visuals<'_> {
+        self.description.slots.visuals()
+    }
+}
+
+impl SharedDescription for ClientEntity {
+    fn slots_mut(&mut self) -> &mut VisualSlots {
+        &mut self.description.slots
+    }
+}
+
+/// The directory client entity files live in.
+const DIRECTORY: &str = "entity";
+
+impl Family for ClientEntityFamily {
+    const NAME: &'static str = "client_entity";
+    const PAYLOAD_KEY: &'static str = PAYLOAD;
+    const FLOOR: FormatVersion = known::V1_8_0;
+    type Latest = ClientEntity;
+    type Beta = NoBeta<kind::Entity>;
+    type Component = NoComponents;
+    type History = ClientEntityHistory;
+    const ENVELOPE: Envelope = ENVELOPE;
+
+    fn reading(_: StructIndex, _: DocumentSource) -> Reading {
+        READING
+    }
+
+    fn validate(v: &mut Loaded<Self>, cx: &mut ValidateCx<'_>) {
+        if let Loaded::Stable(entity) = v {
+            validate::validate(entity, cx);
+        }
+    }
+}
+
+impl Visual for ClientEntityFamily {
+    type Id = EntityId;
+    type Own = NoOwn;
+    type Root<D: FromJson> = ClientEntityRoot<D>;
+    type Family = Self;
+    type Latest = ClientEntity;
+    type History = ClientEntityHistory;
+
+    const PAYLOAD: &'static str = PAYLOAD;
+    const TWIN_PAYLOAD: &'static str = ATTACHABLE;
+    // A file with both payloads loads the client entity alone and the game says nothing; the
+    // crate notes the payload that is not loaded.
+    const NOTES_TWIN: bool = true;
+    // D2: a number no double holds in `min_engine_version` is kept as it is.
+    const CLAMPS_VERSION: bool = false;
+    const CONTROLLERS: ControllerList = ControllerList::Moved;
+    // D4: a literal the lower-casing changes is told.
+    const FOLDED: FoldedLiterals = FoldedLiterals::Told;
+    const SHADOWED: Shadowed = Shadowed {
+        older: &core_codes::CLIENT_ENTITY_SHADOWED_OLDER,
+        above_stack: &core_codes::CLIENT_ENTITY_SHADOWED_ABOVE_STACK,
+        other: &core_codes::CLIENT_ENTITY_SHADOWED,
+    };
+
+    fn wording(names_only: bool) -> fn(&JsonPath) -> Code {
+        // D3: a condition below a list entry is worded by its key, as any member is.
+        if names_only {
+            bedrock_addon_shared_visual::read::wording::<false, true>
+        } else {
+            bedrock_addon_shared_visual::read::wording::<false, false>
+        }
+    }
+
+    fn latest(format_version: FormatVersion, description: Description) -> ClientEntity {
+        ClientEntity {
+            format_version,
+            description,
+        }
+    }
+
+    fn identifier(history: &ClientEntityHistory) -> &str {
+        match history {
+            ClientEntityHistory::V1_8_0(entity) => entity.description.identifier.as_str(),
+            ClientEntityHistory::V1_10_0(entity) => entity.description.identifier.as_str(),
+            ClientEntityHistory::V1_26_0(entity) => entity.description.identifier.as_str(),
+        }
+    }
+
+    fn min_engine_version(latest: &ClientEntity) -> SemVersion {
+        latest.min_engine_version()
+    }
+}
+
+impl Versioned for ClientEntity {
+    const VERSION: FormatVersion = known::V1_26_0;
+}
+
+impl VersionStruct for ClientEntity {
+    fn parse(document: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        // The 1.26 schema.
+        parse_newest::<ClientEntityFamily>(document, cx, d)
+    }
+
+    /// The whole document (the struct reads the whole text, `EnvelopeCheck::Never`), at the
+    /// version it is written with: its own, and never below 1.26.0, the oldest this shape is.
+    fn write(&self) -> Result<Value, EncodeError> {
+        let version = self.format_version.max(Self::VERSION);
+        document::<ClientEntityFamily, _>(version, &self.description)
+    }
+}
+
+impl JsonDocument for ClientEntity {
+    type Family = ClientEntityFamily;
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+    const NAME: &'static str = "client entity";
+
+    /// One client entity file, upgraded to the newest shape: vanilla's admit step (the text,
+    /// the root, the version gate), then the chain. The rules between files (which definition
+    /// of an identifier wins, by `description.min_engine_version`) apply to a stack, not to a
+    /// single file.
+    fn read(origin: Origin, bytes: &[u8], cx: &LoadContext) -> DocumentRead<ClientEntityFamily> {
+        let root = root_of(bytes);
+        match shared::parse_file::<ClientEntityFamily>(
+            origin.pack.clone(),
+            origin.side,
+            &origin.path,
+            bytes,
+            root.as_ref(),
+            cx,
+        ) {
+            (_, Ok(document)) => DocumentRead::Stable(document),
+            (identifier, Err(rejected)) => {
+                DocumentRead::Rejected(identifier.map(|id| id.to_string()), rejected)
+            }
+        }
+    }
+
+    /// Parses one client entity file without upgrading it: the struct its `format_version`
+    /// selects, after the same admit step as [`read`](JsonDocument::read).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Rejected`](bedrock_addon_core::document::Rejected) with the findings the game's content
+    /// log would print when the bytes cannot be read as this file at all: not JSON, a
+    /// `format_version` with no struct here, or a document that does not fit the struct it selects.
+    fn parse_as_written(
+        path: &PackPath,
+        bytes: &[u8],
+        cx: &LoadContext,
+    ) -> Result<Document<ClientEntityHistory>, Rejected> {
+        let bytes = &*bedrock_addon_core::json::blank_bom(bytes);
+        shared::parse_written::<ClientEntityFamily>(path, bytes, root_of(bytes).as_ref(), cx)
+    }
+
+    /// A value built in code may hold what no file can: an empty identifier, a slot name
+    /// outside its pattern, a version above the engine's. The document is written only when
+    /// this loader reads it back, else refused with the path of what it would not read.
+    /// Whether its Molang compiles is not asked: that depends on the pack.
+    fn refuse_write(&self) -> Result<(), EncodeError> {
+        shared::refuse_write::<ClientEntityFamily>(self, |text| {
+            shared::refused_at::<ClientEntityFamily>(
+                text,
+                root_of(text).as_ref(),
+                "entity/written.entity.json",
+            )
+        })
+    }
+}
+
+impl JsonPlaced for ClientEntity {
+    /// `entity/<namespace>/<name>.json`.
+    fn place(&self) -> PackPath {
+        default_path(DIRECTORY, &self.description.identifier)
+    }
+}
+
+// A hand `Definition`, not a `JsonDefinition`: the registry keys a client entity by its
+// identifier in lower case ([`ClientEntity::identifier`], a value, not a reference into the
+// struct), and the loader is the family's own (`FileOutcome`: a file of the walk may be an
+// attachable's), so `load::registry` does not apply.
+impl Definition for ClientEntity {
+    type Kind = kind::Entity;
+    type File = ClientEntity;
+    type Beta = NoBeta<kind::Entity>;
+}
+
+/// The file's root as JSON, for the questions asked before the chain reads the text (which
+/// payload the file holds, its `format_version`): parsed once per file. `None` for bytes that
+/// are no UTF-8 or no JSON.
+pub(crate) fn root_of(bytes: &[u8]) -> Option<Value> {
+    let text = std::str::from_utf8(strip_bom(bytes)).ok()?;
+    // Of a member written twice the last stands, whole. An untyped read of the text as
+    // written merges two objects of one key, so the peek reads the cleaned text, as the load
+    // does.
+    bedrock_addon_core::json::from_str_jsonc(&bedrock_addon_core::json::last_wins(text)).ok()
+}
+
+/// Whether the document is an attachable: no `minecraft:client_entity` object, and a
+/// `minecraft:attachable` one. Vanilla reads `minecraft:client_entity` first, then
+/// `minecraft:attachable`, from either directory.
+fn is_attachable(root: &Value) -> bool {
+    let object = |key: &str| {
+        root.as_object()
+            .and_then(|root| root.get(key))
+            .is_some_and(|value| value.as_object().is_some())
+    };
+    !object(PAYLOAD) && object(ATTACHABLE)
+}
+
+/// Whether the document holds a `minecraft:client_entity` object.
+fn is_client_entity(root: &Value) -> bool {
+    root.as_object()
+        .and_then(|root| root.get(PAYLOAD))
+        .is_some_and(|value| value.as_object().is_some())
+}
+
+// ---- the collection ----------------------------------------------------------------------
+
+/// The folder of the attachables, in a pack and in the app's own data: a file there that
+/// holds a `minecraft:client_entity` object is a client entity.
+const ATTACHABLES: &str = "attachables";
+const APP_ATTACHABLES: &str = "definitions/attachables";
+
+/// The app's own `definitions/attachables`, then every `entity/**/*.json` and after them every
+/// `attachables/**/*.json`, each over the packs from the lowest priority to the highest, as
+/// vanilla loads them: the walk of the attachables, since one loader reads both payloads from
+/// either folder. The game loads its built-in definitions first, then the `entity` and
+/// `attachables` folders in that order, each from the last pack of the stack to the first.
+const WALK: Walk = Walk::json_tree_in(&[DIRECTORY, ATTACHABLES])
+    .directory_major()
+    .app_data(&[APP_ATTACHABLES], AppDataPlace::Before);
+
+/// What one walked file is.
+#[derive(Debug)]
+#[doc(hidden)]
+pub enum FileOutcome {
+    /// The attachable family's: a `minecraft:attachable` document under `entity/`, and
+    /// whatever under `attachables/` or the app's own folder is no client entity.
+    Attachable,
+    /// A client entity, or a file that fails as one.
+    Entity(Box<Contribution<ClientEntity>>),
+}
+
+fn parse_walk_file(file: &WalkFile, cx: &LoadContext) -> FileOutcome {
+    let root = root_of(&file.bytes);
+    if root.as_ref().is_some_and(is_attachable) {
+        return FileOutcome::Attachable;
+    }
+    // Outside `entity/` only a file with a `minecraft:client_entity` object is this family's: what is
+    // wrong with any other file there, the attachables say.
+    let in_entity = WALK.matches(&file.key) == Some(0) && !file.pack.is_app_data();
+    if !in_entity && !root.as_ref().is_some_and(is_client_entity) {
+        return FileOutcome::Attachable;
+    }
+    let contribution = match shared::parse_file::<ClientEntityFamily>(
+        file.pack.clone(),
+        file.side,
+        &file.path,
+        &file.bytes,
+        root.as_ref(),
+        cx,
+    ) {
+        (_, Ok(document)) => Contribution::Stable(document.identifier(), document),
+        (id, Err(rejected)) => Contribution::Rejected(id, rejected),
+    };
+    FileOutcome::Entity(Box::new(contribution))
+}
+
+/// One definition per identifier, by `description.min_engine_version` and not by pack priority
+/// alone: in walk order a document above the stack's highest pack `min_engine_version` is
+/// ignored; the first of an identifier defines it; a later one with a lower version is
+/// ignored, with an equal one is merged into the definition, with a higher one replaces it.
+/// Every ignored document gets a `ClientEntityShadowed` info (the crate's own: vanilla is
+/// silent). The choice of merge step and the merge itself are `visual`'s, shared with attachables.
+fn combine(parsed: Vec<FileOutcome>, stack: &StackCx<'_>) -> Registry<ClientEntity> {
+    let full_stack = stack.full_stack_min_engine_version();
+    let decide = move |existing: Option<&Document<ClientEntity>>,
+                       incoming: &Document<ClientEntity>,
+                       d: &mut Diagnostics| {
+        shared::decide::<ClientEntityFamily>(&full_stack, existing, incoming, d)
+    };
+    let contributions = parsed.into_iter().filter_map(|outcome| match outcome {
+        FileOutcome::Entity(contribution) => Some(*contribution),
+        FileOutcome::Attachable => None,
+    });
+    RegistryBuilder::combine(
+        contributions,
+        CombineRule::EngineVersionMerge {
+            decide: Box::new(decide),
+            merge: |earlier, mut later| {
+                earlier.slots_mut().merge(later.slots_mut());
+            },
+        },
+        CombineRule::top_wins(),
+        stack.options,
+    )
+}
+
+/// The loader of `rp.client_entities()`: `entity/**/*.json` of every resource pack and the
+/// client entities of `attachables/**/*.json` and of the app's `definitions/attachables`, one
+/// definition per identifier by `description.min_engine_version`.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Registry<ClientEntity>, FileOutcome> = CollectionLoader {
+    walk: WALK,
+    parse: parse_walk_file,
+    combine,
+    needs: &[],
+    then: None,
+};
+
+impl ClientEntity {
+    /// A client entity for `identifier` with nothing to draw yet, at format version 1.26.0.
+    pub fn new(identifier: EntityId) -> Self {
+        Self {
+            format_version: Self::VERSION,
+            description: Description::new(identifier),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use bedrock_addon_core::document::Content;
+    use bedrock_addon_core::load::LoadOptions;
+    use bedrock_addon_core::pack_identity::PackRef;
+
+    use super::*;
+    use bedrock_addon_core::test_cost::{assert_linear_timed_at, timed};
+
+    /// The documents the walk of a two-pack stack hands the combine for `identifiers` client
+    /// entities, lower pack first: every identifier is defined twice, the second time
+    /// alternately with the same `min_engine_version` (merged) and with a lower one (ignored).
+    fn colliding(identifiers: usize) -> Vec<FileOutcome> {
+        let cx = LoadContext::detached();
+        let template = |mev: &str, texture: &str| {
+            let text = format!(
+                r#"{{"format_version": "1.26.0", "minecraft:client_entity": {{"description": {{"identifier": "demo:template", "min_engine_version": "{mev}", "textures": {{"default": "textures/{texture}"}}}}}}}}"#
+            );
+            <ClientEntity as Content>::parse(
+                &PackPath::from_static("entity/t.json"),
+                text.as_bytes(),
+                &cx,
+            )
+            .expect("the template loads")
+        };
+        let lower = template("1.20.0", "lower");
+        let merged = template("1.20.0", "upper");
+        let ignored = template("1.10.0", "upper");
+        let outcome = |template: &Document<ClientEntity>, i: usize| {
+            let mut entity = template.value().clone();
+            entity.description.identifier = EntityId::parse(format!("demo:e{i}"));
+            let path = PackPath::new(&format!("entity/e{i}.json")).expect("a pack path");
+            let document = Document::new(
+                entity,
+                shared::origin(PackRef::app_data(), PackSide::Resource, &path),
+                template.version().clone(),
+                Diagnostics::default(),
+            );
+            FileOutcome::Entity(Box::new(Contribution::Stable(
+                document.identifier(),
+                document,
+            )))
+        };
+        let mut outcomes = Vec::with_capacity(identifiers * 2);
+        outcomes.extend((0..identifiers).map(|i| outcome(&lower, i)));
+        outcomes.extend(
+            (0..identifiers).map(|i| outcome(if i % 2 == 0 { &merged } else { &ignored }, i)),
+        );
+        outcomes
+    }
+
+    /// Combines [`colliding`] of `identifiers`, checks the registry, and gives the time the
+    /// combine took.
+    fn combine_colliding(identifiers: usize) -> Duration {
+        let parsed = colliding(identifiers);
+        let options = LoadOptions::default();
+        let (registry, took) = timed(|| combine(parsed, &StackCx::new(&options, &[])));
+        assert_eq!(registry.len(), identifiers);
+        assert_eq!(registry.diagnostics().count(), identifiers / 2);
+        // Both packs are one `PackRef` here, so no contributor is recorded: the stack test
+        // (`tests/client_entity/stack.rs`) holds that part.
+        let texture = |i: usize| {
+            let entity = registry
+                .get(&EntityId::parse(format!("demo:e{i}")))
+                .expect("every identifier is defined");
+            entity.description.slots.textures["default"]
+                .as_str()
+                .to_owned()
+        };
+        for i in [0, identifiers - 2] {
+            assert_eq!(texture(i), "textures/upper");
+        }
+        for i in [1, identifiers - 1] {
+            assert_eq!(texture(i), "textures/lower");
+        }
+        took
+    }
+
+    #[test]
+    fn the_merge_of_colliding_identifiers_is_linear() {
+        // 4 000 identifiers against 16 000, every one defined twice: the combine looks each
+        // identifier up once, so four times the documents take about four times the time. A
+        // combine that scanned what it had seen on every collision would take sixteen times.
+        assert_linear_timed_at("client entity combine", 4_000, combine_colliding);
+    }
+}
+
+#[cfg(test)]
+mod reading_table {
+    //! The family's reading table: what the pipeline reads each of its files and structs by.
+
+    use bedrock_addon_core::versioning::testing::{assert_reading_table, reading_table};
+
+    #[test]
+    fn client_entity_reads_as_pinned() {
+        assert_reading_table(
+            "ClientEntityFamily",
+            &reading_table::<super::ClientEntityFamily>(),
+            r#"
+                text: Root, clamps beyond a double: false, duplicates kept in: []
+                envelope: Never
+                missing version: at the floor, told at Warning: Some(Fixed("Warning: The \"format_version\" field was not given. Fields from format version 1.8.0 and older will be loaded. Update your targeted \"format_version\" to use fields from newer versions."))
+                below floor: UseFormatVersion
+                empty document: Error
+                1.8.0..=1.26.0 (0..=2): json Own/Strict/Error/Warn/reports/lenient/Refuse, mcb Own/Strict/Error/Warn/reports/lenient/Refuse
+            "#,
+        );
+    }
+}

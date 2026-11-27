@@ -1,0 +1,123 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:tree_feature": {
+    "description": {
+      "identifier": "demo:variant_tree"
+    },
+    "base_block": [
+      "minecraft:dirt",
+      "minecraft:coarse_dirt"
+    ],
+    "may_grow_on": [
+      {
+        "tags": "query.any_tag('dirt')"
+      }
+    ],
+    "acacia_trunk": {
+      "trunk_width": 1,
+      "trunk_height": {
+        "base": 5,
+        "intervals": [
+          2,
+          2
+        ],
+        "min_height_for_canopy": 3
+      },
+      "trunk_lean": {
+        "allow_diagonal_growth": true,
+        "lean_height": {
+          "range_min": 2,
+          "range_max": 3
+        },
+        "lean_steps": {
+          "range_min": 3,
+          "range_max": 4
+        },
+        "lean_length": {
+          "range_min": 1,
+          "range_max": 2
+        }
+      },
+      "trunk_block": {
+        "name": "minecraft:acacia_log"
+      },
+      "branches": {
+        "branch_length": {
+          "range_min": 1,
+          "range_max": 3
+        },
+        "branch_position": {
+          "range_min": 1,
+          "range_max": 2
+        },
+        "branch_chance": {
+          "numerator": 1,
+          "denominator": 3
+        },
+        "branch_canopy": {
+          "fancy_canopy": {
+            "height": 2,
+            "radius": 1,
+            "leaf_block": "minecraft:acacia_leaves"
+          }
+        }
+      }
+    },
+    "canopy": {
+      "canopy_offset": {
+        "min": -3,
+        "max": 0
+      },
+      "variation_chance": [
+        {
+          "numerator": 1,
+          "denominator": 2
+        },
+        {
+          "numerator": 1,
+          "denominator": 1
+        }
+      ],
+      "leaf_block": "minecraft:acacia_leaves",
+      "canopy_decoration": {
+        "decoration_chance": {
+          "numerator": 1,
+          "denominator": 4
+        },
+        "decoration_blocks_sequence": [
+          {
+            "block": "minecraft:vine",
+            "count": {
+              "range_min": 1,
+              "range_max": 3
+            }
+          }
+        ],
+        "num_steps": 2,
+        "step_direction": "down"
+      }
+    },
+    "mangrove_roots": {
+      "max_root_width": 8,
+      "max_root_length": 15,
+      "root_block": "minecraft:mangrove_roots",
+      "above_root": {
+        "above_root_chance": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "above_root_block": "minecraft:moss_carpet"
+      },
+      "muddy_root_block": "minecraft:muddy_mangrove_roots",
+      "mud_block": "minecraft:mud",
+      "y_offset": {
+        "range_min": 1,
+        "range_max": 3
+      },
+      "roots_may_grow_through": [
+        "minecraft:mud",
+        "minecraft:water"
+      ]
+    }
+  }
+}

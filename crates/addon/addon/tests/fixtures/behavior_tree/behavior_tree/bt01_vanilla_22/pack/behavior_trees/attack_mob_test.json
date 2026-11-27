@@ -1,0 +1,25 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "attack_mob_test",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at": {
+              "block_pos": [-1, 4, 0]
+            }
+          },
+          {
+            "minecraft:shoot_bow": {
+            }
+          },
+          {
+            "minecraft:wait": { 
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "SB_static_dotdot",
+    "description": "script_bundle fixture",
+    "uuid": "50bc5fbc-8f4d-5465-bab1-4366b020b27b",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "02fe0eac-5b6f-5a24-a749-3b06174b185d",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

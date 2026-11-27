@@ -1,0 +1,35 @@
+// Copied from the vanilla packs: gdk-retail/resource_packs/vanilla_1.21.90/lighting/nether_lighting.json
+{
+  "format_version": "1.21.70",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "minecraft:nether_lighting"
+    },
+    "directional_lights": {
+      "sun": {
+        "illuminance": {
+          "0.000000": 100.0,
+          "1.000000": 100.0
+        },
+        "color": {
+          "0.000000": [ 255, 255, 255 ],
+          "1.000000": [ 255, 255, 255 ]
+        }
+      },
+      "moon": {
+        "illuminance": {
+          "0.000000": 100.0,
+          "1.000000": 100.0
+        },
+        "color": {
+          "0.000000": [ 255, 255, 255 ],
+          "1.000000": [ 255, 255, 255 ]
+        }
+      }
+    },
+    "ambient": {
+      "color": "#FFFFFF",
+      "illuminance": 0.5
+    }
+  }
+}

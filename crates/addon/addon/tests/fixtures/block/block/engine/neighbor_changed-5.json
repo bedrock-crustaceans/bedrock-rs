@@ -1,0 +1,23 @@
+{
+				"format_version": "1.26.60",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:neighbor_changed_permutation_block",
+						"states": {
+							"test:listener_enabled": [0, 1]
+						}
+					},
+					"components": {
+						"minecraft:neighbor_change": {
+							"neighbor_directions": ["west"]
+						},
+						"test:neighbor_changed_passive_component": {}
+					},
+					"permutations": [{
+						"condition": "query.block_state('test:listener_enabled') == 1",
+						"components": {
+							"test:neighbor_changed_component": {}
+						}
+					}]
+				}
+			}

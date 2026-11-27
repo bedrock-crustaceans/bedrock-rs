@@ -1,0 +1,11 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {				
+					"non_positional_sound_event" : {
+						"category": "ui",
+						"sounds": [
+							"sounds/random/click"
+						]
+					}
+				}
+			}

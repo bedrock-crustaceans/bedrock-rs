@@ -1,0 +1,14 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:ender_dragon"
+    },
+    "components": {
+      "minecraft:boss": {
+        "hud_range": 200,
+        "should_darken_sky": false
+      }
+    }
+  }
+}

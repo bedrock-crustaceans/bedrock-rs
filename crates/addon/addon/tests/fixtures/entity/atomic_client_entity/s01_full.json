@@ -1,0 +1,17 @@
+{
+  "format_version": "beta",
+  "minecraft:atomic_client_entity": {
+    "description": {
+      "identifier": "demo:wisp",
+      "materials": { "default": "entity_alphatest" },
+      "textures": { "default": "textures/entity/wisp" },
+      "geometry": { "default": "geometry.wisp" },
+      "animations": { "idle": "animation.wisp.idle" },
+      "particle_effects": {},
+      "sound_effects": {},
+      "scripts": { "initialize": [], "pre_animation": [], "animate": ["idle"] },
+      "render_controllers": ["controller.render.wisp"]
+    },
+    "components": { "minecraft:aabb_dimensions": { "width": 0.5, "height": 0.5 } }
+  }
+}

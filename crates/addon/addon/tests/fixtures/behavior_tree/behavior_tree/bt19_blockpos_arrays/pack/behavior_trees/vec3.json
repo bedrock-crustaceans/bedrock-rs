@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "vec3",
+    "minecraft:root": { "minecraft:move_to": { "block_pos": [0.5, 4, 0.5] } }
+  }
+}

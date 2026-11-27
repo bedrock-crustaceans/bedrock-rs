@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm50",
+    "description": "families/script_module fixture sm50_transitive_beta_conflict",
+    "uuid": "e1f448ec-cf90-5cc2-90ab-59454ced03ca",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "481b1866-0926-562a-9f64-af011d8068f4",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.19.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "beta"
+    }
+  ]
+}

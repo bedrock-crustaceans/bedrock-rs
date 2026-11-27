@@ -5,9 +5,9 @@ use bedrock_level::Greedy;
 use bedrock_level::biome::Biomes;
 use bedrock_level::player::PlayerData;
 use bedrock_level::settings::LevelSettings;
-use bedrock_level::version::GameVersion;
 use bedrock_level::subchunk::BlockDef;
 use bedrock_level::types::BlockPosition;
+use bedrock_level::version::GameVersion;
 use bedrock_level::{
     db::Database,
     key::{Key, KeyVariant},

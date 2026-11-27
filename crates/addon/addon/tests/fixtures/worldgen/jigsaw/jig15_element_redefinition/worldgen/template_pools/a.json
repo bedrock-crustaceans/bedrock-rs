@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:template_pool": {
+    "description": {
+      "identifier": "test:pool_a"
+    },
+    "elements": [
+      {
+        "element": {
+          "element_type": "minecraft:single_pool_element",
+          "location": "test_path/test_structure",
+          "processors": "test:processors_a"
+        }
+      }
+    ]
+  }
+}

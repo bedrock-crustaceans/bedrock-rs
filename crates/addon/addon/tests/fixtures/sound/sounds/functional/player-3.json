@@ -1,0 +1,11 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {
+					"FORMAT_PLACEHOLDER" : {
+						"category": "FORMAT_PLACEHOLDER",
+						"sounds": [
+							"FORMAT_PLACEHOLDER"
+						]
+					}
+				}
+			}

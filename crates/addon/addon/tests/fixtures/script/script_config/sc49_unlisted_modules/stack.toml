@@ -1,0 +1,32 @@
+# The script modules of the stack: name, version and UUIDs of each pack, and its
+# `module_name` dependencies.
+
+[[pack]]
+name = "gfxbeta"
+version = "1.0.0"
+header_uuid = "b0000000-0000-4000-8000-000000000001"
+script_module_uuid = "a0000000-0000-4000-8000-000000000001"
+
+[[dependency]]
+module_name = "@minecraft/server-graphics"
+optional = false
+
+[[pack]]
+name = "gfx100"
+version = "1.0.0"
+header_uuid = "b0000000-0000-4000-8000-000000000002"
+script_module_uuid = "a0000000-0000-4000-8000-000000000002"
+
+[[dependency]]
+module_name = "@minecraft/server-graphics"
+optional = false
+
+[[pack]]
+name = "common"
+version = "1.0.0"
+header_uuid = "b0000000-0000-4000-8000-000000000003"
+script_module_uuid = "a0000000-0000-4000-8000-000000000003"
+
+[[dependency]]
+module_name = "@minecraft/common"
+optional = false

@@ -1,0 +1,12 @@
+
+				{
+					"format_version": "beta",
+					"minecraft:client_biome": {
+						"description": {
+							"identifier": "test:biome"
+						},
+						"components": {
+						}
+					}
+				}
+				

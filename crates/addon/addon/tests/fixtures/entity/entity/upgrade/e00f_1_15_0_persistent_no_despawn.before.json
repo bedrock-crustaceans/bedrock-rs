@@ -1,0 +1,11 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:cow"
+    },
+    "components": {
+      "minecraft:persistent": {}
+    }
+  }
+}

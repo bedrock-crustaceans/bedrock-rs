@@ -1,0 +1,13 @@
+{
+  "format_version": "1.11.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:turtle"
+    },
+    "components": {
+      "minecraft:water_movement": {
+        "drag_factor": 0.5
+      }
+    }
+  }
+}

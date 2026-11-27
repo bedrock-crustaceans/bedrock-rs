@@ -1,0 +1,459 @@
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "length": 2.5, "blend": "q.x", "tag": "t"}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: Some(2.5), blend: Some(Expr(MolangSource { text: "q.x", form: String { context_version: Some(RawVersion(-1)) } })), bones: None, items: None, tag: Some("t") }} })
+== animation {"format_version": "1.8.0", "animations": {}}
+Error core/required_child "Required child animation\.[a-zA-Z0-9_.-]+ not found" at animations 42+2
+None
+== animation {"animations": {"animation.a": {}}}
+Error core/required_child "Required child format_version not found" at  0+35
+None
+== animation {}
+Error core/required_child "Required child format_version not found" at  0+2
+Error core/required_child "Required child animations not found" at  0+2
+None
+== animation []
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at  0+2
+None
+== animation {"format_version": 1, "animations": {"animation.a": {}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at format_version 19+1
+None
+== animation {"format_version": "1.8.0", "animations": []}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations 42+2
+None
+== animation {"format_version": "1.8.0", "animations": {"animation:a": {}, "animation.b": {}}}
+Error core/child_not_valid "child 'animation:a' not valid here." at animations/animation:a 58+2
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loops": true}}}
+Error core/child_not_valid "child 'loops' not valid here." at animations/animation.a/loops 68+4
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loop": 1, "length": "x", "blend": [], "tag": 3}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 80+3
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 94+2
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 105+1
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loop": null, "length": null, "blend": null, "tag": null}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 83+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 98+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 111+4
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"length": 0.123456789012, "blend": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/blend 94+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(0.12345679), blend: Some(Const(3.4028235e38)), bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"length": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/length 69+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(3.4028235e38), blend: None, bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"LOOP": true, "Length": 1}}}
+respelled animations/animation.a/LOOP Some(Span { offset: 67, len: 4 })
+respelled animations/animation.a/Length Some(Span { offset: 83, len: 1 })
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: Some(1.0), blend: None, bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "Loop": false}}}
+Info core/dropped_field "field dropped" at animations/animation.a/loop 67+4
+respelled animations/animation.a/Loop Some(Span { offset: 81, len: 5 })
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(false), length: None, blend: None, bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "LOOP": true}}}
+respelled animations/animation.a/LOOP Some(Span { offset: 81, len: 4 })
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: None, blend: None, bones: None, items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"Animation.A": {}, "ANIMATION.b": {"tag": "x"}}}
+respelled animations/Animation.A Some(Span { offset: 58, len: 2 })
+respelled animations/ANIMATION.b Some(Span { offset: 77, len: 12 })
+Some(Root { format_version: "1.8.0", animations: {"Animation.A": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }, "ANIMATION.b": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: Some("x") }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {}}}}
+Error core/required_child "Required child [a-zA-Z0-9_.-]+ not found" at animations/animation.a/bones 68+2
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"left arm": {"name": "x"}, "arm": {"name": "y"}}}}}
+Error core/child_not_valid "child 'left arm' not valid here." at animations/animation.a/bones/left arm 81+13
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {}}}}}
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+2
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": 1, "scale": true}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/bones/arm/name 85+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/scale 97+4
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "0.5": "x", "x": 2}}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/frames/0.5 116+3
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/frames/x 126+1
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "1": 2.5}}}}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: Some({"0": 1.0, "1": 2.5}) }}), items: None, tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": []}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/bones 68+2
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"a": 2, "b": false}]}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: Some([Item { a: 1.0, b: None }, Item { a: 2.0, b: Some(false) }]), tag: None }} })
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"b": true}, 3, {"a": "x", "c": 1}]}}}
+Error core/required_child "Required child a not found" at animations/animation.a/items/1 79+11
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/items/2 92+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/items/3/a 101+3
+Error core/child_not_valid "child 'c' not valid here." at animations/animation.a/items/3/c 111+1
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"items": {}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: array" at animations/animation.a/items 68+2
+None
+== animation {"zeta": 1, "format_version": "1.8.0", "animations": {"animation.b": {"tag": 1}, "animation.a": {"tag": 2}}}
+Error core/child_not_valid "child 'zeta' not valid here." at zeta 9+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.b/tag 77+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 104+1
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"tag": "x", "blend": 0.5, "zz": 1, "aa": 2, "loop": "no"}}}
+Error core/child_not_valid "child 'zz' not valid here." at animations/animation.a/zz 91+1
+Error core/child_not_valid "child 'aa' not valid here." at animations/animation.a/aa 100+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 111+4
+None
+== animation {"format_version": "1.8.0", "extra": [], "animations": {"animation.a": {"bones": {"arm": {"name": "a", "x": 1}}}}}
+Error core/child_not_valid "child 'extra' not valid here." at extra 37+2
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/x 108+1
+None
+== animation {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"Name": "a", "NAME": "b"}}}}}
+Info core/dropped_field "field dropped" at animations/animation.a/bones/arm/Name 85+3
+respelled animations/animation.a/bones/arm/Name Some(Span { offset: 85, len: 3 })
+respelled animations/animation.a/bones/arm/NAME Some(Span { offset: 98, len: 3 })
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "b", scale: None, frames: None }}), items: None, tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "length": 2.5, "blend": "q.x", "tag": "t"}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: Some(2.5), blend: Some(Expr(MolangSource { text: "q.x", form: String { context_version: Some(RawVersion(-1)) } })), bones: None, items: None, tag: Some("t") }} })
+== render controller {"format_version": "1.8.0", "animations": {}}
+Error core/required_child "Required child animation\.[a-zA-Z0-9_.-]+ not found" at animations 42+2
+None
+== render controller {"animations": {"animation.a": {}}}
+Error core/required_child "Required child format_version not found" at  0+35
+None
+== render controller {}
+Error core/required_child "Required child format_version not found" at  0+2
+Error core/required_child "Required child animations not found" at  0+2
+None
+== render controller []
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at  0+2
+None
+== render controller {"format_version": 1, "animations": {"animation.a": {}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at format_version 19+1
+None
+== render controller {"format_version": "1.8.0", "animations": []}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations 42+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation:a": {}, "animation.b": {}}}
+Error core/child_not_valid "child 'animation:a' not valid here." at animations/animation:a 58+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loops": true}}}
+Error core/child_not_valid "child 'loops' not valid here." at animations/animation.a/loops 68+4
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loop": 1, "length": "x", "blend": [], "tag": 3}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 94+2
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 80+3
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 105+1
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loop": null, "length": null, "blend": null, "tag": null}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 98+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 83+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 111+4
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"length": 0.123456789012, "blend": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/blend 94+4
+Info core/lossy_conversion "value loses precision when written" at animations/animation.a/length 69+14
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(0.12345679), blend: Some(Const(3.4028235e38)), bones: None, items: None, tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"length": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/length 69+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(3.4028235e38), blend: None, bones: None, items: None, tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"LOOP": true, "Length": 1}}}
+Error core/child_not_valid "child 'LOOP' not valid here." at animations/animation.a/LOOP 67+4
+Error core/child_not_valid "child 'Length' not valid here." at animations/animation.a/Length 83+1
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "Loop": false}}}
+Error core/child_not_valid "child 'Loop' not valid here." at animations/animation.a/Loop 81+5
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "LOOP": true}}}
+Error core/child_not_valid "child 'LOOP' not valid here." at animations/animation.a/LOOP 81+4
+None
+== render controller {"format_version": "1.8.0", "animations": {"Animation.A": {}, "ANIMATION.b": {"tag": "x"}}}
+Error core/child_not_valid "child 'ANIMATION.b' not valid here." at animations/ANIMATION.b 77+12
+Error core/child_not_valid "child 'Animation.A' not valid here." at animations/Animation.A 58+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {}}}}
+Error core/required_child "Required child [a-zA-Z0-9_.-]+ not found" at animations/animation.a/bones 68+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"left arm": {"name": "x"}, "arm": {"name": "y"}}}}}
+Error core/child_not_valid "child 'left arm' not valid here." at animations/animation.a/bones/left arm 81+13
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {}}}}}
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": 1, "scale": true}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/bones/arm/name 85+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/scale 97+4
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "0.5": "x", "x": 2}}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/frames/0.5 116+3
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/frames/x 126+1
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "1": 2.5}}}}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: Some({"0": 1.0, "1": 2.5}) }}), items: None, tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": []}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/bones 68+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"a": 2, "b": false}]}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: Some([Item { a: 1.0, b: None }, Item { a: 2.0, b: Some(false) }]), tag: None }} })
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"b": true}, 3, {"a": "x", "c": 1}]}}}
+Error core/required_child "Required child a not found" at animations/animation.a/items/1 79+11
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/items/2 92+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/items/3/a 101+3
+Error core/child_not_valid "child 'c' not valid here." at animations/animation.a/items/3/c 111+1
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"items": {}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: array" at animations/animation.a/items 68+2
+None
+== render controller {"zeta": 1, "format_version": "1.8.0", "animations": {"animation.b": {"tag": 1}, "animation.a": {"tag": 2}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 104+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.b/tag 77+1
+Error core/child_not_valid "child 'zeta' not valid here." at zeta 9+1
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"tag": "x", "blend": 0.5, "zz": 1, "aa": 2, "loop": "no"}}}
+Error core/child_not_valid "child 'aa' not valid here." at animations/animation.a/aa 100+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 111+4
+Error core/child_not_valid "child 'zz' not valid here." at animations/animation.a/zz 91+1
+None
+== render controller {"format_version": "1.8.0", "extra": [], "animations": {"animation.a": {"bones": {"arm": {"name": "a", "x": 1}}}}}
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/x 108+1
+Error core/child_not_valid "child 'extra' not valid here." at extra 37+2
+None
+== render controller {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"Name": "a", "NAME": "b"}}}}}
+Error core/child_not_valid "child 'NAME' not valid here." at animations/animation.a/bones/arm/NAME 98+3
+Error core/child_not_valid "child 'Name' not valid here." at animations/animation.a/bones/arm/Name 85+3
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "length": 2.5, "blend": "q.x", "tag": "t"}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: Some(2.5), blend: Some(Expr(MolangSource { text: "q.x", form: String { context_version: Some(RawVersion(-1)) } })), bones: None, items: None, tag: Some("t") }} })
+== geometry {"format_version": "1.8.0", "animations": {}}
+Error core/required_child "Required child animation\.[a-zA-Z0-9_.-]+ not found" at animations 42+2
+None
+== geometry {"animations": {"animation.a": {}}}
+Error core/required_child "Required child format_version not found" at  0+35
+None
+== geometry {}
+Error core/required_child "Required child format_version not found" at  0+2
+Error core/required_child "Required child animations not found" at  0+2
+None
+== geometry []
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at  0+2
+None
+== geometry {"format_version": 1, "animations": {"animation.a": {}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at format_version 19+1
+None
+== geometry {"format_version": "1.8.0", "animations": []}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations 42+2
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation:a": {}, "animation.b": {}}}
+Error core/child_not_valid "child 'animation:a' not valid here." at animations/animation:a 58+2
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loops": true}}}
+Error core/child_not_valid "child 'loops' not valid here." at animations/animation.a/loops 68+4
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": 1, "length": "x", "blend": [], "tag": 3}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 80+3
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 94+2
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 105+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": null, "length": null, "blend": null, "tag": null}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 83+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 98+4
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 111+4
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"length": 0.123456789012, "blend": 1e39}}}
+Info core/lossy_conversion "value loses precision when written" at animations/animation.a/length 69+14
+Info core/invalid_value "invalid value" at animations/animation.a/blend 94+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(0.12345679), blend: Some(Const(3.4028235e38)), bones: None, items: None, tag: None }} })
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"length": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/length 69+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(3.4028235e38), blend: None, bones: None, items: None, tag: None }} })
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"LOOP": true, "Length": 1}}}
+Error core/child_not_valid "child 'LOOP' not valid here." at animations/animation.a/LOOP 67+4
+Error core/child_not_valid "child 'Length' not valid here." at animations/animation.a/Length 83+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "Loop": false}}}
+Error core/child_not_valid "child 'Loop' not valid here." at animations/animation.a/Loop 81+5
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "LOOP": true}}}
+Error core/child_not_valid "child 'LOOP' not valid here." at animations/animation.a/LOOP 81+4
+None
+== geometry {"format_version": "1.8.0", "animations": {"Animation.A": {}, "ANIMATION.b": {"tag": "x"}}}
+Error core/child_not_valid "child 'Animation.A' not valid here." at animations/Animation.A 58+2
+Error core/child_not_valid "child 'ANIMATION.b' not valid here." at animations/ANIMATION.b 77+12
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {}}}}
+Error core/required_child "Required child [a-zA-Z0-9_.-]+ not found" at animations/animation.a/bones 68+2
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"left arm": {"name": "x"}, "arm": {"name": "y"}}}}}
+Error core/child_not_valid "child 'left arm' not valid here." at animations/animation.a/bones/left arm 81+13
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {}}}}}
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+2
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": 1, "scale": true}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/bones/arm/name 85+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/scale 97+4
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "0.5": "x", "x": 2}}}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/frames/0.5 116+3
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/frames/x 126+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "1": 2.5}}}}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: Some({"0": 1.0, "1": 2.5}) }}), items: None, tag: None }} })
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": []}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/bones 68+2
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"a": 2, "b": false}]}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: Some([Item { a: 1.0, b: None }, Item { a: 2.0, b: Some(false) }]), tag: None }} })
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"b": true}, 3, {"a": "x", "c": 1}]}}}
+Error core/required_child "Required child a not found" at animations/animation.a/items/1 79+11
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/items/2 92+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/items/3/a 101+3
+Error core/child_not_valid "child 'c' not valid here." at animations/animation.a/items/3/c 111+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": {}}}}
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: array" at animations/animation.a/items 68+2
+None
+== geometry {"zeta": 1, "format_version": "1.8.0", "animations": {"animation.b": {"tag": 1}, "animation.a": {"tag": 2}}}
+Error core/child_not_valid "child 'zeta' not valid here." at zeta 9+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.b/tag 77+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 104+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"tag": "x", "blend": 0.5, "zz": 1, "aa": 2, "loop": "no"}}}
+Error core/child_not_valid "child 'zz' not valid here." at animations/animation.a/zz 91+1
+Error core/child_not_valid "child 'aa' not valid here." at animations/animation.a/aa 100+1
+Error core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 111+4
+None
+== geometry {"format_version": "1.8.0", "extra": [], "animations": {"animation.a": {"bones": {"arm": {"name": "a", "x": 1}}}}}
+Error core/child_not_valid "child 'extra' not valid here." at extra 37+2
+Error core/child_not_valid "child 'x' not valid here." at animations/animation.a/bones/arm/x 108+1
+None
+== geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"Name": "a", "NAME": "b"}}}}}
+Error core/child_not_valid "child 'Name' not valid here." at animations/animation.a/bones/arm/Name 85+3
+Error core/child_not_valid "child 'NAME' not valid here." at animations/animation.a/bones/arm/NAME 98+3
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "length": 2.5, "blend": "q.x", "tag": "t"}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: Some(2.5), blend: Some(Expr(MolangSource { text: "q.x", form: String { context_version: Some(RawVersion(-1)) } })), bones: None, items: None, tag: Some("t") }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {}}
+Error core/required_child "Required child animation\.[a-zA-Z0-9_.-]+ not found" at animations 42+2
+None
+== lenient geometry {"animations": {"animation.a": {}}}
+Error core/required_child "Required child format_version not found" at  0+35
+None
+== lenient geometry {}
+Error core/required_child "Required child format_version not found" at  0+2
+Error core/required_child "Required child animations not found" at  0+2
+None
+== lenient geometry []
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: object" at  0+2
+None
+== lenient geometry {"format_version": 1, "animations": {"animation.a": {}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at format_version 19+1
+Error core/required_child "Required child format_version not found" at  0+56
+None
+== lenient geometry {"format_version": "1.8.0", "animations": []}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations 42+2
+Error core/required_child "Required child animations not found" at  0+45
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation:a": {}, "animation.b": {}}}
+Info core/unrecognized_field_worded "child 'animation:a' not valid here (removed)" at animations/animation:a 58+2
+Some(Root { format_version: "1.8.0", animations: {"animation.b": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loops": true}}}
+Info core/unrecognized_field_worded "child 'loops' not valid here (removed)" at animations/animation.a/loops 68+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": 1, "length": "x", "blend": [], "tag": 3}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 80+3
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 94+2
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 105+1
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": null, "length": null, "blend": null, "tag": null}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 67+4
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/length 83+4
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: ExpressionNode" at animations/animation.a/blend 98+4
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 111+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"length": 0.123456789012, "blend": 1e39}}}
+Info core/lossy_conversion "value loses precision when written" at animations/animation.a/length 69+14
+Info core/invalid_value "invalid value" at animations/animation.a/blend 94+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(0.12345679), blend: Some(Const(3.4028235e38)), bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"length": 1e39}}}
+Info core/invalid_value "invalid value" at animations/animation.a/length 69+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: Some(3.4028235e38), blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"LOOP": true, "Length": 1}}}
+Info core/unrecognized_field_worded "child 'LOOP' not valid here (removed)" at animations/animation.a/LOOP 67+4
+Info core/unrecognized_field_worded "child 'Length' not valid here (removed)" at animations/animation.a/Length 83+1
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "Loop": false}}}
+Info core/unrecognized_field_worded "child 'Loop' not valid here (removed)" at animations/animation.a/Loop 81+5
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"loop": true, "LOOP": true}}}
+Info core/unrecognized_field_worded "child 'LOOP' not valid here (removed)" at animations/animation.a/LOOP 81+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: Some(true), length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"Animation.A": {}, "ANIMATION.b": {"tag": "x"}}}
+Info core/unrecognized_field_worded "child 'Animation.A' not valid here (removed)" at animations/Animation.A 58+2
+Info core/unrecognized_field_worded "child 'ANIMATION.b' not valid here (removed)" at animations/ANIMATION.b 77+12
+Error core/required_child "Required child animation\.[a-zA-Z0-9_.-]+ not found" at animations 42+48
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {}}}}
+Error core/required_child "Required child [a-zA-Z0-9_.-]+ not found" at animations/animation.a/bones 68+2
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"left arm": {"name": "x"}, "arm": {"name": "y"}}}}}
+Info core/unrecognized_field_worded "child 'left arm' not valid here (removed)" at animations/animation.a/bones/left arm 81+13
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "y", scale: None, frames: None }}), items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {}}}}}
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+2
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": 1, "scale": true}}}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/bones/arm/name 85+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/scale 97+4
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+26
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "0.5": "x", "x": 2}}}}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/bones/arm/frames/0.5 116+3
+Info core/unrecognized_field_worded "child 'x' not valid here (removed)" at animations/animation.a/bones/arm/frames/x 126+1
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: Some({"0": 1.0}) }}), items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"name": "a", "frames": {"0": 1, "1": 2.5}}}}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: Some({"0": 1.0, "1": 2.5}) }}), items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": []}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/bones 68+2
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"a": 2, "b": false}]}}}
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: Some([Item { a: 1.0, b: None }, Item { a: 2.0, b: Some(false) }]), tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": [{"a": 1}, {"b": true}, 3, {"a": "x", "c": 1}]}}}
+Error core/required_child "Required child a not found" at animations/animation.a/items/1 79+11
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: object" at animations/animation.a/items/2 92+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: float" at animations/animation.a/items/3/a 101+3
+Info core/unrecognized_field_worded "child 'c' not valid here (removed)" at animations/animation.a/items/3/c 111+1
+Error core/required_child "Required child a not found" at animations/animation.a/items/3 95+18
+None
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"items": {}}}}
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: array" at animations/animation.a/items 68+2
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"zeta": 1, "format_version": "1.8.0", "animations": {"animation.b": {"tag": 1}, "animation.a": {"tag": 2}}}
+Info core/unrecognized_field_worded "child 'zeta' not valid here (removed)" at zeta 9+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.b/tag 77+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: string" at animations/animation.a/tag 104+1
+Some(Root { format_version: "1.8.0", animations: {"animation.b": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }, "animation.a": Anim { loop: None, length: None, blend: None, bones: None, items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"tag": "x", "blend": 0.5, "zz": 1, "aa": 2, "loop": "no"}}}
+Info core/unrecognized_field_worded "child 'zz' not valid here (removed)" at animations/animation.a/zz 91+1
+Info core/unrecognized_field_worded "child 'aa' not valid here (removed)" at animations/animation.a/aa 100+1
+Info core/unknown_child_option "unknown child schema option type.  Allowed types: bool" at animations/animation.a/loop 111+4
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: Some(Const(0.5)), bones: None, items: None, tag: Some("x") }} })
+== lenient geometry {"format_version": "1.8.0", "extra": [], "animations": {"animation.a": {"bones": {"arm": {"name": "a", "x": 1}}}}}
+Info core/unrecognized_field_worded "child 'extra' not valid here (removed)" at extra 37+2
+Info core/unrecognized_field_worded "child 'x' not valid here (removed)" at animations/animation.a/bones/arm/x 108+1
+Some(Root { format_version: "1.8.0", animations: {"animation.a": Anim { loop: None, length: None, blend: None, bones: Some({"arm": Bone { name: "a", scale: None, frames: None }}), items: None, tag: None }} })
+== lenient geometry {"format_version": "1.8.0", "animations": {"animation.a": {"bones": {"arm": {"Name": "a", "NAME": "b"}}}}}
+Info core/unrecognized_field_worded "child 'Name' not valid here (removed)" at animations/animation.a/bones/arm/Name 85+3
+Info core/unrecognized_field_worded "child 'NAME' not valid here (removed)" at animations/animation.a/bones/arm/NAME 98+3
+Error core/required_child "Required child name not found" at animations/animation.a/bones/arm 76+26
+None

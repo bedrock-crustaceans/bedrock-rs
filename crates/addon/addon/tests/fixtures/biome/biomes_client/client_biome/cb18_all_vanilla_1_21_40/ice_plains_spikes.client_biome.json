@@ -1,0 +1,17 @@
+// source: retail 1.26.45 resource_packs/vanilla_1.21.40/biomes/ice_plains_spikes.client_biome.json
+{
+  "format_version": "1.21.40",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "ice_plains_spikes"
+    },
+    "components": {
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_ice_plains_spikes"
+      },
+      "minecraft:water_appearance": {
+        "surface_color": "#14559b"
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:iron_golem"
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": [
+          "irongolem",
+          "mob"
+        ]
+      },
+      "minecraft:persistent": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:behavior.target_when_pushed": {
+        "priority": 1,
+        "percent_chance": 5.0,
+        "entity_types": [
+          {
+            "minecraft:filters": {
+              "minecraft:all_of": [
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "value": "monster"
+                },
+                {
+                  "test": "is_family",
+                  "subject": "other",
+                  "operator": "!=",
+                  "value": "creeper"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": {
+              "test": "in_lava",
+              "subject": "self",
+              "operator": "==",
+              "value": true
+            },
+            "cause": "lava",
+            "damage_per_tick": 4
+          }
+        ]
+      }
+    }
+  }
+}

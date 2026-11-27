@@ -1,0 +1,22 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:unknown_key"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "demo:no_such_item"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

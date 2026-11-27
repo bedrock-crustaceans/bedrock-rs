@@ -1,0 +1,295 @@
+# LinkedAssetValidatorMissingReferencesFunctionalTests: strings recovered from libminecraftpe.so 1.26.60.29 (adrp+add refs in each test body, code order; every string is the whole NUL-terminated literal at the VA)
+# fixtures printed verbatim; short strings under '### expected' are repr'd when multi-line.
+
+## LinkedAssetValidatorMissingReferencesFunctionalTests::LinkedAssetValidatorMissingReferencesFunctionalTests() (e3e8410)
+### expected / other strings referenced (in code order)
+VA 0x5d594f2: LoadPackWithMissingReferences_Validate_ContentErrors
+
+## LinkedAssetValidatorMissingReferencesFunctionalTests::_userClassInitFunc() (e3e8b10)
+### expected / other strings referenced (in code order)
+   setup call Experiments::Experiments(std::initializer_list<AllExperiments> const&)
+VA 0x641d1bf: minecraft:plains
+VA 0x41da39d: LinkedAssetValidatorFunctionalTests/UsesReferencesBP
+VA 0x54381d1: LinkedAssetValidatorFunctionalTests/UsesReferencesRP
+
+## LinkedAssetValidatorMissingReferencesFunctionalTests::LoadPackWithMissingReferences_Validate_ContentErrors(AutomationCommandList&)::{lambda()#1}::operator()() const (e3e8f64)
+### expected / other strings referenced (in code order)
+VA 0x68b13d1 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::ITEM_REF]: test:item
+VA 0x4d5672e: -> components -> minecraft:destructible_by_mining -> item_specific_speeds[0] -> item:  Missing referenced asset {}
+VA 0x68b13e9 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::BLOCK_TEXTURE_REF]: test_block_texture
+VA 0x4d567a1: -> components -> minecraft:material_instances -> * -> texture:  Missing referenced asset {}
+VA 0x4678a37: -> components -> minecraft:material_instances -> custom_face -> texture:  Missing referenced asset {}
+VA 0x68b1401 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::BLOCK_REF]: test:block
+VA 0x41da2f1: -> components -> minecraft:placement_filter -> conditions[0] -> block_filter[0]:  Missing referenced asset {}
+VA 0x68b1419 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::JIGSAW_PROCESSOR_LIST_REF]: test:processors
+VA 0x49f2eab: -> elements[0] -> element -> processors:  Missing referenced asset {}
+VA 0x68b1431 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::JIGSAW_TEMPLATE_POOL_REF]: test:template_pool
+VA 0x4e77660: -> fallback:  Missing referenced asset {}
+VA 0x60dd3ba: -> processors[0] -> rules[0] -> input_predicate -> block:  Missing referenced asset {}
+VA 0x568595d: -> processors[0] -> rules[0] -> output_state -> name:  Missing referenced asset {}
+VA 0x68b1449 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::JIGSAW_STRUCTURE_REF]: test:jigsaw
+VA 0x4c3b233: -> structures[0] -> structure:  Missing referenced asset {}
+VA 0x5c33a46: -> start_pool:  Missing referenced asset {}
+VA 0x5c33a72: -> pool_aliases[0] -> groups[0] -> data[0] -> target:  Missing referenced asset {}
+VA 0x543806d: -> pool_aliases[0] -> groups[1] -> data[0] -> targets[0] -> data:  Missing referenced asset {}
+VA 0x5e7ff7d: -> components -> minecraft:digger -> destroy_speeds[0] -> block:  Missing referenced asset {}
+VA 0x4d567fd: -> components -> minecraft:entity_placer -> use_on[0]:  Missing referenced asset {}
+VA 0x631cda1: -> components -> minecraft:entity_placer -> dispense_on[0]:  Missing referenced asset {}
+VA 0x68b1461 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::ENTITY_REF]: test:entity
+VA 0x5b10b8a: -> components -> minecraft:entity_placer -> entity:  Missing referenced asset {}
+VA 0x57a3e34: -> components -> minecraft:food -> using_converts_to:  Missing referenced asset {}
+VA 0x68b1479 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::ITEM_TEXTURE_REF]: test_icon
+VA 0x5d59527: -> components -> minecraft:icon:  Missing referenced asset {}
+VA 0x4fa0ea7: -> components -> minecraft:block_placer -> block:  Missing referenced asset {}
+VA 0x4fa0ef6: -> components -> minecraft:block_placer -> use_on[0]:  Missing referenced asset {}
+VA 0x50c5f34: -> components -> minecraft:projectile -> projectile_entity:  Missing referenced asset {}
+VA 0x47a42ba: -> components -> minecraft:repairable -> repair_items[0] -> items[0]:  Missing referenced asset {}
+VA 0x4e7768a: -> components -> minecraft:shooter -> ammunition[0] -> item:  Missing referenced asset {}
+VA 0x48d0a97: -> components -> minecraft:mountain_parameters -> steep_material_adjustment -> material:  Missing referenced asset {}
+VA 0x68b1491 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::BIOME_REF_ONE]: test:biome_1
+VA 0x4b0d532: -> components -> minecraft:overworld_generation_rules -> hills_transformation[0][0]:  Missing referenced asset {}
+VA 0x68b14a9 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::BIOME_REF_TWO]: test:biome_2
+VA 0x56859b0: -> components -> minecraft:overworld_generation_rules -> hills_transformation[1]:  Missing referenced asset {}
+VA 0x53096c1: -> components -> minecraft:overworld_generation_rules -> mutate_transformation:  Missing referenced asset {}
+VA 0x60dd411: -> components -> minecraft:overworld_generation_rules -> river_transformation:  Missing referenced asset {}
+VA 0x4d56851: -> components -> minecraft:overworld_generation_rules -> shore_transformation:  Missing referenced asset {}
+VA 0x5c33ac5: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> top_material:  Missing referenced asset {}
+VA 0x455595e: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> mid_material:  Missing referenced asset {}
+VA 0x4678a9d: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> sea_floor_material:  Missing referenced asset {}
+VA 0x5c33b4a: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> foundation_material:  Missing referenced asset {}
+VA 0x5c33bd6: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> sea_material:  Missing referenced asset {}
+VA 0x4d568bd: -> components -> minecraft:surface_builder -> builder -> floor_materials[0]:  Missing referenced asset {}
+VA 0x51f1aa4: -> components -> minecraft:surface_builder -> builder -> ceiling_materials[0]:  Missing referenced asset {}
+VA 0x4302b5b: -> components -> minecraft:surface_builder -> builder -> sea_material:  Missing referenced asset {}
+VA 0x59e394b: -> components -> minecraft:surface_builder -> builder -> foundation_material:  Missing referenced asset {}
+VA 0x58b420f: -> components -> minecraft:surface_builder -> builder -> beach_material:  Missing referenced asset {}
+VA 0x631cdfa: -> components -> minecraft:replace_biomes -> replacements[0] -> targets[0]:  Missing referenced asset {}
+VA 0x51f1b10: -> components -> minecraft:replace_biomes -> replacements[0] -> targets[1]:  Missing referenced asset {}
+VA 0x5e7ffdb: -> conditions[0] -> permute_types[0] -> entity_type:  Missing referenced asset {}
+VA 0x54380cc: -> conditions[0] -> minecraft:permute_type[0] -> entity_type:  Missing referenced asset {}
+VA 0x4d56927: -> conditions[0] -> minecraft:spawns_on_block_filter[0]:  Missing referenced asset {}
+VA 0x47a431d: -> conditions[0] -> minecraft:spawns_on_block_prevented_filter[0]:  Missing referenced asset {}
+VA 0x45559e3: -> conditions[0] -> minecraft:spawns_above_block_filter -> blocks:  Missing referenced asset {}
+VA 0x4d5697d: [0] -> groups[0] -> trades[0] -> wants[0] -> item:  Missing referenced asset {}
+VA 0x57a3e87: [0] -> groups[0] -> trades[0] -> gives[0] -> item:  Missing referenced asset {}
+VA 0x68b14c1 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::CAMERA_PRESET_REF]: test:camera_preset
+VA 0x4678b28: -> minecraft:camera_preset -> inherit_from:  Missing referenced asset {}
+VA 0x4d569cd: -> minecraft:camera_list -> cameras[0]:  Missing referenced asset {}
+VA 0x5438127: -> minecraft:aim_assist_preset -> exclusion_list[0]:  Missing referenced asset {}
+VA 0x4435577: -> minecraft:aim_assist_preset -> exclusion_list[1]:  Missing referenced asset {}
+VA 0x631ce63: -> minecraft:aim_assist_preset -> liquid_targeting_list[0]:  Missing referenced asset {}
+   ref constant MinecraftUnitTest::LinkedAssetValidatorMissingReferencesFunctionalTests::CAMERA_AIM_ASSIST_CATEGORY_REF @0x20a61da8
+VA 0x48d0b0d: -> minecraft:aim_assist_preset -> item_settings -> test:item:  Missing referenced asset {}
+VA 0x643f74c: -> minecraft:aim_assist_preset -> default_item_settings:  Missing referenced asset {}
+VA 0x50c5f8d: -> minecraft:aim_assist_preset -> hand_settings:  Missing referenced asset {}
+VA 0x5438179: -> categories[0] -> groups[0] -> group_identifier -> icon:  Missing referenced asset {}
+VA 0x58b4275: -> categories[0] -> groups[0] -> items[0]:  Missing referenced asset {}
+VA 0x68b14d9 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::SPAWN_EGG_REF]: test:entity_spawn_egg
+VA 0x4302bbf: -> categories[0] -> groups[0] -> items[1]:  Missing referenced asset {}
+   ref constant MinecraftUnitTest::LinkedAssetValidatorMissingReferencesFunctionalTests::LOOT_TABLE_REF @0x20a61dc8
+VA 0x49f2ef1: -> components -> minecraft:loot:  Invalid asset path {}
+VA 0x68b14f1 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::SOUND_REF]: test_sound
+VA 0x5fb3945: -> components -> minecraft:ambient_sounds -> addition -> asset:  Missing referenced asset {}
+VA 0x49f2f29: -> components -> minecraft:ambient_sounds -> loop:  Missing referenced asset {}
+VA 0x5e8002d: -> components -> minecraft:ambient_sounds -> mood:  Missing referenced asset {}
+VA 0x68b1509 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::FOG_REF]: test:fog
+VA 0x5d59565: -> components -> minecraft:fog_appearance -> fog_identifier:  Missing referenced asset {}
+VA 0x68b1521 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::ATMOSPHERE_REF]: test:atmosphere
+VA 0x5b10bdb: -> components -> minecraft:atmosphere_identifier -> atmosphere_identifier:  Missing referenced asset {}
+VA 0x68b1539 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::COLOR_GRADING_REF]: test:color_grading
+VA 0x530972e: -> components -> minecraft:color_grading_identifier -> color_grading_identifier:  Missing referenced asset {}
+VA 0x68b1551 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::LIGHTING_REF]: test:lighting
+VA 0x51f1b79: -> components -> minecraft:lighting_identifier -> lighting_identifier:  Missing referenced asset {}
+VA 0x68b1569 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::WATER_REF]: test:water
+VA 0x4c3b26f: -> components -> minecraft:water_identifier -> water_identifier:  Missing referenced asset {}
+VA 0x68b1581 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::MUSIC_REF]: test_music
+VA 0x556605f: -> components -> minecraft:biome_music -> music_definition:  Missing referenced asset {}
+VA 0x68b1599 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::STRUCTURE_REF]: structure
+VA 0x41da35f: -> elements[0] -> element -> location:  Invalid asset path {}
+VA 0x57a3ed7: -> processors[0] -> rules[0] -> block_entity_modifier -> loot_table:  Invalid asset path {}
+VA 0x5c33c5b: -> components -> minecraft:particle_expire_if_in_blocks[0]:  Missing referenced asset {}
+VA 0x5c33cb4: -> components -> minecraft:particle_expire_if_not_in_blocks[0]:  Missing referenced asset {}
+   ref constant MinecraftUnitTest::LinkedAssetValidatorMissingReferencesFunctionalTests::PARTICLE_TEXTURE_REF @0x20a61de8
+VA 0x6562a19: -> description -> basic_render_parameters -> texture:  Invalid asset path {}
+   ref constant MinecraftUnitTest::LinkedAssetValidatorMissingReferencesFunctionalTests::TEXTURE_FILE_REF @0x20a61e08
+VA 0x68b15b1 [payload of std::string constant LinkedAssetValidatorMissingReferencesFunctionalTests::FONT_TEXTURE_REF]: font/test_font
+
+## static string constants of the suite (read from the object bytes)
+ITEM_REF (0x68b13d0) = 'test:item'
+BLOCK_TEXTURE_REF (0x68b13e8) = 'test_block_texture'
+BLOCK_REF (0x68b1400) = 'test:block'
+JIGSAW_PROCESSOR_LIST_REF (0x68b1418) = 'test:processors'
+JIGSAW_TEMPLATE_POOL_REF (0x68b1430) = 'test:template_pool'
+JIGSAW_STRUCTURE_REF (0x68b1448) = 'test:jigsaw'
+ENTITY_REF (0x68b1460) = 'test:entity'
+ITEM_TEXTURE_REF (0x68b1478) = 'test_icon'
+BIOME_REF_ONE (0x68b1490) = 'test:biome_1'
+BIOME_REF_TWO (0x68b14a8) = 'test:biome_2'
+CAMERA_PRESET_REF (0x68b14c0) = 'test:camera_preset'
+SPAWN_EGG_REF (0x68b14d8) = 'test:entity_spawn_egg'
+SOUND_REF (0x68b14f0) = 'test_sound'
+FOG_REF (0x68b1508) = 'test:fog'
+ATMOSPHERE_REF (0x68b1520) = 'test:atmosphere'
+COLOR_GRADING_REF (0x68b1538) = 'test:color_grading'
+LIGHTING_REF (0x68b1550) = 'test:lighting'
+WATER_REF (0x68b1568) = 'test:water'
+MUSIC_REF (0x68b1580) = 'test_music'
+STRUCTURE_REF (0x68b1598) = 'structure'
+FONT_TEXTURE_REF (0x68b15b0) = 'font/test_font'
+
+
+## RESOLVED expected messages (template literal VA, resulting text with the fmt argument substituted, and the fixture file/value in packs/LinkedAssetValidatorFunctionalTests that produces it)
+# The fmt argument is one of the std::string constants (ITEM_REF etc.) of the suite; where the compiler shares one loaded constant between several messages the argument was taken from the pack file value at the message's key path (key-path walk over the shipped pack; '(manual)' where the walk failed).
+# Each text is passed to DebugTestLogEndPoint::assertEntriesContainMessage (a substring match against the recorded content-log entries; no log level argument is passed).
+0x4d5672e: -> components -> minecraft:destructible_by_mining -> item_specific_speeds[0] -> item:  Missing referenced asset test:item
+    <- UsesReferencesBP/blocks/block_with_references.json = "test:item"
+0x4d567a1: -> components -> minecraft:material_instances -> * -> texture:  Missing referenced asset test_block_texture
+    <- UsesReferencesBP/blocks/block_with_references.json = "test_block_texture"
+0x4678a37: -> components -> minecraft:material_instances -> custom_face -> texture:  Missing referenced asset test_block_texture
+    <- UsesReferencesBP/blocks/block_with_references.json = "test_block_texture"
+0x41da2f1: -> components -> minecraft:placement_filter -> conditions[0] -> block_filter[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/blocks/block_with_references.json = "test:block"
+0x49f2eab: -> elements[0] -> element -> processors:  Missing referenced asset test:processors
+    <- UsesReferencesBP/worldgen/template_pools/template_pool_with_references.json = "test:processors"
+0x4e77660: -> fallback:  Missing referenced asset test:template_pool
+    <- UsesReferencesBP/worldgen/template_pools/template_pool_with_references.json = "test:template_pool"
+0x60dd3ba: -> processors[0] -> rules[0] -> input_predicate -> block:  Missing referenced asset test:block
+    <- UsesReferencesBP/worldgen/processors/processors_with_references.json = "test:block"
+0x568595d: -> processors[0] -> rules[0] -> output_state -> name:  Missing referenced asset test:block
+    <- UsesReferencesBP/worldgen/processors/processors_with_references.json = "test:block"
+0x4c3b233: -> structures[0] -> structure:  Missing referenced asset test:jigsaw
+    <- UsesReferencesBP/worldgen/structure_sets/structure_sets_with_references.json = "test:jigsaw"
+0x5c33a46: -> start_pool:  Missing referenced asset test:template_pool
+    <- UsesReferencesBP/worldgen/structures/jigsaw_with_references.json = "test:template_pool"
+0x5c33a72: -> pool_aliases[0] -> groups[0] -> data[0] -> target:  Missing referenced asset test:template_pool
+    <- UsesReferencesBP/worldgen/structures/jigsaw_with_references.json = "test:template_pool"
+0x543806d: -> pool_aliases[0] -> groups[1] -> data[0] -> targets[0] -> data:  Missing referenced asset test:template_pool
+    <- UsesReferencesBP/worldgen/structures/jigsaw_with_references.json = "test:template_pool"
+0x5e7ff7d: -> components -> minecraft:digger -> destroy_speeds[0] -> block:  Missing referenced asset test:block
+    <- UsesReferencesBP/items/item_with_references.json = "test:block"
+0x4d567fd: -> components -> minecraft:entity_placer -> use_on[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/items/item_with_references.json = "test:block"
+0x631cda1: -> components -> minecraft:entity_placer -> dispense_on[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/items/item_with_references.json = "test:block"
+0x5b10b8a: -> components -> minecraft:entity_placer -> entity:  Missing referenced asset test:entity
+    <- UsesReferencesBP/items/item_with_references.json = "test:entity<test:event>"
+0x57a3e34: -> components -> minecraft:food -> using_converts_to:  Missing referenced asset test:item
+    <- UsesReferencesBP/items/item_with_references.json = "test:item"
+0x5d59527: -> components -> minecraft:icon:  Missing referenced asset test_icon
+    <- UsesReferencesBP/items/item_with_references.json = "test_icon"
+0x4fa0ea7: -> components -> minecraft:block_placer -> block:  Missing referenced asset test:block
+    <- UsesReferencesBP/items/item_with_references.json = "test:block"
+0x4fa0ef6: -> components -> minecraft:block_placer -> use_on[0]:  Missing referenced asset ?
+    <- UsesReferencesBP/items/item_with_references.json = {"name": "test:block"}
+0x50c5f34: -> components -> minecraft:projectile -> projectile_entity:  Missing referenced asset test:entity
+    <- UsesReferencesBP/items/item_with_references.json = "test:entity"
+0x47a42ba: -> components -> minecraft:repairable -> repair_items[0] -> items[0]:  Missing referenced asset test:item
+    <- UsesReferencesBP/items/item_with_references.json = "test:item"
+0x4e7768a: -> components -> minecraft:shooter -> ammunition[0] -> item:  Missing referenced asset test:item
+    <- UsesReferencesBP/items/item_with_references.json = "test:item"
+0x48d0a97: -> components -> minecraft:mountain_parameters -> steep_material_adjustment -> material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x4b0d532: -> components -> minecraft:overworld_generation_rules -> hills_transformation[0][0]:  Missing referenced asset test:biome_1
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_1"
+0x56859b0: -> components -> minecraft:overworld_generation_rules -> hills_transformation[1]:  Missing referenced asset test:biome_2
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_2"
+0x53096c1: -> components -> minecraft:overworld_generation_rules -> mutate_transformation:  Missing referenced asset test:biome_1
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_1"
+0x60dd411: -> components -> minecraft:overworld_generation_rules -> river_transformation:  Missing referenced asset test:biome_1
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_1"
+0x4d56851: -> components -> minecraft:overworld_generation_rules -> shore_transformation:  Missing referenced asset test:biome_1
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_1"
+0x5c33ac5: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> top_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x455595e: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> mid_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x4678a9d: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> sea_floor_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x5c33b4a: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> foundation_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x5c33bd6: -> components -> minecraft:surface_material_adjustments -> adjustments[0] -> materials -> sea_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x4d568bd: -> components -> minecraft:surface_builder -> builder -> floor_materials[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x51f1aa4: -> components -> minecraft:surface_builder -> builder -> ceiling_materials[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x4302b5b: -> components -> minecraft:surface_builder -> builder -> sea_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x59e394b: -> components -> minecraft:surface_builder -> builder -> foundation_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x58b420f: -> components -> minecraft:surface_builder -> builder -> beach_material:  Missing referenced asset test:block
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:block"
+0x631cdfa: -> components -> minecraft:replace_biomes -> replacements[0] -> targets[0]:  Missing referenced asset test:biome_1
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_1"
+0x51f1b10: -> components -> minecraft:replace_biomes -> replacements[0] -> targets[1]:  Missing referenced asset test:biome_2
+    <- UsesReferencesBP/biomes/biome_with_references.biome.json = "test:biome_2"
+0x5e7ffdb: -> conditions[0] -> permute_types[0] -> entity_type:  Missing referenced asset test:entity
+    <- UsesReferencesBP/spawn_rules/experimental_version_spawn_rules_with_references.json = "test:entity"
+0x54380cc: -> conditions[0] -> minecraft:permute_type[0] -> entity_type:  Missing referenced asset test:entity
+    <- UsesReferencesBP/spawn_rules/legacy_version_spawn_rules_with_references copy.json = "test:entity"
+0x4d56927: -> conditions[0] -> minecraft:spawns_on_block_filter[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/spawn_rules/legacy_version_spawn_rules_with_references copy.json = "test:block"
+0x47a431d: -> conditions[0] -> minecraft:spawns_on_block_prevented_filter[0]:  Missing referenced asset test:block
+    <- UsesReferencesBP/spawn_rules/legacy_version_spawn_rules_with_references copy.json = "test:block"
+0x45559e3: -> conditions[0] -> minecraft:spawns_above_block_filter -> blocks:  Missing referenced asset test:block
+    <- UsesReferencesBP/spawn_rules/legacy_version_spawn_rules_with_references copy.json = "test:block"
+0x4d5697d: [0] -> groups[0] -> trades[0] -> wants[0] -> item:  Missing referenced asset test:item
+    <- UsesReferencesBP/trading/trade_table_with_references.json = "test:item" (manual: tiers[0].groups[0].trades[0].wants[0].item)
+0x57a3e87: [0] -> groups[0] -> trades[0] -> gives[0] -> item:  Missing referenced asset test:item
+    <- UsesReferencesBP/trading/trade_table_with_references.json = "test:item" (manual: tiers[0].groups[0].trades[0].gives[0].item)
+0x4678b28: -> minecraft:camera_preset -> inherit_from:  Missing referenced asset test:camera_preset
+    <- UsesReferencesBP/cameras/presets/camera_preset_with_referencees.json = "test:camera_preset"
+0x4d569cd: -> minecraft:camera_list -> cameras[0]:  Missing referenced asset test:camera_preset
+    <- UsesReferencesBP/cameras/lists/camera_list_with_references.json = "test:camera_preset"
+0x5438127: -> minecraft:aim_assist_preset -> exclusion_list[0]:  Missing referenced asset test:entity
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:entity"
+0x4435577: -> minecraft:aim_assist_preset -> exclusion_list[1]:  Missing referenced asset test:block
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:block"
+0x631ce63: -> minecraft:aim_assist_preset -> liquid_targeting_list[0]:  Missing referenced asset test:item
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:item"
+0x48d0b0d: -> minecraft:aim_assist_preset -> item_settings -> test:item:  Missing referenced asset test:camera_aim_assist_category
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:camera_aim_assist_category"
+0x643f74c: -> minecraft:aim_assist_preset -> default_item_settings:  Missing referenced asset test:camera_aim_assist_category
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:camera_aim_assist_category"
+0x50c5f8d: -> minecraft:aim_assist_preset -> hand_settings:  Missing referenced asset test:camera_aim_assist_category
+    <- UsesReferencesBP/aim_assist/presets/aim_assist_preset_with_references.json = "test:camera_aim_assist_category"
+0x5438179: -> categories[0] -> groups[0] -> group_identifier -> icon:  Missing referenced asset test:item
+    <- UsesReferencesBP/item_catalog/crafting_item_catalog.json = "test:item"
+0x58b4275: -> categories[0] -> groups[0] -> items[0]:  Missing referenced asset test:item
+    <- UsesReferencesBP/item_catalog/crafting_item_catalog.json = "test:item"
+0x4302bbf: -> categories[0] -> groups[0] -> items[1]:  Missing referenced asset test:entity_spawn_egg
+    <- UsesReferencesBP/item_catalog/crafting_item_catalog.json = "test:entity_spawn_egg"
+0x49f2ef1: -> components -> minecraft:loot:  Invalid asset path loot_tables/test_loot.json
+    <- UsesReferencesBP/blocks/block_with_loot_table_reference.json = "loot_tables/test_loot.json" | UsesReferencesBP/blocks/block_with_references.json = "loot_tables/test_loot.json"
+0x5fb3945: -> components -> minecraft:ambient_sounds -> addition -> asset:  Missing referenced asset test_sound
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test_sound"
+0x49f2f29: -> components -> minecraft:ambient_sounds -> loop:  Missing referenced asset test_sound
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test_sound"
+0x5e8002d: -> components -> minecraft:ambient_sounds -> mood:  Missing referenced asset test_sound
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test_sound"
+0x5d59565: -> components -> minecraft:fog_appearance -> fog_identifier:  Missing referenced asset test:fog
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test:fog"
+0x5b10bdb: -> components -> minecraft:atmosphere_identifier -> atmosphere_identifier:  Missing referenced asset test:atmosphere
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test:atmosphere"
+0x530972e: -> components -> minecraft:color_grading_identifier -> color_grading_identifier:  Missing referenced asset test:color_grading
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test:color_grading"
+0x51f1b79: -> components -> minecraft:lighting_identifier -> lighting_identifier:  Missing referenced asset test:lighting
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test:lighting"
+0x4c3b26f: -> components -> minecraft:water_identifier -> water_identifier:  Missing referenced asset test:water
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test:water"
+0x556605f: -> components -> minecraft:biome_music -> music_definition:  Missing referenced asset test_music
+    <- UsesReferencesRP/biomes/biome_with_references.client_biome.json = "test_music"
+0x41da35f: -> elements[0] -> element -> location:  Invalid asset path test:structure
+    <- UsesReferencesBP/worldgen/template_pools/template_pool_with_references.json = "test:structure"
+0x57a3ed7: -> processors[0] -> rules[0] -> block_entity_modifier -> loot_table:  Invalid asset path loot_tables/test_loot.json
+    <- UsesReferencesBP/worldgen/processors/processors_with_references.json = "loot_tables/test_loot.json"
+0x5c33c5b: -> components -> minecraft:particle_expire_if_in_blocks[0]:  Missing referenced asset test:block
+    <- UsesReferencesRP/particles/particle_with_references.json = "test:block" | UsesReferencesRP/particles/particle_with_item_texture.json = "test:block" | UsesReferencesRP/particles/particle_with_font_texture.json = "test:block"
+0x5c33cb4: -> components -> minecraft:particle_expire_if_not_in_blocks[0]:  Missing referenced asset test:block
+    <- UsesReferencesRP/particles/particle_with_references.json = "test:block" | UsesReferencesRP/particles/particle_with_item_texture.json = "test:block" | UsesReferencesRP/particles/particle_with_font_texture.json = "test:block"
+0x6562a19: -> description -> basic_render_parameters -> texture:  Invalid asset path textures/particle/test_particle
+    <- UsesReferencesRP/particles/particle_with_references.json = "textures/particle/test_particle" (PARTICLE_TEXTURE_REF, run-time initialised std::string)
+0x6562a19: -> description -> basic_render_parameters -> texture:  Invalid asset path textures/items/test_icon
+    <- UsesReferencesRP/particles/particle_with_item_texture.json = "textures/items/test_icon" (TEXTURE_FILE_REF)
+0x6562a19: -> description -> basic_render_parameters -> texture:  Invalid asset path font/test_font
+    <- UsesReferencesRP/particles/particle_with_font_texture.json = "font/test_font.png" in the file; constant FONT_TEXTURE_REF = "font/test_font" (message argument inferred to be the constant)

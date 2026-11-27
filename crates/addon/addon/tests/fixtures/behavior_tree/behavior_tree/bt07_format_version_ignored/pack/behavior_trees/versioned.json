@@ -1,0 +1,7 @@
+{
+  "format_version": "1.99.0",
+  "minecraft:behavior_tree": {
+    "minecraft:name": "versioned",
+    "minecraft:root": { "minecraft:place_block": {} }
+  }
+}

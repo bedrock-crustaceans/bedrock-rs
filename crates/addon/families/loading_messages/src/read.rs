@@ -1,0 +1,348 @@
+//! `loading_messages.json`: reading the file and the game's reading of its lists.
+
+use super::{
+    ConditionalMessage, LoadingMessage, LoadingMessages, MARKETPLACE_NOT_DISABLED, MessageList,
+    codes,
+};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::build::{Object, array};
+use bedrock_addon_core::json::kit::fixed_path::{Authored, reader, to_text};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{ElementFailure, FromJson, read_document, read_iterated};
+
+/// `InvalidValue` without a vanilla text: a finding of the crate's own, an information.
+fn invalid() -> Diagnostic {
+    Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info)
+}
+
+/// The member of the store's progress texts.
+const TOOLTIPS: &str = "store_progress_tooltips";
+const ELEMENT_KEYS: [&str; 2] = ["message", "condition"];
+
+impl MessageList {
+    /// Every list, in the order the game's reader names them.
+    pub const ALL: [MessageList; 8] = [
+        MessageList::Legacy,
+        MessageList::Beginner,
+        MessageList::MidGame,
+        MessageList::LateGame,
+        MessageList::Realms,
+        MessageList::Addons,
+        MessageList::Creative,
+        MessageList::Editor,
+    ];
+
+    /// The member that holds the list.
+    #[must_use]
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::Legacy => "loading_messages",
+            Self::Beginner => "beginner_loading_messages",
+            Self::MidGame => "mid_game_loading_messages",
+            Self::LateGame => "late_game_loading_messages",
+            Self::Realms => "realms_loading_messages",
+            Self::Addons => "addons_loading_messages",
+            Self::Creative => "creative_loading_messages",
+            Self::Editor => "editor_loading_messages",
+        }
+    }
+}
+
+impl LoadingMessage {
+    /// The text the game can show for this element: a plain text, or a conditional one
+    /// without a condition or with the one condition the game knows. `None` for an element
+    /// the game skips or never shows.
+    pub fn shown(&self) -> Option<&str> {
+        match self {
+            Self::Text(text) => Some(text),
+            Self::Conditional(message) => match message.condition.as_deref() {
+                None | Some(MARKETPLACE_NOT_DISABLED) => Some(&message.message),
+                Some(_) => None,
+            },
+            Self::Other(_) => None,
+        }
+    }
+
+    fn to_value(&self) -> Value {
+        match self {
+            Self::Text(text) => Value::from(text.as_str()),
+            Self::Conditional(message) => {
+                let mut object = Object::default();
+                object.put("message", Some(Value::from(message.message.as_str())));
+                object.put("condition", message.condition.as_deref().map(Value::from));
+                object.extra(&message.extra);
+                object.finish()
+            }
+            Self::Other(written) => written.clone(),
+        }
+    }
+}
+
+/// One element of a list: a text; an object, which needs a `message` (the game skips the element
+/// without one, telling it, and reads nothing else of it) and reads `message` and `condition`
+/// as strings with an empty default; anything else, which the game skips. What the game skips
+/// is kept as written.
+impl FromJson for LoadingMessage {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let element = node.value();
+        if let Some(text) = element.as_string() {
+            return Some(Self::Text(text.as_str().to_owned()));
+        }
+        // Another kind is the crate's own finding, not a wrong type.
+        let members = element.is_object().then(|| read.object(node)).flatten();
+        let Some(members) = members else {
+            read.push(invalid().at(node.path().clone()));
+            return Some(Self::Other(element.clone()));
+        };
+        let Some(message) = read.required(&members, "message") else {
+            return Some(Self::Other(element.clone()));
+        };
+        // Each read as a string with an empty default: the wrong type is told and the text read on.
+        read.string(&message);
+        let condition = members.get("condition").map(|condition| {
+            read.string(&condition);
+            to_text(condition.value())
+        });
+        if condition
+            .as_deref()
+            .is_some_and(|c| c != MARKETPLACE_NOT_DISABLED)
+        {
+            // An unknown condition is false; the message is never shown.
+            read.push(invalid().at(node.path().child("condition")));
+        }
+        let extra = members
+            .iter()
+            .filter(|(key, _)| !ELEMENT_KEYS.contains(key))
+            .map(|(key, member)| (key.to_owned(), member.value().clone()))
+            .collect();
+        Some(Self::Conditional(ConditionalMessage {
+            message: to_text(message.value()),
+            condition,
+            extra,
+        }))
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(LoadingMessage);
+bedrock_addon_core::impl_no_molang!(LoadingMessage);
+
+/// The store's progress texts: iterated as the game iterates a list, each element kept as
+/// written, and told when it is no string.
+pub(super) fn tooltips(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Value>> {
+    read_iterated(node, read, ElementFailure::ByReading, |element, read| {
+        if !element.value().is_string() {
+            read.push(invalid().at(element.path().clone()));
+        }
+        Some(element.value().clone())
+    })
+}
+
+impl Authored for LoadingMessages {
+    /// Reads the file's root. A root that is no object is told and has no list.
+    fn read(root: &Value, diagnostics: &mut Diagnostics) -> Self {
+        let mut read = reader(diagnostics);
+        let node = Node::new(root, JsonPath::new());
+        let messages: Self = read_document(&node, &mut read).unwrap_or_default();
+        messages.check_lists(diagnostics);
+        messages
+    }
+
+    /// The lists as the JSON object they are written as.
+    fn fields_value(&self) -> Value {
+        let mut object = Object::default();
+        for list in MessageList::ALL {
+            let elements = self.list(list);
+            object.put(
+                list.key(),
+                elements.map(|list| array(list.iter().map(LoadingMessage::to_value))),
+            );
+        }
+        object.put(
+            TOOLTIPS,
+            self.store_progress_tooltips
+                .as_ref()
+                .map(|list| array(list.iter().cloned())),
+        );
+        object.extra(&self.extra);
+        object.finish()
+    }
+
+    fn written_mut(&mut self) -> &mut Option<Value> {
+        &mut self.written
+    }
+}
+
+impl LoadingMessages {
+    /// Checks the lists the game asks for.
+    fn check_lists(&self, diagnostics: &mut Diagnostics) {
+        let legacy = self.uses_legacy_list();
+        let mut asked = Vec::new();
+        if !legacy {
+            match &self.beginner_loading_messages {
+                None => diagnostics.push(Diagnostic::of(&codes::BEGINNER_MISSING)),
+                Some(list) if list.is_empty() => diagnostics.push(
+                    Diagnostic::of(&codes::BEGINNER_EMPTY)
+                        .at(JsonPath::new().child(MessageList::Beginner.key())),
+                ),
+                Some(_) => {}
+            }
+            asked.extend([MessageList::MidGame, MessageList::LateGame]);
+        }
+        asked.extend([
+            MessageList::Realms,
+            MessageList::Addons,
+            MessageList::Creative,
+            MessageList::Editor,
+        ]);
+        for list in asked {
+            if self.list(list).is_none() {
+                diagnostics.push(Diagnostic::of(codes::LIST_MISSING.with([list.key()])));
+            }
+        }
+    }
+
+    /// The elements of `list` as written; `None` when the file has no such member.
+    pub fn list(&self, list: MessageList) -> Option<&[LoadingMessage]> {
+        match list {
+            MessageList::Legacy => &self.loading_messages,
+            MessageList::Beginner => &self.beginner_loading_messages,
+            MessageList::MidGame => &self.mid_game_loading_messages,
+            MessageList::LateGame => &self.late_game_loading_messages,
+            MessageList::Realms => &self.realms_loading_messages,
+            MessageList::Addons => &self.addons_loading_messages,
+            MessageList::Creative => &self.creative_loading_messages,
+            MessageList::Editor => &self.editor_loading_messages,
+        }
+        .as_deref()
+    }
+
+    /// Whether the older single list stands for the three stage lists: when
+    /// `loading_messages` has an element.
+    pub fn uses_legacy_list(&self) -> bool {
+        self.loading_messages
+            .as_ref()
+            .is_some_and(|list| !list.is_empty())
+    }
+
+    /// The tips the game can show from the list a screen or a stage asks for. A stage
+    /// (`Beginner`, `MidGame`, `LateGame`) is answered from `loading_messages` when
+    /// [that list is in use](Self::uses_legacy_list). A message whose condition the game does
+    /// not know and an element it skips are left out.
+    pub fn tips(&self, list: MessageList) -> Vec<&str> {
+        let stage = matches!(
+            list,
+            MessageList::Beginner | MessageList::MidGame | MessageList::LateGame
+        );
+        let list = if stage && self.uses_legacy_list() {
+            MessageList::Legacy
+        } else {
+            list
+        };
+        self.list(list)
+            .unwrap_or_default()
+            .iter()
+            .filter_map(LoadingMessage::shown)
+            .collect()
+    }
+
+    /// The store's progress texts as the game reads them: a string as written, a boolean as
+    /// `true` / `false`, anything else as the empty text.
+    // Every element is read as a string with an empty default.
+    pub fn tooltips(&self) -> Vec<String> {
+        self.store_progress_tooltips
+            .iter()
+            .flatten()
+            .map(to_text)
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bedrock_addon_core::json::jsoncpp::read;
+    use bedrock_addon_core::test_cost::assert_linear_at;
+
+    /// A list is read in time linear in its elements.
+    #[test]
+    fn a_message_list_is_read_in_linear_time() {
+        let build = |entries: usize| {
+            let elements: Vec<String> = (0..entries)
+                .map(|i| match i % 3 {
+                    0 => format!("\"tip {i}\""),
+                    1 => format!(r#"{{ "message": "m{i}", "condition": "$x" }}"#),
+                    _ => format!("{i}"),
+                })
+                .collect();
+            let text = format!(
+                r#"{{ "beginner_loading_messages": [{}] }}"#,
+                elements.join(",")
+            );
+            read(text.as_bytes()).expect("JSON")
+        };
+        assert_linear_at("LoadingMessages::from_value", 25_000, build, |root| {
+            let mut diagnostics = Diagnostics::default();
+            let messages = LoadingMessages::from_value(root, &mut diagnostics);
+            let read = messages.list(MessageList::Beginner).map(<[_]>::len);
+            assert_eq!(
+                read,
+                root.as_object()
+                    .and_then(|o| o.values().next())
+                    .and_then(Value::as_array)
+                    .map(|a| a.iter().count())
+            );
+        });
+    }
+}
+
+#[cfg(test)]
+mod kept_root_tests {
+    use super::*;
+    use bedrock_addon_core::json::kit::fixed_path::testing::{
+        assert_kept_root_written_linearly, list,
+    };
+
+    /// The root kept beside the fields is left out of equality: a loaded value that kept one
+    /// equals the value built by hand with the same fields, and is still written as authored.
+    #[test]
+    fn a_kept_root_is_left_out_of_equality() {
+        let root = bedrock_addon_core::json::jsoncpp::read(
+            br#"{"beginner_loading_messages": ["a"], "mid_game_loading_messages": 5}"#,
+        )
+        .expect("JSON");
+        let loaded = LoadingMessages::from_value(&root, &mut Diagnostics::default());
+        assert_eq!(*loaded.written, Some(root.clone()));
+        let built = LoadingMessages {
+            beginner_loading_messages: Some(vec![LoadingMessage::Text("a".to_owned())]),
+            mid_game_loading_messages: Some(Vec::new()),
+            ..LoadingMessages::default()
+        };
+        assert_eq!(loaded, built);
+        assert_eq!(loaded.to_value(), root);
+        assert_ne!(built.to_value(), root);
+    }
+
+    /// A write of a value that keeps its root is linear in its entries, with one entry the
+    /// game skips.
+    #[test]
+    fn a_kept_root_is_written_in_linear_time() {
+        assert_kept_root_written_linearly::<LoadingMessages>(
+            "LoadingMessages::to_value",
+            5000,
+            |entries| {
+                let messages = list(entries, |i| match i % 2 {
+                    0 => format!("\"tip {i}\""),
+                    _ => format!(r#"{{ "message": "m{i}", "condition": "$x" }}"#),
+                });
+                format!(
+                    r#"{{ "beginner_loading_messages": [{messages}], "mid_game_loading_messages": 5 }}"#
+                )
+            },
+        );
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "additive": true,
+      "mip_fade_amount": 0.5,
+      "textures": {
+        "variations": [
+          7,
+          "v1"
+        ]
+      }
+    }
+  }
+}

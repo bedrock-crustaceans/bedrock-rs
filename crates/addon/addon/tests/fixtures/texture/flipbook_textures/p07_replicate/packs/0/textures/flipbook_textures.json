@@ -1,0 +1,11 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/lava_flow",
+    "atlas_tile": "flowing_lava",
+    "replicate": 2
+  },
+  {
+    "atlas_tile": "x",
+    "replicate": "2"
+  }
+]

@@ -1,0 +1,5 @@
+error: a `from_only` enum has no component table, so no `family`
+  --> tests/ui/from_only_with_family.rs:10:33
+   |
+10 | #[component(from_only, family = Toy)]
+   |                                 ^^^

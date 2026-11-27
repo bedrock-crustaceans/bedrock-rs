@@ -1,0 +1,7 @@
+{
+  "string": { "predicate_type": "minecraft:blockstate_match", "block_state": "minecraft:stone" },
+  "object": {
+    "predicate_type": "minecraft:blockstate_match",
+    "block_state": { "name": "minecraft:oak_log", "states": { "pillar_axis": "y" } }
+  }
+}

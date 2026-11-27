@@ -1,0 +1,11 @@
+{
+    "format_version": "1.21.50",
+    "minecraft:block": {
+        "description": {
+            "identifier": "test:block_with_loot_table_reference"
+        },
+        "components": {
+            "minecraft:loot": "loot_tables/test_loot.json"
+        }
+    }
+}

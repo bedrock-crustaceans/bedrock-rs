@@ -1,0 +1,15 @@
+
+				{
+					"format_version": "1.21.90",
+					"minecraft:client_biome": {
+						"description": {
+							"identifier": "minecraft:the_end"
+						},
+						"components": {
+							"minecraft:water_appearance": {
+								"surface_color": "#000000"
+							}
+						}
+					}
+				}
+				

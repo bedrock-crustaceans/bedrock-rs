@@ -1,0 +1,16 @@
+[package]
+name = "bedrock_addon_schema"
+description = "The schema:: attribute grammar of the bedrock_addon crate family: the per-field facts of a typed document struct, checked by name by facet's derive; reached as bedrock_addon_core::schema"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]
+# `define_attr_grammar!`, and the generated `Attr` derives `::facet::Facet`.
+facet = { workspace = true }
+# `#[derive(Schema)]`, re-exported beside the grammar.
+bedrock_addon_derive = { path = "../derive" }

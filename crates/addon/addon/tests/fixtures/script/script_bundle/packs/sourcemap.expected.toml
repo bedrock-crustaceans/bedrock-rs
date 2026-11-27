@@ -1,0 +1,14 @@
+# sourcemap: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 2] [sourcemap] ran
+members = ["main.js"]
+others = ["scripts/main.js.map"]
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"

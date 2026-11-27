@@ -1,0 +1,14 @@
+# static_ext: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [static_ext] got b.js
+members = ["b.js", "main.js"]
+others = []
+main = "main.js"
+reachable_static = ["b.js", "main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "./b.js"
+normalized = "b.js"
+resolution = "file"

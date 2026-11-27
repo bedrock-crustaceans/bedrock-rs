@@ -1,0 +1,23 @@
+error: `schema::iterated` reads a list: a `Vec` field (or an `Option` of one)
+ --> tests/ui/schema/shape_keys.rs:6:13
+  |
+6 |     #[facet(schema::iterated)]
+  |             ^^^^^^
+
+error: `schema::or_kept` leaves the field `None` where its value fails: an `Option` field
+ --> tests/ui/schema/shape_keys.rs:8:13
+  |
+8 |     #[facet(schema::or_kept = "told")]
+  |             ^^^^^^
+
+error: `schema::reads_null` reads a `null` as a value: an `Option` field
+  --> tests/ui/schema/shape_keys.rs:10:13
+   |
+10 |     #[facet(schema::reads_null)]
+   |             ^^^^^^
+
+error: `schema::drop` reads a list: a `Vec` field (or an `Option` of one)
+  --> tests/ui/schema/shape_keys.rs:12:13
+   |
+12 |     #[facet(schema::drop)]
+   |             ^^^^^^

@@ -1,0 +1,22 @@
+{
+  "format_version": "1.26.30",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:no_unlock_1_26_30"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

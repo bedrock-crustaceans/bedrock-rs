@@ -1,0 +1,17 @@
+error: `1.21` is not a version: expected `major.minor.patch`, e.g. "1.21.60"
+ --> tests/ui/schema/bad_version.rs:6:36
+  |
+6 |     #[facet(schema::since_format = "1.21")]
+  |                                    ^^^^^^
+
+error: `1.+2.0` is not a version: expected `major.minor.patch`, e.g. "1.21.60"
+ --> tests/ui/schema/bad_version.rs:8:36
+  |
+8 |     #[facet(schema::since_engine = "1.+2.0")]
+  |                                    ^^^^^^^^
+
+error: `schema::since_format` takes a string literal, as in `schema::since_format = ".."`
+  --> tests/ui/schema/bad_version.rs:10:36
+   |
+10 |     #[facet(schema::since_format = SINCE)]
+   |                                    ^^^^^

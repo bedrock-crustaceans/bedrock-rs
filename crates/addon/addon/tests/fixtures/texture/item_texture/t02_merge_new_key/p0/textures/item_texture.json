@@ -1,0 +1,8 @@
+{
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "demo_gem": {
+      "textures": "textures/items/demo_gem"
+    }
+  }
+}

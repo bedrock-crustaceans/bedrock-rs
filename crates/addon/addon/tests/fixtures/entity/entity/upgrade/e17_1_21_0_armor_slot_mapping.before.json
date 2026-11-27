@@ -1,0 +1,14 @@
+{
+  "format_version": "1.21.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:horse"
+    },
+    "components": {},
+    "component_groups": {
+      "g": {
+        "minecraft:equippable": {}
+      }
+    }
+  }
+}

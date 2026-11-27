@@ -1,0 +1,20 @@
+{
+					"items": [
+						{
+							"item": "minecraft:apple"
+						},
+						{
+							"item": { "name": "minecraft:golden_apple" },
+							"result_item": "minecraft:stick",
+							"heal_amount": 4,
+							"effects": [{
+								"name": "regeneration",
+								"duration": "infinite",
+								"amplifier": 2,
+								"chance": 0.25
+							}]
+						}
+					],
+					"force_use": true,
+					"filters": { "test": "is_family", "subject": "self", "value": "player" }
+				}

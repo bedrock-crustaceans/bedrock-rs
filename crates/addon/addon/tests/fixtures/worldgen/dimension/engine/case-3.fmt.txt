@@ -1,0 +1,16 @@
+{{
+				  "format_version": "1.26.50",
+				  "minecraft:dimension": {{
+					"description": {{
+					  "identifier": "{}"
+					}},
+					"components": {{
+					  "minecraft:default_biome": {{
+						"biome": "{}"
+					  }},
+					  "minecraft:generation": {{
+						"generator_type": "void"
+					  }}
+					}}
+				  }}
+				}}

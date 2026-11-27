@@ -1,0 +1,9 @@
+{
+  "changelog_example": { "should_bounce": true, "on_hit": { "impact_damage": { "damage": [1, 4], "knockback": true, "semi_random_diff_damage": false } } },
+  "false_and_additive": { "should_bounce": false, "on_hit": { "impact_damage": { "semi_random_diff_damage": true, "power_multiplier": 1.5 } } },
+  "bogus": { "should_bounce": "bogus" },
+  "enum_kept": { "should_bounce": "if_no_damage_dealt" },
+  "both_members": { "on_hit": { "impact_damage": { "semi_random_diff_damage": true, "difficulty_randomization": "multiplicative" } } },
+  "inert_impact_should_bounce": { "on_hit": { "impact_damage": { "should_bounce": true } } },
+  "non_bool_semi_random": { "on_hit": { "impact_damage": { "semi_random_diff_damage": "yes" } } }
+}

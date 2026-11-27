@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "header": {
+    "uuid": "a819ba9b-44c5-4064-a681-303f0327df5f",
+    "name": "released_out_of_experimental_components_test",
+    "version": [ 1, 0, 0 ],
+    "description": "released_out_of_experimental_components_test"
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "8d529b89-605a-456b-ac62-82bd1a4ac719",
+      "type": "data"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+// a line comment
+{
+  /* a block
+     comment */
+  "allowed_modules": [ "@minecraft/server" ] // the end
+}

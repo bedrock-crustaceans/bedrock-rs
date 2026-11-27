@@ -1,0 +1,8 @@
+texture.png
+texts/
+texts/en_US.lang
+texts/languages.json
+body.png
+manifest.json
+sci_fi_boots.geometry.json
+sci_fi_boots.meta.json

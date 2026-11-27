@@ -1,0 +1,8 @@
+// Copied from the vanilla packs: gdk-retail/resource_packs/vanilla_1.21.90/shadows/global.json
+{
+  "format_version": "1.21.80",
+  "minecraft:shadow_settings": {
+    "shadow_style": "blocky_shadows",
+    "texel_size": 16
+  }
+}

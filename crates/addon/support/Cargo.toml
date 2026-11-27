@@ -1,0 +1,17 @@
+[package]
+name = "bedrock_addon_support"
+description = "The digit-key path builder the three biome families of bedrock_addon share until its behaviour-bearing removal; no I/O"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../core" }

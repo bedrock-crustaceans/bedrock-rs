@@ -1,0 +1,13 @@
+     63  E core/unresolved_reference_worded [atlas key] @ items
+     14  I core/unknown_sound [sound event] @ sounds.json
+      1  I core/unresolved_reference [animation] @ entity
+     23  I core/unresolved_reference [atlas key] @ textures
+      1  I core/unresolved_reference [block] @ aim_assist
+     12  I core/unresolved_reference [feature] @ feature_rules
+     29  I core/unresolved_reference [feature] @ features
+      1  I core/unresolved_reference [geometry] @ entity
+      3  I core/unresolved_reference [loot table] @ entities
+      1  I core/unresolved_reference [render controller] @ entity
+      2  I core/unresolved_reference [sound file] @ sounds
+    609  I core/unresolved_reference_worded [atlas key] @ blocks.json
+     23  I flipbooks/no_metadata [-] @ textures

@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Experimental behavior pack for Drop 2 of 2026 content",
+    "name": "Drop 2 of 2026",
+    "uuid": "d3eb1863-37f7-4a41-af0f-a52d4a1968f4",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      26,
+      10
+    ]
+  },
+  "modules": [
+    {
+      "description": "Experimental behavior pack for Drop 2 of 2026 content",
+      "type": "data",
+      "uuid": "be327c7d-d750-40e7-939f-85244f19b386",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

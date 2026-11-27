@@ -1,0 +1,17 @@
+{
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "a": {
+      "textures": [
+        {
+          "path": "p",
+          "weight": 0.01
+        },
+        {
+          "path": "q",
+          "weight": 2000000.0
+        }
+      ]
+    }
+  }
+}

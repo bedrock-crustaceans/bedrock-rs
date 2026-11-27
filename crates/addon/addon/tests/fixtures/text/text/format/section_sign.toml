@@ -1,0 +1,6 @@
+# `format/section_sign`: `§` codes are bytes like any other.
+
+[[case]]
+value = "§aGreen %s"
+params = ["x"]
+expected = "§aGreen x"

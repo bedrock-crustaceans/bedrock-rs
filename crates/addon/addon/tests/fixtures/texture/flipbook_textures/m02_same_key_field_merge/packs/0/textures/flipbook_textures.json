@@ -1,0 +1,12 @@
+[
+  {
+    "atlas_tile": "x",
+    "ticks_per_frame": 10,
+    "frames": [
+      0,
+      1,
+      2
+    ],
+    "blend_frames": false
+  }
+]

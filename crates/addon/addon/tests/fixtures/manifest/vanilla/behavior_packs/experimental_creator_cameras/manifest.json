@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Experimental creator cameras behavior pack",
+        "name": "Experimental Creator Cameras",
+        "uuid": "05112080-727b-4ed4-98d4-b099fc75f2be",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            21,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Experimental creator cameras behavior pack",
+            "type": "data",
+            "uuid": "748595e8-971d-4825-8350-33ab910e43d8",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

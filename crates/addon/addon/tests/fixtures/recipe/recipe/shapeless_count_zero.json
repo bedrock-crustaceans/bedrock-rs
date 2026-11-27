@@ -1,0 +1,23 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shapeless": {
+    "description": {
+      "identifier": "demo:count_zero"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "ingredients": [
+      {
+        "item": "minecraft:stick",
+        "count": 0
+      },
+      {
+        "item": "minecraft:coal"
+      }
+    ],
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

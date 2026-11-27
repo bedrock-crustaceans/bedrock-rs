@@ -1,0 +1,27 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "insert_after",
+        "value": [
+          {
+            "w@a.leaf": {}
+          }
+        ]
+      },
+      {
+        "control_name": "y",
+        "operation": "move_front"
+      },
+      {
+        "control_name": "x",
+        "operation": "remove"
+      },
+      {
+        "control_name": "x",
+        "operation": "move_back"
+      }
+    ]
+  }
+}

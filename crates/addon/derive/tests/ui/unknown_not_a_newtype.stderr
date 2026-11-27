@@ -1,0 +1,5 @@
+error: the `unknown` variant has exactly one unnamed field: `Unknown(Value)`
+  --> tests/ui/unknown_not_a_newtype.rs:14:5
+   |
+14 |     Unknown,
+   |     ^^^^^^^

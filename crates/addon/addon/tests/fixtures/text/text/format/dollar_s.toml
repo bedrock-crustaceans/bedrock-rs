@@ -1,0 +1,11 @@
+# fixtures.md `format/dollar_s`: every `$s` / `$d` is erased, wherever it stands.
+
+[[case]]
+value = "Page %1$s of %2$s"
+params = ["3", "9"]
+expected = "Page 3 of 9"
+
+[[case]]
+value = "cost 5$s"
+params = ["x"]
+expected = "cost 5"

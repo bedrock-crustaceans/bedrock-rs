@@ -1,0 +1,13 @@
+{
+  "root": {
+    "property_bag": {
+      "k": 1,
+      "modifications": [
+        {
+          "control_name": "x",
+          "operation": "remove"
+        }
+      ]
+    }
+  }
+}

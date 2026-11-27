@@ -1,0 +1,13 @@
+{
+  "globals": {
+    "$a": 1,
+    "$b": 2
+  },
+  "diagnostics": [
+    {
+      "code": "core/syntax",
+      "severity": "info",
+      "pack": 1
+    }
+  ]
+}

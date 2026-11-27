@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:sword"
+    },
+    "components": {
+      "minecraft:icon": {
+        "texture": "demo_sword"
+      }
+    }
+  }
+}

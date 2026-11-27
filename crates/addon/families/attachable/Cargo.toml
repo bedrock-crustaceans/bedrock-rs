@@ -1,0 +1,29 @@
+[package]
+name = "bedrock_addon_family_attachable"
+description = "The `attachable` content family of bedrock_addon, re-exported as bedrock_addon::families::attachable; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+molang = ["bedrock_addon_core/molang", "bedrock_addon_shared_visual/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
+bedrock_addon_shared_visual = { path = "../../shared/visual" }
+facet = { workspace = true }
+indexmap = { workspace = true }
+
+[dev-dependencies]
+facet-value = { workspace = true }
+bedrock_addon_test_support = { path = "../../test_support" }
+bedrock_addon_core = { path = "../../core", features = ["test-cost"] }
+uuid = { workspace = true }

@@ -1,0 +1,16 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "minecraft:bee_nest"
+    },
+    "tickets": 0,
+    "usable_distance": 1,
+    "blocks": [
+      "minecraft:bee_nest"
+    ],
+    "tags": [
+      "minecraft:bee_home"
+    ]
+  }
+}

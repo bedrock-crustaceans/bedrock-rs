@@ -1,0 +1,1140 @@
+//! Item and block goals: picking up, giving, eating, placing and carrying.
+
+use crate::codes;
+use crate::component::descriptor_tags;
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::molang::{Molang, MolangVisitor};
+use bedrock_addon_core::schema::{self, GoalMeta, Schema};
+use bedrock_addon_core::shared::{EventTrigger, Filter, FloatRange, IntRange};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
+use facet::Facet;
+use facet_value::VObject;
+
+use super::check::{Goal, GoalCheck, V1_26_30};
+use super::common::{
+    ControlFlag, EntityTypes, LegacyConditions, PlaceStrategy, SearchStrategy, SoundEvent, Vec2,
+    Vec3,
+};
+use super::convert;
+use super::molang::{
+    SUCCESS_CHANCE, SUCCESS_CHANCE_CONVERTED, push_trigger, push_triggers, visit_blocks,
+    visit_conditions, visit_items,
+};
+
+/// `minecraft:behavior.admire_item`: enables the mob to admire items that have been configured as admirable. Must be used in combination with the `admire_item` component.
+// `behavior.admire_item`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.admire_item")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct AdmireItem {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `admire_item_sound`: the sound event to play when admiring the item. Default `""`.
+    #[facet(schema::fallback = "")]
+    pub admire_item_sound: Option<SoundEvent>,
+    /// `on_admire_item_start`: event to run when the mob starts admiring an item.
+    pub on_admire_item_start: Option<EventTrigger>,
+    /// `on_admire_item_stop`: event to run when the mob stops admiring an item.
+    pub on_admire_item_stop: Option<EventTrigger>,
+    /// `sound_interval`: the range of time in seconds to randomly wait before playing the sound again. Default 0 to 0.
+    #[facet(schema::fallback = (0.0, 0.0))]
+    pub sound_interval: Option<FloatRange>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for AdmireItem {
+    const TYPED: FormatVersion = known::V1_26_20;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.sound("admire_item_sound", self.admire_item_sound.as_ref());
+        c.trigger("on_admire_item_start", self.on_admire_item_start.as_ref());
+        c.trigger("on_admire_item_stop", self.on_admire_item_stop.as_ref());
+        c.range("sound_interval", &mut self.sound_interval);
+    }
+}
+
+impl AdmireItem {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let mut triggers = Vec::new();
+        push_trigger(
+            &mut triggers,
+            "on_admire_item_start",
+            self.on_admire_item_start.as_ref(),
+        );
+        push_trigger(
+            &mut triggers,
+            "on_admire_item_stop",
+            self.on_admire_item_stop.as_ref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.barter`: enables the mob to barter for items that have been configured as barter currency. Must be used in combination with the barter component.
+// `behavior.barter`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.barter")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Barter {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+}
+
+impl Goal for Barter {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+}
+
+/// `minecraft:behavior.charge_held_item`: allows an entity to charge and use their held item.
+// `behavior.charge_held_item`: typed from 1.26.40.
+#[doc(alias = "minecraft:behavior.charge_held_item")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct ChargeHeldItem {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `items`: the list of items that can be used to charge the held item. This list is required and must have at least one item in it.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub items: Option<Vec<ItemDescriptor>>,
+}
+
+impl Goal for ChargeHeldItem {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.items("items", self.items.as_deref());
+        c.required("items", self.items.is_some());
+        if self.items.as_ref().is_some_and(Vec::is_empty) {
+            // The list "must have at least one item in it" (`minItems` 1).
+            c.reject("items", &core_codes::INVALID_VALUE);
+            self.items = None;
+        }
+    }
+}
+
+/// `minecraft:behavior.drink_milk`: allows the mob to drink milk based on specified environment conditions.
+// `behavior.drink_milk`: typed from 1.21.120.
+#[doc(alias = "minecraft:behavior.drink_milk")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct DrinkMilk {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `cooldown_seconds`: time (in seconds) that the goal is on cooldown before it can be used again. Default 5.
+    #[facet(schema::fallback = 5.0)]
+    pub cooldown_seconds: Option<f32>,
+    /// `filters`: conditions that need to be met for the behavior to start.
+    pub filters: Option<Filter>,
+}
+
+impl Goal for DrinkMilk {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.filter("filters", self.filters.as_ref());
+    }
+}
+
+/// `minecraft:behavior.drink_potion`: allows the mob to drink potions based on specified environment conditions.
+// `behavior.drink_potion`: typed from 1.26.40.
+#[doc(alias = "minecraft:behavior.drink_potion")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct DrinkPotion {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `potions`: a list of potions that this entity can drink. Each potion entry has the following parameters.
+    pub potions: Option<Vec<Potion>>,
+    /// `speed_modifier`: the movement speed modifier to apply to the entity while it is drinking a potion. A value of 0 represents no change in speed. Default 0.
+    #[facet(schema::fallback = 0.0)]
+    pub speed_modifier: Option<f32>,
+}
+
+impl Goal for DrinkPotion {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.each("potions", &mut self.potions, Potion::check);
+        if c.lenient()
+            && let Some(potions) = &mut self.potions
+        {
+            // The legacy goal parser logs a potion whose `id` (default −1) is negative as an
+            // error and does not append it. It is told at the entry's index as written, the
+            // list keeping the others.
+            let mut index = 0;
+            potions.retain(|potion| {
+                let keep = potion.id.is_some_and(|id| id >= 0);
+                if !keep {
+                    let mut at = c.path("potions");
+                    at.push_index(index);
+                    c.legacy_error_at(at, "Drinkable potions must specify a valid potion id");
+                }
+                index += 1;
+                keep
+            });
+        }
+    }
+}
+
+/// `minecraft:behavior.drop_item_for`: allows the entity to move toward a target, and drop an item near the target. This goal requires a `minecraft:navigation` to execute.
+// `behavior.drop_item_for`: typed from 1.26.10.
+#[doc(alias = "minecraft:behavior.drop_item_for")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct DropItemFor {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `cooldown`: total time that the goal is on cooldown before it can be used again. Default 0.25; at least 0.
+    #[facet(schema::fallback = 0.25, schema::min = 0.0)]
+    pub cooldown: Option<f32>,
+    /// `drop_item_chance`: the percent chance the entity will drop an item when using this goal. Default 1; 0 to 1.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0, schema::max = 1.0)]
+    pub drop_item_chance: Option<f32>,
+    /// `entity_types`: the list of conditions another entity must meet to be a valid target to drop an item for.
+    pub entity_types: Option<EntityTypes>,
+    /// `goal_radius`: distance in blocks within the mob considers it has reached the goal. This is the "wiggle room" to stop the AI from bouncing back and forth trying to reach a specific spot. Default 0.5; greater than 0.
+    #[facet(schema::fallback = 0.5, schema::above = 0.0)]
+    pub goal_radius: Option<f32>,
+    /// `loot_table`: the loot table that contains the possible loot the entity can drop with this goal. Default `""`.
+    #[facet(schema::fallback = "")]
+    pub loot_table: Option<String>,
+    /// `max_head_look_at_height`: the maximum height the entities head will look at when dropping the item. The entity will always be looking at its target. Default 1e+01; at least 0.
+    #[facet(schema::fallback = 1.0e1, schema::min = 0.0)]
+    pub max_head_look_at_height: Option<f32>,
+    /// `minimum_teleport_distance`: if the target position is farther away than this distance on any tick, the entity will teleport to the target position. Default 2; at least 0.
+    #[facet(schema::fallback = 2.0, schema::min = 0.0)]
+    pub minimum_teleport_distance: Option<f32>,
+    /// `offering_distance`: the preferred distance the entity tries to be from the target it is dropping an item for. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
+    pub offering_distance: Option<f32>,
+    /// `on_drop_attempt`: the event to trigger when the entity attempts to drop an item.
+    pub on_drop_attempt: Option<EventTrigger>,
+    /// `search_count`: the number of randomly selected blocks each tick that the mob will check within its search range and height for a valid block to move to. A value of 0 will have the mob check every block within range in one tick. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub search_count: Option<i32>,
+    /// `search_height`: the height in blocks the entity will search within to find a valid target position. Default 1; greater than 0.
+    #[facet(schema::fallback = 1, schema::above = 0)]
+    pub search_height: Option<i32>,
+    /// `search_range`: the distance in blocks the entity will search within to find a valid target position. Default 0; greater than 0.
+    #[facet(schema::fallback = 0, schema::above = 0)]
+    pub search_range: Option<i32>,
+    /// `seconds_before_pickup`: the numbers of seconds that will pass before the dropped entity can be picked up from the ground. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0, schema::min = 0.0)]
+    pub seconds_before_pickup: Option<f32>,
+    /// `speed_multiplier`: movement speed multiplier of the mob when using this goal. Default 1; at least 0.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0)]
+    pub speed_multiplier: Option<f32>,
+    /// `target_range`: the range in blocks within which the entity searches to find a target to drop an item for. Default `[1, 1, 1]`.
+    pub target_range: Option<Vec3>,
+    /// `teleport_offset`: when the entity teleports, offset the teleport position by this many blocks in the X, Y, and Z coordinate. Default `[0, 1, 0]`.
+    pub teleport_offset: Option<Vec3>,
+    /// `time_of_day_range`: the valid times of day that this goal can be used. For reference: noon is 0.0, sunset is 0.25, midnight is 0.5, and sunrise is 0.75, and back to noon for 1.0. Default 0 to 1.
+    #[facet(schema::fallback = (0.0, 1.0))]
+    pub time_of_day_range: Option<FloatRange>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl DropItemFor {
+    /// `search_count`, or its default 0.
+    // The goal's own default (the game's 1.26.10 schema), not the base shape's.
+    /// `target_range`, or its default `[1, 1, 1]`.
+    pub fn target_range(&self) -> [f32; 3] {
+        self.target_range
+            .as_ref()
+            .map_or([1.0, 1.0, 1.0], |v| [v.x, v.y, v.z])
+    }
+
+    /// `teleport_offset`, or its default `[0, 1, 0]`.
+    pub fn teleport_offset(&self) -> [f32; 3] {
+        self.teleport_offset
+            .as_ref()
+            .map_or([0.0, 1.0, 0.0], |v| [v.x, v.y, v.z])
+    }
+}
+
+impl Goal for DropItemFor {
+    const TYPED: FormatVersion = known::V1_26_10;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.entity_types("entity_types", self.entity_types.as_ref());
+        c.trigger("on_drop_attempt", self.on_drop_attempt.as_ref());
+        c.vector("target_range", self.target_range.as_ref().map(|v| &v.extra));
+        c.vector(
+            "teleport_offset",
+            self.teleport_offset.as_ref().map(|v| &v.extra),
+        );
+        c.range("time_of_day_range", &mut self.time_of_day_range);
+    }
+}
+
+impl DropItemFor {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let mut triggers = Vec::new();
+        push_trigger(
+            &mut triggers,
+            "on_drop_attempt",
+            self.on_drop_attempt.as_ref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.eat_block`: allows the entity to consume a block, replace the eaten block with another block, and trigger an event as a result.
+// `behavior.eat_block`: typed from 1.26.40.
+#[doc(alias = "minecraft:behavior.eat_block")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct EatBlock {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `eat_and_replace_block_pairs`: a collection of pairs of blocks; the first (`eat_block`) is the block the entity should eat, the second (`replace_block`) is the block that should replace the eaten block.
+    pub eat_and_replace_block_pairs: Option<Vec<EatAndReplaceBlockPair>>,
+    /// `on_eat`: the event to trigger when the block eating animation has completed.
+    pub on_eat: Option<EventTrigger>,
+    /// `success_chance`: a molang expression defining the success chance the entity has to consume a block.
+    pub success_chance: Option<Molang>,
+    /// `time_until_eat`: the amount of time (in seconds) it takes for the block to be eaten upon a successful eat attempt. Default 1.8.
+    #[facet(schema::fallback = 1.8)]
+    pub time_until_eat: Option<f32>,
+    /// Read by the lenient conversion of a document older than the goal's typed version:
+    /// a rejected `success_chance` is then a warning and the member takes its default.
+    /// Not written.
+    #[facet(skip)]
+    pub converted: bool,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for EatBlock {
+    const TYPED: FormatVersion = known::V1_26_40;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.each(
+            "eat_and_replace_block_pairs",
+            &mut self.eat_and_replace_block_pairs,
+            EatAndReplaceBlockPair::check,
+        );
+        c.trigger("on_eat", self.on_eat.as_ref());
+    }
+
+    fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
+        convert::success_chance(json, d);
+    }
+
+    fn lenient_value(&mut self) {
+        self.converted = true;
+    }
+}
+
+impl EatBlock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let spec = if self.converted {
+            &SUCCESS_CHANCE_CONVERTED
+        } else {
+            &SUCCESS_CHANCE
+        };
+        visitor.field("success_chance", spec, &mut self.success_chance);
+        let mut triggers = Vec::new();
+        push_trigger(&mut triggers, "on_eat", self.on_eat.as_ref());
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.eat_carried_item`: if the mob is carrying a food item, the mob will eat it and the effects will be applied to the mob.
+// `behavior.eat_carried_item`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.eat_carried_item")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct EatCarriedItem {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `delay_before_eating`: time in seconds the mob should wait before eating the item. Default 0; at least 0.
+    #[facet(schema::fallback = 0.0, schema::min = 0.0)]
+    pub delay_before_eating: Option<f32>,
+}
+
+impl Goal for EatCarriedItem {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+}
+
+/// `minecraft:behavior.equip_item`: the entity puts on the desired equipment.
+// `behavior.equip_item`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.equip_item")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct EquipItem {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+}
+
+impl Goal for EquipItem {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+}
+
+/// `minecraft:behavior.go_and_give_items_to_noteblock`: the entity will attempt to toss the items from its inventory to a nearby recently played noteblock.
+// `behavior.go_and_give_items_to_noteblock`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.go_and_give_items_to_noteblock")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct GoAndGiveItemsToNoteblock {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `listen_time`: sets the time an entity should continue delivering items to a noteblock after hearing it. Default 30.
+    #[facet(schema::fallback = 30)]
+    pub listen_time: Option<i32>,
+    /// `on_item_throw`: event(s) to run when this mob throws items.
+    pub on_item_throw: Option<Vec<EventTrigger>>,
+    /// `reach_block_distance`: sets the desired distance to be reached before throwing the items towards the block. Default 3.
+    #[facet(schema::fallback = 3.0)]
+    pub reach_block_distance: Option<f32>,
+    /// `run_speed`: sets the entity's speed when running toward the block. Default 1.
+    #[facet(schema::fallback = 1.0)]
+    pub run_speed: Option<f32>,
+    /// `throw_force`: sets the throw force. Default 0.2.
+    #[facet(schema::fallback = 0.2)]
+    pub throw_force: Option<f32>,
+    /// `throw_sound`: sound to play when this mob throws an item. Default `charge`.
+    #[facet(schema::fallback = "charge")]
+    pub throw_sound: Option<SoundEvent>,
+    /// `vertical_throw_mul`: sets the vertical throw multiplier that is applied on top of the throw force in the vertical direction. Default 1.5.
+    #[facet(schema::fallback = 1.5)]
+    pub vertical_throw_mul: Option<f32>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for GoAndGiveItemsToNoteblock {
+    const TYPED: FormatVersion = known::V1_26_20;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.triggers("on_item_throw", self.on_item_throw.as_deref());
+        c.sound("throw_sound", self.throw_sound.as_ref());
+    }
+}
+
+impl GoAndGiveItemsToNoteblock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let mut triggers = Vec::new();
+        push_triggers(
+            &mut triggers,
+            "on_item_throw",
+            self.on_item_throw.as_deref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.go_and_give_items_to_owner`: the entity will attempt to toss the items from its inventory to its owner.
+// `behavior.go_and_give_items_to_owner`: typed from 1.26.20.
+#[doc(alias = "minecraft:behavior.go_and_give_items_to_owner")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct GoAndGiveItemsToOwner {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `on_item_throw`: event(s) to run when this mob throws items.
+    pub on_item_throw: Option<Vec<EventTrigger>>,
+    /// `reach_mob_distance`: sets the desired distance to be reached before giving items to owner. Default 3.
+    #[facet(schema::fallback = 3.0)]
+    pub reach_mob_distance: Option<f32>,
+    /// `run_speed`: sets the entity's speed when running toward the owner. Default 1.
+    #[facet(schema::fallback = 1.0)]
+    pub run_speed: Option<f32>,
+    /// `throw_force`: sets the throw force. Default 0.2.
+    #[facet(schema::fallback = 0.2)]
+    pub throw_force: Option<f32>,
+    /// `throw_sound`: sound to play when this mob throws an item. Default `charge`.
+    #[facet(schema::fallback = "charge")]
+    pub throw_sound: Option<SoundEvent>,
+    /// `vertical_throw_mul`: sets the vertical throw multiplier that is applied on top of the throw force in the vertical direction. Default 1.5.
+    #[facet(schema::fallback = 1.5)]
+    pub vertical_throw_mul: Option<f32>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for GoAndGiveItemsToOwner {
+    const TYPED: FormatVersion = known::V1_26_20;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.triggers("on_item_throw", self.on_item_throw.as_deref());
+        c.sound("throw_sound", self.throw_sound.as_ref());
+    }
+}
+
+impl GoAndGiveItemsToOwner {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let mut triggers = Vec::new();
+        push_triggers(
+            &mut triggers,
+            "on_item_throw",
+            self.on_item_throw.as_deref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.offer_flower`: allows the mob to offer a flower to another mob with the `minecraft:take_flower` behavior.
+// `behavior.offer_flower`: typed from 1.26.10.
+#[doc(alias = "minecraft:behavior.offer_flower")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct OfferFlower {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `chance_to_start`: percent chance that the mob will start this goal from 0.0 to 1.0 (where 1.0 = 100%). Default 0.000125; 0 to 1.
+    #[facet(schema::fallback = 0.000_125, schema::min = 0.0, schema::max = 1.0)]
+    pub chance_to_start: Option<f32>,
+    /// `filters`: conditions that need to be met for the behavior to start.
+    pub filters: Option<Filter>,
+    /// `max_head_rotation_y`: maximum rotation (in degrees), on the Y-axis, this entity can rotate its head while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
+    pub max_head_rotation_y: Option<f32>,
+    /// `max_offer_flower_duration`: the max amount of time (in seconds) that the mob will offer the flower for before exiting the Goal. Default 2e+01; at least 0.
+    #[facet(schema::fallback = 2.0e1, schema::min = 0.0)]
+    pub max_offer_flower_duration: Option<f32>,
+    /// `max_rotation_x`: maximum rotation (in degrees), on the X-axis, this entity can rotate while trying to look at the target. Default 3e+01; at least 0.
+    #[facet(schema::fallback = 3.0e1, schema::min = 0.0)]
+    pub max_rotation_x: Option<f32>,
+    /// `search_area`: the dimensions of the AABB used to search for a potential mob to offer flower to. Default `[6, 2, 6]`.
+    pub search_area: Option<Vec3>,
+}
+
+impl OfferFlower {
+    /// `search_area`, or its default `[6, 2, 6]`.
+    pub fn search_area(&self) -> [f32; 3] {
+        self.search_area
+            .as_ref()
+            .map_or([6.0, 2.0, 6.0], |v| [v.x, v.y, v.z])
+    }
+}
+
+impl Goal for OfferFlower {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.filter("filters", self.filters.as_ref());
+        c.vector("search_area", self.search_area.as_ref().map(|v| &v.extra));
+    }
+}
+
+/// `minecraft:behavior.pickup_items`: allows the mob to pick up items on the ground.
+// `behavior.pickup_items`: typed from 1.26.20, redeclared 1.26.30.
+#[doc(alias = "minecraft:behavior.pickup_items")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct PickupItems {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `can_pickup_any_item`: if true, the mob can pick up any item. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub can_pickup_any_item: Option<bool>,
+    /// `can_pickup_to_hand_or_equipment`: if true, the mob can pick up items to its hand or armor slots. Default `true`.
+    #[facet(schema::fallback = true)]
+    pub can_pickup_to_hand_or_equipment: Option<bool>,
+    /// `cooldown_after_being_attacked`: time in seconds the mob cannot pickup items after being attacked. Default 0.
+    #[facet(schema::fallback = 0)]
+    pub cooldown_after_being_attacked: Option<i32>,
+    /// `excluded_items`: list of items this mob will not pick up.
+    pub excluded_items: Option<Vec<ItemDescriptor>>,
+    /// `goal_radius`: distance in blocks within the mob considers it has reached the goal. This is the "wiggle room" to stop the AI from bouncing back and forth trying to reach a specific spot. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
+    pub goal_radius: Option<f32>,
+    /// `max_dist`: maximum distance this mob will look for items to pick up. Default 1.
+    #[facet(schema::fallback = 1)]
+    pub max_dist: Option<i32>,
+    /// `on_pickup_item_end`: event to run when this mob either finishes or loses interest in picking up an item.
+    pub on_pickup_item_end: Option<EventTrigger>,
+    /// `on_pickup_item_start`: event to run when this mob moves to pick up an item.
+    pub on_pickup_item_start: Option<EventTrigger>,
+    /// `pickup_based_on_chance`: if true, depending on the difficulty, there is a random chance that the mob may not be able to pickup items. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub pickup_based_on_chance: Option<bool>,
+    /// `pickup_same_items_as_in_hand`: if true, the mob will only pick up items that match what's in their hand. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub pickup_same_items_as_in_hand: Option<bool>,
+    /// `search_height`: height in blocks the mob will search for items. Default 1.
+    #[facet(schema::fallback = 1)]
+    pub search_height: Option<i32>,
+    /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
+    pub speed_multiplier: Option<f32>,
+    /// `stop_if_holding_item`: if true, the mob will not pick up another item if the item's preferred slot matches. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub stop_if_holding_item: Option<bool>,
+    /// `track_target`: if true, this mob will chase after the target as long as it's a valid target. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub track_target: Option<bool>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for PickupItems {
+    const TYPED: FormatVersion = known::V1_26_20;
+
+    const GATED: &'static [(&'static str, FormatVersion)] = &[("stop_if_holding_item", V1_26_30)];
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.items("excluded_items", self.excluded_items.as_deref());
+        c.trigger("on_pickup_item_end", self.on_pickup_item_end.as_ref());
+        c.trigger("on_pickup_item_start", self.on_pickup_item_start.as_ref());
+    }
+
+    fn forget(&mut self, name: &str) {
+        if name == "stop_if_holding_item" {
+            self.stop_if_holding_item = None;
+        }
+    }
+}
+
+impl PickupItems {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visit_items(visitor, "excluded_items", &mut self.excluded_items);
+        let mut triggers = Vec::new();
+        push_trigger(
+            &mut triggers,
+            "on_pickup_item_end",
+            self.on_pickup_item_end.as_ref(),
+        );
+        push_trigger(
+            &mut triggers,
+            "on_pickup_item_start",
+            self.on_pickup_item_start.as_ref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.place_block`: allows the entity to place a block.
+// `behavior.place_block`: typed from 1.26.30.
+#[doc(alias = "minecraft:behavior.place_block")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct PlaceBlock {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `affected_by_griefing_rule`: if true, whether the goal is affected by the mob griefing game rule. Default `true`.
+    #[facet(schema::fallback = true)]
+    pub affected_by_griefing_rule: Option<bool>,
+    /// `can_place`: filters for if the entity should try to place its block. Self and Target are set.
+    pub can_place: Option<Filter>,
+    /// `chance`: chance each tick for the entity to try and place a block. Default 1; 0 to 1.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0, schema::max = 1.0)]
+    pub chance: Option<f32>,
+    /// `on_place`: trigger ran if the entity does place its block. Self, Target, and Block are set.
+    pub on_place: Option<EventTrigger>,
+    /// `placeable_carried_blocks`: block descriptors for which blocks are valid to be placed from the entity's carried item, if empty all blocks are valid.
+    pub placeable_carried_blocks: Option<Vec<BlockDescriptor>>,
+    /// `randomly_placeable_blocks`: weighted block descriptors for which blocks should be randomly placed, if empty the entity will try to place its carried block from `placeable_carried_blocks`.
+    pub randomly_placeable_blocks: Option<Vec<WeightedBlock>>,
+    /// `xz_range`: xZ range from which the entity will try and place blocks in. Default -2 to 2.
+    #[facet(schema::fallback = (-2, 2))]
+    pub xz_range: Option<IntRange>,
+    /// `y_range`: y range from which the entity will try and place blocks in. Default 0 to 3.
+    #[facet(schema::fallback = (0, 3))]
+    pub y_range: Option<IntRange>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for PlaceBlock {
+    const TYPED: FormatVersion = known::V1_26_30;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.filter("can_place", self.can_place.as_ref());
+        c.trigger("on_place", self.on_place.as_ref());
+        c.blocks(
+            "placeable_carried_blocks",
+            self.placeable_carried_blocks.as_deref(),
+        );
+        c.each(
+            "randomly_placeable_blocks",
+            &mut self.randomly_placeable_blocks,
+            WeightedBlock::check,
+        );
+        c.range("xz_range", &mut self.xz_range);
+        c.range("y_range", &mut self.y_range);
+    }
+}
+
+impl PlaceBlock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visit_blocks(
+            visitor,
+            "placeable_carried_blocks",
+            &mut self.placeable_carried_blocks,
+        );
+        visitor.nested(
+            "randomly_placeable_blocks",
+            &mut self.randomly_placeable_blocks,
+        );
+        let mut triggers = Vec::new();
+        push_trigger(&mut triggers, "on_place", self.on_place.as_ref());
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.share_items`: allows the mob to give items it has to others.
+// `behavior.share_items`: typed from 1.26.30.
+#[doc(alias = "minecraft:behavior.share_items")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct ShareItems {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `entity_types`: list of entities this mob will share items with.
+    pub entity_types: Option<EntityTypes>,
+    /// `goal_radius`: distance in blocks within the mob considers it has reached the goal. This is the "wiggle room" to stop the AI from bouncing back and forth trying to reach a specific spot. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
+    pub goal_radius: Option<f32>,
+    /// `max_dist`: maximum distance in blocks this mob will look for entities to share items with. Default 1.
+    #[facet(schema::fallback = 1)]
+    pub max_dist: Option<i32>,
+    /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 1.
+    #[facet(schema::fallback = 1.0)]
+    pub speed_multiplier: Option<f32>,
+}
+
+impl Goal for ShareItems {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.entity_types("entity_types", self.entity_types.as_ref());
+    }
+}
+
+/// `minecraft:behavior.snacking`: allows the mob to take a load off and snack on food that it found nearby.
+// `behavior.snacking`: typed from 1.26.40.
+#[doc(alias = "minecraft:behavior.snacking")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Snacking {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `items`: items that we are interested in snacking on.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub items: Option<Vec<ItemDescriptor>>,
+    /// `snacking_cooldown`: the cooldown time in seconds before the mob is able to snack again. Default 7.5.
+    #[facet(schema::fallback = 7.5)]
+    pub snacking_cooldown: Option<f32>,
+    /// `snacking_cooldown_min`: the minimum time in seconds before the mob is able to snack again. Default 0.5.
+    #[facet(schema::fallback = 0.5)]
+    pub snacking_cooldown_min: Option<f32>,
+    /// `snacking_stop_chance`: this is the chance that the mob will stop snacking, from 0 to 1. Default 0.0016666667.
+    #[facet(schema::fallback = 0.001_666_666_7)]
+    pub snacking_stop_chance: Option<f32>,
+}
+
+impl Goal for Snacking {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.items("items", self.items.as_deref());
+    }
+}
+
+/// `minecraft:behavior.take_block`: allows the entity to take a block from the world and carry it around.
+// `behavior.take_block`: typed from 1.26.30.
+#[doc(alias = "minecraft:behavior.take_block")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct TakeBlock {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `affected_by_griefing_rule`: if true, whether the goal is affected by the mob griefing game rule. Default `true`.
+    #[facet(schema::fallback = true)]
+    pub affected_by_griefing_rule: Option<bool>,
+    /// `blocks`: block descriptors for which blocks are valid to be taken by the entity, if empty all blocks are valid.
+    pub blocks: Option<Vec<BlockDescriptor>>,
+    /// `can_take`: filters for if the entity should try to take a block. Self and Target are set.
+    pub can_take: Option<Filter>,
+    /// `chance`: chance each tick for the entity to try and take a block. Default 1; 0 to 1.
+    #[facet(schema::fallback = 1.0, schema::min = 0.0, schema::max = 1.0)]
+    pub chance: Option<f32>,
+    /// `on_take`: trigger ran if the entity does take a block. Self, Target, and Block are set.
+    pub on_take: Option<EventTrigger>,
+    /// `requires_line_of_sight`: if true, whether the entity needs line of sight to the block they are trying to take. Default `true`.
+    #[facet(schema::fallback = true)]
+    pub requires_line_of_sight: Option<bool>,
+    /// `xz_range`: xZ range from which the entity will try and take blocks from. Default -2 to 2.
+    #[facet(schema::fallback = (-2, 2))]
+    pub xz_range: Option<IntRange>,
+    /// `y_range`: y range from which the entity will try and take blocks from. Default 0 to 3.
+    #[facet(schema::fallback = (0, 3))]
+    pub y_range: Option<IntRange>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl Goal for TakeBlock {
+    const TYPED: FormatVersion = known::V1_26_30;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.blocks("blocks", self.blocks.as_deref());
+        c.filter("can_take", self.can_take.as_ref());
+        c.trigger("on_take", self.on_take.as_ref());
+        c.range("xz_range", &mut self.xz_range);
+        c.range("y_range", &mut self.y_range);
+    }
+}
+
+impl TakeBlock {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        visit_blocks(visitor, "blocks", &mut self.blocks);
+        let mut triggers = Vec::new();
+        push_trigger(&mut triggers, "on_take", self.on_take.as_ref());
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.take_flower`: allows the mob to accept flowers from another mob with the `minecraft:offer_flower` behavior.
+// `behavior.take_flower`: typed from 1.26.10.
+#[doc(alias = "minecraft:behavior.take_flower")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = Self::legacy_molang)]
+pub struct TakeFlower {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `filters`: conditions that need to be met for the behavior to start.
+    pub filters: Option<Filter>,
+    /// `max_head_rotation_y`: maximum rotation (in degrees), on the Y-axis, this entity can rotate its head while trying to look at the target. Default 3e+01; greater than 0.
+    #[facet(schema::fallback = 3.0e1, schema::above = 0.0)]
+    pub max_head_rotation_y: Option<f32>,
+    /// `max_rotation_x`: maximum rotation (in degrees), on the X-axis, this entity can rotate while trying to look at the target. Default 3e+01; greater than 0.
+    #[facet(schema::fallback = 3.0e1, schema::above = 0.0)]
+    pub max_rotation_x: Option<f32>,
+    /// `max_wait_time`: the maximum amount of time (in seconds) for the mob to randomly wait for before taking the flower. Default 2e+01; at least 0.
+    #[facet(schema::fallback = 2.0e1, schema::min = 0.0)]
+    pub max_wait_time: Option<f32>,
+    /// `min_distance_to_target`: minimum distance (in blocks) for the entity to be considered having reached its target. Default 2; greater than 0.
+    #[facet(schema::fallback = 2.0, schema::above = 0.0)]
+    pub min_distance_to_target: Option<f32>,
+    /// `min_wait_time`: the minimum amount of time (in seconds) for the mob to randomly wait for before taking the flower. Default 4; at least 0.
+    #[facet(schema::fallback = 4.0, schema::min = 0.0)]
+    pub min_wait_time: Option<f32>,
+    /// `on_take_flower`: event triggered when the entity takes a flower from another entity.
+    pub on_take_flower: Option<EventTrigger>,
+    /// `search_area`: the dimensions of the AABB used to search for a potential mob to take a flower from. Default `[6, 2, 6]`.
+    pub search_area: Option<Vec3>,
+    /// `speed_multiplier`: movement speed multiplier of the mob when using this AI Goal. Default 0.5; at least 0.
+    #[facet(schema::fallback = 0.5, schema::min = 0.0)]
+    pub speed_multiplier: Option<f32>,
+    /// The legacy `condition`s of the goal's triggers, read for the Molang check;
+    /// written back from each trigger's `extra`.
+    #[doc(hidden)]
+    #[facet(skip)]
+    pub legacy_conditions: LegacyConditions,
+}
+
+impl TakeFlower {
+    /// `search_area`, or its default `[6, 2, 6]`.
+    pub fn search_area(&self) -> [f32; 3] {
+        self.search_area
+            .as_ref()
+            .map_or([6.0, 2.0, 6.0], |v| [v.x, v.y, v.z])
+    }
+}
+
+impl Goal for TakeFlower {
+    const TYPED: FormatVersion = known::V1_26_10;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.filter("filters", self.filters.as_ref());
+        c.trigger("on_take_flower", self.on_take_flower.as_ref());
+        c.vector("search_area", self.search_area.as_ref().map(|v| &v.extra));
+    }
+}
+
+impl TakeFlower {
+    /// The goal's Molang walk (`schema::molang_with`): its triggers' legacy conditions
+    /// read once into its cache, and its descriptors' tags.
+    fn legacy_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
+        let mut triggers = Vec::new();
+        push_trigger(
+            &mut triggers,
+            "on_take_flower",
+            self.on_take_flower.as_ref(),
+        );
+        visit_conditions(visitor, &mut self.legacy_conditions, &triggers);
+    }
+}
+
+/// `minecraft:behavior.trade_with_player`: allows the player to trade with this mob. When the goal starts, it will stop the mob's navigation.
+// `behavior.trade_with_player`: typed from 1.26.10.
+#[doc(alias = "minecraft:behavior.trade_with_player")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct TradeWithPlayer {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `filters`: conditions that need to be met for the behavior to start.
+    pub filters: Option<Filter>,
+    /// `max_distance_from_player`: the max distance that the mob can be from the player before exiting the goal. Default 8; greater than 0.
+    #[facet(schema::fallback = 8.0, schema::above = 0.0)]
+    pub max_distance_from_player: Option<f32>,
+}
+
+impl Goal for TradeWithPlayer {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.filter("filters", self.filters.as_ref());
+    }
+}
+
+/// `minecraft:behavior.transport_items`: a behavior that enables a mob to transport items from and to containers.
+// `behavior.transport_items`: typed from 1.21.100.
+#[doc(alias = "minecraft:behavior.transport_items")]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct TransportItems {
+    /// `priority`: the goal's priority; lower runs first. Default 0; at least 0.
+    #[facet(schema::fallback = 0, schema::min = 0)]
+    pub priority: Option<i32>,
+    /// `control_flags`: what the goal claims while it runs (`move`, `look`, `jump`).
+    pub control_flags: Option<Vec<ControlFlag>>,
+    /// `allow_simultaneous_interaction`: when true the mob will wait until a container is not used by other entities before starting to interact with it. Default `false`.
+    #[facet(schema::fallback = false)]
+    pub allow_simultaneous_interaction: Option<bool>,
+    /// `allowed_items`: a list of item descriptors that are the only items the mob is allowed to transport. If this and `disallowed_items` are both empty, then all items are allowed. If non-empty `disallowed_items` must be empty.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub allowed_items: Option<Vec<ItemDescriptor>>,
+    /// `destination_container_types`: a list of block descriptors that should be a container type to put items in.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub destination_container_types: Option<Vec<BlockDescriptor>>,
+    /// `disallowed_items`: a list of item descriptors that are the mob is not allowed to transport. If non-empty `allowed_items` must be empty.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub disallowed_items: Option<Vec<ItemDescriptor>>,
+    /// `idle_cooldown`: when the mob cannot find a container in which to get or put items, the goal will stop being active for this amount of time in seconds. Default 20.
+    #[facet(schema::fallback = 20)]
+    pub idle_cooldown: Option<u32>,
+    /// `initial_cooldown`: how long the mob will wait after spawning or getting the goal added before the goal can start. Default 0.
+    #[facet(schema::fallback = 0)]
+    pub initial_cooldown: Option<u32>,
+    /// `interaction_time`: the amount of time in seconds spent interacting with the containers. Default 3; at least 0.
+    #[facet(schema::fallback = 3.0, schema::min = 0.0)]
+    pub interaction_time: Option<f32>,
+    /// `max_stack_size`: the maximum stack size that the mob will try to take from a container. Default 64; 1 to 64.
+    #[facet(schema::fallback = 64, schema::min = 1, schema::max = 64)]
+    pub max_stack_size: Option<u32>,
+    /// `max_visited_containers`: the maximum number of containers that the mob will try to take/place items from before going on cooldown and starting over. Default 16.
+    #[facet(schema::fallback = 16)]
+    pub max_visited_containers: Option<u32>,
+    /// `place_strategy`: the strategy to use for placing the transported item. Any - always place if there is room, With matching - place if there is a matching item in the container, With matching or empty - like With matching but will also place in empty containers. Default `any`.
+    #[facet(schema::fallback = PlaceStrategy::Any)]
+    pub place_strategy: Option<PlaceStrategy>,
+    /// `search_distance`: the maximum search distance horizontally and vertically at which to find containers for taking or placing items. Default `[64, 32]`.
+    pub search_distance: Option<Vec2>,
+    /// `search_strategy`: the strategy to use for finding source or destination containers. The nearest valid container or a random valid container in range. Default `random`.
+    #[facet(schema::fallback = SearchStrategy::Random)]
+    pub search_strategy: Option<SearchStrategy>,
+    /// `source_container_types`: a list of block descriptors that should be a container type to get items from.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub source_container_types: Option<Vec<BlockDescriptor>>,
+}
+
+impl TransportItems {
+    /// `search_distance`, or its default `[64, 32]`.
+    pub fn search_distance(&self) -> [f32; 2] {
+        self.search_distance
+            .as_ref()
+            .map_or([64.0, 32.0], |v| [v.x, v.y])
+    }
+}
+
+impl Goal for TransportItems {
+    const TYPED: FormatVersion = <Self as GoalMeta>::TYPED;
+
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+        c.items("allowed_items", self.allowed_items.as_deref());
+        c.blocks(
+            "destination_container_types",
+            self.destination_container_types.as_deref(),
+        );
+        c.items("disallowed_items", self.disallowed_items.as_deref());
+        c.vector(
+            "search_distance",
+            self.search_distance.as_ref().map(|v| &v.extra),
+        );
+        c.blocks(
+            "source_container_types",
+            self.source_container_types.as_deref(),
+        );
+        // A non-positive `search_distance` is reported and the default is used: the game logs
+        // it at the error level at the goal's set-up and keeps loading the entity, in either
+        // reader, so it is a kept error.
+        if self
+            .search_distance
+            .as_ref()
+            .is_some_and(|v| v.x <= 0.0 || v.y <= 0.0)
+        {
+            c.kept("search_distance", &codes::SEARCH_DISTANCE);
+            self.search_distance = None;
+        }
+    }
+}
+
+/// One potion `drink_potion` may drink, and when.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct Potion {
+    /// `chance`: the percent chance (from 0.0 to 1.0) of this potion being selected when searching for a potion to use. Default 1.
+    #[facet(schema::fallback = 1.0)]
+    pub chance: Option<f32>,
+    /// `filters`: the filters to use when determining if this potion can be selected.
+    pub filters: Option<Filter>,
+    /// `id`: the registry ID of the potion to use. Default -1.
+    #[facet(schema::fallback = -1)]
+    pub id: Option<i32>,
+}
+
+impl Potion {
+    /// Checks the entry's members.
+    pub(crate) fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.filter("filters", self.filters.as_ref());
+    }
+}
+
+/// A block `eat_block` eats and the block it leaves behind.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct EatAndReplaceBlockPair {
+    /// `eat_block`: the block the entity should eat. Default `""`.
+    #[facet(schema::fallback = "")]
+    pub eat_block: Option<String>,
+    /// `replace_block`: the block that should replace the eaten block. Default `""`.
+    #[facet(schema::fallback = "")]
+    pub replace_block: Option<String>,
+}
+
+impl EatAndReplaceBlockPair {
+    /// Checks the entry's members.
+    #[allow(clippy::unused_self, reason = "every entry check has this shape")]
+    pub(crate) fn check(&mut self, _: &mut GoalCheck<'_>) {}
+}
+
+/// A block `place_block` may place at random, with its weight and condition.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct WeightedBlock {
+    /// `block`: block descriptor for this entry.
+    #[facet(schema::molang_with = descriptor_tags)]
+    pub block: Option<BlockDescriptor>,
+    /// `filter`: filter for if this entry should be randomly selected from. Self, Target, and Block are set.
+    pub filter: Option<Filter>,
+    /// `weight`: weight for this entry. Default 1.
+    #[facet(schema::fallback = 1)]
+    pub weight: Option<i32>,
+}
+
+impl WeightedBlock {
+    /// Checks the entry's members.
+    pub(crate) fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.block("block", self.block.as_ref());
+        c.filter("filter", self.filter.as_ref());
+    }
+}

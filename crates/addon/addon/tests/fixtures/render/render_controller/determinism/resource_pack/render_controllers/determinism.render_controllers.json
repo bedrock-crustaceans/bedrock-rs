@@ -1,0 +1,18 @@
+{
+  "format_version": "1.8.0",
+  "render_controllers": {
+    "controller.render.determinism": {
+      "arrays": {
+        "textures": { "Array.skins": [ "Texture.default", "Texture.brown" ] }
+      },
+      "geometry": "Geometry.default",
+      "materials": [ { "*": "Material.default" } ],
+      "textures": [ "Array.skins[query.variant]" ],
+      "part_visibility": [ { "saddle": "query.is_saddled" } ],
+      "color": { "r": 1.0, "g": "query.is_baby ? 0.8 : 1.0" }
+    },
+    "controller.render.determinism_dropped": {
+      "geometry": "Geometry.default"
+    }
+  }
+}

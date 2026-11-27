@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm48",
+    "description": "families/script_module fixture sm48_conflict_and_unshipped",
+    "uuid": "95fbc58f-9eb0-50a0-a12e-81ed1cec5077",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "0aeb7b13-e07b-56bd-ad5a-6d605bf47892",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.5.0"
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "9.0.0"
+    }
+  ]
+}

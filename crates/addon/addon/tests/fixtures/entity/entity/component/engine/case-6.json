@@ -1,0 +1,107 @@
+{
+				"format_version": "1.21.100",
+				"minecraft:entity": {
+					"description": {
+						 "identifier": "test:mob"
+					},
+					"components": {
+						"minecraft:annotation.open_door": {
+						},
+						"minecraft:bucketable": {
+						},
+						"minecraft:hide": {
+						},
+						"minecraft:managed_wandering_trader": {
+						},
+						"minecraft:persistent": {
+						},
+						"minecraft:trade_resupply": {
+						},
+						"minecraft:trust": {
+						},
+						"minecraft:jump.static": {
+							"jump_power": 0.8
+						},
+						"minecraft:jump.dynamic": {
+							"regular_skip_data": {
+								"distance_scale": 1.2,
+								"height": 0.5,
+								"jump_delay": 50,
+								"animation_duration": 4
+							},
+							"fast_skip_data": {
+								"distance_scale": 1.2,
+								"height": 0.5,
+								"jump_delay": 50,
+								"animation_duration": 4
+							}							
+						},
+						"minecraft:cannot_be_attacked": {
+						},
+						"minecraft:ignore_cannot_be_attacked": {
+							"filters": {
+								"test": "is_family",
+								"subject": "other",
+								"value": "not_you_defender"
+							}
+						},
+						"minecraft:floats_in_liquid": {
+						},
+						"minecraft:wants_jockey": {
+						},
+						"minecraft:interact": {
+							"interactions": [
+								{
+								  "cooldown": 0.8,
+								  "cooldown_after_being_attacked": 0.8,
+								  "swing": false,
+								  "use_item": false,
+								  "barter": false,
+								  "admire": true,
+								  "give_item": true,
+								  "take_item": true,
+								  "hurt_item": 1,
+								  "health_amount": 1,
+								  "equip_item_slot": "slot.weapon.mainhand",
+								  "drop_item_slot": "1",
+								  "drop_item_y_offset": 1.1,
+								  "repair_entity_item": {
+									"slot": "2",
+									"amount": 3
+								  },
+								  "transform_to_item": "bucket:1",
+								  "interact_text": "action.interact.removenautilusarmor",
+								  "add_items": {
+									"table": "loot_tables/gameplay/entities/mooshroom_milking.json"
+								  },
+								  "spawn_items": {
+									"table": "loot_tables/gameplay/entities/mooshroom_milking.json",
+									"y_offset": 0.8
+								  },
+								  "particle_on_start": {
+									"particle_type": "smoke",
+									"particle_offset_towards_interactor": true,
+									"particle_y_offset": 0.8,
+									"copper_event": "wax_off"
+								  },
+								  "vibration": "shear",
+								  "play_sounds": ["armor.unequip_generic"],
+								  "spawn_entities": ["zombie"],
+								  "on_interact": {
+									"filters": {
+									  "all_of": [
+										{
+										  "operator": "equals",
+										  "test": "rider_count",
+										  "subject": "self",
+										  "value": 0
+										}
+									  ]
+									}
+								  }
+								}
+							]
+						}
+					}
+				}
+			}

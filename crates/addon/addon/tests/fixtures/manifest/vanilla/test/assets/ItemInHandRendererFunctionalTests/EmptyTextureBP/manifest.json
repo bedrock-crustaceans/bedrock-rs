@@ -1,0 +1,24 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "Empty Texture",
+		"description": "Empty Texture Behavior Pack",
+		"uuid": "76a87590-b60d-638c-a6b7-49b459f81db0",
+		"version": [1, 0, 0],
+		"min_engine_version": [1, 20, 0]
+	},
+	"modules": [
+		{
+			"description": "Behavior",
+			"version": [1, 0, 0],
+			"uuid": "48bf24c3-f78f-de59-e487-47f094adb3c4",
+			"type": "data"
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "9ae9acfc-4e11-c7e7-58b8-190b50ef8171",
+			"version": [1, 0, 0]
+		}
+	]
+}

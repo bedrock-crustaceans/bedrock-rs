@@ -1,0 +1,9 @@
+# server_install: the default world (support::default_world): packs on the stacks and findings by severity at load and at link
+      0  link errors
+    183  link infos
+      0  link warnings
+     52  load errors
+   2564  load infos
+      0  load warnings
+     56  packs on the behaviour stack
+      0  packs on the resource stack

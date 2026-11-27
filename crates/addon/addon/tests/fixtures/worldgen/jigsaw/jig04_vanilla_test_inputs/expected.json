@@ -1,0 +1,18 @@
+{
+  "loaded": {
+    "structures": [
+      "minecraft:trail_ruins"
+    ],
+    "pools": [
+      "minecraft:trail_ruins/tower"
+    ],
+    "structure_sets": [
+      "minecraft:trail_ruins"
+    ],
+    "processors": [
+      "minecraft:trail_ruins_roads_archaeology"
+    ],
+    "metadata": []
+  },
+  "diagnostics": []
+}

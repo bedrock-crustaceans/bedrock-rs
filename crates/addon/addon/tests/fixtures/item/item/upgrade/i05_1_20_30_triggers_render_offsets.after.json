@@ -1,0 +1,49 @@
+{
+  "format_version": "1.20.40",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:wand"
+    },
+    "components": {
+      "minecraft:hand_equipped": true
+    },
+    "__deprecated_components": {
+      "on_use": {
+        "on_use_trigger": {
+          "event": "demo:use"
+        }
+      },
+      "on_use_on_trigger": {
+        "on_use_on": {
+          "event": "demo:use_on"
+        }
+      },
+      "render_offsets": {
+        "main_hand": {
+          "first_person": {
+            "scale": [
+              0.5,
+              0.5,
+              0.5
+            ]
+          }
+        }
+      },
+      "on_hurt_actor_trigger": {
+        "on_hurt_actor": {
+          "event": "demo:hurt"
+        }
+      },
+      "on_hit_actor_trigger": {
+        "on_hit_actor": {
+          "event": "demo:miss"
+        }
+      },
+      "on_hit_block_trigger": {
+        "on_hit_block": {
+          "event": "demo:block"
+        }
+      }
+    }
+  }
+}

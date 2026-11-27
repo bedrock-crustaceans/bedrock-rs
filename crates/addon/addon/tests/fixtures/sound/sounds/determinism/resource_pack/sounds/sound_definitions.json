@@ -1,0 +1,11 @@
+{
+  "format_version": "1.14.0",
+  "sound_definitions": {
+    "determinism.click": {
+      "category": "ui",
+      "max_distance": 8,
+      "sounds": ["sounds/determinism/click", { "name": "sounds/determinism/missing", "stream": true }]
+    },
+    "music.determinism": { "category": "music", "sounds": ["sounds/determinism/click"] }
+  }
+}

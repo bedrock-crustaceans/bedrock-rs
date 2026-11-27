@@ -1,0 +1,15 @@
+
+			{
+				"format_version": "1.21.120",
+				"minecraft:biome": {
+					"description": {
+						"identifier": "test:biome"
+					},
+					"components": {
+						"minecraft:tags": {
+							"tags": ["overworld"]
+						}
+					}
+				}
+			}
+			

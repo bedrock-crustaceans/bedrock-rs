@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "header": {
+    "uuid": "0BA56E15-C3F6-1BE3-B75A-BBF781DEA039",
+    "name": "craft_compo_test",
+    "version": [ 1, 0, 0 ],
+    "description": "craft_compo_test"
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "9AC7160F-1DA6-4AD0-9603-6F25C56E30E2",
+      "type": "data"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format_version": "1.21.100",
+  "minecraft:pack_settings": {
+    "settings": [
+      {
+        "pack_id": "d3349771-6782-4420-875a-fcd6179a8915",
+        "values": {
+          "banana:dropdown": "balloon",
+          "banana:toggle": 1,
+          "banana:slider": "x"
+        }
+      }
+    ]
+  }
+}

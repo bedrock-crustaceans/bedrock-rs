@@ -1,0 +1,10 @@
+{
+  "allowed_modules": [
+    "@minecraft/server-gametest",
+    "@minecraft/server",
+    "@minecraft/server-ui",
+    "@minecraft/server-admin",
+    "@minecraft/server-editor",
+    "@minecraft/debug-utilities"
+  ]
+}

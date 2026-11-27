@@ -1,0 +1,1825 @@
+//! What `#[derive(Schema)]` emits: for a struct, `impl Schema` (`FIELDS`, `check`,
+//! `trigger_members`), `impl MolangFields`, `impl Default` when no field is required, and a
+//! getter per `Option` field with a `schema::fallback`; for a unit-only enum, `ALL`, `NAMES`,
+//! `EXPECTED`, `name`, `from_name`, `parse_name`, `Display`, an empty `impl Schema` and an
+//! empty Molang walk; for an untagged or tagged enum with data, `impl Schema` and `impl
+//! MolangFields` over the active variant. For each, `impl FromJson`, the read (`read`).
+
+mod attr;
+mod read;
+mod ty;
+
+use proc_macro2::{Span, TokenStream};
+use quote::{format_ident, quote, quote_spanned};
+use syn::{
+    Data, DataEnum, DeriveInput, Error, Expr, Fields, GenericParam, Generics, Ident, Lit, Member,
+    Result, Type, Visibility,
+};
+
+use self::attr::{BoundDecl, ContainerAttrs, FieldAttrs, LimitDecl, Op, Place};
+use crate::attr::Version;
+
+/// The derive's root path for the emitted code.
+fn core() -> TokenStream {
+    quote!(::bedrock_addon_core)
+}
+
+/// Expands the derive, or every error found.
+pub(crate) fn derive(input: &DeriveInput) -> Result<TokenStream> {
+    let mut errors = Vec::new();
+    for param in &input.generics.params {
+        if !matches!(param, GenericParam::Type(_)) {
+            errors.push(Error::new_spanned(
+                param,
+                "`#[derive(Schema)]` takes type parameters only: a lifetime or a const parameter \
+                 has no JSON form",
+            ));
+        }
+    }
+    let out = match &input.data {
+        Data::Struct(data) => derive_struct(input, &data.fields, &mut errors),
+        Data::Enum(data) => derive_enum(input, data, &mut errors),
+        Data::Union(data) => {
+            return Err(Error::new(
+                data.union_token.span,
+                "`#[derive(Schema)]` applies to a struct or a string enum, not a union",
+            ));
+        }
+    };
+    match errors.into_iter().reduce(|mut all, next| {
+        all.combine(next);
+        all
+    }) {
+        Some(error) => Err(error),
+        None => Ok(out),
+    }
+}
+
+/// The type a derive emits impls for: its name and its type parameters. Each impl bounds every
+/// parameter by the trait the impl needs of the types the fields hold (`FromJson` for the read,
+/// `SchemaFields` for the check, `MolangFields` for the Molang walk), so a field `data: T` or
+/// `items: Vec<T>` walks as `T` does.
+pub(super) struct Target<'a> {
+    pub ident: &'a Ident,
+    pub generics: &'a Generics,
+}
+
+impl Target<'_> {
+    /// The type with its parameters: `Weighted<T>`.
+    pub(super) fn ty(&self) -> TokenStream {
+        let ident = self.ident;
+        let (_, ty, _) = self.generics.split_for_impl();
+        quote!(#ident #ty)
+    }
+
+    /// Whether the type has parameters.
+    pub(super) fn is_generic(&self) -> bool {
+        !self.generics.params.is_empty()
+    }
+
+    /// The header of an impl of `trait_path` for the type, each type parameter bounded by
+    /// `bound` (none: unbounded): `impl<T: Bound> Trait for Name<T> where ..`.
+    pub(super) fn impl_for(
+        &self,
+        trait_path: &TokenStream,
+        bound: Option<&TokenStream>,
+    ) -> TokenStream {
+        self.impl_where(trait_path, bound, None)
+    }
+
+    /// [`impl_for`](Self::impl_for) where each type parameter named in `flat` is also bounded by
+    /// `extra`: a parameter the struct flattens.
+    pub(super) fn impl_flat(
+        &self,
+        trait_path: &TokenStream,
+        bound: &TokenStream,
+        flat: &[&Ident],
+        extra: &TokenStream,
+    ) -> TokenStream {
+        let (mut generics, ty) = self.bounded(Some(bound));
+        for param in generics.type_params_mut() {
+            if flat.contains(&&param.ident) {
+                param.bounds.push(syn::parse_quote!(#extra));
+            }
+        }
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #trait_path for #ty #where_clause)
+    }
+
+    /// [`impl_for`](Self::impl_for) with one more predicate in the where clause (`predicate`:
+    /// `Self::ty(): Facet<'static>`, as tokens), when the type has parameters.
+    pub(super) fn impl_where(
+        &self,
+        trait_path: &TokenStream,
+        bound: Option<&TokenStream>,
+        predicate: Option<&TokenStream>,
+    ) -> TokenStream {
+        let (mut generics, ty) = self.bounded(bound);
+        if let Some(predicate) = predicate.filter(|_| self.is_generic()) {
+            let predicate: syn::WherePredicate = syn::parse_quote!(#predicate);
+            generics.make_where_clause().predicates.push(predicate);
+        }
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #trait_path for #ty #where_clause)
+    }
+
+    /// The headers of the `Schema` impl (its parameters `SchemaFields`: the check and the trigger
+    /// list walk into them) and the `MolangFields` one (its parameters `MolangFields`).
+    pub(super) fn walk_impls(&self) -> (TokenStream, TokenStream) {
+        let core = core();
+        (
+            self.impl_for(
+                &quote!(#core::schema::Schema),
+                Some(&quote!(#core::schema::SchemaFields)),
+            ),
+            self.impl_for(
+                &quote!(#core::molang::MolangFields),
+                Some(&quote!(#core::molang::MolangFields)),
+            ),
+        )
+    }
+
+    /// The header of an inherent impl: `impl<T> Name<T> where ..`.
+    pub(super) fn inherent(&self) -> TokenStream {
+        let (generics, ty) = self.bounded(None);
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        quote!(impl #impl_generics #ty #where_clause)
+    }
+
+    /// The parameters and where clause a function nested in an impl repeats (it sees none of
+    /// the impl's), each type parameter bounded by `bound`: `(<T: Bound>, where ..)`.
+    pub(super) fn fn_generics(&self, bound: &TokenStream) -> (TokenStream, TokenStream) {
+        let (generics, _) = self.bounded(Some(bound));
+        let (impl_generics, _, where_clause) = generics.split_for_impl();
+        (quote!(#impl_generics), quote!(#where_clause))
+    }
+
+    fn bounded(&self, bound: Option<&TokenStream>) -> (Generics, TokenStream) {
+        let mut generics = self.generics.clone();
+        if let Some(bound) = bound {
+            for param in generics.type_params_mut() {
+                param.bounds.push(syn::parse_quote!(#bound));
+            }
+        }
+        (generics, self.ty())
+    }
+}
+
+/// One field of the struct, read.
+struct FieldInfo<'a> {
+    /// `self.<member>`.
+    member: Member,
+    /// The Rust name.
+    rust: String,
+    /// The JSON key; empty for an inline field.
+    json: String,
+    /// A transparent newtype's field or a flattened one: it shares its owner's object, so the
+    /// walks take no step into it.
+    inline: bool,
+    ty: &'a Type,
+    /// `T` of an `Option<T>` field.
+    option: Option<&'a Type>,
+    vis: &'a Visibility,
+    ident: Option<&'a Ident>,
+    attrs: FieldAttrs,
+    /// The place expression of the field's value: `self.x` in a struct, `(*__f0)` for a
+    /// variant's bound field.
+    access: TokenStream,
+}
+
+impl FieldInfo<'_> {
+    /// The type a bound compares: `T` of an `Option<T>`, or the field's.
+    fn value_ty(&self) -> &Type {
+        self.option.unwrap_or(self.ty)
+    }
+
+    /// The element type of a `[T; N]` or `Vec<T>` field (below its `Option`): a bound on such a
+    /// field is the bound of each element.
+    fn element_ty(&self) -> Option<&Type> {
+        ty::elements(self.value_ty()).or_else(|| ty::map_values(self.value_ty()))
+    }
+
+    /// Whether the field is a map: a bound on it is the bound of each value, at the value's key.
+    fn is_map(&self) -> bool {
+        ty::map_values(self.value_ty()).is_some()
+    }
+
+    fn required(&self) -> bool {
+        self.option.is_none() && self.attrs.default.is_none()
+    }
+}
+
+/// Whether a limit is a number literal written with the `f64` suffix (`179.9_f64`): the bound
+/// is a double the field's value is widened to, where an unsuffixed one is the field's type.
+fn is_f64_limit(bound: Option<&BoundDecl>) -> bool {
+    fn suffixed(expr: &Expr) -> bool {
+        match expr {
+            Expr::Lit(lit) => matches!(&lit.lit, Lit::Float(float) if float.suffix() == "f64"),
+            Expr::Unary(unary) => suffixed(&unary.expr),
+            _ => false,
+        }
+    }
+    bound.is_some_and(|b| matches!(&b.limit, LimitDecl::Num(expr) if suffixed(expr)))
+}
+
+/// `expr` as a value of `ty`: a string literal through `From` (`String` from `&str`), any
+/// other expression as written, so a literal of another type is the compiler's error at it.
+fn typed(expr: &Expr, ty: &Type) -> TokenStream {
+    if let Expr::Lit(syn::ExprLit {
+        lit: Lit::Str(_), ..
+    }) = expr
+    {
+        quote!({ let __value: #ty = ::core::convert::From::from(#expr); __value })
+    } else {
+        quote!({ let __value: #ty = #expr; __value })
+    }
+}
+
+/// The `Lit` of the row table for an attribute's value.
+fn row_lit(expr: &Expr) -> TokenStream {
+    let core = core();
+    let negated = |lit: &Lit, neg: bool| -> Option<TokenStream> {
+        match lit {
+            Lit::Int(int) => {
+                let value: i64 = int.base10_parse().ok()?;
+                let value = if neg { -value } else { value };
+                Some(quote!(#core::schema::Lit::Int(#value)))
+            }
+            Lit::Float(float) => {
+                let value: f64 = float.base10_parse().ok()?;
+                let value = if neg { -value } else { value };
+                Some(quote!(#core::schema::Lit::Float(#value)))
+            }
+            Lit::Bool(b) if !neg => {
+                let value = b.value;
+                Some(quote!(#core::schema::Lit::Bool(#value)))
+            }
+            Lit::Str(s) if !neg => Some(quote!(#core::schema::Lit::Str(#s))),
+            _ => None,
+        }
+    };
+    let found = match expr {
+        Expr::Lit(lit) => negated(&lit.lit, false),
+        Expr::Unary(unary) if matches!(unary.op, syn::UnOp::Neg(_)) => match &*unary.expr {
+            Expr::Lit(lit) => negated(&lit.lit, true),
+            _ => None,
+        },
+        _ => None,
+    };
+    found.unwrap_or_else(|| {
+        let text = attr::text(expr);
+        quote!(#core::schema::Lit::Expr(#text))
+    })
+}
+
+/// `Option<FormatVersion>` tokens.
+fn version_option(version: Option<Version>) -> TokenStream {
+    let core = core();
+    let Some(Version {
+        major,
+        minor,
+        patch,
+    }) = version
+    else {
+        return quote!(::core::option::Option::None);
+    };
+    quote!(::core::option::Option::Some(#core::version::FormatVersion::new(#major, #minor, #patch)))
+}
+
+/// `Option<UnknownRule>` tokens.
+fn unknown_option(word: Option<&String>) -> TokenStream {
+    let core = core();
+    let Some(word) = word else {
+        return quote!(::core::option::Option::None);
+    };
+    let variant = format_ident!(
+        "{}",
+        match word.as_str() {
+            "keep" => "Keep",
+            "report" => "Report",
+            "reject" => "Reject",
+            "component" => "Component",
+            "silent" => "Silent",
+            _ => "Ignore",
+        }
+    );
+    quote!(::core::option::Option::Some(#core::schema::UnknownRule::#variant))
+}
+
+/// The JSON key of a field or variant named `rust`: facet's `rename`, else `rename_all`.
+fn json_name(rust: &str, rename: Option<&String>, container: &ContainerAttrs) -> String {
+    let rust = rust.strip_prefix("r#").unwrap_or(rust);
+    match (rename, container.rename_all) {
+        (Some(rename), _) => rename.clone(),
+        (None, Some(rule)) => rule.apply(rust),
+        (None, None) => rust.to_owned(),
+    }
+}
+
+/// The fields of a struct or a variant, `skip` ones left out (with an error for a `schema::`
+/// key on one): each named by `container`'s rules, inline where `inline_all` (a transparent
+/// newtype, a newtype variant) or flattened, its value at `access(member, index)`.
+fn field_infos<'a>(
+    fields: &'a Fields,
+    container: &ContainerAttrs,
+    inline_all: bool,
+    access: impl Fn(&Member, usize) -> TokenStream,
+    errors: &mut Vec<Error>,
+) -> Vec<FieldInfo<'a>> {
+    let mut infos = Vec::new();
+    for (index, field) in fields.iter().enumerate() {
+        let attrs = FieldAttrs::read(&field.attrs, errors);
+        let member = match &field.ident {
+            Some(ident) => Member::Named(ident.clone()),
+            None => Member::Unnamed(index.into()),
+        };
+        if attrs.skip {
+            if let Some(span) = attrs.any_schema_key() {
+                errors.push(Error::new(
+                    span,
+                    "a `skip` field is not read or written: it takes no `schema::` key",
+                ));
+            }
+            continue;
+        }
+        let rust = match &field.ident {
+            Some(ident) => ident.to_string(),
+            None => index.to_string(),
+        };
+        let inline = inline_all || attrs.flatten;
+        let json = if inline {
+            String::new()
+        } else {
+            json_name(&rust, attrs.rename.as_ref(), container)
+        };
+        let access = access(&member, index);
+        infos.push(FieldInfo {
+            member,
+            rust,
+            json,
+            inline,
+            ty: &field.ty,
+            option: ty::option_inner(&field.ty),
+            vis: &field.vis,
+            ident: field.ident.as_ref(),
+            attrs,
+            access,
+        });
+    }
+    infos
+}
+
+fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) -> TokenStream {
+    let container = ContainerAttrs::read(&input.attrs, Place::Struct, errors);
+    if matches!(fields, Fields::Unnamed(_)) && !container.transparent {
+        errors.push(Error::new_spanned(
+            fields,
+            "`#[derive(Schema)]` applies to a struct with named fields or a \
+             `#[facet(transparent)]` newtype",
+        ));
+    }
+    let infos = field_infos(
+        fields,
+        &container,
+        container.transparent,
+        |member, _| quote!(self.#member),
+        errors,
+    );
+    for info in &infos {
+        validate_field(info, &infos, errors);
+        read::validate(info, errors);
+    }
+
+    let core = core();
+    let ident = &input.ident;
+    let target = Target {
+        ident,
+        generics: &input.generics,
+    };
+    let from_json = read::struct_read(&target, fields, &container, &infos);
+    let rows = infos.iter().map(|info| field_row(info));
+    let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
+        infos
+            .iter()
+            .filter_map(|info| field_cross_check(info, &infos)),
+    );
+    let container_rule = container
+        .rule
+        .as_ref()
+        .map(|(rule, _)| quote!((#rule)(self, cx);));
+    let molang: Vec<TokenStream> = infos.iter().map(field_molang).collect();
+    // A spec on the struct is the default of the walk below it; a walk of its own replaces the
+    // walk over the fields.
+    let molang = if let Some((walk, _)) = &container.molang_with {
+        quote!((#walk)(self, visitor);)
+    } else if let Some((spec, _)) = &container.molang {
+        quote!(visitor.under(&#spec, |visitor| { #(#molang)* });)
+    } else {
+        quote!(#(#molang)*)
+    };
+    let mut triggers = trigger_calls(&infos);
+    if container.trigger {
+        // The struct is a trigger itself: its own path, before its fields'.
+        triggers.insert(
+            0,
+            quote!(out.push(::std::borrow::ToOwned::to_owned(prefix));),
+        );
+    }
+
+    // The empty object's test names the type: a generic one has no type to name.
+    let default = (!infos.iter().any(FieldInfo::required)).then(|| {
+        // A `schema::required` option is told missing by `{}` and by the written default: the
+        // reader's rule, not facet's.
+        let required = infos.iter().any(|info| info.attrs.required.is_some());
+        let test = (!target.is_generic())
+            .then(|| default_test(ident, !container.transparent && !required, required));
+        let default = default_impl(&target, fields, &infos);
+        quote!(#default #test)
+    });
+    let getters = getters(&target, &infos);
+    let (schema_impl, molang_impl) = target.walk_impls();
+
+    quote! {
+        #[automatically_derived]
+        #schema_impl {
+            const FIELDS: &'static [#core::schema::FieldRow] = &[#(#rows),*];
+
+
+            #[allow(unused_variables)]
+            fn check(&mut self, cx: &mut #core::schema::SchemaCx<'_>) {
+                #(#checks)*
+                #container_rule
+            }
+
+            #[allow(unused_variables)]
+            fn trigger_members(prefix: &str, out: &mut ::std::vec::Vec<::std::string::String>) {
+                #(#triggers)*
+            }
+        }
+
+        #[automatically_derived]
+        #molang_impl {
+            #[allow(unused_variables)]
+            fn visit_molang(&mut self, visitor: &mut #core::molang::MolangVisitor<'_>) {
+                #molang
+            }
+        }
+
+        #default
+        #getters
+        #from_json
+    }
+}
+
+/// `trigger_members`' calls: one per field that is no `foreign_event`, below the field's key
+/// (or at the owner's for an inline field).
+fn trigger_calls(infos: &[FieldInfo]) -> Vec<TokenStream> {
+    let core = core();
+    infos
+        .iter()
+        .filter(|info| info.attrs.foreign_event.is_none())
+        .map(|info| {
+            let ty = info.ty;
+            if info.inline {
+                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(prefix, out);)
+            } else {
+                let json = &info.json;
+                quote!(<#ty as #core::schema::SchemaFields>::trigger_members(&#core::schema::member(prefix, #json), out);)
+            }
+        })
+        .collect()
+}
+
+/// The refusals of a field's bound rules: a code for a side the field has no bound on, `kept`
+/// with nothing to keep, a key rule on a field that is no map.
+fn validate_bound_rules(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let low = side_bound(info, true).is_some();
+    let high = side_bound(info, false).is_some();
+    for (given, present, word) in [
+        (&attrs.low_code, low, "a low bound (`min` or `above`)"),
+        (&attrs.high_code, high, "a high bound (`max` or `below`)"),
+    ] {
+        if let Some((_, span)) = given
+            && !present
+        {
+            errors.push(Error::new(
+                *span,
+                format!("this code is what a broken bound is told as: the field needs {word}"),
+            ));
+        }
+    }
+    if let Some(span) = attrs.kept
+        && !(low || high)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::kept` says the game keeps a value that breaks a bound: the field states \
+             none",
+        ));
+    }
+}
+
+/// The forced declarations of one field.
+fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    if info.option.is_some()
+        && let Some(default) = &attrs.default
+    {
+        let message = if default.value.is_some() {
+            "an `Option` field keeps absence: facet's `default = ..` would fill `Some(..)` on read \
+             and write it back; drop it, and state what absence stands for with \
+             `schema::fallback = ..`"
+        } else {
+            "an `Option` field is `None` when absent without facet's `default`: drop it \
+             (`schema::fallback = ..` states what absence stands for)"
+        };
+        errors.push(Error::new(default.span, message));
+    }
+    if info.option.is_none()
+        && let Some((_, span)) = &attrs.fallback
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::fallback` is what an absent `Option` stands for: a plain field states its \
+             default with facet's `default = ..`",
+        ));
+    }
+    if let Some(span) = attrs.required
+        && info.option.is_none()
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::required` is for an `Option` field the document must write: a plain field \
+             is required already",
+        ));
+    }
+    if let Some(span) = attrs.foreign_event
+        && !ty::is_event_trigger(info.ty)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::foreign_event` marks a field holding an `EventTrigger` (or an `Option`, \
+             `Vec` or map of them)",
+        ));
+    }
+    validate_bound_rules(info, errors);
+    match (&attrs.molang, &attrs.molang_with) {
+        (Some(_), Some((_, span))) => errors.push(Error::new(
+            *span,
+            "`schema::molang` and `schema::molang_with` both say how the field is walked: keep one",
+        )),
+        (Some((_, span)), None) if ty::is_plain_value(info.ty) => errors.push(Error::new(
+            *span,
+            "`schema::molang` names the spec of a Molang field, or the default spec of a nested \
+             walk, and this field holds a plain value: a hand walk is `schema::molang_with`",
+        )),
+        _ => {}
+    }
+    for bound in &attrs.bounds {
+        if let LimitDecl::Field(other) = &bound.limit {
+            if *other == info.rust {
+                errors.push(Error::new(
+                    other.span(),
+                    format!(
+                        "`schema::{}` names the field itself: a bound compares with a number or \
+                         another field",
+                        bound.op.key()
+                    ),
+                ));
+            } else if !all.iter().any(|f| *other == f.rust) {
+                errors.push(Error::new(
+                    other.span(),
+                    format!(
+                        "no field `{other}` in this struct for `schema::{}` to compare with",
+                        bound.op.key()
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+/// One `FieldRow` literal.
+fn field_row(info: &FieldInfo) -> TokenStream {
+    let core = core();
+    let FieldInfo {
+        rust,
+        json,
+        ty,
+        attrs,
+        ..
+    } = info;
+    let ty_text = attr::type_text(ty);
+    let kind = format_ident!(
+        "{}",
+        if info.option.is_some() {
+            "Optional"
+        } else if attrs.default.is_some() {
+            "Filled"
+        } else {
+            "Required"
+        }
+    );
+    let mut parts = Vec::new();
+    if let Some(default) = &attrs.default {
+        let lit = default
+            .value
+            .as_ref()
+            .map_or_else(|| quote!(#core::schema::Lit::TypeDefault), row_lit);
+        parts.push(quote!(default: ::core::option::Option::Some(#lit)));
+    }
+    if let Some((fallback, _)) = &attrs.fallback {
+        let lit = row_lit(fallback);
+        parts.push(quote!(fallback: ::core::option::Option::Some(#lit)));
+    }
+    if !attrs.bounds.is_empty() {
+        let bounds = attrs.bounds.iter().map(|BoundDecl { op, limit, .. }| {
+            let op = op.variant();
+            let limit = match limit {
+                LimitDecl::Num(expr) => {
+                    let lit = row_lit(expr);
+                    // A number limit's row value is its `f64`.
+                    quote!(#core::schema::Limit::Num(match #lit {
+                        #core::schema::Lit::Int(value) => value as f64,
+                        #core::schema::Lit::Float(value) => value,
+                        _ => f64::NAN,
+                    }))
+                }
+                LimitDecl::Field(other) => {
+                    let other = other.to_string();
+                    quote!(#core::schema::Limit::Field(#other))
+                }
+            };
+            quote!(#core::schema::Bound { op: #core::schema::BoundOp::#op, limit: #limit })
+        });
+        parts.push(quote!(bounds: &[#(#bounds),*]));
+    }
+    if let Some((step, _)) = attrs.multiple_of {
+        parts.push(quote!(multiple_of: ::core::option::Option::Some(#step)));
+    }
+    if let Some((count, _)) = attrs.min_len {
+        parts.push(quote!(min_len: ::core::option::Option::Some(#count)));
+    }
+    if let Some((count, _)) = attrs.max_len {
+        parts.push(quote!(max_len: ::core::option::Option::Some(#count)));
+    }
+    if attrs.since_format.is_some() {
+        let v = version_option(attrs.since_format);
+        parts.push(quote!(since_format: #v));
+    }
+    if attrs.since_engine.is_some() {
+        let v = version_option(attrs.since_engine);
+        parts.push(quote!(since_engine: #v));
+    }
+    if attrs.unknown.is_some() {
+        let v = unknown_option(attrs.unknown.as_ref());
+        parts.push(quote!(unknown: #v));
+    }
+
+    if attrs.foreign_event.is_some() {
+        parts.push(quote!(foreign_event: true));
+    }
+    if attrs.flatten {
+        parts.push(quote!(flatten: true));
+    }
+    quote! {
+        #core::schema::FieldRow {
+            #(#parts,)*
+            ..#core::schema::FieldRow::plain(#rust, #json, #ty_text, #core::schema::FieldKind::#kind)
+        }
+    }
+}
+
+/// The value a failed member takes from its own declaration, `None` when it keeps its value
+/// (a required field): an `Option` becomes absent (its fallback is what absence stands for and
+/// is never written into the data), a plain field takes its facet `default`.
+fn own_reset(info: &FieldInfo) -> Option<TokenStream> {
+    if info.option.is_some() {
+        return Some(quote!(::core::option::Option::None));
+    }
+    let default = info.attrs.default.as_ref()?;
+    Some(default.value.as_ref().map_or_else(
+        || quote!(::core::default::Default::default()),
+        |expr| typed(expr, info.value_ty()),
+    ))
+}
+
+/// The bound on the lower side (`min`, `above`) or the upper one (`max`, `below`).
+fn side_bound<'a>(info: &'a FieldInfo<'_>, low: bool) -> Option<&'a BoundDecl> {
+    info.attrs
+        .bounds
+        .iter()
+        .find(|b| matches!(b.op, Op::Min | Op::Above) == low)
+}
+
+/// Whether a bound of the field names another field: its check runs after every field's own.
+fn is_cross(info: &FieldInfo) -> bool {
+    info.attrs
+        .bounds
+        .iter()
+        .any(|b| matches!(b.limit, LimitDecl::Field(_)))
+}
+
+/// The limit of a bound as an `Option<T>`, typed by the field: a number, or the sibling's value
+/// (what it stands for where it is an absent `Option` with a fallback; no side where it is
+/// absent without one).
+fn limit_expr(bound: Option<&BoundDecl>, value_ty: &Type, all: &[FieldInfo]) -> TokenStream {
+    let Some(bound) = bound else {
+        return quote!({ let __limit: ::core::option::Option<#value_ty> = ::core::option::Option::None; __limit });
+    };
+    let limit = match &bound.limit {
+        LimitDecl::Num(expr) => quote!(::core::option::Option::Some(#expr)),
+        LimitDecl::Field(other) => match all.iter().find(|f| *other == f.rust) {
+            None => quote!(::core::option::Option::None),
+            Some(sibling) => {
+                let access = &sibling.access;
+                match (&sibling.option, &sibling.attrs.fallback) {
+                    (None, _) => quote!(::core::option::Option::Some(#access)),
+                    (Some(inner), Some((fallback, _))) => {
+                        let fallback = typed(fallback, inner);
+                        quote!(::core::option::Option::Some(::core::option::Option::unwrap_or(#access, #fallback)))
+                    }
+                    (Some(_), None) => quote!(#access),
+                }
+            }
+        },
+    };
+    // The limit typed by the field: a literal of another type is the compiler's error at it.
+    let span = bound.span;
+    quote_spanned!(span=> { let __limit: ::core::option::Option<#value_ty> = #limit; __limit })
+}
+
+/// What the member takes when `side` failed under `DefaultAndTell`: the other member where the
+/// side names one, else its own reset; nothing for a required field.
+fn side_reset(info: &FieldInfo, bound: Option<&BoundDecl>, limit: &TokenStream) -> TokenStream {
+    let access = &info.access;
+    if bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) {
+        let value = if info.option.is_some() {
+            quote!(::core::option::Option::Some(__other))
+        } else {
+            quote!(__other)
+        };
+        return quote! {
+            if let ::core::option::Option::Some(__other) = #limit {
+                #access = #value;
+            }
+        };
+    }
+    match own_reset(info) {
+        Some(value) => quote!(#access = #value;),
+        None => TokenStream::new(),
+    }
+}
+
+/// A field's bounds and its step: one range, one finding, whichever side the value broke, and
+/// the step (`schema::multiple_of`) checked only for a value inside the range; empty where the
+/// field states neither.
+fn field_bounds(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
+    let range = field_range(info, all);
+    let Some(multiple) = field_multiple(info) else {
+        return range.map_or_else(TokenStream::new, |range| quote!(let _ = #range;));
+    };
+    match range {
+        Some(range) => quote! {
+            if !#range {
+                #multiple
+            }
+        },
+        None => multiple,
+    }
+}
+
+/// A field's step (`schema::multiple_of`): a value that is no multiple of it is one finding,
+/// graded and reset as a broken bound is.
+fn field_multiple(info: &FieldInfo) -> Option<TokenStream> {
+    let (step, _) = info.attrs.multiple_of?;
+    let core = core();
+    let access = &info.access;
+    let value = if info.option.is_some() {
+        quote!(#access)
+    } else {
+        quote!(::core::option::Option::Some(#access))
+    };
+    let reset = own_reset(info);
+    let resettable = reset.is_some();
+    let apply = reset.map_or_else(
+        || quote!(let _ = __verdict;),
+        |reset| {
+            quote! {
+                if __verdict == #core::schema::Verdict::Reset {
+                    #access = #reset;
+                }
+            }
+        },
+    );
+    Some(quote! {
+        if let ::core::option::Option::Some(__value) = #value {
+            let __value = #core::schema::Number::to_f64(__value);
+            if __value % #step != 0.0 {
+                let __verdict = cx.multiple(__value, #step, #resettable);
+                #apply
+            }
+        }
+    })
+}
+
+/// What a broken side does under `DefaultAndTell`: the member takes what `side_reset` says for
+/// the side that broke.
+fn side_apply(info: &FieldInfo, low: Option<&BoundDecl>, high: Option<&BoundDecl>) -> TokenStream {
+    let core = core();
+    let low_reset = side_reset(info, low, &quote!(__sides.low));
+    let high_reset = side_reset(info, high, &quote!(__sides.high));
+    if low_reset.is_empty() && high_reset.is_empty() {
+        quote!(let _ = (__verdict, __side);)
+    } else {
+        quote! {
+            if __verdict == #core::schema::Verdict::Reset {
+                match __side {
+                    #core::schema::Side::Low => { #low_reset }
+                    #core::schema::Side::High => { #high_reset }
+                }
+            }
+        }
+    }
+}
+
+/// What a field says its broken bounds are told as (`schema::low_code`, `high_code`, `kept`):
+/// the static of the rules, and the call that tells a broken bound `found` (an expression), with
+/// `__side` and `__resettable` in scope. No rules: no static, `cx.found`.
+fn bound_rules(info: &FieldInfo) -> (TokenStream, impl Fn(&TokenStream) -> TokenStream + use<>) {
+    let core = core();
+    let attrs = &info.attrs;
+    let ruled = attrs.low_code.is_some() || attrs.high_code.is_some() || attrs.kept.is_some();
+    let maker = |maker: &Option<(Expr, Span)>| {
+        maker.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |(expr, _)| {
+                quote!(::core::option::Option::Some(|| -> #core::diagnostic::Code { #expr }))
+            },
+        )
+    };
+    let statics = if ruled {
+        let (low, high) = (maker(&attrs.low_code), maker(&attrs.high_code));
+        let kept = attrs.kept.is_some();
+        quote! {
+            static __BOUND: #core::schema::BoundRules = #core::schema::BoundRules {
+                low: #low,
+                high: #high,
+                kept: #kept,
+            };
+        }
+    } else {
+        TokenStream::new()
+    };
+    let call = move |found: &TokenStream| {
+        if ruled {
+            quote!(cx.found_by(#found, __side, &__BOUND, __resettable))
+        } else {
+            quote!(cx.found(#found, __resettable))
+        }
+    };
+    (statics, call)
+}
+
+/// A field's range, as an expression that is whether the value broke it: one finding,
+/// whichever side the value broke; `None` where the field states no bound.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one emission for each shape a bound applies to: a number, a list, a map"
+)]
+fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
+    if info.attrs.bounds.is_empty() {
+        return None;
+    }
+    let core = core();
+    let access = &info.access;
+    let elements = info.element_ty();
+    let (low, high) = (side_bound(info, true), side_bound(info, false));
+    // A limit written as a double (`179.9_f64`) is compared with the value widened to one.
+    let precise = is_f64_limit(low) || is_f64_limit(high);
+    let double: Type = syn::parse_quote!(f64);
+    // The number a bound compares: the value's own, or what a wrapper or a range holds
+    // (`Bounded`); a double where the limit is one.
+    let held: Type = {
+        let holder = elements.unwrap_or_else(|| info.value_ty());
+        syn::parse_quote!(<#holder as #core::schema::Bounded>::Number)
+    };
+    let value_ty = if precise { &double } else { &held };
+    let widen = |value: TokenStream| {
+        if precise {
+            quote!(#core::schema::Number::to_f64(#value))
+        } else {
+            value
+        }
+    };
+    let number = widen(quote!(__number));
+    let exclusive =
+        |bound: Option<&BoundDecl>| bound.is_some_and(|b| matches!(b.op, Op::Above | Op::Below));
+    let (low_exclusive, high_exclusive) = (exclusive(low), exclusive(high));
+    let (low_limit, high_limit) = (
+        limit_expr(low, value_ty, all),
+        limit_expr(high, value_ty, all),
+    );
+    let apply = side_apply(info, low, high);
+    // A side resets where it names another member or the field has its own reset.
+    let resettable = |bound: Option<&BoundDecl>| {
+        bound.is_some_and(|b| matches!(b.limit, LimitDecl::Field(_))) || own_reset(info).is_some()
+    };
+    let (low_resettable, high_resettable) = (resettable(low), resettable(high));
+    // What the field says its broken bounds are told as: its codes, and whether the game keeps
+    // the value; `cx.found` otherwise.
+    let (rules, found_call) = bound_rules(info);
+    let value = if info.option.is_some() {
+        quote!(#access)
+    } else {
+        quote!(::core::option::Option::Some(#access))
+    };
+    if info.is_map() {
+        // The bound of each value: every one outside is told, at its key.
+        let map = if info.option.is_some() {
+            quote!(#access.as_ref())
+        } else {
+            quote!(::core::option::Option::Some(&#access))
+        };
+        let found = found_call(&quote!(__found));
+        return Some(quote! {{
+            #rules
+            let __sides = #core::schema::Sides::<#value_ty> {
+                low: #low_limit,
+                low_exclusive: #low_exclusive,
+                high: #high_limit,
+                high_exclusive: #high_exclusive,
+            };
+            let mut __outside = ::std::vec::Vec::new();
+            if let ::core::option::Option::Some(__map) = #map {
+                for (__key, __value) in __map.iter() {
+                    for (__end, __number) in #core::schema::Bounded::numbers(__value) {
+                        let __number = #number;
+                        if let ::core::option::Option::Some(__side) = __sides.broken(__number) {
+                            __outside.push((
+                                ::std::string::ToString::to_string(__key),
+                                __side,
+                                __sides.found(__end, __number),
+                            ));
+                            break;
+                        }
+                    }
+                }
+            }
+            let __broken = !__outside.is_empty();
+            for (__key, __side, __found) in __outside {
+                let __resettable = match __side {
+                    #core::schema::Side::Low => #low_resettable,
+                    #core::schema::Side::High => #high_resettable,
+                };
+                cx.enter(&__key);
+                let __verdict = #found;
+                cx.leave();
+                #apply
+            }
+            __broken
+        }});
+    }
+    if elements.is_some() {
+        // The bound of each element: the first one outside is the one finding, at its index.
+        let list = if info.option.is_some() {
+            quote!(#access.as_ref())
+        } else {
+            quote!(::core::option::Option::Some(&#access))
+        };
+        let found = found_call(&quote!(__found.clone()));
+        return Some(quote! {{
+            #rules
+            let __sides = #core::schema::Sides::<#value_ty> {
+                low: #low_limit,
+                low_exclusive: #low_exclusive,
+                high: #high_limit,
+                high_exclusive: #high_exclusive,
+            };
+            let __first = #list.and_then(|__list| {
+                __list.iter().enumerate().find_map(|(__index, __value)| {
+                    #core::schema::Bounded::numbers(__value).into_iter().find_map(|(__end, __number)| {
+                        let __number = #number;
+                        __sides.broken(__number).map(|__side| (__index, __side, __sides.found(__end, __number)))
+                    })
+                })
+            });
+            if let ::core::option::Option::Some((__index, __side, __found)) = __first.as_ref() {
+                let __side = *__side;
+                let __resettable = match __side {
+                    #core::schema::Side::Low => #low_resettable,
+                    #core::schema::Side::High => #high_resettable,
+                };
+                cx.enter_index(*__index);
+                let __verdict = #found;
+                cx.leave();
+                #apply
+            }
+            __first.is_some()
+        }});
+    }
+    let found = found_call(&quote!(__sides.found(__end, __number)));
+    Some(quote! {{
+        #rules
+        let __sides = #core::schema::Sides::<#value_ty> {
+            low: #low_limit,
+            low_exclusive: #low_exclusive,
+            high: #high_limit,
+            high_exclusive: #high_exclusive,
+        };
+        let mut __broken = false;
+        if let ::core::option::Option::Some(__value) = #value {
+            for (__end, __number) in #core::schema::Bounded::numbers(&__value) {
+                let __number = #number;
+                if let ::core::option::Option::Some(__side) = __sides.broken(__number) {
+                    __broken = true;
+                    let __resettable = match __side {
+                        #core::schema::Side::Low => #low_resettable,
+                        #core::schema::Side::High => #high_resettable,
+                    };
+                    let __verdict = #found;
+                    #apply
+                    break;
+                }
+            }
+        }
+        __broken
+    }})
+}
+
+/// `body` at the field's path: inside `enter`/`leave`, or at the owner's for an inline field.
+fn at_field(info: &FieldInfo, body: TokenStream) -> TokenStream {
+    if info.inline {
+        body
+    } else {
+        let json = &info.json;
+        quote! {
+            cx.enter(#json);
+            #body
+            cx.leave();
+        }
+    }
+}
+
+/// A field's length bounds (`schema::min_len`, `schema::max_len`), as an expression that is
+/// whether the field broke them: one finding, whichever side it broke, graded as a broken bound
+/// is; `None` where the field states none.
+fn field_len(info: &FieldInfo) -> Option<TokenStream> {
+    let min = info.attrs.min_len.map(|(count, _)| count);
+    let max = info.attrs.max_len.map(|(count, _)| count);
+    if min.is_none() && max.is_none() {
+        return None;
+    }
+    let access = &info.access;
+    let reset = own_reset(info);
+    let resettable = reset.is_some();
+    let apply = reset.map_or_else(
+        || quote!(let _ = __verdict;),
+        |reset| {
+            quote! {
+                if __verdict == ::bedrock_addon_core::schema::Verdict::Reset {
+                    #access = #reset;
+                }
+            }
+        },
+    );
+    let min = min.map_or_else(
+        || quote!(::core::option::Option::<usize>::None),
+        |count| quote!(::core::option::Option::Some(#count)),
+    );
+    let max = max.map_or_else(
+        || quote!(::core::option::Option::<usize>::None),
+        |count| quote!(::core::option::Option::Some(#count)),
+    );
+    let len = if info.option.is_some() {
+        quote!(#access.as_ref().map(|__list| __list.len()))
+    } else {
+        quote!(::core::option::Option::Some(#access.len()))
+    };
+    Some(quote! {
+        if let ::core::option::Option::Some(__len) = #len {
+            let (__min, __max) = (#min, #max);
+            if __min.is_some_and(|__min| __len < __min) || __max.is_some_and(|__max| __len > __max) {
+                let __verdict = cx.length(__len, __min, __max, #resettable);
+                #apply
+            }
+        }
+    })
+}
+
+/// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
+/// its bounds (unless one names another field), its length bounds, then the walk into it, or
+/// the field's `check_with`.
+fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
+    let core = core();
+    let access = &info.access;
+    let bounds = if is_cross(info) {
+        TokenStream::new()
+    } else {
+        field_bounds(info, all)
+    };
+    let len = field_len(info);
+    let since_engine = info.attrs.since_engine.map(|_| {
+        let since = version_option(info.attrs.since_engine);
+        let present = if info.option.is_some() {
+            quote!(#access.is_some())
+        } else {
+            quote!(true)
+        };
+        quote! {
+            if let ::core::option::Option::Some(__since) = #since {
+                cx.since_engine(__since, #present);
+            }
+        }
+    });
+    let walk = match &info.attrs.check_with {
+        Some((with, _)) if info.option.is_some() => quote! {
+            if let ::core::option::Option::Some(__value) = &mut #access {
+                (#with)(__value, cx);
+            }
+        },
+        Some((with, _)) => quote!((#with)(&mut #access, cx);),
+        None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
+    };
+    at_field(info, quote!(#since_engine #bounds #len #walk))
+}
+
+/// A field's cross-field bounds, which run after every field's own check, so they compare with
+/// the other member as that check left it.
+fn field_cross_check(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
+    is_cross(info).then(|| at_field(info, field_bounds(info, all)))
+}
+
+/// A field's part of the Molang walk.
+fn field_molang(info: &FieldInfo) -> TokenStream {
+    let core = core();
+    let access = &info.access;
+    let json = &info.json;
+    if let Some((walk, _)) = &info.attrs.molang_with {
+        return if info.inline {
+            quote!((#walk)(&mut #access, visitor);)
+        } else {
+            quote! {
+                visitor.enter(#core::molang::Step::Key(#json));
+                (#walk)(&mut #access, visitor);
+                visitor.leave();
+            }
+        };
+    }
+    if ty::is_molang_slot(info.ty) {
+        let spec = info.attrs.molang.as_ref().map(|(spec, _)| spec);
+        return match (info.inline, spec) {
+            (false, Some(spec)) => quote!(visitor.field(#json, &#spec, &mut #access);),
+            (false, None) => quote!(visitor.field_default(#json, &mut #access);),
+            (true, Some(spec)) => {
+                quote!(#core::molang::MolangSlot::visit_slot(&mut #access, &#spec, visitor);)
+            }
+            (true, None) => quote! {
+                let __spec = *visitor.default_spec();
+                #core::molang::MolangSlot::visit_slot(&mut #access, &__spec, visitor);
+            },
+        };
+    }
+    // A spec on a nested walk is that walk's default.
+    match (
+        info.inline,
+        info.attrs.molang.as_ref().map(|(spec, _)| spec),
+    ) {
+        (true, None) => quote!(#core::molang::MolangFields::visit_molang(&mut #access, visitor);),
+        (false, None) => quote!(visitor.nested(#json, &mut #access);),
+        (true, Some(spec)) => quote! {
+            visitor.under(&#spec, |visitor| {
+                #core::molang::MolangFields::visit_molang(&mut #access, visitor);
+            });
+        },
+        (false, Some(spec)) => quote!(visitor.nested_under(#json, &#spec, &mut #access);),
+    }
+}
+
+/// The test beside the emitted `Default`: it is the value `{}` reads (unless the struct is a
+/// transparent newtype, which no object spells) and it reads back unchanged from what the
+/// writer makes of it; for a struct with a required option, that neither reads. A module of its own per struct, so that the test's path names the type.
+fn default_test(ident: &Ident, empty_object: bool, required: bool) -> TokenStream {
+    let core = core();
+    let check = if required {
+        quote!(#core::schema::default_refused::<super::#ident>())
+    } else {
+        quote!(#core::schema::default_round_trip::<super::#ident>(#empty_object))
+    };
+    let module = format_ident!("__schema_{}", ident);
+    quote! {
+        #[cfg(test)]
+        #[doc(hidden)]
+        #[allow(non_snake_case, reason = "the module is named after the type it tests")]
+        mod #module {
+            #[test]
+            fn default_is_the_empty_object_and_round_trips() {
+                if let ::core::result::Result::Err(fault) = #check {
+                    ::core::panic!("{}: {fault:?}", ::core::any::type_name::<super::#ident>());
+                }
+            }
+        }
+    }
+}
+
+/// `impl Default`: an `Option` field `None`, a plain field its facet `default`, a `skip`
+/// field its type's `Default`.
+fn default_impl(target: &Target, fields: &Fields, infos: &[FieldInfo]) -> TokenStream {
+    let value = |member: &Member| -> TokenStream {
+        let info = infos.iter().find(|info| info.member == *member);
+        match info {
+            Some(info) if info.option.is_some() => quote!(::core::option::Option::None),
+            Some(FieldInfo {
+                ty,
+                attrs:
+                    FieldAttrs {
+                        default:
+                            Some(attr::DefaultDecl {
+                                value: Some(expr), ..
+                            }),
+                        ..
+                    },
+                ..
+            }) => typed(expr, ty),
+            _ => quote!(::core::default::Default::default()),
+        }
+    };
+    let members = fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| match &field.ident {
+            Some(name) => Member::Named(name.clone()),
+            None => Member::Unnamed(index.into()),
+        });
+    let body = match fields {
+        Fields::Named(_) => {
+            let inits = members.map(|member| {
+                let value = value(&member);
+                quote!(#member: #value)
+            });
+            quote!(Self { #(#inits),* })
+        }
+        Fields::Unnamed(_) => {
+            let inits = members.map(|member| value(&member));
+            quote!(Self(#(#inits),*))
+        }
+        Fields::Unit => quote!(Self),
+    };
+    let header = target.impl_for(
+        &quote!(::core::default::Default),
+        Some(&quote!(::core::default::Default)),
+    );
+    quote! {
+        #[automatically_derived]
+        #header {
+            fn default() -> Self {
+                #body
+            }
+        }
+    }
+}
+
+/// A getter per named `Option` field with a `schema::fallback`.
+fn getters(target: &Target, infos: &[FieldInfo]) -> TokenStream {
+    let getters: Vec<TokenStream> = infos
+        .iter()
+        .filter_map(|info| {
+            let (fallback, _) = info.attrs.fallback.as_ref()?;
+            let name = info.ident?;
+            let inner = info.option?;
+            let vis = info.vis;
+            // A named fallback is often a private const of the family, which the doc of a
+            // public getter cannot name: it says what the const is instead.
+            let doc = if matches!(fallback, syn::Expr::Path(_)) {
+                format!("`{name}`, or the family's default where the document has none.")
+            } else {
+                format!(
+                    "`{name}`, or `{}` where the document has none.",
+                    attr::text(fallback)
+                )
+            };
+            let core = core();
+            let (answer, some, none) = match fallback {
+                // A text: the member's own, lent.
+                syn::Expr::Lit(syn::ExprLit {
+                    lit: Lit::Str(_), ..
+                }) => (
+                    quote!(&str),
+                    quote!(::core::convert::AsRef::<str>::as_ref(value)),
+                    quote!(#fallback),
+                ),
+                // A pair of ends: the ends the member resolves to.
+                syn::Expr::Tuple(pair) if pair.elems.len() == 2 => {
+                    let (low, high) = (&pair.elems[0], &pair.elems[1]);
+                    let end = quote!(<#inner as #core::shared::Resolve>::End);
+                    (
+                        quote!((#end, #end)),
+                        quote!(#core::shared::Resolve::resolve_ends(value, #low, #high)),
+                        quote!((#low, #high)),
+                    )
+                }
+                _ => (
+                    quote!(#inner),
+                    quote!(::core::clone::Clone::clone(value)),
+                    typed(fallback, inner),
+                ),
+            };
+            Some(quote! {
+                #[doc = #doc]
+                #[must_use]
+                #[allow(clippy::clone_on_copy)]
+                #vis fn #name(&self) -> #answer {
+                    match &self.#name {
+                        ::core::option::Option::Some(value) => #some,
+                        ::core::option::Option::None => #none,
+                    }
+                }
+            })
+        })
+        .collect();
+    if getters.is_empty() {
+        return TokenStream::new();
+    }
+    let header = target.inherent();
+    quote! {
+        #[automatically_derived]
+        #header {
+            #(#getters)*
+        }
+    }
+}
+
+fn derive_enum(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) -> TokenStream {
+    let has_data = data
+        .variants
+        .iter()
+        .any(|variant| !matches!(variant.fields, Fields::Unit));
+    if has_data && attr::is_untagged(&input.attrs) {
+        return derive_untagged(input, data, errors);
+    }
+    if has_data {
+        return derive_tagged(input, data, attr::tag_of(&input.attrs).as_deref(), errors);
+    }
+    let container = ContainerAttrs::read(&input.attrs, Place::Enum, errors);
+    if let Some(param) = input.generics.params.first() {
+        errors.push(Error::new_spanned(
+            param,
+            "a string enum has no type parameters: its variants hold nothing a parameter could \
+             stand for",
+        ));
+    }
+    let mut variants = Vec::new();
+    for variant in &data.variants {
+        let rename = attr::variant_rename(&variant.attrs, errors);
+        let name = json_name(&variant.ident.to_string(), rename.as_ref(), &container);
+        variants.push((&variant.ident, name));
+    }
+    let core = core();
+    let ident = &input.ident;
+    // An enum in the game's order states its own `ALL`.
+    let all = (!container.order_game).then(|| {
+        let all = variants.iter().map(|(v, _)| quote!(Self::#v));
+        quote! {
+            /// Every value, in declaration order.
+            pub const ALL: &'static [Self] = &[#(#all),*];
+        }
+    });
+    let all_check = container
+        .order_game
+        .then(|| game_order_check(ident, &variants));
+    let names: Vec<&String> = variants.iter().map(|(_, n)| n).collect();
+    let expected = format!(
+        "one of: {}",
+        names
+            .iter()
+            .map(|n| n.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    let name_arms = variants.iter().map(|(v, n)| quote!(Self::#v => #n,));
+    let from_arms = variants
+        .iter()
+        .map(|(v, n)| quote!(#n => ::core::option::Option::Some(Self::#v),));
+    let from_json = read::unit_enum_read(ident, container.string_only);
+    quote! {
+        #from_json
+
+        #[automatically_derived]
+        impl #ident {
+            #all
+            /// The JSON names, in declaration order (an enum in the game's order states its
+            /// own `ALL` in that order; `NAMES` and `EXPECTED` keep the declaration's).
+            pub const NAMES: &'static [&'static str] = &[#(#names),*];
+            /// What the enum takes, in words: the error of a name it does not know.
+            pub const EXPECTED: &'static str = #expected;
+
+            /// The JSON name.
+            pub const fn name(&self) -> &'static str {
+                match self {
+                    #(#name_arms)*
+                }
+            }
+
+            /// The value spelt `name`.
+            pub fn from_name(name: &str) -> ::core::option::Option<Self> {
+                match name { #(#from_arms)* _ => ::core::option::Option::None }
+            }
+
+            /// The value spelt `name`, or the error naming what the enum takes.
+            pub fn parse_name(name: &str) -> ::core::result::Result<Self, #core::schema::UnknownName> {
+                Self::from_name(name).ok_or_else(|| #core::schema::UnknownName {
+                    expected: Self::EXPECTED,
+                    found: ::std::borrow::ToOwned::to_owned(name),
+                })
+            }
+        }
+
+        #all_check
+
+        #[automatically_derived]
+        impl ::core::fmt::Display for #ident {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                f.write_str(self.name())
+            }
+        }
+
+        #[automatically_derived]
+        impl #core::schema::Schema for #ident {
+            const FIELDS: &'static [#core::schema::FieldRow] = &[];
+
+            fn check(&mut self, _: &mut #core::schema::SchemaCx<'_>) {}
+
+            fn trigger_members(_: &str, _: &mut ::std::vec::Vec<::std::string::String>) {}
+        }
+
+        #[automatically_derived]
+        impl #core::molang::MolangFields for #ident {
+            fn visit_molang(&mut self, _: &mut #core::molang::MolangVisitor<'_>) {}
+        }
+    }
+}
+
+/// The compile-time check of an enum's own `ALL` (`schema::order = "game"`): a list of `Self`
+/// naming every variant once.
+fn game_order_check(ident: &Ident, variants: &[(&Ident, String)]) -> TokenStream {
+    let count = variants.len();
+    let indices = variants
+        .iter()
+        .enumerate()
+        .map(|(index, (v, _))| quote!(#ident::#v => #index,));
+    quote! {
+        #[automatically_derived]
+        const _: () = {
+            let all: &[#ident] = &#ident::ALL;
+            let mut seen = [false; #count];
+            let mut at = 0;
+            while at < all.len() {
+                let index = match &all[at] {
+                    #(#indices)*
+                };
+                assert!(
+                    !seen[index],
+                    "`schema::order = \"game\"`: the enum's `ALL` names a variant twice"
+                );
+                seen[index] = true;
+                at += 1;
+            }
+            assert!(
+                all.len() == #count,
+                "`schema::order = \"game\"`: the enum's `ALL` leaves out a variant"
+            );
+        };
+    }
+}
+
+/// One variant of an untagged enum, read.
+struct VariantInfo<'a> {
+    ident: &'a Ident,
+    /// `Self::V { a: __f0, .. }`, `Self::V(__f0)` or `Self::V`.
+    pattern: TokenStream,
+    fields: Vec<FieldInfo<'a>>,
+}
+
+/// The binding of a variant's field `index` in its arm.
+fn binding(index: usize) -> Ident {
+    format_ident!("__f{index}")
+}
+
+/// An untagged enum with data: `impl Schema` (no `FIELDS` of its own; `check` and the Molang
+/// walk of the active variant's fields at the owner's path, every variant's trigger members).
+/// A newtype variant's value is the enum's (no step); a struct variant's members are the
+/// object's. No `Default`: no variant is the default one.
+fn derive_untagged(input: &DeriveInput, data: &DataEnum, errors: &mut Vec<Error>) -> TokenStream {
+    let container = ContainerAttrs::read(&input.attrs, Place::Untagged, errors);
+    let variants = untagged_variants(data, errors);
+    let target = Target {
+        ident: &input.ident,
+        generics: &input.generics,
+    };
+    let impls = untagged_impls(&target, &variants, None);
+    let reads: Vec<read::ReadVariant> = data
+        .variants
+        .iter()
+        .filter_map(|variant| {
+            let info = variants.iter().find(|info| *info.ident == variant.ident)?;
+            Some(read::ReadVariant {
+                variant,
+                name: json_name(
+                    &variant.ident.to_string(),
+                    attr::rename_of(&variant.attrs).as_ref(),
+                    &container,
+                ),
+                fields: &info.fields,
+                unknown: attr::variant_unknown(&variant.attrs),
+            })
+        })
+        .collect();
+    let from_json = read::untagged_read(&target, container.invalid.as_ref(), &reads);
+    quote!(#impls #from_json)
+}
+
+/// A tagged enum with data: internally (`tag = ".."`, the variant named by that member, its
+/// members beside it) or externally (`{"name": payload}`, a unit variant its name). `impl
+/// Schema` and `impl MolangFields` as an untagged enum's (an externally tagged variant's
+/// fields one key down), and its read.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of field and variant"
+)]
+fn derive_tagged(
+    input: &DeriveInput,
+    data: &DataEnum,
+    tag: Option<&str>,
+    errors: &mut Vec<Error>,
+) -> TokenStream {
+    let container = ContainerAttrs::read(&input.attrs, Place::Tagged, errors);
+    if let Some(span) = attr::content_of(&input.attrs) {
+        errors.push(Error::new(
+            span,
+            "an adjacently tagged enum (`content` beside `tag`) has no derived read: no document \
+             of the game writes one",
+        ));
+    }
+    if let (None, Some((_, span))) = (tag, &container.tag_with) {
+        errors.push(Error::new(
+            *span,
+            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`): \
+             an externally tagged one is named by its key",
+        ));
+    }
+    read::check_tagged_variants(data, tag.is_some(), errors);
+    let mut variants: Vec<VariantInfo> = Vec::new();
+    let mut json_names = Vec::new();
+    let mut unknowns = Vec::new();
+    for variant in &data.variants {
+        let named = matches!(variant.fields, Fields::Named(_));
+        let (rename, rename_all, unknown) = attr::tagged_variant(&variant.attrs, named, errors);
+        let naming = ContainerAttrs {
+            rename_all,
+            ..ContainerAttrs::default()
+        };
+        let v = &variant.ident;
+        let access = |_: &Member, index: usize| {
+            let binding = binding(index);
+            quote!((*#binding))
+        };
+        let (pattern, fields) = match &variant.fields {
+            Fields::Unit => (quote!(Self::#v), Vec::new()),
+            Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1 => {
+                // An internally tagged newtype's struct shares the enum's object; an externally
+                // tagged one's value is the variant's payload.
+                let fields = field_infos(&variant.fields, &naming, true, access, errors);
+                let pattern = if fields.is_empty() {
+                    quote!(Self::#v(..))
+                } else {
+                    quote!(Self::#v(__f0))
+                };
+                (pattern, fields)
+            }
+            Fields::Unnamed(_) => continue,
+            Fields::Named(_) => {
+                let fields = field_infos(&variant.fields, &naming, false, access, errors);
+                let binds = variant
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, field)| {
+                        let name = field.ident.as_ref()?;
+                        fields.iter().any(|info| info.ident == Some(name)).then(|| {
+                            let binding = binding(index);
+                            quote!(#name: #binding)
+                        })
+                    });
+                (quote!(Self::#v { #(#binds,)* .. }), fields)
+            }
+        };
+        for info in &fields {
+            validate_field(info, &fields, errors);
+            read::validate(info, errors);
+        }
+        json_names.push(read::variant_name(variant, rename.as_ref(), &container));
+        unknowns.push(unknown);
+        variants.push(VariantInfo {
+            ident: v,
+            pattern,
+            fields,
+        });
+    }
+    let steps = tag.is_none().then(|| json_names.clone());
+    let target = Target {
+        ident: &input.ident,
+        generics: &input.generics,
+    };
+    let impls = untagged_impls(&target, &variants, steps.as_deref());
+    let reads: Vec<read::ReadVariant> = data
+        .variants
+        .iter()
+        .filter_map(|variant| {
+            let at = variants
+                .iter()
+                .position(|info| *info.ident == variant.ident)?;
+            Some(read::ReadVariant {
+                variant,
+                name: json_names[at].clone(),
+                fields: &variants[at].fields,
+                unknown: unknowns[at].clone(),
+            })
+        })
+        .collect();
+    let from_json = match tag {
+        Some(tag) => read::tagged_read(
+            &target,
+            tag,
+            container.invalid.as_ref(),
+            container.tag_with.as_ref(),
+            container.after_read.as_ref(),
+            &reads,
+        ),
+        None => read::external_read(&target, container.invalid.as_ref(), &reads),
+    };
+    quote!(#impls #from_json)
+}
+
+/// The variants of an untagged enum, each with its arm's pattern and its fields bound in it.
+fn untagged_variants<'a>(data: &'a DataEnum, errors: &mut Vec<Error>) -> Vec<VariantInfo<'a>> {
+    let mut variants: Vec<VariantInfo> = Vec::new();
+    for variant in &data.variants {
+        let named = matches!(variant.fields, Fields::Named(_));
+        let rename_all = attr::untagged_variant(&variant.attrs, named, errors);
+        let naming = ContainerAttrs {
+            rename_all,
+            ..ContainerAttrs::default()
+        };
+        let v = &variant.ident;
+        let access = |_: &Member, index: usize| {
+            let binding = binding(index);
+            quote!((*#binding))
+        };
+        let (pattern, fields) = match &variant.fields {
+            Fields::Unit => (quote!(Self::#v), Vec::new()),
+            Fields::Unnamed(unnamed) if unnamed.unnamed.len() == 1 => {
+                let fields = field_infos(&variant.fields, &naming, true, access, errors);
+                let pattern = if fields.is_empty() {
+                    quote!(Self::#v(..))
+                } else {
+                    quote!(Self::#v(__f0))
+                };
+                (pattern, fields)
+            }
+            Fields::Unnamed(unnamed) => {
+                errors.push(Error::new_spanned(
+                    unnamed,
+                    "a variant of an untagged enum holds one value or named members: a tuple of \
+                     several has no JSON form the derive walks",
+                ));
+                continue;
+            }
+            Fields::Named(_) => {
+                let fields = field_infos(&variant.fields, &naming, false, access, errors);
+                let binds = variant
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, field)| {
+                        let name = field.ident.as_ref()?;
+                        fields.iter().any(|info| info.ident == Some(name)).then(|| {
+                            let binding = binding(index);
+                            quote!(#name: #binding)
+                        })
+                    });
+                (quote!(Self::#v { #(#binds,)* .. }), fields)
+            }
+        };
+        for info in &fields {
+            validate_field(info, &fields, errors);
+        }
+        variants.push(VariantInfo {
+            ident: v,
+            pattern,
+            fields,
+        });
+    }
+    variants
+}
+
+/// The impls of an untagged enum over its read `variants`; with `steps`, each variant's
+/// fields one key down, under its name (an externally tagged enum).
+fn untagged_impls(
+    target: &Target,
+    variants: &[VariantInfo],
+    steps: Option<&[String]>,
+) -> TokenStream {
+    let core = core();
+    let step = |index: usize| steps.and_then(|steps| steps.get(index));
+    let check_arms = variants.iter().enumerate().map(|(index, variant)| {
+        let pattern = &variant.pattern;
+        let checks = variant
+            .fields
+            .iter()
+            .map(|info| field_check(info, &variant.fields))
+            .chain(
+                variant
+                    .fields
+                    .iter()
+                    .filter_map(|info| field_cross_check(info, &variant.fields)),
+            );
+        if let Some(name) = step(index) {
+            quote!(#pattern => { cx.enter(#name); #(#checks)* cx.leave(); })
+        } else {
+            quote!(#pattern => { #(#checks)* })
+        }
+    });
+    let molang_arms = variants.iter().enumerate().map(|(index, variant)| {
+        let pattern = &variant.pattern;
+        let molang = variant.fields.iter().map(field_molang);
+        if let Some(name) = step(index) {
+            quote! {
+                #pattern => {
+                    visitor.enter(#core::molang::Step::Key(#name));
+                    #(#molang)*
+                    visitor.leave();
+                }
+            }
+        } else {
+            quote!(#pattern => { #(#molang)* })
+        }
+    });
+    let triggers: Vec<TokenStream> = variants
+        .iter()
+        .enumerate()
+        .map(|(index, variant)| {
+            let calls = trigger_calls(&variant.fields);
+            if let Some(name) = step(index) {
+                quote! {{
+                    let prefix: &str = &#core::schema::member(prefix, #name);
+                    #(#calls)*
+                }}
+            } else {
+                quote!(#(#calls)*)
+            }
+        })
+        .collect();
+
+    let (schema_impl, molang_impl) = target.walk_impls();
+    quote! {
+        #[automatically_derived]
+        #schema_impl {
+            /// An untagged enum is no one object: it has no rows of its own.
+            const FIELDS: &'static [#core::schema::FieldRow] = &[];
+
+            #[allow(unused_variables)]
+            fn check(&mut self, cx: &mut #core::schema::SchemaCx<'_>) {
+                match self {
+                    #(#check_arms)*
+                }
+            }
+
+            #[allow(unused_variables)]
+            fn trigger_members(prefix: &str, out: &mut ::std::vec::Vec<::std::string::String>) {
+                // Every variant's, a member two of them share once.
+                let mut __all = ::std::vec::Vec::new();
+                {
+                    let out = &mut __all;
+                    #(#triggers)*
+                }
+                let __start = out.len();
+                for __member in __all {
+                    if !out[__start..].contains(&__member) {
+                        out.push(__member);
+                    }
+                }
+            }
+        }
+
+        #[automatically_derived]
+        #molang_impl {
+            #[allow(unused_variables)]
+            fn visit_molang(&mut self, visitor: &mut #core::molang::MolangVisitor<'_>) {
+                match self {
+                    #(#molang_arms)*
+                }
+            }
+        }
+    }
+}

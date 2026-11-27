@@ -1,0 +1,243 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:crafting_items_catalog": {
+    "categories": [
+      {
+        "category_name": "nature",
+        "groups": [
+          {
+            "group_identifier": {
+              "icon": "minecraft:fern",
+              "name": "minecraft:itemGroup.name.grass"
+            },
+            "items": ["minecraft:red_shrub"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:shelf_mushroom",
+              "name": "minecraft:itemGroup.name.mushroom"
+            },
+            "items": ["minecraft:shelf_mushroom"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_leaves",
+              "name": "minecraft:itemGroup.name.leaves"
+            },
+            "items": [
+              "minecraft:orange_poplar_leaves",
+              "minecraft:red_poplar_leaves",
+              "minecraft:yellow_poplar_leaves"
+            ]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_sapling",
+              "name": "minecraft:itemGroup.name.sapling"
+            },
+            "items": ["minecraft:poplar_sapling"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_log",
+              "name": "minecraft:itemGroup.name.log"
+            },
+            "items": [
+              "minecraft:poplar_log",
+              "minecraft:stripped_poplar_log"
+            ]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_wood",
+              "name": "minecraft:itemGroup.name.wood"
+            },
+            "items": ["minecraft:poplar_wood", "minecraft:stripped_poplar_wood"]
+          }
+        ]
+      },
+      {
+        "category_name": "construction",
+        "groups": [
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_planks",
+              "name": "minecraft:itemGroup.name.planks"
+            },
+            "items": ["minecraft:poplar_planks"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_fence",
+              "name": "minecraft:itemGroup.name.fence"
+            },
+            "items": ["minecraft:poplar_fence"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:fence_gate",
+              "name": "minecraft:itemGroup.name.fenceGate"
+            },
+            "items": ["minecraft:poplar_fence_gate"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:stone_stairs",
+              "name": "minecraft:itemGroup.name.stairs"
+            },
+            "items": [
+              "minecraft:poplar_stairs",
+              "minecraft:white_wool_stairs",
+              "minecraft:light_gray_wool_stairs",
+              "minecraft:gray_wool_stairs",
+              "minecraft:black_wool_stairs",
+              "minecraft:brown_wool_stairs",
+              "minecraft:red_wool_stairs",
+              "minecraft:orange_wool_stairs",
+              "minecraft:yellow_wool_stairs",
+              "minecraft:lime_wool_stairs",
+              "minecraft:green_wool_stairs",
+              "minecraft:cyan_wool_stairs",
+              "minecraft:light_blue_wool_stairs",
+              "minecraft:blue_wool_stairs",
+              "minecraft:purple_wool_stairs",
+              "minecraft:magenta_wool_stairs",
+              "minecraft:pink_wool_stairs"
+            ]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:wooden_door",
+              "name": "minecraft:itemGroup.name.door"
+            },
+            "items": ["minecraft:poplar_door"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:trapdoor",
+              "name": "minecraft:itemGroup.name.trapdoor"
+            },
+            "items": ["minecraft:poplar_trapdoor"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:smooth_stone_slab",
+              "name": "minecraft:itemGroup.name.slab"
+            },
+            "items": [
+              "minecraft:poplar_slab",
+              "minecraft:white_wool_slab",
+              "minecraft:light_gray_wool_slab",
+              "minecraft:gray_wool_slab",
+              "minecraft:black_wool_slab",
+              "minecraft:brown_wool_slab",
+              "minecraft:red_wool_slab",
+              "minecraft:orange_wool_slab",
+              "minecraft:yellow_wool_slab",
+              "minecraft:lime_wool_slab",
+              "minecraft:green_wool_slab",
+              "minecraft:cyan_wool_slab",
+              "minecraft:light_blue_wool_slab",
+              "minecraft:blue_wool_slab",
+              "minecraft:purple_wool_slab",
+              "minecraft:magenta_wool_slab",
+              "minecraft:pink_wool_slab"
+            ]
+          }
+        ]
+      },
+      {
+        "category_name": "items",
+        "groups": [
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_boat",
+              "name": "minecraft:itemGroup.name.boat"
+            },
+            "items": ["minecraft:poplar_boat"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_chest_boat",
+              "name": "minecraft:itemGroup.name.chestboat"
+            },
+            "items": ["minecraft:poplar_chest_boat"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:wooden_pressure_plate",
+              "name": "minecraft:itemGroup.name.pressurePlate"
+            },
+            "items": ["minecraft:poplar_pressure_plate"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_shelf",
+              "name": "minecraft:itemGroup.name.shelf"
+            },
+            "items": ["minecraft:poplar_shelf"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_sign",
+              "name": "minecraft:itemGroup.name.sign"
+            },
+            "items": ["minecraft:poplar_sign"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:oak_hanging_sign",
+              "name": "minecraft:itemGroup.name.hanging_sign"
+            },
+            "items": ["minecraft:poplar_hanging_sign"]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:wooden_button",
+              "name": "minecraft:itemGroup.name.buttons"
+            },
+            "items": ["minecraft:poplar_button"]
+          }
+        ]
+      },
+      {
+        "category_name": "items",
+        "groups": [
+          {
+            "group_identifier": {
+              "icon": "minecraft:bed",
+              "name": "minecraft:itemGroup.name.bed"
+            },
+            "items": [
+              "minecraft:straw_bed"
+            ]
+          },
+          {
+            "group_identifier": {
+              "icon": "minecraft:red_cushion",
+              "name": "minecraft:itemGroup.name.cushion"
+            },
+            "items": [
+              "minecraft:black_cushion",
+              "minecraft:blue_cushion",
+              "minecraft:brown_cushion",
+              "minecraft:cyan_cushion",
+              "minecraft:gray_cushion",
+              "minecraft:green_cushion",
+              "minecraft:light_blue_cushion",
+              "minecraft:light_gray_cushion",
+              "minecraft:lime_cushion",
+              "minecraft:magenta_cushion",
+              "minecraft:orange_cushion",
+              "minecraft:pink_cushion",
+              "minecraft:purple_cushion",
+              "minecraft:red_cushion",
+              "minecraft:white_cushion",
+              "minecraft:yellow_cushion"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

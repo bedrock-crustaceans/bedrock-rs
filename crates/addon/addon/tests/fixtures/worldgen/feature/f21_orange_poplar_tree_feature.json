@@ -1,0 +1,94 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:tree_feature": {
+    "description": {
+      "identifier": "minecraft:orange_poplar_tree_feature"
+    },
+    "poplar_trunk": {
+      "trunk_height": {
+        "range_min": 7,
+        "range_max": 11
+      },
+      "trunk_block": {
+        "name": "minecraft:poplar_log"
+      },
+      "remaining_trunk_height_above_branches": {
+        "range_min": 4,
+        "range_max": 4
+      },
+      "amount_of_foliage_support_branches": {
+        "range_min": 1,
+        "range_max": 4
+      },
+      "log_decoration_feature": "minecraft:optional_shelf_mushroom_feature"
+    },
+    "poplar_canopy": {
+      "radius": [
+        {
+          "value": 5,
+          "weight": 5
+        },
+        {
+          "value": 6,
+          "weight": 5
+        },
+        {
+          "value": 7,
+          "weight": 1
+        },
+        {
+          "value": 8,
+          "weight": 1
+        }
+      ],
+      "height": {
+        "range_min": 5,
+        "range_max": 6
+      },
+      "side_hole_chance": 0.15,
+      "leaf_block": {
+        "name": "minecraft:orange_poplar_leaves"
+      },
+      "branch_block": {
+        "name": "minecraft:poplar_log"
+      }
+    },
+    "may_grow_on": [
+      {
+        "tags": "query.any_tag('dirt')"
+      }
+    ],
+    "base_block": [
+      "minecraft:dirt",
+      "minecraft:coarse_dirt"
+    ],
+    "may_grow_through": [
+      {
+        "tags": "query.any_tag('dirt')"
+      }
+    ],
+    "may_replace": [
+      "minecraft:air",
+      "minecraft:snow_layer",
+      "minecraft:acacia_leaves",
+      "minecraft:azalea_leaves",
+      "minecraft:azalea_leaves_flowered",
+      "minecraft:birch_leaves",
+      "minecraft:cherry_leaves",
+      "minecraft:dark_oak_leaves",
+      "minecraft:jungle_leaves",
+      "minecraft:mangrove_leaves",
+      "minecraft:oak_leaves",
+      "minecraft:pale_oak_leaves",
+      "minecraft:spruce_leaves",
+      "minecraft:orange_poplar_leaves",
+      "minecraft:red_poplar_leaves",
+      "minecraft:yellow_poplar_leaves",
+      "minecraft:wildflowers",
+      "minecraft:leaf_litter",
+      "minecraft:brown_mushroom",
+      "minecraft:red_shrub",
+      "minecraft:shelf_mushroom"
+    ]
+  }
+}

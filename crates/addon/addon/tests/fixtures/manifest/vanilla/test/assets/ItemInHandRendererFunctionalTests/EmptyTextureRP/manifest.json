@@ -1,0 +1,18 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "Empty Texture",
+		"description": "Empty Texture Resource Pack",
+		"uuid": "9ae9acfc-4e11-c7e7-58b8-190b50ef8171",
+		"version": [1, 0, 0],
+		"min_engine_version": [1, 16, 0]
+	},
+	"modules": [
+		{
+			"description": "Empty Texture",
+			"type": "resources",
+			"uuid": "7234e2f2-ceaa-9eb8-0af5-46e93ee43932",
+			"version": [1, 0, 0]
+		}
+	]
+}

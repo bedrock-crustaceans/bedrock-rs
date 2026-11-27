@@ -1,0 +1,5 @@
+error: `#[derive(Components)]` applies to a family's component enum, not a struct
+  --> tests/ui/not_an_enum.rs:11:1
+   |
+11 | struct ToyComponent {
+   | ^^^^^^

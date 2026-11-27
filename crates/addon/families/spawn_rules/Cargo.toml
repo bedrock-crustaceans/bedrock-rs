@@ -1,0 +1,28 @@
+[package]
+name = "bedrock_addon_family_spawn_rules"
+description = "The `spawn_rules` content family of bedrock_addon, re-exported as bedrock_addon::families::spawn_rules; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+# The load-time Molang compile check of the conditions' `tags` members.
+molang = ["bedrock_addon_shared_spawn/molang"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_spawn = { path = "../../shared/spawn" }
+facet = { workspace = true }
+
+[dev-dependencies]
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
+bedrock_addon_test_support = { path = "../../test_support" }
+facet-value = { workspace = true }
+uuid = { workspace = true }

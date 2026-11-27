@@ -1,0 +1,23 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "sm23",
+    "description": "families/script_module fixture sm23_entry_extension",
+    "uuid": "c9700f27-962d-5303-a1b4-330206eda1b1",
+    "version": "1.0.0",
+    "min_engine_version": "1.21.0"
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "53c667cd-d46e-53d0-848b-f77afca1b343",
+      "version": "3.2.1"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ]
+}

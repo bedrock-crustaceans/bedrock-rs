@@ -1,0 +1,11 @@
+error: `schema::keys` is the rule of a map's member names: an `IndexMap<String, V>` field (or an `Option` of one)
+  --> tests/ui/schema/keys.rs:14:13
+   |
+14 |     #[facet(schema::keys = NAMES)]
+   |             ^^^^^^
+
+error: a field with `schema::read_with` is read by its function, which reads the names its own way
+  --> tests/ui/schema/keys.rs:16:13
+   |
+16 |     #[facet(schema::keys = NAMES, schema::read_with = names)]
+   |             ^^^^^^

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "determinism:lighting"
+    },
+    "emissive": {
+      "desaturation": 0.5
+    }
+  }
+}

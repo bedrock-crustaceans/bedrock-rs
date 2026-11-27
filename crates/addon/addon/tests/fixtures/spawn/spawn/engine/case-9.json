@@ -1,0 +1,23 @@
+{
+				"format_version": "1.21.60",
+				"minecraft:spawn_rules": {
+					"description": {
+						"identifier": "test:mob"
+					},
+					"conditions": [
+						{
+							"weight": 99
+						},
+						{
+							"weight": 1,
+							"herds": [
+							  {"min":1},
+							  {"max":6},
+							  {"min":2, "max":6, "event":"minecraft:make_white"}
+							],
+							"mob_event_filter": "mob:filter",
+							"biome_filter": { "test": "has_biome_tag", "operator":"==", "value": "plains" }
+						}
+					]
+				}
+			}

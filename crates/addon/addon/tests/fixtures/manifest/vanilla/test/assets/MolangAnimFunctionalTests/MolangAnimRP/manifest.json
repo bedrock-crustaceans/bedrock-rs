@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Molang Anim Test Resource Pack",
+    "name": "Molang Anim Test Resource Pack",
+    "uuid": "1153d3e8-2c47-47e9-9e4b-5d571a2894cd",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "Molang Anim Test Resource Pack",
+      "type": "resources",
+      "uuid": "672ea8da-4a6c-4506-8d5e-520ff85f9945",
+      "version": [1, 0, 0]
+    }
+  ]
+}

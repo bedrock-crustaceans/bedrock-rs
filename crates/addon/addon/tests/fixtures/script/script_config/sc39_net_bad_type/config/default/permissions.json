@@ -1,0 +1,11 @@
+{
+  "allowed_modules": [
+    "@minecraft/server",
+    "@minecraft/server-net"
+  ],
+  "module_permissions": {
+    "@minecraft/server-net": {
+      "force_tls": "yes"
+    }
+  }
+}

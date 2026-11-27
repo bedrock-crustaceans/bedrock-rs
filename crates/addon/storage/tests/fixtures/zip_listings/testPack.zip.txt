@@ -1,0 +1,7 @@
+test/
+test/nested/
+test/nested/test3.txt
+test/test.json
+test/test2.txt
+contents.json
+manifest.json

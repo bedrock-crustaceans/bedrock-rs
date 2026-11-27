@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
+use facet::Facet;
 
 /// [`Dropdown`] represents a dropdown which, when clicked,
 /// opens a window with the options set in the Options field.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(deny_unknown_fields)]
 pub struct Dropdown {
     /// Refers to the content shown above the dropdown element.
     /// It may include Minecraft formatting codes.

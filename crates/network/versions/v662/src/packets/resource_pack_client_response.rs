@@ -1,0 +1,11 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 8, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ResourcePackClientResponsePacket<V: ProtoVersion> {
+    pub response: V::ResourcePackResponse,
+    #[vec_repr(u16)]
+    #[vec_endianness(le)]
+    pub downloading_packs: Vec<String>,
+}

@@ -1,0 +1,73 @@
+//! Writing [`Dimension`]: the newest struct's `VersionStruct` (its parse reads the whole
+//! document with `read`), and the whole document it writes.
+
+use super::read::{RootLatest, constraints, parse_root};
+use super::{Dimension, V1_26_50};
+use bedrock_addon_core::diagnostic::Diagnostics;
+use bedrock_addon_core::json::{EncodeError, JsonSlice, Value};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{ParseCx, VersionStruct, Versioned, write_payload};
+
+impl Versioned for Dimension {
+    const VERSION: FormatVersion = V1_26_50;
+}
+
+impl VersionStruct for Dimension {
+    /// Reads the whole document (the raw-text path).
+    fn parse(text: JsonSlice<'_>, cx: &ParseCx<'_>, d: &mut Diagnostics) -> Option<Self> {
+        let root: RootLatest = parse_root(text, cx, d)?;
+        let mut inner = root.dimension;
+        let components = cx.at.with(&["minecraft:dimension", "components"]);
+        // The 1.26.50 schema constraints: `min_y` in `[-512, 512]`, `height_range` in
+        // `[16, 1024]` and a multiple of 16, the clouds' `height` in `[-512, 512]`.
+        let height = inner
+            .components
+            .dimension_height
+            .as_mut()
+            .is_none_or(|height| {
+                constraints(height, &components.child("minecraft:dimension_height"), d)
+            });
+        let clouds = inner
+            .components
+            .clouds
+            .as_mut()
+            .is_none_or(|clouds| constraints(clouds, &components.child("minecraft:clouds"), d));
+        if !(height && clouds) {
+            return None;
+        }
+        Some(Dimension {
+            description: inner.description,
+            components: inner.components,
+            source_format_version: cx.original_version,
+        })
+    }
+
+    /// The whole document: `format_version` (the document's own when it is 1.26.50 or newer,
+    /// else 1.26.50), the payload and the other root members. Not core's `write_envelope`: the
+    /// family reads the raw text at every version (`EnvelopeCheck::Never`), so the struct writes
+    /// its own root.
+    fn write(&self) -> Result<Value, EncodeError> {
+        let mut payload = facet_value::VObject::new();
+        payload.insert("description", write_payload(&self.description)?);
+        let mut components = write_payload(&self.components)?;
+        if let Some(object) = components.as_object_mut()
+            && self
+                .components
+                .dimension_height
+                .as_ref()
+                .is_some_and(|height| !height.is_writable())
+        {
+            object.remove("minecraft:dimension_height");
+        }
+        payload.insert("components", components);
+        let mut root = facet_value::VObject::new();
+        root.insert(
+            "format_version",
+            self.source_format_version.max(V1_26_50).to_string(),
+        );
+        root.insert("minecraft:dimension", payload);
+        // The unknown members of the payload and the root are the document's, written from
+        // its table.
+        Ok(root.into())
+    }
+}

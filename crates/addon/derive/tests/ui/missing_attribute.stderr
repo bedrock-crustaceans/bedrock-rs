@@ -1,0 +1,5 @@
+error: missing `#[component(name = "minecraft:…", parse = …)]`: every variant other than the `custom`, `unknown` and `dynamic` ones is a typed component
+  --> tests/ui/missing_attribute.rs:14:5
+   |
+14 |     Glint(Glint),
+   |     ^^^^^

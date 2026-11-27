@@ -1,0 +1,15 @@
+# families/script_config fixtures.md, row sc15_mixed_elements (probe C).
+
+[[diagnostic]]
+code = "core/invalid_type"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "allowed_modules/1"
+
+[[diagnostic]]
+code = "core/invalid_type"
+severity = "info"
+phase = "parse"
+file = "config/default/permissions.json"
+path = "allowed_modules/2"

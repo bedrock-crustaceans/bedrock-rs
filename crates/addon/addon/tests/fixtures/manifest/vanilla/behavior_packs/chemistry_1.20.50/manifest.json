@@ -1,0 +1,28 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "pack.description",
+    "name": "pack.name",
+    "uuid": "91b9e624-dda6-43f3-a567-8025c53860b5",
+    "version": [ 1, 20, 50 ],
+    "min_engine_version": [1, 20, 50]
+  },
+  "modules": [
+    {
+      "description": "pack.description",
+      "type": "data",
+      "uuid": "c442aa3a-4485-4914-a13d-a99fb7555a50",
+      "version": [1, 0, 0]
+    }
+  ],
+  "dependencies": [
+    {
+      // Chemistry resource pack 1.20.50
+      "uuid": "0674721c-a0aa-41a1-9ba8-1ed33ea3e7ed",
+      "version": [1, 0, 0]
+    }
+  ],
+  "capabilities": [
+    "chemistry"
+  ]
+}

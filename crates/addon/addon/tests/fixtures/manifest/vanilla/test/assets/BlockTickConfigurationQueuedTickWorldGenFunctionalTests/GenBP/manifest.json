@@ -1,0 +1,26 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Behavior pack used for ScriptBlockCustomComponentQueuedTickWorldGenFunctionalTests",
+    "name": "ScriptBlockCustomComponentQueuedTickWorldGenFunctionalTests Behavior Pack",
+    "uuid": "18ade776-bfbe-46b8-b1f7-3e567cc800d0",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      18,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "0590c9e4-6293-4ce3-88d1-19c30a44a725",
+      "type": "data"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "determinism_tree",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          { "minecraft:wait_ticks": { "num_of_ticks": 1 } },
+          { "minecraft:subtree": { "subtree_id": "move" } }
+        ]
+      }
+    }
+  }
+}

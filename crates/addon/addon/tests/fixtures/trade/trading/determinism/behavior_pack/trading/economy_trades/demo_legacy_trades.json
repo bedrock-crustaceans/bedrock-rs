@@ -1,0 +1,12 @@
+{
+  "tiers": [
+    {
+      "trades": [
+        {
+          "wants": [{ "item": "minecraft:boat", "quantity": 1, "functions": [{ "function": "trader_material_type" }] }],
+          "gives": [{ "item": "minecraft:emerald", "quantity": { "min": 1, "max": 2 } }]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+# fixtures.md `lang/ut_leading_whitespace` (LocalizationUnitTests): the key is registered.
+
+[entries]
+"key.leading_whitespace" = "Value with leading whitespace"

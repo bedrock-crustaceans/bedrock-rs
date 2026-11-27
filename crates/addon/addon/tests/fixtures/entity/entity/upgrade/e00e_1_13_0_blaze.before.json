@@ -1,0 +1,14 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:blaze"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "max_dist": 3,
+        "target_dist": 2
+      }
+    }
+  }
+}

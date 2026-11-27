@@ -1,0 +1,44 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:breedable": {
+        "require_tame": false,
+        "breed_items": [
+          "wheat"
+        ],
+        "inherit_tamed": true,
+        "breeds_with": {
+          "mate_type": "x:cow",
+          "baby_type": "x:cow",
+          "breed_event": {
+            "event": "minecraft:entity_born",
+            "target": "baby"
+          }
+        }
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:breedable": {
+          "breeds_with": [
+            {
+              "mate_type": "x:a",
+              "baby_type": "x:b"
+            },
+            {
+              "mate_type": "x:c",
+              "baby_type": "x:d",
+              "breed_event": {
+                "event": "e"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

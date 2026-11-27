@@ -1,0 +1,15 @@
+{
+  "block_sounds": {
+    "determinism_stone": { "events": { "break": "determinism.click", "hit": { "sound": "determinism.unknown", "pitch": [0.8, 1.2] } } },
+    "determinism_slab": { "base": "determinism_stone", "events": { "place": "determinism.click" } }
+  },
+  "entity_sounds": {
+    "entities": {
+      "determinism_cat": {
+        "events": { "ambient": "determinism.click" },
+        "variants": { "key": "query.is_baby ? 'baby' : 'adult'", "map": { "baby": { "events": { "ambient": "determinism.click" } } } }
+      }
+    }
+  },
+  "individual_event_sounds": { "events": { "ambient.cave": "determinism.click" } }
+}

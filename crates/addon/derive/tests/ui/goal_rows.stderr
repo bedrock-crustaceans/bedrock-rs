@@ -1,0 +1,23 @@
+error: unknown shorthand `object`; expected `scalar`
+  --> tests/ui/goal_rows.rs:14:58
+   |
+14 |     #[component(name = "minecraft:friction", shorthand = object, parse = parse)]
+   |                                                          ^^^^^^
+
+error: a dynamic key holds JSON, not a goal struct: `goal` applies to typed variants
+  --> tests/ui/goal_rows.rs:16:55
+   |
+16 |     #[component(name = "minecraft:behavior.vex_move", goal, parse = parse)]
+   |                                                       ^^^^
+
+error: a `goal` row states the goal's typed version: `typed = "major.minor.patch"`
+  --> tests/ui/goal_rows.rs:12:52
+   |
+12 |     #[component(name = "minecraft:behavior.float", goal, parse = parse)]
+   |                                                    ^^^^
+
+error: a `goal` row needs the enum's `versioned = path`: the goal parse its `VERSIONED` entry instantiates
+  --> tests/ui/goal_rows.rs:12:52
+   |
+12 |     #[component(name = "minecraft:behavior.float", goal, parse = parse)]
+   |                                                    ^^^^

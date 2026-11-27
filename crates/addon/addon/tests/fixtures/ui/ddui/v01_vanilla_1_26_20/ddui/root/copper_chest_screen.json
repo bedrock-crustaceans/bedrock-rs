@@ -1,0 +1,67 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:ui-root": {
+    "description": {
+      "identifier": "minecraft:copper_chest_screen"
+    },
+    "attribs": {
+      "root_point": "minecraft:screen"
+    },
+    "layout": {
+      "markup": [
+        {
+          "component": "Container.Layout",
+          "children": [
+            {
+              "component": "Context",
+              "attribs": { "data": { "$path": "$.minecraft.container" } },
+              "children": [
+                {
+                  "component": "Panel",
+                  "attribs": {
+                    "colorMode": { "$relativePath": "$.colorMode" }
+                  },
+                  "children": [
+                    { "component": "Panel.Decoration" },
+                    {
+                      "component": "Panel.Text",
+                      "attribs": { "text": { "$relativePath": "$.name" } }
+                    },
+                    {
+                      "component": "Panel.CloseButton",
+                      "attribs": {
+                        "onClick": {
+                          "$relativePath": "$.closeCommand"
+                        }
+                      }
+                    },
+                    { "component": "Panel.Spacing" },
+                    {
+                      "component": "Container.FixedGridLayout",
+                      "children": [
+                        {
+                          "component": "Context.List",
+                          "attribs": {
+                            "data": {
+                              "$relativePath": "$.items.levelEntityContainer"
+                            }
+                          },
+                          "children": [
+                            {
+                              "component": "Container.Item",
+                              "attribs": { "item": { "$relativePath": "$" } }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+	"format_version": 2,
+	"header": {
+		"description": "The default Minecraft UI resources.",
+		"name": "Minecraft UI Resource Pack",
+		"uuid": "fdcdb085-9f06-464f-bf0e-25c0b37ff4a5",
+		"version": [0, 0, 1],
+		"min_engine_version": [1, 13, 0]
+	},
+	"modules": [
+		{
+			"description": "The default Minecraft UI resources.",
+			"type": "resources",
+			"uuid": "a405939d-2d00-471a-a51b-64217336b480",
+			"version": [0, 0, 1]
+		}
+	]
+}

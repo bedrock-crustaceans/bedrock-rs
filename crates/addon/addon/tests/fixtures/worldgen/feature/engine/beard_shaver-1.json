@@ -1,0 +1,11 @@
+
+			{
+				"places_feature": "minecraft:feature_that_places_a_structure",
+				"bounding_box_min": [ -2, 0, -2 ],
+				"bounding_box_max": [ 2, 8, 2 ],
+				"y_delta": 2.0,
+				"surface_block_type": "minecraft:grass",
+				"subsurface_block_type": "minecraft:dirt",
+				"beard_raggedness_min": 0.1,
+				"beard_raggedness_max": 0.3
+			}

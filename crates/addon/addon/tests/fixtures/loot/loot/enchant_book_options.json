@@ -1,0 +1,19 @@
+// fixtures.md row 19: enchant_book_for_trading options
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "item",
+          "name": "minecraft:book",
+          "functions": [
+            {"function": "enchant_book_for_trading", "enchantments": [{"name": "sharpness"}, {"name": "nope"}, {"name": 5}]},
+            {"function": "enchant_book_for_trading", "enchantments": 5},
+            {"function": "enchant_book_for_trading", "enchantments": null}
+          ]
+        }
+      ]
+    }
+  ]
+}

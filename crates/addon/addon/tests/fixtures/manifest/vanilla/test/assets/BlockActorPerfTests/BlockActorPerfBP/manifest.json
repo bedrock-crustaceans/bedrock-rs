@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Block Actor Performance Test BP",
+    "description": "Block Actor Performance Test BP",
+    "uuid": "da09e399-6f5e-4287-a013-4cf13de32167",
+    "version": [0, 0, 1],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "63746e38-cab1-49d8-afa7-183967da4818",
+      "version": [0, 0, 1]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "bb09d3c3-b9df-4c90-a151-5488693cbb04",
+      "version": [0, 0, 1]
+    }
+  ]
+}

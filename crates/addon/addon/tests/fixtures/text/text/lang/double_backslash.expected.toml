@@ -1,0 +1,5 @@
+# schema.md rule 6: `\\` becomes one backslash, and the byte after it is not an escape.
+
+[entries]
+"a" = "x\\y"
+"b" = "x\\ny"

@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "who",
+    "minecraft:root": { "minecraft:find_entity": { "entity_type": "who" } }
+  }
+}

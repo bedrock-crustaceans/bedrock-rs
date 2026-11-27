@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm35",
+    "description": "families/script_module fixture sm35_not_allowed",
+    "uuid": "41b17609-ce70-54ac-ab19-aa58c6059c58",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "612f61cb-8c96-53f1-804d-5745692aa897",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/common",
+      "version": "1.0.0"
+    }
+  ]
+}

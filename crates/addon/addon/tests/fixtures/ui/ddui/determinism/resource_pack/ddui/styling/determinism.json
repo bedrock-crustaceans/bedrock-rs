@@ -1,0 +1,16 @@
+{
+  "format_version": "beta",
+  "minecraft:ui-style": {
+    "description": { "identifier": "determinism:style" },
+    "components": {
+      "minecraft:form_panel": { "padding": [2, 4, 2, 4], "image": "textures/ui/form_bg", "image_repeat_top_bottom": "repeat" },
+      "minecraft:form_label": { "color": "#FF202020", "shadow": false },
+      "minecraft:form_textfield": {
+        "text_color": [255, 255, 255, 255],
+        "caret_color": [255, 255, 255],
+        "selection_background_color": "#3366FF",
+        "text_color_disabled": "#80FFFFFF"
+      }
+    }
+  }
+}

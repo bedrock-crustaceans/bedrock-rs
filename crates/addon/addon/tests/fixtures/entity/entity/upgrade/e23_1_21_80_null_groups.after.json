@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.89",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {},
+    "component_groups": {
+      "kept": {}
+    },
+    "events": {
+      "x:go": {
+        "add": {
+          "component_groups": [
+            "gone"
+          ]
+        }
+      }
+    }
+  }
+}

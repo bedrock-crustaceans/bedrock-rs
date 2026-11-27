@@ -1,0 +1,23 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.drop_item_for": {
+        "priority": 1,
+        "max_dist": 6
+      },
+      "minecraft:behavior.explore_outskirts": {
+        "wait_time": 5
+      },
+      "minecraft:economy_trade_table": {
+        "table": "trading/x.json"
+      },
+      "minecraft:foot_size": {
+        "value": 0.5
+      }
+    }
+  }
+}

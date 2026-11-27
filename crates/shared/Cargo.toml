@@ -1,14 +1,15 @@
 [package]
 name = "bedrock_shared"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
-bedrock_protocol_core = { path = "../protocol_core" }
-bedrock_macros = { path = "../macros" }
+bedrock_network_core = { path = "../network/core" }
+bedrock_network_macros = { path = "../network/macros" }
 
-tracing = { workspace = true }
-
-byteorder = { workspace = true }
-varint-rs = { workspace = true }
-serde.workspace = true
+tracing.workspace = true
+byteorder.workspace = true
+facet.workspace = true

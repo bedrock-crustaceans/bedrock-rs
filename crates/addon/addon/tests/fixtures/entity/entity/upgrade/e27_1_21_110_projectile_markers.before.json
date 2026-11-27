@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:skeleton"
+    },
+    "components": {
+      "minecraft:projectile": {
+        "on_hit": {
+          "impact_damage": {
+            "damage": 2
+          }
+        }
+      }
+    }
+  }
+}

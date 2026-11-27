@@ -1,0 +1,30 @@
+
+			{
+				"format_version": "beta",
+				"minecraft:biome": {
+					"description": {
+						"identifier": "test:biome"
+					},
+					"components": {
+					},
+					"environment_attributes": {
+						"minecraft:experimental_float_attr_1": {
+							"value" : 3.9,
+							"operation" : "add"
+						},
+						"minecraft:experimental_float_attr_2": {
+							"value" : 1.4,
+							"operation" : "alpha_blend"
+						},
+						"minecraft:experimental_bool_attr": {
+							"value": true,
+							"operation": "xor"
+						},
+						"minecraft:experimental_color_attr": {
+							"value": "#32a779ba",
+							"operation": "alpha_blend"
+						}
+					}
+				}
+			}
+			

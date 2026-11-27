@@ -1,0 +1,23 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:symmetry_false"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    },
+    "assume_symmetry": false
+  }
+}

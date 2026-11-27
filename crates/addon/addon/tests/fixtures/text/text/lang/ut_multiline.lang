@@ -1,0 +1,10 @@
+## IngestValidMultilineFile: comment lines, blank lines, a tab before a comment
+
+key.first=First value
+key.second=Second value	 ## a comment after a tab
+	key.indented=Indented value
+
+## another comment
+key.with_equals=a=b
+key.unicode_entry=Ünïcödé ✓ §aGreen
+key.last=Last value

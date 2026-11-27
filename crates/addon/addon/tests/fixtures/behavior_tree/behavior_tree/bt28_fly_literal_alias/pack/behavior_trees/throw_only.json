@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "throw_only",
+    "minecraft:root": { "minecraft:fly": { "should_throw_event_if_no_state_change_necessary_bool": true } }
+  }
+}

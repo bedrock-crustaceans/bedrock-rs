@@ -1,0 +1,5 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:root": { "minecraft:wait": {} }
+  }
+}

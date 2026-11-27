@@ -1,0 +1,28 @@
+{
+  "namespace": "a",
+  "t1": {
+    "type": "image",
+    "texture": "t",
+    "tiled": true
+  },
+  "t2": {
+    "type": "image",
+    "texture": "t",
+    "tiled": "x"
+  },
+  "t3": {
+    "type": "image",
+    "texture": "t",
+    "tiled": "yx"
+  },
+  "t4": {
+    "type": "image",
+    "texture": "t",
+    "tiled": "z"
+  },
+  "t5": {
+    "type": "image",
+    "texture": "t",
+    "tiled": 1
+  }
+}

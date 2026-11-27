@@ -1,0 +1,11 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": 5,
+        "operation": "remove"
+      }
+    ],
+    "layer": 5
+  }
+}

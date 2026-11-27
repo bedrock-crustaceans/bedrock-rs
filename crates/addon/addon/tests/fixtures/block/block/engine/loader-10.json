@@ -1,0 +1,13 @@
+{
+				"format_version": "1.26.20",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:block_with_internal_vanilla_data",
+						"internal_vanilla_data": {
+							"block_id": 42,
+							"material": "wood"
+						}
+					},
+					"components": {}
+				}
+			}

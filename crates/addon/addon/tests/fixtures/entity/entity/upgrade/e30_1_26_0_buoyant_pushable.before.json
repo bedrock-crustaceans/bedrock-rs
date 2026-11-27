@@ -1,0 +1,37 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:buoyant": {
+        "simulate_waves": true
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": false
+      }
+    },
+    "component_groups": {
+      "a": {
+        "minecraft:pushable": {},
+        "minecraft:buoyant": {
+          "simulate_waves": false
+        }
+      },
+      "b": {
+        "minecraft:pushable": {
+          "is_pushable": false,
+          "is_pushable_by_piston": true
+        }
+      },
+      "c": {
+        "minecraft:pushable": {
+          "is_pushable": false,
+          "is_pushable_by_piston": false
+        }
+      }
+    }
+  }
+}

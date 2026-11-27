@@ -1,0 +1,14 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:cod"
+    },
+    "components": {
+      "minecraft:behavior.swim_wander": {
+        "interval": 20,
+        "look_ahead": 2.0
+      }
+    }
+  }
+}

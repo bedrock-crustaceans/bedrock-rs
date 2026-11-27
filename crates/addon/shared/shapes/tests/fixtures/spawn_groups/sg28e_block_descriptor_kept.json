@@ -1,0 +1,4 @@
+{
+  "with_a_bad_entry": { "minecraft:spawns_on_block_filter": [5, "minecraft:grass_block"] },
+  "empty": { "minecraft:spawns_on_block_filter": [] }
+}

@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "A BP containing all the @minecraft/server-ui typescript code.",
+        "name": "@minecraft/server-ui TS Library",
+        "uuid": "f53f490f-9d47-45ca-86de-0946b6d1c366",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            14,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "@minecraft/server-ui TS Library Module",
+            "type": "data",
+            "uuid": "2b99ff4f-d59e-4215-b001-5eead20dfafb",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

@@ -1,0 +1,104 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:everything",
+      "menu_category": {
+        "category": "construction",
+        "group": "minecraft:itemGroup.name.stone",
+        "is_hidden_in_commands": false
+      },
+      "states": {
+        "demo:open": [
+          false,
+          true
+        ]
+      }
+    },
+    "components": {
+      "minecraft:collision_box": {
+        "origin": [
+          -8.0,
+          0.0,
+          -8.0
+        ],
+        "size": [
+          16.0,
+          8.0,
+          16.0
+        ]
+      },
+      "minecraft:selection_box": {
+        "origin": [
+          -8.0,
+          0.0,
+          -8.0
+        ],
+        "size": [
+          16.0,
+          8.0,
+          16.0
+        ]
+      },
+      "minecraft:light_dampening": 3,
+      "minecraft:light_emission": 7,
+      "minecraft:destructible_by_mining": {
+        "seconds_to_destroy": 2.0
+      },
+      "minecraft:destructible_by_explosion": {
+        "explosion_resistance": 6.0
+      },
+      "minecraft:friction": 0.4,
+      "minecraft:flammable": {
+        "catch_chance_modifier": 5,
+        "destroy_chance_modifier": 20
+      },
+      "minecraft:display_name": "tile.everything.name",
+      "minecraft:geometry": "geometry.everything",
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "everything",
+          "render_method": "alpha_test"
+        }
+      },
+      "minecraft:loot": "loot_tables/everything.json",
+      "minecraft:map_color": "#123456",
+      "minecraft:transformation": {
+        "rotation": [
+          0.0,
+          90.0,
+          0.0
+        ]
+      },
+      "minecraft:tags": [
+        "stone"
+      ],
+      "minecraft:queued_ticking": {
+        "interval_range": [
+          20,
+          40
+        ],
+        "looping": true,
+        "on_tick": {
+          "event": "demo:tick"
+        }
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('demo:open') == 1",
+        "components": {
+          "minecraft:light_emission": 15,
+          "minecraft:friction": 0.9
+        }
+      }
+    ],
+    "events": {
+      "demo:tick": {
+        "set_block_state": {
+          "demo:open": "!q.block_property('demo:open')"
+        }
+      }
+    }
+  }
+}

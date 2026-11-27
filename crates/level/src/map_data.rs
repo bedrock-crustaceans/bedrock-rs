@@ -219,9 +219,9 @@ pub(crate) fn float(value: &nbtx::Value, name: &str) -> Option<f32> {
     }
 }
 
-pub(crate) fn list<'a>(value: &'a nbtx::Value, name: &str) -> Option<&'a [nbtx::Value]> {
+pub(crate) fn list<'a>(value: &'a nbtx::Value, name: &str) -> Option<&'a nbtx::ValueList> {
     match field(value, name)? {
-        nbtx::Value::List(items) => Some(items.as_slice()),
+        nbtx::Value::List(items) => Some(items),
         _ => None,
     }
 }
@@ -376,9 +376,9 @@ impl MapRecord {
     /// The `decorations` field, verbatim -- see the module docs for why
     /// its per-entry shape (`{data: {...}, key: {...}}`) is not modeled
     /// further.
-    pub fn decorations(&self) -> Option<&[nbtx::Value]> {
+    pub fn decorations(&self) -> Option<&nbtx::ValueList> {
         match self.field("decorations")? {
-            nbtx::Value::List(entries) => Some(entries.as_slice()),
+            nbtx::Value::List(entries) => Some(entries),
             _ => None,
         }
     }
@@ -441,7 +441,10 @@ mod tests {
         compound.insert("unlimitedTracking".into(), nbtx::Value::Byte(0));
         compound.insert("mapLocked".into(), nbtx::Value::Byte(0));
         compound.insert("fullyExplored".into(), nbtx::Value::Byte(1));
-        compound.insert("decorations".into(), nbtx::Value::List(vec![]));
+        compound.insert(
+            "decorations".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         compound.insert(
             "colors".into(),
             nbtx::Value::ByteArray(vec![0u8; 128 * 128 * 4]),
@@ -501,7 +504,7 @@ mod tests {
         assert_eq!(record.unlimited_tracking(), Some(false));
         assert_eq!(record.map_locked(), Some(false));
         assert_eq!(record.fully_explored(), Some(true));
-        assert_eq!(record.decorations(), Some(&[][..]));
+        assert_eq!(record.decorations(), Some(&nbtx::ValueList::End));
         assert_eq!(record.colors().map(|c| c.len()), Some(128 * 128 * 4));
     }
 
@@ -533,7 +536,10 @@ mod tests {
             "colors".into(),
             nbtx::Value::ByteArray(vec![0u8; 128 * 128 * 4]),
         );
-        compound.insert("decorations".into(), nbtx::Value::List(vec![]));
+        compound.insert(
+            "decorations".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         compound.insert("dimension".into(), nbtx::Value::Byte(0));
         compound.insert("fullyExplored".into(), nbtx::Value::Byte(0));
         compound.insert("height".into(), nbtx::Value::Short(128));
@@ -557,7 +563,7 @@ mod tests {
     /// `decorations` list is written with element type `Compound` (`0x0a`),
     /// not the `TAG_End` (`0x00`) a generic re-derivation from `Value`
     /// would produce. Hand-built with the real element-type byte (rather
-    /// than going through `nbtx::to_le_bytes` on a `Value::List(vec![])`,
+    /// than going through `nbtx::to_le_bytes` on a `Value::List(nbtx::ValueList::End)`,
     /// which would silently launder the exact byte this test exists to
     /// pin) so a regression that stops preferring `original` in [`encode`]
     /// is caught here even though the *content* still round-trips fine.
@@ -570,12 +576,16 @@ mod tests {
         bytes.extend_from_slice(&11u16.to_le_bytes());
         bytes.extend_from_slice(b"decorations");
         bytes.push(0x0a); // element type: Compound, not the TAG_End a
-        // generic re-derivation from `Value::List(vec![])` would produce
+        // generic re-derivation from `Value::List(nbtx::ValueList::End)` would produce
         bytes.extend_from_slice(&0u32.to_le_bytes()); // 0 elements
         bytes.push(0x00); // root Compound end
 
         let record = decode(&bytes).unwrap();
-        assert_eq!(record.decorations(), Some(&[][..]));
+        // `ValueList` keeps an empty list's element type, so the decoded value says so too.
+        assert_eq!(
+            record.decorations(),
+            Some(&nbtx::ValueList::Compound(Vec::new()))
+        );
         assert_eq!(encode(&record).unwrap(), bytes);
     }
 
@@ -589,7 +599,10 @@ mod tests {
     #[test]
     fn a_freshly_built_records_empty_list_loses_its_intended_element_type() {
         let mut compound = nbtx::Compound::new();
-        compound.insert("decorations".into(), nbtx::Value::List(vec![]));
+        compound.insert(
+            "decorations".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         let record = MapRecord::new(nbtx::Value::Compound(compound));
 
         let bytes = encode(&record).unwrap();

@@ -1,0 +1,17 @@
+{
+						"format_version":"1.26.50",
+						"minecraft:item":{
+							"description":{
+								"identifier":"test:item"
+							},
+							"components":{
+								"minecraft:use_modifiers": {
+									"use_duration": 1.0,
+									"start_sound": "test_pack:custom_start"
+								},
+								"minecraft:food": {
+									"can_always_eat": true
+								}
+							}
+						}
+					}

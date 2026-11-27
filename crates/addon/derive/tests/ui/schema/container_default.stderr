@@ -1,0 +1,5 @@
+error: facet's container `default` fills a missing member from the field type's `Default`, not from the field's own: drop it and state each plain field's default with `default = ..` on the field
+ --> tests/ui/schema/container_default.rs:8:9
+  |
+8 | #[facet(default)]
+  |         ^^^^^^^

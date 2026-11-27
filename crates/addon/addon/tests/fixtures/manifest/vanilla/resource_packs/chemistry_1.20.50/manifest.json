@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "uuid": "0674721c-a0aa-41a1-9ba8-1ed33ea3e7ed",
+    "name": "pack.name",
+    "version": [1, 20, 50],
+    "description": "pack.description",
+    "min_engine_version": [1, 20, 50],
+    "pack_scope": "world"
+  },
+  "modules": [
+    {
+      "description": "pack.description",
+      "version": [1, 0, 0],
+      "uuid": "d5b8d050-7586-44dd-99d5-95406118fbac",
+      "type": "resources"
+    }
+  ],
+  "dependencies": [
+    {
+      // Chemistry behavior pack 1.20.50
+      "uuid": "91b9e624-dda6-43f3-a567-8025c53860b5",
+      "version": [1, 0, 0]
+    }
+  ],
+  "capabilities": [
+    "chemistry"
+  ]
+}

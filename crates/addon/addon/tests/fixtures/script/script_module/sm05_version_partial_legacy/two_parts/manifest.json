@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm05",
+    "description": "families/script_module fixture sm05_version_partial_legacy",
+    "uuid": "e47ffadc-fc20-52bb-aad7-dffa3b9472f9",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "a0985fe7-9876-5003-9755-45136f58fa11",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0"
+    }
+  ]
+}

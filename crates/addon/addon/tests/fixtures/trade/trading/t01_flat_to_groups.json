@@ -1,0 +1,27 @@
+// t01: two unstamped tiers with flat `trades` and no `total_exp_required`.
+{
+  "tiers": [
+    {
+      "trades": [
+        {
+          "wants": [{ "item": "minecraft:wheat", "quantity": 20 }],
+          "gives": [{ "item": "minecraft:emerald" }],
+          "trader_exp": 2,
+          "max_uses": 16
+        },
+        {
+          "wants": [{ "item": "minecraft:potato", "quantity": 26 }],
+          "gives": [{ "item": "minecraft:emerald" }]
+        }
+      ]
+    },
+    {
+      "trades": [
+        {
+          "wants": [{ "item": "minecraft:emerald" }],
+          "gives": [{ "item": "minecraft:bread", "quantity": 6 }]
+        }
+      ]
+    }
+  ]
+}

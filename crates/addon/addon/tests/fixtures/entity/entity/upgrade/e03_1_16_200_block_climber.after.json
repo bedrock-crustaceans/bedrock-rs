@@ -1,0 +1,16 @@
+{
+  "format_version": "1.17.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:block_climber": {}
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:block_climber": {}
+      }
+    }
+  }
+}

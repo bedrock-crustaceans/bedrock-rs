@@ -1,0 +1,4 @@
+# Probe: P19 (a development build)
+scope = "none"
+resolved = ["@minecraft/server 2.9.0-internal"]
+allow_internal = true

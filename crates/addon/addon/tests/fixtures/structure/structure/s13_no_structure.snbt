@@ -1,0 +1,6 @@
+// No structure compound.
+{
+  format_version: 1,
+  size: [1, 1, 1],
+  structure_world_origin: [0, 0, 0]
+}

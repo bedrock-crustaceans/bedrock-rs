@@ -1,0 +1,23 @@
+{
+  "format_version": "1.16.100",
+  "minecraft:item": {
+    "description": {
+      "identifier": "minecraft:fixed"
+    },
+    "components": {
+      "minecraft:food": {
+        "nutrition": 4,
+        "saturation_modifier": "Good"
+      },
+      "minecraft:durability": {
+        "max_damage": 250
+      },
+      "minecraft:repairable": {
+        "repair_items": [
+          "minecraft:stick",
+          "minecraft:planks"
+        ]
+      }
+    }
+  }
+}

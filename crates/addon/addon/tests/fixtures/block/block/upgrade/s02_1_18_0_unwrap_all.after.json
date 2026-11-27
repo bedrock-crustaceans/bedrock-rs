@@ -1,0 +1,43 @@
+{
+  "format_version": "1.19.10",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:collision_box": false,
+      "minecraft:aim_collision": {
+        "origin": [
+          -8,
+          0,
+          -8
+        ],
+        "size": [
+          16,
+          8,
+          16
+        ]
+      },
+      "minecraft:destroy_time": 3,
+      "minecraft:explosion_resistance": 5,
+      "minecraft:display_name": "demo_ore",
+      "minecraft:friction": 0.6,
+      "minecraft:geometry": "geometry.demo",
+      "minecraft:loot": "loot_tables/demo.json",
+      "minecraft:map_color": "#ffffff",
+      "minecraft:block_light_filter": 4,
+      "minecraft:breathability": "air",
+      "minecraft:light_emission": 7,
+      "minecraft:queued_ticking": {
+        "on_tick": {
+          "event": "tick"
+        },
+        "interval_range": [
+          20,
+          50
+        ],
+        "looping": true
+      }
+    }
+  }
+}

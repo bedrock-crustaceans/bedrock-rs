@@ -1,0 +1,47 @@
+// fixtures.md l01: sun colour with a non-opaque alpha and an ARGB hex string
+{
+  "format_version": "1.21.40",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l01"
+    },
+    "directional_lights": {
+      "sun": {
+        "illuminance": {
+          "0.0": 100.0,
+          "1.0": 100.0
+        },
+        "color": {
+          "0.0": [
+            255,
+            200,
+            100,
+            128
+          ],
+          "1.0": "#FFFFFFFF"
+        }
+      },
+      "moon": {
+        "illuminance": 0.27,
+        "color": [
+          10,
+          20,
+          30,
+          255
+        ]
+      },
+      "orbital_offset_degrees": 15.0
+    },
+    "emissive": {
+      "desaturation": 0.5
+    },
+    "ambient": {
+      "color": [
+        1,
+        2,
+        3
+      ],
+      "illuminance": 0.02
+    }
+  }
+}

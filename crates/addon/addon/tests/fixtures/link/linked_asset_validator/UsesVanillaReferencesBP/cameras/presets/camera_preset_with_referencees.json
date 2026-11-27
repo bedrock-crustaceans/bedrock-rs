@@ -1,0 +1,7 @@
+{
+  "format_version": "1.19.50",
+  "minecraft:camera_preset": {
+    "identifier": "test:camera_preset_with_references",
+    "inherit_from": "minecraft:follow_orbit"
+  }
+}

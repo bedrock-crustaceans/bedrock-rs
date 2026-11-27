@@ -1,0 +1,5 @@
+error: `schema::fallback` is what an absent `Option` stands for: a plain field states its default with facet's `default = ..`
+ --> tests/ui/schema/fallback_on_plain.rs:6:13
+  |
+6 |     #[facet(schema::fallback = 55)]
+  |             ^^^^^^

@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
+use facet::Facet;
 
 /// [`Input`] represents a text input field element
 /// where players can enter text of any length without restrictions.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[facet(deny_unknown_fields)]
 pub struct Input {
     /// Refers to the content displayed over the input element,
     /// which may include Minecraft formatting codes.

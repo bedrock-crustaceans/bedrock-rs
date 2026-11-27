@@ -1,0 +1,17 @@
+error: a `skip` field is not read or written: it takes no `schema::` key
+ --> tests/ui/schema/skip_stored_key.rs:7:19
+  |
+7 |     #[facet(skip, schema::since_format = "1.21.60")]
+  |                   ^^^^^^
+
+error: a `skip` field is not read or written: it takes no `schema::` key
+ --> tests/ui/schema/skip_stored_key.rs:9:19
+  |
+9 |     #[facet(skip, schema::since_engine = "1.20.0")]
+  |                   ^^^^^^
+
+error: a `skip` field is not read or written: it takes no `schema::` key
+  --> tests/ui/schema/skip_stored_key.rs:11:19
+   |
+11 |     #[facet(skip, schema::unknown = "keep")]
+   |                   ^^^^^^

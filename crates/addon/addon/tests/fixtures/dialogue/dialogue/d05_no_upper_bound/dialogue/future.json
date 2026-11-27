@@ -1,0 +1,8 @@
+{
+  "format_version": "99.0.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "future", "text": "Hello." }
+    ]
+  }
+}

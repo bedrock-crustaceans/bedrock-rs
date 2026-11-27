@@ -1,0 +1,8 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_unknown": {
+    "description": {
+      "identifier": "demo:determinism_untyped"
+    }
+  }
+}

@@ -1,0 +1,207 @@
+## "{\"a\":1}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":\"\\q\"}"
+first_fault          Some(6)
+first_beyond_double  None
+## "{\"a\":\"\\u12\"}"
+first_fault          Some(6)
+first_beyond_double  None
+## "{\"a\":\"\\u12"
+first_fault          Some(6)
+first_beyond_double  None
+## "{\"a\":\"abc"
+first_fault          Some(5)
+first_beyond_double  None
+## "{\"a\":\"x\\\\\",\"b\":2}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":\"\\/\\b\\f\\n\\r\\t\\u00e9\"}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":1 /* x"
+first_fault          Some(7)
+first_beyond_double  None
+## "{\"a\":1} /* x"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":\u{c}1}"
+first_fault          Some(5)
+first_beyond_double  None
+## "{\"a\":1}\u{c}"
+first_fault          None
+first_beyond_double  None
+## "\u{c}{\"a\":1}"
+first_fault          Some(0)
+first_beyond_double  None
+## "{\"a\":\u{a0}1}"
+first_fault          Some(5)
+first_beyond_double  None
+## "\u{a0}{\"a\":1}"
+first_fault          Some(0)
+first_beyond_double  None
+## "{\"a\":[1}]"
+first_fault          Some(7)
+first_beyond_double  None
+## "[}"
+first_fault          Some(1)
+first_beyond_double  None
+## "}"
+first_fault          Some(0)
+first_beyond_double  None
+## "]]]{"
+first_fault          Some(0)
+first_beyond_double  None
+## "\"str\""
+first_fault          None
+first_beyond_double  None
+## "12 garbage"
+first_fault          None
+first_beyond_double  None
+## "-"
+first_fault          Some(0)
+first_beyond_double  None
+## "1.5e+"
+first_fault          Some(0)
+first_beyond_double  None
+## "nul"
+first_fault          Some(0)
+first_beyond_double  None
+## "{\"a\":1} trailing"
+first_fault          None
+first_beyond_double  None
+## "// c\n{\"a\":1}"
+first_fault          None
+first_beyond_double  None
+## "/* c */ {\"a\":1}"
+first_fault          None
+first_beyond_double  None
+## "/* c */ [1]"
+first_fault          None
+first_beyond_double  None
+## "{\"a/b\":1,\"c~d\":{\"e\":[0,1e39]}}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":1,\"a\":2}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\\u0062\":1,\"ab\":2}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":{\"b\":1,\"b\":2},\"a\":{\"c\":3,\"c\":4}}"
+first_fault          None
+first_beyond_double  None
+## "{\"k\":{\"a\":1,\"a\":2},\"k\":3}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":1,\"a\":2,\"b\":tru}"
+first_fault          Some(20)
+first_beyond_double  None
+## "{\"a\":tru,\"a\":2}"
+first_fault          Some(8)
+first_beyond_double  None
+## "{\"a\":[1,2,],}"
+first_fault          None
+first_beyond_double  None
+## "{,,\"a\":1}"
+first_fault          Some(1)
+first_beyond_double  None
+## "{\"a\" 1}"
+first_fault          Some(5)
+first_beyond_double  None
+## "{\"a\":1 \"b\":2}"
+first_fault          Some(7)
+first_beyond_double  None
+## ""
+first_fault          Some(0)
+first_beyond_double  None
+## "   "
+first_fault          Some(3)
+first_beyond_double  None
+## "// only"
+first_fault          Some(7)
+first_beyond_double  None
+## "/* only"
+first_fault          Some(0)
+first_beyond_double  None
+## "/* only */"
+first_fault          Some(10)
+first_beyond_double  None
+## "[ /* c */ ]"
+first_fault          None
+first_beyond_double  None
+## "[ // c\n ]"
+first_fault          None
+first_beyond_double  None
+## "[ ]"
+first_fault          None
+first_beyond_double  None
+## "[\u{a0}]"
+first_fault          Some(1)
+first_beyond_double  None
+## "[\"[ ]\", 1]"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":1e999,\"b\":-1e400,\"c\":\"1e999\"}"
+first_fault          None
+first_beyond_double  Some(5..10)
+## "{\"a\":1e39,\"a\":2}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":2,\"a\":1e39}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":1e39,\"b\":{\"c\":-1e39},\"a\":3e39}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":{\"x\":1e39},\"a\":{\"y\":2e39}}"
+first_fault          None
+first_beyond_double  None
+## "{\"b\":1e39,\"a\":1e39,\"b\":2e39}"
+first_fault          None
+first_beyond_double  None
+## "[1e39,[-1e39],{\"a\\\"b\":1e39}]"
+first_fault          None
+first_beyond_double  None
+## "{\"a\": \"]}\" // [\n, \"b\": 1}"
+first_fault          None
+first_beyond_double  None
+## "{\"a\":[[[\"\\q\"]]]}"
+first_fault          Some(9)
+first_beyond_double  None
+## "[[\"\\q\",[[[[]]]]]]"
+first_fault          Some(3)
+first_beyond_double  None
+## "{\"a\":{\"b\":{\"c\":{\"d\":1}}}}"
+first_fault          None
+first_beyond_double  None
+## 128 levels
+first_fault          None
+first_beyond_double  None
+## 129 levels
+first_fault          Some(128)
+first_beyond_double  None
+## 129 levels after a bad escape
+first_fault          Some(2)
+first_beyond_double  None
+## 129 levels in a comment
+first_fault          None
+first_beyond_double  None
+## 129 levels in a string
+first_fault          None
+first_beyond_double  None
+## 129 levels after the root
+first_fault          None
+first_beyond_double  None
+## 128 objects
+first_fault          None
+first_beyond_double  None
+## 129 objects
+first_fault          Some(640)
+first_beyond_double  None
+## duplicate at 127 levels
+first_fault          None
+first_beyond_double  None
+## duplicate at 128 levels
+first_fault          Some(128)
+first_beyond_double  None

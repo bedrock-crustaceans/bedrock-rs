@@ -1,0 +1,49 @@
+//! Colour-grading settings as written at format 1.21.40: without
+//! `color_grading.temperature`, which the step to 1.21.90 inserts switched off.
+
+use crate::ColorGradingSettings;
+
+/// Format 1.21.40.
+pub mod v1_21_40 {
+    use crate::{ColorGradingDescription, Highlights, Midtones, Shadows, ToneMapping};
+    use bedrock_addon_core::document::UnknownMembers;
+    use bedrock_addon_core::schema::Schema;
+    use facet::Facet;
+
+    /// Colour-grading settings at format 1.21.40.
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+    pub struct ColorGradingSettings {
+        /// The settings' name (JSON `description`).
+        pub description: Option<ColorGradingDescription>,
+        /// The grading controls (JSON `color_grading`).
+        pub color_grading: Option<ColorGrading>,
+        /// The tone mapper (JSON `tone_mapping`).
+        pub tone_mapping: Option<ToneMapping>,
+        /// Members the game does not know, kept for write-back.
+        pub extra: UnknownMembers,
+    }
+
+    /// The grading controls at format 1.21.40: without `temperature`.
+    #[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+    pub struct ColorGrading {
+        /// The controls of the mid tones (JSON `midtones`).
+        pub midtones: Option<Midtones>,
+        /// The controls of the bright tones (JSON `highlights`).
+        pub highlights: Option<Highlights>,
+        /// The controls of the dark tones (JSON `shadows`).
+        pub shadows: Option<Shadows>,
+        /// Members the game does not know, kept for write-back.
+        pub extra: UnknownMembers,
+    }
+}
+
+chain! {
+    latest = ColorGradingSettings;
+    /// A colour-grading file parsed by the struct its `format_version` selects, not upgraded.
+    enum ColorGradingHistory {
+        /// Format 1.21.40.
+        V1_21_40(v1_21_40::ColorGradingSettings),
+        /// Format 1.21.90: the newest colour-grading settings.
+        V1_21_90(ColorGradingSettings),
+    }
+}

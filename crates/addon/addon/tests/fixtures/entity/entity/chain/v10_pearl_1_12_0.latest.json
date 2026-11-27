@@ -1,0 +1,69 @@
+{
+  "format_version": "1.26.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:ender_pearl",
+      "is_spawnable": false,
+      "is_summonable": false,
+      "spawn_category": "misc",
+      "is_experimental": false
+    },
+    "components": {
+      "minecraft:collision_box": {
+        "height": 0.25,
+        "width": 0.25
+      },
+      "minecraft:projectile": {
+        "anchor": "eye_height",
+        "angle_offset": 0.0,
+        "catch_fire": false,
+        "crit_particle_on_hurt": false,
+        "destroy_on_hurt": false,
+        "gravity": 0.025,
+        "hit_ground_sound": "",
+        "hit_nearest_passenger": false,
+        "hit_sound": "",
+        "hit_water": false,
+        "homing": false,
+        "ignored_entities": [],
+        "inertia": 1.0,
+        "is_dangerous": false,
+        "isolated_physics": true,
+        "lightning": false,
+        "liquid_inertia": 1.0,
+        "multiple_targets": true,
+        "offset": [
+          0.0,
+          -0.1,
+          0.0
+        ],
+        "on_fire_time": 5.0,
+        "particle": "iconcrack",
+        "potion_effect": -1,
+        "power": 1.5,
+        "reflect_immunity": 0.0,
+        "reflect_on_hurt": false,
+        "shoot_sound": "",
+        "shoot_target": true,
+        "should_bounce": "no",
+        "splash_range": 4.0,
+        "spread_fire": true,
+        "stop_on_hurt": false,
+        "uncertainty_base": 0.0,
+        "uncertainty_multiplier": 0.0
+      },
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": true,
+        "push_towards_closest_space": false
+      },
+      "minecraft:pushable_by_entity": {
+        "presets": [],
+        "use_default_with_overlap_check": false
+      },
+      "minecraft:pushable_by_block": {},
+      "minecraft:uses_legacy_friction": {},
+      "minecraft:uses_legacy_ambient_sounds": {}
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:snowball"
+    },
+    "components": {},
+    "component_groups": {
+      "g": {}
+    }
+  }
+}

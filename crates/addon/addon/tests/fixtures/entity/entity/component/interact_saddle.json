@@ -1,0 +1,30 @@
+{
+  "interactions": [
+    {
+      "cooldown": 2.5,
+      "use_item": true,
+      "equip_item_slot": "0",
+      "play_sounds": [ "saddle" ],
+      "interact_text": "action.interact.saddle",
+      "swing": false,
+      "on_interact": {
+        "filters": {
+          "all_of": [
+            { "test": "has_equipment", "subject": "self", "domain": "inventory", "operator": "not", "value": "saddle" },
+            { "test": "is_family", "subject": "other", "value": "player" }
+          ]
+        },
+        "event": "minecraft:on_saddled"
+      }
+    },
+    {
+      "cooldown": 2.5,
+      "drop_item_slot": "0",
+      "drop_item_y_offset": 1.2,
+      "play_sounds": [ "unsaddle" ],
+      "vibration": "shear",
+      "particle_on_start": { "particle_type": "none", "copper_event": "none" },
+      "add_items": { "table": "loot_tables/entities/x.json" }
+    }
+  ]
+}

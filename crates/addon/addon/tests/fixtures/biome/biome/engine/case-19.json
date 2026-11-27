@@ -1,0 +1,7 @@
+{
+				"minecraft:biome": {
+					"components": {
+						"some_field": "1234"
+					}
+				}
+			}

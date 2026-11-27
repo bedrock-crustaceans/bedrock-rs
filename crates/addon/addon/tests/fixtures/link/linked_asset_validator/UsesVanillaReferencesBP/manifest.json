@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with content with vanilla asset references",
+    "name": "Missing references bp",
+    "uuid":"278d1e8b-a3a2-44c4-9f50-4a16b0419c14",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 19, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "My First Add-On!",
+          "type": "data",
+          "uuid": "deadd362-4f83-4470-ad8f-f3ec06899cda",
+          "version": [1, 0, 0]
+      }
+    ]
+}

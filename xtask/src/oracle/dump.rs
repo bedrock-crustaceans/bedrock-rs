@@ -439,5 +439,9 @@ fn nbt_pos(value: &nbtx::Value) -> Option<(f64, f64, f64)> {
             _ => None,
         }
     };
-    Some((get(&list[0])?, get(&list[1])?, get(&list[2])?))
+    Some((
+        get(&list.get(0)?)?,
+        get(&list.get(1)?)?,
+        get(&list.get(2)?)?,
+    ))
 }

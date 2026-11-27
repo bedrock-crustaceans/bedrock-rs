@@ -1,0 +1,35 @@
+error: `schema::min_len` is a field's key: put it on the field it is about
+ --> tests/ui/schema/check_keys.rs:7:9
+  |
+7 | #[facet(schema::min_len = 1)]
+  |         ^^^^^^
+
+error: `schema::rule` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/check_keys.rs:14:13
+   |
+14 |     #[facet(schema::rule = rule)]
+   |             ^^^^^^
+
+error: `schema::min_len` takes a whole number literal, as in `schema::min_len = 1`
+  --> tests/ui/schema/check_keys.rs:16:31
+   |
+16 |     #[facet(schema::min_len = "one")]
+   |                               ^^^^^
+
+error: duplicate `schema::max_len`
+  --> tests/ui/schema/check_keys.rs:18:34
+   |
+18 |     #[facet(schema::max_len = 1, schema::max_len = 2)]
+   |                                  ^^^^^^
+
+error: `schema::rule` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/check_keys.rs:23:9
+   |
+23 | #[facet(schema::rule = rule, schema::rule = rule)]
+   |         ^^^^^^
+
+error: `schema::rule` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/check_keys.rs:23:30
+   |
+23 | #[facet(schema::rule = rule, schema::rule = rule)]
+   |                              ^^^^^^

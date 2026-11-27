@@ -1,0 +1,15 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "use_entity",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:use_entity": {
+            }
+          }
+        ]
+      }
+    }
+  }
+}

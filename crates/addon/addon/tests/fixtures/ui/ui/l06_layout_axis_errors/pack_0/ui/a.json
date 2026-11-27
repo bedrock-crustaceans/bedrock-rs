@@ -1,0 +1,17 @@
+{
+  "namespace": "a",
+  "p1": {
+    "type": "panel",
+    "size": [
+      "100",
+      "50c"
+    ]
+  },
+  "p2": {
+    "type": "panel",
+    "size": [
+      "100%q",
+      10
+    ]
+  }
+}

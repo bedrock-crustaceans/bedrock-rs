@@ -1,0 +1,8 @@
+{
+					"container_type": "chest",
+					"inventory_size": 27,
+					"can_be_siphoned_from": true,
+					"private": true,
+					"restrict_to_owner": true,
+					"additional_slots_per_strength": 2
+				}

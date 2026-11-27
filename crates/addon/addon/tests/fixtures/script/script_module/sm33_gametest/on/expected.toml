@@ -1,0 +1,4 @@
+# Probe: B07
+scope = "none"
+resolved = ["@minecraft/server 2.8.0", "@minecraft/server-gametest 1.0.0-beta"]
+beta_apis = true

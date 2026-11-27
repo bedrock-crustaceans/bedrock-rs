@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm36",
+    "description": "families/script_module fixture sm36_uuid_dependency",
+    "uuid": "ba652895-e064-5d1a-b8e0-794d5467510e",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "a51f57b4-07ab-56d8-81de-b908f82dd742",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "b26a4d4c-afdf-4690-88f8-931846312678",
+      "version": [
+        0,
+        1,
+        0
+      ]
+    }
+  ]
+}

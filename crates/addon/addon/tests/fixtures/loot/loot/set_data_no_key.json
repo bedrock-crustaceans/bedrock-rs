@@ -1,0 +1,2 @@
+// fixtures.md row 14: set_data with neither data nor values
+{"pools": [{"rolls": 1, "entries": [{"type": "item", "name": "minecraft:wool", "functions": [{"function": "set_data"}]}]}]}

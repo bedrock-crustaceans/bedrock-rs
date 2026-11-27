@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "flying_only",
+    "minecraft:root": { "minecraft:fly": { "should_be_flying_bool": true } }
+  }
+}

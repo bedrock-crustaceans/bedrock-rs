@@ -1,0 +1,5 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "cut", "text": "Never

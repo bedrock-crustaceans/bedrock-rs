@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "header": {
+    "uuid": "22d20c6b-5d58-436f-8c1c-14e2b216f4b9",
+    "name": "FireResistantItemComponentFunctionalTests",
+    "version": [ 1, 0, 0 ],
+    "description": "FireResistantItemComponentFunctionalTests"
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "6ce5dcf8-1762-4ce4-a860-d19de25b7bc9",
+      "type": "data"
+    }
+  ]
+}

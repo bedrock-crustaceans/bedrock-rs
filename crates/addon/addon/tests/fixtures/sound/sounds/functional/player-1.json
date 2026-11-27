@@ -1,0 +1,11 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {
+					"game_music_event" : {
+						"category": "ui/music",
+						"sounds": [
+							"sounds/random/music"
+						]
+					}
+				}
+			}

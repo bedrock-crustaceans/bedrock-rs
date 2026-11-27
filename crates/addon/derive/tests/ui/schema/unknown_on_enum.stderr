@@ -1,0 +1,5 @@
+error: `schema::unknown` is about the members of an object: a string enum has none
+ --> tests/ui/schema/unknown_on_enum.rs:6:9
+  |
+6 | #[facet(schema::unknown = "keep")]
+  |         ^^^^^^

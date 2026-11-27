@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Experimental behavior pack for the Brain prototype.",
+    "name": "Experimental Brain Behavior Pack",
+    "uuid": "c5b9eaf5-41cc-4a37-838b-3f6ef6fdf7e3",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      130
+    ]
+  },
+  "modules": [
+    {
+      "description": "Experimental behavior pack for the Brain prototype.",
+      "type": "data",
+      "uuid": "ee1de62a-32b8-4e69-858d-c951358b2678",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

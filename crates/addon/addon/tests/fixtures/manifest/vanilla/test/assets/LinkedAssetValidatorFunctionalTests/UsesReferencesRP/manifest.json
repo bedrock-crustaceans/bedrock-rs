@@ -1,0 +1,18 @@
+{
+  "format_version": 1,
+  "header": {
+    "description": "Test pack with content using asset references",
+    "name": "Uses references rp",
+    "uuid": "ebf13dab-7d5b-41fe-8366-7696b61b402b",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "description": "",
+      "type": "resources",
+      "uuid": "d4f554b6-1b83-4c63-b062-b3fd067dd5d2",
+      "version": [1, 0, 0]
+    }
+  ]
+}

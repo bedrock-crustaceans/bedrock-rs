@@ -1,0 +1,10 @@
+{
+  "conditions": [
+    { "weight": 99 },
+    {
+      "weight": 1,
+      "mob_event_filter": "mob:filter",
+      "biome_filter": { "test": "has_biome_tag", "operator": "==", "value": "plains" }
+    }
+  ]
+}

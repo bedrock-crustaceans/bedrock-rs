@@ -1,0 +1,10 @@
+
+			{
+				"format_version": "1.26.60",
+				"minecraft:block": {
+					"description": {
+						"identifier": "test:custom_block_without_vibration_properties"
+					},
+					"components": {}
+				}
+			}

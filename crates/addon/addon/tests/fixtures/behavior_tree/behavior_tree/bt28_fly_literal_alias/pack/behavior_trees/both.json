@@ -1,0 +1,11 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "both",
+    "minecraft:root": {
+      "minecraft:fly": {
+        "should_be_flying_bool": true,
+        "should_throw_event_if_no_state_change_necessary_bool": false
+      }
+    }
+  }
+}

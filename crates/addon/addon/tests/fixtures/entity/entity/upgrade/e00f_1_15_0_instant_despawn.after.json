@@ -1,0 +1,32 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:instant_despawn": {
+        "remove_child_entities": false
+      },
+      "minecraft:breathable": {
+        "breathes_lava": false
+      },
+      "minecraft:behavior.panic": {
+        "speed_multiplier": 1.25,
+        "damage_sources": [
+          "fire",
+          "fire_tick",
+          "magma"
+        ]
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:instant_despawn": {
+          "remove_child_entities": true
+        },
+        "minecraft:behavior.melee_attack": {}
+      }
+    }
+  }
+}

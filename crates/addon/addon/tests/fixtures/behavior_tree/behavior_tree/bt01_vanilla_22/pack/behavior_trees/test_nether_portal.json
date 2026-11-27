@@ -1,0 +1,27 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "test_nether_portal",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:wait": { 
+              "wait_duration": 2
+            }
+          },
+          {
+            "minecraft:move": { 
+              "max_number_of_ticks": 100,
+              "desired_direction": "forward"
+            }
+          },
+          {
+            "minecraft:wait": { 
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

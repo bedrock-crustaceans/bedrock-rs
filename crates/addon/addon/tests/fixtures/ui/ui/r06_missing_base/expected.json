@@ -1,0 +1,30 @@
+{
+  "defs": {
+    "a.k": {
+      "layer": 1
+    },
+    "a.t": {
+      "type": "panel"
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "core/unresolved_reference",
+      "severity": "info",
+      "text": "unresolved reference",
+      "at": "k@a.nope"
+    },
+    {
+      "code": "core/unresolved_reference",
+      "severity": "info",
+      "text": "unresolved reference",
+      "at": "t@a.nope"
+    },
+    {
+      "code": "json_ui/type_not_specified",
+      "severity": "info",
+      "text": "Type not specified (or @-base not found) for control: k",
+      "at": "k@a.nope"
+    }
+  ]
+}

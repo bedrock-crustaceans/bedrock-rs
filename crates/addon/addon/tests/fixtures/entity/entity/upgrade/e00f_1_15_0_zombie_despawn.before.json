@@ -1,0 +1,16 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:zombie"
+    },
+    "components": {},
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.melee_attack": {
+          "priority": 3
+        }
+      }
+    }
+  }
+}

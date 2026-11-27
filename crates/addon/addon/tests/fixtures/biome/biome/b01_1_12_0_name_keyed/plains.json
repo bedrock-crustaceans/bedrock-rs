@@ -1,0 +1,14 @@
+{
+  "plains": {
+    "format_version": "1.12.0",
+    "minecraft:climate": {
+      "downfall": 0.4,
+      "snow_accumulation": [ 0.0, 0.125 ],
+      "temperature": 0.8
+    },
+    "animal": {},
+    "monster": {},
+    "overworld": {},
+    "plains": {}
+  }
+}

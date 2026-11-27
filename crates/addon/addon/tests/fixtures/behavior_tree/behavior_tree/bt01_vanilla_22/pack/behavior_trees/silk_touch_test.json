@@ -1,0 +1,26 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "silk_touch_test",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:look_at": {
+              "block_pos": [0, 4, 0]
+            }
+          },
+          {
+            "minecraft:break_block": {
+              "block_pos": [0, 4, 0]
+            }
+          },
+          {
+            "minecraft:wait": { 
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "operation": "remove",
+        "where": [
+          {
+            "binding_name": "#a"
+          }
+        ]
+      }
+    ],
+    "layer": 5
+  }
+}

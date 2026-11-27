@@ -1,0 +1,22 @@
+{
+  "format_version": "1.17.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      {
+        "scene_tag": "determinism_greeting",
+        "npc_name": { "rawtext": [ { "translate": "determinism.npc.name" } ] },
+        "text": "Hello.",
+        "buttons": [
+          { "name": "Wave", "commands": [ "/say wave" ] },
+          { "name": "Read more", "url": "https://example.com" }
+        ],
+        "on_open_commands": [ "/say open" ],
+        "on_close_commands": [ "/say close" ]
+      },
+      {
+        "scene_tag": "determinism_farewell",
+        "text": { "rawtext": [ { "text": "Goodbye." } ] }
+      }
+    ]
+  }
+}

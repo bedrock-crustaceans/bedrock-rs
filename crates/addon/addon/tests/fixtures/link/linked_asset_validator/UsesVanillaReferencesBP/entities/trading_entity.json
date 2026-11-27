@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "test:trading_entity",
+      "is_spawnable": true,
+      "is_summonable": true
+    },
+    "components": {
+      "minecraft:trade_table": {
+        "table": "trading/trade_table_with_references.json",
+        "convert_trades_economy": true
+      }
+    },
+    "events": {
+      "test:event": {}
+    }
+  }
+}

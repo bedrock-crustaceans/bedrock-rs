@@ -1,0 +1,16 @@
+//! Implementation details shared with `bedrock_addon`: the seal of the public traits. Hidden
+//! from the documentation; nothing here is covered by SemVer.
+
+/// The seal of `Content`, `Definition` and `Merge`: implemented by `bedrock_addon`'s
+/// types, reachable so that crate can implement the traits, hidden so nobody else does.
+pub trait Sealed {}
+
+/// facet's `Shape`, for the paths `#[derive(Components)]` emits (a family names facet itself,
+/// but the derive's output names only core).
+pub use facet::Shape;
+
+/// facet's `Facet`, for the bounds `#[derive(Schema)]` emit.
+pub use facet::Facet;
+
+/// The grammar's dispatcher macro, which `schema::__attr!` forwards to (`__schema_attr!`).
+pub use bedrock_addon_schema::__attr as grammar_attr;

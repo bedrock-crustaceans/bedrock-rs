@@ -1,0 +1,10 @@
+{
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "test:forge"
+    },
+    "blocks": [
+      "minecraft:anvil"
+    ]
+  }
+}

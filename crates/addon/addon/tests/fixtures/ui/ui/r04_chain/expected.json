@@ -1,0 +1,25 @@
+{
+  "defs": {
+    "a.a": {
+      "type": "panel",
+      "layer": 1
+    },
+    "a.b": {
+      "size": [
+        1,
+        1
+      ],
+      "type": "panel",
+      "layer": 1
+    },
+    "a.c": {
+      "visible": false,
+      "size": [
+        1,
+        1
+      ],
+      "type": "panel",
+      "layer": 1
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "walk_forward",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:move": { 
+              "desired_direction": "forward",
+              "max_number_of_ticks": 30
+            }
+          }
+        ]
+      }
+    }
+  }
+}

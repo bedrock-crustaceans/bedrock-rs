@@ -165,7 +165,9 @@ mod tests {
         let mut root = nbtx::Compound::new();
         root.insert(
             "list".into(),
-            nbtx::Value::List(vec![nbtx::Value::Compound(entry)]),
+            nbtx::Value::List(
+                nbtx::ValueList::try_from(vec![nbtx::Value::Compound(entry)]).unwrap(),
+            ),
         );
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(root)).unwrap();
 

@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm45",
+    "description": "families/script_module fixture sm45_transitive_conflict",
+    "uuid": "f3a43cde-89a4-5535-b19f-66db9e876180",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "7d4d1d36-2de4-56d4-84af-7ba0bc67e04e",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.19.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "2.0.0"
+    }
+  ]
+}

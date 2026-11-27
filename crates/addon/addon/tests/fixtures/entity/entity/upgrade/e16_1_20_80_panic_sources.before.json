@@ -1,0 +1,20 @@
+{
+  "format_version": "1.20.80",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:behavior.panic": {}
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.panic": {
+          "damage_sources": [
+            "fire"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:ore_feature": {
+    "description": {
+      "identifier": "demo:determinism_ore"
+    },
+    "count": 8,
+    "replace_rules": [
+      {
+        "places_block": "minecraft:diamond_ore",
+        "may_replace": [
+          "minecraft:stone"
+        ]
+      }
+    ]
+  }
+}

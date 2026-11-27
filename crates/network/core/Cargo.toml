@@ -1,0 +1,25 @@
+[package]
+name = "bedrock_network_core"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+nbtx.workspace = true
+paste.workspace = true
+seq-macro.workspace = true
+byteorder.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+strum.workspace = true
+
+[features]
+packet-meta = []
+packet-dyn = []
+packet-trace = []
+
+[dev-dependencies]
+bedrock_network_macros = { path = "../macros" }
+tracing.workspace = true

@@ -1,0 +1,55 @@
+{
+	"format_version": "1.21.50",
+	"minecraft:item": {
+    "description": {
+	    "identifier": "test:item_with_references"
+    },
+    "components": {
+      "minecraft:icon": "cake",
+      "minecraft:block_placer": {
+        "block": "minecraft:dirt",
+        "use_on": [
+          { "name": "grass_block" }
+        ]
+      },
+      "minecraft:digger": {
+        "use_efficiency": true,
+        "destroy_speeds": [
+          {
+            "block": "minecraft:coal_ore",
+            "speed": 2
+          }
+        ]
+      },
+      "minecraft:entity_placer": {
+        "entity": "minecraft:spider<minecraft:become_neutral>",
+        "dispense_on": [ "minecraft:web" ],
+        "use_on": [ "minecraft:web" ]
+      },
+      "minecraft:food": {
+        "using_converts_to": "minecraft:bucket"
+      },
+      "minecraft:projectile": {
+        "projectile_entity": "minecraft:arrow",
+        "minimum_critical_power": 4.2
+      },
+      "minecraft:repairable": {
+        "repair_items": [
+          {
+            "items": [ "minecraft:torch" ]
+          }
+        ]
+      },
+      "minecraft:shooter": {
+        "ammunition": [
+          {
+            "item": "minecraft:egg"
+          }
+        ]
+      },
+      "minecraft:use_modifiers": {
+        "use_duration": 1.0
+      }
+    }
+  }
+}

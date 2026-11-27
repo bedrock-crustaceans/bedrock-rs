@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm31",
+    "description": "families/script_module fixture sm31_internal",
+    "uuid": "14cc4b2d-b053-56fd-8c98-6da0b299b798",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "252d6428-6d0f-56e6-a4e2-79c47b4be640",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.9.0-internal"
+    }
+  ]
+}

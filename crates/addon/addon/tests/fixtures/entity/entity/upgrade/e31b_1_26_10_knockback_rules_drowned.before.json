@@ -1,0 +1,13 @@
+{
+  "format_version": "1.26.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:drowned"
+    },
+    "components": {
+      "minecraft:apply_knockback_rules": {
+        "presets": []
+      }
+    }
+  }
+}

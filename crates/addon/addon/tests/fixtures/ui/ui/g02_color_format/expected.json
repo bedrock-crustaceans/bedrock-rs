@@ -1,0 +1,10 @@
+{
+  "globals": {
+    "$a_color_format": [
+      1,
+      0,
+      0
+    ],
+    "$coin_color": "yellow"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "format_version": "1.18.10",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:bee"
+    },
+    "components": {
+      "minecraft:behavior.go_home": {
+        "on_home": {
+          "event": "x:home"
+        },
+        "on_failed": [
+          {
+            "event": "x:f"
+          }
+        ]
+      }
+    }
+  }
+}

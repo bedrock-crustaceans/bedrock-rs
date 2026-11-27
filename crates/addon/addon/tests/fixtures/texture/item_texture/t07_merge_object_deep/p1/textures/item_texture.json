@@ -1,0 +1,11 @@
+{
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "k": {
+      "textures": {
+        "path": "y",
+        "overlay_color": "#ff0000"
+      }
+    }
+  }
+}

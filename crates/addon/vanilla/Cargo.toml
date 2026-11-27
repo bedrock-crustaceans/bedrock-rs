@@ -1,0 +1,12 @@
+[package]
+name = "bedrock_addon_vanilla"
+description = "The game's own data for the bedrock_addon crate family: the identifier lists and command table generated from the game's script metadata, and the hand-kept name lists; plain static tables, no dependencies"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]

@@ -1,0 +1,32 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:crafting_items_catalog": {
+    "categories": [
+      {
+        "category_name": "construction",
+        "groups": []
+      },
+      {
+        "category_name": "nature",
+        "groups": [
+          {
+            "group_identifier": {
+              "name": "custom:g"
+            },
+            "items": [
+              "minecraft:stone"
+            ]
+          }
+        ]
+      },
+      {
+        "category_name": "equipment",
+        "groups": []
+      },
+      {
+        "category_name": "items",
+        "groups": []
+      }
+    ]
+  }
+}

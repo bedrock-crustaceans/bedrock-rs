@@ -1,15 +1,30 @@
 [package]
 name = "bedrock_auth"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
-serde = { workspace = true }
-serde_json = { workspace = true }
-serde_repr = { workspace = true }
-jsonwebtoken = { workspace = true }
-reqwest = { workspace = true, features = ["blocking", "json"] }
-thiserror = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+serde_repr.workspace = true
+thiserror.workspace = true
+base64.workspace = true
+p384.workspace = true
+sha2.workspace = true
+md-5 = "0.11.0"
+uuid.workspace = true
+ureq = { version = "3", optional = true }
+reqwest = { workspace = true, optional = true }
+
+# TODO: update this once 0.10 is released
+rsa = { version = "0.10.0-rc.19", default-features = false, features = ["std", "sha2"] }
+
+[dev-dependencies]
+rand = "0.10.3"
 
 [features]
-async = []
+ureq = ["dep:ureq"]
+reqwest = ["dep:reqwest"]

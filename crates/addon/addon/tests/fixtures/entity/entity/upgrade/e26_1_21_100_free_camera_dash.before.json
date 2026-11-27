@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.100",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:input_air_controlled": {},
+      "minecraft:dash": {
+        "cooldown_time": 2
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:dash": {
+          "direction": "passenger"
+        }
+      }
+    }
+  }
+}

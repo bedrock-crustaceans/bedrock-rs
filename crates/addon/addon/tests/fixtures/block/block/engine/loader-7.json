@@ -1,0 +1,81 @@
+{
+			"format_version": "1.20.50",
+			"minecraft:block": {
+				"description": {
+					"identifier": "minecraft:test_block",
+					"menu_category": {
+						"category": "equipment",
+						"group": "name.group",
+						"is_hidden_in_commands": true
+					}
+				},
+				"components": {
+					"minecraft:breathability": "air",
+					"minecraft:unit_cube": {},
+					"minecraft:on_fall_on": {
+						"target": "self",
+						"event": "dummy:event1",
+						"condition": "query.get_equipped_item_name(0)=='itemA'",
+						"min_fall_distance": 2.5
+					},
+					"minecraft:on_interact": {
+						"target": "other",
+						"event": "dummy:event2",
+						"condition": "query.get_equipped_item_name(0)=='itemB'"
+					},
+					"minecraft:on_placed": {
+						"target": "player",
+						"event": "dummy:event3",
+						"condition": "query.get_equipped_item_name(0)=='itemC'"
+					},
+					"minecraft:on_player_destroyed": {
+						"target": "target",
+						"event": "dummy:event4",
+						"condition": "query.get_equipped_item_name(0)=='itemD'"
+					},
+					"minecraft:on_player_placing": {
+						"target": "parent",
+						"event": "dummy:event5",
+						"condition": "query.get_equipped_item_name(0)=='itemE'"
+					},
+					"minecraft:on_step_off": {
+						"target": "baby",
+						"event": "dummy:event6",
+						"condition": "query.get_equipped_item_name(0)=='itemF'"
+					},
+					"minecraft:on_step_on": {
+						"target": "block",
+						"event": "dummy:event7",
+						"condition": "query.get_equipped_item_name(0)=='itemG'"
+					},
+					"minecraft:queued_ticking": {
+						"interval_range": [1,3],
+						"looping": false,
+						"on_tick": {
+							"target": "block",
+							"event": "dummy:event",
+							"condition": "query.get_equipped_item_name(0)=='itemG'"
+						}
+					},
+					"minecraft:random_ticking": {
+						"on_tick": {
+							"target": "block",
+							"event": "dummy:event",
+							"condition": "query.get_equipped_item_name(0)=='itemG'"
+						}
+					}
+				},
+				"events": {
+					"dummy:place_rotate": {
+						"set_block_state": {
+							"dummy:rotation": "math.floor(query.cardinal_facing_2d)"
+						}
+					},
+					"dummy:cycle_rotation": {
+						"set_block_state": {
+							"dummy:rotation": "(query.block_state('dummy:rotation')<5?query.block_state('dummy:rotation')+1:2)"
+						}
+					}
+				}
+			}
+		}

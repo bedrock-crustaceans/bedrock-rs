@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use rusty_leveldb::{DBIterator, LdbIterator};
+use leveldb::DBIterator;
 
 use crate::{
     db::{Buffer, Database},
@@ -27,7 +27,7 @@ impl KvRef<'_, '_> {
     }
 }
 
-/// An iterator over keys in a LevelDB database.
+/// An iterator over keys in a `LevelDB` database.
 pub struct Keys<'db> {
     iter: DBIterator,
     /// Binds this struct to the `db` lifetime to ensure it does not outlive the database.
@@ -35,6 +35,11 @@ pub struct Keys<'db> {
 }
 
 impl<'db> Keys<'db> {
+    /// Creates an iterator over the keys of `db`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database cannot create an iterator.
     pub fn new(db: &'db Database) -> Result<Self> {
         Ok(Self {
             iter: db.new_iter()?,
@@ -47,7 +52,7 @@ impl<'k, 'db> Iterator for &'k mut Keys<'db> {
     type Item = KvRef<'k, 'db>;
 
     fn next(&mut self) -> Option<KvRef<'k, 'db>> {
-        if !self.iter.advance() {
+        if !self.iter.next() {
             return None;
         }
 

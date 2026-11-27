@@ -1,0 +1,22 @@
+{
+				"format_version": "1.14.0",
+				"sound_definitions": {
+					"DefaultMinMax": {
+							"category": "neutral",
+							"sounds": [
+							{
+								"name": "sounds/random/click"
+							}
+						]
+					},
+					"HighMax": {
+							"category": "neutral",
+							"max_distance": 50.0,
+							"sounds": [
+							{
+								"name": "sounds/random/click"
+							}
+						]
+					}
+				}
+			}

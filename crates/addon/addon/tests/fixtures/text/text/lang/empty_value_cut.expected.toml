@@ -1,0 +1,4 @@
+# validation.md V3: a value that a tab or `##` ends at once is empty, dropped silently.
+
+[entries]
+"e" = "f"

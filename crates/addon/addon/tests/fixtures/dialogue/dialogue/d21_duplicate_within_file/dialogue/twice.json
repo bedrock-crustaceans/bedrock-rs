@@ -1,0 +1,9 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "a", "text": "First." },
+      { "scene_tag": "a", "text": "Second." }
+    ]
+  }
+}

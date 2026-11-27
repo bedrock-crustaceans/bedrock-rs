@@ -4,7 +4,10 @@ use crate::subchunk::BlockDef;
 
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct ItemStack {
     pub block: Option<BlockDef>,
     pub can_destroy: Option<Vec<String>>,
@@ -33,7 +36,10 @@ pub struct ItemStack {
 /// `Hopper`, which a hand-written `ItemSlot` codec would never be reached from.
 #[derive(Debug, Clone, PartialEq, Facet)]
 #[facet(rename_all = "PascalCase")]
-#[cfg_attr(not(feature = "deny-unknown-fields"), facet(nbtx::allow_unknown_fields))]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct ItemSlot {
     pub slot: i8,
     pub block: Option<BlockDef>,

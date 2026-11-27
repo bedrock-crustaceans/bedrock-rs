@@ -1,0 +1,3 @@
+pack/behavior_trees/: the 22 files of behavior_packs/vanilla/behavior_trees/ of the GDK
+Retail-1.26.4501 build [gdk-1.26.45], copied byte for byte (CRLF line ends, no final
+newline). The Dev-1.26.2004 build ships the same 22 files.

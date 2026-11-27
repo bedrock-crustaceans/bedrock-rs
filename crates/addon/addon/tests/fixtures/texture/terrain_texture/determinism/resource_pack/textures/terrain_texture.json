@@ -1,0 +1,20 @@
+{
+  "texture_name": "atlas.terrain",
+  "padding": 8,
+  "texture_data": {
+    "demo_stone": {
+      "textures": "textures/blocks/demo_stone"
+    },
+    "demo_mix": {
+      "textures": {
+        "variations": [
+          {
+            "path": "textures/blocks/demo_stone",
+            "weight": 2
+          },
+          "textures/blocks/demo_missing"
+        ]
+      }
+    }
+  }
+}

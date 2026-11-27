@@ -1,0 +1,21 @@
+{
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:no_version"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}

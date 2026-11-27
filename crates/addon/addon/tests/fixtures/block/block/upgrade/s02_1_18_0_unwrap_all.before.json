@@ -1,0 +1,79 @@
+{
+  "format_version": "1.18.0",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:block_collision": {
+        "origin": [
+          -8,
+          0,
+          -8
+        ],
+        "size": [
+          16,
+          8,
+          16
+        ],
+        "enabled": false
+      },
+      "minecraft:aim_collision": {
+        "origin": [
+          -8,
+          0,
+          -8
+        ],
+        "size": [
+          16,
+          8,
+          16
+        ],
+        "enabled": true
+      },
+      "minecraft:destroy_time": {
+        "destroy_time": 3
+      },
+      "minecraft:explosion_resistance": {
+        "resistance": 5
+      },
+      "minecraft:display_name": {
+        "display_name": "demo_ore"
+      },
+      "minecraft:friction": {
+        "friction": 0.6
+      },
+      "minecraft:geometry": {
+        "geometry": "geometry.demo"
+      },
+      "minecraft:loot": {
+        "loot_table": "loot_tables/demo.json"
+      },
+      "minecraft:map_color": {
+        "map_color": "#ffffff"
+      },
+      "minecraft:block_light_filter": {
+        "filter_level": 4
+      },
+      "minecraft:breathability": {
+        "breathing_type": "air"
+      },
+      "minecraft:block_light_emission": {
+        "emission": 0.5
+      },
+      "minecraft:ticking": {
+        "on_tick": {
+          "event": "tick"
+        },
+        "range": [
+          2.5,
+          1.0
+        ],
+        "looping": true
+      },
+      "minecraft:flammable": {
+        "flame_odds": 5
+      }
+    }
+  }
+}

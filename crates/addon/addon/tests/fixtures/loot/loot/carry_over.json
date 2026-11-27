@@ -1,0 +1,11 @@
+// fixtures.md row 12: carry_over_block_entity_data (engine 1.26.40, Upcoming Creator Features)
+{
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {"type": "item", "name": "minecraft:chest", "functions": [{"function": "carry_over_block_entity_data"}]}
+      ]
+    }
+  ]
+}

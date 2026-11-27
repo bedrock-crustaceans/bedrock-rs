@@ -1,0 +1,21 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with content using AGFX Experimental features",
+    "name": "AGFXExperimental resource pack",
+    "uuid": "054a7527-1f84-492e-b23c-c3648bc84b24",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 120]
+  },
+  "modules": [
+    {
+      "description": "",
+      "type": "resources",
+      "uuid": "4d9c2546-6ccf-458a-820f-8b4ae9e8b4fd",
+      "version": [1, 0, 0]
+    }
+  ],
+  "capabilities": [
+    "pbr"
+  ]
+}

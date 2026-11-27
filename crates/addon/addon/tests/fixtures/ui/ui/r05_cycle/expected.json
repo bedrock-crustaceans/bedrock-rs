@@ -1,0 +1,34 @@
+{
+  "defs": {
+    "a.p": {
+      "layer": 1
+    },
+    "a.q": {
+      "layer": 2
+    }
+  },
+  "diagnostics": [
+    {
+      "code": "core/reference_cycle",
+      "severity": "info",
+      "text": "references form a cycle",
+      "at": "p@a.q"
+    },
+    {
+      "code": "core/reference_cycle",
+      "severity": "info",
+      "text": "references form a cycle",
+      "at": "q@a.p"
+    },
+    {
+      "code": "json_ui/type_not_specified",
+      "severity": "info",
+      "text": "Type not specified (or @-base not found) for control: p"
+    },
+    {
+      "code": "json_ui/type_not_specified",
+      "severity": "info",
+      "text": "Type not specified (or @-base not found) for control: q"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+					"container_type": "hopper",
+					"inventory_size": 5,
+					"can_be_siphoned_from": true,
+					"private": true,
+					"restrict_to_owner": true,
+					"additional_slots_per_strength": 1
+				}

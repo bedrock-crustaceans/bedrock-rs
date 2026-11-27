@@ -1,0 +1,13 @@
+
+			{
+				"format_version": "1.26.50",
+				"minecraft:entity": {
+					"description": {
+						"identifier": "<PowderSnowServerTestInternal::CAN_STAND_ON_POWDER_SNOW_MOB_NAME>",
+						"is_summonable": true
+					},
+					"components": {
+						"minecraft:can_stand_on_powder_snow": {}
+					}
+				}
+			}

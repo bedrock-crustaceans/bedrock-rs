@@ -1,0 +1,26 @@
+{
+  "format_version": "1.20.60",
+  "minecraft:block_culling_rules": {
+    "description": {
+      "identifier": "minecraft:culling.shelf_mushroom_large"
+    },
+    "rules": [
+      {
+        "geometry_part": {
+          "bone": "mushroom_top",
+          "cube": 0,
+          "face": "south"
+        },
+        "direction": "south"
+      },
+      {
+        "geometry_part": {
+          "bone": "mushroom_bottom",
+          "cube": 0,
+          "face": "south"
+        },
+        "direction": "south"
+      }
+    ]
+  }
+}

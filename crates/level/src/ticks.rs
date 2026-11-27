@@ -65,17 +65,17 @@ fn field<'v>(value: &'v nbtx::Value, name: &str) -> Option<&'v nbtx::Value> {
 /// instead of a fixed struct.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TickEntry<'a> {
-    value: &'a nbtx::Value,
+    value: &'a nbtx::Compound,
 }
 
 impl<'a> TickEntry<'a> {
-    /// The entry's full NBT value, verbatim.
-    pub fn value(&self) -> &'a nbtx::Value {
+    /// The entry's full NBT compound, verbatim.
+    pub fn value(&self) -> &'a nbtx::Compound {
         self.value
     }
 
     fn field(&self, name: &str) -> Option<&'a nbtx::Value> {
-        field(self.value, name)
+        self.value.get(bstr::BStr::new(name))
     }
 
     /// The `x` field. `Int` in every real record found; `None` if absent or
@@ -125,7 +125,7 @@ impl<'a> TickEntry<'a> {
 /// Iterates over a [`TickList`]'s entries, in on-disk order. See
 /// [`TickList::entries`].
 pub struct TickEntries<'a> {
-    inner: std::slice::Iter<'a, nbtx::Value>,
+    inner: std::slice::Iter<'a, nbtx::Compound>,
 }
 
 impl<'a> Iterator for TickEntries<'a> {
@@ -196,7 +196,11 @@ impl TickList {
     /// decision 11 (unmodelled, not malformed).
     pub fn entries(&self) -> TickEntries<'_> {
         match self.field("tickList") {
-            Some(nbtx::Value::List(list)) => TickEntries { inner: list.iter() },
+            // Every real `tickList` is a list of compounds; any other element type has no
+            // entries to model.
+            Some(nbtx::Value::List(nbtx::ValueList::Compound(list))) => {
+                TickEntries { inner: list.iter() }
+            }
             _ => TickEntries { inner: [].iter() },
         }
     }
@@ -247,10 +251,13 @@ mod tests {
         compound.insert("currentTick".into(), nbtx::Value::Int(30));
         compound.insert(
             "tickList".into(),
-            nbtx::Value::List(vec![
-                sample_entry(15, 4, 44, 30),
-                sample_entry(14, 4, 43, 31),
-            ]),
+            nbtx::Value::List(
+                nbtx::ValueList::try_from(vec![
+                    sample_entry(15, 4, 44, 30),
+                    sample_entry(14, 4, 43, 31),
+                ])
+                .unwrap(),
+            ),
         );
         nbtx::Value::Compound(compound)
     }
@@ -291,7 +298,7 @@ mod tests {
     fn round_trips_an_empty_tick_list() {
         let mut compound = nbtx::Compound::new();
         compound.insert("currentTick".into(), nbtx::Value::Int(0));
-        compound.insert("tickList".into(), nbtx::Value::List(vec![]));
+        compound.insert("tickList".into(), nbtx::Value::List(nbtx::ValueList::End));
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(compound)).unwrap();
 
         let list = decode_tick_list(&bytes).unwrap();
@@ -306,7 +313,7 @@ mod tests {
         // re-encode (architecture decision 7).
         let mut compound = nbtx::Compound::new();
         compound.insert("currentTick".into(), nbtx::Value::Int(5));
-        compound.insert("tickList".into(), nbtx::Value::List(vec![]));
+        compound.insert("tickList".into(), nbtx::Value::List(nbtx::ValueList::End));
         compound.insert("someFutureField".into(), nbtx::Value::Long(99));
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(compound)).unwrap();
 
@@ -322,7 +329,7 @@ mod tests {
         assert_eq!(list.entries().count(), 0);
 
         let entry = TickEntry {
-            value: &nbtx::Value::Byte(0),
+            value: &nbtx::Compound::new(),
         };
         assert_eq!(entry.x(), None);
         assert_eq!(entry.y(), None);

@@ -1,0 +1,21 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:turtleish"
+    },
+    "components": {
+      "minecraft:behavior.lay_egg": {
+        "search_count": 10,
+        "speed_multiplier": 1
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:behavior.stomp_turtle_egg": {
+          "search_count": 5
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# fixtures.md `a=x\ny`: the escape `\n` becomes a line feed.
+
+[entries]
+"a" = "x\ny"

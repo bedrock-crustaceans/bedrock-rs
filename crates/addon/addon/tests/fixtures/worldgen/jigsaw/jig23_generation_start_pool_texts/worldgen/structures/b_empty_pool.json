@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "demo:b"
+    },
+    "step": "surface_structures",
+    "start_pool": "demo:empty",
+    "max_depth": 4,
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "minecraft:meeting"
+    },
+    "tickets": 32,
+    "usable_distance": 6,
+    "blocks": [
+      "minecraft:bell"
+    ],
+    "tags": [
+      "minecraft:village"
+    ]
+  }
+}

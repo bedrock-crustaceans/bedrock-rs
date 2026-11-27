@@ -1,0 +1,30 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Experimental resource pack for the Brain prototype.",
+    "name": "Experimental Brain Resource Pack",
+    "uuid": "40d23612-15ef-471d-9607-0ab5ec97bf5c",
+    "version": [
+      0,
+      0,
+      1
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      130
+    ]
+  },
+  "modules": [
+    {
+      "description": "Experimental resource pack for the Brain prototype.",
+      "type": "resources",
+      "uuid": "ef57db53-631c-4784-b629-5e176ac3cbb0",
+      "version": [
+        0,
+        0,
+        1
+      ]
+    }
+  ]
+}

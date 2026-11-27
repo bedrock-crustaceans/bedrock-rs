@@ -10,6 +10,10 @@ pub trait SeekExt {
     /// `stream_len_ext` to ensure it does not collide with the standard library method.
     ///
     /// [`stream_len`]: std::io::Seek::stream_len
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if querying or moving the stream position fails.
     fn stream_len_ext(&mut self) -> std::io::Result<u64>;
 }
 
@@ -26,5 +30,19 @@ where
         }
 
         Ok(len)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stream_len_ext_reports_the_length_and_keeps_the_position() {
+        let mut cursor = Cursor::new([1_u8, 2, 3, 4, 5]);
+        cursor.seek(SeekFrom::Start(2)).unwrap();
+
+        assert_eq!(cursor.stream_len_ext().unwrap(), 5);
+        assert_eq!(cursor.stream_position().unwrap(), 2);
     }
 }

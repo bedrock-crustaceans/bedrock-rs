@@ -1,0 +1,4 @@
+# fixtures.md `lang/ut_trailing_comment` (LocalizationUnitTests).
+
+[entries]
+"key.trailing_comment" = "Value followed by comment "

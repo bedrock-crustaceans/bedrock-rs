@@ -1,0 +1,18 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "replace",
+        "value": [
+          {
+            "q@a.leaf": {}
+          },
+          {
+            "w@a.leaf": {}
+          }
+        ]
+      }
+    ]
+  }
+}

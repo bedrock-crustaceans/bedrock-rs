@@ -1,0 +1,2000 @@
+wrapper NonStrict Int { bits: 8, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 8, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 8, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 8, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 8, signed: true } 128	Respell(Int(-128))	Int(-128)
+wrapper NonStrict Int { bits: 8, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 8, signed: true } -129	Respell(UInt(127))	UInt(127)
+wrapper NonStrict Int { bits: 8, signed: true } 255	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 256	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 257	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } 32767	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 65535	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 65536	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 2147483647	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 2147483648	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } -2147483648	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } -2147483649	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 3000000000	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 9223372036854775807	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 18446744073709551615	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 18446744073709551616	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 0.0	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } -0.0	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 0.5	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } 1.0	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } 1.5	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } -1.5	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 3.0	Respell(UInt(3))	UInt(3)
+wrapper NonStrict Int { bits: 8, signed: true } 7.9	Respell(UInt(7))	UInt(7)
+wrapper NonStrict Int { bits: 8, signed: true } 1e1	Respell(UInt(10))	UInt(10)
+wrapper NonStrict Int { bits: 8, signed: true } -7.9	Respell(Int(-7))	Int(-7)
+wrapper NonStrict Int { bits: 8, signed: true } 1e10	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 1e20	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 3.4e38	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } 1e39	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } -1e39	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } 1e300	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: true } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: true } "true"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: true } ""	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: true } true	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: true } false	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 16, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 16, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 16, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 16, signed: true } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 16, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 16, signed: true } -129	Keep	Int(-129)
+wrapper NonStrict Int { bits: 16, signed: true } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 16, signed: true } 256	Keep	UInt(256)
+wrapper NonStrict Int { bits: 16, signed: true } 257	Keep	UInt(257)
+wrapper NonStrict Int { bits: 16, signed: true } 32767	Keep	UInt(32767)
+wrapper NonStrict Int { bits: 16, signed: true } 65535	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 65536	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 2147483647	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 2147483648	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } -2147483648	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } -2147483649	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 3000000000	Respell(UInt(24064))	UInt(24064)
+wrapper NonStrict Int { bits: 16, signed: true } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 9223372036854775807	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 18446744073709551615	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 18446744073709551616	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 0.0	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } -0.0	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 0.5	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } 1.0	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: true } 1.5	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: true } -1.5	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 3.0	Respell(UInt(3))	UInt(3)
+wrapper NonStrict Int { bits: 16, signed: true } 7.9	Respell(UInt(7))	UInt(7)
+wrapper NonStrict Int { bits: 16, signed: true } 1e1	Respell(UInt(10))	UInt(10)
+wrapper NonStrict Int { bits: 16, signed: true } -7.9	Respell(Int(-7))	Int(-7)
+wrapper NonStrict Int { bits: 16, signed: true } 1e10	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 1e20	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 3.4e38	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } 1e39	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } -1e39	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: true } 1e300	Respell(Int(-1))	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: true } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: true } "true"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: true } ""	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: true } true	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: true } false	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 32, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 32, signed: true } 2	Keep	UInt(2)
+wrapper Strict Int { bits: 8, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 32, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 32, signed: true } 7	Keep	UInt(7)
+wrapper Strict Int { bits: 8, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 32, signed: true } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 8, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 32, signed: true } 127	Keep	UInt(127)
+wrapper Strict Int { bits: 8, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 32, signed: true } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 32, signed: true } -128	Keep	Int(-128)
+wrapper Strict Int { bits: 8, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 32, signed: true } -129	Keep	Int(-129)
+wrapper Strict Int { bits: 8, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 32, signed: true } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 8, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 32, signed: true } 256	Keep	UInt(256)
+wrapper Strict Int { bits: 8, signed: true } 128	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 257	Keep	UInt(257)
+wrapper Strict Int { bits: 8, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 32, signed: true } 32767	Keep	UInt(32767)
+wrapper Strict Int { bits: 8, signed: true } -129	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 8, signed: true } 255	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 65536	Keep	UInt(65536)
+wrapper Strict Int { bits: 8, signed: true } 256	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 2147483647	Keep	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 257	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 2147483648	Respell(Int(-2147483648))	Int(-2147483648)
+wrapper Strict Int { bits: 8, signed: true } 32767	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -2147483648	Keep	Int(-2147483648)
+wrapper Strict Int { bits: 8, signed: true } 65535	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -2147483649	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 65536	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 3000000000	Respell(Int(-1294967296))	Int(-1294967296)
+wrapper Strict Int { bits: 8, signed: true } 2147483647	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } 2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 9223372036854775807	Respell(Int(-1))	Int(-1)
+wrapper Strict Int { bits: 8, signed: true } -2147483648	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 8, signed: true } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } 3000000000	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 18446744073709551615	Respell(Int(-1))	Int(-1)
+wrapper Strict Int { bits: 8, signed: true } 4294967296	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 18446744073709551616	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 0.5	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 32, signed: true } 1.0	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: true } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: true } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -1.5	Respell(Int(-1))	Int(-1)
+wrapper Strict Int { bits: 8, signed: true } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 8, signed: true } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 8, signed: true } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 8, signed: true } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -7.9	Respell(Int(-7))	Int(-7)
+wrapper Strict Int { bits: 8, signed: true } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1e10	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1e20	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 3.4e38	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1e39	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } -1e39	Respell(Int(-2147483647))	Int(-2147483647)
+wrapper Strict Int { bits: 8, signed: true } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } 1e300	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: true } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } true	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } false	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: true } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } true	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: true } false	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 0	Keep	UInt(0)
+wrapper Strict Int { bits: 8, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 64, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 64, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 64, signed: true } 7	Keep	UInt(7)
+wrapper Strict Int { bits: 16, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 64, signed: true } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 16, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 64, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 64, signed: true } 128	Keep	UInt(128)
+wrapper Strict Int { bits: 16, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 64, signed: true } -128	Keep	Int(-128)
+wrapper Strict Int { bits: 16, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 64, signed: true } -129	Keep	Int(-129)
+wrapper Strict Int { bits: 16, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 64, signed: true } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 16, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 64, signed: true } 256	Keep	UInt(256)
+wrapper Strict Int { bits: 16, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 64, signed: true } 257	Keep	UInt(257)
+wrapper Strict Int { bits: 16, signed: true } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 64, signed: true } 32767	Keep	UInt(32767)
+wrapper Strict Int { bits: 16, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 64, signed: true } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 16, signed: true } -129	Keep	Int(-129)
+wrapper NonStrict Int { bits: 64, signed: true } 65536	Keep	UInt(65536)
+wrapper Strict Int { bits: 16, signed: true } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 64, signed: true } 2147483647	Keep	UInt(2147483647)
+wrapper Strict Int { bits: 16, signed: true } 256	Keep	UInt(256)
+wrapper NonStrict Int { bits: 64, signed: true } 2147483648	Keep	UInt(2147483648)
+wrapper Strict Int { bits: 16, signed: true } 257	Keep	UInt(257)
+wrapper NonStrict Int { bits: 64, signed: true } -2147483648	Keep	Int(-2147483648)
+wrapper Strict Int { bits: 16, signed: true } 32767	Keep	UInt(32767)
+wrapper NonStrict Int { bits: 64, signed: true } -2147483649	Keep	Int(-2147483649)
+wrapper Strict Int { bits: 16, signed: true } 65535	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 16, signed: true } 65536	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 3000000000	Keep	UInt(3000000000)
+wrapper Strict Int { bits: 16, signed: true } 2147483647	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 4294967296	Keep	UInt(4294967296)
+wrapper Strict Int { bits: 16, signed: true } 2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 9223372036854775807	Keep	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } -2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 9223372036854775808	Respell(Int(-9223372036854775808))	Int(-9223372036854775808)
+wrapper Strict Int { bits: 16, signed: true } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 18446744073709551615	Respell(Int(-1))	Int(-1)
+wrapper Strict Int { bits: 16, signed: true } 3000000000	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } -9223372036854775808	Keep	Int(-9223372036854775808)
+wrapper Strict Int { bits: 16, signed: true } 4294967296	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 16, signed: true } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 18446744073709551616	Respell(UInt(9223372036854775807))	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: true } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: true } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 0.5	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 64, signed: true } 1.0	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: true } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: true } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } -1.5	Respell(Int(-1))	Int(-1)
+wrapper Strict Int { bits: 16, signed: true } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 16, signed: true } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 16, signed: true } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 16, signed: true } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } -7.9	Respell(Int(-7))	Int(-7)
+wrapper Strict Int { bits: 16, signed: true } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1e10	Respell(UInt(10000000000))	UInt(10000000000)
+wrapper Strict Int { bits: 16, signed: true } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1e20	Respell(UInt(9223372036854775807))	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 3.4e38	Respell(UInt(9223372036854775807))	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1e39	Respell(UInt(9223372036854775807))	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } -1e39	Respell(Int(-9223372036854775807))	Int(-9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } 1e300	Respell(UInt(9223372036854775807))	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: true } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } true	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } false	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: true } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: true } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } true	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } false	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 8, signed: false } -1	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: false } 7	Keep	UInt(7)
+wrapper Strict Int { bits: 32, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: false } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 32, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 8, signed: false } 127	Keep	UInt(127)
+wrapper Strict Int { bits: 32, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 8, signed: false } 128	Keep	UInt(128)
+wrapper Strict Int { bits: 32, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 8, signed: false } -128	Respell(UInt(128))	UInt(128)
+wrapper Strict Int { bits: 32, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 8, signed: false } -129	Respell(UInt(127))	UInt(127)
+wrapper Strict Int { bits: 32, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 8, signed: false } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 8, signed: false } 256	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: false } 257	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 32, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 8, signed: false } 32767	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } -129	Keep	Int(-129)
+wrapper NonStrict Int { bits: 8, signed: false } 65535	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 8, signed: false } 65536	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 256	Keep	UInt(256)
+wrapper NonStrict Int { bits: 8, signed: false } 2147483647	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 257	Keep	UInt(257)
+wrapper NonStrict Int { bits: 8, signed: false } 2147483648	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 32767	Keep	UInt(32767)
+wrapper NonStrict Int { bits: 8, signed: false } -2147483648	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 65535	Keep	UInt(65535)
+wrapper NonStrict Int { bits: 8, signed: false } -2147483649	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 65536	Keep	UInt(65536)
+wrapper NonStrict Int { bits: 8, signed: false } 3000000000	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 8, signed: false } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 2147483647	Keep	UInt(2147483647)
+wrapper NonStrict Int { bits: 8, signed: false } 9223372036854775807	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } -2147483648	Keep	Int(-2147483648)
+wrapper NonStrict Int { bits: 8, signed: false } 18446744073709551615	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 3000000000	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 32, signed: true } 4294967296	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 18446744073709551616	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 0.5	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1.0	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 8, signed: false } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 32, signed: true } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } -1.5	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 32, signed: true } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 32, signed: true } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 32, signed: true } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } -7.9	Respell(UInt(249))	UInt(249)
+wrapper Strict Int { bits: 32, signed: true } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1e10	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1e20	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 3.4e38	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1e39	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } -1e39	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 32, signed: true } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } 1e300	Respell(UInt(255))	UInt(255)
+wrapper Strict Int { bits: 32, signed: true } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } true	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 32, signed: true } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } false	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 8, signed: false } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } true	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 0	Keep	UInt(0)
+wrapper Strict Int { bits: 32, signed: true } false	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 16, signed: false } -1	Respell(UInt(65535))	UInt(65535)
+wrapper NonStrict Int { bits: 16, signed: false } 7	Keep	UInt(7)
+wrapper Strict Int { bits: 64, signed: true } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: false } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 64, signed: true } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 16, signed: false } 127	Keep	UInt(127)
+wrapper Strict Int { bits: 64, signed: true } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 16, signed: false } 128	Keep	UInt(128)
+wrapper Strict Int { bits: 64, signed: true } -1	Keep	Int(-1)
+wrapper NonStrict Int { bits: 16, signed: false } -128	Respell(UInt(65408))	UInt(65408)
+wrapper Strict Int { bits: 64, signed: true } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 16, signed: false } -129	Respell(UInt(65407))	UInt(65407)
+wrapper NonStrict Int { bits: 16, signed: false } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 64, signed: true } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 16, signed: false } 256	Keep	UInt(256)
+wrapper Strict Int { bits: 64, signed: true } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 16, signed: false } 257	Keep	UInt(257)
+wrapper Strict Int { bits: 64, signed: true } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 16, signed: false } 32767	Keep	UInt(32767)
+wrapper Strict Int { bits: 64, signed: true } -128	Keep	Int(-128)
+wrapper NonStrict Int { bits: 16, signed: false } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } -129	Keep	Int(-129)
+wrapper NonStrict Int { bits: 16, signed: false } 65536	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 16, signed: false } 2147483647	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 256	Keep	UInt(256)
+wrapper NonStrict Int { bits: 16, signed: false } 2147483648	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 257	Keep	UInt(257)
+wrapper NonStrict Int { bits: 16, signed: false } -2147483648	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 32767	Keep	UInt(32767)
+wrapper NonStrict Int { bits: 16, signed: false } -2147483649	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 65535	Keep	UInt(65535)
+wrapper NonStrict Int { bits: 16, signed: false } 3000000000	Respell(UInt(24064))	UInt(24064)
+wrapper Strict Int { bits: 64, signed: true } 65536	Keep	UInt(65536)
+wrapper NonStrict Int { bits: 16, signed: false } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 2147483647	Keep	UInt(2147483647)
+wrapper NonStrict Int { bits: 16, signed: false } 9223372036854775807	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 2147483648	Keep	UInt(2147483648)
+wrapper NonStrict Int { bits: 16, signed: false } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } -2147483648	Keep	Int(-2147483648)
+wrapper NonStrict Int { bits: 16, signed: false } 18446744073709551615	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } -2147483649	Keep	Int(-2147483649)
+wrapper NonStrict Int { bits: 16, signed: false } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 3000000000	Keep	UInt(3000000000)
+wrapper Strict Int { bits: 64, signed: true } 4294967296	Keep	UInt(4294967296)
+wrapper NonStrict Int { bits: 16, signed: false } 18446744073709551616	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 9223372036854775807	Keep	UInt(9223372036854775807)
+wrapper NonStrict Int { bits: 16, signed: false } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 16, signed: false } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 0.5	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 16, signed: false } 1.0	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 64, signed: true } -9223372036854775808	Keep	Int(-9223372036854775808)
+wrapper NonStrict Int { bits: 16, signed: false } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 64, signed: true } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } -1.5	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 64, signed: true } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 64, signed: true } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 64, signed: true } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } -7.9	Respell(UInt(65529))	UInt(65529)
+wrapper Strict Int { bits: 64, signed: true } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1e10	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1e20	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 3.4e38	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1e39	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } -1e39	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 64, signed: true } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } 1e300	Respell(UInt(65535))	UInt(65535)
+wrapper Strict Int { bits: 64, signed: true } 1e10	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } true	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 64, signed: true } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } false	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 64, signed: true } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 16, signed: false } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } true	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } false	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: true } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 32, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 32, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 32, signed: false } -1	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 32, signed: false } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 32, signed: false } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 8, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 32, signed: false } 127	Keep	UInt(127)
+wrapper Strict Int { bits: 8, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 32, signed: false } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 32, signed: false } -128	Respell(UInt(4294967168))	UInt(4294967168)
+wrapper Strict Int { bits: 8, signed: false } -1	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 8, signed: false } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 32, signed: false } -129	Respell(UInt(4294967167))	UInt(4294967167)
+wrapper NonStrict Int { bits: 32, signed: false } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 8, signed: false } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 8, signed: false } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 32, signed: false } 256	Keep	UInt(256)
+wrapper Strict Int { bits: 8, signed: false } 128	Keep	UInt(128)
+wrapper NonStrict Int { bits: 32, signed: false } 257	Keep	UInt(257)
+wrapper Strict Int { bits: 8, signed: false } -128	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 32767	Keep	UInt(32767)
+wrapper Strict Int { bits: 8, signed: false } -129	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 8, signed: false } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 32, signed: false } 65536	Keep	UInt(65536)
+wrapper Strict Int { bits: 8, signed: false } 256	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 2147483647	Keep	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: false } 257	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 2147483648	Keep	UInt(2147483648)
+wrapper Strict Int { bits: 8, signed: false } 32767	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -2147483648	Respell(UInt(2147483648))	UInt(2147483648)
+wrapper Strict Int { bits: 8, signed: false } 65535	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 8, signed: false } 65536	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -2147483649	Respell(UInt(2147483647))	UInt(2147483647)
+wrapper Strict Int { bits: 8, signed: false } 2147483647	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 3000000000	Keep	UInt(3000000000)
+wrapper Strict Int { bits: 8, signed: false } 2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 4294967296	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } -2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 9223372036854775807	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } 3000000000	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 18446744073709551615	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 4294967296	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -9223372036854775808	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 8, signed: false } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 18446744073709551616	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 0.5	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1.0	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: false } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: false } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -1.5	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 8, signed: false } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 8, signed: false } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 8, signed: false } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -7.9	Respell(UInt(4294967289))	UInt(4294967289)
+wrapper Strict Int { bits: 8, signed: false } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1e10	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1e20	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 3.4e38	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1e39	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } -1e39	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: false } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } 1e300	Respell(UInt(4294967295))	UInt(4294967295)
+wrapper Strict Int { bits: 8, signed: false } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } -1e39	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } "true"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } true	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 8, signed: false } ""	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } false	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 8, signed: false } true	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 32, signed: false } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } false	Refused(WrongType)	refused
+wrapper Strict Int { bits: 8, signed: false } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 0	Keep	UInt(0)
+wrapper Strict Int { bits: 16, signed: false } 0	Keep	UInt(0)
+wrapper NonStrict Int { bits: 64, signed: false } 1	Keep	UInt(1)
+wrapper Strict Int { bits: 16, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Int { bits: 64, signed: false } 2	Keep	UInt(2)
+wrapper Strict Int { bits: 16, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Int { bits: 64, signed: false } -1	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } -1	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 7	Keep	UInt(7)
+wrapper Strict Int { bits: 16, signed: false } 7	Keep	UInt(7)
+wrapper NonStrict Int { bits: 64, signed: false } 16	Keep	UInt(16)
+wrapper Strict Int { bits: 16, signed: false } 16	Keep	UInt(16)
+wrapper NonStrict Int { bits: 64, signed: false } 127	Keep	UInt(127)
+wrapper Strict Int { bits: 16, signed: false } 127	Keep	UInt(127)
+wrapper NonStrict Int { bits: 64, signed: false } 128	Keep	UInt(128)
+wrapper Strict Int { bits: 16, signed: false } 128	Keep	UInt(128)
+wrapper Strict Int { bits: 16, signed: false } -128	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -128	Respell(UInt(18446744073709551488))	UInt(18446744073709551488)
+wrapper Strict Int { bits: 16, signed: false } -129	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -129	Respell(UInt(18446744073709551487))	UInt(18446744073709551487)
+wrapper Strict Int { bits: 16, signed: false } 255	Keep	UInt(255)
+wrapper NonStrict Int { bits: 64, signed: false } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 16, signed: false } 256	Keep	UInt(256)
+wrapper NonStrict Int { bits: 64, signed: false } 256	Keep	UInt(256)
+wrapper Strict Int { bits: 16, signed: false } 257	Keep	UInt(257)
+wrapper NonStrict Int { bits: 64, signed: false } 257	Keep	UInt(257)
+wrapper Strict Int { bits: 16, signed: false } 32767	Keep	UInt(32767)
+wrapper NonStrict Int { bits: 64, signed: false } 32767	Keep	UInt(32767)
+wrapper Strict Int { bits: 16, signed: false } 65535	Keep	UInt(65535)
+wrapper NonStrict Int { bits: 64, signed: false } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 16, signed: false } 65536	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 65536	Keep	UInt(65536)
+wrapper Strict Int { bits: 16, signed: false } 2147483647	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 2147483647	Keep	UInt(2147483647)
+wrapper Strict Int { bits: 16, signed: false } 2147483648	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 16, signed: false } -2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 2147483648	Keep	UInt(2147483648)
+wrapper Strict Int { bits: 16, signed: false } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -2147483648	Respell(UInt(18446744071562067968))	UInt(18446744071562067968)
+wrapper Strict Int { bits: 16, signed: false } 3000000000	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -2147483649	Respell(UInt(18446744071562067967))	UInt(18446744071562067967)
+wrapper Strict Int { bits: 16, signed: false } 4294967296	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 3000000000	Keep	UInt(3000000000)
+wrapper Strict Int { bits: 16, signed: false } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 4294967296	Keep	UInt(4294967296)
+wrapper Strict Int { bits: 16, signed: false } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 9223372036854775807	Keep	UInt(9223372036854775807)
+wrapper Strict Int { bits: 16, signed: false } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 16, signed: false } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 9223372036854775808	Keep	UInt(9223372036854775808)
+wrapper NonStrict Int { bits: 64, signed: false } 18446744073709551615	Keep	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } 18446744073709551616	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: false } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -9223372036854775808	Respell(UInt(9223372036854775808))	UInt(9223372036854775808)
+wrapper Strict Int { bits: 16, signed: false } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 18446744073709551616	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: false } 1.0	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: false } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -0.0	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: false } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 0.5	Respell(UInt(0))	UInt(0)
+wrapper Strict Int { bits: 16, signed: false } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1.0	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: false } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1.5	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: false } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -1.5	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 3.0	Respell(UInt(3))	UInt(3)
+wrapper Strict Int { bits: 16, signed: false } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 7.9	Respell(UInt(7))	UInt(7)
+wrapper Strict Int { bits: 16, signed: false } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1e1	Respell(UInt(10))	UInt(10)
+wrapper Strict Int { bits: 16, signed: false } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -7.9	Respell(UInt(18446744073709551609))	UInt(18446744073709551609)
+wrapper Strict Int { bits: 16, signed: false } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1e10	Respell(UInt(10000000000))	UInt(10000000000)
+wrapper Strict Int { bits: 16, signed: false } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1e20	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 3.4e38	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } "1"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1e39	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } "x"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } -1e39	Respell(UInt(1))	UInt(1)
+wrapper Strict Int { bits: 16, signed: false } "true"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } 1e300	Respell(UInt(18446744073709551615))	UInt(18446744073709551615)
+wrapper Strict Int { bits: 16, signed: false } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: false } true	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: false } false	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 16, signed: false } null	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } "true"	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } ""	Refused(WrongType)	refused
+wrapper NonStrict Int { bits: 64, signed: false } true	Respell(UInt(1))	UInt(1)
+wrapper NonStrict Int { bits: 64, signed: false } false	Respell(UInt(0))	UInt(0)
+wrapper NonStrict Int { bits: 64, signed: false } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } 0	Keep	UInt(0)
+wrapper Strict Int { bits: 32, signed: false } 1	Keep	UInt(1)
+wrapper Strict Int { bits: 32, signed: false } 2	Keep	UInt(2)
+wrapper Strict Int { bits: 32, signed: false } -1	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 32, signed: false } 7	Keep	UInt(7)
+wrapper NonStrict Float { bits: 32 } 0	Keep	Real(0.0)
+wrapper Strict Int { bits: 32, signed: false } 16	Keep	UInt(16)
+wrapper NonStrict Float { bits: 32 } 1	Keep	Real(1.0)
+wrapper Strict Int { bits: 32, signed: false } 127	Keep	UInt(127)
+wrapper NonStrict Float { bits: 32 } 2	Keep	Real(2.0)
+wrapper Strict Int { bits: 32, signed: false } 128	Keep	UInt(128)
+wrapper NonStrict Float { bits: 32 } -1	Keep	Real(-1.0)
+wrapper Strict Int { bits: 32, signed: false } -128	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 32, signed: false } -129	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } 7	Keep	Real(7.0)
+wrapper Strict Int { bits: 32, signed: false } 255	Keep	UInt(255)
+wrapper NonStrict Float { bits: 32 } 16	Keep	Real(16.0)
+wrapper Strict Int { bits: 32, signed: false } 256	Keep	UInt(256)
+wrapper NonStrict Float { bits: 32 } 127	Keep	Real(127.0)
+wrapper Strict Int { bits: 32, signed: false } 257	Keep	UInt(257)
+wrapper NonStrict Float { bits: 32 } 128	Keep	Real(128.0)
+wrapper Strict Int { bits: 32, signed: false } 32767	Keep	UInt(32767)
+wrapper NonStrict Float { bits: 32 } -128	Keep	Real(-128.0)
+wrapper Strict Int { bits: 32, signed: false } 65535	Keep	UInt(65535)
+wrapper NonStrict Float { bits: 32 } -129	Keep	Real(-129.0)
+wrapper Strict Int { bits: 32, signed: false } 65536	Keep	UInt(65536)
+wrapper NonStrict Float { bits: 32 } 255	Keep	Real(255.0)
+wrapper Strict Int { bits: 32, signed: false } 2147483647	Keep	UInt(2147483647)
+wrapper NonStrict Float { bits: 32 } 256	Keep	Real(256.0)
+wrapper Strict Int { bits: 32, signed: false } 2147483648	Keep	UInt(2147483648)
+wrapper NonStrict Float { bits: 32 } 257	Keep	Real(257.0)
+wrapper Strict Int { bits: 32, signed: false } -2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } 32767	Keep	Real(32767.0)
+wrapper Strict Int { bits: 32, signed: false } -2147483649	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 32, signed: false } 3000000000	Keep	UInt(3000000000)
+wrapper NonStrict Float { bits: 32 } 65535	Keep	Real(65535.0)
+wrapper Strict Int { bits: 32, signed: false } 4294967296	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } 65536	Keep	Real(65536.0)
+wrapper Strict Int { bits: 32, signed: false } 9223372036854775807	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } 2147483647	Keep	Real(2147483648.0)
+wrapper Strict Int { bits: 32, signed: false } 9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } 2147483648	Keep	Real(2147483648.0)
+wrapper Strict Int { bits: 32, signed: false } 18446744073709551615	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } -2147483648	Keep	Real(-2147483648.0)
+wrapper Strict Int { bits: 32, signed: false } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } -2147483649	Keep	Real(-2147483648.0)
+wrapper Strict Int { bits: 32, signed: false } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 3000000000	Keep	Real(3000000000.0)
+wrapper Strict Int { bits: 32, signed: false } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 4294967296	Keep	Real(4294967296.0)
+wrapper Strict Int { bits: 32, signed: false } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 9223372036854775807	Keep	Real(9.223372036854776e18)
+wrapper Strict Int { bits: 32, signed: false } 0.5	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 9223372036854775808	Keep	Real(9.223372036854776e18)
+wrapper Strict Int { bits: 32, signed: false } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 18446744073709551615	Keep	Real(1.8446744073709552e19)
+wrapper Strict Int { bits: 32, signed: false } -1.5	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } -9223372036854775808	Keep	Real(-9.223372036854776e18)
+wrapper Strict Int { bits: 32, signed: false } 3.0	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 18446744073709551616	Keep	Real(1.8446744073709552e19)
+wrapper Strict Int { bits: 32, signed: false } 1e1	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 0.0	Keep	Real(0.0)
+wrapper Strict Int { bits: 32, signed: false } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } -0.0	Keep	Real(-0.0)
+wrapper Strict Int { bits: 32, signed: false } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 0.5	Keep	Real(0.5)
+wrapper Strict Int { bits: 32, signed: false } 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 1.0	Keep	Real(1.0)
+wrapper Strict Int { bits: 32, signed: false } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 1.5	Keep	Real(1.5)
+wrapper Strict Int { bits: 32, signed: false } -1e39	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } -1.5	Keep	Real(-1.5)
+wrapper Strict Int { bits: 32, signed: false } "1"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 3.0	Keep	Real(3.0)
+wrapper Strict Int { bits: 32, signed: false } "x"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 7.9	Keep	Real(7.900000095367432)
+wrapper Strict Int { bits: 32, signed: false } "true"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 1e1	Keep	Real(10.0)
+wrapper Strict Int { bits: 32, signed: false } ""	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } -7.9	Keep	Real(-7.900000095367432)
+wrapper Strict Int { bits: 32, signed: false } true	Refused(WrongType)	refused
+wrapper Strict Int { bits: 32, signed: false } false	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 1e10	Keep	Real(10000000000.0)
+wrapper Strict Int { bits: 32, signed: false } null	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 32 } 1e20	Keep	Real(1.0000000200408773e20)
+wrapper NonStrict Float { bits: 32 } 3.4e38	Keep	Real(3.3999999521443642e38)
+wrapper NonStrict Float { bits: 32 } 1e39	Refused(BeyondWidth)	refused
+wrapper NonStrict Float { bits: 32 } -1e39	Refused(BeyondWidth)	refused
+wrapper Strict Int { bits: 64, signed: false } 0	Keep	UInt(0)
+wrapper NonStrict Float { bits: 32 } 1e300	Refused(BeyondWidth)	refused
+wrapper Strict Int { bits: 64, signed: false } 1	Keep	UInt(1)
+wrapper NonStrict Float { bits: 32 } "1"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } 2	Keep	UInt(2)
+wrapper NonStrict Float { bits: 32 } "x"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } -1	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 32 } "true"	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } 7	Keep	UInt(7)
+wrapper NonStrict Float { bits: 32 } ""	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } 16	Keep	UInt(16)
+wrapper NonStrict Float { bits: 32 } true	Respell(Real(1.0))	Real(1.0)
+wrapper Strict Int { bits: 64, signed: false } 127	Keep	UInt(127)
+wrapper NonStrict Float { bits: 32 } false	Respell(Real(0.0))	Real(0.0)
+wrapper Strict Int { bits: 64, signed: false } 128	Keep	UInt(128)
+wrapper NonStrict Float { bits: 32 } null	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } -128	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 64, signed: false } -129	Refused(OutOfRange)	refused
+wrapper Strict Int { bits: 64, signed: false } 255	Keep	UInt(255)
+wrapper Strict Int { bits: 64, signed: false } 256	Keep	UInt(256)
+wrapper NonStrict Float { bits: 64 } 0	Keep	Real(0.0)
+wrapper Strict Int { bits: 64, signed: false } 257	Keep	UInt(257)
+wrapper NonStrict Float { bits: 64 } 1	Keep	Real(1.0)
+wrapper Strict Int { bits: 64, signed: false } 32767	Keep	UInt(32767)
+wrapper NonStrict Float { bits: 64 } 2	Keep	Real(2.0)
+wrapper Strict Int { bits: 64, signed: false } 65535	Keep	UInt(65535)
+wrapper Strict Int { bits: 64, signed: false } 65536	Keep	UInt(65536)
+wrapper NonStrict Float { bits: 64 } -1	Keep	Real(-1.0)
+wrapper Strict Int { bits: 64, signed: false } 2147483647	Keep	UInt(2147483647)
+wrapper NonStrict Float { bits: 64 } 7	Keep	Real(7.0)
+wrapper Strict Int { bits: 64, signed: false } 2147483648	Keep	UInt(2147483648)
+wrapper NonStrict Float { bits: 64 } 16	Keep	Real(16.0)
+wrapper Strict Int { bits: 64, signed: false } -2147483648	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 64 } 127	Keep	Real(127.0)
+wrapper Strict Int { bits: 64, signed: false } -2147483649	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 64 } 128	Keep	Real(128.0)
+wrapper Strict Int { bits: 64, signed: false } 3000000000	Keep	UInt(3000000000)
+wrapper NonStrict Float { bits: 64 } -128	Keep	Real(-128.0)
+wrapper Strict Int { bits: 64, signed: false } 4294967296	Keep	UInt(4294967296)
+wrapper NonStrict Float { bits: 64 } -129	Keep	Real(-129.0)
+wrapper Strict Int { bits: 64, signed: false } 9223372036854775807	Keep	UInt(9223372036854775807)
+wrapper NonStrict Float { bits: 64 } 255	Keep	Real(255.0)
+wrapper Strict Int { bits: 64, signed: false } 9223372036854775808	Keep	UInt(9223372036854775808)
+wrapper NonStrict Float { bits: 64 } 256	Keep	Real(256.0)
+wrapper Strict Int { bits: 64, signed: false } 18446744073709551615	Keep	UInt(18446744073709551615)
+wrapper NonStrict Float { bits: 64 } 257	Keep	Real(257.0)
+wrapper Strict Int { bits: 64, signed: false } -9223372036854775808	Refused(OutOfRange)	refused
+wrapper NonStrict Float { bits: 64 } 32767	Keep	Real(32767.0)
+wrapper Strict Int { bits: 64, signed: false } 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 65535	Keep	Real(65535.0)
+wrapper Strict Int { bits: 64, signed: false } 0.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 65536	Keep	Real(65536.0)
+wrapper Strict Int { bits: 64, signed: false } -0.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 2147483647	Keep	Real(2147483647.0)
+wrapper Strict Int { bits: 64, signed: false } 0.5	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 2147483648	Keep	Real(2147483648.0)
+wrapper Strict Int { bits: 64, signed: false } 1.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } -2147483648	Keep	Real(-2147483648.0)
+wrapper Strict Int { bits: 64, signed: false } 1.5	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } -2147483649	Keep	Real(-2147483649.0)
+wrapper Strict Int { bits: 64, signed: false } -1.5	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } 3.0	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 3000000000	Keep	Real(3000000000.0)
+wrapper Strict Int { bits: 64, signed: false } 7.9	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 4294967296	Keep	Real(4294967296.0)
+wrapper Strict Int { bits: 64, signed: false } 1e1	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 9223372036854775807	Keep	Real(9.223372036854776e18)
+wrapper Strict Int { bits: 64, signed: false } -7.9	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 9223372036854775808	Keep	Real(9.223372036854776e18)
+wrapper Strict Int { bits: 64, signed: false } 1e10	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 18446744073709551615	Keep	Real(1.8446744073709552e19)
+wrapper Strict Int { bits: 64, signed: false } 1e20	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } -9223372036854775808	Keep	Real(-9.223372036854776e18)
+wrapper Strict Int { bits: 64, signed: false } 3.4e38	Refused(WrongType)	refused
+wrapper Strict Int { bits: 64, signed: false } 1e39	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 18446744073709551616	Keep	Real(1.8446744073709552e19)
+wrapper Strict Int { bits: 64, signed: false } -1e39	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 0.0	Keep	Real(0.0)
+wrapper Strict Int { bits: 64, signed: false } 1e300	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } -0.0	Keep	Real(-0.0)
+wrapper Strict Int { bits: 64, signed: false } "1"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 0.5	Keep	Real(0.5)
+wrapper Strict Int { bits: 64, signed: false } "x"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 1.0	Keep	Real(1.0)
+wrapper Strict Int { bits: 64, signed: false } "true"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 1.5	Keep	Real(1.5)
+wrapper Strict Int { bits: 64, signed: false } ""	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } -1.5	Keep	Real(-1.5)
+wrapper Strict Int { bits: 64, signed: false } true	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 3.0	Keep	Real(3.0)
+wrapper Strict Int { bits: 64, signed: false } false	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 7.9	Keep	Real(7.9)
+wrapper Strict Int { bits: 64, signed: false } null	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } 1e1	Keep	Real(10.0)
+wrapper NonStrict Float { bits: 64 } -7.9	Keep	Real(-7.9)
+wrapper NonStrict Float { bits: 64 } 1e10	Keep	Real(10000000000.0)
+wrapper NonStrict Float { bits: 64 } 1e20	Keep	Real(1e20)
+wrapper NonStrict Float { bits: 64 } 3.4e38	Keep	Real(3.4e38)
+wrapper NonStrict Float { bits: 64 } 1e39	Keep	Real(1e39)
+wrapper NonStrict Float { bits: 64 } -1e39	Keep	Real(-1e39)
+wrapper Strict Float { bits: 32 } 0	Keep	Real(0.0)
+wrapper NonStrict Float { bits: 64 } 1e300	Keep	Real(1e300)
+wrapper NonStrict Float { bits: 64 } "1"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } 1	Keep	Real(1.0)
+wrapper NonStrict Float { bits: 64 } "x"	Refused(WrongType)	refused
+wrapper NonStrict Float { bits: 64 } "true"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } 2	Keep	Real(2.0)
+wrapper NonStrict Float { bits: 64 } ""	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } -1	Keep	Real(-1.0)
+wrapper NonStrict Float { bits: 64 } true	Respell(Real(1.0))	Real(1.0)
+wrapper NonStrict Float { bits: 64 } false	Respell(Real(0.0))	Real(0.0)
+wrapper Strict Float { bits: 32 } 7	Keep	Real(7.0)
+wrapper NonStrict Float { bits: 64 } null	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } 16	Keep	Real(16.0)
+wrapper Strict Float { bits: 32 } 127	Keep	Real(127.0)
+wrapper Strict Float { bits: 32 } 128	Keep	Real(128.0)
+wrapper NonStrict Bool 0	Respell(Bool(false))	Bool(false)
+wrapper Strict Float { bits: 32 } -128	Keep	Real(-128.0)
+wrapper NonStrict Bool 1	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 2	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } -129	Keep	Real(-129.0)
+wrapper NonStrict Bool -1	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 255	Keep	Real(255.0)
+wrapper NonStrict Bool 7	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 16	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 256	Keep	Real(256.0)
+wrapper NonStrict Bool 127	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 128	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 257	Keep	Real(257.0)
+wrapper NonStrict Bool -128	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool -129	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 32767	Keep	Real(32767.0)
+wrapper NonStrict Bool 255	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 65535	Keep	Real(65535.0)
+wrapper NonStrict Bool 256	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 257	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 65536	Keep	Real(65536.0)
+wrapper NonStrict Bool 32767	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 65535	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 2147483647	Keep	Real(2147483648.0)
+wrapper NonStrict Bool 65536	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 2147483648	Keep	Real(2147483648.0)
+wrapper NonStrict Bool 2147483647	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 2147483648	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } -2147483648	Keep	Real(-2147483648.0)
+wrapper NonStrict Bool -2147483648	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool -2147483649	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } -2147483649	Keep	Real(-2147483648.0)
+wrapper NonStrict Bool 3000000000	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 4294967296	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 3000000000	Keep	Real(3000000000.0)
+wrapper NonStrict Bool 9223372036854775807	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 4294967296	Keep	Real(4294967296.0)
+wrapper NonStrict Bool 9223372036854775808	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 18446744073709551615	Respell(Bool(true))	Bool(true)
+wrapper Strict Float { bits: 32 } 9223372036854775807	Keep	Real(9.223372036854776e18)
+wrapper NonStrict Bool -9223372036854775808	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 18446744073709551616	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 0.0	Respell(Bool(false))	Bool(false)
+wrapper NonStrict Bool -0.0	Respell(Bool(false))	Bool(false)
+wrapper NonStrict Bool 0.5	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1.0	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1.5	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool -1.5	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 3.0	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 7.9	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1e1	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool -7.9	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1e10	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1e20	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 3.4e38	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1e39	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool -1e39	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool 1e300	Respell(Bool(true))	Bool(true)
+wrapper NonStrict Bool "1"	Refused(WrongType)	refused
+wrapper NonStrict Bool "x"	Refused(WrongType)	refused
+wrapper NonStrict Bool "true"	Refused(WrongType)	refused
+wrapper NonStrict Bool ""	Refused(WrongType)	refused
+wrapper NonStrict Bool true	Keep	Bool(true)
+wrapper NonStrict Bool false	Keep	Bool(false)
+wrapper NonStrict Bool null	Refused(WrongType)	refused
+wrapper NonStrict Text 0	Refused(WrongType)	refused
+wrapper NonStrict Text 1	Refused(WrongType)	refused
+wrapper NonStrict Text 2	Refused(WrongType)	refused
+wrapper NonStrict Text -1	Refused(WrongType)	refused
+wrapper NonStrict Text 7	Refused(WrongType)	refused
+wrapper NonStrict Text 16	Refused(WrongType)	refused
+wrapper NonStrict Text 127	Refused(WrongType)	refused
+wrapper NonStrict Text 128	Refused(WrongType)	refused
+wrapper NonStrict Text -128	Refused(WrongType)	refused
+wrapper NonStrict Text -129	Refused(WrongType)	refused
+wrapper NonStrict Text 255	Refused(WrongType)	refused
+wrapper NonStrict Text 256	Refused(WrongType)	refused
+wrapper NonStrict Text 257	Refused(WrongType)	refused
+wrapper NonStrict Text 32767	Refused(WrongType)	refused
+wrapper NonStrict Text 65535	Refused(WrongType)	refused
+wrapper NonStrict Text 65536	Refused(WrongType)	refused
+wrapper NonStrict Text 2147483647	Refused(WrongType)	refused
+wrapper NonStrict Text 2147483648	Refused(WrongType)	refused
+wrapper NonStrict Text -2147483648	Refused(WrongType)	refused
+wrapper NonStrict Text -2147483649	Refused(WrongType)	refused
+wrapper NonStrict Text 3000000000	Refused(WrongType)	refused
+wrapper NonStrict Text 4294967296	Refused(WrongType)	refused
+wrapper NonStrict Text 9223372036854775807	Refused(WrongType)	refused
+wrapper NonStrict Text 9223372036854775808	Refused(WrongType)	refused
+wrapper NonStrict Text 18446744073709551615	Refused(WrongType)	refused
+wrapper NonStrict Text -9223372036854775808	Refused(WrongType)	refused
+wrapper NonStrict Text 18446744073709551616	Refused(WrongType)	refused
+wrapper NonStrict Text 0.0	Refused(WrongType)	refused
+wrapper NonStrict Text -0.0	Refused(WrongType)	refused
+wrapper NonStrict Text 0.5	Refused(WrongType)	refused
+wrapper NonStrict Text 1.0	Refused(WrongType)	refused
+wrapper NonStrict Text 1.5	Refused(WrongType)	refused
+wrapper NonStrict Text -1.5	Refused(WrongType)	refused
+wrapper NonStrict Text 3.0	Refused(WrongType)	refused
+wrapper NonStrict Text 7.9	Refused(WrongType)	refused
+wrapper NonStrict Text 1e1	Refused(WrongType)	refused
+wrapper NonStrict Text -7.9	Refused(WrongType)	refused
+wrapper NonStrict Text 1e10	Refused(WrongType)	refused
+wrapper NonStrict Text 1e20	Refused(WrongType)	refused
+wrapper NonStrict Text 3.4e38	Refused(WrongType)	refused
+wrapper NonStrict Text 1e39	Refused(WrongType)	refused
+wrapper NonStrict Text -1e39	Refused(WrongType)	refused
+wrapper NonStrict Text 1e300	Refused(WrongType)	refused
+wrapper NonStrict Text "1"	Keep	Text
+wrapper NonStrict Text "x"	Keep	Text
+wrapper NonStrict Text "true"	Keep	Text
+wrapper NonStrict Text ""	Keep	Text
+wrapper NonStrict Text true	Refused(WrongType)	refused
+wrapper NonStrict Text false	Refused(WrongType)	refused
+wrapper NonStrict Text null	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } 9223372036854775808	Keep	Real(9.223372036854776e18)
+wrapper Strict Float { bits: 32 } 18446744073709551615	Keep	Real(1.8446744073709552e19)
+wrapper Strict Float { bits: 32 } -9223372036854775808	Keep	Real(-9.223372036854776e18)
+wrapper Strict Float { bits: 32 } 18446744073709551616	Keep	Real(1.8446744073709552e19)
+wrapper Strict Float { bits: 32 } 0.0	Keep	Real(0.0)
+wrapper Strict Float { bits: 32 } -0.0	Keep	Real(-0.0)
+wrapper Strict Float { bits: 32 } 0.5	Keep	Real(0.5)
+wrapper Strict Float { bits: 32 } 1.0	Keep	Real(1.0)
+wrapper Strict Float { bits: 32 } 1.5	Keep	Real(1.5)
+wrapper Strict Float { bits: 32 } -1.5	Keep	Real(-1.5)
+wrapper Strict Float { bits: 32 } 3.0	Keep	Real(3.0)
+wrapper Strict Float { bits: 32 } 7.9	Keep	Real(7.900000095367432)
+wrapper Strict Float { bits: 32 } 1e1	Keep	Real(10.0)
+wrapper Strict Float { bits: 32 } -7.9	Keep	Real(-7.900000095367432)
+wrapper Strict Float { bits: 32 } 1e10	Keep	Real(10000000000.0)
+wrapper Strict Float { bits: 32 } 1e20	Keep	Real(1.0000000200408773e20)
+wrapper Strict Float { bits: 32 } 3.4e38	Keep	Real(3.3999999521443642e38)
+wrapper Strict Float { bits: 32 } 1e39	Refused(BeyondWidth)	refused
+wrapper Strict Float { bits: 32 } -1e39	Refused(BeyondWidth)	refused
+wrapper Strict Float { bits: 32 } 1e300	Refused(BeyondWidth)	refused
+wrapper Strict Float { bits: 32 } "1"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } "x"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } "true"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } ""	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } true	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } false	Refused(WrongType)	refused
+wrapper Strict Float { bits: 32 } null	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } 0	Keep	Real(0.0)
+wrapper Strict Float { bits: 64 } 1	Keep	Real(1.0)
+wrapper Strict Float { bits: 64 } 2	Keep	Real(2.0)
+wrapper Strict Float { bits: 64 } -1	Keep	Real(-1.0)
+wrapper Strict Float { bits: 64 } 7	Keep	Real(7.0)
+wrapper Strict Float { bits: 64 } 16	Keep	Real(16.0)
+wrapper Strict Float { bits: 64 } 127	Keep	Real(127.0)
+wrapper Strict Float { bits: 64 } 128	Keep	Real(128.0)
+wrapper Strict Float { bits: 64 } -128	Keep	Real(-128.0)
+wrapper Strict Float { bits: 64 } -129	Keep	Real(-129.0)
+wrapper Strict Float { bits: 64 } 255	Keep	Real(255.0)
+wrapper Strict Float { bits: 64 } 256	Keep	Real(256.0)
+wrapper Strict Float { bits: 64 } 257	Keep	Real(257.0)
+wrapper Strict Float { bits: 64 } 32767	Keep	Real(32767.0)
+wrapper Strict Float { bits: 64 } 65535	Keep	Real(65535.0)
+wrapper Strict Float { bits: 64 } 65536	Keep	Real(65536.0)
+wrapper Strict Float { bits: 64 } 2147483647	Keep	Real(2147483647.0)
+wrapper Strict Float { bits: 64 } 2147483648	Keep	Real(2147483648.0)
+wrapper Strict Float { bits: 64 } -2147483648	Keep	Real(-2147483648.0)
+wrapper Strict Float { bits: 64 } -2147483649	Keep	Real(-2147483649.0)
+wrapper Strict Float { bits: 64 } 3000000000	Keep	Real(3000000000.0)
+wrapper Strict Float { bits: 64 } 4294967296	Keep	Real(4294967296.0)
+wrapper Strict Float { bits: 64 } 9223372036854775807	Keep	Real(9.223372036854776e18)
+wrapper Strict Float { bits: 64 } 9223372036854775808	Keep	Real(9.223372036854776e18)
+wrapper Strict Float { bits: 64 } 18446744073709551615	Keep	Real(1.8446744073709552e19)
+wrapper Strict Float { bits: 64 } -9223372036854775808	Keep	Real(-9.223372036854776e18)
+wrapper Strict Float { bits: 64 } 18446744073709551616	Keep	Real(1.8446744073709552e19)
+wrapper Strict Float { bits: 64 } 0.0	Keep	Real(0.0)
+wrapper Strict Float { bits: 64 } -0.0	Keep	Real(-0.0)
+wrapper Strict Float { bits: 64 } 0.5	Keep	Real(0.5)
+wrapper Strict Float { bits: 64 } 1.0	Keep	Real(1.0)
+wrapper Strict Float { bits: 64 } 1.5	Keep	Real(1.5)
+wrapper Strict Float { bits: 64 } -1.5	Keep	Real(-1.5)
+wrapper Strict Float { bits: 64 } 3.0	Keep	Real(3.0)
+wrapper Strict Float { bits: 64 } 7.9	Keep	Real(7.9)
+wrapper Strict Float { bits: 64 } 1e1	Keep	Real(10.0)
+wrapper Strict Float { bits: 64 } -7.9	Keep	Real(-7.9)
+wrapper Strict Float { bits: 64 } 1e10	Keep	Real(10000000000.0)
+wrapper Strict Float { bits: 64 } 1e20	Keep	Real(1e20)
+wrapper Strict Float { bits: 64 } 3.4e38	Keep	Real(3.4e38)
+wrapper Strict Float { bits: 64 } 1e39	Keep	Real(1e39)
+wrapper Strict Float { bits: 64 } -1e39	Keep	Real(-1e39)
+wrapper Strict Float { bits: 64 } 1e300	Keep	Real(1e300)
+wrapper Strict Float { bits: 64 } "1"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } "x"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } "true"	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } ""	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } true	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } false	Refused(WrongType)	refused
+wrapper Strict Float { bits: 64 } null	Refused(WrongType)	refused
+wrapper Strict Bool 0	Refused(WrongType)	refused
+wrapper Strict Bool 1	Refused(WrongType)	refused
+wrapper Strict Bool 2	Refused(WrongType)	refused
+wrapper Strict Bool -1	Refused(WrongType)	refused
+wrapper Strict Bool 7	Refused(WrongType)	refused
+wrapper Strict Bool 16	Refused(WrongType)	refused
+wrapper Strict Bool 127	Refused(WrongType)	refused
+wrapper Strict Bool 128	Refused(WrongType)	refused
+wrapper Strict Bool -128	Refused(WrongType)	refused
+wrapper Strict Bool -129	Refused(WrongType)	refused
+wrapper Strict Bool 255	Refused(WrongType)	refused
+wrapper Strict Bool 256	Refused(WrongType)	refused
+wrapper Strict Bool 257	Refused(WrongType)	refused
+wrapper Strict Bool 32767	Refused(WrongType)	refused
+wrapper Strict Bool 65535	Refused(WrongType)	refused
+wrapper Strict Bool 65536	Refused(WrongType)	refused
+wrapper Strict Bool 2147483647	Refused(WrongType)	refused
+wrapper Strict Bool 2147483648	Refused(WrongType)	refused
+wrapper Strict Bool -2147483648	Refused(WrongType)	refused
+wrapper Strict Bool -2147483649	Refused(WrongType)	refused
+wrapper Strict Bool 3000000000	Refused(WrongType)	refused
+wrapper Strict Bool 4294967296	Refused(WrongType)	refused
+wrapper Strict Bool 9223372036854775807	Refused(WrongType)	refused
+wrapper Strict Bool 9223372036854775808	Refused(WrongType)	refused
+wrapper Strict Bool 18446744073709551615	Refused(WrongType)	refused
+wrapper Strict Bool -9223372036854775808	Refused(WrongType)	refused
+wrapper Strict Bool 18446744073709551616	Refused(WrongType)	refused
+wrapper Strict Bool 0.0	Refused(WrongType)	refused
+wrapper Strict Bool -0.0	Refused(WrongType)	refused
+wrapper Strict Bool 0.5	Refused(WrongType)	refused
+wrapper Strict Bool 1.0	Refused(WrongType)	refused
+wrapper Strict Bool 1.5	Refused(WrongType)	refused
+wrapper Strict Bool -1.5	Refused(WrongType)	refused
+wrapper Strict Bool 3.0	Refused(WrongType)	refused
+wrapper Strict Bool 7.9	Refused(WrongType)	refused
+wrapper Strict Bool 1e1	Refused(WrongType)	refused
+wrapper Strict Bool -7.9	Refused(WrongType)	refused
+wrapper Strict Bool 1e10	Refused(WrongType)	refused
+wrapper Strict Bool 1e20	Refused(WrongType)	refused
+wrapper Strict Bool 3.4e38	Refused(WrongType)	refused
+wrapper Strict Bool 1e39	Refused(WrongType)	refused
+wrapper Strict Bool -1e39	Refused(WrongType)	refused
+wrapper Strict Bool 1e300	Refused(WrongType)	refused
+wrapper Strict Bool "1"	Refused(WrongType)	refused
+wrapper Strict Bool "x"	Refused(WrongType)	refused
+wrapper Strict Bool "true"	Refused(WrongType)	refused
+wrapper Strict Bool ""	Refused(WrongType)	refused
+wrapper Strict Bool true	Keep	Bool(true)
+wrapper Strict Bool false	Keep	Bool(false)
+wrapper Strict Bool null	Refused(WrongType)	refused
+wrapper Strict Text 0	Refused(WrongType)	refused
+wrapper Strict Text 1	Refused(WrongType)	refused
+wrapper Strict Text 2	Refused(WrongType)	refused
+wrapper Strict Text -1	Refused(WrongType)	refused
+wrapper Strict Text 7	Refused(WrongType)	refused
+wrapper Strict Text 16	Refused(WrongType)	refused
+wrapper Strict Text 127	Refused(WrongType)	refused
+wrapper Strict Text 128	Refused(WrongType)	refused
+wrapper Strict Text -128	Refused(WrongType)	refused
+wrapper Strict Text -129	Refused(WrongType)	refused
+wrapper Strict Text 255	Refused(WrongType)	refused
+wrapper Strict Text 256	Refused(WrongType)	refused
+wrapper Strict Text 257	Refused(WrongType)	refused
+wrapper Strict Text 32767	Refused(WrongType)	refused
+wrapper Strict Text 65535	Refused(WrongType)	refused
+wrapper Strict Text 65536	Refused(WrongType)	refused
+wrapper Strict Text 2147483647	Refused(WrongType)	refused
+wrapper Strict Text 2147483648	Refused(WrongType)	refused
+wrapper Strict Text -2147483648	Refused(WrongType)	refused
+wrapper Strict Text -2147483649	Refused(WrongType)	refused
+wrapper Strict Text 3000000000	Refused(WrongType)	refused
+wrapper Strict Text 4294967296	Refused(WrongType)	refused
+wrapper Strict Text 9223372036854775807	Refused(WrongType)	refused
+wrapper Strict Text 9223372036854775808	Refused(WrongType)	refused
+wrapper Strict Text 18446744073709551615	Refused(WrongType)	refused
+wrapper Strict Text -9223372036854775808	Refused(WrongType)	refused
+wrapper Strict Text 18446744073709551616	Refused(WrongType)	refused
+wrapper Strict Text 0.0	Refused(WrongType)	refused
+wrapper Strict Text -0.0	Refused(WrongType)	refused
+wrapper Strict Text 0.5	Refused(WrongType)	refused
+wrapper Strict Text 1.0	Refused(WrongType)	refused
+wrapper Strict Text 1.5	Refused(WrongType)	refused
+wrapper Strict Text -1.5	Refused(WrongType)	refused
+wrapper Strict Text 3.0	Refused(WrongType)	refused
+wrapper Strict Text 7.9	Refused(WrongType)	refused
+wrapper Strict Text 1e1	Refused(WrongType)	refused
+wrapper Strict Text -7.9	Refused(WrongType)	refused
+wrapper Strict Text 1e10	Refused(WrongType)	refused
+wrapper Strict Text 1e20	Refused(WrongType)	refused
+wrapper Strict Text 3.4e38	Refused(WrongType)	refused
+wrapper Strict Text 1e39	Refused(WrongType)	refused
+wrapper Strict Text -1e39	Refused(WrongType)	refused
+wrapper Strict Text 1e300	Refused(WrongType)	refused
+wrapper Strict Text "1"	Keep	Text
+wrapper Strict Text "x"	Keep	Text
+wrapper Strict Text "true"	Keep	Text
+wrapper Strict Text ""	Keep	Text
+wrapper Strict Text true	Refused(WrongType)	refused
+wrapper Strict Text false	Refused(WrongType)	refused
+wrapper Strict Text null	Refused(WrongType)	refused
+misread ClampAndTell Int { bits: 8, signed: true } 0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 1	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 2	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } -1	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 7	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 16	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 127	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 128	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -128	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } -129	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 255	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 256	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 257	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 32767	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 65535	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 65536	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 2147483647	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 2147483648	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -2147483648	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -2147483649	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 3000000000	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 4294967296	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 9223372036854775807	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 18446744073709551615	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 18446744073709551616	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 0.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } -0.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 0.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 1.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -1.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 3.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } 7.9	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1e1	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: true } -7.9	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1e10	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1e20	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 3.4e38	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1e39	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } -1e39	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } 1e300	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: true } "1"	Converted	[WrongType]
+misread ClampAndTell Int { bits: 8, signed: true } "x"	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: true } "true"	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: true } ""	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: true } true	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: true } false	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: true } null	Converted	[WrongType]
+misread Error Int { bits: 8, signed: true } 0	Keep	[]
+misread Error Int { bits: 8, signed: true } 1	Keep	[]
+misread Error Int { bits: 8, signed: true } 2	Keep	[]
+misread Error Int { bits: 8, signed: true } -1	Keep	[]
+misread Error Int { bits: 8, signed: true } 7	Keep	[]
+misread Error Int { bits: 8, signed: true } 16	Keep	[]
+misread Error Int { bits: 8, signed: true } 127	Keep	[]
+misread Error Int { bits: 8, signed: true } 128	Keep	refused
+misread Error Int { bits: 8, signed: true } -128	Keep	[]
+misread Error Int { bits: 8, signed: true } -129	Keep	refused
+misread Error Int { bits: 8, signed: true } 255	Keep	refused
+misread Error Int { bits: 8, signed: true } 256	Keep	refused
+misread Error Int { bits: 8, signed: true } 257	Keep	refused
+misread Error Int { bits: 8, signed: true } 32767	Keep	refused
+misread Error Int { bits: 8, signed: true } 65535	Keep	refused
+misread Error Int { bits: 8, signed: true } 65536	Keep	refused
+misread Error Int { bits: 8, signed: true } 2147483647	Keep	refused
+misread Error Int { bits: 8, signed: true } 2147483648	Keep	refused
+misread Error Int { bits: 8, signed: true } -2147483648	Keep	refused
+misread Error Int { bits: 8, signed: true } -2147483649	Keep	refused
+misread Error Int { bits: 8, signed: true } 3000000000	Keep	refused
+misread Error Int { bits: 8, signed: true } 4294967296	Keep	refused
+misread Error Int { bits: 8, signed: true } 9223372036854775807	Keep	refused
+misread Error Int { bits: 8, signed: true } 9223372036854775808	Keep	refused
+misread Error Int { bits: 8, signed: true } 18446744073709551615	Keep	refused
+misread Error Int { bits: 8, signed: true } -9223372036854775808	Keep	refused
+misread Error Int { bits: 8, signed: true } 18446744073709551616	Keep	refused
+misread Error Int { bits: 8, signed: true } 0.0	Keep	[]
+misread Error Int { bits: 8, signed: true } -0.0	Keep	[]
+misread Error Int { bits: 8, signed: true } 0.5	Keep	refused
+misread Error Int { bits: 8, signed: true } 1.0	Keep	[]
+misread Error Int { bits: 8, signed: true } 1.5	Keep	refused
+misread Error Int { bits: 8, signed: true } -1.5	Keep	refused
+misread Error Int { bits: 8, signed: true } 3.0	Keep	[]
+misread Error Int { bits: 8, signed: true } 7.9	Keep	refused
+misread Error Int { bits: 8, signed: true } 1e1	Keep	[]
+misread Error Int { bits: 8, signed: true } -7.9	Keep	refused
+misread Error Int { bits: 8, signed: true } 1e10	Keep	refused
+misread Error Int { bits: 8, signed: true } 1e20	Keep	refused
+misread Error Int { bits: 8, signed: true } 3.4e38	Keep	refused
+misread Error Int { bits: 8, signed: true } 1e39	Keep	refused
+misread Error Int { bits: 8, signed: true } -1e39	Keep	refused
+misread Error Int { bits: 8, signed: true } 1e300	Keep	refused
+misread Error Int { bits: 8, signed: true } "1"	Converted	[WrongType]
+misread Error Int { bits: 8, signed: true } "x"	Converted	refused
+misread Error Int { bits: 8, signed: true } "true"	Converted	refused
+misread Error Int { bits: 8, signed: true } ""	Converted	refused
+misread Error Int { bits: 8, signed: true } true	Converted	refused
+misread Error Int { bits: 8, signed: true } false	Converted	refused
+misread Error Int { bits: 8, signed: true } null	Converted	[WrongType]
+misread ClampAndTell Int { bits: 32, signed: true } 0	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 1	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 2	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -1	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 7	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 16	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 127	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 128	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -128	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -129	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 255	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 256	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 257	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 32767	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 65535	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 65536	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 2147483647	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 2147483648	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } -2147483648	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -2147483649	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 3000000000	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 4294967296	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 9223372036854775807	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 18446744073709551615	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } -9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 18446744073709551616	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 0.0	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -0.0	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 0.5	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1.0	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 1.5	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } -1.5	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 3.0	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } 7.9	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1e1	Keep	[]
+misread ClampAndTell Int { bits: 32, signed: true } -7.9	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1e10	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1e20	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 3.4e38	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1e39	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } -1e39	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } 1e300	Keep	refused
+misread ClampAndTell Int { bits: 32, signed: true } "1"	Converted	[WrongType]
+misread ClampAndTell Int { bits: 32, signed: true } "x"	Converted	refused
+misread ClampAndTell Int { bits: 32, signed: true } "true"	Converted	refused
+misread ClampAndTell Int { bits: 32, signed: true } ""	Converted	refused
+misread ClampAndTell Int { bits: 32, signed: true } true	Converted	refused
+misread ClampAndTell Int { bits: 32, signed: true } false	Converted	refused
+misread ClampAndTell Int { bits: 32, signed: true } null	Converted	[WrongType]
+misread Error Int { bits: 32, signed: true } 0	Keep	[]
+misread Error Int { bits: 32, signed: true } 1	Keep	[]
+misread Error Int { bits: 32, signed: true } 2	Keep	[]
+misread Error Int { bits: 32, signed: true } -1	Keep	[]
+misread Error Int { bits: 32, signed: true } 7	Keep	[]
+misread Error Int { bits: 32, signed: true } 16	Keep	[]
+misread Error Int { bits: 32, signed: true } 127	Keep	[]
+misread Error Int { bits: 32, signed: true } 128	Keep	[]
+misread Error Int { bits: 32, signed: true } -128	Keep	[]
+misread Error Int { bits: 32, signed: true } -129	Keep	[]
+misread Error Int { bits: 32, signed: true } 255	Keep	[]
+misread Error Int { bits: 32, signed: true } 256	Keep	[]
+misread Error Int { bits: 32, signed: true } 257	Keep	[]
+misread Error Int { bits: 32, signed: true } 32767	Keep	[]
+misread Error Int { bits: 32, signed: true } 65535	Keep	[]
+misread Error Int { bits: 32, signed: true } 65536	Keep	[]
+misread Error Int { bits: 32, signed: true } 2147483647	Keep	[]
+misread Error Int { bits: 32, signed: true } 2147483648	Keep	refused
+misread Error Int { bits: 32, signed: true } -2147483648	Keep	[]
+misread Error Int { bits: 32, signed: true } -2147483649	Keep	refused
+misread Error Int { bits: 32, signed: true } 3000000000	Keep	refused
+misread Error Int { bits: 32, signed: true } 4294967296	Keep	refused
+misread Error Int { bits: 32, signed: true } 9223372036854775807	Keep	refused
+misread Error Int { bits: 32, signed: true } 9223372036854775808	Keep	refused
+misread Error Int { bits: 32, signed: true } 18446744073709551615	Keep	refused
+misread Error Int { bits: 32, signed: true } -9223372036854775808	Keep	refused
+misread Error Int { bits: 32, signed: true } 18446744073709551616	Keep	refused
+misread Error Int { bits: 32, signed: true } 0.0	Keep	[]
+misread Error Int { bits: 32, signed: true } -0.0	Keep	[]
+misread Error Int { bits: 32, signed: true } 0.5	Keep	refused
+misread Error Int { bits: 32, signed: true } 1.0	Keep	[]
+misread Error Int { bits: 32, signed: true } 1.5	Keep	refused
+misread Error Int { bits: 32, signed: true } -1.5	Keep	refused
+misread Error Int { bits: 32, signed: true } 3.0	Keep	[]
+misread Error Int { bits: 32, signed: true } 7.9	Keep	refused
+misread Error Int { bits: 32, signed: true } 1e1	Keep	[]
+misread Error Int { bits: 32, signed: true } -7.9	Keep	refused
+misread Error Int { bits: 32, signed: true } 1e10	Keep	refused
+misread Error Int { bits: 32, signed: true } 1e20	Keep	refused
+misread Error Int { bits: 32, signed: true } 3.4e38	Keep	refused
+misread Error Int { bits: 32, signed: true } 1e39	Keep	refused
+misread Error Int { bits: 32, signed: true } -1e39	Keep	refused
+misread Error Int { bits: 32, signed: true } 1e300	Keep	refused
+misread Error Int { bits: 32, signed: true } "1"	Converted	[WrongType]
+misread Error Int { bits: 32, signed: true } "x"	Converted	refused
+misread Error Int { bits: 32, signed: true } "true"	Converted	refused
+misread Error Int { bits: 32, signed: true } ""	Converted	refused
+misread Error Int { bits: 32, signed: true } true	Converted	refused
+misread Error Int { bits: 32, signed: true } false	Converted	refused
+misread Error Int { bits: 32, signed: true } null	Converted	[WrongType]
+misread ClampAndTell Int { bits: 8, signed: false } 0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 1	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 2	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } -1	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 7	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 16	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 127	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 128	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } -128	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -129	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 255	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 256	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 257	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 32767	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 65535	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 65536	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 2147483647	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 2147483648	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -2147483648	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -2147483649	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 3000000000	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 4294967296	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 9223372036854775807	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 18446744073709551615	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 18446744073709551616	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 0.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } -0.0	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 0.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 1.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -1.5	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 3.0	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } 7.9	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1e1	Keep	[]
+misread ClampAndTell Int { bits: 8, signed: false } -7.9	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1e10	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1e20	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 3.4e38	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1e39	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } -1e39	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } 1e300	Keep	refused
+misread ClampAndTell Int { bits: 8, signed: false } "1"	Converted	[WrongType]
+misread ClampAndTell Int { bits: 8, signed: false } "x"	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: false } "true"	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: false } ""	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: false } true	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: false } false	Converted	refused
+misread ClampAndTell Int { bits: 8, signed: false } null	Converted	[WrongType]
+misread Error Int { bits: 8, signed: false } 0	Keep	[]
+misread Error Int { bits: 8, signed: false } 1	Keep	[]
+misread Error Int { bits: 8, signed: false } 2	Keep	[]
+misread Error Int { bits: 8, signed: false } -1	Keep	refused
+misread Error Int { bits: 8, signed: false } 7	Keep	[]
+misread Error Int { bits: 8, signed: false } 16	Keep	[]
+misread Error Int { bits: 8, signed: false } 127	Keep	[]
+misread Error Int { bits: 8, signed: false } 128	Keep	[]
+misread Error Int { bits: 8, signed: false } -128	Keep	refused
+misread Error Int { bits: 8, signed: false } -129	Keep	refused
+misread Error Int { bits: 8, signed: false } 255	Keep	[]
+misread Error Int { bits: 8, signed: false } 256	Keep	refused
+misread Error Int { bits: 8, signed: false } 257	Keep	refused
+misread Error Int { bits: 8, signed: false } 32767	Keep	refused
+misread Error Int { bits: 8, signed: false } 65535	Keep	refused
+misread Error Int { bits: 8, signed: false } 65536	Keep	refused
+misread Error Int { bits: 8, signed: false } 2147483647	Keep	refused
+misread Error Int { bits: 8, signed: false } 2147483648	Keep	refused
+misread Error Int { bits: 8, signed: false } -2147483648	Keep	refused
+misread Error Int { bits: 8, signed: false } -2147483649	Keep	refused
+misread Error Int { bits: 8, signed: false } 3000000000	Keep	refused
+misread Error Int { bits: 8, signed: false } 4294967296	Keep	refused
+misread Error Int { bits: 8, signed: false } 9223372036854775807	Keep	refused
+misread Error Int { bits: 8, signed: false } 9223372036854775808	Keep	refused
+misread Error Int { bits: 8, signed: false } 18446744073709551615	Keep	refused
+misread Error Int { bits: 8, signed: false } -9223372036854775808	Keep	refused
+misread Error Int { bits: 8, signed: false } 18446744073709551616	Keep	refused
+misread Error Int { bits: 8, signed: false } 0.0	Keep	[]
+misread Error Int { bits: 8, signed: false } -0.0	Keep	refused
+misread Error Int { bits: 8, signed: false } 0.5	Keep	refused
+misread Error Int { bits: 8, signed: false } 1.0	Keep	[]
+misread Error Int { bits: 8, signed: false } 1.5	Keep	refused
+misread Error Int { bits: 8, signed: false } -1.5	Keep	refused
+misread Error Int { bits: 8, signed: false } 3.0	Keep	[]
+misread Error Int { bits: 8, signed: false } 7.9	Keep	refused
+misread Error Int { bits: 8, signed: false } 1e1	Keep	[]
+misread Error Int { bits: 8, signed: false } -7.9	Keep	refused
+misread Error Int { bits: 8, signed: false } 1e10	Keep	refused
+misread Error Int { bits: 8, signed: false } 1e20	Keep	refused
+misread Error Int { bits: 8, signed: false } 3.4e38	Keep	refused
+misread Error Int { bits: 8, signed: false } 1e39	Keep	refused
+misread Error Int { bits: 8, signed: false } -1e39	Keep	refused
+misread Error Int { bits: 8, signed: false } 1e300	Keep	refused
+misread Error Int { bits: 8, signed: false } "1"	Converted	[WrongType]
+misread Error Int { bits: 8, signed: false } "x"	Converted	refused
+misread Error Int { bits: 8, signed: false } "true"	Converted	refused
+misread Error Int { bits: 8, signed: false } ""	Converted	refused
+misread Error Int { bits: 8, signed: false } true	Converted	refused
+misread Error Int { bits: 8, signed: false } false	Converted	refused
+misread Error Int { bits: 8, signed: false } null	Converted	[WrongType]
+misread ClampAndTell Int { bits: 64, signed: false } 0	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 1	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 2	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -1	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 7	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 16	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 127	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 128	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -128	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } -129	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 255	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 256	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 257	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 32767	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 65535	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 65536	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 2147483647	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 2147483648	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -2147483648	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } -2147483649	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 3000000000	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 4294967296	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 9223372036854775807	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 9223372036854775808	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 18446744073709551615	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -9223372036854775808	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 18446744073709551616	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 0.0	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -0.0	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 0.5	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 1.0	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 1.5	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } -1.5	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 3.0	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 7.9	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 1e1	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } -7.9	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 1e10	Keep	[]
+misread ClampAndTell Int { bits: 64, signed: false } 1e20	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 3.4e38	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 1e39	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } -1e39	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } 1e300	Keep	refused
+misread ClampAndTell Int { bits: 64, signed: false } "1"	Converted	[WrongType]
+misread ClampAndTell Int { bits: 64, signed: false } "x"	Converted	refused
+misread ClampAndTell Int { bits: 64, signed: false } "true"	Converted	refused
+misread ClampAndTell Int { bits: 64, signed: false } ""	Converted	refused
+misread ClampAndTell Int { bits: 64, signed: false } true	Converted	refused
+misread ClampAndTell Int { bits: 64, signed: false } false	Converted	refused
+misread ClampAndTell Int { bits: 64, signed: false } null	Converted	[WrongType]
+misread Error Int { bits: 64, signed: false } 0	Keep	[]
+misread Error Int { bits: 64, signed: false } 1	Keep	[]
+misread Error Int { bits: 64, signed: false } 2	Keep	[]
+misread Error Int { bits: 64, signed: false } -1	Keep	refused
+misread Error Int { bits: 64, signed: false } 7	Keep	[]
+misread Error Int { bits: 64, signed: false } 16	Keep	[]
+misread Error Int { bits: 64, signed: false } 127	Keep	[]
+misread Error Int { bits: 64, signed: false } 128	Keep	[]
+misread Error Int { bits: 64, signed: false } -128	Keep	refused
+misread Error Int { bits: 64, signed: false } -129	Keep	refused
+misread Error Int { bits: 64, signed: false } 255	Keep	[]
+misread Error Int { bits: 64, signed: false } 256	Keep	[]
+misread Error Int { bits: 64, signed: false } 257	Keep	[]
+misread Error Int { bits: 64, signed: false } 32767	Keep	[]
+misread Error Int { bits: 64, signed: false } 65535	Keep	[]
+misread Error Int { bits: 64, signed: false } 65536	Keep	[]
+misread Error Int { bits: 64, signed: false } 2147483647	Keep	[]
+misread Error Int { bits: 64, signed: false } 2147483648	Keep	[]
+misread Error Int { bits: 64, signed: false } -2147483648	Keep	refused
+misread Error Int { bits: 64, signed: false } -2147483649	Keep	refused
+misread Error Int { bits: 64, signed: false } 3000000000	Keep	[]
+misread Error Int { bits: 64, signed: false } 4294967296	Keep	[]
+misread Error Int { bits: 64, signed: false } 9223372036854775807	Keep	[]
+misread Error Int { bits: 64, signed: false } 9223372036854775808	Keep	[]
+misread Error Int { bits: 64, signed: false } 18446744073709551615	Keep	[]
+misread Error Int { bits: 64, signed: false } -9223372036854775808	Keep	refused
+misread Error Int { bits: 64, signed: false } 18446744073709551616	Keep	refused
+misread Error Int { bits: 64, signed: false } 0.0	Keep	[]
+misread Error Int { bits: 64, signed: false } -0.0	Keep	refused
+misread Error Int { bits: 64, signed: false } 0.5	Keep	refused
+misread Error Int { bits: 64, signed: false } 1.0	Keep	[]
+misread Error Int { bits: 64, signed: false } 1.5	Keep	refused
+misread Error Int { bits: 64, signed: false } -1.5	Keep	refused
+misread Error Int { bits: 64, signed: false } 3.0	Keep	[]
+misread Error Int { bits: 64, signed: false } 7.9	Keep	refused
+misread Error Int { bits: 64, signed: false } 1e1	Keep	[]
+misread Error Int { bits: 64, signed: false } -7.9	Keep	refused
+misread Error Int { bits: 64, signed: false } 1e10	Keep	[]
+misread Error Int { bits: 64, signed: false } 1e20	Keep	refused
+misread Error Int { bits: 64, signed: false } 3.4e38	Keep	refused
+misread Error Int { bits: 64, signed: false } 1e39	Keep	refused
+misread Error Int { bits: 64, signed: false } -1e39	Keep	refused
+misread Error Int { bits: 64, signed: false } 1e300	Keep	refused
+misread Error Int { bits: 64, signed: false } "1"	Converted	[WrongType]
+misread Error Int { bits: 64, signed: false } "x"	Converted	refused
+misread Error Int { bits: 64, signed: false } "true"	Converted	refused
+misread Error Int { bits: 64, signed: false } ""	Converted	refused
+misread Error Int { bits: 64, signed: false } true	Converted	refused
+misread Error Int { bits: 64, signed: false } false	Converted	refused
+misread Error Int { bits: 64, signed: false } null	Converted	[WrongType]
+misread ClampAndTell Float { bits: 32 } 0	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1	Keep	[]
+misread ClampAndTell Float { bits: 32 } 2	Keep	[]
+misread ClampAndTell Float { bits: 32 } -1	Keep	[]
+misread ClampAndTell Float { bits: 32 } 7	Keep	[]
+misread ClampAndTell Float { bits: 32 } 16	Keep	[]
+misread ClampAndTell Float { bits: 32 } 127	Keep	[]
+misread ClampAndTell Float { bits: 32 } 128	Keep	[]
+misread ClampAndTell Float { bits: 32 } -128	Keep	[]
+misread ClampAndTell Float { bits: 32 } -129	Keep	[]
+misread ClampAndTell Float { bits: 32 } 255	Keep	[]
+misread ClampAndTell Float { bits: 32 } 256	Keep	[]
+misread ClampAndTell Float { bits: 32 } 257	Keep	[]
+misread ClampAndTell Float { bits: 32 } 32767	Keep	[]
+misread ClampAndTell Float { bits: 32 } 65535	Keep	[]
+misread ClampAndTell Float { bits: 32 } 65536	Keep	[]
+misread ClampAndTell Float { bits: 32 } 2147483647	Keep	[]
+misread ClampAndTell Float { bits: 32 } 2147483648	Keep	[]
+misread ClampAndTell Float { bits: 32 } -2147483648	Keep	[]
+misread ClampAndTell Float { bits: 32 } -2147483649	Keep	[]
+misread ClampAndTell Float { bits: 32 } 3000000000	Keep	[]
+misread ClampAndTell Float { bits: 32 } 4294967296	Keep	[]
+misread ClampAndTell Float { bits: 32 } 9223372036854775807	Keep	[]
+misread ClampAndTell Float { bits: 32 } 9223372036854775808	Keep	[]
+misread ClampAndTell Float { bits: 32 } 18446744073709551615	Keep	[]
+misread ClampAndTell Float { bits: 32 } -9223372036854775808	Keep	[]
+misread ClampAndTell Float { bits: 32 } 18446744073709551616	Keep	[]
+misread ClampAndTell Float { bits: 32 } 0.0	Keep	[]
+misread ClampAndTell Float { bits: 32 } -0.0	Keep	[]
+misread ClampAndTell Float { bits: 32 } 0.5	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1.0	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1.5	Keep	[]
+misread ClampAndTell Float { bits: 32 } -1.5	Keep	[]
+misread ClampAndTell Float { bits: 32 } 3.0	Keep	[]
+misread ClampAndTell Float { bits: 32 } 7.9	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1e1	Keep	[]
+misread ClampAndTell Float { bits: 32 } -7.9	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1e10	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1e20	Keep	[]
+misread ClampAndTell Float { bits: 32 } 3.4e38	Keep	[]
+misread ClampAndTell Float { bits: 32 } 1e39	BeyondFloat	[BeyondFloat]
+misread ClampAndTell Float { bits: 32 } -1e39	BeyondFloat	[BeyondFloat]
+misread ClampAndTell Float { bits: 32 } 1e300	BeyondFloat	[BeyondFloat]
+misread ClampAndTell Float { bits: 32 } "1"	Converted	[WrongType]
+misread ClampAndTell Float { bits: 32 } "x"	Converted	refused
+misread ClampAndTell Float { bits: 32 } "true"	Converted	refused
+misread ClampAndTell Float { bits: 32 } ""	Converted	refused
+misread ClampAndTell Float { bits: 32 } true	Converted	refused
+misread ClampAndTell Float { bits: 32 } false	Converted	refused
+misread ClampAndTell Float { bits: 32 } null	Converted	[WrongType]
+misread Error Float { bits: 32 } 0	Keep	[]
+misread Error Float { bits: 32 } 1	Keep	[]
+misread Error Float { bits: 32 } 2	Keep	[]
+misread Error Float { bits: 32 } -1	Keep	[]
+misread Error Float { bits: 32 } 7	Keep	[]
+misread Error Float { bits: 32 } 16	Keep	[]
+misread Error Float { bits: 32 } 127	Keep	[]
+misread Error Float { bits: 32 } 128	Keep	[]
+misread Error Float { bits: 32 } -128	Keep	[]
+misread Error Float { bits: 32 } -129	Keep	[]
+misread Error Float { bits: 32 } 255	Keep	[]
+misread Error Float { bits: 32 } 256	Keep	[]
+misread Error Float { bits: 32 } 257	Keep	[]
+misread Error Float { bits: 32 } 32767	Keep	[]
+misread Error Float { bits: 32 } 65535	Keep	[]
+misread Error Float { bits: 32 } 65536	Keep	[]
+misread Error Float { bits: 32 } 2147483647	Keep	[]
+misread Error Float { bits: 32 } 2147483648	Keep	[]
+misread Error Float { bits: 32 } -2147483648	Keep	[]
+misread Error Float { bits: 32 } -2147483649	Keep	[]
+misread Error Float { bits: 32 } 3000000000	Keep	[]
+misread Error Float { bits: 32 } 4294967296	Keep	[]
+misread Error Float { bits: 32 } 9223372036854775807	Keep	[]
+misread Error Float { bits: 32 } 9223372036854775808	Keep	[]
+misread Error Float { bits: 32 } 18446744073709551615	Keep	[]
+misread Error Float { bits: 32 } -9223372036854775808	Keep	[]
+misread Error Float { bits: 32 } 18446744073709551616	Keep	[]
+misread Error Float { bits: 32 } 0.0	Keep	[]
+misread Error Float { bits: 32 } -0.0	Keep	[]
+misread Error Float { bits: 32 } 0.5	Keep	[]
+misread Error Float { bits: 32 } 1.0	Keep	[]
+misread Error Float { bits: 32 } 1.5	Keep	[]
+misread Error Float { bits: 32 } -1.5	Keep	[]
+misread Error Float { bits: 32 } 3.0	Keep	[]
+misread Error Float { bits: 32 } 7.9	Keep	[]
+misread Error Float { bits: 32 } 1e1	Keep	[]
+misread Error Float { bits: 32 } -7.9	Keep	[]
+misread Error Float { bits: 32 } 1e10	Keep	[]
+misread Error Float { bits: 32 } 1e20	Keep	[]
+misread Error Float { bits: 32 } 3.4e38	Keep	[]
+misread Error Float { bits: 32 } 1e39	Refused(BeyondWidth)	[BeyondFloat]
+misread Error Float { bits: 32 } -1e39	Refused(BeyondWidth)	[BeyondFloat]
+misread Error Float { bits: 32 } 1e300	Refused(BeyondWidth)	[BeyondFloat]
+misread Error Float { bits: 32 } "1"	Converted	[WrongType]
+misread Error Float { bits: 32 } "x"	Converted	refused
+misread Error Float { bits: 32 } "true"	Converted	refused
+misread Error Float { bits: 32 } ""	Converted	refused
+misread Error Float { bits: 32 } true	Converted	refused
+misread Error Float { bits: 32 } false	Converted	refused
+misread Error Float { bits: 32 } null	Converted	[WrongType]
+misread ClampAndTell Float { bits: 64 } 0	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1	Keep	[]
+misread ClampAndTell Float { bits: 64 } 2	Keep	[]
+misread ClampAndTell Float { bits: 64 } -1	Keep	[]
+misread ClampAndTell Float { bits: 64 } 7	Keep	[]
+misread ClampAndTell Float { bits: 64 } 16	Keep	[]
+misread ClampAndTell Float { bits: 64 } 127	Keep	[]
+misread ClampAndTell Float { bits: 64 } 128	Keep	[]
+misread ClampAndTell Float { bits: 64 } -128	Keep	[]
+misread ClampAndTell Float { bits: 64 } -129	Keep	[]
+misread ClampAndTell Float { bits: 64 } 255	Keep	[]
+misread ClampAndTell Float { bits: 64 } 256	Keep	[]
+misread ClampAndTell Float { bits: 64 } 257	Keep	[]
+misread ClampAndTell Float { bits: 64 } 32767	Keep	[]
+misread ClampAndTell Float { bits: 64 } 65535	Keep	[]
+misread ClampAndTell Float { bits: 64 } 65536	Keep	[]
+misread ClampAndTell Float { bits: 64 } 2147483647	Keep	[]
+misread ClampAndTell Float { bits: 64 } 2147483648	Keep	[]
+misread ClampAndTell Float { bits: 64 } -2147483648	Keep	[]
+misread ClampAndTell Float { bits: 64 } -2147483649	Keep	[]
+misread ClampAndTell Float { bits: 64 } 3000000000	Keep	[]
+misread ClampAndTell Float { bits: 64 } 4294967296	Keep	[]
+misread ClampAndTell Float { bits: 64 } 9223372036854775807	Keep	[]
+misread ClampAndTell Float { bits: 64 } 9223372036854775808	Keep	[]
+misread ClampAndTell Float { bits: 64 } 18446744073709551615	Keep	[]
+misread ClampAndTell Float { bits: 64 } -9223372036854775808	Keep	[]
+misread ClampAndTell Float { bits: 64 } 18446744073709551616	Keep	[]
+misread ClampAndTell Float { bits: 64 } 0.0	Keep	[]
+misread ClampAndTell Float { bits: 64 } -0.0	Keep	[]
+misread ClampAndTell Float { bits: 64 } 0.5	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1.0	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1.5	Keep	[]
+misread ClampAndTell Float { bits: 64 } -1.5	Keep	[]
+misread ClampAndTell Float { bits: 64 } 3.0	Keep	[]
+misread ClampAndTell Float { bits: 64 } 7.9	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1e1	Keep	[]
+misread ClampAndTell Float { bits: 64 } -7.9	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1e10	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1e20	Keep	[]
+misread ClampAndTell Float { bits: 64 } 3.4e38	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1e39	Keep	[]
+misread ClampAndTell Float { bits: 64 } -1e39	Keep	[]
+misread ClampAndTell Float { bits: 64 } 1e300	Keep	[]
+misread ClampAndTell Float { bits: 64 } "1"	Converted	[WrongType]
+misread ClampAndTell Float { bits: 64 } "x"	Converted	refused
+misread ClampAndTell Float { bits: 64 } "true"	Converted	refused
+misread ClampAndTell Float { bits: 64 } ""	Converted	refused
+misread ClampAndTell Float { bits: 64 } true	Converted	refused
+misread ClampAndTell Float { bits: 64 } false	Converted	refused
+misread ClampAndTell Float { bits: 64 } null	Converted	[WrongType]
+misread Error Float { bits: 64 } 0	Keep	[]
+misread Error Float { bits: 64 } 1	Keep	[]
+misread Error Float { bits: 64 } 2	Keep	[]
+misread Error Float { bits: 64 } -1	Keep	[]
+misread Error Float { bits: 64 } 7	Keep	[]
+misread Error Float { bits: 64 } 16	Keep	[]
+misread Error Float { bits: 64 } 127	Keep	[]
+misread Error Float { bits: 64 } 128	Keep	[]
+misread Error Float { bits: 64 } -128	Keep	[]
+misread Error Float { bits: 64 } -129	Keep	[]
+misread Error Float { bits: 64 } 255	Keep	[]
+misread Error Float { bits: 64 } 256	Keep	[]
+misread Error Float { bits: 64 } 257	Keep	[]
+misread Error Float { bits: 64 } 32767	Keep	[]
+misread Error Float { bits: 64 } 65535	Keep	[]
+misread Error Float { bits: 64 } 65536	Keep	[]
+misread Error Float { bits: 64 } 2147483647	Keep	[]
+misread Error Float { bits: 64 } 2147483648	Keep	[]
+misread Error Float { bits: 64 } -2147483648	Keep	[]
+misread Error Float { bits: 64 } -2147483649	Keep	[]
+misread Error Float { bits: 64 } 3000000000	Keep	[]
+misread Error Float { bits: 64 } 4294967296	Keep	[]
+misread Error Float { bits: 64 } 9223372036854775807	Keep	[]
+misread Error Float { bits: 64 } 9223372036854775808	Keep	[]
+misread Error Float { bits: 64 } 18446744073709551615	Keep	[]
+misread Error Float { bits: 64 } -9223372036854775808	Keep	[]
+misread Error Float { bits: 64 } 18446744073709551616	Keep	[]
+misread Error Float { bits: 64 } 0.0	Keep	[]
+misread Error Float { bits: 64 } -0.0	Keep	[]
+misread Error Float { bits: 64 } 0.5	Keep	[]
+misread Error Float { bits: 64 } 1.0	Keep	[]
+misread Error Float { bits: 64 } 1.5	Keep	[]
+misread Error Float { bits: 64 } -1.5	Keep	[]
+misread Error Float { bits: 64 } 3.0	Keep	[]
+misread Error Float { bits: 64 } 7.9	Keep	[]
+misread Error Float { bits: 64 } 1e1	Keep	[]
+misread Error Float { bits: 64 } -7.9	Keep	[]
+misread Error Float { bits: 64 } 1e10	Keep	[]
+misread Error Float { bits: 64 } 1e20	Keep	[]
+misread Error Float { bits: 64 } 3.4e38	Keep	[]
+misread Error Float { bits: 64 } 1e39	Keep	[]
+misread Error Float { bits: 64 } -1e39	Keep	[]
+misread Error Float { bits: 64 } 1e300	Keep	[]
+misread Error Float { bits: 64 } "1"	Converted	[WrongType]
+misread Error Float { bits: 64 } "x"	Converted	refused
+misread Error Float { bits: 64 } "true"	Converted	refused
+misread Error Float { bits: 64 } ""	Converted	refused
+misread Error Float { bits: 64 } true	Converted	refused
+misread Error Float { bits: 64 } false	Converted	refused
+misread Error Float { bits: 64 } null	Converted	[WrongType]
+misread ClampAndTell Bool 0	Converted	refused
+misread ClampAndTell Bool 1	Converted	refused
+misread ClampAndTell Bool 2	Converted	refused
+misread ClampAndTell Bool -1	Converted	refused
+misread ClampAndTell Bool 7	Converted	refused
+misread ClampAndTell Bool 16	Converted	refused
+misread ClampAndTell Bool 127	Converted	refused
+misread ClampAndTell Bool 128	Converted	refused
+misread ClampAndTell Bool -128	Converted	refused
+misread ClampAndTell Bool -129	Converted	refused
+misread ClampAndTell Bool 255	Converted	refused
+misread ClampAndTell Bool 256	Converted	refused
+misread ClampAndTell Bool 257	Converted	refused
+misread ClampAndTell Bool 32767	Converted	refused
+misread ClampAndTell Bool 65535	Converted	refused
+misread ClampAndTell Bool 65536	Converted	refused
+misread ClampAndTell Bool 2147483647	Converted	refused
+misread ClampAndTell Bool 2147483648	Converted	refused
+misread ClampAndTell Bool -2147483648	Converted	refused
+misread ClampAndTell Bool -2147483649	Converted	refused
+misread ClampAndTell Bool 3000000000	Converted	refused
+misread ClampAndTell Bool 4294967296	Converted	refused
+misread ClampAndTell Bool 9223372036854775807	Converted	refused
+misread ClampAndTell Bool 9223372036854775808	Converted	refused
+misread ClampAndTell Bool 18446744073709551615	Converted	refused
+misread ClampAndTell Bool -9223372036854775808	Converted	refused
+misread ClampAndTell Bool 18446744073709551616	Converted	refused
+misread ClampAndTell Bool 0.0	Converted	refused
+misread ClampAndTell Bool -0.0	Converted	refused
+misread ClampAndTell Bool 0.5	Converted	refused
+misread ClampAndTell Bool 1.0	Converted	refused
+misread ClampAndTell Bool 1.5	Converted	refused
+misread ClampAndTell Bool -1.5	Converted	refused
+misread ClampAndTell Bool 3.0	Converted	refused
+misread ClampAndTell Bool 7.9	Converted	refused
+misread ClampAndTell Bool 1e1	Converted	refused
+misread ClampAndTell Bool -7.9	Converted	refused
+misread ClampAndTell Bool 1e10	Converted	refused
+misread ClampAndTell Bool 1e20	Converted	refused
+misread ClampAndTell Bool 3.4e38	Converted	refused
+misread ClampAndTell Bool 1e39	Converted	refused
+misread ClampAndTell Bool -1e39	Converted	refused
+misread ClampAndTell Bool 1e300	Converted	refused
+misread ClampAndTell Bool "1"	Converted	refused
+misread ClampAndTell Bool "x"	Converted	refused
+misread ClampAndTell Bool "true"	Converted	[WrongType]
+misread ClampAndTell Bool ""	Converted	refused
+misread ClampAndTell Bool true	Keep	[]
+misread ClampAndTell Bool false	Keep	[]
+misread ClampAndTell Bool null	Converted	[WrongType]
+misread Error Bool 0	Converted	refused
+misread Error Bool 1	Converted	refused
+misread Error Bool 2	Converted	refused
+misread Error Bool -1	Converted	refused
+misread Error Bool 7	Converted	refused
+misread Error Bool 16	Converted	refused
+misread Error Bool 127	Converted	refused
+misread Error Bool 128	Converted	refused
+misread Error Bool -128	Converted	refused
+misread Error Bool -129	Converted	refused
+misread Error Bool 255	Converted	refused
+misread Error Bool 256	Converted	refused
+misread Error Bool 257	Converted	refused
+misread Error Bool 32767	Converted	refused
+misread Error Bool 65535	Converted	refused
+misread Error Bool 65536	Converted	refused
+misread Error Bool 2147483647	Converted	refused
+misread Error Bool 2147483648	Converted	refused
+misread Error Bool -2147483648	Converted	refused
+misread Error Bool -2147483649	Converted	refused
+misread Error Bool 3000000000	Converted	refused
+misread Error Bool 4294967296	Converted	refused
+misread Error Bool 9223372036854775807	Converted	refused
+misread Error Bool 9223372036854775808	Converted	refused
+misread Error Bool 18446744073709551615	Converted	refused
+misread Error Bool -9223372036854775808	Converted	refused
+misread Error Bool 18446744073709551616	Converted	refused
+misread Error Bool 0.0	Converted	refused
+misread Error Bool -0.0	Converted	refused
+misread Error Bool 0.5	Converted	refused
+misread Error Bool 1.0	Converted	refused
+misread Error Bool 1.5	Converted	refused
+misread Error Bool -1.5	Converted	refused
+misread Error Bool 3.0	Converted	refused
+misread Error Bool 7.9	Converted	refused
+misread Error Bool 1e1	Converted	refused
+misread Error Bool -7.9	Converted	refused
+misread Error Bool 1e10	Converted	refused
+misread Error Bool 1e20	Converted	refused
+misread Error Bool 3.4e38	Converted	refused
+misread Error Bool 1e39	Converted	refused
+misread Error Bool -1e39	Converted	refused
+misread Error Bool 1e300	Converted	refused
+misread Error Bool "1"	Converted	refused
+misread Error Bool "x"	Converted	refused
+misread Error Bool "true"	Converted	[WrongType]
+misread Error Bool ""	Converted	refused
+misread Error Bool true	Keep	[]
+misread Error Bool false	Keep	[]
+misread Error Bool null	Converted	[WrongType]
+misread ClampAndTell Text 0	Converted	[WrongType]
+misread ClampAndTell Text 1	Converted	[WrongType]
+misread ClampAndTell Text 2	Converted	[WrongType]
+misread ClampAndTell Text -1	Converted	[WrongType]
+misread ClampAndTell Text 7	Converted	[WrongType]
+misread ClampAndTell Text 16	Converted	[WrongType]
+misread ClampAndTell Text 127	Converted	[WrongType]
+misread ClampAndTell Text 128	Converted	[WrongType]
+misread ClampAndTell Text -128	Converted	[WrongType]
+misread ClampAndTell Text -129	Converted	[WrongType]
+misread ClampAndTell Text 255	Converted	[WrongType]
+misread ClampAndTell Text 256	Converted	[WrongType]
+misread ClampAndTell Text 257	Converted	[WrongType]
+misread ClampAndTell Text 32767	Converted	[WrongType]
+misread ClampAndTell Text 65535	Converted	[WrongType]
+misread ClampAndTell Text 65536	Converted	[WrongType]
+misread ClampAndTell Text 2147483647	Converted	[WrongType]
+misread ClampAndTell Text 2147483648	Converted	[WrongType]
+misread ClampAndTell Text -2147483648	Converted	[WrongType]
+misread ClampAndTell Text -2147483649	Converted	[WrongType]
+misread ClampAndTell Text 3000000000	Converted	[WrongType]
+misread ClampAndTell Text 4294967296	Converted	[WrongType]
+misread ClampAndTell Text 9223372036854775807	Converted	[WrongType]
+misread ClampAndTell Text 9223372036854775808	Converted	[WrongType]
+misread ClampAndTell Text 18446744073709551615	Converted	[WrongType]
+misread ClampAndTell Text -9223372036854775808	Converted	[WrongType]
+misread ClampAndTell Text 18446744073709551616	Converted	[WrongType]
+misread ClampAndTell Text 0.0	Converted	[WrongType]
+misread ClampAndTell Text -0.0	Converted	[WrongType]
+misread ClampAndTell Text 0.5	Converted	[WrongType]
+misread ClampAndTell Text 1.0	Converted	[WrongType]
+misread ClampAndTell Text 1.5	Converted	[WrongType]
+misread ClampAndTell Text -1.5	Converted	[WrongType]
+misread ClampAndTell Text 3.0	Converted	[WrongType]
+misread ClampAndTell Text 7.9	Converted	[WrongType]
+misread ClampAndTell Text 1e1	Converted	[WrongType]
+misread ClampAndTell Text -7.9	Converted	[WrongType]
+misread ClampAndTell Text 1e10	Converted	[WrongType]
+misread ClampAndTell Text 1e20	Converted	[WrongType]
+misread ClampAndTell Text 3.4e38	Converted	[WrongType]
+misread ClampAndTell Text 1e39	Converted	[WrongType]
+misread ClampAndTell Text -1e39	Converted	[WrongType]
+misread ClampAndTell Text 1e300	Converted	[WrongType]
+misread ClampAndTell Text "1"	Keep	[]
+misread ClampAndTell Text "x"	Keep	[]
+misread ClampAndTell Text "true"	Keep	[]
+misread ClampAndTell Text ""	Keep	[]
+misread ClampAndTell Text true	Converted	refused
+misread ClampAndTell Text false	Converted	refused
+misread ClampAndTell Text null	Converted	[WrongType]
+misread Error Text 0	Converted	[WrongType]
+misread Error Text 1	Converted	[WrongType]
+misread Error Text 2	Converted	[WrongType]
+misread Error Text -1	Converted	[WrongType]
+misread Error Text 7	Converted	[WrongType]
+misread Error Text 16	Converted	[WrongType]
+misread Error Text 127	Converted	[WrongType]
+misread Error Text 128	Converted	[WrongType]
+misread Error Text -128	Converted	[WrongType]
+misread Error Text -129	Converted	[WrongType]
+misread Error Text 255	Converted	[WrongType]
+misread Error Text 256	Converted	[WrongType]
+misread Error Text 257	Converted	[WrongType]
+misread Error Text 32767	Converted	[WrongType]
+misread Error Text 65535	Converted	[WrongType]
+misread Error Text 65536	Converted	[WrongType]
+misread Error Text 2147483647	Converted	[WrongType]
+misread Error Text 2147483648	Converted	[WrongType]
+misread Error Text -2147483648	Converted	[WrongType]
+misread Error Text -2147483649	Converted	[WrongType]
+misread Error Text 3000000000	Converted	[WrongType]
+misread Error Text 4294967296	Converted	[WrongType]
+misread Error Text 9223372036854775807	Converted	[WrongType]
+misread Error Text 9223372036854775808	Converted	[WrongType]
+misread Error Text 18446744073709551615	Converted	[WrongType]
+misread Error Text -9223372036854775808	Converted	[WrongType]
+misread Error Text 18446744073709551616	Converted	[WrongType]
+misread Error Text 0.0	Converted	[WrongType]
+misread Error Text -0.0	Converted	[WrongType]
+misread Error Text 0.5	Converted	[WrongType]
+misread Error Text 1.0	Converted	[WrongType]
+misread Error Text 1.5	Converted	[WrongType]
+misread Error Text -1.5	Converted	[WrongType]
+misread Error Text 3.0	Converted	[WrongType]
+misread Error Text 7.9	Converted	[WrongType]
+misread Error Text 1e1	Converted	[WrongType]
+misread Error Text -7.9	Converted	[WrongType]
+misread Error Text 1e10	Converted	[WrongType]
+misread Error Text 1e20	Converted	[WrongType]
+misread Error Text 3.4e38	Converted	[WrongType]
+misread Error Text 1e39	Converted	[WrongType]
+misread Error Text -1e39	Converted	[WrongType]
+misread Error Text 1e300	Converted	[WrongType]
+misread Error Text "1"	Keep	[]
+misread Error Text "x"	Keep	[]
+misread Error Text "true"	Keep	[]
+misread Error Text ""	Keep	[]
+misread Error Text true	Converted	refused
+misread Error Text false	Converted	refused
+misread Error Text null	Converted	[WrongType]

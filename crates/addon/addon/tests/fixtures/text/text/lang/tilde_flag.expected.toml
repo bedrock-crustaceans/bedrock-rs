@@ -1,0 +1,6 @@
+# fixtures.md `lang/tilde_flag`: stored verbatim; a `~` in a value sets the flag.
+may_contain_identifier = true
+
+[entries]
+"a" = "x~LINEBREAK~y"
+"b" = "p~LINEBEAK~q"

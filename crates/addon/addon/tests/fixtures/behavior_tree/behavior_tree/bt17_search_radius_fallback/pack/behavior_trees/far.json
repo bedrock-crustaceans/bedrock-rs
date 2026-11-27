@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "far",
+    "minecraft:root": { "minecraft:find_block": { "search_radius": "far" } }
+  }
+}

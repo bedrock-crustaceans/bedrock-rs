@@ -1,0 +1,13 @@
+{
+						"format_version": "1.26.50",
+						"minecraft:item": {
+							"description": {
+								"identifier": "test:string_sound_item"
+							},
+							"components": {
+								"minecraft:swing_sounds": {
+									"attack_hit": "test_pack:custom_swing"
+								}
+							}
+						}
+					}

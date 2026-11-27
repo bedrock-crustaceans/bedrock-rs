@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:capped_capped"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:capped",
+        "limit": 1,
+        "delegate": {
+          "processor_type": "minecraft:capped",
+          "limit": 2,
+          "delegate": {
+            "processor_type": "minecraft:rule",
+            "rules": [
+              {
+                "output_state": "minecraft:stone"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

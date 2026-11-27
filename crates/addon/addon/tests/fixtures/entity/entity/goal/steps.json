@@ -1,0 +1,35 @@
+{
+  // fixtures.md e24, e29b, e29c, e31c, e32 (the goal parts).
+  "e24_breed_wrong_type": {
+    "priority": 3,
+    "speed_multiplier": true
+  },
+  "e29b_look_at_player": {
+    "priority": 7,
+    "look_distance": 6,
+    "target_distance": 6,
+    "min_look_time": 3,
+    "probability": 0.02
+  },
+  "e29c_aquatic_old_name": {
+    "priority": 4,
+    "charge_speed_multiplier": 0.5
+  },
+  "e29c_aquatic_both": {
+    "priority": 4,
+    "charge_speed": 0.2,
+    "charge_speed_multiplier": 0.5
+  },
+  "e31c_follow_target_leader": {
+    "priority": 5,
+    "speed_multiplier": 0.8,
+    "leader_filters": { "test": "has_component", "subject": "other", "value": "minecraft:is_illager_captain" },
+    "search_cooldown": 1
+  },
+  "e32_pickup_items": {
+    "priority": 6,
+    "max_dist": 3,
+    "goal_radius": 2,
+    "stop_if_holding_item": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Block Tessellation Performance Test BP",
+    "description": "The UUID for this pack enables Legacy Creator Features in order to use the unreleased minecraft:unit_cube component",
+    "uuid": "da09e399-6f5e-4287-a013-4cf13de32166",
+    "version": [0, 0, 1],
+    "min_engine_version": [	1, 16, 0 ]
+  },
+  "modules": [
+    {
+      "description": "_",
+      "type": "data",
+      "uuid": "63746e38-cab1-49d8-afa7-183967da4817",
+      "version": [0, 0, 1]
+    }
+  ],
+  "dependencies": [
+    {
+      "uuid": "bb09d3c3-b9df-4c90-a151-5488693cbb03",
+      "version": [0, 0, 1]
+    }
+  ]
+}

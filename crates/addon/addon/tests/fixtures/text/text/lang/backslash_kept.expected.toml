@@ -1,0 +1,4 @@
+# fixtures.md `a=C:\path`: a backslash before any other byte is kept.
+
+[entries]
+"a" = "C:\\path"

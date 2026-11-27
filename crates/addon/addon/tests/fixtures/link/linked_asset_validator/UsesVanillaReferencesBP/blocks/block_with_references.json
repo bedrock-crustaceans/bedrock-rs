@@ -1,0 +1,38 @@
+{
+    "format_version": "1.21.50",
+    "minecraft:block": {
+        "description": {
+            "identifier": "test:item_with_references"
+        },
+        "components": {
+            "minecraft:destructible_by_mining": {
+                "seconds_to_destroy": 10,
+                "item_specific_speeds": [
+                    {
+                        "item": "minecraft:iron_axe",
+                        "destroy_speed": 5
+                    }
+                ]
+            },
+            "minecraft:loot": "loot_tables/entities/fish.json",
+            "minecraft:material_instances": {
+                "north": "custom_face",
+                "south": "custom_face",
+                "*": {
+                    "texture": "cobblestone"
+                },
+                "custom_face": {
+                    "texture": "cobblestone"
+                }
+            },
+            "minecraft:placement_filter" : {
+                "conditions": [
+                    {
+                        "allowed_faces": ["up", "side"],
+                        "block_filter": ["minecraft:dirt"]
+                    }
+                ]
+            }
+        }
+    }
+}

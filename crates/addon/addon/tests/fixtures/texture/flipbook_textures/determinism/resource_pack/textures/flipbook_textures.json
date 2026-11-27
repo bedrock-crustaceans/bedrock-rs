@@ -1,0 +1,8 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/demo_stone",
+    "atlas_tile": "demo_stone",
+    "ticks_per_frame": 0,
+    "fps": 2
+  }
+]

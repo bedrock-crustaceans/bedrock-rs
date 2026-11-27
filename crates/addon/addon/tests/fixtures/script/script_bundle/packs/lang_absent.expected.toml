@@ -1,0 +1,14 @@
+# lang_absent: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [lang_absent] ran
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"

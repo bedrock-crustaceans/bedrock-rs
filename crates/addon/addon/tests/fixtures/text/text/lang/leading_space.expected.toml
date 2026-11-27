@@ -1,0 +1,4 @@
+# schema.md rule 4: spaces and tabs before the key are skipped.
+
+[entries]
+"a" = "b"

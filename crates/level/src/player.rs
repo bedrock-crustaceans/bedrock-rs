@@ -481,7 +481,9 @@ mod tests {
                                 ("Count".into(), Value::Byte(0)),
                             ]))
                         })
-                        .collect(),
+                        .collect::<Vec<Value>>()
+                        .try_into()
+                        .unwrap(),
                 ),
             ),
             ("HurtTime".into(), Value::Short(0)),
@@ -490,11 +492,13 @@ mod tests {
             ("Color".into(), Value::Byte(0)),
             (
                 "Rotation".into(),
-                Value::List(vec![Value::Float(0.0), Value::Float(0.0)]),
+                Value::List(
+                    nbtx::ValueList::try_from(vec![Value::Float(0.0), Value::Float(0.0)]).unwrap(),
+                ),
             ),
             ("Invulnerable".into(), Value::Byte(0)),
             ("IsAngry".into(), Value::Byte(0)),
-            ("ActiveEffects".into(), Value::List(vec![])),
+            ("ActiveEffects".into(), Value::List(nbtx::ValueList::End)),
             ("NaturalSpawn".into(), Value::Byte(0)),
             ("DeathTime".into(), Value::Short(0)),
             ("IsBaby".into(), Value::Byte(0)),
@@ -505,7 +509,7 @@ mod tests {
             ("OnGround".into(), Value::Byte(1)),
             ("Sneaking".into(), Value::Byte(0)),
             ("Sleeping".into(), Value::Byte(0)),
-            ("Attributes".into(), Value::List(vec![])),
+            ("Attributes".into(), Value::List(nbtx::ValueList::End)),
             ("BedPositionZ".into(), Value::Int(0)),
             (
                 "Abilities".into(),
@@ -531,7 +535,7 @@ mod tests {
                 ])),
             ),
             ("UniqueID".into(), Value::Long(0)),
-            ("Definitions".into(), Value::List(vec![])),
+            ("Definitions".into(), Value::List(nbtx::ValueList::End)),
             ("Saddled".into(), Value::Byte(0)),
             ("ShowBottom".into(), Value::Byte(0)),
             ("TargetID".into(), Value::Long(0)),
@@ -541,11 +545,14 @@ mod tests {
             ("IsTamed".into(), Value::Byte(0)),
             (
                 "Pos".into(),
-                Value::List(vec![
-                    Value::Float(0.0),
-                    Value::Float(0.0),
-                    Value::Float(0.0),
-                ]),
+                Value::List(
+                    nbtx::ValueList::try_from(vec![
+                        Value::Float(0.0),
+                        Value::Float(0.0),
+                        Value::Float(0.0),
+                    ])
+                    .unwrap(),
+                ),
             ),
             ("MapIndex".into(), Value::Int(0)),
             ("boundX".into(), Value::Int(0)),
@@ -562,12 +569,14 @@ mod tests {
                                 ("Count".into(), Value::Byte(0)),
                             ]))
                         })
-                        .collect(),
+                        .collect::<Vec<Value>>()
+                        .try_into()
+                        .unwrap(),
                 ),
             ),
             ("IsAutonomous".into(), Value::Byte(0)),
             ("Persistent".into(), Value::Byte(1)),
-            ("Offhand".into(), Value::List(vec![])),
+            ("Offhand".into(), Value::List(nbtx::ValueList::End)),
             ("SelectedContainerID".into(), Value::Int(0)),
             ("OwnerNew".into(), Value::Long(0)),
             ("PlayerLevel".into(), Value::Int(0)),

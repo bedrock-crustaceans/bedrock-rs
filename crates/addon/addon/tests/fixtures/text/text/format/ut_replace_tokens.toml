@@ -1,0 +1,6 @@
+# fixtures.md `format/ut_replace_tokens` (LocalizationUnitTests).
+
+[[case]]
+value = "This is a %s string with %d tokens."
+params = ["test", "2"]
+expected = "This is a test string with 2 tokens."

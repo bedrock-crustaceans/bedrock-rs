@@ -1,0 +1,51 @@
+
+				{
+					"format_version": "1.21.90",
+					"minecraft:client_biome": {
+						"description": {
+							"identifier": "minecraft:the_end"
+						},
+						"components": {
+							"minecraft:ambient_sounds": {
+								"addition": {
+									"asset": "ambient.basalt_deltas.additions",
+									"chance": 0.0111
+								}
+							},
+							"minecraft:fog_appearance": {
+								"fog_identifier": "minecraft:fog_bamboo_jungle"
+							},
+							"minecraft:foliage_appearance": {
+								"color": "#b6db61"
+							},
+							"minecraft:grass_appearance": {
+								"color": "#b6db61"
+							},
+							"minecraft:biome_music": {
+								"volume_multiplier": 0
+							},
+							"minecraft:water_appearance": {
+								"surface_color": "#14A2C5"
+							},
+							"minecraft:dry_foliage_color": {
+								"color": "#7B5334"
+							},
+							"minecraft:sky_color": {
+								"sky_color": "#000000"
+							},
+							"minecraft:atmosphere_identifier": {
+								"atmosphere_identifier": "testpack:my_atmosphere"
+							},
+							"minecraft:color_grading_identifier": {
+								"color_grading_identifier": "testpack:my_color_grading"
+							},
+							"minecraft:lighting_identifier": {
+								"lighting_identifier": "testpack:my_lighting"
+							},
+							"minecraft:water_identifier": {
+								"water_identifier": "testpack:my_water"
+							}
+						}
+					}
+				}
+				

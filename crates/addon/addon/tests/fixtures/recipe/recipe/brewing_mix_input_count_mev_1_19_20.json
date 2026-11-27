@@ -1,0 +1,19 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_brewing_mix": {
+    "description": {
+      "identifier": "demo:input_count"
+    },
+    "tags": [
+      "brewing_stand"
+    ],
+    "input": {
+      "item": "minecraft:apple",
+      "count": 2
+    },
+    "reagent": "minecraft:gold_ingot",
+    "output": {
+      "item": "minecraft:golden_apple"
+    }
+  }
+}

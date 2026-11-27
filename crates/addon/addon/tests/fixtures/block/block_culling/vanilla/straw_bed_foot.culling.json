@@ -1,0 +1,90 @@
+{
+  "format_version": "1.20.60",
+  "minecraft:block_culling_rules": {
+    "description": {
+      "identifier": "minecraft:culling.straw_bed_foot"
+    },
+    "rules": [
+      {
+        "geometry_part": {
+          "bone": "base",
+          "cube": 0,
+          "face": "down"
+        },
+        "direction": "down"
+      },
+      {
+        "geometry_part": {
+          "bone": "base",
+          "cube": 0,
+          "face": "north"
+        },
+        "direction": "north"
+      },
+      {
+        "geometry_part": {
+          "bone": "base",
+          "cube": 0,
+          "face": "west"
+        },
+        "direction": "west"
+      },
+      {
+        "geometry_part": {
+          "bone": "base",
+          "cube": 0,
+          "face": "east"
+        },
+        "direction": "east"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_03",
+          "cube": 0,
+          "face": "down"
+        },
+        "direction": "north"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_03",
+          "cube": 0,
+          "face": "up"
+        },
+        "direction": "north"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_04",
+          "cube": 0,
+          "face": "down"
+        },
+        "direction": "east"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_04",
+          "cube": 0,
+          "face": "up"
+        },
+        "direction": "east"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_05",
+          "cube": 0,
+          "face": "down"
+        },
+        "direction": "west"
+      },
+      {
+        "geometry_part": {
+          "bone": "frills_05",
+          "cube": 0,
+          "face": "up"
+        },
+        "direction": "west"
+      }
+    ]
+  }
+}

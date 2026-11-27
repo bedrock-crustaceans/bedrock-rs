@@ -1,0 +1,15 @@
+{
+			"format_version": "1.21.110",
+			"minecraft:biome": {
+				"description": {
+					"identifier": "minecraft:desert"
+				},
+				"components": {
+					"minecraft:tags": {
+						"tags": [
+							"overworld"
+						]
+					}
+				}
+			}
+			}

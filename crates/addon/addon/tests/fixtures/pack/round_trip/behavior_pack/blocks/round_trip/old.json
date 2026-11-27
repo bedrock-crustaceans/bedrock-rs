@@ -1,0 +1,7 @@
+{
+  "format_version": "1.21.60",
+  "minecraft:block": {
+    "description": { "identifier": "round_trip:old" },
+    "components": { "minecraft:friction": 0.4, "minecraft:light_emission": 7 }
+  }
+}

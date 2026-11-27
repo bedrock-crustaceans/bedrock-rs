@@ -1,0 +1,7 @@
+
+                {
+                    "feature_to_snap": "test_feature",
+                    "search_range" : 12,
+                    "surface" : "ceiling",
+                    "allow_underwater_placement": true
+                }

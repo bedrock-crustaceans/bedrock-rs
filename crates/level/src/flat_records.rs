@@ -313,22 +313,22 @@ impl Scoreboard {
 
     /// `Criteria`, verbatim -- empty (element tag `TAG_End`) on every real
     /// record found.
-    pub fn criteria(&self) -> Option<&[nbtx::Value]> {
+    pub fn criteria(&self) -> Option<&nbtx::ValueList> {
         list(self.value(), "Criteria")
     }
 
     /// `DisplayObjectives`, verbatim -- empty on every real record found.
-    pub fn display_objectives(&self) -> Option<&[nbtx::Value]> {
+    pub fn display_objectives(&self) -> Option<&nbtx::ValueList> {
         list(self.value(), "DisplayObjectives")
     }
 
     /// `Entries`, verbatim -- empty on every real record found.
-    pub fn entries(&self) -> Option<&[nbtx::Value]> {
+    pub fn entries(&self) -> Option<&nbtx::ValueList> {
         list(self.value(), "Entries")
     }
 
     /// `Objectives`, verbatim -- empty on every real record found.
-    pub fn objectives(&self) -> Option<&[nbtx::Value]> {
+    pub fn objectives(&self) -> Option<&nbtx::ValueList> {
         list(self.value(), "Objectives")
     }
 }
@@ -405,7 +405,12 @@ impl BiomeData {
     /// in the corpus has ever shown a malformed entry.
     pub fn entries(&self) -> Option<Vec<BiomeEntry>> {
         let items = list(self.value(), "list")?;
-        Some(items.iter().filter_map(BiomeEntry::from_value).collect())
+        Some(
+            items
+                .iter()
+                .filter_map(|item| BiomeEntry::from_value(&item))
+                .collect(),
+        )
     }
 }
 
@@ -430,7 +435,7 @@ flat_record!(
 impl AutonomousEntities {
     /// `AutonomousEntityList`, verbatim -- see the type docs for why this
     /// stays raw rather than being parsed element by element.
-    pub fn entity_list(&self) -> Option<&[nbtx::Value]> {
+    pub fn entity_list(&self) -> Option<&nbtx::ValueList> {
         list(self.value(), "AutonomousEntityList")
     }
 }
@@ -477,7 +482,7 @@ impl DragonFight {
                 let mut out = [0i32; 3];
                 for (slot, item) in out.iter_mut().zip(items.iter()) {
                     match item {
-                        nbtx::Value::Int(v) => *slot = *v,
+                        nbtx::Value::Int(v) => *slot = v,
                         _ => return None,
                     }
                 }
@@ -514,7 +519,7 @@ flat_record!(
 impl DimensionRecord {
     /// `data.LimboEntities`, verbatim -- always an empty list (element tag
     /// `TAG_End`) in every corpus record on all three dimension keys.
-    pub fn limbo_entities(&self) -> Option<&[nbtx::Value]> {
+    pub fn limbo_entities(&self) -> Option<&nbtx::ValueList> {
         list(field(self.value(), "data")?, "LimboEntities")
     }
 
@@ -645,10 +650,13 @@ mod tests {
     fn scoreboard_sample() -> nbtx::Value {
         let mut compound = nbtx::Compound::new();
         compound.insert("LastUniqueID".into(), nbtx::Value::Long(7));
-        compound.insert("Criteria".into(), nbtx::Value::List(vec![]));
-        compound.insert("DisplayObjectives".into(), nbtx::Value::List(vec![]));
-        compound.insert("Entries".into(), nbtx::Value::List(vec![]));
-        compound.insert("Objectives".into(), nbtx::Value::List(vec![]));
+        compound.insert("Criteria".into(), nbtx::Value::List(nbtx::ValueList::End));
+        compound.insert(
+            "DisplayObjectives".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
+        compound.insert("Entries".into(), nbtx::Value::List(nbtx::ValueList::End));
+        compound.insert("Objectives".into(), nbtx::Value::List(nbtx::ValueList::End));
         nbtx::Value::Compound(compound)
     }
 
@@ -657,10 +665,10 @@ mod tests {
         let bytes = nbtx::to_le_bytes(&scoreboard_sample()).unwrap();
         let record = decode_scoreboard(&bytes).unwrap();
         assert_eq!(record.last_unique_id(), Some(7));
-        assert_eq!(record.criteria(), Some(&[][..]));
-        assert_eq!(record.display_objectives(), Some(&[][..]));
-        assert_eq!(record.entries(), Some(&[][..]));
-        assert_eq!(record.objectives(), Some(&[][..]));
+        assert_eq!(record.criteria(), Some(&nbtx::ValueList::End));
+        assert_eq!(record.display_objectives(), Some(&nbtx::ValueList::End));
+        assert_eq!(record.entries(), Some(&nbtx::ValueList::End));
+        assert_eq!(record.objectives(), Some(&nbtx::ValueList::End));
         assert_eq!(encode_scoreboard(&record).unwrap(), bytes);
     }
 
@@ -679,7 +687,10 @@ mod tests {
         let mut root = nbtx::Compound::new();
         root.insert(
             "list".into(),
-            nbtx::Value::List(vec![biome_entry_value(nbtx::Value::Byte(1), None)]),
+            nbtx::Value::List(
+                nbtx::ValueList::try_from(vec![biome_entry_value(nbtx::Value::Byte(1), None)])
+                    .unwrap(),
+            ),
         );
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(root)).unwrap();
         let record = decode_biome_data(&bytes).unwrap();
@@ -696,7 +707,13 @@ mod tests {
         let mut root = nbtx::Compound::new();
         root.insert(
             "list".into(),
-            nbtx::Value::List(vec![biome_entry_value(nbtx::Value::Short(300), Some(0.5))]),
+            nbtx::Value::List(
+                nbtx::ValueList::try_from(vec![biome_entry_value(
+                    nbtx::Value::Short(300),
+                    Some(0.5),
+                )])
+                .unwrap(),
+            ),
         );
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(root)).unwrap();
         let record = decode_biome_data(&bytes).unwrap();
@@ -711,16 +728,22 @@ mod tests {
     #[test]
     fn autonomous_entities_decode_then_encode_round_trips_empty_list() {
         let mut root = nbtx::Compound::new();
-        root.insert("AutonomousEntityList".into(), nbtx::Value::List(vec![]));
+        root.insert(
+            "AutonomousEntityList".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         let bytes = nbtx::to_le_bytes(&nbtx::Value::Compound(root)).unwrap();
         let record = decode_autonomous_entities(&bytes).unwrap();
-        assert_eq!(record.entity_list(), Some(&[][..]));
+        assert_eq!(record.entity_list(), Some(&nbtx::ValueList::End));
         assert_eq!(encode_autonomous_entities(&record).unwrap(), bytes);
     }
 
     fn overworld_sample() -> nbtx::Value {
         let mut data = nbtx::Compound::new();
-        data.insert("LimboEntities".into(), nbtx::Value::List(vec![]));
+        data.insert(
+            "LimboEntities".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         let mut root = nbtx::Compound::new();
         root.insert("data".into(), nbtx::Value::Compound(data));
         nbtx::Value::Compound(root)
@@ -730,7 +753,7 @@ mod tests {
     fn dimension_record_overworld_has_no_dragon_fight() {
         let bytes = nbtx::to_le_bytes(&overworld_sample()).unwrap();
         let record = decode_dimension_record(&bytes).unwrap();
-        assert_eq!(record.limbo_entities(), Some(&[][..]));
+        assert_eq!(record.limbo_entities(), Some(&nbtx::ValueList::End));
         assert_eq!(record.dragon_fight(), None);
         assert_eq!(encode_dimension_record(&record).unwrap(), bytes);
     }
@@ -746,23 +769,34 @@ mod tests {
         dragon_fight.insert("DragonUUID".into(), nbtx::Value::Long(-1));
         dragon_fight.insert(
             "Gateways".into(),
-            nbtx::Value::List((0..20).map(nbtx::Value::Int).collect()),
+            nbtx::Value::List(
+                nbtx::ValueList::try_from(
+                    (0..20).map(nbtx::Value::Int).collect::<Vec<nbtx::Value>>(),
+                )
+                .unwrap(),
+            ),
         );
         dragon_fight.insert("IsRespawning".into(), nbtx::Value::Byte(0));
         dragon_fight.insert("PreviouslyKilled".into(), nbtx::Value::Byte(0));
         if exit_portal {
             dragon_fight.insert(
                 "ExitPortalLocation".into(),
-                nbtx::Value::List(vec![
-                    nbtx::Value::Int(0),
-                    nbtx::Value::Int(64),
-                    nbtx::Value::Int(0),
-                ]),
+                nbtx::Value::List(
+                    nbtx::ValueList::try_from(vec![
+                        nbtx::Value::Int(0),
+                        nbtx::Value::Int(64),
+                        nbtx::Value::Int(0),
+                    ])
+                    .unwrap(),
+                ),
             );
         }
         let mut data = nbtx::Compound::new();
         data.insert("DragonFight".into(), nbtx::Value::Compound(dragon_fight));
-        data.insert("LimboEntities".into(), nbtx::Value::List(vec![]));
+        data.insert(
+            "LimboEntities".into(),
+            nbtx::Value::List(nbtx::ValueList::End),
+        );
         let mut root = nbtx::Compound::new();
         root.insert("data".into(), nbtx::Value::Compound(data));
         nbtx::Value::Compound(root)
@@ -775,7 +809,7 @@ mod tests {
         let fight = record.dragon_fight().unwrap();
         assert!(fight.spawned);
         assert_eq!(fight.exit_portal_location, Some([0, 64, 0]));
-        assert_eq!(record.limbo_entities(), Some(&[][..]));
+        assert_eq!(record.limbo_entities(), Some(&nbtx::ValueList::End));
         assert_eq!(encode_dimension_record(&record).unwrap(), bytes);
     }
 

@@ -116,7 +116,10 @@ fn block_entity_decode_failures_match_known_gaps() {
         }
     }
 
-    println!("total records: {total}, ok: {ok}, known-failing: {}", total - ok);
+    println!(
+        "total records: {total}, ok: {ok}, known-failing: {}",
+        total - ok
+    );
 
     let known: std::collections::BTreeSet<&str> =
         KNOWN_FAILING_IDS.iter().map(|(id, _)| *id).collect();
@@ -146,5 +149,8 @@ fn block_entity_decode_failures_match_known_gaps() {
     // A sanity floor on top of the per-id checks above: if the fixture or the
     // decode path changes in a way that stops touching real records
     // altogether, this catches it even though no single id looks wrong.
-    assert!(total > 4000, "expected the full fixture, got {total} records");
+    assert!(
+        total > 4000,
+        "expected the full fixture, got {total} records"
+    );
 }

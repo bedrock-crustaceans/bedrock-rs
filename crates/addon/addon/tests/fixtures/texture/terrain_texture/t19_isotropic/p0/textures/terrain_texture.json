@@ -1,0 +1,27 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "x": {
+      "textures": [
+        {
+          "path": "a",
+          "isotropic": true
+        },
+        {
+          "path": "a",
+          "isotropic": {
+            "up": true,
+            "side": false
+          }
+        },
+        {
+          "path": "a",
+          "isotropic": {
+            "north": true,
+            "bogus": true
+          }
+        }
+      ]
+    }
+  }
+}

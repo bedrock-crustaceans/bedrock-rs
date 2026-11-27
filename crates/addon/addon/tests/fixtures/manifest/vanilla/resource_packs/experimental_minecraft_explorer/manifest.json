@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Experimental Minecraft Explorer resource pack",
+        "name": "experimental minecraft explorer",
+        "uuid": "3704747e-b27f-4cfd-98d6-4265be2c769c",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "Experimental Minecraft Explorer resource pack",
+            "type": "resources",
+            "uuid": "7a02cb0b-5da4-4b52-95d6-312f4a5a3c96",
+            "version": [
+                0,
+                0,
+                1
+            ]
+        }
+    ]
+}

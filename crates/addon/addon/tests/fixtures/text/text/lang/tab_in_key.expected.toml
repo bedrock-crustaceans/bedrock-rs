@@ -1,0 +1,4 @@
+# fixtures.md `lang/tab_in_key`: a tab has no meaning in a key.
+
+[entries]
+"a\tb" = "c"

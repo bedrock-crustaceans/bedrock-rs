@@ -1,0 +1,4 @@
+# fixtures.md `#a=b`: a lone `#` at the line start is a key character.
+
+[entries]
+"#a" = "b"

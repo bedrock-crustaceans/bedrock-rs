@@ -1,0 +1,29 @@
+{
+  "global": {
+    "format_version": "1.21.100",
+    "minecraft:pack_settings": {
+      "settings": [
+        {
+          "pack_id": "d3349771-6782-4420-875a-fcd6179a8915",
+          "last_used": 5120331,
+          "values": {
+            "banana:slider": 8.0
+          }
+        }
+      ]
+    }
+  },
+  "world": {
+    "format_version": "1.21.100",
+    "minecraft:pack_settings": {
+      "settings": [
+        {
+          "pack_id": "8f4e6e3c-5b2a-4c1d-9e7f-0a1b2c3d4e5f",
+          "values": {
+            "banana:slider": 8.0
+          }
+        }
+      ]
+    }
+  }
+}

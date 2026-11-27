@@ -1,0 +1,7 @@
+{
+  "repair_items": [
+    { "items": [{ "tags": "query.any_tag('planks')" }] },
+    { "items": [{ "tags": "query.is_baby" }] }
+  ],
+  "destroy_speeds": [{ "block": { "tags": "query.any_tag('stone')" }, "speed": 5 }]
+}

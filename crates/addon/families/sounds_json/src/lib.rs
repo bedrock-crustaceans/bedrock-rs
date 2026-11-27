@@ -1,0 +1,287 @@
+//! `sounds.json` of the resource packs: which sound event each game event plays. The client
+//! merges every pack's copy as JSON before it reads the result, lowest pack first: an object
+//! merges into an object member by member, and anything else (an array, a number, `null`)
+//! replaces what the lower packs had. The layers of the [`Merged`] are the packs' copies as
+//! written.
+//!
+//! Unlike music and sound definitions, a [`SoundBindings`] writes the document it read, not its
+//! typed members: the typed value is the resolved reading (a range is its two bounds in
+//! whichever form it was written, one no table sets [`SoundRange::UNSET`], a `base` chain worked
+//! out), which no longer says how the author wrote it.
+//!
+//! The read is a hand walk (`bindings.rs`, reporting through its private `Reporter`), the one
+//! sound document with no typed struct that declares it: what is typed is the resolved reading,
+//! and each step of it depends on the table above the value read (a sound's range is its
+//! table's where it sets none, in whichever form it was written; a variant key is parsed with
+//! the `__molang_version` of the entry that holds it; an event table is read in four contexts
+//! that differ in the members they know and in what a missing `events` is). A derived read
+//! has no place for that context: it would need a read scope the leaves can ask, and a
+//! flattened struct read in declaration order.
+//!
+//! [`Merged`]: bedrock_addon_core::document::Merged
+
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
+mod bindings;
+pub mod codes;
+mod events;
+mod report;
+
+pub use bindings::{
+    BlockSounds, EntitySoundEntry, EntitySounds, EventSounds, InteractiveEntityEntry,
+    InteractiveEntitySounds, InteractiveEventSounds, InteractiveSounds, NamedSounds, SoundBindings,
+    SoundRange, SoundRef, SoundVariants,
+};
+
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase};
+use bedrock_addon_core::document::unversioned::{lone, version_at};
+use bedrock_addon_core::document::{
+    Content, Document, JsonContent, Merge, Merged, Origin, Placed, RawLayer, Rejected,
+};
+use bedrock_addon_core::json::jsoncpp::fork;
+use bedrock_addon_core::json::{EncodeError, Value, WriteStyle};
+use bedrock_addon_core::load::sound::{
+    SoundCopy, layers, located, not_json, parse_copy, path_member, read_json, readable,
+    write_document,
+};
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk};
+use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::version::ENGINE_VERSION;
+#[doc(hidden)]
+pub use events::is_level_sound_event;
+use indexmap::IndexMap;
+
+/// Where a pack keeps its event bindings.
+pub(crate) const BINDINGS_PATH: &str = "sounds.json";
+
+impl bedrock_addon_core::__private::Sealed for SoundBindings {}
+
+impl Merge for SoundBindings {
+    /// A top-level section (`block_sounds`, `entity_sounds`).
+    type Key = String;
+}
+
+/// The findings of one copy of `sounds.json` about the lower copies it clears, judged before the transform inserts its `null`s.
+fn cleared_tables(json: &Value, target: &Value, found: &mut Diagnostics) {
+    let own = fork::member(fork::member(json, "entity_sounds"), "entities");
+    let lower = fork::member(fork::member(target, "entity_sounds"), "entities");
+    let at = JsonPath::new().child("entity_sounds").child("entities");
+    // A copy without the section inserts nothing.
+    if fork::has_member(json, "entity_sounds") && own.is_null() && !lower.is_null() {
+        found.push(Diagnostic::of(&core_codes::SOUNDS_JSON_TABLE_CLEARED).at(at));
+        return;
+    }
+    for name in fork::member_names(own) {
+        let entity = fork::member(own, &name);
+        let key = fork::member(fork::member(entity, "variants"), "key");
+        let lower_key = fork::member(fork::member(fork::member(lower, &name), "variants"), "key");
+        if fork::has_member(entity, "variants") && key.is_null() && !lower_key.is_null() {
+            let at = at.child(&name).child("variants").child("key");
+            found.push(Diagnostic::of(&core_codes::SOUNDS_JSON_TABLE_CLEARED).at(at));
+        }
+    }
+}
+
+/// The compile check of the variant keys: every key is compiled at
+/// its own version against the client catalogue, for its findings only. Without the check
+/// (the `molang` feature, `LoadOptions::molang`) the keys are counted in one `MolangNotChecked`.
+/// `cx` is a pack's context, for the load's compile check and the world's experiments.
+fn check_variant_keys(value: &SoundBindings, cx: Option<&LoadContext>, found: &mut Diagnostics) {
+    fn keyed<'a, T>(
+        section: &'static [&'static str],
+        name: &'a str,
+        variants: Option<&'a SoundVariants<T>>,
+    ) -> Option<(JsonPath, &'a bedrock_addon_core::molang::MolangSource)> {
+        let key = variants?.key.as_ref()?;
+        let mut at = JsonPath::new();
+        for part in section {
+            at.push(part);
+        }
+        at.push(name);
+        at.push("variants");
+        at.push("key");
+        Some((at, key))
+    }
+    let keys: Vec<_> = value
+        .entity_sounds
+        .entities
+        .iter()
+        .filter_map(|(name, entry)| {
+            keyed(
+                &["entity_sounds", "entities"],
+                name,
+                entry.variants.as_ref(),
+            )
+        })
+        .chain(
+            value
+                .interactive_sounds
+                .entity_sounds
+                .entities
+                .iter()
+                .filter_map(|(name, entry)| {
+                    keyed(
+                        &["interactive_sounds", "entity_sounds", "entities"],
+                        name,
+                        entry.variants.as_ref(),
+                    )
+                }),
+        )
+        .collect();
+    if keys.is_empty() {
+        return;
+    }
+    #[cfg(feature = "molang")]
+    if let Some((check, cx)) = cx.and_then(|cx| Some((cx.molang.as_deref()?, cx))) {
+        use bedrock_addon_core::diagnostic::Location;
+        use bedrock_addon_core::molang::{MolangContext, MolangFieldSpec, Side};
+        // The game parses whatever string the key holds, an empty text included.
+        // The game parses the `key` without testing the result and registers the entity
+        // anyway: the parser's content-log errors are kept errors and the document loads.
+        const KEY: MolangFieldSpec = MolangFieldSpec::KEPT.compile_empty();
+        let context = MolangContext {
+            experiments: cx.molang_experiments,
+            ..MolangContext::detached()
+        };
+        for (at, key) in keys {
+            let location = Location::new(None, None, at, None);
+            check.check_source(key, &KEY, Side::Client, &context, &location, found);
+        }
+        return;
+    }
+    let _ = cx;
+    let fields = u32::try_from(keys.len()).unwrap_or(u32::MAX);
+    found.push(
+        Diagnostic::of(core_codes::MOLANG_NOT_CHECKED.with([fields.to_string()]))
+            .phase(Phase::Validate),
+    );
+}
+
+/// Merges the copies of `sounds.json` and reads the result.
+fn merge_bindings(copies: Vec<SoundCopy>, cx: &StackCx<'_>) -> Merged<SoundBindings, RawLayer> {
+    let mut diagnostics = Diagnostics::default();
+    let copies = readable(BINDINGS_PATH, copies, &mut diagnostics);
+    let mut origins: IndexMap<String, Origin> = IndexMap::new();
+    let mut target: Option<Value> = None;
+    for (origin, json, molang_version) in &copies {
+        if let Some(target) = &target {
+            let mut found = Diagnostics::default();
+            cleared_tables(json, target, &mut found);
+            located(found, origin, &mut diagnostics);
+        }
+        let mut copy = json.clone();
+        bindings::pre_merge_transform(&mut copy, *molang_version);
+        for name in fork::member_names(json) {
+            origins.insert(name, origin.clone());
+        }
+        match &mut target {
+            None => target = Some(copy),
+            Some(target) => fork::recursive_merge(target, &copy, None),
+        }
+    }
+    let mut found = Diagnostics::default();
+    let value = match target {
+        Some(merged) => bindings::read_root(&merged, true, &mut found),
+        None => SoundBindings::default(),
+    };
+    check_variant_keys(
+        &value,
+        cx.packs.first().map(|pack| &pack.context),
+        &mut found,
+    );
+    let top = copies.last().map(|(origin, _, _)| origin);
+    for mut finding in found {
+        let owner = path_member(&finding.location.json_path, 0)
+            .and_then(|section| origins.get(&section))
+            .or(top);
+        if let Some(origin) = owner {
+            finding.location.pack = Some(origin.pack.clone());
+            finding.location.path = Some(origin.path.clone());
+        }
+        diagnostics.push(finding);
+    }
+    Merged::new(value, origins, layers(&copies), diagnostics)
+}
+
+/// The loader of `rp.sounds_json()`: every resource pack's copy of the file, merged as JSON and
+/// read once.
+///
+/// A hand loader rather than `load::merged`: a copy is the file\'s JSON, merged into the lower
+/// copies before the one typed read, not a document read on its own.
+#[doc(hidden)]
+pub const LOADER: CollectionLoader<Merged<SoundBindings, RawLayer>, SoundCopy> = CollectionLoader {
+    walk: Walk::exact_files(&[BINDINGS_PATH]),
+    parse: parse_copy,
+    combine: merge_bindings,
+    needs: &[],
+    then: None,
+};
+
+impl Content for SoundBindings {
+    const NAME: &'static str = "sound bindings";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one pack's `sounds.json` on its own, as the only copy of a stack: vanilla's
+    /// pre-merge transform with the pack's Molang version, then the typed read and the compile
+    /// check of the variant keys. A block sound `base` that names no type of this file is no
+    /// finding here (a lower pack may define it); the stack reports it. A file that is no JSON
+    /// is rejected.
+    fn parse(path: &PackPath, bytes: &[u8], cx: &LoadContext) -> Result<Document<Self>, Rejected> {
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::document::FiniteText::load(bytes, |bytes| {
+            let origin = lone(path);
+            let json = match read_json(bytes) {
+                Ok(json) => json,
+                Err(message) => return Err(not_json(origin, &message)),
+            };
+            // The transformed copy is what a merge takes and what the typed members are read from;
+            // the document keeps the author's text, which is what it writes.
+            let mut transformed = json.clone();
+            bindings::pre_merge_transform(&mut transformed, cx.molang_version.0);
+            let mut found = Diagnostics::default();
+            let mut value = bindings::read_root(&transformed, false, &mut found);
+            value.json = json;
+            check_variant_keys(&value, Some(cx), &mut found);
+            let mut diagnostics = Diagnostics::default();
+            located(found, &origin, &mut diagnostics);
+            Ok(Document::new(
+                value,
+                origin,
+                version_at(ENGINE_VERSION),
+                diagnostics,
+            ))
+        })
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        write_document(&self.json, out, style)
+    }
+}
+
+impl JsonContent for SoundBindings {}
+
+impl Placed for SoundBindings {
+    /// `sounds.json`, at the pack root: the one path the client reads.
+    fn default_path(&self) -> PackPath {
+        PackPath::from_static(BINDINGS_PATH)
+    }
+}
+
+#[cfg(all(test, feature = "molang"))]
+mod spec_tests {
+    use bedrock_addon_core::diagnostic::Severity;
+    use bedrock_addon_core::molang::{EmptyRule, MolangFieldSpec, ReaderKind};
+
+    #[test]
+    fn the_key_spec_is_the_kept_preset_compiling_an_empty_text() {
+        let written_out = MolangFieldSpec {
+            reader: ReaderKind::StrictVersioned,
+            empty: EmptyRule::Compile,
+            error_severity: Severity::Error,
+            error_kept: true,
+            ..MolangFieldSpec::DEFAULT
+        };
+        assert_eq!(MolangFieldSpec::KEPT.compile_empty(), written_out);
+    }
+}

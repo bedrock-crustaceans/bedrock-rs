@@ -1,0 +1,30 @@
+# The script modules of the stack: name, version and UUIDs of each pack, and its
+# `module_name` dependencies.
+
+[[pack]]
+name = "vars"
+version = "1.0.0"
+header_uuid = "b0000000-0000-4000-8000-000000000001"
+script_module_uuid = "426f63cd-dd57-5b19-8d35-d73e1b7b1cc5"
+
+[[dependency]]
+module_name = "@minecraft/server"
+optional = false
+
+[[dependency]]
+module_name = "@minecraft/server-admin"
+optional = false
+
+[[pack]]
+name = "vardefault"
+version = "1.0.0"
+header_uuid = "b0000000-0000-4000-8000-000000000002"
+script_module_uuid = "a0000000-0000-4000-8000-000000000002"
+
+[[dependency]]
+module_name = "@minecraft/server"
+optional = false
+
+[[dependency]]
+module_name = "@minecraft/server-admin"
+optional = false

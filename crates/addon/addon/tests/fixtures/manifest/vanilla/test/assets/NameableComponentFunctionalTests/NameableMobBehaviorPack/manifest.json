@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Nameable Component Functional Tests Asset Behavior Pack",
+    "name": "Nameable Component Functional Tests Asset Behavior Pack",
+    "uuid": "326b8bbe-d987-11e7-9296-cec278b6b50a",
+    "version": [ 1, 0, 0],
+    "min_engine_version": [ 1, 16, 0]
+  },
+  "modules": [
+    {
+      "description": "Nameable Component Functional Tests Asset Behavior Pack",
+      "type": "data",
+      "uuid": "326b8e16-d987-11e7-9296-cec278b6b50a",
+      "version": [ 1, 0, 0 ]
+    }
+  ]
+}

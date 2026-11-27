@@ -1,0 +1,16 @@
+// size 2x2x2, layers of 8 and 7 indices.
+{
+  format_version: 1,
+  size: [2, 2, 2],
+  structure: {
+    block_indices: [[0, 0, 0, 0, 0, 0, 0, 0], [-1, -1, -1, -1, -1, -1, -1]],
+    palette: {
+      default: {
+        block_palette: [{name: "minecraft:stone", states: {}, version: 18168865}],
+        block_position_data: {}
+      }
+    },
+    entities: []
+  },
+  structure_world_origin: [0, 0, 0]
+}

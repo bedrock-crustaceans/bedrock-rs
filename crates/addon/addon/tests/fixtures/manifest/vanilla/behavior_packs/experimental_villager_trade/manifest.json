@@ -1,0 +1,18 @@
+{
+	"format_version": 2,
+	"header": {
+		"name": "Villager Trade Rebalancing",
+		"description": "Experimental Villager Trade Adjustments",
+		"uuid": "0127bd67-dc5b-45c2-8d5b-1d65876d5679",
+		"version": [ 0, 0, 1 ],
+		"min_engine_version": [ 1, 19, 0 ]
+	},
+	"modules": [
+		{
+			"description": "Experimental behavior pack for villager trade rebalancing",
+			"type": "data",
+			"uuid": "725d7992-6601-47c4-980f-ebbf7521e751",
+			"version": [ 0, 0, 1 ]
+		}
+	]
+}

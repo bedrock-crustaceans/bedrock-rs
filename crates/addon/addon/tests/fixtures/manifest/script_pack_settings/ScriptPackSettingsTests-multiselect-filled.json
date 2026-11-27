@@ -1,0 +1,49 @@
+{
+	"format_version": 3,
+	"header": {
+		"name": "test",
+		"description": "test",
+		"uuid": "aa6516db-e06e-47de-afa2-6363e2efa31b",
+		"version": "1.0.0",
+		"min_engine_version": "1.14.0"
+	},
+	"modules": [
+		{
+			"description": "test script module",
+			"type": "script",
+			"uuid": "00000000-0000-4000-8000-000000000001",
+			"version": "1.0.0",
+			"language": "javascript",
+			"entry": "scripts/main.js"
+		}
+	],
+	"dependencies": [
+		{
+			"module_name": "Test",
+			"version": "1.0.0",
+		},
+		{
+			"module_name": "@minecraft/server",
+			"version": "1.0.0",
+		}
+	],
+	"settings": [
+		{
+			"type": "multiselect",
+			"text": "multiselect text",
+			"name": "e:multiselect",
+			"selection_text": "select something",
+			"defaults": ["one", "two", "three"],
+			"options": [
+				{ "name": "one", "text": "1" },
+				{ "name": "two", "text": "2" },
+				{ "name": "three", "text": "3" },
+				{ "name": "four", "text": "4" },
+				{ "name": "five", "text": "5" },
+				{ "name": "six", "text": "6" },
+				{ "name": "seven", "text": "7" },
+				{ "name": "eight", "text": "8" }
+			]
+		}
+	]
+}

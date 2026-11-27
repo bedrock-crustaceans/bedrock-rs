@@ -1,118 +1,97 @@
-[package]
-name = "bedrock"
+[workspace]
+members = [
+    "bedrock",
+    "crates/auth",
+    "crates/form",
+    "crates/level",
+    "crates/network/core",
+    "crates/network/macros",
+    "crates/network/network",
+    "crates/network/protocol",
+    "crates/network/versions/*",
+    "crates/shared",
+    "crates/vanilla_data",
+    "crates/addon/addon",
+    "crates/addon/core",
+    "crates/addon/derive",
+    "crates/addon/manifest",
+    "crates/addon/schema",
+    "crates/addon/storage",
+    "crates/addon/std",
+    "crates/addon/support",
+    "crates/addon/test_support",
+    "crates/addon/vanilla",
+    "crates/addon/families/*",
+    "crates/addon/shared/*",
+    "xtask",
+]
+resolver = "3"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# `assert!(x.is_empty())` is the plain spelling; the suggested `assert_eq!(x, [])` needs `Debug`
+# and `PartialEq` against an array on every asserted type.
+assert_is_empty = "allow"
+# Every pure function is a candidate; `#[must_use]` goes only where losing the value is a bug.
+must_use_candidate = "allow"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
 
-[workspace]
-members = ["crates/*", "xtask"]
-
 [workspace.dependencies]
 thiserror = "2.0"
-vek = "0.17"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 byteorder = "1.5.0"
-varint-rs = "2.2"
 bytemuck = "1.25.0"
 tokio = { version = "1.52.3", features = ["macros", "rt-multi-thread", "sync", "time", "tracing"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1.20"
+facet = { version = "0.50.0-rc.7", features = ["indexmap", "bstr"] }
+facet-json = "0.50.0-rc.7"
+facet-format = "0.50.0-rc.7"
+facet-value = "0.50.0-rc.7"
+facet-macro-types = "0.50.0-rc.7" # `RenameRule`, the exact rule facet's `rename_all` applies, for `#[derive(Schema)]`
 paste = "1.0"
-semver = { version = "1.0", features = ["serde"] }
-json_comments = "0.2"
-image = "0.25"
 tar = "0.4.44"
 tempfile = "3.26.0"
-walkdir = "2.5"
 flate2 = "1.0"
 snap = "1.1"
 criterion = { version = "0.8.2", features = ["html_reports"] }
 proptest = "1.5"
 seq-macro = "0.3"
 proc-macro2 = "1.0"
-syn = { version = "2.0", features = ["derive", "parsing", "printing", "proc-macro"] }
+syn = { version = "3.0.3", features = ["derive", "parsing", "printing", "proc-macro"] }
 quote = { version = "1.0" }
-jsonwebtoken = "10.3"
-base64 = "0.22"
-sha2 = "0.11"
-# nbtx 4.0 is a from-scratch rewrite on `facet` and has not shipped to
-# crates.io yet, so track the branch it lives on.
-nbtx = { git = "https://github.com/bedrock-crustaceans/bedrockrs-nbt", branch = "facet-migration" }
-# Pinned to the exact rev nbtx pins for facet/facet-reflect/facet-core.
-# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so every crate that
-# derives it needs facet as a direct dependency, and a second facet in the graph
-# would give the derive a different `Shape` type than nbtx reflects against.
-facet = { git = "https://github.com/facet-rs/facet", rev = "bbce10cbd1ddd535b0d812ccbf9456f7ff7d58cf", features = ["bstr"] }
-bstr = "1"
-xuid = "1.0"
+base64 = "0.23.0"
+# TODO: switch this back to crates.io after 4.0.0 release
+nbtx = { git = "https://github.com/bedrock-crustaceans/nbtx" }
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
+p384 = "0.14.0"
+sha2 = "0.11.0"
 rand = "0.10"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 reqwest = "0.13.2"
+# bedrock_addon family (crates/addon/core, addon/derive, addon/schema, addon/addon, addon/std)
+# A git dependency until the crate is published.
+molang = { git = "https://github.com/bedrock-crustaceans/molang", default-features = false }
+semver = "1.0.28" # the engine versions of `molang::version::EngineVersion`
+indexmap = "2"
+bstr = "1"
+bytes = "1"
+stacker = "0.1.25" # the stack of a typed JSON read, grown on the thread that reads
+zip = { version = "8", default-features = false, features = ["deflate"] }
+aes = "0.8"
+cfb8 = "0.8"
+ctr = "0.9"
+rayon = "1"
+oxc_parser = "0.153"
+brarchive = "0.5"
+md-5 = "0.11.0" # the manifest's stable ids for malformed UUIDs (the package is md-5, the library md5)
 
-[dependencies]
-bedrock_auth = { path = "crates/auth", optional = true }
-bedrock_core = { path = "crates/core" }
-bedrock_shared = { path = "crates/shared" }
-bedrock_macros = { path = "crates/macros", optional = true }
-bedrock_addon = { path = "crates/addon", optional = true }
-bedrock_form = { path = "crates/form", optional = true }
-bedrock_protocol = { path = "crates/protocol", optional = true }
-bedrock_protocol_core = { path = "crates/protocol_core", optional = true }
-bedrock_network = { path = "crates/network", optional = true }
-bedrock_level = { path = "crates/level", optional = true }
-
-[dev-dependencies]
-tokio = { workspace = true }
-uuid = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-
-[features]
-auth = ["dep:bedrock_auth"]
-addon = ["dep:bedrock_addon"]
-protocol = [
-    "dep:bedrock_protocol",
-    "dep:bedrock_protocol_core",
-    "dep:bedrock_macros",
-]
-network = ["dep:bedrock_network", "protocol"]
-level = ["dep:bedrock_level"]
-full = ["addon", "level", "network", "protocol", "auth"]
-form = ["dep:bedrock_form"]
-
-auth-async = ["bedrock_auth/async"]
-
-protocol-unknown = ["bedrock_protocol/unknown"]
-protocol-v662 = ["bedrock_protocol/v662"]
-protocol-v671 = ["bedrock_protocol/v671"]
-protocol-v685 = ["bedrock_protocol/v685"]
-protocol-v686 = ["bedrock_protocol/v686"]
-protocol-v712 = ["bedrock_protocol/v712"]
-protocol-v729 = ["bedrock_protocol/v729"]
-protocol-v748 = ["bedrock_protocol/v748"]
-protocol-v766 = ["bedrock_protocol/v766"]
-protocol-v776 = ["bedrock_protocol/v776"]
-protocol-v786 = ["bedrock_protocol/v786"]
-protocol-v800 = ["bedrock_protocol/v800"]
-protocol-v818 = ["bedrock_protocol/v818"]
-protocol-v819 = ["bedrock_protocol/v819"]
-protocol-v827 = ["bedrock_protocol/v827"]
-protocol-v844 = ["bedrock_protocol/v844"]
-protocol-v859 = ["bedrock_protocol/v859"]
-protocol-v898 = ["bedrock_protocol/v898"]
-protocol-v924 = ["bedrock_protocol/v924"]
-protocol-v944 = ["bedrock_protocol/v944"]
-protocol-v975 = ["bedrock_protocol/v975"]
-protocol-v1001 = ["bedrock_protocol/v1001"]
-protocol-all = ["bedrock_protocol/all"]
-
-protocol-packet-dyn = ["bedrock_protocol/packet-dyn"]
-protocol-packet-meta = ["bedrock_protocol/packet-meta"]
-
-[[example]]
-name = "server"
-path = "examples/server.rs"
-required-features = ["network", "protocol-v944", "protocol-unknown"]
+# Backtraces keep file and line; test binaries shrink to about a third of their size.
+[profile.dev]
+debug = "line-tables-only"

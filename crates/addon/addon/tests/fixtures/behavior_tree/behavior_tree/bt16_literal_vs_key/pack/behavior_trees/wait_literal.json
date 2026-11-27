@@ -1,0 +1,6 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "wait_literal",
+    "minecraft:root": { "minecraft:wait": { "wait_duration": 3 } }
+  }
+}

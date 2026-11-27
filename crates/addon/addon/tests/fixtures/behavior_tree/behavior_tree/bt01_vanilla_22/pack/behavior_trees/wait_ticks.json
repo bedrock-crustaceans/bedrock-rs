@@ -1,0 +1,15 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "wait_ticks",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:wait_ticks": { 
+            }
+          }
+        ]
+      }
+    }
+  }
+}

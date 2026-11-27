@@ -1,0 +1,26 @@
+{
+  "format_version": "1.21.110",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "minecraft:plains"
+    },
+    "components": {
+      "minecraft:climate": {
+        "downfall": 0.4,
+        "snow_accumulation": [ 0.0, 0.125 ],
+        "temperature": 0.8
+      },
+      "minecraft:surface_material_adjustments": {
+        "adjustments": [
+          {
+            "materials": { "top_material": "minecraft:sand" },
+            "height_range": [ "variable.sea_level - 3", "variable.sea_level + 2" ]
+          }
+        ]
+      },
+      "minecraft:tags": {
+        "tags": [ "animal", "plains" ]
+      }
+    }
+  }
+}

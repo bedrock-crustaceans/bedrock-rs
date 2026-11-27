@@ -1,0 +1,11 @@
+{
+		"format_version": "1.21.120",
+		"minecraft:aim_assist_preset": {
+			"identifier": "minecraft:preset1",
+			"item_settings": {},
+			"exclusion_settings": {},
+			"liquid_targeting_list": [],
+			"default_item_settings": "minecraft:default",
+			"hand_settings": "minecraft:empty_hand"
+		}
+	}

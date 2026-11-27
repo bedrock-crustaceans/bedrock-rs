@@ -1,0 +1,9 @@
+# Probe: B12
+scope = "none"
+resolved = ["@minecraft/server 3.0.0-alpha"]
+beta_apis = true
+
+[[diagnostic]]
+code = "core/script_alpha_dependency"
+severity = "info"
+path = "dependencies/0"

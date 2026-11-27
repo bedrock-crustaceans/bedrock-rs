@@ -1,0 +1,13 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:wither"
+    },
+    "components": {
+      "minecraft:health": {
+        "value": 600
+      }
+    }
+  }
+}

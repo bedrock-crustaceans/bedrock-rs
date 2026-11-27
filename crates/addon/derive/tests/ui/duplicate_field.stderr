@@ -1,0 +1,5 @@
+error: duplicate field `value`
+  --> tests/ui/duplicate_field.rs:16:22
+   |
+16 |             { name = "value", since_engine = "1.21.0" },
+   |                      ^^^^^^^

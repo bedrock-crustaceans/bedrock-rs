@@ -1,0 +1,20 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:block": {
+    "description": {
+      "identifier": "demo:ruby_lamp",
+      "menu_category": { "category": "construction" },
+      "states": { "demo:lit": [false, true] }
+    },
+    "components": {
+      "minecraft:destructible_by_mining": { "seconds_to_destroy": 1.5 },
+      "minecraft:light_emission": 0
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('demo:lit')",
+        "components": { "minecraft:light_emission": 15 }
+      }
+    ]
+  }
+}

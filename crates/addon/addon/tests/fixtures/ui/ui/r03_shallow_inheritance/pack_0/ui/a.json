@@ -1,0 +1,26 @@
+{
+  "namespace": "a",
+  "d@a.b": {
+    "controls": [
+      {
+        "z@a.leaf": {}
+      }
+    ]
+  },
+  "b": {
+    "type": "panel",
+    "size": [
+      1,
+      1
+    ],
+    "controls": [
+      {
+        "x@a.leaf": {}
+      }
+    ]
+  },
+  "leaf": {
+    "type": "label",
+    "text": "hi"
+  }
+}

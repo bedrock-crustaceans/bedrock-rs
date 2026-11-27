@@ -1,0 +1,7 @@
+
+                {
+                    "feature_to_snap": "test_feature",
+                    "vertical_search_range" : 12,
+                    "surface" : "ceiling",
+                    "allowed_surface_blocks": [ { "name": "minecraft:cobblestone" } ]
+                }

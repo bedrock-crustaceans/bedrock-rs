@@ -1,0 +1,19 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "Test pack with content using asset references",
+    "name": "Test archive and encrypt bp",
+    "uuid": "eab7dbf0-2980-4231-acf5-df7ad9d995f0",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 19, 0]
+  },
+  "modules":
+    [
+      {
+        "description": "My First Add-On!",
+          "type": "data",
+          "uuid": "1a8318cf-2038-4c20-a34e-990940c2490d",
+          "version": [1, 0, 0]
+      }
+    ]
+}

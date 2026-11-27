@@ -1,0 +1,48 @@
+name: Contributors
+
+# Draws everyone in the history of `main` into `.github/assets/contributors.svg` once a week,
+# which the README shows, and commits it to `main` when it changed. It pushes with the deploy key
+# in `CONTRIBUTORS_DEPLOY_KEY`, which the ruleset on `main` lets bypass its pull request rule.
+
+on:
+  schedule:
+    - cron: "23 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contributors
+
+jobs:
+  draw:
+    name: Draw contributors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          ssh-key: ${{ secrets.CONTRIBUTORS_DEPLOY_KEY }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Draw
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/contributors.ts --out .github/assets/contributors.svg
+
+      - name: Commit
+        run: |
+          if [ -z "$(git status --porcelain -- .github/assets/contributors.svg)" ]; then
+            echo "The drawing is unchanged."
+            exit 0
+          fi
+          git add .github/assets/contributors.svg
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898273+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "chore: draw contributors [skip ci]"
+          git push -q origin HEAD:main

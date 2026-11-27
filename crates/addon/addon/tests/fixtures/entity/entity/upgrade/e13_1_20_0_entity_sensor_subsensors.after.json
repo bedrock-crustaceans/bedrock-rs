@@ -1,0 +1,28 @@
+{
+  "format_version": "1.20.60",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:entity_sensor": {
+        "relative_range": false,
+        "find_players_only": true,
+        "subsensors": [
+          {
+            "event": "x:near",
+            "range": 2.5,
+            "require_all": true,
+            "minimum_count": 1,
+            "maximum_count": 3,
+            "event_filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "player"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

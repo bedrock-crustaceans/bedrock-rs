@@ -1,0 +1,15 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "panel",
+    "variables": [
+      {
+        "requires": "$touch",
+        "offset": [
+          0,
+          5
+        ]
+      }
+    ]
+  }
+}

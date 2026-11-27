@@ -1,0 +1,116 @@
+{
+				"format_version": "1.26.60",
+				"minecraft:entity": {
+					"description": {
+						 "identifier": "test:mob"
+					},
+					"components": {
+						"minecraft:movement.basic":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.sway":{
+							"sway_frequency": 0.1,
+							"sway_amplitude": 0.2
+						},
+						"minecraft:movement.skip":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.generic":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.amphibious":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.jump":{
+							"jump_delay": {
+								"min": 0.1,
+								"max": 0.2
+							}
+						},
+						"minecraft:movement.fly":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.hover":{
+							"max_turn": 45.0
+						},
+						"minecraft:movement.glide":{
+							"start_speed": 0.5,
+							"speed_when_turning": 0.6
+						},
+						"minecraft:pushable_by_block": {
+						},
+						"minecraft:economy_trade_table": {
+							"display_name": "entity.villager.toolsmith",
+							"table": "trading/tool_smith_trades.json",
+							"new_screen": true,
+							"hero_demand_discount": -6,
+							"cured_discount": { "min": -30, "max": -24 },
+							"max_cured_discount": { "min": -30, "max": -24 },
+							"nearby_cured_discount": -18,
+							"max_nearby_cured_discount": -180,
+							"persist_trades": true,
+							"convert_trades_economy": true,
+							"show_trade_screen": false,
+							"use_legacy_price_formula": true
+						},
+						"minecraft:strength": {
+							"value": 7,
+							"max": 12
+						},
+						"minecraft:teleport": {
+							"random_teleports": false,
+							"teleports_on_projectile_hit": true,
+							"min_random_teleport_time": 2.5,
+							"max_random_teleport_time": 8.0,
+							"random_teleport_cube": [12, 8, 10],
+							"target_distance": 20.0,
+							"target_teleport_chance": 0.75,
+							"light_teleport_chance": 0.2,
+							"dark_teleport_chance": 0.4
+						},
+						"minecraft:timer": {
+						  "looping": false,
+						  "time": {
+							"min": 1,
+							"max": 3
+						  },
+						  "time_down_event": {
+							"event": "minecraft:target_far_enough",
+							"target": "self"
+						  }
+						},
+						"minecraft:dash_action": {
+							"cooldown_time": 2,
+							"horizontal_momentum": 154.0,
+							"vertical_momentum": 0.1,
+							"can_dash_underwater": true,
+							"direction": "passenger"
+						},
+						"minecraft:rail_movement": {
+							"max_speed": 0.5
+						},
+						"minecraft:rideable": {
+							"seat_count": 1,
+							"crouching_skip_interact": true,
+							"family_types": ["player"],
+							"interact_text": "action.interact.ride",
+							"seats": [{
+								"position": [0.0, 1.7, -0.2]
+							}]
+						},
+						"minecraft:scale_by_age": {
+						  "end_scale": 1.0,
+						  "start_scale": 0.5
+						},
+						"minecraft:shareables": {
+						  "singular_pickup": true,
+						  "all_items": true,
+						  "all_items_max_amount": 1,
+						  "items": [
+						    { "item": "minecraft:is_food", "priority": 0, "max_amount": 1 },
+						    { "item": "minecraft:glow_berries", "priority": 0, "max_amount": 1 }
+						  ]
+						}
+					}
+				}
+			}

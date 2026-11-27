@@ -1,0 +1,22 @@
+{
+  // 1.26.20.04 writes horizontal_power 1.3 for an iron golem at or above 1.18.30 (this one, run at 1.19.0) with a runtime x0.4; we write the product 0.52 (below 1.18.30: 2.0 -> 0.8) (e31b, steps.md §D.2.31).
+  "format_version": "1.26.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:iron_golem"
+    },
+    "components": {
+      "minecraft:uses_legacy_friction": {},
+      "minecraft:apply_knockback_rules": {
+        "presets": [
+          {
+            "horizontal_power": 0.52,
+            "vertical_power": 0.39,
+            "vertical_velocity_cap": 0.8,
+            "check_if_target_is_immersed_in_water": false
+          }
+        ]
+      }
+    }
+  }
+}

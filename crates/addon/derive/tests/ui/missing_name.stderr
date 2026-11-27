@@ -1,0 +1,5 @@
+error: missing `name`: the component's JSON key, `name = "minecraft:…"`
+  --> tests/ui/missing_name.rs:12:5
+   |
+12 |     #[component(released = "1.19.20", parse = parse)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

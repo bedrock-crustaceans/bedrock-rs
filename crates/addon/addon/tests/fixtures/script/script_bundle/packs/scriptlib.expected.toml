@@ -1,0 +1,14 @@
+# scriptlib: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# a script pack whose files a dependent pack cannot import
+members = ["main.js", "shared_lib.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []
+
+[[imports]]
+file = "main.js"
+kind = "static"
+raw = "@minecraft/server"
+normalized = "@minecraft/server"
+resolution = "native"

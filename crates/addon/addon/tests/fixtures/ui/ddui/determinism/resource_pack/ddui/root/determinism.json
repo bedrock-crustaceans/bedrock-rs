@@ -1,0 +1,19 @@
+{
+  "format_version": "1.21.130",
+  "minecraft:ui-root": {
+    "description": { "identifier": "determinism:screen" },
+    "attribs": { "root_point": "minecraft:screen" },
+    "layout": {
+      "markup": [
+        {
+          "component": "Panel",
+          "attribs": { "colorMode": "dark" },
+          "children": [
+            { "component": "Panel.Text", "attribs": { "text": "determinism" } },
+            { "component": "ExtensionPoint", "attribs": { "name": "determinism:slot" } }
+          ]
+        }
+      ]
+    }
+  }
+}

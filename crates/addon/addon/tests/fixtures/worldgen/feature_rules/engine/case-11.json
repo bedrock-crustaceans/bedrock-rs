@@ -1,0 +1,28 @@
+
+		{
+			"format_version": "1.13.0",
+			"minecraft:feature_rules": {
+				"description": {
+					"identifier": "test:test_feature_rule",
+					"places_feature": "test:feature"
+				},
+				"conditions": {
+					"placement_pass": "surface_pass"
+				},
+				"distribution": {
+					"iterations": "2",
+					"x": {
+						"distribution": "uniform",
+						"extent": [ 0, 1 ]
+					},
+					"y": {
+						"distribution": "gaussian",
+						"extent": [ 2, 3 ]
+					},
+					"z": {
+						"distribution": "triangle",
+						"extent": [ 4, 5 ]
+					}
+				}
+			}
+		}

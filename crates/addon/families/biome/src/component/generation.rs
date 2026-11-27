@@ -1,0 +1,386 @@
+//! World-generation components: `minecraft:mountain_parameters`,
+//! `minecraft:multinoise_generation_rules`, `minecraft:overworld_generation_rules`,
+//! `minecraft:overworld_height` and `minecraft:replace_biomes`.
+
+use facet::Facet;
+use facet_value::VArray;
+
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::ValueExt;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{FromJson, Schema, from_value};
+use bedrock_addon_core::shared::ShapeErrorKind;
+use bedrock_addon_shared_shapes::BlockSpecifier;
+
+/// `minecraft:mountain_parameters`: steep-slope materials and the top slide of mountain
+/// terrain. Every member is optional.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct MountainParameters {
+    /// The block on steep slopes and the sides it covers (JSON `steep_material_adjustment`).
+    pub steep_material_adjustment: Option<SteepMaterialAdjustment>,
+    /// The density reduction near the world's top (JSON `top_slide`).
+    pub top_slide: Option<TopSlide>,
+}
+
+/// `mountain_parameters.steep_material_adjustment`.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct SteepMaterialAdjustment {
+    /// The block placed on steep slopes (JSON `material`).
+    pub material: Option<BlockSpecifier>,
+    /// Slopes facing north (JSON `north_slopes`).
+    pub north_slopes: Option<bool>,
+    /// Slopes facing south (JSON `south_slopes`).
+    pub south_slopes: Option<bool>,
+    /// Slopes facing west (JSON `west_slopes`).
+    pub west_slopes: Option<bool>,
+    /// Slopes facing east (JSON `east_slopes`).
+    pub east_slopes: Option<bool>,
+}
+
+/// `mountain_parameters.top_slide`.
+// Required members: no `Default`, or facet would default them.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct TopSlide {
+    /// Whether the top slide applies (JSON `enabled`, required).
+    pub enabled: bool,
+}
+
+/// `minecraft:multinoise_generation_rules`: where the biome lands in the multi-noise climate
+/// space. The game applies it only to biomes in the `minecraft` namespace.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct MultinoiseGenerationRules {
+    /// JSON `target_temperature`.
+    pub target_temperature: Option<f32>,
+    /// JSON `target_humidity`.
+    pub target_humidity: Option<f32>,
+    /// JSON `target_altitude`.
+    pub target_altitude: Option<f32>,
+    /// JSON `target_weirdness`.
+    pub target_weirdness: Option<f32>,
+    /// JSON `weight`.
+    pub weight: Option<f32>,
+}
+
+/// `minecraft:overworld_generation_rules`: the legacy overworld generator's transformations
+/// and climates.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct OverworldGenerationRules {
+    /// The biomes that replace this one as hills (JSON `hills_transformation`).
+    pub hills_transformation: Option<WeightedBiomes>,
+    /// The biomes that replace this one as its mutated variant (JSON `mutate_transformation`).
+    pub mutate_transformation: Option<WeightedBiomes>,
+    /// The climates and weights the biome generates for (JSON `generate_for_climates`).
+    pub generate_for_climates: Option<Vec<WeightedClimate>>,
+    /// The biomes along its rivers (JSON `river_transformation`).
+    pub river_transformation: Option<WeightedBiomes>,
+    /// The biomes along its shores (JSON `shore_transformation`).
+    pub shore_transformation: Option<WeightedBiomes>,
+}
+
+/// A transformation target: one biome name, or a list of names, each with an optional weight.
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[facet(opaque, proxy = Value)]
+#[repr(u8)]
+pub enum WeightedBiomes {
+    /// `"<biome>"`: one biome of weight 1.
+    One(String),
+    /// `[<entry>, …]`.
+    List(Vec<WeightedBiome>),
+}
+
+/// One entry of a [`WeightedBiomes`] list.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WeightedBiome {
+    /// `"<biome>"`: weight 1.
+    Name(String),
+    /// `[<name or weight>, <name or weight>]`, as written; the game requires the name first
+    /// and the weight second.
+    Pair([NameOrWeight; 2]),
+}
+
+/// One element of a two-element weighted entry: a name or a non-negative integer weight.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NameOrWeight {
+    /// A string.
+    Name(String),
+    /// A non-negative integer.
+    Weight(u32),
+}
+
+/// An entry of `generate_for_climates`: `[<category or weight>, <category or weight>]`, as
+/// written; the game requires the category first and the weight second.
+#[derive(Clone, Debug, PartialEq, Eq, Facet)]
+#[facet(opaque, proxy = Value)]
+pub struct WeightedClimate(pub [CategoryOrWeight; 2]);
+
+/// One element of a [`WeightedClimate`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CategoryOrWeight {
+    /// A temperature category.
+    Category(TemperatureCategory),
+    /// A non-negative integer.
+    Weight(u32),
+}
+
+/// A temperature category of the legacy overworld generator; the game numbers the five
+/// categories 0 to 4 in the order listed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
+#[non_exhaustive]
+#[allow(missing_docs, reason = "each variant is its JSON spelling")]
+pub enum TemperatureCategory {
+    Medium,
+    Warm,
+    Lukewarm,
+    Cold,
+    Frozen,
+}
+
+/// A non-negative integer weight.
+fn weight(value: &Value) -> Option<u32> {
+    let number = value.as_number()?;
+    if number.is_float() {
+        return None;
+    }
+    u32::try_from(number.to_i64()?).ok()
+}
+
+/// A two-element array, or the shape error.
+fn pair(value: &Value) -> Result<[&Value; 2], ShapeErrorKind> {
+    let array = value.as_array().ok_or(ShapeErrorKind::WrongType {
+        expected: "an array of 2 elements",
+        found: value.json_type(),
+    })?;
+    match array.as_slice() {
+        [a, b] => Ok([a, b]),
+        other => Err(ShapeErrorKind::ArrayLength {
+            expected: "exactly 2",
+            len: other.len(),
+        }),
+    }
+}
+
+impl NameOrWeight {
+    fn read(value: &Value) -> Result<Self, ShapeErrorKind> {
+        if let Some(name) = value.as_string() {
+            return Ok(Self::Name(name.as_str().to_owned()));
+        }
+        weight(value)
+            .map(Self::Weight)
+            .ok_or(ShapeErrorKind::WrongType {
+                expected: "a biome name or a non-negative integer",
+                found: value.json_type(),
+            })
+    }
+
+    fn write(&self) -> Value {
+        match self {
+            Self::Name(name) => Value::from(name.as_str()),
+            Self::Weight(weight) => Value::from(u64::from(*weight)),
+        }
+    }
+}
+
+impl WeightedBiome {
+    fn read(value: &Value) -> Result<Self, ShapeErrorKind> {
+        if let Some(name) = value.as_string() {
+            return Ok(Self::Name(name.as_str().to_owned()));
+        }
+        let [a, b] = pair(value)?;
+        Ok(Self::Pair([NameOrWeight::read(a)?, NameOrWeight::read(b)?]))
+    }
+
+    fn write(&self) -> Value {
+        match self {
+            Self::Name(name) => Value::from(name.as_str()),
+            Self::Pair([a, b]) => {
+                let mut array = VArray::new();
+                array.push(a.write());
+                array.push(b.write());
+                Value::from(array)
+            }
+        }
+    }
+}
+
+impl TryFrom<Value> for WeightedBiomes {
+    type Error = ShapeErrorKind;
+
+    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
+        if let Some(name) = value.as_string() {
+            return Ok(Self::One(name.as_str().to_owned()));
+        }
+        let array = value.as_array().ok_or(ShapeErrorKind::WrongType {
+            expected: "a biome name or an array",
+            found: value.json_type(),
+        })?;
+        array
+            .iter()
+            .map(WeightedBiome::read)
+            .collect::<Result<_, _>>()
+            .map(Self::List)
+    }
+}
+
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedBiomes {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
+
+impl From<&WeightedBiomes> for Value {
+    fn from(biomes: &WeightedBiomes) -> Self {
+        match biomes {
+            WeightedBiomes::One(name) => Value::from(name.as_str()),
+            WeightedBiomes::List(entries) => {
+                let mut array = VArray::new();
+                for entry in entries {
+                    array.push(entry.write());
+                }
+                Value::from(array)
+            }
+        }
+    }
+}
+
+impl CategoryOrWeight {
+    fn read(value: &Value) -> Result<Self, ShapeErrorKind> {
+        if let Some(name) = value.as_string() {
+            return TemperatureCategory::from_name(name.as_str())
+                .map(Self::Category)
+                .ok_or(ShapeErrorKind::UnknownName);
+        }
+        weight(value)
+            .map(Self::Weight)
+            .ok_or(ShapeErrorKind::WrongType {
+                expected: "a temperature category or a non-negative integer",
+                found: value.json_type(),
+            })
+    }
+
+    fn write(&self) -> Value {
+        match self {
+            Self::Category(category) => Value::from(category.name()),
+            Self::Weight(weight) => Value::from(u64::from(*weight)),
+        }
+    }
+}
+
+impl TryFrom<Value> for WeightedClimate {
+    type Error = ShapeErrorKind;
+
+    fn try_from(value: Value) -> Result<Self, ShapeErrorKind> {
+        let [a, b] = pair(&value)?;
+        Ok(Self([
+            CategoryOrWeight::read(a)?,
+            CategoryOrWeight::read(b)?,
+        ]))
+    }
+}
+
+// Read as the game's reader of the shape reads it (`TryFrom<Value>`), not by the slice's
+// scalar rules; a refusal is one wrong type at the member.
+impl FromJson for WeightedClimate {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        from_value(node, read, Self::try_from)
+    }
+}
+
+impl From<&WeightedClimate> for Value {
+    fn from(climate: &WeightedClimate) -> Self {
+        let mut array = VArray::new();
+        array.push(climate.0[0].write());
+        array.push(climate.0[1].write());
+        Value::from(array)
+    }
+}
+
+/// `minecraft:overworld_height`: the legacy generator's terrain height, as a preset or as
+/// `[depth, scale]`, not both.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct OverworldHeight {
+    /// A height preset (JSON `noise_type`).
+    pub noise_type: Option<NoiseType>,
+    /// `[depth, scale]` (JSON `noise_params`).
+    pub noise_params: Option<[f32; 2]>,
+}
+
+/// A terrain-height preset; the game numbers the fifteen presets 0 to 14 in the order listed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet, Schema)]
+#[facet(rename_all = "snake_case")]
+#[repr(u8)]
+#[non_exhaustive]
+#[allow(missing_docs, reason = "each variant is its JSON spelling")]
+pub enum NoiseType {
+    Default,
+    DefaultMutated,
+    River,
+    Ocean,
+    DeepOcean,
+    Lowlands,
+    Taiga,
+    Mountains,
+    Highlands,
+    Extreme,
+    LessExtreme,
+    Beach,
+    StoneBeach,
+    Mushroom,
+    Swamp,
+}
+
+impl NoiseType {
+    /// The `(depth, scale)` the preset stands for.
+    // The game keeps the depths and the scales in two tables; which table is the depth and
+    // which the scale follows the order of the values.
+    pub fn depth_and_scale(self) -> (f32, f32) {
+        match self {
+            Self::Default => (0.1, 0.2),
+            Self::DefaultMutated => (0.2, 0.4),
+            Self::Taiga => (0.2, 0.2),
+            Self::River => (-0.5, 0.0),
+            Self::Ocean => (-1.0, 0.1),
+            Self::DeepOcean => (-1.8, 0.1),
+            Self::Lowlands => (0.125, 0.05),
+            Self::Mountains => (0.45, 0.3),
+            Self::Highlands => (1.5, 0.025),
+            Self::Extreme => (1.0, 0.5),
+            Self::LessExtreme => (0.8, 0.4),
+            Self::Beach => (0.0, 0.025),
+            Self::StoneBeach => (0.1, 0.8),
+            Self::Mushroom => (0.2, 0.3),
+            Self::Swamp => (-0.2, 0.1),
+        }
+    }
+}
+
+/// `minecraft:replace_biomes`: replaces vanilla biomes, by noise, with this one.
+// Required members: no `Default`, or facet would default them.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct ReplaceBiomes {
+    /// The replacements (JSON `replacements`, required, at least one).
+    pub replacements: Vec<BiomeReplacement>,
+}
+
+/// One entry of `replace_biomes.replacements`.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct BiomeReplacement {
+    /// The dimension: `minecraft:overworld`, or from format 1.26.0 also `minecraft:nether`
+    /// (JSON `dimension`, required).
+    pub dimension: String,
+    /// The vanilla biomes to replace, by name without namespace (JSON `targets`, required, at
+    /// least one).
+    pub targets: Vec<String>,
+    /// How much of the targets to replace, in `(0, 1]` (JSON `amount`, required).
+    pub amount: f32,
+    /// The scale of the replacement noise, in `(0, 100]` (JSON `noise_frequency_scale`,
+    /// required).
+    pub noise_frequency_scale: f32,
+}
+
+// Read through their proxies, which judge their own form.
+bedrock_addon_core::impl_schema_leaf!(WeightedBiomes, WeightedClimate);
+bedrock_addon_core::impl_no_molang!(WeightedBiomes, WeightedClimate);

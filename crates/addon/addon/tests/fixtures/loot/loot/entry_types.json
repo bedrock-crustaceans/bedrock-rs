@@ -1,0 +1,14 @@
+// fixtures.md row 3: vanilla's unit test LootTableWithThreeValidEntryTypes_Deserialized_ThreeEntriesAdded
+{
+  "pools": [
+    {
+      "rolls": 1.0,
+      "entries": [
+        {"type": "test"},
+        {"type": "item"},
+        {"type": "loot_table"},
+        {"type": "empty"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format_version": "1.21.70",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10,
+        "on_leash": {
+          "event": "x:leashed"
+        }
+      }
+    }
+  }
+}

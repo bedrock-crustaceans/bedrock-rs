@@ -1,0 +1,7 @@
+[
+  {
+    "code": "crafting_catalog/group_name",
+    "severity": "error",
+    "text": "string must be prefixed with a namespace (eg. namespace:value)"
+  }
+]

@@ -1,0 +1,29 @@
+// fixtures.md g01: a 1.21.40 file
+{
+  "format_version": "1.21.40",
+  "minecraft:color_grading_settings": {
+    "description": {
+      "identifier": "test:g01"
+    },
+    "color_grading": {
+      "midtones": {
+        "contrast": [
+          1.1,
+          1.1,
+          1.1
+        ]
+      },
+      "highlights": {
+        "enabled": true,
+        "highlightsMin": 2.0
+      },
+      "shadows": {
+        "enabled": true,
+        "shadowsMax": 0.5
+      }
+    },
+    "tone_mapping": {
+      "operator": "aces"
+    }
+  }
+}

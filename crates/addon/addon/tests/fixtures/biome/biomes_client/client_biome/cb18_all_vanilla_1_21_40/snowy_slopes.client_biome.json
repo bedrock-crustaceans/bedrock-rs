@@ -1,0 +1,20 @@
+// source: retail 1.26.45 resource_packs/vanilla_1.21.40/biomes/snowy_slopes.client_biome.json
+{
+  "format_version": "1.21.70",
+  "minecraft:client_biome": {
+    "description": {
+      "identifier": "snowy_slopes"
+    },
+    "components": {
+      "minecraft:fog_appearance": {
+        "fog_identifier": "minecraft:fog_default"
+      },
+      "minecraft:water_appearance": {
+        "surface_color": "#44AFF5"
+      },
+      "minecraft:biome_music": {
+        "music_definition": "snowy_slopes"
+      }
+    }
+  }
+}

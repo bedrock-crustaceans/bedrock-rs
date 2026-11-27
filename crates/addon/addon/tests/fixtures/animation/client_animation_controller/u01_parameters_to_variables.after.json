@@ -1,0 +1,10 @@
+{ "format_version": "1.10",
+  "animation_controllers": { "controller.animation.pig.move": {
+    "initial_state": "default",
+    "states": { "default": {
+      "animations": [ { "walk": "variable.walk_0+variable.walk_1" } ],
+      "transitions": [ { "idle": "!query.is_moving" } ],
+      "variables": {
+        "walk_0": { "input": "query.modified_move_speed", "remap_curve": { "0.0": 0.0, "1.0": 1.0 } },
+        "walk_1": { "input": "query.is_baby", "remap_curve": { "0.0": 1.0, "1.0": 0.5 } } } },
+      "idle": { "animations": [ { "look": "1.0f" } ] } } } } }

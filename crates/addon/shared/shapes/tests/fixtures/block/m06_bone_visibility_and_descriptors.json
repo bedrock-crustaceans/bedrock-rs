@@ -1,0 +1,6 @@
+{
+  "conditions": [
+    { "block_filter": [{ "tags": "query.any_tag('stone')" }] },
+    { "block_filter": [{ "tags": "q.block_state('x')" }] }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "test:jigsaw"
+    },
+    "step": "underground_structures",
+    "start_pool": "test:template_pool",
+    "max_depth": 1,
+    "start_height": {
+      "type": "constant",
+  "value": {
+    "absolute": 10 
+  }
+    }
+  }
+}

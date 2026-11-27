@@ -1,0 +1,16 @@
+{
+  "namespace": "a",
+  "k": {
+    "type": "panel",
+    "variables": [
+      {
+        "requires": "$pocket_edition",
+        "$x": 1
+      },
+      {
+        "requires": "(not $pocket_edition)",
+        "$x": 2
+      }
+    ]
+  }
+}

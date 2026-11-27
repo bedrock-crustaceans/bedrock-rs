@@ -1,0 +1,40 @@
+[package]
+name = "bedrock_addon_std"
+description = "The std driver of bedrock_addon: answers the sans-IO loaders with std::fs, runs jobs sequentially or on rayon, reads the server-side files around packs and writes packs to disk"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["rayon", "zip", "encrypted", "script"]
+rayon = ["dep:rayon"]                    # Strategy::Rayon: jobs and reads on a rayon pool with RECOMMENDED_JOB_STACK
+zip = ["bedrock_addon/zip"]              # load_archive, write_archive
+encrypted = ["bedrock_addon/encrypted"]  # key sidecars
+script = ["bedrock_addon/script", "bedrock_addon/server_config"]  # read_script_config, read_server_properties
+
+[dependencies]
+# Content-module features are the user's choice on `bedrock_addon` and unify.
+bedrock_addon = { path = "../addon", default-features = false }
+bytes = { workspace = true }
+thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+uuid = { workspace = true }
+bedrock_addon = { path = "../addon", default-features = false, features = ["full", "molang"] }
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../test_support" }
+
+[[example]]
+name = "rayon_driver"
+required-features = ["rayon"]

@@ -1,0 +1,14 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "dance",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          { "minecraft:wait": { "wait_duration": 1 } },
+          { "minecraft:dance": {} },
+          { "minecraft:wait_ticks": { "num_of_ticks": 3 } }
+        ]
+      }
+    }
+  }
+}

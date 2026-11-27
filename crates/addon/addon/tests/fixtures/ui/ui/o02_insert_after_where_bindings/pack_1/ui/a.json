@@ -1,0 +1,16 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "where": {
+          "binding_name": "#a"
+        },
+        "operation": "insert_after",
+        "value": {
+          "binding_name": "#c"
+        }
+      }
+    ]
+  }
+}

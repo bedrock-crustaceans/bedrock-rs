@@ -1,38 +1,44 @@
+#![allow(
+    clippy::disallowed_methods,
+    clippy::disallowed_types,
+    reason = "outside the add-on toolkit: facet-json is called directly"
+)]
 use crate::forms::custom::CustomForm;
 use crate::forms::modal::ModalForm;
 use crate::forms::simple::SimpleForm;
-use serde::{Deserialize, Serialize};
+use facet::Facet;
 
 pub mod custom;
 pub mod modal;
 pub mod simple;
 
 /// An enum of all possible Forms, including [`Custom`](CustomForm), [`Modal`](ModalForm) and [`Simple`](SimpleForm).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-#[serde(deny_unknown_fields)]
+#[derive(Debug, Clone, PartialEq, Facet)]
+#[repr(C)]
+#[facet(tag = "type")]
+#[facet(deny_unknown_fields)]
 pub enum Form {
     /// [`CustomForm`] represents a form that can be sent to a player,
     /// containing fields that the player may fill out.
     /// All possible fields are in the [`Element`] enum.
-    #[serde(rename = "custom_form")]
+    #[facet(rename = "custom_form")]
     Custom(CustomForm),
     /// [`ModalForm`] represents a modal form.
     /// These forms consist of a body containing text and two [`Buttons`](Button) at the bottom,
     /// usually labeled "Yes" (`gui.yes` for automatic translation) and "No" (`gui.no` for automatic translation)
     /// While the button text can be customized,
     /// unlike a [`SimpleForm`](crate::forms::SimpleForm), they cannot include images next to them.
-    #[serde(rename = "modal")]
+    #[facet(rename = "modal")]
     Modal(ModalForm),
     /// [`SimpleForm`] represents a form consisting of a title,
     /// body, and a set of buttons beneath the body.
     /// These [`Buttons`](Button) can optionally include images alongside them.
-    #[serde(rename = "form")]
+    #[facet(rename = "form")]
     Simple(SimpleForm),
 }
 
 impl TryFrom<String> for Form {
-    type Error = serde_json::Error;
+    type Error = facet_json::DeserializeError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         Self::try_from(value.as_str())
@@ -40,18 +46,18 @@ impl TryFrom<String> for Form {
 }
 
 impl TryFrom<&str> for Form {
-    type Error = serde_json::Error;
+    type Error = facet_json::DeserializeError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str(value)
+        facet_json::from_str(value)
     }
 }
 
 impl TryFrom<Form> for String {
-    type Error = serde_json::Error;
+    type Error = facet_format::SerializeError<facet_json::JsonSerializeError>;
 
     fn try_from(value: Form) -> Result<Self, Self::Error> {
-        serde_json::to_string(&value)
+        facet_json::to_string(&value)
     }
 }
 
@@ -109,7 +115,7 @@ mod test {
             ],
         });
 
-        assert_eq!(serde_json::from_str::<Form>(json).unwrap(), form);
+        assert_eq!(facet_json::from_str::<Form>(json).unwrap(), form);
     }
 
     #[test]
@@ -147,7 +153,7 @@ mod test {
             },
         });
 
-        assert_eq!(serde_json::from_str::<Form>(json).unwrap(), form);
+        assert_eq!(facet_json::from_str::<Form>(json).unwrap(), form);
     }
 
     #[test]
@@ -200,6 +206,6 @@ mod test {
             ],
         });
 
-        assert_eq!(serde_json::from_str::<Form>(json).unwrap(), form);
+        assert_eq!(facet_json::from_str::<Form>(json).unwrap(), form);
     }
 }

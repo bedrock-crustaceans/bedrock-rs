@@ -1,0 +1,19 @@
+{
+						"format_version":"1.20.50",
+						"minecraft:item":{
+							"description":{
+								"identifier":"test:item"
+							},
+							"components":{
+								"minecraft:use_modifiers": {
+									"use_duration": 1.0,
+									"movement_modifier": 1.000000,
+									"start_sound": "<LevelSoundEvent 17>",
+									"start_using": "always"
+								},
+								"minecraft:food": {
+									"can_always_eat": true
+								}
+							}
+						}
+					}

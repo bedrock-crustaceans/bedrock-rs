@@ -90,7 +90,10 @@ mod tests {
     fn display_matches_dotted_form() {
         assert_eq!(GameVersion::new(1, 21, 44, 0, 0).to_string(), "1.21.44");
         assert_eq!(GameVersion::new(1, 26, 13, 1, 0).to_string(), "1.26.13.1");
-        assert_eq!(GameVersion::new(1, 26, 13, 0, 1).to_string(), "1.26.13-beta");
+        assert_eq!(
+            GameVersion::new(1, 26, 13, 0, 1).to_string(),
+            "1.26.13-beta"
+        );
     }
 
     #[test]

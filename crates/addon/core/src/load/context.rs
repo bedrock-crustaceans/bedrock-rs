@@ -1,0 +1,305 @@
+//! The per-pack load context: what the game's loaders know about the pack a document is in.
+
+use std::fmt;
+use std::sync::Arc;
+
+use indexmap::IndexMap;
+use uuid::Uuid;
+
+use super::{BuiltIns, Experiment, Experiments, LoadOptions};
+use crate::id::{
+    AtmosphereSettingsId, BiomeId, ColorGradingSettingsId, LightingSettingsId, WaterSettingsId,
+};
+use crate::molang::{ExperimentMask, RawVersion};
+use crate::pack_identity::PackType;
+use crate::version::{
+    BaseGameVersion, ENGINE_VERSION, FormatVersion, MinEngineVersion, SemVersion,
+};
+
+/// The per-pack inputs a document load depends on (the game's per-pack load context): the pack's
+/// `min_engine_version`, Molang version, experiments, whether it is a base-game pack, the
+/// engine version.
+///
+/// Built per pack by the stack loaders; [`detached`](Self::detached) gives one for a file
+/// outside any stack, whose fields can then be set (`cx.beta_apis = true`).
+#[derive(Clone)]
+#[non_exhaustive]
+#[allow(clippy::struct_excessive_bools)] // vanilla's flags, one field each
+pub struct LoadContext {
+    /// The pack manifest's `min_engine_version`; `None` when absent or invalid.
+    pub min_engine_version: Option<MinEngineVersion>,
+    /// The pack's Molang version, mapped once from `min_engine_version`: the version of every
+    /// Molang field whose version comes from the pack. Invalid (−1) without a
+    /// `min_engine_version`.
+    pub molang_version: RawVersion,
+    /// [`experiments`](Self::experiments) as molang's experiment mask, for compiling.
+    pub molang_experiments: ExperimentMask,
+    /// The pack is a base-game pack: one the game ships (`PackOrigin::Package`).
+    pub is_base_game_pack: bool,
+    /// The pack is trusted (vanilla's flag of the same name; nothing here sets it).
+    pub is_trusted_pack: bool,
+    /// The pack's header UUID.
+    pub pack_uuid: Uuid,
+    /// The pack's type.
+    pub pack_type: PackType,
+    /// The pack's manifest has a script module its side's script host builds a plugin from
+    /// (the game's manifest checks for plugins and client scripts), in a language and with an
+    /// entry the host does not drop before it looks at a file. Set by `bedrock_addon`'s stack
+    /// loaders; `false` on a context nothing set it on. A walk's
+    /// [`in_pack`](super::Walk::in_pack) rule reads it to leave the script files of every
+    /// other pack unread.
+    pub runs_scripts: bool,
+    /// The world's enabled experiments.
+    pub experiments: Experiments,
+    /// The Beta APIs toggle: allows `"format_version": "beta"` documents.
+    pub beta_apis: bool,
+    /// The Upcoming Creator Features toggle.
+    pub upcoming_creator_features: bool,
+    /// The engine version the crate tracks ([`ENGINE_VERSION`]).
+    pub engine_version: FormatVersion,
+    /// The world's base-game version (client biomes skip base-game `biomes_client.json` from
+    /// 1.21.40, smithing-trim recipes need 1.20).
+    pub world_base_game_version: BaseGameVersion,
+    /// The render-configuration identifiers per biome that client-biome upgrades insert;
+    /// `None` gives every biome vanilla's defaults.
+    pub client_render_identifiers: Option<Arc<IndexMap<BiomeId, BiomeRenderIdentifiers>>>,
+    /// The Molang compile check, shared from `LoadOptions::molang`.
+    #[cfg(feature = "molang")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "molang")))]
+    pub molang: Option<Arc<crate::molang::MolangCheck>>,
+    /// The null rule of the document being read: set by the versioning load from the slice's
+    /// `Family::reading`; `None`
+    /// (each read takes `null` as it does) outside a versioned load and for a family of the
+    /// first run's input kind.
+    pub null_rule: Option<crate::json::NullRule>,
+    /// The reading of the slice being parsed, which grades its findings
+    /// ([`grade`](Self::grade)): set by the versioning load from the slice's `Family::reading`
+    /// for the parse of the struct alone (not its upgrade steps or its checks), and
+    /// [`Reading::OWN`](crate::versioning::Reading::OWN) outside it, where an unknown member
+    /// is a warning.
+    pub reading: crate::versioning::Reading,
+    /// Whether the document is read by a cereal slice of a Minecraft Document family (the
+    /// slice's null rule is N2, whatever the source): a component read then rejects the
+    /// document for a component whose typed read fails (a type error) or whose required member
+    /// is missing, under both of the game's log masks. Set by the versioning
+    /// load from `Reading::components_fatal`; `false` outside it, for `JsonCpp` slices and for a family's hand-written slices.
+    pub strict_components: bool,
+    /// The format version the document being read is written at, for a part read apart from
+    /// its document (a component, `versioning::read_component`): set by
+    /// `versioning::read_component_map_by` from the read's versions, so a member of a component
+    /// `schema::since_format` a later version is an unknown one; `None` outside it.
+    pub document_format: Option<FormatVersion>,
+    /// What the document's bytes were before the loader read them: JSON text, or a
+    /// binary `\x7FMCB` document the stack turned into text. The game reads an MCB as a
+    /// binary input: no null rule, no JSON size check, and the item loader's MCB path meets the
+    /// versioned loaders' beta gate (`Family::beta_permission`).
+    pub source: DocumentSource,
+    /// The JSON document size limit (`load::MAX_JSON_DOCUMENT_BYTES`); the warning comes from
+    /// three quarters of it.
+    /// Lowered only to test the refusal without a 128 MiB text.
+    pub max_json_document_bytes: usize,
+    /// The host's provider, shared from `LoadOptions::built_ins`
+    /// ([`built_ins`](Self::built_ins), [`set_built_ins`](Self::set_built_ins)).
+    built_ins: Option<Arc<dyn BuiltIns>>,
+}
+
+/// Prints the providers (`built_ins`, `molang`) as `present` or `absent`, as
+/// [`LoadOptions`] does, so neither has to be `Debug`.
+impl fmt::Debug for LoadContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let present = |present: bool| if present { "present" } else { "absent" };
+        let mut debug = f.debug_struct("LoadContext");
+        debug
+            .field("min_engine_version", &self.min_engine_version)
+            .field("molang_version", &self.molang_version)
+            .field("molang_experiments", &self.molang_experiments)
+            .field("is_base_game_pack", &self.is_base_game_pack)
+            .field("is_trusted_pack", &self.is_trusted_pack)
+            .field("pack_uuid", &self.pack_uuid)
+            .field("pack_type", &self.pack_type)
+            .field("runs_scripts", &self.runs_scripts)
+            .field("experiments", &self.experiments)
+            .field("beta_apis", &self.beta_apis)
+            .field("upcoming_creator_features", &self.upcoming_creator_features)
+            .field("engine_version", &self.engine_version)
+            .field("world_base_game_version", &self.world_base_game_version)
+            .field("client_render_identifiers", &self.client_render_identifiers);
+        #[cfg(feature = "molang")]
+        debug.field("molang", &present(self.molang.is_some()));
+        debug
+            .field("null_rule", &self.null_rule)
+            .field("reading", &self.reading)
+            .field("strict_components", &self.strict_components)
+            .field("document_format", &self.document_format)
+            .field("source", &self.source)
+            .field("max_json_document_bytes", &self.max_json_document_bytes)
+            .field("built_ins", &present(self.built_ins.is_some()))
+            .finish()
+    }
+}
+
+/// What a document's bytes were before the loader read them.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum DocumentSource {
+    /// JSON text, as written.
+    #[default]
+    Json,
+    /// A binary `\x7FMCB` document, turned into JSON text by the stack.
+    Mcb,
+}
+
+impl LoadContext {
+    /// A context for a file outside any stack: engine version `ENGINE_VERSION`, no
+    /// experiments, Molang version of the engine, not a base-game pack.
+    ///
+    /// The pack is the nil UUID of type `Invalid` with `min_engine_version` and the world's
+    /// base-game version both the engine version.
+    #[must_use]
+    pub fn detached() -> Self {
+        let engine = MinEngineVersion::new(
+            ENGINE_VERSION.major,
+            ENGINE_VERSION.minor,
+            ENGINE_VERSION.patch,
+        );
+        let mut cx = Self::for_pack(
+            &LoadOptions::default(),
+            Uuid::nil(),
+            PackType::Invalid,
+            Some(engine),
+            false,
+        );
+        cx.world_base_game_version = BaseGameVersion::new(SemVersion::new(
+            ENGINE_VERSION.major,
+            ENGINE_VERSION.minor,
+            ENGINE_VERSION.patch,
+        ));
+        cx
+    }
+
+    /// The context of one pack of a stack loaded with `options` (built by
+    /// `bedrock_addon`'s loaders).
+    ///
+    /// The Beta APIs and Upcoming Creator Features toggles and their experiments are one
+    /// setting each: either one turns on both.
+    pub fn for_pack(
+        options: &LoadOptions,
+        pack_uuid: Uuid,
+        pack_type: PackType,
+        min_engine_version: Option<MinEngineVersion>,
+        is_base_game_pack: bool,
+    ) -> Self {
+        let mut experiments = options.experiments.clone();
+        let beta_apis = options.beta_apis || experiments.contains(Experiment::BetaApis);
+        let upcoming_creator_features = options.upcoming_creator_features
+            || experiments.contains(Experiment::UpcomingCreatorFeatures);
+        if beta_apis {
+            experiments.insert(Experiment::BetaApis);
+        }
+        if upcoming_creator_features {
+            experiments.insert(Experiment::UpcomingCreatorFeatures);
+        }
+        let molang_version = crate::molang::pack_molang_version(min_engine_version.as_ref());
+        Self {
+            min_engine_version,
+            molang_version,
+            molang_experiments: experiments.molang_mask(),
+            is_base_game_pack,
+            is_trusted_pack: false,
+            pack_uuid,
+            pack_type,
+            runs_scripts: false,
+            experiments,
+            beta_apis,
+            upcoming_creator_features,
+            engine_version: ENGINE_VERSION,
+            world_base_game_version: options.base_game_version.clone(),
+            client_render_identifiers: None,
+            #[cfg(feature = "molang")]
+            molang: options.molang.clone(),
+            null_rule: None,
+            reading: crate::versioning::Reading::OWN,
+            strict_components: false,
+            document_format: None,
+            source: DocumentSource::Json,
+            max_json_document_bytes: super::MAX_JSON_DOCUMENT_BYTES,
+            built_ins: options.built_ins.clone(),
+        }
+    }
+
+    /// What answers for the game's own content: the host's provider when the stack's
+    /// options gave one, else the generated tables
+    /// ([`GeneratedBuiltIns`](crate::vanilla::GeneratedBuiltIns)).
+    pub fn built_ins(&self) -> &dyn BuiltIns {
+        static TABLES: crate::vanilla::GeneratedBuiltIns = crate::vanilla::GeneratedBuiltIns;
+        match &self.built_ins {
+            Some(host) => host.as_ref(),
+            None => &TABLES,
+        }
+    }
+
+    /// The level sound event `name` names, in the provider's spelling (the tables': lower
+    /// case), compared without ASCII case; `None` when it names none.
+    pub fn level_sound_event(&self, name: &str) -> Option<crate::id::LevelSoundEventName> {
+        self.built_ins()
+            .level_sound_event(name)
+            .map(crate::id::LevelSoundEventName::parse)
+    }
+
+    /// The host's provider, `None` when the host gave none: for the decisions that depend on
+    /// whether a host answers at all (the link pass's views).
+    pub fn host_built_ins(&self) -> Option<&Arc<dyn BuiltIns>> {
+        self.built_ins.as_ref()
+    }
+
+    /// Gives the context a host's provider, or takes it away (a detached context has none).
+    pub fn set_built_ins(&mut self, built_ins: Option<Arc<dyn BuiltIns>>) {
+        self.built_ins = built_ins;
+    }
+
+    /// The severity a finding of `class` has in the slice being parsed: its
+    /// [`reading`](Self::reading)'s grade
+    /// ([`Reading::grade`](crate::versioning::Reading::grade)), where only an unknown member
+    /// or component follows the slice's mask.
+    pub fn grade(&self, class: crate::diagnostic::Class) -> crate::diagnostic::Severity {
+        self.reading.grade(class)
+    }
+}
+
+/// The render-configuration identifiers the client renderer records for one biome, which
+/// client-biome upgrades insert into documents written before those components existed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BiomeRenderIdentifiers {
+    /// `minecraft:atmosphere_identifier`.
+    pub atmosphere: AtmosphereSettingsId,
+    /// `minecraft:color_grading_identifier`.
+    pub color_grading: ColorGradingSettingsId,
+    /// `minecraft:lighting_identifier`.
+    pub lighting: LightingSettingsId,
+    /// `minecraft:water_identifier`.
+    pub water: WaterSettingsId,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::diagnostic::{Class, Severity};
+    use crate::versioning::Reading;
+
+    #[test]
+    fn outside_a_slice_an_unknown_member_is_a_warning() {
+        let cx = LoadContext::detached();
+        assert_eq!(cx.reading, Reading::OWN);
+        assert_eq!(cx.grade(Class::Unknown), Severity::Warning);
+        assert_eq!(cx.grade(Class::Error), Severity::Error);
+    }
+
+    #[test]
+    fn the_context_grades_by_the_reading_it_carries() {
+        let mut cx = LoadContext::detached();
+        cx.reading = Reading::OWN.with_unknown(Severity::Error);
+        assert_eq!(cx.grade(Class::Unknown), Severity::Error);
+        assert_eq!(cx.grade(Class::Lint), Severity::Info);
+        assert_eq!(cx.grade(Class::Warning), Severity::Warning);
+    }
+}

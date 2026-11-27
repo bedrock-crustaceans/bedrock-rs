@@ -1,0 +1,5 @@
+error: `schema::foreign_event` marks a field holding an `EventTrigger` (or an `Option`, `Vec` or map of them)
+ --> tests/ui/schema/wrong_field_type.rs:6:13
+  |
+6 |     #[facet(schema::foreign_event)]
+  |             ^^^^^^

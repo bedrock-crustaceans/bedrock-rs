@@ -1,0 +1,2 @@
+// fixtures.md row 18: random_difficulty_chance defaults to default_chance
+{"pools": [{"rolls": 1, "conditions": [{"condition": "random_difficulty_chance", "default_chance": 0.5, "hard": 1.0}], "entries": [{"type": "empty"}]}]}

@@ -1,0 +1,1 @@
+{"allowed_modules": ["@minecraft/server"], "module_permissions": {"@minecraft/server": {"a": 1}}}

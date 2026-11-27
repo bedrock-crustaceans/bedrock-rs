@@ -1,0 +1,10 @@
+{
+  "diagnostics": [
+    {
+      "code": "json_ui/mapping_type_unrecognized",
+      "severity": "info",
+      "text": "Unrecognized mapping type String: ",
+      "at": "k/button_mappings/0/mapping_type"
+    }
+  ]
+}

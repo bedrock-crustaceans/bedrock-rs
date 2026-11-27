@@ -1,0 +1,11 @@
+{
+  "files": {},
+  "defs": {},
+  "diagnostics": [
+    {
+      "code": "json_ui/parse_error",
+      "severity": "error",
+      "pack": 0
+    }
+  ]
+}

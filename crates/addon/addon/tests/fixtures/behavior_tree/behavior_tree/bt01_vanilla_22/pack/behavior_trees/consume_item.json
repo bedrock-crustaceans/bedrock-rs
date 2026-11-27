@@ -1,0 +1,20 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "consume_item",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:consume_item": {
+            }
+          },
+          {
+            "minecraft:wait": {
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "root@a.base": {
+        "type": "panel",
+        "controls": [
+          {
+            "x@a.leaf": {}
+          },
+          {
+            "y@a.leaf": {}
+          }
+        ],
+        "layer": 2
+      },
+      "base": {
+        "size": [
+          10,
+          10
+        ]
+      },
+      "leaf": {
+        "type": "label",
+        "text": "hi"
+      }
+    }
+  },
+  "defs": {
+    "a.base": {
+      "size": [
+        10,
+        10
+      ]
+    },
+    "a.leaf": {
+      "type": "label",
+      "text": "hi"
+    },
+    "a.root": {
+      "type": "panel",
+      "controls": [
+        {
+          "x@a.leaf": {}
+        },
+        {
+          "y@a.leaf": {}
+        }
+      ],
+      "layer": 2,
+      "size": [
+        10,
+        10
+      ]
+    }
+  }
+}

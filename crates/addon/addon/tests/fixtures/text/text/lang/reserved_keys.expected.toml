@@ -1,0 +1,6 @@
+# fixtures.md `lang/reserved_keys`: loaded globally, the pack keywords are blocked; the
+# lists match the lower-cased key.
+blocked = ["pack.name", "pack.description"]
+
+[entries]
+"other" = "Z"

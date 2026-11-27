@@ -1,0 +1,40 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm37",
+    "description": "families/script_module fixture sm37_script_eval",
+    "uuid": "5a394a2a-a764-5405-834b-7124f412010c",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "c9f872c0-bd93-5608-b2ba-48d9b492c353",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    }
+  ],
+  "capabilities": [
+    "script_eval"
+  ]
+}

@@ -1,0 +1,26 @@
+[package]
+name = "bedrock_addon_family_crafting_catalog"
+description = "The `crafting_catalog` content family of bedrock_addon, re-exported as bedrock_addon::families::crafting_catalog; sans-IO"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+bedrock_addon_core = { path = "../../core" }
+bedrock_addon_shared_shapes = { path = "../../shared/shapes" }
+facet = { workspace = true }
+facet-value = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+# The helpers the tests of the addon crates share.
+bedrock_addon_test_support = { path = "../../test_support" }
+# The tests read their expected-diagnostics fixtures and build maps by hand.
+indexmap = { workspace = true }

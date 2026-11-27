@@ -1,0 +1,12 @@
+{
+  "texture_name": "atlas.terrain",
+  "texture_data": {
+    "grass_top": {
+      "textures": [
+        "a",
+        "b",
+        "c"
+      ]
+    }
+  }
+}

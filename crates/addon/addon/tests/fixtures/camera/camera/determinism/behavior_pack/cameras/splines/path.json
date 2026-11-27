@@ -1,0 +1,14 @@
+{
+  "format_version": "1.26.0",
+  "minecraft:camera_custom_splines": {
+    "splines": [
+      {
+        "name": "determinism:path",
+        "total_time": 4.0,
+        "control_points": [{ "position": [0, 64, 0] }, { "position": [8, 70, 8] }],
+        "progress_key_frames": [{ "progress": 1.0, "time": 4.0, "easing": "in_out_sine" }],
+        "rotation_key_frames": [{ "rotation": [0, 90, 0], "time": 4.0 }]
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "root": {
+    "modifications": [
+      {
+        "control_name": "x",
+        "operation": "move_after"
+      }
+    ],
+    "layer": 5
+  }
+}

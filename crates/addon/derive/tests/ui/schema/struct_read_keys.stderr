@@ -1,0 +1,23 @@
+error: `schema::quiet` takes a string literal, as in `schema::quiet = ".."`
+ --> tests/ui/schema/struct_read_keys.rs:5:25
+  |
+5 | #[facet(schema::quiet = 5)]
+  |                         ^
+
+error: `schema::after_read` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/struct_read_keys.rs:12:13
+   |
+12 |     #[facet(schema::after_read = nothing, schema::quiet = "a")]
+   |             ^^^^^^
+
+error: `schema::quiet` is a struct's key: put it on the struct it is about
+  --> tests/ui/schema/struct_read_keys.rs:12:43
+   |
+12 |     #[facet(schema::after_read = nothing, schema::quiet = "a")]
+   |                                           ^^^^^^
+
+error: duplicate `schema::after_read`
+  --> tests/ui/schema/struct_read_keys.rs:17:39
+   |
+17 | #[facet(schema::after_read = nothing, schema::after_read = nothing)]
+   |                                       ^^^^^^

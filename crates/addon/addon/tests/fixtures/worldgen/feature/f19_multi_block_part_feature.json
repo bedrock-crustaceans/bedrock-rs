@@ -1,0 +1,14 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:multi_block_feature": {
+    "description": {
+      "identifier": "demo:place_door_top"
+    },
+    "places_block": {
+      "name": "demo:door",
+      "states": {
+        "minecraft:multi_block_part": 1
+      }
+    }
+  }
+}

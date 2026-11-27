@@ -1,0 +1,29 @@
+// fixtures.md l12: the step wraps the struct defaults
+{
+  "format_version": "1.26.0",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l12"
+    },
+    "emissive": {
+      "desaturation": 0.25
+    },
+    "ambient": {
+      "color": {
+        "0.0": [
+          255,
+          255,
+          255
+        ]
+      },
+      "illuminance": {
+        "0.0": 0.02
+      }
+    },
+    "sky": {
+      "intensity": {
+        "0.0": 1.0
+      }
+    }
+  }
+}

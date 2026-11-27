@@ -1,0 +1,9 @@
+{
+  "format_version": "1.14.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "shared", "text": "From the top pack." },
+      { "scene_tag": "top_only", "text": "Only the top pack has it." }
+    ]
+  }
+}

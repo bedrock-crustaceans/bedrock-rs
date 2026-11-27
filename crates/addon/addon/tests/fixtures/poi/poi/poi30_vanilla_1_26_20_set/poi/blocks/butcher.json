@@ -1,0 +1,16 @@
+{
+  "format_version": "1.26.40",
+  "minecraft:poi_block": {
+    "description": {
+      "identifier": "minecraft:butcher"
+    },
+    "tickets": 1,
+    "usable_distance": 1,
+    "blocks": [
+      "minecraft:smoker"
+    ],
+    "tags": [
+      "minecraft:acquirable_job_site"
+    ]
+  }
+}

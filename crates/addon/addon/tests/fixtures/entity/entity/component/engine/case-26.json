@@ -1,0 +1,11 @@
+{
+					"add_effects": [{
+						"effect": "speed",
+						"duration": 2.5,
+						"amplifier": 3,
+						"ambient": true,
+						"visible": false,
+						"display_on_screen_animation": true
+					}],
+					"remove_effects": ["slowness"]
+				}

@@ -1,0 +1,183 @@
+//! Helpers of the deferred-settings tests.
+
+#![allow(
+    dead_code,
+    reason = "bedrock_addon's tests/deferred_settings.rs includes this file too: the family's tests leave origin and located unused, bedrock_addon's stack tests the loaders, the finding views, the fixture reads and round_trip"
+)]
+
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, Severity};
+use bedrock_addon_core::document::{Content, Document, Rejected};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::pack_identity::PackPath;
+
+#[allow(unused_imports, reason = "each test file uses part of the helpers")]
+pub use bedrock_addon_test_support::json::strict as json;
+
+/// The fixture folder of this family. The file is included by the family crate's tests and by
+/// `bedrock_addon`'s, whose manifest folders sit at different depths, so the folder is found
+/// below the fixture root of the package that compiles it.
+pub fn fixtures() -> std::path::PathBuf {
+    bedrock_addon_test_support::fixture::root(env!("CARGO_MANIFEST_DIR"))
+        .join("render/render_configs")
+}
+
+/// The text of the fixture file `path` (relative to the family's fixture folder).
+pub fn fixture(path: &str) -> String {
+    std::fs::read_to_string(fixtures().join(path)).unwrap_or_else(|error| panic!("{path}: {error}"))
+}
+
+pub const LIGHTING: &str = "minecraft:lighting_settings";
+pub const WATER: &str = "minecraft:water_settings";
+pub const ATMOSPHERE: &str = "minecraft:atmosphere_settings";
+pub const GRADING: &str = "minecraft:color_grading_settings";
+pub const CUBEMAP: &str = "minecraft:cubemap_settings";
+pub const SHADOWS: &str = "minecraft:shadow_settings";
+pub const PBR: &str = "minecraft:pbr_fallback_settings";
+pub const LOCAL: &str = "minecraft:local_light_settings";
+
+/// A document at `version` whose payload `key` has `members` (a JSON object's members).
+pub fn doc(version: &str, key: &str, members: &str) -> String {
+    format!(r#"{{"format_version": "{version}", "{key}": {{{members}}}}}"#)
+}
+
+/// `members` after a `description` naming `identifier`.
+pub fn named(identifier: &str, members: &str) -> String {
+    let comma = if members.is_empty() { "" } else { ", " };
+    format!(r#""description": {{"identifier": "{identifier}"}}{comma}{members}"#)
+}
+
+/// Loads `json` as content `T`.
+pub fn parse<T: Content>(json: &str) -> Result<Document<T>, Rejected> {
+    parse_with(json, &LoadContext::detached())
+}
+
+/// Loads `json` as content `T` with `cx`.
+pub fn parse_with<T: Content>(json: &str, cx: &LoadContext) -> Result<Document<T>, Rejected> {
+    T::parse(&PackPath::from_static("test.json"), json.as_bytes(), cx)
+}
+
+/// The document of `json`, which must load.
+#[track_caller]
+pub fn loads<T: Content + std::fmt::Debug>(json: &str) -> Document<T> {
+    match parse::<T>(json) {
+        Ok(document) => document,
+        Err(rejected) => panic!("rejected: {json}\n{:#?}", rejected.diagnostics),
+    }
+}
+
+/// The findings of `json`, which must be rejected.
+#[track_caller]
+pub fn rejects<T: Content + std::fmt::Debug>(json: &str) -> Diagnostics {
+    match parse::<T>(json) {
+        Ok(document) => panic!("loaded: {json}\n{:#?}", document.value()),
+        Err(rejected) => rejected.diagnostics,
+    }
+}
+
+/// `(code name, JSON path, message)` of each finding of `severity`.
+pub fn found<'a>(
+    d: impl IntoIterator<Item = &'a Diagnostic>,
+    severity: Severity,
+) -> Vec<(&'static str, String, String)> {
+    d.into_iter()
+        .filter(|f| f.severity == severity)
+        .map(|f| {
+            (
+                f.code.id(),
+                f.location.json_path.to_string(),
+                f.code.to_string(),
+            )
+        })
+        .collect()
+}
+
+/// The errors of `d`.
+pub fn errors<'a>(
+    d: impl IntoIterator<Item = &'a Diagnostic>,
+) -> Vec<(&'static str, String, String)> {
+    found(d, Severity::Error)
+}
+
+/// The warnings of `d`.
+pub fn warnings<'a>(
+    d: impl IntoIterator<Item = &'a Diagnostic>,
+) -> Vec<(&'static str, String, String)> {
+    found(d, Severity::Warning)
+}
+
+/// The infos of `d`.
+pub fn infos<'a>(
+    d: impl IntoIterator<Item = &'a Diagnostic>,
+) -> Vec<(&'static str, String, String)> {
+    found(d, Severity::Info)
+}
+
+/// `(code name, JSON path)` of each entry.
+pub fn at<'a>(found: &'a [(&'static str, String, String)]) -> Vec<(&'static str, &'a str)> {
+    found
+        .iter()
+        .map(|(code, path, _)| (*code, path.as_str()))
+        .collect()
+}
+
+/// One expected finding.
+pub fn finding(code: &'static str, path: &str, message: &str) -> (&'static str, String, String) {
+    (code, path.to_owned(), message.to_owned())
+}
+
+/// The one error of `json` loaded as `T`: `(code name, JSON path, message)`.
+#[track_caller]
+pub fn one_error<T: Content + std::fmt::Debug>(json: &str) -> (&'static str, String, String) {
+    let d = rejects::<T>(json);
+    let mut errors = errors(&d);
+    assert_eq!(errors.len(), 1, "{json}\n{errors:#?}");
+    errors.remove(0)
+}
+
+/// Writes `value`, reads the text back strictly (no finding at all) and requires the second
+/// writing to be the same text; returns the text.
+#[track_caller]
+pub fn round_trip<T: Content + std::fmt::Debug + PartialEq>(value: &T) -> String {
+    let written = value.to_json().expect("written");
+    let again = match parse::<T>(&written) {
+        Ok(document) => document,
+        Err(rejected) => panic!("{written}\n{:#?}", rejected.diagnostics),
+    };
+    assert!(
+        again.diagnostics().is_empty(),
+        "{written}\n{:#?}",
+        again.diagnostics()
+    );
+    assert_eq!(again.value(), value, "{written}");
+    assert_eq!(again.to_json().expect("rewritten"), written);
+    written
+}
+
+/// `(pack index, path)` of a document's origin.
+pub fn origin<T>(document: &Document<T>) -> (Option<usize>, &str) {
+    (
+        document.origin().pack.index(),
+        document.origin().path.as_str(),
+    )
+}
+
+/// `(code name, pack index, file path, message)` of each finding of `severity`.
+pub fn located<'a>(
+    d: impl IntoIterator<Item = &'a Diagnostic>,
+    severity: Severity,
+) -> Vec<(&'static str, Option<usize>, String, String)> {
+    d.into_iter()
+        .filter(|f| f.severity == severity)
+        .map(|f| {
+            (
+                f.code.id(),
+                f.location
+                    .pack
+                    .as_ref()
+                    .and_then(bedrock_addon_core::pack_identity::PackRef::index),
+                f.location.path.as_ref().map_or_default(ToString::to_string),
+                f.code.to_string(),
+            )
+        })
+        .collect()
+}

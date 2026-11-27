@@ -1,0 +1,23 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "description",
+    "name": "Test pack with subpacks",
+    "uuid": "e1e63e3e-0d08-4f98-9e84-bcf0edd82935",
+    "version": [1, 5, 1],
+    "min_engine_version": [1, 21, 50],
+    "pack_optimization_version": [0, 1, 0]
+  },
+  "modules": [
+    {
+      "description": "resources",
+      "type": "resources",
+      "uuid": "22ed17a6-ea7c-5ccd-93b4-b90e86ce0046",
+      "version": [1, 5, 1]
+    }
+  ],
+  "subpacks": [
+    { "folder_name": "rp1", "name": "rp1", "memory_tier": 0 },
+    { "folder_name": "rp2", "name": "rp2", "memory_tier": 0 }
+  ]
+}

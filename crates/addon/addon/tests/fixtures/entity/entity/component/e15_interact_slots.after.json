@@ -1,0 +1,5 @@
+{
+  "integers": { "interactions": [ { "equip_item_slot": "2", "drop_item_slot": "0", "cooldown": 2.5 } ] },
+  "strings_kept": { "interactions": [ { "equip_item_slot": "slot.armor.body" } ] },
+  "single_object": { "interactions": { "drop_item_slot": "1" } }
+}

@@ -1,0 +1,30 @@
+// source: retail 1.26.45 resource_packs/vanilla_1.16/biomes_client.json
+/*
+ - Default is the settings that a biome will use if it is not specified.
+ - All fields in a biome are optional default values will overwrite the missing ones.
+ - If the default is overwritten in a resource pack then it will overwrite all biomes unless the resource pack defines the biomes.
+  */
+{
+  "biomes": {
+    "minecraft:warped_forest": {
+      "water_surface_color": "#905957",
+      "water_fog_color": "#905957",
+      "fog_color": "#1a051A"
+    },
+    "minecraft:crimson_forest": {
+      "water_surface_color": "#905957",
+      "water_fog_color": "#905957",
+      "fog_color": "#330303"
+    },
+    "minecraft:soulsand_valley": {
+      "water_surface_color": "#905957",
+      "water_fog_color": "#905957",
+      "fog_color": "#1B4745"
+    },
+    "minecraft:basalt_deltas": {
+      "water_surface_color": "#3f76e4",
+      "water_fog_color": "#423e42",
+      "fog_color": "#685f70"
+    }
+  }
+}

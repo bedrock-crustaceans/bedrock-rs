@@ -1,0 +1,6 @@
+/* a file */
+{
+  // its namespace
+  "namespace": "a",
+  "one": { "type": "panel" /* a panel */ }
+}

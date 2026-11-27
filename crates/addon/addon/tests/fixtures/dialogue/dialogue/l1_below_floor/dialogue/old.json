@@ -1,0 +1,8 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "old", "text": "Below the floor." }
+    ]
+  }
+}

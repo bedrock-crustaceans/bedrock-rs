@@ -1,0 +1,6 @@
+# Probe: P01
+scope = "none"
+resolved = ["@minecraft/server 2.8.0"]
+requested = ["@minecraft/server 2.0.0"]
+main = "main.js"
+script_eval = false

@@ -1,0 +1,1 @@
+{"format_version":2,"header":{"description":"Test pack with content using asset references","name":"Test archive and encrypt rp","uuid":"e1e63e3e-0d08-4f98-9e84-bcf0edd82935","version":[1,0,0],"min_engine_version":[1,21,0],"pack_optimization_version":"0.1.0"},"modules":[{"description":"","type":"resources","uuid":"8c2ab7bb-8fa4-418e-8f5e-f3dd5b3a7f71","version":[1,0,0]}]}

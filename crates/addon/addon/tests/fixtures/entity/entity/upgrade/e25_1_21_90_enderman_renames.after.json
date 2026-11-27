@@ -1,0 +1,64 @@
+{
+  "format_version": "1.21.100",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:enderman"
+    },
+    "components": {
+      "minecraft:behavior.place_block": {
+        "priority": 10,
+        "xz_range": [
+          -1,
+          1
+        ],
+        "y_range": [
+          0,
+          2
+        ],
+        "chance": 0.0005
+      },
+      "minecraft:behavior.take_block": {
+        "priority": 11,
+        "chance": 0.05,
+        "xz_range": [
+          -1,
+          1
+        ],
+        "y_range": [
+          0,
+          3
+        ],
+        "requires_line_of_sight": false,
+        "blocks": [
+          "minecraft:grass_block",
+          "minecraft:dirt",
+          "minecraft:coarse_dirt",
+          "minecraft:podzol",
+          "minecraft:sand",
+          "minecraft:red_sand",
+          "minecraft:gravel",
+          "minecraft:crimson_roots",
+          "minecraft:warped_roots",
+          "minecraft:dandelion",
+          "minecraft:poppy",
+          "minecraft:brown_mushroom",
+          "minecraft:red_mushroom",
+          "minecraft:crimson_fungus",
+          "minecraft:warped_fungus",
+          "minecraft:tnt",
+          "minecraft:cactus",
+          "minecraft:clay",
+          "minecraft:pumpkin",
+          "minecraft:carved_pumpkin",
+          "minecraft:melon_block",
+          "minecraft:mycelium",
+          "minecraft:warped_nylium",
+          "minecraft:crimson_nylium",
+          "minecraft:dirt_with_roots",
+          "minecraft:cactus_flower"
+        ]
+      },
+      "minecraft:rotation_axis_aligned": {}
+    }
+  }
+}

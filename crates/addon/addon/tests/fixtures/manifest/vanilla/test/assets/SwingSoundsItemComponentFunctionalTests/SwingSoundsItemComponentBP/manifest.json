@@ -1,0 +1,17 @@
+{
+  "format_version": 1,
+  "header": {
+    "uuid": "eba74149-5eb1-4d52-9912-d0cea9d440a0",
+    "name": "SwingSoundsItemComponentFunctionalTests",
+    "version": [ 1, 0, 0 ],
+    "description": "SwingSoundsItemComponentFunctionalTests"
+  },
+  "modules": [
+    {
+      "description": "Not Used",
+      "version": [ 1, 0, 0 ],
+      "uuid": "37b4157c-4e62-4b2a-931e-4db7c48952c8",
+      "type": "data"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+			  "format_version": "1.26.50",
+			  "minecraft:dimension": {
+				"description": {
+				  "identifier": "test:custom_dimension"
+				},
+				"components": {
+				  "minecraft:generation": {
+					"generator_type": "void"
+				  }
+				}
+			  }
+			}

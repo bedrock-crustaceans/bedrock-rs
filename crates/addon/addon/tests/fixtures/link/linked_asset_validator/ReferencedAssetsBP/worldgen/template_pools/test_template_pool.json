@@ -1,0 +1,10 @@
+{
+  "format_version": "1.21.20", 
+  "minecraft:template_pool": { 
+    "description": { 
+      "identifier": "test:template_pool" 
+    }, 
+    "elements": [
+    ]
+  } 
+}

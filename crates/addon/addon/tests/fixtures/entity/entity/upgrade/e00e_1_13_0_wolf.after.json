@@ -1,0 +1,13 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:wolf"
+    },
+    "components": {
+      "minecraft:behavior.melee_attack": {
+        "max_dist": 3
+      }
+    }
+  }
+}

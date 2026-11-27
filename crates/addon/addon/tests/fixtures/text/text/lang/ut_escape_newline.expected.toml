@@ -1,0 +1,6 @@
+# fixtures.md `lang/ut_escape_newline` (LocalizationUnitTests): `\n` is a line feed,
+# `\n\n` two.
+
+[entries]
+"key.1" = "Text before\nand after"
+"key.2" = "Two\n\nlines"

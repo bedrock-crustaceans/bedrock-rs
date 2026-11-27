@@ -1,0 +1,11 @@
+# client_install_b: every pack through PackWriter::from_pack and into_pack
+    464  baked binary documents copied as JSON text
+      0  baked binary documents copied as their bytes
+812321697  bytes copied
+  32583  files copied
+   1837  files left out: brarchive archives
+    143  files left out: contents.json, signatures.json
+    143  manifests written with other bytes than read
+    143  packs
+    143  packs copied
+      0  packs refused: encrypted

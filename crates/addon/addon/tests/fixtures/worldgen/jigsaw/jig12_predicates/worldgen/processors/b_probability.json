@@ -1,0 +1,23 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:probability"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "input_predicate": {
+              "predicate_type": "minecraft:random_block_match",
+              "block": "minecraft:stone",
+              "probability": 1.5
+            },
+            "output_state": "minecraft:dirt"
+          }
+        ]
+      }
+    ]
+  }
+}

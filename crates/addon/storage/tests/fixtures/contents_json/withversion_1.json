@@ -1,0 +1,176 @@
+{
+   "content" : [
+      {
+         "path" : "block_culling/default.culling_rules.json"
+      },
+      {
+         "path" : "block_culling/glass_clone.culling_rules.json"
+      },
+      {
+         "path" : "block_culling/leaves_clone.culling_rules.json"
+      },
+      {
+         "path" : "blocks.json"
+      },
+      {
+         "path" : "contents.json"
+      },
+      {
+         "path" : "manifest.json"
+      },
+      {
+         "path" : "models/blocks/basic_block.geo.json"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_0.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_1.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_2.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_3.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_4.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_5.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_6.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_7.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_8.png"
+      },
+      {
+         "path" : "textures/blocks/Bedrock_9.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_0.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_1.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_2.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_3.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_4.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_5.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_6.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_7.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_8.png"
+      },
+      {
+         "path" : "textures/blocks/Brick_9.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_0.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_1.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_2.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_3.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_4.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_5.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_6.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_7.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_8.png"
+      },
+      {
+         "path" : "textures/blocks/Coral_9.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_0.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_1.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_2.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_3.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_4.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_5.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_6.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_7.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_8.png"
+      },
+      {
+         "path" : "textures/blocks/Dirt_9.png"
+      },
+      {
+         "path" : "textures/blocks/FlipBookBedrock.png"
+      },
+      {
+         "path" : "textures/blocks/FlipBookBrick.png"
+      },
+      {
+         "path" : "textures/blocks/FlipBookCoral.png"
+      },
+      {
+         "path" : "textures/blocks/FlipBookDirt.png"
+      },
+      {
+         "path" : "textures/blocks/FlipBookNoNumbers.png"
+      },
+      {
+         "path" : "textures/blocks/cobblestone.png"
+      },
+      {
+         "path" : "textures/blocks/glass_clone_tex.png"
+      },
+      {
+         "path" : "textures/flipbook_textures.json"
+      },
+      {
+         "path" : "textures/terrain_texture.json"
+      },
+      {
+         "path" : "textures/textures_list.json"
+      }
+   ],
+   "version" : 1
+}

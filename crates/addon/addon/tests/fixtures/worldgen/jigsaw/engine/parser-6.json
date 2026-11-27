@@ -1,0 +1,9 @@
+{
+				  "format_version": "invalid",
+				  "minecraft:processor_list": {
+					"description": {
+					  "identifier": "test:block_rules_parsing"
+					},
+					"processors": []
+				  }
+			}

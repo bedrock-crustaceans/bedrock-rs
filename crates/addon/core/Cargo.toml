@@ -1,0 +1,56 @@
+[package]
+name = "bedrock_addon_core"
+description = "The shared vocabulary of the bedrock_addon crate family: identifiers, versions, diagnostics, documents, load context, JSON helpers, Molang re-exports and the version-chain machinery; no I/O"
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# Shows which feature each item needs.
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+# The load-time Molang compile check.
+molang = ["molang/compiler", "molang/stdlib", "molang/cache"]
+# The cost-test protocol (`bedrock_addon_core::test_cost`), for dev-dependencies only: it reads the
+# clock, which the library never does. The crate's own tests have it without the feature.
+test-cost = []
+
+[dependencies]
+thiserror = { workspace = true }
+facet = { workspace = true, features = ["reflect"] } # the writer walks values with `Peek`
+facet-format = { workspace = true } # the writer is a `FormatSerializer`
+facet-value = { workspace = true }
+indexmap = { workspace = true }
+bytes = { workspace = true }
+uuid = { workspace = true }
+# Always built with `facet` only: `version`, `json`, `hash`, `catalog`, `ops`.
+molang = { workspace = true, features = ["facet"] }
+semver = { workspace = true }
+# The `schema::` attribute grammar, re-exported as `schema`.
+bedrock_addon_schema = { path = "../schema" }
+# The game's tables, re-exported as `vanilla` and indexed by `vanilla::GeneratedBuiltIns`.
+bedrock_addon_vanilla = { path = "../vanilla" }
+
+# No thread of WebAssembly has a stack to grow from within: there the stack is the embedder's
+# to size (`json::MAX_JSON_DEPTH`).
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+stacker = { workspace = true } # the reader and the writer walk a value by a call of themselves for each level; this gives the walk the stack the depth can take, on the thread that walks (no `Send` bound, no thread)
+
+[dev-dependencies]
+# The integration tests reach `test_cost` through the library, with the feature on.
+bedrock_addon_core = { path = ".", features = ["test-cost"] }
+# The version-chain tests derive a toy family's component enum (a dev-only cycle: the derive's
+# tests depend on core).
+bedrock_addon_derive = { path = "../derive" }
+# The tests' helpers (a dev-only cycle: test_support depends on core). Only `tests/` may use
+# it: a unit test in `src` is built in a second core whose types are not test_support's.
+bedrock_addon_test_support = { path = "../test_support" }
+# `tests/json_parse.rs` alone: facet-json's reading of each text is the oracle the parser is
+# held to.
+facet-json = { workspace = true }

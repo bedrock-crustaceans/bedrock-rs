@@ -1,0 +1,37 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "sm33",
+    "description": "families/script_module fixture sm33_gametest",
+    "uuid": "8dc3550c-6407-5d7c-9af8-315426a2baec",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "uuid": "eda682de-1d98-5b47-8066-017799750282",
+      "version": [
+        3,
+        2,
+        1
+      ],
+      "language": "javascript",
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server-gametest",
+      "version": "beta"
+    }
+  ]
+}

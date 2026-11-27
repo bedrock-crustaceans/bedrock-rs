@@ -1,0 +1,58 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "demo:untagged"
+    },
+    "step": "surface_structures",
+    "start_pool": "demo:ruin/start",
+    "max_depth": 4,
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": 0
+      }
+    },
+    "pool_aliases": [
+      {
+        "alias": "demo:alias/direct",
+        "target": "demo:ruin/start"
+      },
+      {
+        "alias": "demo:alias/random",
+        "targets": [
+          {
+            "weight": 1,
+            "data": "demo:ruin/start"
+          },
+          {
+            "weight": 2,
+            "data": "demo:ruin/other"
+          }
+        ]
+      },
+      {
+        "groups": [
+          {
+            "weight": 1,
+            "data": [
+              {
+                "alias": "demo:alias/g1",
+                "target": "demo:ruin/start"
+              },
+              {
+                "alias": "demo:alias/g2",
+                "targets": [
+                  {
+                    "weight": 1,
+                    "data": "demo:ruin/start"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

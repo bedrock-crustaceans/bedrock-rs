@@ -1,0 +1,76 @@
+{
+  "format_version": 3,
+  "header": {
+    "name": "Banana",
+    "description": "pack settings",
+    "uuid": "d3349771-6782-4420-875a-fcd6179a8915",
+    "version": "1.0.0",
+    "min_engine_version": "1.26.50"
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "1a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d",
+      "version": "1.0.0"
+    }
+  ],
+  "settings": [
+    {
+      "type": "slider",
+      "name": "banana:slider",
+      "text": "Slider",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "toggle",
+      "name": "banana:toggle",
+      "text": "Toggle",
+      "default": false
+    },
+    {
+      "type": "dropdown",
+      "name": "banana:dropdown",
+      "text": "Dropdown",
+      "options": [
+        {
+          "name": "apple",
+          "text": "Apple"
+        },
+        {
+          "name": "banana",
+          "text": "Banana"
+        },
+        {
+          "name": "cherry",
+          "text": "Cherry"
+        }
+      ],
+      "default": "cherry"
+    },
+    {
+      "type": "multiselect",
+      "name": "banana:fruits",
+      "text": "Fruits",
+      "options": [
+        {
+          "name": "apple",
+          "text": "Apple"
+        },
+        {
+          "name": "banana",
+          "text": "Banana"
+        },
+        {
+          "name": "cherry",
+          "text": "Cherry"
+        }
+      ],
+      "defaults": [
+        "cherry"
+      ]
+    }
+  ]
+}

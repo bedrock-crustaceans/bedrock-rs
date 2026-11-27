@@ -1,0 +1,11 @@
+{
+  "format_version": "1.26.20",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:uses_legacy_friction": {}
+    }
+  }
+}

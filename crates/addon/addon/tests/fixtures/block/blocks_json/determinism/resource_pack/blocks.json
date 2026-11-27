@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.40",
+  "determinism:lamp": {
+    "textures": {
+      "up": "lamp_top",
+      "down": "lamp_bottom",
+      "side": "lamp_side"
+    },
+    "carried_textures": "lamp_item",
+    "isotropic": {
+      "up": true,
+      "down": true
+    },
+    "ambient_occlusion_exponent": 0.5,
+    "sound": "glass"
+  },
+  "obsidian": {
+    "textures": "determinism_obsidian",
+    "blockshape": "cross_texture",
+    "sound": "stone"
+  }
+}

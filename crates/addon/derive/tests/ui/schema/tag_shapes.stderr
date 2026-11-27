@@ -1,0 +1,11 @@
+error: an adjacently tagged enum (`content` beside `tag`) has no derived read: no document of the game writes one
+  --> tests/ui/schema/tag_shapes.rs:15:23
+   |
+15 | #[facet(tag = "type", content = "value")]
+   |                       ^^^^^^^
+
+error: `schema::read_with` reads one member: the struct of an internally tagged newtype variant has none, its members sit beside the tag
+  --> tests/ui/schema/tag_shapes.rs:25:17
+   |
+25 |     One(#[facet(schema::read_with = inner)] Inner),
+   |                 ^^^^^^

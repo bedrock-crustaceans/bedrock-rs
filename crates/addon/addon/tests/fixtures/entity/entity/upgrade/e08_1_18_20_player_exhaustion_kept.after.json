@@ -1,0 +1,13 @@
+{
+  "format_version": "1.18.30",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:player"
+    },
+    "components": {
+      "minecraft:exhaustion_values": {
+        "heal": 6
+      }
+    }
+  }
+}

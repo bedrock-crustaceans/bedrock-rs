@@ -1,0 +1,6 @@
+# fixtures.md CRLF file: a carriage return is ignored everywhere, inside a value too.
+
+[entries]
+"a" = "b"
+"c" = "d"
+"e" = "xy"

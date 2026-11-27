@@ -1,0 +1,22 @@
+{
+  "files": {
+    "ui/a.json": {
+      "namespace": "a",
+      "one": {
+        "type": "panel"
+      }
+    },
+    "ui/b.json": {
+      "namespace": "b",
+      "one": {
+        "type": "panel"
+      }
+    },
+    "ui/c.json": {
+      "namespace": "c",
+      "one": {
+        "type": "panel"
+      }
+    }
+  }
+}

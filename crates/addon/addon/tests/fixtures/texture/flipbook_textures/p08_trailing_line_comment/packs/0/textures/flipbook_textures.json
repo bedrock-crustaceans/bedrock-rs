@@ -1,0 +1,6 @@
+[
+  {
+    "flipbook_texture": "textures/blocks/a", // the strip
+    "atlas_tile": "x"
+  }
+]

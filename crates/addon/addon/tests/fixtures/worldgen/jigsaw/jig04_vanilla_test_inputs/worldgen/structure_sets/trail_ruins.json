@@ -1,0 +1,21 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:structure_set": {
+    "description": {
+      "identifier": "minecraft:trail_ruins"
+    },
+    "placement": {
+      "type": "minecraft:random_spread",
+      "salt": 83469867,
+      "separation": 8,
+      "spacing": 34,
+      "spread_type": "triangular"
+    },
+    "structures": [
+      {
+        "structure": "minecraft:trail_ruins",
+        "weight": 1
+      }
+    ]
+  }
+}

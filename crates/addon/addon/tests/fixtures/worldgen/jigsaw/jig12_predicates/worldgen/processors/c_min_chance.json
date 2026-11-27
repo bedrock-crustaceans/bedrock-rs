@@ -1,0 +1,22 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:processor_list": {
+    "description": {
+      "identifier": "demo:min_chance"
+    },
+    "processors": [
+      {
+        "processor_type": "minecraft:rule",
+        "rules": [
+          {
+            "position_predicate": {
+              "predicate_type": "minecraft:axis_aligned_linear_pos",
+              "min_chance": 1.0
+            },
+            "output_state": "minecraft:dirt"
+          }
+        ]
+      }
+    ]
+  }
+}

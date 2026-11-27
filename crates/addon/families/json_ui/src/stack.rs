@@ -1,0 +1,879 @@
+//! The stack merge of JSON UI, the bulk of its loader: the united lists, each listed file
+//! merged from the lowest pack up, the global variables, the definition table and the checks
+//! over it; with the walk of `ui/` and `Content` of the file kinds it reads.
+
+use std::collections::HashSet;
+
+use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
+use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use indexmap::IndexMap;
+
+use super::codes;
+use super::globals::{GlobalEvent, merge_globals};
+use super::merge::{CopyContent, Event, FileCopy, merge_file};
+use super::resolve::{ResolveEvent, resolve};
+use super::value::{member, string_or_empty};
+use super::{
+    DefKey, GLOBAL_VARIABLES_PATH, GlobalVariables, UI_DEFS_PATH, UiDefinitions, UiDefsList,
+    UiFile, UiPackError, UiPackErrorKind, UiPackReport, lint, write,
+};
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Code, CodeDef, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Kind, Phase, Severity,
+    builders,
+};
+use bedrock_addon_core::document::{
+    Content, Document, Merge, Merged, Origin, Placed, RawLayer, Rejected, unversioned,
+};
+use bedrock_addon_core::json::jsoncpp::read;
+use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
+
+/// The directory the listed files live in.
+const UI: &str = "ui";
+
+impl bedrock_addon_core::__private::Sealed for UiDefinitions {}
+impl bedrock_addon_core::__private::Sealed for UiFile {}
+impl bedrock_addon_core::__private::Sealed for UiDefsList {}
+impl bedrock_addon_core::__private::Sealed for GlobalVariables {}
+
+/// Keyed by the path of a read file (`ui/hud_screen.json`, `ui/_global_variables.json`):
+/// `Merged::origin` names the highest pack whose copy is part of the merged file, with the
+/// lower ones as contributors.
+impl Merge for UiDefinitions {
+    type Key = String;
+}
+
+impl UiFile {
+    /// A file from its root object: `namespace` and the definitions. The flag says the
+    /// `namespace` member is not a string (it is then kept among the definitions).
+    pub(crate) fn from_value(root: &Value) -> Option<(Self, bool)> {
+        let root = root.as_object()?;
+        let mut file = Self::default();
+        let mut bad_namespace = false;
+        for (key, value) in root {
+            if key.as_str() == "namespace" && !value.is_null() {
+                match value.as_string() {
+                    Some(namespace) => {
+                        file.namespace = Some(namespace.as_str().to_owned());
+                        continue;
+                    }
+                    None => bad_namespace = true,
+                }
+            }
+            file.defs.insert(DefKey::parse(key.as_str()), value.clone());
+        }
+        Some((file, bad_namespace))
+    }
+}
+
+/// A rejection for a file that is not the JSON object it has to be.
+fn reject(origin: Origin, message: String) -> Rejected {
+    let mut diagnostics = Diagnostics::default();
+    diagnostics.push(Diagnostic::of(builders::syntax(message)));
+    Rejected::located(origin, diagnostics)
+}
+
+/// The root object of a file, or the rejection.
+fn root_object(origin: &Origin, bytes: &[u8]) -> Result<Value, Rejected> {
+    let root = read(bytes).map_err(|message| reject(origin.clone(), message.to_string()))?;
+    if root.is_object() {
+        Ok(root)
+    } else {
+        Err(reject(
+            origin.clone(),
+            "the root is not an object".to_owned(),
+        ))
+    }
+}
+
+fn json_text(value: &Value, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+    write_json(value, out, style)
+}
+
+impl Content for UiFile {
+    const NAME: &'static str = "ui file";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one UI file on its own: its namespace and its definitions, as written. The
+    /// checks of the merge and of control creation belong to the stack ([`UiDefinitions`]).
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = unversioned::lone(path);
+        let mut root = root_object(&origin, bytes)?;
+        let mut diagnostics = Diagnostics::default();
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::json::clamp_non_finite_warned(
+            &mut root,
+            None,
+            &JsonPath::new(),
+            &mut diagnostics,
+        );
+        let (file, bad_namespace) = Self::from_value(&root).unwrap_or_default();
+        if bad_namespace {
+            // The game converts the value to a string; the crate puts the file in `_root`
+            // instead and says so.
+            diagnostics.push(
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
+                    .at(json_path(&["namespace"])),
+            );
+        }
+        Ok(unversioned::document(file, origin, diagnostics))
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        json_text(&write::file_value(self), out, style)
+    }
+}
+
+impl bedrock_addon_core::document::JsonContent for UiFile {}
+
+impl Content for UiDefsList {
+    const NAME: &'static str = "ui definition list";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one `ui/_ui_defs.json`.
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = unversioned::lone(path);
+        let mut root = root_object(&origin, bytes)?;
+        let mut list = Self::default();
+        let mut diagnostics = Diagnostics::default();
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::json::clamp_non_finite_warned(
+            &mut root,
+            None,
+            &JsonPath::new(),
+            &mut diagnostics,
+        );
+        for (key, value) in root
+            .as_object()
+            .into_iter()
+            .flat_map(|object| object.iter())
+        {
+            if key.as_str() != "ui_defs" {
+                list.extra.insert(key.as_str().to_owned(), value.clone());
+                continue;
+            }
+            list.ui_defs = read_ui_defs(value);
+            if !value.is_array() {
+                // The game reads no path from a list that is not an array; the crate says so.
+                diagnostics.push(
+                    Diagnostic::of(&core_codes::INVALID_TYPE)
+                        .severity(Severity::Info)
+                        .at(json_path(&["ui_defs"])),
+                );
+            }
+            // What the typed list cannot say (no array, an element that is no string, an
+            // empty array against no member at all) is kept as written beside it.
+            let exact = value.as_array().is_some_and(|paths| {
+                !paths.is_empty() && paths.as_slice().iter().all(Value::is_string)
+            });
+            if !exact {
+                list.extra.insert(key.as_str().to_owned(), value.clone());
+            }
+        }
+        Ok(unversioned::document(list, origin, diagnostics))
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        json_text(&write::defs_list_value(self), out, style)
+    }
+}
+
+impl bedrock_addon_core::document::JsonContent for UiDefsList {}
+
+/// The paths of a `ui_defs` array: each element through `asString("")`.
+pub(super) fn listed(paths: &[Value]) -> Vec<String> {
+    paths
+        .iter()
+        .map(|path| string_or_empty(Some(path)).to_owned())
+        .collect()
+}
+
+/// The paths the game reads from a `ui_defs` value: the elements of an array.
+pub(super) fn read_ui_defs(written: &Value) -> Vec<String> {
+    written
+        .as_array()
+        .map_or_default(|paths| listed(paths.as_slice()))
+}
+
+impl Placed for UiDefsList {
+    /// `ui/_ui_defs.json`: the one path the game reads the list from.
+    fn default_path(&self) -> PackPath {
+        PackPath::from_static(UI_DEFS_PATH)
+    }
+}
+
+impl Content for GlobalVariables {
+    const NAME: &'static str = "ui global variables";
+    const SIDES: &'static [PackSide] = &[PackSide::Resource];
+
+    /// Reads one `ui/_global_variables.json`.
+    fn parse(path: &PackPath, bytes: &[u8], _: &LoadContext) -> Result<Document<Self>, Rejected> {
+        let origin = unversioned::lone(path);
+        let mut root = root_object(&origin, bytes)?;
+        let mut diagnostics = Diagnostics::default();
+        // A number no double holds is read as the largest finite one, with a warning.
+        bedrock_addon_core::json::clamp_non_finite_warned(
+            &mut root,
+            None,
+            &JsonPath::new(),
+            &mut diagnostics,
+        );
+        Ok(unversioned::document(
+            Self::from_value(&root),
+            origin,
+            diagnostics,
+        ))
+    }
+
+    fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
+        json_text(&write::globals_value(self), out, style)
+    }
+}
+
+impl bedrock_addon_core::document::JsonContent for GlobalVariables {}
+
+impl Placed for GlobalVariables {
+    /// `ui/_global_variables.json`: the one path the game reads the variables from.
+    fn default_path(&self) -> PackPath {
+        PackPath::from_static(GLOBAL_VARIABLES_PATH)
+    }
+}
+
+// ---- the stack ------------------------------------------------------------------------------
+
+/// What the `ui()` line reads of one file below `ui/`.
+#[derive(Debug)]
+pub struct UiCopy {
+    origin: Origin,
+    /// The path the stack keys the file by (no subpack folder).
+    key: String,
+    content: CopyContent,
+    /// What reading the copy found, in its pack's file: the warnings of the numbers no
+    /// double holds, each read as the largest finite one.
+    found: Diagnostics,
+}
+
+/// Whether a path names a JSON file: the files below `ui/` a list may name and have read. A
+/// picture or an archive left there is never read.
+fn is_json(path: &str) -> bool {
+    path.rsplit_once('.')
+        .is_some_and(|(_, extension)| extension.eq_ignore_ascii_case("json"))
+}
+
+/// Whether the loader reads the file a list names by `path`: a JSON file below `ui/`: the game reads only `ui/` for JSON UI.
+fn is_read(path: &str) -> bool {
+    path.starts_with("ui/") && is_json(path)
+}
+
+/// The second walk stage: the files the lists of the stack name. Every pack's copy of
+/// `ui/_ui_defs.json` that is JSON counts, as in the merge; the loader reads each named file
+/// from every pack that has it.
+// The only enumeration of files is the `ui_defs` list.
+fn listed_files(parsed: &[&UiCopy]) -> Vec<PackPath> {
+    parsed
+        .iter()
+        .filter(|copy| copy.key == UI_DEFS_PATH)
+        .filter_map(|copy| match &copy.content {
+            CopyContent::Json(json) => member(json, "ui_defs").and_then(Value::as_array),
+            _ => None,
+        })
+        .flat_map(|paths| listed(paths.as_slice()))
+        .filter(|path| is_read(path))
+        .filter_map(|path| PackPath::new(&path).ok())
+        .collect()
+}
+
+/// Whether a pack of the stack has a JSON file below `ui/`, read or not: a stack without one
+/// has no JSON UI to talk about. Decided from the packs' listings, bytes unread.
+fn has_ui_file(stack: &StackCx<'_>) -> bool {
+    stack.packs.iter().any(|pack| {
+        let mut below = pack.files_below(UI).iter();
+        below.any(|file| is_json(file.key.as_str()))
+    })
+}
+
+/// The `Parse` job: the file's JSON, or why it is none.
+fn parse(file: &WalkFile, _: &LoadContext) -> UiCopy {
+    let origin = Origin::file(file.pack.clone(), file.side, file.path.clone());
+    // The copy is read with the numbers no double holds clamped, so no layer, file,
+    // variable or control of the merge keeps an infinity; the warning names this pack's file.
+    let finite = bedrock_addon_core::document::FiniteText::of(&file.bytes);
+    let content = if file.bytes.is_empty() {
+        CopyContent::Empty
+    } else {
+        match read(finite.bytes()) {
+            Ok(json) => CopyContent::Json(json),
+            Err(message) => CopyContent::Malformed(message.to_string()),
+        }
+    };
+    let mut found = Diagnostics::default();
+    finite.settle(&mut found, Some(&origin));
+    UiCopy {
+        origin,
+        key: file.key.as_str().to_owned(),
+        content,
+        found,
+    }
+}
+
+/// The loader of `ui()`: the list and the global variables of every resource pack, lowest
+/// pack first, then the files the lists name (the second walk stage). A file below
+/// `ui/` that no list names is never asked for.
+///
+/// A hand loader rather than `load::merged`: a copy is the file's JSON, merged into the lower
+/// copies before it is read, and the listed files are a second stage (`then`).
+// The game hands the merge the copies of a file lowest priority first.
+pub const LOADER: CollectionLoader<Merged<UiDefinitions, RawLayer>, UiCopy> = CollectionLoader {
+    walk: Walk::exact_files(&[UI_DEFS_PATH, GLOBAL_VARIABLES_PATH]),
+    parse,
+    combine,
+    needs: &[],
+    then: Some(listed_files),
+};
+
+fn json_path(segments: &[&str]) -> JsonPath {
+    let mut path = JsonPath::new();
+    for segment in segments {
+        match segment.parse::<usize>() {
+            Ok(index) if !segment.is_empty() => path.push_index(index),
+            _ => path.push(segment),
+        }
+    }
+    path
+}
+
+/// The stack's findings and pack reports as they accumulate.
+#[derive(Default)]
+struct Report {
+    diagnostics: Diagnostics,
+    reports: IndexMap<PackRef, Vec<UiPackError>>,
+}
+
+impl Report {
+    fn push(
+        &mut self,
+        code: impl Into<Code>,
+        severity: Severity,
+        origin: Option<&Origin>,
+        path: &[&str],
+        detail: Option<DiagnosticDetail>,
+    ) {
+        let code = code.into();
+        let phase = if code.kind() == Kind::Syntax {
+            Phase::Parse
+        } else {
+            Phase::Validate
+        };
+        let mut diagnostic = Diagnostic::error(code)
+            .severity(severity)
+            .at(json_path(path))
+            .phase(phase);
+        if let Some(origin) = origin {
+            diagnostic = diagnostic.in_file(origin);
+        }
+        if let Some(detail) = detail {
+            diagnostic = diagnostic.detail(detail);
+        }
+        self.diagnostics.push(diagnostic);
+    }
+
+    /// A content-log error after which the game goes on with the file: a kept error.
+    fn push_kept(&mut self, code: impl Into<Code>, origin: Option<&Origin>) {
+        let mut diagnostic = Diagnostic::error(code.into()).phase(Phase::Validate);
+        if let Some(origin) = origin {
+            diagnostic = diagnostic.in_file(origin);
+        }
+        self.diagnostics.push_kept_error(diagnostic);
+    }
+
+    /// A lint of the crate's own (vanilla is silent): an information.
+    fn lint(&mut self, code: impl Into<Code>, origin: Option<&Origin>, path: &[&str]) {
+        self.push(code, Severity::Info, origin, path, None);
+    }
+
+    /// One `uiPackError`: into the pack's report and the findings.
+    fn pack_error(&mut self, error: UiPackError, origin: &Origin) {
+        // A pack error has no code of its own: each kind's definition was the legacy code of
+        // its nature.
+        let args = &error.args;
+        let code = match error.kind {
+            UiPackErrorKind::InvalidChildNames => fill(&codes::PACK_INVALID_CHILD_NAMES, args),
+            UiPackErrorKind::ParseError => fill(&codes::PACK_PARSE_ERROR, args),
+            UiPackErrorKind::MissingControl => fill(&codes::PACK_MISSING_CONTROL, args),
+            UiPackErrorKind::MissingControlTarget => {
+                fill(&codes::PACK_MISSING_CONTROL_TARGET, args)
+            }
+            UiPackErrorKind::MissingArrayName => fill(&codes::PACK_MISSING_ARRAY_NAME, args),
+            UiPackErrorKind::MissingCondition => fill(&codes::PACK_MISSING_CONDITION, args),
+            UiPackErrorKind::MissingValue => fill(&codes::PACK_MISSING_VALUE, args),
+            UiPackErrorKind::MissingOperation => fill(&codes::PACK_MISSING_OPERATION, args),
+            UiPackErrorKind::InvalidOperationName => {
+                fill(&codes::PACK_INVALID_OPERATION_NAME, args)
+            }
+        };
+        // The reader's message of an overlay that is not JSON.
+        let detail = (error.kind == UiPackErrorKind::ParseError)
+            .then(|| DiagnosticDetail::Syntax(args.get(1).cloned().unwrap_or_default()));
+        // The overlay key, when the text has one, is where the finding is.
+        let key = match error.kind {
+            UiPackErrorKind::InvalidChildNames | UiPackErrorKind::ParseError => None,
+            _ => error.args.get(1).cloned(),
+        };
+        let path: Vec<&str> = key.as_deref().into_iter().collect();
+        self.push(code, error.severity, Some(origin), &path, detail);
+        self.reports
+            .entry(origin.pack.clone())
+            .or_default()
+            .push(error);
+    }
+
+    /// A file that is not JSON, with vanilla's text for it and the reader's message.
+    fn malformed(&mut self, code: Code, message: String, origin: &Origin) {
+        self.push(
+            code,
+            Severity::Error,
+            Some(origin),
+            &[],
+            Some(DiagnosticDetail::Syntax(message)),
+        );
+    }
+}
+
+/// A definition's code from a pack error's arguments, in order; a missing one is empty.
+fn fill<const N: usize>(def: &'static CodeDef<N>, args: &[String]) -> Code {
+    def.with(std::array::from_fn(|index| {
+        args.get(index).cloned().unwrap_or_default()
+    }))
+}
+
+/// The stack position of a pack: the top pack first, the app data last.
+fn rank(pack: &PackRef) -> usize {
+    pack.index().unwrap_or(usize::MAX)
+}
+
+/// The reader's message of a copy that is not JSON.
+fn message_of(content: &CopyContent) -> Option<String> {
+    match content {
+        CopyContent::Json(_) => None,
+        CopyContent::Empty => Some("empty document".to_owned()),
+        CopyContent::Malformed(message) => Some(message.clone()),
+    }
+}
+
+/// The `Combine` job: see the module documentation.
+fn combine(parsed: Vec<UiCopy>, stack: &StackCx<'_>) -> Merged<UiDefinitions, RawLayer> {
+    let has_ui = !parsed.is_empty() || has_ui_file(stack);
+    merge_stack(parsed, has_ui)
+}
+
+/// The whole merge of a stack's `ui/` files, given lowest pack first: the fixed files, then
+/// the listed ones. `has_ui` says whether a pack of the stack has a JSON file below `ui/`: a
+/// stack without one has no JSON UI to talk about.
+#[allow(clippy::too_many_lines, reason = "the load order, step by step")]
+fn merge_stack(parsed: Vec<UiCopy>, has_ui: bool) -> Merged<UiDefinitions, RawLayer> {
+    // A subpack's file replaces its pack's file of the same key.
+    let mut by_path: IndexMap<String, Vec<UiCopy>> = IndexMap::new();
+    for copy in parsed {
+        let copies = by_path.entry(copy.key.clone()).or_default();
+        match copies.last_mut() {
+            Some(last) if last.origin.pack == copy.origin.pack => *last = copy,
+            _ => copies.push(copy),
+        }
+    }
+    let mut report = Report::default();
+    // What reading each copy that takes part found, lowest pack first.
+    for copy in by_path.values_mut().flatten() {
+        report.diagnostics.append(std::mem::take(&mut copy.found));
+    }
+    let mut layers: Vec<RawLayer> = Vec::new();
+    let mut origins: IndexMap<String, Origin> = IndexMap::new();
+    let mut value = UiDefinitions::default();
+
+    // The union of every pack's list, sorted, each path once.
+    let mut paths: Vec<String> = Vec::new();
+    // Each listed path with the list that names it and its index there (of several, the
+    // highest pack's last).
+    let mut listers: IndexMap<String, (Origin, usize)> = IndexMap::new();
+    let lists = by_path.shift_remove(UI_DEFS_PATH).unwrap_or_default();
+    for copy in &lists {
+        match &copy.content {
+            CopyContent::Json(json) => {
+                let listed_here = member(json, "ui_defs")
+                    .and_then(Value::as_array)
+                    .map_or_default(|listed_here| listed(listed_here.as_slice()));
+                for (index, path) in listed_here.into_iter().enumerate() {
+                    listers.insert(path.clone(), (copy.origin.clone(), index));
+                    paths.push(path);
+                }
+                layers.push(RawLayer::new(copy.origin.clone(), json.clone()));
+            }
+            // That pack's list is skipped; the others still contribute.
+            content => {
+                let message = message_of(content).unwrap_or_default();
+                let code = codes::PARSE_ERROR.with([copy.origin.path.to_string(), message.clone()]);
+                report.malformed(code, message, &copy.origin);
+            }
+        }
+    }
+    paths.sort();
+    paths.dedup();
+    // A list may name any file, the two fixed ones too: the game loads every listed path
+    // as a UI file, whatever else it reads it as.
+    let is_listed = |fixed: &str| {
+        paths
+            .binary_search_by(|path| path.as_str().cmp(fixed))
+            .is_ok()
+    };
+    if is_listed(UI_DEFS_PATH) && !lists.is_empty() {
+        by_path.insert(UI_DEFS_PATH.to_owned(), lists);
+    }
+    let globals_listed = is_listed(GLOBAL_VARIABLES_PATH);
+    if paths.is_empty() && has_ui {
+        // No pack lists a file although the stack has JSON UI files.
+        report.push(
+            &core_codes::NO_UI_DEFINITIONS,
+            Severity::Info,
+            None,
+            &[],
+            None,
+        );
+    }
+
+    // The global variables.
+    let globals = by_path
+        .shift_remove(GLOBAL_VARIABLES_PATH)
+        .unwrap_or_default();
+    let global_origins: Vec<Origin> = globals.iter().map(|copy| copy.origin.clone()).collect();
+    let mut inputs = Vec::new();
+    let mut listed_globals = Vec::new();
+    for (slot, copy) in globals.into_iter().enumerate() {
+        if let CopyContent::Json(json) = &copy.content {
+            layers.push(RawLayer::new(copy.origin.clone(), json.clone()));
+        }
+        if globals_listed {
+            listed_globals.push(UiCopy {
+                origin: copy.origin,
+                key: copy.key,
+                content: copy.content.clone(),
+                found: Diagnostics::default(),
+            });
+        }
+        inputs.push((slot, copy.content));
+    }
+    if !listed_globals.is_empty() {
+        by_path.insert(GLOBAL_VARIABLES_PATH.to_owned(), listed_globals);
+    }
+    let (root, merged, raised) = merge_globals(inputs);
+    for (slot, event) in raised {
+        let origin = &global_origins[slot];
+        match event {
+            // The lowest copy of the variables does not parse.
+            GlobalEvent::BaseMalformed(message) => report.malformed(
+                codes::GLOBALS_NOT_PARSED.with([origin.path.to_string()]),
+                message,
+                origin,
+            ),
+            // Silent in vanilla.
+            GlobalEvent::OverlayMalformed(message) => {
+                report.lint(builders::syntax(message), Some(origin), &[]);
+            }
+        }
+    }
+    value.global_variables = GlobalVariables::from_value(&root);
+    if let Some(origin) = merged_origin(&global_origins, &merged) {
+        origins.insert(GLOBAL_VARIABLES_PATH.to_owned(), origin);
+    }
+
+    // Each listed file, merged from the lowest pack up.
+    for path in &paths {
+        let Some(copies) = by_path.shift_remove(path) else {
+            let (lister, index) = match listers.get(path) {
+                Some((lister, index)) => (Some(lister), index.to_string()),
+                None => (None, String::new()),
+            };
+            // At the element of the list that names the file.
+            let at: &[&str] = if lister.is_some() {
+                &["ui_defs", &index]
+            } else {
+                &["ui_defs"]
+            };
+            if path.is_empty() || is_read(path) {
+                // The game's line for a listed file no pack has goes to the developer log
+                // only, not the content log: an information that carries its text.
+                report.push(
+                    codes::NOT_LOADED.with([path.as_str()]),
+                    Severity::Info,
+                    lister,
+                    at,
+                    None,
+                );
+            } else {
+                // Only the JSON files of `ui/` are read, so a path elsewhere or of another
+                // kind is never asked for; the crate says so.
+                report.lint(&core_codes::FILE_NOT_LOADED, lister, at);
+            }
+            continue;
+        };
+        // The two fixed files have their layers already.
+        let fixed = path == UI_DEFS_PATH || path == GLOBAL_VARIABLES_PATH;
+        let file_origins: Vec<Origin> = copies.iter().map(|copy| copy.origin.clone()).collect();
+        let mut inputs = Vec::new();
+        for (slot, copy) in copies.into_iter().enumerate() {
+            if let CopyContent::Json(json) = &copy.content
+                && !fixed
+            {
+                layers.push(RawLayer::new(copy.origin, json.clone()));
+            }
+            inputs.push(FileCopy {
+                slot,
+                content: copy.content,
+            });
+        }
+        let merged = merge_file(path, inputs);
+        for raised in merged.raised {
+            let origin = &file_origins[raised.slot];
+            match raised.event {
+                // The base copy does not parse.
+                Event::BaseMalformed(message) => report.malformed(
+                    codes::PARSE_ERROR.with([origin.path.to_string(), message.clone()]),
+                    message,
+                    origin,
+                ),
+                // Empty or repeated child names in the base copy are an error in the game's
+                // content log, and the merge goes on with the file: a kept error.
+                Event::BaseInvalidNames(names) => report.push_kept(
+                    codes::INVALID_NAMES.with([names.join("\n"), path.clone()]),
+                    Some(origin),
+                ),
+                Event::Pack(error) => report.pack_error(error, origin),
+                // Silent in vanilla: an overlay member that is no object, and `modifications`
+                // below a control's top level.
+                Event::IgnoredValue(key) => {
+                    report.lint(&core_codes::IGNORED_MEMBER, Some(origin), &[&key]);
+                }
+                Event::NestedModifications(key) => report.lint(
+                    &core_codes::IGNORED_MEMBER,
+                    Some(origin),
+                    &[&key, "modifications"],
+                ),
+                // An overlay `name@base` key whose short name the base already has.
+                Event::Rebased(key) => {
+                    report.lint(&core_codes::REBASED_OVERRIDE, Some(origin), &[&key]);
+                }
+                // A condition that matches nothing is silent in vanilla.
+                Event::Unmatched(key) => report.lint(
+                    &core_codes::UNMATCHED_CONDITION,
+                    Some(origin),
+                    &[&key, "modifications"],
+                ),
+                Event::WhereArray(key) => report.lint(
+                    &core_codes::WHERE_ARRAY_NEVER_MATCHES,
+                    Some(origin),
+                    &[&key, "modifications"],
+                ),
+            }
+        }
+        let Some(root) = merged.root else {
+            continue;
+        };
+        match UiFile::from_value(&root) {
+            Some((file, bad_namespace)) => {
+                let origin = merged_origin(&file_origins, &merged.committed);
+                if bad_namespace {
+                    report.lint(&core_codes::INVALID_TYPE, origin.as_ref(), &["namespace"]);
+                }
+                if let Some(origin) = origin {
+                    origins.entry(path.clone()).or_insert(origin);
+                }
+                value.files.insert(path.clone(), file);
+            }
+            // A root that is no object defines nothing; the game says nothing, the crate
+            // reports an error.
+            None => report.push(
+                core_codes::SYNTAX.with(["the root is not an object"]),
+                Severity::Error,
+                file_origins.first(),
+                &[],
+                None,
+            ),
+        }
+    }
+
+    // The definition table.
+    let (namespaces, resolved) = resolve(&value.files, &value.global_variables);
+    value.namespaces = namespaces;
+    let mut unresolved: HashSet<(String, String)> = HashSet::new();
+    for found in resolved {
+        let origin = origins.get(&found.file);
+        let key = found.key.to_string();
+        match found.event {
+            // Silent in vanilla; the crate reports an information.
+            ResolveEvent::Duplicate => report.push(
+                &core_codes::DUPLICATE_IDENTIFIER,
+                Severity::Info,
+                origin,
+                &[&key],
+                None,
+            ),
+            // Silent in vanilla at load; the crate reports an information.
+            ResolveEvent::MissingBase(reference) => {
+                unresolved.insert((found.namespace, found.key.name));
+                report.push(
+                    &core_codes::UNRESOLVED_REFERENCE,
+                    Severity::Info,
+                    origin,
+                    &[&key],
+                    Some(DiagnosticDetail::Reference {
+                        kind: "ui definition",
+                        id: reference,
+                        hint: None,
+                    }),
+                );
+            }
+            // Silent in vanilla at load (the self-base walk stops); the crate reports an
+            // information.
+            ResolveEvent::Cycle => {
+                unresolved.insert((found.namespace, found.key.name));
+                report.push(
+                    &core_codes::REFERENCE_CYCLE,
+                    Severity::Info,
+                    origin,
+                    &[&key],
+                    None,
+                );
+            }
+        }
+    }
+
+    // The control-creation checks, statically: informations, since the game logs them only
+    // when a screen builds the control, never at load.
+    for finding in lint::lint(&value, &unresolved) {
+        let path: Vec<&str> = finding.path.iter().map(String::as_str).collect();
+        report.push(
+            finding.code,
+            Severity::Info,
+            origins.get(&finding.file),
+            &path,
+            finding.detail,
+        );
+    }
+
+    let Report {
+        diagnostics,
+        reports,
+    } = report;
+    let mut reports: Vec<UiPackReport> = reports
+        .into_iter()
+        .map(|(pack, errors)| UiPackReport { pack, errors })
+        .collect();
+    reports.sort_by_key(|report| rank(&report.pack));
+    value.reports = reports;
+    // Top first; within one pack the later file first.
+    layers.reverse();
+    layers.sort_by_key(|layer| rank(&layer.origin.pack));
+    Merged::new(value, origins, layers, diagnostics)
+}
+
+/// The origin of a merged file: the highest pack whose copy is part of it, the lower ones as
+/// contributors.
+fn merged_origin(file_origins: &[Origin], committed: &[usize]) -> Option<Origin> {
+    let (top, lower) = committed.split_last()?;
+    let top = file_origins.get(*top)?;
+    Some(Origin::new(
+        top.pack.clone(),
+        top.side,
+        top.path.clone(),
+        None,
+        lower
+            .iter()
+            .rev()
+            .filter_map(|slot| file_origins.get(*slot))
+            .map(|origin| origin.pack.clone())
+            .collect(),
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Characterization: the files a list names are told JSON without regard to case, unlike
+    /// `PackPath::is_json`. Pinned, not decided: no vanilla sample says which the game does.
+    #[test]
+    fn a_listed_file_is_json_in_any_case() {
+        for path in ["ui/screen.json", "ui/screen.JSON", "ui/screen.Json"] {
+            assert!(is_json(path), "{path}");
+            assert!(is_read(path), "{path}");
+        }
+        assert!(!PackPath::new("ui/screen.JSON").unwrap().is_json());
+        assert!(!is_read("textures/screen.JSON"));
+        assert!(!is_json("ui/screen.jsonc"));
+    }
+
+    /// `UiCopy` can be printed in a failure message.
+    #[test]
+    fn ui_copy_implements_debug() {
+        fn assert_debug<T: std::fmt::Debug>() {}
+        assert_debug::<UiCopy>();
+    }
+
+    /// `UiPackError` is an error, so `?` can box it.
+    #[test]
+    fn ui_pack_error_implements_error() {
+        fn assert_error<T: std::error::Error>() {}
+        assert_error::<UiPackError>();
+    }
+
+    /// The walk asks for the two fixed files and nothing else (`Walk::matches`); every other
+    /// file is asked for only when a list names it.
+    #[test]
+    fn the_walk_asks_for_the_fixed_files_and_the_lists_name_the_rest() {
+        let loader = LOADER;
+        let asked =
+            |path: &'static str| loader.walk.matches(&PackPath::from_static(path)).is_some();
+        assert!(asked(UI_DEFS_PATH));
+        assert!(asked(GLOBAL_VARIABLES_PATH));
+        // A file no list names is not asked for.
+        assert!(!asked("ui/unlisted.json"));
+        assert!(!asked("ui/deep/_ui_defs.json"));
+        assert!(!asked("ui/picture.png"));
+        assert!(!asked("textures/ui/a.json"));
+
+        let copy = |key: &str, text: &str| {
+            let path = PackPath::new(key).unwrap();
+            UiCopy {
+                origin: unversioned::lone(&path),
+                key: key.to_owned(),
+                content: match read(text.as_bytes()) {
+                    Ok(json) => CopyContent::Json(json),
+                    Err(message) => CopyContent::Malformed(message.to_string()),
+                },
+                found: Diagnostics::default(),
+            }
+        };
+        let lists = [
+            copy(
+                UI_DEFS_PATH,
+                r#"{ "ui_defs": ["ui/a.json", "ui/deep/b.JSON", "ui/a.json", 7, "",
+                                 "ui/note.txt", "textures/ui/c.json", "uix/d.json"] }"#,
+            ),
+            // The global variables name no file, whatever they hold.
+            copy(GLOBAL_VARIABLES_PATH, r#"{ "ui_defs": ["ui/g.json"] }"#),
+            // A list that is no JSON, and one whose `ui_defs` is no array, name nothing.
+            copy(UI_DEFS_PATH, "{"),
+            copy(UI_DEFS_PATH, r#"{ "ui_defs": "ui/e.json" }"#),
+            copy(UI_DEFS_PATH, r#"{ "ui_defs": ["ui/z.json"] }"#),
+        ];
+        let then = loader.then.expect("the second stage");
+        let named: Vec<String> = then(&lists.iter().collect::<Vec<_>>())
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        // Only the JSON files below `ui/` are named.
+        assert_eq!(
+            named,
+            ["ui/a.json", "ui/deep/b.JSON", "ui/a.json", "ui/z.json"]
+        );
+    }
+}

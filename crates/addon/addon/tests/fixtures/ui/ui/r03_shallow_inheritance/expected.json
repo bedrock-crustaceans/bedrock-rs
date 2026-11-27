@@ -1,0 +1,32 @@
+{
+  "defs": {
+    "a.b": {
+      "type": "panel",
+      "size": [
+        1,
+        1
+      ],
+      "controls": [
+        {
+          "x@a.leaf": {}
+        }
+      ]
+    },
+    "a.d": {
+      "controls": [
+        {
+          "z@a.leaf": {}
+        }
+      ],
+      "type": "panel",
+      "size": [
+        1,
+        1
+      ]
+    },
+    "a.leaf": {
+      "type": "label",
+      "text": "hi"
+    }
+  }
+}

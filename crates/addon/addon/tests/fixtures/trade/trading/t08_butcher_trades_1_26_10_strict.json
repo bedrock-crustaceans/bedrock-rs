@@ -1,0 +1,501 @@
+// t07_butcher_trades_1_26_10.json with three changes: tier 0 also has a flat "trades" list,
+// tiers/0/groups/0/trades/0/wants/0/choice/0 has "biomes", tier 1 has no "total_exp_required".
+{
+  "format_version": "1.26.10",
+  "tiers": [
+    {
+      "total_exp_required": 0,
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 14,
+                        "max": 14
+                      },
+                      "item": "minecraft:chicken",
+                      "functions": [],
+                      "price_multiplier": 0.05,
+                      "biomes": [
+                        "plains"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 2,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 4,
+                        "max": 4
+                      },
+                      "item": "minecraft:rabbit",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 2,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 7,
+                        "max": 7
+                      },
+                      "item": "minecraft:porkchop",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 2,
+              "max_uses": 16
+            }
+          ]
+        },
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:rabbit_stew",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "max_uses": 12
+            }
+          ]
+        }
+      ],
+      "trades": [
+        {
+          "wants": [
+            {
+              "choice": [
+                {
+                  "item": "minecraft:emerald",
+                  "functions": [],
+                  "price_multiplier": 0.05
+                }
+              ]
+            }
+          ],
+          "gives": [
+            {
+              "choice": [
+                {
+                  "item": "minecraft:rabbit_stew",
+                  "functions": []
+                }
+              ]
+            }
+          ],
+          "max_uses": 12
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 15,
+                        "max": 15
+                      },
+                      "item": "minecraft:coal:0",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 10,
+              "max_uses": 16
+            }
+          ]
+        },
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 5,
+                        "max": 5
+                      },
+                      "item": "minecraft:cooked_rabbit",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 5,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 8,
+                        "max": 8
+                      },
+                      "item": "minecraft:cooked_chicken",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 5,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 5,
+                        "max": 5
+                      },
+                      "item": "minecraft:cooked_porkchop",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 5,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 4,
+                        "max": 4
+                      },
+                      "item": "minecraft:muttoncooked",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 5,
+              "max_uses": 16
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 10,
+                        "max": 10
+                      },
+                      "item": "minecraft:beef",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 20,
+              "max_uses": 16
+            },
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 7,
+                        "max": 7
+                      },
+                      "item": "minecraft:muttonraw",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 20,
+              "max_uses": 16
+            }
+          ]
+        },
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 3,
+                        "max": 3
+                      },
+                      "item": "minecraft:cooked_beef",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 10,
+              "max_uses": 16
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 70
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 10,
+                        "max": 10
+                      },
+                      "item": "minecraft:dried_kelp_block",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 30,
+              "max_uses": 12
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 150
+    },
+    {
+      "groups": [
+        {
+          "num_to_select": 1,
+          "trades": [
+            {
+              "wants": [
+                {
+                  "choice": [
+                    {
+                      "quantity": {
+                        "min": 10,
+                        "max": 10
+                      },
+                      "item": "minecraft:sweet_berries",
+                      "functions": [],
+                      "price_multiplier": 0.05
+                    }
+                  ]
+                }
+              ],
+              "gives": [
+                {
+                  "choice": [
+                    {
+                      "item": "minecraft:emerald",
+                      "functions": []
+                    }
+                  ]
+                }
+              ],
+              "trader_exp": 30,
+              "max_uses": 12
+            }
+          ]
+        }
+      ],
+      "total_exp_required": 250
+    }
+  ]
+}

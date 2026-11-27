@@ -1,0 +1,18 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:aim_assist_preset": {
+    "identifier": "test:aim_assist_preset_with_references",
+    "item_settings": {
+      "test:item": "test:camera_aim_assist_category"
+    },
+    "default_item_settings": "test:camera_aim_assist_category",
+    "hand_settings": "test:camera_aim_assist_category",
+    "exclusion_list": [
+      "test:entity",
+      "test:block"
+    ],
+    "liquid_targeting_list": [
+      "test:item"
+    ]
+  }
+}

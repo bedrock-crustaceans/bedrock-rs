@@ -1,0 +1,7 @@
+manifest.json
+texts/
+texts/en_US.lang
+texts/languages.json
+Backrooms.geometry.json
+Backrooms.meta.json
+backrooms_glitch.png

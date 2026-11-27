@@ -1,0 +1,17 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "resourcePack.betapack.description",
+        "name": "resourcePack.betapack",
+        "uuid": "6b22ea2b-bac1-4c07-95a1-bc7bc5818b1c",
+        "version": [0, 0, 1],
+        "min_engine_version": [1, 13, 0]
+    },
+    "modules": [
+        {
+            "type": "resources",
+            "uuid": "d5566886-7920-42ac-8ed5-43656dd2520f",
+            "version": [1, 0, 0]
+        }
+    ]
+}

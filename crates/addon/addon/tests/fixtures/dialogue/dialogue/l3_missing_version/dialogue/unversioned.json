@@ -1,0 +1,7 @@
+{
+  "minecraft:npc_dialogue": {
+    "scenes": [
+      { "scene_tag": "unversioned", "text": "No version." }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "demo:x"
+    },
+    "components": {
+      "minecraft:leashable": {
+        "can_be_cut": false,
+        "can_be_stolen": false,
+        "presets": [
+          {
+            "soft_distance": 4,
+            "hard_distance": 6.0,
+            "max_distance": 10.0,
+            "spring_type": "bouncy"
+          },
+          {
+            "hard_distance": 3,
+            "spring_type": "dampened",
+            "max_distance": 10.0
+          }
+        ]
+      }
+    }
+  }
+}

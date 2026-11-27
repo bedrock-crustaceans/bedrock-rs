@@ -1,0 +1,27 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "collect_items",
+    "minecraft:root": {
+      "minecraft:sequence": {
+        "children": [
+          {
+            "minecraft:find_entity": {
+              "entity_name": "item"
+            }
+          },
+          {
+            "minecraft:move_to": {
+              "block_pos_id": "target_pos",
+              "distance_epsilon": 1.5
+            }
+          },
+          {
+            "minecraft:wait": {
+              "wait_duration": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

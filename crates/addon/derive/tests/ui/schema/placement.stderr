@@ -1,0 +1,35 @@
+error: `schema::min` is a field's key: put it on the field it is about
+ --> tests/ui/schema/placement.rs:5:9
+  |
+5 | #[facet(schema::min = 0, schema::string_only)]
+  |         ^^^^^^
+
+error: `schema::string_only` is a string enum's key: a struct has no names to read
+ --> tests/ui/schema/placement.rs:5:26
+  |
+5 | #[facet(schema::min = 0, schema::string_only)]
+  |                          ^^^^^^
+
+error: `schema::string_only` is a string enum's key: put it on the enum
+ --> tests/ui/schema/placement.rs:7:13
+  |
+7 |     #[facet(schema::string_only)]
+  |             ^^^^^^
+
+error: a `skip` field is not read or written: it takes no `schema::` key
+ --> tests/ui/schema/placement.rs:9:19
+  |
+9 |     #[facet(skip, schema::fallback = 1)]
+  |                   ^^^^^^
+
+error: `schema::finite` is a field's key: put it on the field it is about
+  --> tests/ui/schema/placement.rs:14:9
+   |
+14 | #[facet(schema::finite)]
+   |         ^^^^^^
+
+error: a variant of a string enum takes no `schema::` key, `schema::string_only` included
+  --> tests/ui/schema/placement.rs:17:13
+   |
+17 |     #[facet(schema::string_only)]
+   |             ^^^^^^

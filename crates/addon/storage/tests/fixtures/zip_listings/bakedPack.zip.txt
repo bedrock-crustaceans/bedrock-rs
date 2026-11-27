@@ -1,0 +1,12 @@
+test/
+test/nested/
+test/nested/test3.txt
+test/test.json
+test/test2.txt
+contents.json
+manifest.json
+signatures.json
+__brarchive/
+__brarchive/test/
+__brarchive/test/nested.brarchive
+__brarchive/test.brarchive

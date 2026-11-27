@@ -1,0 +1,28 @@
+{
+  "format_version": "1.8.0",
+  "minecraft:spawn_rules": {
+    "description": {
+      "identifier": "test:spawn_rules_with_references",
+      "population_control": "monster"
+    },
+    "conditions": [
+      {
+        "minecraft:weight": {
+          "default": 40
+        },
+        "minecraft:permute_type": [
+          {
+            "weight": 100,
+            "entity_type": "minecraft:pillager<minecraft:spawn_as_patrol_follower>"
+          }
+        ],
+        "minecraft:spawns_on_block_filter": [ "dirt" ],
+        "minecraft:spawns_on_block_prevented_filter": [ "sand" ],
+        "minecraft:spawns_above_block_filter": {
+          "blocks": "iron_ore",
+          "distance": 10
+        }
+      }
+    ]
+  }
+}

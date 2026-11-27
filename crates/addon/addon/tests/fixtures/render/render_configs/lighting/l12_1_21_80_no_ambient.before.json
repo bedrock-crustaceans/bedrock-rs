@@ -1,0 +1,12 @@
+// fixtures.md l12: a 1.21.80 file without ambient and sky
+{
+  "format_version": "1.21.80",
+  "minecraft:lighting_settings": {
+    "description": {
+      "identifier": "test:l12"
+    },
+    "emissive": {
+      "desaturation": 0.25
+    }
+  }
+}

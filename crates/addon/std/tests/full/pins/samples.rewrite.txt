@@ -1,0 +1,59 @@
+# samples: every typed document through PackWriter::put, by document type
+  13258  (no document type) files
+    143  animation written
+     73  animation_controller written
+     17  atmosphere written
+     17  atmosphere written at a newer version than read
+     55  attachable written
+     55  attachable written at a newer version than read
+     89  biome written
+     70  biome written at a newer version than read
+      1  biomes_client written
+     98  block written
+     98  block written at a newer version than read
+      1  blocks_json written
+     89  client_biome written
+     87  client_biome written at a newer version than read
+      7  client_entity rejected, kept as their bytes
+    173  client_entity written
+    170  client_entity written at a newer version than read
+     14  color_grading written
+      2  entity read back unequal and written as the same text, in {abort_navigation_on_stop}                                                                                            # the fixer that brings older documents to 1.26.50 writes `false` into every older `behavior.follow_mob` and the typed goal keeps it, while the 1.26.50 binding deprecates the name: no newest-format document can hold the value, so the reread holds `None` (parrot, happy_ghast)
+      1  entity read back unequal and written as the same text, in {converted}                                                                                                           # `converted` marks that the load converted the legacy conditions of the sheep's eat-block goal; the written newest form needs no conversion (a mark of the load)
+    128  entity written
+    128  entity written at a newer version than read
+      1  flipbook_textures written
+     80  fog written
+     80  fog written at a newer version than read
+    151  geometry read back unequal and written as the same text, in {format_version}                                                                                                    # the format version of the file read is recorded and the file is written at the newest
+    198  geometry written
+    196  geometry written at a newer version than read
+      7  item read back unequal and written as the same text, in {menu_category/category, shared/minecraft:enchantable, shared/minecraft:max_stack_size, shared/minecraft:use_modifiers} # A VALUE CHANGE THE LOAD TELLS: an item read at 1.21.60 to 1.21.109 without a category holds `Undefined`, which has no JSON spelling; it is written `"menu_category": {"category": "none"}` and reads back `ItemCommandOnly`; the upgrade says so with a `ValueRewritten` warning at `description/menu_category`; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+     17  item read back unequal and written as the same text, in {menu_category/category, shared/minecraft:max_stack_size}                                                               # A VALUE CHANGE THE LOAD TELLS: an item read at 1.21.60 to 1.21.109 without a category holds `Undefined`, which has no JSON spelling; it is written `"menu_category": {"category": "none"}` and reads back `ItemCommandOnly`; the upgrade says so with a `ValueRewritten` warning at `description/menu_category`; `legacy.shared` keeps a component as the file wrote it and the writer writes it in full, defaults spelled out
+     79  item written
+     77  item written at a newer version than read
+     29  lang written
+      1  language_names written
+      1  languages written
+      1  lighting written
+      1  lighting written at a newer version than read
+    309  loot_table written
+      1  music_definitions written
+    192  particle written
+      4  particle written at a newer version than read
+   1892  recipe written
+    173  render_controller written
+      1  sound_definitions written
+      1  sounds written
+     60  spawn_rules written
+      2  terrain_texture written
+   3130  texture_set written
+     27  trade_table written
+     18  trade_table written at a newer version than read
+      1  ui_defs written
+    205  ui_file written
+      1  ui_global_variables written
+    383  ui_texture_info written
+    218  voxel_shape written
+      1  water written
+      1  water written at a newer version than read

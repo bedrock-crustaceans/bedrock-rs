@@ -1,0 +1,6 @@
+# fixtures.md `format/double_percent`: `%%` is not an escape in a value.
+
+[[case]]
+value = "+%d%% %s"
+params = ["5", "Speed"]
+expected = "+5%% Speed"

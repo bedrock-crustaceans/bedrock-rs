@@ -1,0 +1,11 @@
+# fixtures.md `format/ut_param_order` (LocalizationUnitTests): the inserted values' `%d` / `%s` take the
+# parameters left to right.
+
+[keys]
+"key.1" = "Value %d"
+"key.2" = "Value %s"
+
+[[case]]
+id = "String with %key.1 and %key.2"
+params = ["param1", "param2"]
+expected = "String with Value param1 and Value param2"

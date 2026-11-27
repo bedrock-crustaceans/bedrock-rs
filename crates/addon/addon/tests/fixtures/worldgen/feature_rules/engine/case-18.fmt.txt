@@ -1,0 +1,13 @@
+
+		{{
+			"format_version": "{}",
+			"minecraft:feature_rules": {{
+				"description": {{
+					"identifier": "test:test_feature_rule",
+					"places_feature": "test:feature"
+				}},
+				"conditions": {{
+					"placement_pass": "surface_pass"
+				}}
+			}}
+		}}

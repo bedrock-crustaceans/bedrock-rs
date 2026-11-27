@@ -1,0 +1,26 @@
+{
+  "namespace": "a",
+  "f1": {
+    "anim_type": "flip_book",
+    "initial_uv": [
+      0,
+      0
+    ],
+    "fps": 1,
+    "frame_count": 0
+  },
+  "o1": {
+    "anim_type": "offset",
+    "from": [
+      "0px",
+      "0px"
+    ],
+    "to": [
+      "100% + 2px",
+      "0px"
+    ]
+  },
+  "u1": {
+    "anim_type": "wobble"
+  }
+}

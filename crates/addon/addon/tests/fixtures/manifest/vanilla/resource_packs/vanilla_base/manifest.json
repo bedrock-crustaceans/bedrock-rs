@@ -1,0 +1,18 @@
+{
+  "format_version": 2,
+  "header": {
+    "description": "resourcePack.vanilla_base.description",
+    "name": "resourcePack.vanilla_base.name",
+    "uuid": "9ae3d2cc-7811-404c-b578-cb27689c8ac5",
+    "version": [ 0, 0, 1 ],
+     "min_engine_version": [1, 13, 0]
+  },
+  "modules": [
+    {
+      "description": "resourcePack.vanilla_base.description",
+      "type": "resources",
+      "uuid": "68ebfd58-ebda-4975-8f19-aa5503c006d2",
+      "version": [ 0, 0, 1 ]
+    }
+  ]
+}

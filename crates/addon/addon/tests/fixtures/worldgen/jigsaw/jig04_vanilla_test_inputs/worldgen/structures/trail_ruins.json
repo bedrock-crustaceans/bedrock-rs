@@ -1,0 +1,31 @@
+{
+  "format_version": "1.21.20",
+  "minecraft:jigsaw": {
+    "description": {
+      "identifier": "minecraft:trail_ruins"
+    },
+    "biome_filters": [
+      {
+        "test": "has_biome_tag",
+        "operator": "==",
+        "value": "has_structure_trail_ruins"
+      }
+    ],
+    "step": "underground_structures",
+    "terrain_adaptation": "bury",
+    "start_pool": "minecraft:trail_ruins/tower",
+    "max_depth": 7,
+    "max_distance_from_center": {
+      "horizontal": 80,
+      "vertical": 80
+    },
+    "start_height": {
+      "type": "constant",
+      "value": {
+        "absolute": -15
+      }
+    },
+    "heightmap_projection": "world_surface",
+    "liquid_settings": "ignore_waterlogging"
+  }
+}

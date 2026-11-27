@@ -1,0 +1,38 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Test pack for testing early execution scripts",
+        "name": "EarlyExeTestBP",
+        "uuid": "9b650aab-af69-4139-8d29-8f9adccfc558",
+        "version": [
+            0,
+            0,
+            1
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "description": "EarlyExeTestBP",
+            "type": "script",
+            "uuid": "a7a8c09b-c33b-41d8-93c3-67b52eb698e8",
+            "version": [
+                0,
+                0,
+                1
+            ],
+            "language": "javascript",
+            "entry": "scripts/main.js"
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "2.0.0"
+        }
+    ]
+}

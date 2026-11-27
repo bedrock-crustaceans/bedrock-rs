@@ -1,0 +1,15 @@
+{
+  "namespace": "a",
+  "img": {
+    "type": "image",
+    "texture": "t1",
+    "uv": [
+      0,
+      0
+    ],
+    "uv_size": [
+      8,
+      8
+    ]
+  }
+}

@@ -184,10 +184,14 @@ fn scoreboard_decode_then_encode_reproduces_every_real_record() {
             "{name}: re-encoded scoreboard is not byte-identical"
         );
         assert!(record.last_unique_id().is_some(), "{name}");
-        assert_eq!(record.criteria(), Some(&[][..]), "{name}");
-        assert_eq!(record.display_objectives(), Some(&[][..]), "{name}");
-        assert_eq!(record.entries(), Some(&[][..]), "{name}");
-        assert_eq!(record.objectives(), Some(&[][..]), "{name}");
+        assert_eq!(record.criteria(), Some(&nbtx::ValueList::End), "{name}");
+        assert_eq!(
+            record.display_objectives(),
+            Some(&nbtx::ValueList::End),
+            "{name}"
+        );
+        assert_eq!(record.entries(), Some(&nbtx::ValueList::End), "{name}");
+        assert_eq!(record.objectives(), Some(&nbtx::ValueList::End), "{name}");
         total += 1;
     }
     assert_eq!(total, WORLD_COUNT);
@@ -296,12 +300,12 @@ fn biome_data_mutation_re_encodes_with_the_change_and_decodes_back() {
     let nbtx::Value::Compound(compound) = record.value_mut() else {
         panic!("expected a compound");
     };
-    let nbtx::Value::List(entries) = compound.get_mut("list".as_bytes()).unwrap() else {
-        panic!("expected a list");
+    let nbtx::Value::List(nbtx::ValueList::Compound(entries)) =
+        compound.get_mut("list".as_bytes()).unwrap()
+    else {
+        panic!("expected a list of compounds");
     };
-    let nbtx::Value::Compound(first) = &mut entries[0] else {
-        panic!("expected a compound entry");
-    };
+    let first = &mut entries[0];
     first.insert("snowAccumulation".into(), nbtx::Value::Float(9.5));
 
     let re_encoded = flat_records::encode_biome_data(&record).unwrap();
@@ -334,12 +338,12 @@ fn biome_data_mutation_on_a_byte_world_keeps_the_byte_id_tag() {
     let nbtx::Value::Compound(compound) = record.value_mut() else {
         panic!("expected a compound");
     };
-    let nbtx::Value::List(entries) = compound.get_mut("list".as_bytes()).unwrap() else {
-        panic!("expected a list");
+    let nbtx::Value::List(nbtx::ValueList::Compound(entries)) =
+        compound.get_mut("list".as_bytes()).unwrap()
+    else {
+        panic!("expected a list of compounds");
     };
-    let nbtx::Value::Compound(first) = &mut entries[0] else {
-        panic!("expected a compound entry");
-    };
+    let first = &mut entries[0];
     first.insert("snowAccumulation".into(), nbtx::Value::Float(2.0));
 
     let re_encoded = flat_records::encode_biome_data(&record).unwrap();
@@ -436,7 +440,7 @@ fn dimension_record_decode_then_encode_reproduces_every_real_record() {
             );
             assert_eq!(
                 record.limbo_entities(),
-                Some(&[][..]),
+                Some(&nbtx::ValueList::End),
                 "{name}: {key}: LimboEntities"
             );
         }

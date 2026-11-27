@@ -1,0 +1,7 @@
+# eval_cap: families/script_bundle fixtures.md; BDS 1.26.36.1.
+# [bds-run 1] [eval_cap] eval=2; [eval_cap] Function=3
+members = ["main.js"]
+others = []
+main = "main.js"
+reachable_static = ["main.js"]
+reachable_dynamic = []

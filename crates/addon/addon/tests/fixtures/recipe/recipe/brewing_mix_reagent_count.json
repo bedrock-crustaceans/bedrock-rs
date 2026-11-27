@@ -1,0 +1,17 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_brewing_mix": {
+    "description": {
+      "identifier": "demo:reagent_count"
+    },
+    "tags": [
+      "brewing_stand"
+    ],
+    "input": "minecraft:potion_type:awkward",
+    "reagent": {
+      "item": "minecraft:sugar",
+      "count": 2
+    },
+    "output": "minecraft:potion_type:swiftness"
+  }
+}

@@ -1,0 +1,11 @@
+error[E0308]: mismatched types
+  --> tests/ui/custom_payload_type.rs:13:12
+   |
+13 |     Custom(String),
+   |            ^^^^^^
+   |            |
+   |            expected fn pointer, found enum constructor
+   |            expected because of the type of the constant
+   |
+   = note:    expected fn pointer `fn(CustomComponent) -> ToyComponentV1`
+           found enum constructor `fn(std::string::String) -> ToyComponentV1 {ToyComponentV1::Custom}`

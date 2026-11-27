@@ -1,0 +1,29 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:result_array"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:stick"
+      }
+    },
+    "result": [
+      {
+        "item": "minecraft:torch",
+        "count": 4
+      },
+      {
+        "item": "minecraft:stick",
+        "count": 2
+      }
+    ]
+  }
+}

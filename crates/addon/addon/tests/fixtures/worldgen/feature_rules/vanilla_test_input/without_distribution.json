@@ -1,0 +1,15 @@
+{
+  "format_version": "{version}",
+  "minecraft:feature_rules": {
+    "description": {
+      "identifier": "test:custom_feature_rule",
+      "places_feature": "test:custom_feature"
+    },
+    "conditions": {
+      "placement_pass": "surface_pass",
+      "minecraft:biome_filter": [
+        { "test": "has_biome_tag", "operator": "==", "value": "overworld" }
+      ]
+    }
+  }
+}

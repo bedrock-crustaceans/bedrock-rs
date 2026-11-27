@@ -1,0 +1,1 @@
+{ "version": 1, "fonts": [{ "font_format": "ttf", "font_name": "Determinism", "font_file": "font/determinism" }], "font_aliases": [{ "alias": "DeterminismAlias", "fonts": [{ "font_reference": "Determinism" }, { "font_reference": "UnicodeFont", "font_scale": 0.5 }] }] }

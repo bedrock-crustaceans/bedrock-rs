@@ -1,0 +1,17 @@
+error: duplicate `schema::read_with`
+  --> tests/ui/schema/read_with.rs:21:40
+   |
+21 |     #[facet(schema::read_with = level, schema::read_with = level)]
+   |                                        ^^^^^^
+
+error: `schema::read_with` reads one member: a flattened field has none, its struct's own read takes its members from the owner's object
+  --> tests/ui/schema/read_with.rs:17:22
+   |
+17 |     #[facet(flatten, schema::read_with = level)]
+   |                      ^^^^^^
+
+error: `schema::read_with` reads one member: an `UnknownMembers` field holds the members no field takes
+  --> tests/ui/schema/read_with.rs:19:13
+   |
+19 |     #[facet(schema::read_with = level)]
+   |             ^^^^^^

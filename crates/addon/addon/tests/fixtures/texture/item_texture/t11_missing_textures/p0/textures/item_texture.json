@@ -1,0 +1,8 @@
+{
+  "texture_name": "atlas.items",
+  "texture_data": {
+    "a": {
+      "quad": true
+    }
+  }
+}

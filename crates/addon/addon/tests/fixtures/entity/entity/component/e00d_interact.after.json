@@ -1,0 +1,16 @@
+{
+  "without_on_interact": {
+    "interactions": { "cooldown": 2.5, "use_item": true, "on_interact": { "event": "x:sheared", "target": "self" } }
+  },
+  "with_on_interact": {
+    "interactions": {
+      "on_interact": { "event": "x:new", "filters": { "test": "is_family", "subject": "other", "value": "player" } }
+    }
+  },
+  "array": {
+    "interactions": [
+      { "on_interact": { "event": "x:a", "filters": { "test": "has_equipment", "domain": "hand", "subject": "other", "value": "shears" } } },
+      { "interact_text": "action.interact.feed" }
+    ]
+  }
+}

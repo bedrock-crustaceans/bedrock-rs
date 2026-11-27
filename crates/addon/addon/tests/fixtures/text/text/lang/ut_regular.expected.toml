@@ -1,0 +1,4 @@
+# fixtures.md `lang/ut_regular` (LocalizationUnitTests): registered, no log.
+
+[entries]
+"key.regular" = "Regular Value"

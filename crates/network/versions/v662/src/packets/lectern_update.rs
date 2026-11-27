@@ -1,0 +1,10 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 125, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct LecternUpdatePacket<V: ProtoVersion> {
+    pub new_page_to_show: i8,
+    pub total_pages: i8,
+    pub position_of_lectern_to_update: V::NetworkBlockPosition,
+}

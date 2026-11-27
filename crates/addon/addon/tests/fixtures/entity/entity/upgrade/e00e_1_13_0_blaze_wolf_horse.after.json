@@ -1,0 +1,20 @@
+{
+  "format_version": "1.15.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:horse"
+    },
+    "components": {
+      "minecraft:rideable": {
+        "seat_count": 1
+      }
+    },
+    "component_groups": {
+      "g": {
+        "minecraft:rideable": {
+          "seat_count": 1
+        }
+      }
+    }
+  }
+}

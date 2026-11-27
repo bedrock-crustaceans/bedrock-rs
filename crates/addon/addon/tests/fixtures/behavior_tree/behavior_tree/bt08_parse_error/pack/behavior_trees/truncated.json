@@ -1,0 +1,4 @@
+{
+  "minecraft:behavior_tree": {
+    "minecraft:name": "cut",
+    "minecraft:root": { "minecraft:wait": {

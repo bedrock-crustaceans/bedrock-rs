@@ -1,0 +1,1005 @@
+//! The parse of one AI goal from its slice (the `parse` of every goal row of the component
+//! table), strict or lenient, and the member checks every goal runs while it is read.
+
+use bedrock_addon_core::diagnostic::codes as core_codes;
+use bedrock_addon_core::diagnostic::{
+    Class, Code, Diagnostic, Diagnostics, JsonPath, Severity, Told,
+};
+use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::Recovery;
+use bedrock_addon_core::json::parse::{Options, parse_slice};
+use bedrock_addon_core::json::{
+    JsonSlice, StrictIntType, Value, remove_null_members, tell_null_members,
+};
+use bedrock_addon_core::load::LoadContext;
+use bedrock_addon_core::schema::{FromJson, Schema, SchemaCx};
+use bedrock_addon_core::shared::{EventTrigger, Filter, Range, RangeEnd, RangeForm};
+use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::version::known;
+use bedrock_addon_core::versioning::{ConvertMode, MemberFailure};
+use bedrock_addon_shared_shapes::{BlockDescriptor, ItemDescriptor};
+use facet::Facet;
+use facet_value::VObject;
+
+use super::common::{EntityTypes, SoundEvent, check_entity_types};
+use crate::component::EntityComponent;
+use crate::component::parse::read_converted;
+
+/// Vanilla's message for a deprecated member: `member "<name>" is deprecated`.
+macro_rules! deprecated_text {
+    ($name:literal) => {
+        concat!("member \"", $name, "\" is deprecated")
+    };
+}
+pub(crate) use deprecated_text;
+
+/// The newest format version: what a strict parse without a document version reads as.
+pub(crate) const NEWEST: FormatVersion = crate::versions::NEWEST_GOAL_RULES;
+/// 1.26.0: `aquatic_charge_attack` renames `charge_speed_multiplier`.
+pub(crate) const V1_26_0: FormatVersion = known::V1_26_0;
+/// 1.26.30: `pickup_items` gains `stop_if_holding_item`.
+pub(crate) const V1_26_30: FormatVersion = known::V1_26_30;
+/// 1.26.40: the melee goals bind `on_kill` on its own.
+pub(crate) const V1_26_40: FormatVersion = known::V1_26_40;
+/// 1.26.50: `ranged_attack` gains `attack_range` and `in_range_movement_mode`.
+pub(crate) const V1_26_50: FormatVersion = NEWEST;
+
+/// One deprecated inherited member: its name, vanilla's message and the version from which the
+/// goal's struct deprecates it.
+pub(crate) type Deprecated = (&'static str, &'static str, FormatVersion);
+
+/// What every goal type tells the shared parse: its typed version, its deprecated and
+/// version-gated members, the checks of its members, and its conversions of older shapes.
+pub(crate) trait Goal:
+    for<'a> Facet<'a> + FromJson + Schema + Into<EntityComponent> + Default + Sized
+{
+    /// The format version from which vanilla reads the goal with its typed struct: a document
+    /// below it is converted leniently.
+    const TYPED: FormatVersion;
+
+    /// Inherited member names this goal's struct deprecates: a document at or above the
+    /// version that writes one gets a `DeprecatedMember` warning and the value is not used.
+    // The game logs a deprecated name as an error and ignores its value.
+    const DEPRECATED: &'static [Deprecated] = &[];
+
+    /// Members of the goal's older shape: the lenient parse converts them, and a document at or
+    /// above the typed version that still writes one is an error that drops the goal.
+    // Documents at the typed version or above must use the new shape; older ones are
+    // converted.
+    const REJECTED: &'static [&'static str] = &[];
+
+    /// Members that exist only from a version: a document below it that writes one gets
+    /// `UnrecognizedField` and the value is not used ([`Goal::forget`]).
+    const GATED: &'static [(&'static str, FormatVersion)] = &[];
+
+    /// The content-log texts the legacy goal parser writes when a
+    /// top-level member of the goal does not read, and their level: the lenient conversion
+    /// tells a member it gives up with this text and severity instead of its own.
+    const LENIENT_TEXTS: &'static [(&'static str, &'static str, Severity)] = &[];
+
+    /// The lenient read gave up the [`Goal::LENIENT_TEXTS`] member `name`: what the legacy
+    /// reader does after that failure. Returns the members it set back to their defaults that
+    /// the goal was written with, each told as dropped. Nothing by default.
+    fn legacy_member_failed(&mut self, _name: &str) -> Vec<&'static str> {
+        Vec::new()
+    }
+
+    /// Checks every member: the bounds its keys state (the default), ranges, constraints and
+    /// the shared types' own findings.
+    fn check(&mut self, c: &mut GoalCheck<'_>) {
+        c.bounds(self);
+    }
+
+    /// A deprecated member was written with `value`; the goal may carry it over to its
+    /// replacement.
+    fn deprecated(&mut self, name: &str, value: &Value) {
+        let _ = (name, value);
+    }
+
+    /// Clears the gated member `name` (one of [`Goal::GATED`]).
+    fn forget(&mut self, name: &str) {
+        let _ = name;
+    }
+
+    /// The typed → typed conversions of a document read strictly at `from`, below a later
+    /// redeclaration of the goal: members of the older struct are taken from its unknown
+    /// members (`Diagnostics::unknown_mut`).
+    fn upgrade(&mut self, from: FormatVersion, d: &mut Diagnostics) {
+        let _ = (from, d);
+    }
+
+    /// Rewrites an older document's JSON into this struct's shape before the lenient parse.
+    fn lenient_shape(json: &mut VObject, d: &mut Diagnostics) {
+        let _ = (json, d);
+    }
+
+    /// Rewrites the parsed value in the lenient path.
+    fn lenient_value(&mut self) {}
+}
+
+/// How a goal is read: strictly, by a document at the given version (at or above the goal's
+/// typed version), or leniently, converted from a document below it.
+#[derive(Clone, Copy, Debug)]
+enum Mode {
+    Strict(FormatVersion),
+    Lenient,
+}
+
+/// Parses one goal: the `parse` of a goal row.
+///
+/// `Strict` reads the goal as a document at the newest format version does; `Lenient` as the
+/// conversion of a document below the goal's typed version. See [`read`].
+pub(crate) fn parse<T: Goal>(
+    slice: JsonSlice<'_>,
+    mode: ConvertMode,
+    load: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<EntityComponent> {
+    let mode = match mode {
+        ConvertMode::Strict => Mode::Strict(NEWEST),
+        ConvertMode::Lenient => Mode::Lenient,
+    };
+    read::<T>(slice, mode, load.grade(Class::Unknown), d).map(Into::into)
+}
+
+/// A parse of a goal by the document's format version: what the entity document's component
+/// map calls for a goal key (see [`versioned`](super::versioned)).
+pub(crate) type VersionedParseFn = bedrock_addon_core::schema::VersionedParseFn<EntityComponent>;
+
+/// Parses one goal of a document at `version`: leniently below the goal's typed version,
+/// strictly at or above it, with the typed → typed conversions and member gates of the versions
+/// between `version` and the newest.
+pub(crate) fn parse_versioned<T: Goal>(
+    slice: JsonSlice<'_>,
+    version: FormatVersion,
+    load: &LoadContext,
+    d: &mut Diagnostics,
+) -> Option<EntityComponent> {
+    let mode = if version < T::TYPED {
+        Mode::Lenient
+    } else {
+        Mode::Strict(version)
+    };
+    read::<T>(slice, mode, load.grade(Class::Unknown), d).map(Into::into)
+}
+
+/// Reads a goal.
+///
+/// Strict (a document at or above the goal's typed version): a member of the wrong type is an
+/// error and drops the goal, and so is a value outside its member's bounds. Lenient (an older
+/// document converted in a step): such a member is an `InvalidValue` information and takes its
+/// default, the innermost value that fails given up ([`Recovery::Value`]); the goal is dropped
+/// only when its value is not an object. Unknown members are kept and reported as
+/// `UnrecognizedField` at `grade` (the slice's) either way.
+fn read<T: Goal>(
+    slice: JsonSlice<'_>,
+    mode: Mode,
+    grade: Severity,
+    d: &mut Diagnostics,
+) -> Option<T> {
+    let Ok(mut parsed) = parse_slice(slice, Options::default()) else {
+        // Not reached: the payload's parse has read the goal's text.
+        d.push(Diagnostic::of(&core_codes::INVALID_VALUE));
+        return None;
+    };
+    let version = match mode {
+        Mode::Strict(version) => Some(version),
+        Mode::Lenient => {
+            parsed.value = lenient_shape::<T>(&parsed.value, d)?;
+            None
+        }
+    };
+    let mut found = Diagnostics::default();
+    // The lenient conversion reads the goal as its steps left it, which is no text of the file.
+    let strict = version.is_some();
+    let read = read_converted::<T>(
+        &parsed,
+        strict,
+        strict,
+        Recovery::Value,
+        grade,
+        None,
+        &mut found,
+    );
+    let Some(mut value) = read else {
+        // A strict read's first failure is all it tells.
+        d.append(found);
+        return None;
+    };
+    // The goal's unknown members (below the goal: its caller places them), told after what
+    // else the read found.
+    d.unknown_mut()
+        .absorb(&JsonPath::new(), found.take_unknown());
+    let mut unknown = Vec::new();
+    let mut failed = Vec::new();
+    for told in found.into_told() {
+        match told {
+            Told::Finding(finding) if is_unknown(&finding) => unknown.push(*finding),
+            Told::Finding(finding) => d.push(legacy_text::<T>(*finding, &mut failed)),
+            Told::Moved { from, to } => d.moved(from, to),
+        }
+    }
+    for name in failed {
+        // Members the legacy reader never reaches: the game is silent, the crate tells each
+        // one written as dropped.
+        for unread in value.legacy_member_failed(name) {
+            d.push(Diagnostic::of(&core_codes::DROPPED_FIELD).at(JsonPath::new().child(unread)));
+        }
+    }
+    if let Some(version) = version {
+        for (name, since) in T::GATED {
+            let written = parsed
+                .value
+                .as_object()
+                .is_some_and(|o| o.get(name).is_some());
+            if version < *since && written {
+                value.forget(name);
+                d.push(
+                    // The game logs an unrecognised member of a legacy-format goal as a
+                    // warning; the strict slices from 1.21.89 refuse the document.
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                        .severity(grade)
+                        .at(JsonPath::new().child(name)),
+                );
+            }
+        }
+        value.upgrade(version, d);
+    }
+    let rejected = tell_unknown::<T>(&mut value, unknown, version, d);
+    if version.is_none() {
+        value.lenient_value();
+    }
+    let mut check = GoalCheck::new(version.is_some(), grade, d);
+    Goal::check(&mut value, &mut check);
+    if check.failed || rejected {
+        return None;
+    }
+    Some(value)
+}
+
+/// The goal as the lenient conversion reads it: an object, its members written `null` absent,
+/// its version-gated members not read, its older shape converted ([`Goal::lenient_shape`]),
+/// its numbers as vanilla writes them back. `None` (told) when the goal is no object.
+fn lenient_shape<T: Goal>(json: &Value, d: &mut Diagnostics) -> Option<Value> {
+    let Some(object) = json.as_object().cloned() else {
+        // A goal whose value is not an object is dropped.
+        d.push(
+            // The game writes no content-log line for this (the legacy reader takes
+            // defaults), so the crate reports it as an information.
+            Diagnostic::of(&core_codes::INVALID_VALUE).severity(Severity::Info),
+        );
+        return None;
+    };
+    // A `null` member is absent, as in the strict read.
+    let mut without_nulls = Value::from(object);
+    let absent = remove_null_members(T::SHAPE, &mut without_nulls);
+    tell_null_members(&absent, &JsonPath::new(), d);
+    let mut object = without_nulls.as_object().cloned().unwrap_or_default();
+    for (name, _) in T::GATED {
+        if object.remove(name).is_some() {
+            d.push(
+                // The lenient conversion: the legacy reader reads only what it knows, in
+                // silence, so the crate reports an information.
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(Severity::Info)
+                    .at(JsonPath::new().child(name)),
+            );
+        }
+    }
+    T::lenient_shape(&mut object, d);
+    let mut value = Value::from(object);
+    crate::component::written_back(&mut value);
+    Some(value)
+}
+
+/// Whether `finding` tells of an unknown member: told after the read's other findings.
+fn is_unknown(finding: &Diagnostic) -> bool {
+    finding.is(&core_codes::UNRECOGNIZED_FIELD)
+}
+
+/// `finding` with the legacy goal parser's text and level where the lenient conversion gave
+/// up a member it has a text for ([`Goal::LENIENT_TEXTS`]), its name added to `failed`.
+fn legacy_text<T: Goal>(finding: Diagnostic, failed: &mut Vec<&'static str>) -> Diagnostic {
+    let path = &finding.location.json_path;
+    let legacy = (path.len() == 1 && finding.is(&core_codes::INVALID_VALUE))
+        .then(|| path.last_key())
+        .flatten()
+        .and_then(|key| T::LENIENT_TEXTS.iter().find(|(name, ..)| *name == key));
+    let Some((name, text, severity)) = legacy else {
+        return finding;
+    };
+    failed.push(name);
+    let mut worded = finding;
+    worded.code = core_codes::INVALID_VALUE_WORDED.with([*text]);
+    // A row with a text carries its own level.
+    worded.severity = *severity;
+    worded
+}
+
+/// Tells the goal's unknown members, `unknown` as the read told them: a member of the goal's
+/// older shape a strict read refuses ([`Goal::REJECTED`]), a deprecated member
+/// ([`Goal::DEPRECATED`]), an unknown one; a member a conversion took is not told. Returns
+/// whether one was refused.
+fn tell_unknown<T: Goal>(
+    value: &mut T,
+    unknown: Vec<Diagnostic>,
+    version: Option<FormatVersion>,
+    d: &mut Diagnostics,
+) -> bool {
+    let mut rejected = false;
+    for finding in unknown {
+        let path = finding.location.json_path.clone();
+        // The member's own key, as the file has it, when the path is a member of the goal.
+        let top = path.len() == 1;
+        let name = path
+            .last_key()
+            .filter(|_| top)
+            .unwrap_or_default()
+            .to_owned();
+        if top && !d.unknown().contains(&JsonPath::new(), &name) {
+            // Taken by a conversion.
+            continue;
+        }
+        let deprecated = top
+            .then(|| {
+                T::DEPRECATED
+                    .iter()
+                    .find(|(n, _, since)| *n == name && version.is_none_or(|v| v >= *since))
+            })
+            .flatten();
+        if top && version.is_some() && T::REJECTED.contains(&name.as_str()) {
+            rejected = true;
+            d.push(Diagnostic::of(&core_codes::INVALID_VALUE).at(path));
+        } else if let Some((name, text, _)) = deprecated {
+            let member = d.unknown_mut().take(&JsonPath::new(), name);
+            // The game logs a deprecated name as an error that rejects the document in a
+            // typed read; the lenient conversion of an older document, whose struct may still
+            // bind the name, is only told.
+            let severity = if version.is_some() {
+                Severity::Error
+            } else {
+                // The lenient conversion: the legacy reader knows no deprecation and writes no
+                // content-log line, so the crate reports an information.
+                Severity::Info
+            };
+            d.push(
+                Diagnostic::of(core_codes::DEPRECATED_MEMBER_WORDED.with([*text]))
+                    .at(path)
+                    .severity(severity),
+            );
+            if let Some(member) = member {
+                value.deprecated(name, &member);
+            }
+        } else {
+            // The game logs an unrecognised member of a legacy-format goal as a warning;
+            // the strict slices from 1.21.89 refuse the document.
+            d.push(finding);
+        }
+    }
+    rejected
+}
+
+/// The severity of a broken rule in the lenient read: an information, with or without the
+/// game's text: the game writes no content-log line for these, because the texts are
+/// cereal's constraints, which the legacy readers do not check. A line the game logs whatever the reader is told with
+/// [`GoalCheck::kept`].
+fn lenient_severity() -> Severity {
+    Severity::Info
+}
+
+/// The legacy readers of every goal read a range object through `range_min` / `range_max`
+/// only, whether the goal is read by a schema reader or by the legacy goal parser, so the
+/// `min` / `max` of a member of the goal as the legacy reader meets it (an object that has
+/// either) are not read. They are taken out and
+/// their paths (below the goal) returned, for an information each; a range left empty goes, the
+/// member keeping its default. `range_*` stay. Run on the goal as the step to its typed version
+/// starts, before that step's own conversions (which write the typed `{min, max}`).
+pub(crate) fn legacy_ranges(key: &str, goal: &mut VObject) -> Vec<(JsonPath, Code)> {
+    let mut dropped = Vec::new();
+    // A string `look_time` of the look goals is read by the game's integer range parser, which
+    // `parse_range_string` mirrors.
+    if PARSE_RANGE_LOOK_TIME.contains(&key)
+        && let Some(text) = goal.get("look_time").and_then(Value::as_string)
+    {
+        let (min, max) = parse_range_string(text.as_str()).unwrap_or((2, 4));
+        let mut range = VObject::new();
+        range.insert("min", Value::from(i64::from(min)));
+        range.insert("max", Value::from(i64::from(max)));
+        goal.insert("look_time", Value::from(range));
+        dropped.push((
+            JsonPath::new().child("look_time"),
+            Code::from(&core_codes::VALUE_REWRITTEN),
+        ));
+    }
+    let names: Vec<String> = goal.keys().map(|key| key.as_str().to_owned()).collect();
+    for name in names {
+        // The look goals' `look_time` is read by the game's integer range parser, which reads
+        // `min` and `max` and never `range_*`.
+        let unread: [&str; 2] = if name == "look_time" && PARSE_RANGE_LOOK_TIME.contains(&key) {
+            ["range_min", "range_max"]
+        } else {
+            ["min", "max"]
+        };
+        let Some(range) = goal.get_mut(&name).and_then(Value::as_object_mut) else {
+            continue;
+        };
+        if !unread.iter().any(|end| range.contains_key(end)) {
+            continue;
+        }
+        for end in unread {
+            if range.remove(end).is_some() {
+                let mut at = JsonPath::new().child(&name);
+                at.push(end);
+                dropped.push((at, Code::from(&core_codes::DROPPED_FIELD)));
+            }
+        }
+        if range.is_empty() {
+            goal.remove(&name);
+        }
+    }
+    dropped
+}
+
+/// The game's integer range parser for a string `look_time`. With a `[` and a `]` after it,
+/// the text from after the `[` (its length is `]`'s offset minus one bytes, at most to the end
+/// of the string) is split at `,` without the empty parts, and the first part, a space and the
+/// second part (when there are two) are read through a string stream as `min`, `max = min`,
+/// `max`, swapped when `min > max`. Without a `[` the whole string is read for `min` and
+/// `max = min`. A `[` without a `]` fails (`None`; the goal then takes (2, 4)). An inner text
+/// of no part (`"[]"`) indexes an empty list in the game, whose result is undefined; it is
+/// read here as no number, (0, 0).
+fn parse_range_string(text: &str) -> Option<(i32, i32)> {
+    // The game works on the bytes of its strings; so does this, so the game's substring
+    // length (which can end inside a UTF-8 character) never splits a `&str`.
+    let bytes = text.as_bytes();
+    let mut min = 0_i32;
+    let Some(open) = bytes.iter().position(|b| *b == b'[') else {
+        let mut stream = IntStream::new(bytes);
+        stream.read(&mut min);
+        return Some((min, min));
+    };
+    let close = bytes[open..].iter().position(|b| *b == b']')? + open;
+    let start = open + 1;
+    let count = (bytes.len() - start).min(close.saturating_sub(1));
+    let inner = &bytes[start..start + count];
+    let parts: Vec<&[u8]> = inner
+        .split(|b| *b == b',')
+        .filter(|part| !part.is_empty())
+        .collect();
+    let line: Vec<u8> = match parts.as_slice() {
+        [] => Vec::new(),
+        [one] => one.to_vec(),
+        [first, second, ..] => [*first, b" ", *second].concat(),
+    };
+    let mut stream = IntStream::new(&line);
+    stream.read(&mut min);
+    let mut max = min;
+    stream.read(&mut max);
+    if min > max {
+        std::mem::swap(&mut min, &mut max);
+    }
+    Some((min, max))
+}
+
+/// Reading an int from `text` as a stream does: leading white space
+/// skipped; a failed sentry (the stream not good, or at its end) leaves the value; no digits
+/// stores 0 and fails; digits beyond the type store its bound and fail; reaching the end sets
+/// eof, so the next read leaves its value.
+struct IntStream<'a> {
+    bytes: &'a [u8],
+    at: usize,
+    good: bool,
+}
+
+impl<'a> IntStream<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            at: 0,
+            good: true,
+        }
+    }
+
+    fn read(&mut self, out: &mut i32) {
+        if !self.good {
+            return;
+        }
+        while self.at < self.bytes.len() && self.bytes[self.at].is_ascii_whitespace() {
+            self.at += 1;
+        }
+        if self.at == self.bytes.len() {
+            self.good = false;
+            return;
+        }
+        let start = self.at;
+        if matches!(self.bytes[self.at], b'+' | b'-') {
+            self.at += 1;
+        }
+        let digits = self.at;
+        while self.at < self.bytes.len() && self.bytes[self.at].is_ascii_digit() {
+            self.at += 1;
+        }
+        if self.at == digits {
+            *out = 0;
+            self.good = false;
+            return;
+        }
+        let text = std::str::from_utf8(&self.bytes[start..self.at]).unwrap_or("0");
+        if let Ok(value) = text.parse::<i32>() {
+            *out = value;
+        } else {
+            *out = if text.starts_with('-') {
+                i32::MIN
+            } else {
+                i32::MAX
+            };
+            self.good = false;
+        }
+        if self.at == self.bytes.len() {
+            self.good = false;
+        }
+    }
+}
+
+/// The goals whose `look_time` the legacy goal parser reads with the game's integer range
+/// parser (a string such as `"[1,3]"`, or a `{min, max}` object).
+const PARSE_RANGE_LOOK_TIME: [&str; 7] = [
+    "minecraft:behavior.beg",
+    "minecraft:behavior.look_at_entity",
+    "minecraft:behavior.look_at_player",
+    "minecraft:behavior.look_at_target",
+    "minecraft:behavior.look_at_trading_player",
+    "minecraft:behavior.random_look_around",
+    "minecraft:behavior.random_look_around_and_sit",
+];
+
+/// The number `value` holds, as an `f32`; `None` for any other JSON value or a number with no
+/// finite `f32`.
+pub(crate) fn float_of(value: &Value) -> Option<f32> {
+    #[allow(clippy::cast_possible_truncation)] // the nearest f32 is the reading
+    let x = value.as_number()?.to_f64_lossy() as f32;
+    x.is_finite().then_some(x)
+}
+
+/// The lower bound a numeric member of a goal's list element must keep (the schema's
+/// `minimum`), as the game's numeric constraint applies it; the goals' own members state theirs
+/// as `schema::min`.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Bound<T> {
+    /// `≥ min`.
+    Min(T),
+}
+
+impl<T: PartialOrd + Copy> Bound<T> {
+    /// `x` keeps the bound.
+    fn holds(self, x: T) -> bool {
+        match self {
+            Self::Min(min) => x >= min,
+        }
+    }
+}
+
+/// The member checks of one goal: where the findings go, and whether a violation drops the goal
+/// (strict) or resets the member to its default (lenient).
+pub(crate) struct GoalCheck<'d> {
+    strict: bool,
+    /// The severity of an unknown member of the goal or of a shared value it holds: the
+    /// slice's grade.
+    unknown: Severity,
+    d: &'d mut Diagnostics,
+    failed: bool,
+    at: JsonPath,
+}
+
+impl<'d> GoalCheck<'d> {
+    /// A check of a goal at the root of its slice, an unknown member at `unknown`.
+    pub(crate) fn new(strict: bool, unknown: Severity, d: &'d mut Diagnostics) -> Self {
+        Self {
+            strict,
+            unknown,
+            d,
+            failed: false,
+            at: JsonPath::new(),
+        }
+    }
+
+    /// The path of member `key`.
+    pub(crate) fn path(&self, key: &str) -> JsonPath {
+        self.at.child(key)
+    }
+
+    /// The severity of an unknown member of a shared value the goal holds.
+    pub(crate) fn unknown(&self) -> Severity {
+        self.unknown
+    }
+
+    /// Adds findings made elsewhere (a shared type's `check`).
+    pub(crate) fn extend(&mut self, found: Diagnostics) {
+        self.d.extend(found);
+    }
+
+    /// A value of member `key` the game logs at level 3 at the goal's set-up, whatever the
+    /// reader, and replaces by its default: the game logs this at the error level and keeps the document: a kept error.
+    pub(crate) fn kept(&mut self, key: &str, code: impl Into<Code>) {
+        let at = self.path(key);
+        self.d
+            .push_kept_error(Diagnostic::error(code.into()).at(at));
+    }
+
+    /// Reports a value of member `key` that vanilla rejects: an error that drops the goal in
+    /// the strict parse; in the lenient one (the caller then resets the member) an
+    /// information: the legacy readers check no bound, so the typed struct's bound is the
+    /// crate's own and the game writes no line for it.
+    pub(crate) fn reject(&mut self, key: &str, code: impl Into<Code>) {
+        let severity = if self.strict {
+            self.failed = true;
+            Severity::Error
+        } else {
+            lenient_severity()
+        };
+        let at = self.path(key);
+        self.d
+            .push(Diagnostic::error(code.into()).at(at).severity(severity));
+    }
+
+    /// [`GoalCheck::reject`] at `at`, a path below the goal.
+    fn reject_at(&mut self, at: JsonPath, code: impl Into<Code>) {
+        let severity = if self.strict {
+            self.failed = true;
+            Severity::Error
+        } else {
+            lenient_severity()
+        };
+        self.d
+            .push(Diagnostic::error(code.into()).at(at).severity(severity));
+    }
+
+    /// Checks a float member with the game's numeric constraint of a lower bound `min`: a value
+    /// below refuses the member with the constraint's text (`the input must be a number >= …`,
+    /// the game's range text).
+    pub(crate) fn float_at_least(&mut self, key: &str, slot: &mut Option<f32>, min: f64) {
+        let range = bedrock_addon_core::diagnostic::cereal::NumericRange::at_least(min);
+        if let Some(x) = *slot
+            && !range.contains(f64::from(x))
+        {
+            self.reject(key, range.code());
+            *slot = None;
+        }
+    }
+
+    /// Checks a member that is optionally a number or a float range, with the game's
+    /// constraint of a number at least 0 or a range whose ends
+    /// are each at least 0: the number form below 0, an end below 0 (told at the end as the
+    /// file writes it) or a max below its min ("max value cannot be lower than min value")
+    /// refuses the member with the constraint's text.
+    pub(crate) fn seconds(
+        &mut self,
+        key: &str,
+        slot: &mut Option<bedrock_addon_core::shared::FloatRange>,
+    ) {
+        let Some(range) = *slot else {
+            return;
+        };
+        if self.typed_range_spelling(key, &range) {
+            *slot = None;
+            return;
+        }
+        let at_least = bedrock_addon_core::diagnostic::cereal::NumericRange::at_least(0.0);
+        let (lo, hi) = if range.swapped {
+            (range.max, range.min)
+        } else {
+            (range.min, range.max)
+        };
+        let mut refused = false;
+        if range.form == RangeForm::Scalar {
+            if lo < 0.0 {
+                self.reject(key, at_least.code());
+                refused = true;
+            }
+        } else {
+            let names = match range.form {
+                RangeForm::Array => ["0", "1"],
+                RangeForm::RangeMinMax => ["range_min", "range_max"],
+                _ => ["min", "max"],
+            };
+            for (end, missing, name) in [
+                (lo, range.missing_min, names[0]),
+                (hi, range.missing_max, names[1]),
+            ] {
+                if !missing && end < 0.0 {
+                    let mut at = self.path(key);
+                    at.push(name);
+                    self.reject_at(at, at_least.code());
+                    refused = true;
+                }
+            }
+            // An end the object leaves out holds the type's default 0 in the stored range,
+            // which the game validates.
+            if !refused && hi < lo {
+                self.reject(
+                    key,
+                    core_codes::INVALID_VALUE_WORDED
+                        .with(["max value cannot be lower than min value"]),
+                );
+                refused = true;
+            }
+        }
+        if refused {
+            *slot = None;
+        }
+    }
+
+    /// A member the goal's newest struct binds and then deprecates, written as `text` says: in
+    /// the strict parse the game logs an error that refuses the document; in the lenient
+    /// conversion the older reader reads it, and the newest
+    /// document cannot hold it, so the write-back leaves it out, told (`MemberNotKept`, INFO).
+    pub(crate) fn deprecated_member(&mut self, key: &str, text: &'static str) {
+        let at = self.path(key);
+        let (code, severity) = if self.strict {
+            self.failed = true;
+            (
+                core_codes::DEPRECATED_MEMBER_WORDED.with([text]),
+                Severity::Error,
+            )
+        } else {
+            (Code::from(&core_codes::MEMBER_NOT_KEPT), Severity::Info)
+        };
+        self.d
+            .push(Diagnostic::error(code).at(at).severity(severity));
+    }
+
+    /// The goal is read by the lenient conversion of an older document.
+    pub(crate) fn lenient(&self) -> bool {
+        !self.strict
+    }
+
+    /// A content-log error of the legacy goal parser at member `key`, after which the goal is
+    /// kept (the game ignores the parser's result): the game logs this at the error level and
+    /// keeps the document: a kept error.
+    pub(crate) fn legacy_error(&mut self, key: &str, text: &'static str) {
+        let at = self.path(key);
+        self.legacy_error_at(at, text);
+    }
+
+    /// [`GoalCheck::legacy_error`] at `at` (a path below the goal, an element of a list).
+    pub(crate) fn legacy_error_at(&mut self, at: JsonPath, text: &'static str) {
+        self.d
+            .push_kept_error(Diagnostic::of(core_codes::INVALID_VALUE_WORDED.with([text])).at(at));
+    }
+
+    /// A content-log warning of the legacy goal parser at `at` (a path below the goal, an
+    /// element of a list).
+    pub(crate) fn legacy_warning_at(&mut self, at: JsonPath, text: &'static str) {
+        self.d.push(
+            // The legacy goal parser logs these at the warning level.
+            Diagnostic::of(core_codes::INVALID_VALUE_WORDED.with([text]))
+                .severity(Severity::Warning)
+                .at(at),
+        );
+    }
+
+    /// The bounds `value`'s `Schema` states (`schema::min`, `max`, `above`), graded as
+    /// [`GoalCheck::reject`] grades a broken one: an error that drops the goal in the strict parse;
+    /// in the lenient one an information, and the member is left out (`None`).
+    pub(crate) fn bounds<T: Schema>(&mut self, value: &mut T) {
+        let failure = if self.strict {
+            MemberFailure::Refuse
+        } else {
+            MemberFailure::DefaultAndTell
+        };
+        let reading = crate::READING.with_on_member_failure(failure);
+        let mut cx = SchemaCx::new(reading, self.at.clone(), self.d);
+        value.check(&mut cx);
+        self.failed |= cx.failed();
+    }
+
+    /// Checks a float member against its bound.
+    pub(crate) fn float(&mut self, key: &str, slot: &mut Option<f32>, bound: Bound<f32>) {
+        if let Some(x) = *slot
+            && !bound.holds(x)
+        {
+            self.reject(key, &core_codes::INVALID_VALUE);
+            *slot = None;
+        }
+    }
+
+    /// Checks an integer member against its bound.
+    pub(crate) fn int<T: StrictIntType + PartialOrd>(
+        &mut self,
+        key: &str,
+        slot: &mut Option<T>,
+        bound: Bound<T>,
+    ) {
+        if let Some(x) = *slot
+            && !bound.holds(x)
+        {
+            self.reject(key, &core_codes::INVALID_VALUE);
+            *slot = None;
+        }
+    }
+
+    /// Reports a range member's findings (a swapped range).
+    pub(crate) fn range<T: RangeEnd>(&mut self, key: &str, range: &mut Option<Range<T>>) {
+        if let Some(range) = range {
+            if self.typed_range_spelling(key, range) {
+                return;
+            }
+            // The lenient conversion reads the legacy `range_min` / `range_max` spelling; the
+            // typed goal it makes is written in the cereal one, `{min, max}`.
+            if range.form == RangeForm::RangeMinMax {
+                range.form = RangeForm::MinMax;
+            }
+            let found = range.check(&self.path(key));
+            self.d.extend(found);
+        }
+    }
+
+    /// In the strict read (the goal's typed version) a range written `{range_min, range_max}`:
+    /// the cereal `FloatRange` / `IntRange` bind only `min` and `max` and read no other
+    /// spelling, so each is an unknown member of the range, an error that refuses the goal.
+    /// Returns whether it told so. The legacy readers' `range_min` / `range_max` spelling is
+    /// the lenient conversion's, read there.
+    fn typed_range_spelling<T: RangeEnd>(&mut self, key: &str, range: &Range<T>) -> bool {
+        if !self.strict || range.form != RangeForm::RangeMinMax {
+            return false;
+        }
+        self.failed = true;
+        for (end, missing) in [
+            ("range_min", range.missing_min),
+            ("range_max", range.missing_max),
+        ] {
+            if !missing {
+                let mut at = self.path(key);
+                at.push(end);
+                self.d.push(
+                    Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                        .severity(Severity::Error)
+                        .at(at),
+                );
+            }
+        }
+        true
+    }
+
+    /// Checks a range member that takes only the `{min, max}` object form (and a number):
+    /// an array is rejected in the strict parse and becomes the object form in the lenient one.
+    // `beg.look_time` and
+    // `float_wander.float_duration` "accept only `{min, max}` from 1.26.40".
+    pub(crate) fn object_range<T: RangeEnd>(&mut self, key: &str, range: &mut Option<Range<T>>) {
+        if let Some(r) = range
+            && r.form == RangeForm::Array
+        {
+            if self.strict {
+                self.reject(key, &core_codes::INVALID_VALUE);
+            } else {
+                r.form = RangeForm::MinMax;
+            }
+        }
+        self.range(key, range);
+    }
+
+    /// Reports a filter member's findings.
+    pub(crate) fn filter(&mut self, key: &str, filter: Option<&Filter>) {
+        if let Some(filter) = filter {
+            let found = filter.check(&self.path(key), self.unknown);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports a trigger member's findings.
+    pub(crate) fn trigger(&mut self, key: &str, trigger: Option<&EventTrigger>) {
+        if let Some(trigger) = trigger {
+            let found = trigger.check(&self.path(key), self.unknown);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports the findings of each trigger of a list member.
+    pub(crate) fn triggers(&mut self, key: &str, triggers: Option<&[EventTrigger]>) {
+        for (i, trigger) in triggers.into_iter().flatten().enumerate() {
+            let mut at = self.path(key);
+            at.push_index(i);
+            let found = trigger.check(&at, self.unknown);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports the findings of each item descriptor of a list member.
+    pub(crate) fn items(&mut self, key: &str, items: Option<&[ItemDescriptor]>) {
+        for (i, item) in items.into_iter().flatten().enumerate() {
+            let mut at = self.path(key);
+            at.push_index(i);
+            let found = item.check(&at);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports the members a vector's object form does not define (kept in its `extra`).
+    pub(crate) fn vector(&mut self, key: &str, extra: Option<&UnknownMembers>) {
+        for (name, _) in extra.into_iter().flat_map(UnknownMembers::iter) {
+            let mut at = self.path(key);
+            at.push(name);
+            self.d.push(
+                // The game logs an unrecognised member of a legacy-format goal as a warning;
+                // the strict slices from 1.21.89 refuse the document.
+                Diagnostic::of(&core_codes::UNRECOGNIZED_FIELD)
+                    .severity(self.unknown)
+                    .at(at),
+            );
+        }
+    }
+
+    /// Reports a sound event name that is not one of vanilla's: an information (the name is
+    /// kept).
+    pub(crate) fn sound(&mut self, key: &str, sound: Option<&SoundEvent>) {
+        if sound.is_some_and(|s| !s.is_known()) {
+            let at = self.path(key);
+            self.d.push(
+                // The game keeps a sound name it does not know without a line, so the crate
+                // reports an information.
+                Diagnostic::of(&core_codes::UNKNOWN_SOUND).at(at),
+            );
+        }
+    }
+
+    /// Reports the findings of a block descriptor member.
+    pub(crate) fn block(&mut self, key: &str, block: Option<&BlockDescriptor>) {
+        if let Some(block) = block {
+            let found = block.check(&self.path(key), self.unknown);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports a required member that is absent: an error that drops the goal in the strict
+    /// parse, a warning in the lenient one.
+    pub(crate) fn required(&mut self, key: &str, present: bool) {
+        if present {
+            return;
+        }
+        let severity = if self.strict {
+            self.failed = true;
+            Severity::Error
+        } else {
+            // The lenient conversion takes the default without a line, so the crate reports an
+            // information.
+            Severity::Info
+        };
+        let at = self.path(key);
+        self.d.push(
+            Diagnostic::of(&core_codes::MISSING_REQUIRED_FIELD)
+                .at(at)
+                .severity(severity),
+        );
+    }
+
+    /// Reports the findings of each block descriptor of a list member.
+    pub(crate) fn blocks(&mut self, key: &str, blocks: Option<&[BlockDescriptor]>) {
+        for (i, block) in blocks.into_iter().flatten().enumerate() {
+            let mut at = self.path(key);
+            at.push_index(i);
+            let found = block.check(&at, self.unknown);
+            self.d.extend(found);
+        }
+    }
+
+    /// Reports the findings of an `entity_types` member.
+    pub(crate) fn entity_types(&mut self, key: &str, types: Option<&EntityTypes>) {
+        check_entity_types(self, key, types);
+    }
+
+    /// Runs `check` on each element of a list member, with the path of the element.
+    pub(crate) fn each<T>(
+        &mut self,
+        key: &str,
+        list: &mut Option<Vec<T>>,
+        mut check: impl FnMut(&mut T, &mut GoalCheck<'_>),
+    ) {
+        for (i, element) in list.iter_mut().flatten().enumerate() {
+            self.at.push(key);
+            self.at.push_index(i);
+            check(element, self);
+            self.at.pop();
+            self.at.pop();
+        }
+    }
+}

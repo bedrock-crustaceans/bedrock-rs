@@ -1,0 +1,16 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "demo:furnace_count"
+    },
+    "tags": [
+      "furnace"
+    ],
+    "input": {
+      "item": "minecraft:beef",
+      "count": 2
+    },
+    "output": "minecraft:cooked_beef"
+  }
+}

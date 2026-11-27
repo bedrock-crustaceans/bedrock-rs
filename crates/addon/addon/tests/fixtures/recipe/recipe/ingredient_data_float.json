@@ -1,0 +1,27 @@
+{
+  "format_version": "1.12",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "demo:data_float"
+    },
+    "tags": [
+      "crafting_table"
+    ],
+    "pattern": [
+      "#$"
+    ],
+    "key": {
+      "#": {
+        "item": "minecraft:wool",
+        "data": 2.9
+      },
+      "$": {
+        "item": "minecraft:wool",
+        "data": "1.5 + 1.5"
+      }
+    },
+    "result": {
+      "item": "minecraft:torch"
+    }
+  }
+}
