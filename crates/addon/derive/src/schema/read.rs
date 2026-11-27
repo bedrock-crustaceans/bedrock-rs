@@ -358,11 +358,24 @@ fn validate_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
 /// What the read emits for one field it takes by name: its slot, its match arm and the
 /// finish that says what absence and failure make of it.
 struct FieldRead {
+    /// The read of a `reads_absent` member a read in file order did not meet.
+    absent_after: Option<TokenStream>,
     slot: TokenStream,
     arm: TokenStream,
     /// The keep of a value it could not read (`schema::or_kept`), after the members.
     kept: Option<TokenStream>,
     finish: TokenStream,
+}
+
+/// The read of a `reads_absent` field's member the object lacks, as the `null` jsoncpp gives
+/// for it: the field's `read_with`, or its type's read.
+fn absent_read(info: &FieldInfo, held: &syn::Type) -> Option<TokenStream> {
+    info.attrs.reads_absent.map(|_| {
+        info.attrs.read_with.as_ref().map_or_else(
+            || quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json),
+            |(with, _)| quote!(#with),
+        )
+    })
 }
 
 /// The read of the field `info`, its value bound to `__v{index}`. The calls that need the
@@ -408,7 +421,13 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let required = !(info.option.is_some() && info.attrs.required.is_none())
         && info.attrs.default.is_none()
         && info.attrs.alias.is_none();
-    let missing_now = if required {
+    let absent_read = absent_read(info, held);
+    let absent_after = absent_read
+        .as_ref()
+        .map(|with| quote!(#slot.read_absent_after(__object, #json, __read, #with);));
+    let missing_now = if let Some(with) = &absent_read {
+        quote!(#slot.read_absent(__object, #json, __read, #with);)
+    } else if required {
         quote!(#slot.missing_now(__object, #json, __read);)
     } else {
         quote!()
@@ -423,6 +442,7 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
     let when_absent = quote!(#missing_now #absent);
     let scope = scope_put(info, &slot);
     FieldRead {
+        absent_after,
         slot: quote!(let mut #slot = #new_slot;),
         // A field that reads a `null` as a value reads it, whatever the reading does with a
         // `null` member of the others (it is not absent for it).
@@ -500,6 +520,7 @@ fn members_read(
         (#with)(__object.node(), &__members, #default, __read)
     }};
     let read = FieldRead {
+        absent_after: None,
         slot: quote! {
             let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
                 ::core::option::Option::None;
@@ -788,6 +809,7 @@ fn fields_body(
     let (mut flat_slots, mut flat_arms) = (Vec::new(), Vec::new());
     let mut kept = Vec::new();
     let mut fed = Vec::new();
+    let mut absent_afters = Vec::new();
     for info in infos.iter().filter(|info| taken(info)) {
         let index = index_of(info);
         if info.inline {
@@ -801,8 +823,8 @@ fn fields_body(
             });
             let place = flat_place(info);
             flat_arms.push(quote_spanned! {ty.span()=>
-                _ if ::core::option::Option::Some(__key) == <#ty as #fields_trait>::TAG
-                    || (<#ty as #fields_trait>::TAG.is_none() && __key == #place) => {
+                _ if <#ty as #fields_trait>::reads_at(__key)
+                    || (<#ty as #fields_trait>::AT.is_none() && __key == #place) => {
                     if #slot.is_none() {
                         #slot = ::core::option::Option::Some(
                             <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
@@ -827,6 +849,7 @@ fn fields_body(
             continue;
         }
         let FieldRead {
+            absent_after,
             slot,
             arm,
             kept: keep,
@@ -839,6 +862,7 @@ fn fields_body(
             }
             None => field_read(info, index, &extra_arg),
         };
+        absent_afters.extend(absent_after);
         slots.push(slot);
         arms.push(arm);
         kept.extend(keep);
@@ -1013,6 +1037,7 @@ fn fields_body(
             },
             #unknown_member,
         );
+        #(#absent_afters)*
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
         #unknown_last
@@ -1044,7 +1069,7 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
             if info.inline {
                 let (ty, place) = (info.ty, flat_place(info));
                 return vec![
-                    quote_spanned!(ty.span()=> #reader::flat_name(<#ty as #fields>::TAG, #place)),
+                    quote_spanned!(ty.span()=> #reader::flat_name(<#ty as #fields>::AT, #place)),
                 ];
             }
             json_names(info)
@@ -1734,10 +1759,17 @@ pub(super) fn tagged_read(
 }
 
 /// The read of an externally tagged enum: a unit variant by its name, a variant with data as
-/// `{name: payload}`.
+/// `{name: payload}`. One whose every variant holds a value is also `Fields`: flattened into a
+/// struct, the variant is a member of the struct's object, the one `tag_with` names or the first
+/// the object has.
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of variant, read alone and flattened"
+)]
 pub(super) fn external_read(
     target: &Target,
     invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    tag_with: Option<&(syn::Expr, proc_macro2::Span)>,
     variants: &[ReadVariant],
 ) -> TokenStream {
     let Paths {
@@ -1745,6 +1777,8 @@ pub(super) fn external_read(
         read,
         from_json,
         reader,
+        fields: fields_trait,
+        object,
         ..
     } = paths();
     let invalid = invalid_code(invalid);
@@ -1778,7 +1812,67 @@ pub(super) fn external_read(
                 _ => struct_value(index, &at),
             };
             quote!(#json => #value,)
-        });
+        })
+        .collect::<Vec<_>>();
+    // Flattened, the variant is a member of the owner's object: every variant holds a value.
+    let flattened = (!variants.is_empty()
+        && variants
+            .iter()
+            .all(|v| !matches!(payload(v), Payload::Unit)))
+    .then(|| {
+        let fields_header = target.impl_for(&fields_trait, Some(&from_json));
+        let names: Vec<&String> = variants.iter().map(|v| &v.name).collect();
+        let first = &names[0];
+        let with = tag_with.map_or_else(
+            || quote!(::core::option::Option::None),
+            |(with, _)| quote!(::core::option::Option::Some(#with)),
+        );
+        let fns = variants
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| matches!(payload(v), Payload::Struct))
+            .map(|(index, v)| variant_fn(target, index, v));
+        quote! {
+            #[automatically_derived]
+            #fields_header {
+                const VARIANTS: &'static [&'static str] = &[#(#names),*];
+
+                const AT: ::core::option::Option<&'static str> =
+                    ::core::option::Option::Some(#first);
+
+                fn knows(__key: &str) -> bool {
+                    ::core::matches!(__key, #(#names)|*)
+                }
+
+                fn reads_at(__key: &str) -> bool {
+                    <Self as #fields_trait>::knows(__key)
+                }
+
+                #[allow(unused_variables, clippy::too_many_lines)]
+                fn read_fields(
+                    __object: &#object<'_>,
+                    __read: &mut #read<'_>,
+                    __unknown: bool,
+                    __tag: ::core::option::Option<&'static str>,
+                ) -> ::core::option::Option<Self> {
+                    #(#fns)*
+                    let (__name, __payload) = #reader::variant_member(
+                        __object,
+                        __read,
+                        <Self as #fields_trait>::VARIANTS,
+                        #with,
+                    )?;
+                    match __name {
+                        #(#payload_arms)*
+                        _ => {
+                            #reader::unknown_variant(&__payload, __read, #invalid);
+                            ::core::option::Option::None
+                        }
+                    }
+                }
+            }
+        }
+    });
     quote! {
         #[automatically_derived]
         #header {
@@ -1802,6 +1896,8 @@ pub(super) fn external_read(
                 }
             }
         }
+
+        #flattened
     }
 }
 

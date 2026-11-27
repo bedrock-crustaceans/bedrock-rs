@@ -282,6 +282,7 @@ crate::impl_schema_leaf!(
     crate::molang::MolangSource,
     crate::molang::MolangList,
     crate::json::StrictBool,
+    crate::version::FormatVersion,
     crate::version::SemVersion,
     crate::version::MinEngineVersion,
     crate::version::BaseGameVersion,

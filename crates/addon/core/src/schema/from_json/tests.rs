@@ -611,6 +611,206 @@ fn a_tagged_enum_s_rule_runs_over_the_variant_it_read() {
     assert_eq!(told, ["Warning root test/stage_weight"]);
 }
 
+/// A crate's payload: one of two members of its owner's object, keyed by the variant.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[repr(u8)]
+enum Cargo {
+    #[facet(rename = "x:box")]
+    Box(Lamp),
+    #[facet(rename = "x:ball")]
+    Ball { radius: Option<u8> },
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Shipment {
+    before: Option<u8>,
+    #[facet(flatten)]
+    cargo: Cargo,
+    after: Option<u8>,
+}
+
+/// An externally tagged enum flattened into a struct is the member of the struct's object that
+/// holds a variant: the first of them the object has and is not `null`, read where the struct
+/// declares the enum; every other one the object has is a payload the read does not take, told
+/// at the read's unknown severity and kept. With none of them the first one is missing, which
+/// fails the struct there.
+#[test]
+fn a_flattened_external_enum_is_the_first_variant_member_the_object_has() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<Shipment>(text, lenient(), declared);
+    let (shipment, told) = read(r#"{"after": 2, "x:ball": {"radius": 3}, "before": 1}"#);
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(
+        shipment,
+        Some(Shipment {
+            before: Some(1),
+            cargo: Cargo::Ball { radius: Some(3) },
+            after: Some(2)
+        })
+    );
+    let (shipment, told) =
+        read(r#"{"after": "a", "x:box": null, "zz": 1, "x:ball": {"radius": "r"}, "before": "b"}"#);
+    assert_eq!(
+        told,
+        [
+            "Info root/before core/invalid_type",
+            "Warning root/x:box core/ignored_payload",
+            "Info root/x:ball/radius core/invalid_type",
+            "Info root/after core/invalid_type",
+            "Warning root/zz core/unrecognized_field",
+        ]
+    );
+    assert_eq!(
+        shipment.map(|shipment| shipment.cargo),
+        Some(Cargo::Ball { radius: None })
+    );
+    let (shipment, told) = read(r#"{"x:ball": {}, "x:box": {"level": 1}}"#);
+    assert_eq!(told, ["Warning root/x:ball core/ignored_payload"]);
+    assert!(matches!(shipment.map(|s| s.cargo), Some(Cargo::Box(_))));
+    let (shipment, told) = read(r#"{"before": 1, "x:box": null, "after": 2, "zz": 1}"#);
+    assert_eq!(shipment, None);
+    assert_eq!(told, ["Info root/x:box core/missing_required_field"]);
+    // In file order the variant is read where the file has the first member that holds one.
+    let (_, told) = read_as::<Shipment>(
+        r#"{"after": "a", "x:ball": {"radius": "r"}, "before": "b"}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/after core/invalid_type",
+            "Info root/x:ball/radius core/invalid_type",
+            "Info root/before core/invalid_type",
+        ]
+    );
+}
+
+/// The variant of a flattened external enum named by the function, which tells what it refuses.
+fn heaviest(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'static str> {
+    let object = node.value().as_object()?;
+    if object.contains_key("x:box") && object.contains_key("x:ball") {
+        read.push(crate::diagnostic::Diagnostic::of(&STAGE_KIND).at(node.path().clone()));
+        return None;
+    }
+    <Weighed as super::derived::Fields>::VARIANTS
+        .iter()
+        .copied()
+        .find(|name| object.contains_key(name))
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::tag_with = heaviest)]
+#[repr(u8)]
+enum Weighed {
+    #[facet(rename = "x:box")]
+    Box(Lamp),
+    #[facet(rename = "x:ball")]
+    Ball { radius: Option<u8> },
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Weighing {
+    #[facet(flatten)]
+    cargo: Weighed,
+    after: Option<u8>,
+}
+
+/// `tag_with` names the variant of a flattened external enum; a name it refuses fails the owner
+/// there, its later and unknown members untold.
+#[test]
+fn a_flattened_external_enum_takes_the_variant_its_function_names() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let read = |text: &str| read_as::<Weighing>(text, lenient(), declared);
+    let (weighing, told) = read(r#"{"x:ball": {"radius": 2}, "after": 1}"#);
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(
+        weighing,
+        Some(Weighing {
+            cargo: Weighed::Ball { radius: Some(2) },
+            after: Some(1)
+        })
+    );
+    let (weighing, told) = read(r#"{"x:ball": {}, "x:box": {}, "after": "a", "zz": 1}"#);
+    assert_eq!(weighing, None);
+    assert_eq!(told, ["Error root test/stage_kind"]);
+}
+
+/// A mood the game reads whether the member is written or not: absent, it is `calm`, told.
+fn mood(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    if node.is_absent() {
+        assert_eq!(node.span(), None);
+        read.push(crate::diagnostic::Diagnostic::of(&STAGE_WEIGHT).at(node.path().clone()));
+        return Some("calm".to_owned());
+    }
+    read.string(node).map(str::to_owned)
+}
+
+/// A size an absent member leaves at its default, after telling it missing.
+fn size(node: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+    if node.is_absent() {
+        read.missing_absent(node);
+        return None;
+    }
+    u8::from_json(node, read)
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Moody {
+    before: Option<u8>,
+    #[facet(schema::reads_absent, schema::read_with = mood)]
+    mood: Option<String>,
+    #[facet(default = 4, schema::reads_absent, schema::read_with = size)]
+    size: u8,
+    after: Option<u8>,
+}
+
+/// A member the object lacks is read by a `reads_absent` field as the `null` jsoncpp gives for
+/// it: in its place in declared order, after the members in file order; a value read is the
+/// field's, none leaves the field's default.
+#[test]
+fn reads_absent_reads_a_member_the_object_lacks() {
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (moody, told) = read_as::<Moody>(r#"{"after": "a", "before": "b"}"#, lenient(), declared);
+    assert_eq!(
+        told,
+        [
+            "Info root/before core/invalid_type",
+            "Warning root/mood test/stage_weight",
+            "Info root/size core/missing_required_field",
+            "Info root/after core/invalid_type",
+        ]
+    );
+    assert_eq!(
+        moody.map(|m| (m.mood, m.size)),
+        Some((Some("calm".to_owned()), 4))
+    );
+    let (moody, told) = read_as::<Moody>(
+        r#"{"size": 2, "after": "a", "mood": "sad"}"#,
+        lenient(),
+        declared,
+    );
+    assert_eq!(told, ["Info root/after core/invalid_type"]);
+    assert_eq!(
+        moody.map(|m| (m.mood, m.size)),
+        Some((Some("sad".to_owned()), 2))
+    );
+    let (_, told) = read_as::<Moody>(
+        r#"{"after": "a", "before": "b"}"#,
+        lenient(),
+        Profile::EVERY_FAILURE,
+    );
+    assert_eq!(
+        told,
+        [
+            "Info root/after core/invalid_type",
+            "Info root/before core/invalid_type",
+            "Warning root/mood test/stage_weight",
+            "Info root/size core/missing_required_field",
+        ]
+    );
+}
+
 /// A level read as a word: `read_with`'s function reads the member.
 fn level_word(node: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
     match read.string(node)? {

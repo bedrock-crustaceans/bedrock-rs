@@ -21,6 +21,7 @@ crate::impl_no_molang!(
     String,
     crate::json::Value,
     crate::shared::EventTrigger,
+    crate::version::FormatVersion,
     crate::version::SemVersion,
     crate::version::MinEngineVersion,
     crate::version::BaseGameVersion,

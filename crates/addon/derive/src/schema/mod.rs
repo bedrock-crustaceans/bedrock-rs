@@ -436,7 +436,10 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         // A `schema::required` option is told missing by `{}` and by the written default: the
         // reader's rule, not facet's.
         let required = infos.iter().any(|info| info.attrs.required.is_some());
-        let test = (!target.is_generic()).then(|| {
+        // A member the object lacks is read all the same (`schema::reads_absent`): neither `{}`
+        // nor the written default need read as the default.
+        let reads_absent = infos.iter().any(|info| info.attrs.reads_absent.is_some());
+        let test = (!target.is_generic() && !reads_absent).then(|| {
             default_test(
                 ident,
                 !container.transparent && !positional && !required,
@@ -1611,11 +1614,17 @@ fn derive_tagged(
              of the game writes one",
         ));
     }
-    if let (None, Some((_, span))) = (tag, &container.tag_with) {
+    if let (None, Some((_, span))) = (tag, &container.tag_with)
+        && data
+            .variants
+            .iter()
+            .any(|v| matches!(v.fields, Fields::Unit))
+    {
         errors.push(Error::new(
             *span,
-            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`): \
-             an externally tagged one is named by its key",
+            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`), \
+             or of an externally tagged one flattened into a struct, whose every variant holds a \
+             value: a unit variant is named by its string",
         ));
     }
     read::check_tagged_variants(data, tag.is_some(), errors);
@@ -1706,7 +1715,12 @@ fn derive_tagged(
             container.after_read.as_ref(),
             &reads,
         ),
-        None => read::external_read(&target, container.invalid.as_ref(), &reads),
+        None => read::external_read(
+            &target,
+            container.invalid.as_ref(),
+            container.tag_with.as_ref(),
+            &reads,
+        ),
     };
     quote!(#impls #from_json)
 }

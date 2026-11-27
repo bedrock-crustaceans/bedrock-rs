@@ -181,19 +181,24 @@ fn parsed(name: &str, text: &str) -> Document<Recipe> {
         .unwrap_or_else(|rejected| panic!("{name}: rejected\n{text}\n{:#?}", rejected.diagnostics))
 }
 
-/// The findings of `document` without their order.
+/// The findings of `document` without their order or their spans: a finding spans the value
+/// it is about, and the two documents compared spell that value differently.
 fn findings(document: &Document<Recipe>) -> Vec<String> {
     let mut found: Vec<String> = document
         .diagnostics()
         .iter()
-        .map(|finding| format!("{finding:?}"))
+        .map(|finding| {
+            let mut finding = finding.clone();
+            finding.location.span = None;
+            format!("{finding:?}")
+        })
         .collect();
     found.sort();
     found
 }
 
-/// Core's finding of a number read as the largest finite float, as this family raises it: the
-/// family's findings carry no span.
+/// Core's finding of a number read as the largest finite float, as this family raises it:
+/// without a span.
 fn is_the_warning(finding: &Diagnostic, path: &str) -> bool {
     finding.is(&bedrock_addon::diagnostic::codes::INVALID_VALUE)
         && finding.severity == Severity::Info

@@ -12,6 +12,7 @@ struct Plain {
 #[repr(u8)]
 enum External {
     A(u8),
+    B,
 }
 
 fn main() {}

@@ -34,8 +34,21 @@ pub trait Fields: Sized {
     const TAG: Option<&'static str> = None;
 
     /// The JSON names of the variants of an internally tagged enum, which a function that names
-    /// the variant of an object (`schema::tag_with`) looks its name up in.
+    /// the variant of an object (`schema::tag_with`) looks its name up in; of a flattened
+    /// externally tagged enum, the members that hold a variant, in declaration order.
     const VARIANTS: &'static [&'static str] = &[];
+
+    /// The member a struct that flattens the type asks for in a read in declared order, where it
+    /// reads it: an internally tagged enum's tag, the first variant of an externally tagged one;
+    /// `None` for a struct, which is read after the members.
+    const AT: Option<&'static str> = Self::TAG;
+
+    /// Whether a read in file order reads the type where the file has the member `key`: at the
+    /// tag of an internally tagged enum, at any member that holds a variant of an externally
+    /// tagged one.
+    fn reads_at(key: &str) -> bool {
+        Some(key) == Self::TAG
+    }
 
     /// Whether a member named `key` is one of the fields (a flattened struct's included).
     fn knows(key: &str) -> bool;
@@ -631,6 +644,42 @@ impl<T> Slot<T> {
         }
     }
 
+    /// Reads the member `key` the object lacks, as a field that `reads_absent` reads it: `with`
+    /// at the `null` jsoncpp gives for it ([`Node::absent`]), telling what the game tells of the
+    /// absence. A value is the field's; `None` leaves the member absent (the field's default or
+    /// `None`, or missing where it is required), whatever was told.
+    pub fn read_absent(
+        &mut self,
+        object: &Object<'_>,
+        key: &str,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if read.stopped() {
+            return;
+        }
+        let node = Node::absent(object.node().path().child(key));
+        self.depth = node.path().len();
+        self.missing_told = true;
+        if let Some(value) = with(&node, read) {
+            self.state = State::Read(value);
+        }
+    }
+
+    /// [`read_absent`](Self::read_absent) after the members of a read in file order, which asks
+    /// for the members the object has alone: the field's member was not among them.
+    pub fn read_absent_after(
+        &mut self,
+        object: &Object<'_>,
+        key: &str,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if matches!(self.state, State::Absent) && !self.missing_told {
+            self.read_absent(object, key, read, with);
+        }
+    }
+
     /// A required field: the value, or the owner fails (a missing member told, unless the
     /// object of a tree failed: [`Object::settle`]).
     pub fn required(
@@ -1160,6 +1209,72 @@ pub const fn flat_name(tag: Option<&'static str>, place: &'static str) -> &'stat
     match tag {
         Some(tag) => tag,
         None => place,
+    }
+}
+
+/// The variant a flattened externally tagged enum reads from its owner's object, and the member
+/// that holds it: the one `with` (`schema::tag_with`) names, or else the first of `names` (the
+/// variants' members, in declaration order) the object has and is not `null`. Without `with`, every
+/// other of `names` the object has is a payload the read does not take ([`ignored_member`]); with
+/// none present the first one is missing.
+pub fn variant_member<'v>(
+    object: &Object<'v>,
+    read: &mut Read<'_>,
+    names: &'static [&'static str],
+    with: Option<TagWith>,
+) -> Option<(&'static str, Node<'v>)> {
+    if read.stopped() {
+        return None;
+    }
+    let name = if let Some(with) = with {
+        with(object.node(), read)?
+    } else {
+        let Some(chosen) = present_member(object.node(), names) else {
+            read.missing_member(&object.members, names.first().copied().unwrap_or_default());
+            return None;
+        };
+        for name in names.iter().filter(|name| **name != chosen) {
+            ignored_member(object.node(), name, read);
+        }
+        chosen
+    };
+    let Some(member) = object.members.get(name) else {
+        read.missing_member(&object.members, name);
+        return None;
+    };
+    Some((name, member))
+}
+
+/// The first of `names` the object `node` has as a member that is not `null`: the variant of a
+/// flattened externally tagged enum, as the game probes its payload keys.
+#[must_use]
+pub fn present_member(node: &Node<'_>, names: &'static [&'static str]) -> Option<&'static str> {
+    let object = node.value().as_object()?;
+    names
+        .iter()
+        .copied()
+        .find(|name| object.get(name).is_some_and(|value| !value.is_null()))
+}
+
+/// Tells the member `key` of the object `node`, a variant the read does not take beside the one
+/// it reads, if the object has it: `core/ignored_payload` at the read's unknown severity, the
+/// member kept as written with the object's unknown members.
+pub fn ignored_member(node: &Node<'_>, key: &str, read: &mut Read<'_>) {
+    let Some(value) = node.value().as_object().and_then(|object| object.get(key)) else {
+        return;
+    };
+    let span = read
+        .object(node)
+        .and_then(|members| members.get(key))
+        .and_then(|member| member.span());
+    let mut finding = Diagnostic::of(&core_codes::IGNORED_PAYLOAD).severity(read.unknown_grade());
+    finding.location.json_path = node.path().child(key);
+    finding.location.span = span;
+    read.push(finding);
+    if read.keepable() {
+        read.findings_mut()
+            .unknown_mut()
+            .put(node.path(), key, value.clone());
     }
 }
 

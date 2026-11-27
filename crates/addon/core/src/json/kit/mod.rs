@@ -118,6 +118,9 @@ pub struct Node<'v> {
 enum Text<'v> {
     /// No text: no span.
     None,
+    /// A member the object does not have, read as the `null` jsoncpp gives for it
+    /// ([`Node::absent`]): no text, no span.
+    Absent,
     /// A node of a parse's span tree. The root of a read of a whole text has that text as
     /// `whole`, white space and comments round the value included, as a slice has it.
     Tree {
@@ -130,6 +133,7 @@ impl std::fmt::Debug for Text<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::None => f.write_str("None"),
+            Self::Absent => f.write_str("Absent"),
             Self::Tree { node, .. } => f.debug_tuple("Tree").field(&node.span()).finish(),
         }
     }
@@ -143,14 +147,14 @@ impl<'v> Text<'v> {
 
     fn slice(self) -> Option<JsonSlice<'v>> {
         match self {
-            Self::None => None,
+            Self::None | Self::Absent => None,
             Self::Tree { node, whole } => Some(whole.unwrap_or_else(|| node.text())),
         }
     }
 
     fn span(self) -> Option<Span> {
         match self {
-            Self::None => None,
+            Self::None | Self::Absent => None,
             Self::Tree { node, whole } => Some(whole.map_or_else(|| node.span(), span_of)),
         }
     }
@@ -210,6 +214,26 @@ impl<'v> Node<'v> {
                 whole: Some(parsed.spans.text()),
             },
         }
+    }
+
+    /// The member at `path` that its object does not have, read as the `null` jsoncpp's
+    /// `operator[]` gives for a missing key: a read that asks for a member and takes what is
+    /// there (`schema::reads_absent`). Findings at it carry no span; [`is_absent`](Self::is_absent)
+    /// tells it from a `null` the file writes.
+    #[must_use]
+    pub fn absent(path: JsonPath) -> Node<'static> {
+        static NULL: Value = Value::NULL;
+        Node {
+            value: &NULL,
+            path,
+            text: Text::Absent,
+        }
+    }
+
+    /// Whether the node is a member its object does not have ([`absent`](Self::absent)).
+    #[must_use]
+    pub fn is_absent(&self) -> bool {
+        matches!(self.text, Text::Absent)
     }
 
     /// The value.
@@ -2177,7 +2201,7 @@ impl<'d> Read<'d> {
             return None;
         };
         let texts = match node.text {
-            Text::None => None,
+            Text::None | Text::Absent => None,
             Text::Tree { node, .. } => Some(node),
         };
         Some(Members {
@@ -2215,7 +2239,7 @@ impl<'d> Read<'d> {
             return None;
         };
         let texts = match node.text {
-            Text::None => None,
+            Text::None | Text::Absent => None,
             Text::Tree { node, .. } => Some(node),
         };
         Some(Elements {
@@ -2298,6 +2322,17 @@ impl<'d> Read<'d> {
         self.missing(members, key);
     }
 
+    /// Tells that the member at `node`, which its object lacks ([`Node::absent`]: a
+    /// `schema::reads_absent` field's read), is required and missing: what
+    /// [`missing_member`](Self::missing_member) tells of it, with no span.
+    pub fn missing_absent(&mut self, node: &Node<'_>) {
+        let key = node.path().last_key().unwrap_or_default();
+        let object = node.path().prefix(node.path().len().saturating_sub(1));
+        let code = self.missing_code(key);
+        let at = self.missing_path(&object, key);
+        self.tell_missing(code, at, None);
+    }
+
     /// Tells that the member `key` of `members` is required and missing, with `code` (a
     /// field's `schema::missing`).
     pub(crate) fn missing_member_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
@@ -2348,19 +2383,24 @@ impl<'d> Read<'d> {
     /// where the read words a defaulted failure as one ([`Texts::defaulted`]) or is a tree's
     /// ([`Objects::Tree`]).
     fn missing_at(&self, members: &Members<'_>, key: &str) -> JsonPath {
+        self.missing_path(&members.node.path, key)
+    }
+
+    /// Where the member `key` of the object at `object` is told missing.
+    fn missing_path(&self, object: &JsonPath, key: &str) -> JsonPath {
         if self.texts.missing_in_object
             || self.profile.objects == Objects::Tree
             || (self.texts.defaulted.is_some() && self.defaults())
         {
-            members.node.path.clone()
+            object.clone()
         } else {
-            members.node.path.child(key)
+            object.child(key)
         }
     }
 
-    /// Tells that the member `key` of `members` is required and missing.
-    fn missing(&mut self, members: &Members<'_>, key: &str) {
-        let code = match (
+    /// The code the member `key` is told missing under.
+    fn missing_code(&self, key: &str) -> Code {
+        match (
             self.texts.missing_named,
             self.texts.missing_code,
             self.texts.missing,
@@ -2369,7 +2409,12 @@ impl<'d> Read<'d> {
             (None, Some(code), _) => Code::from(code),
             (None, None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
             (None, None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-        };
+        }
+    }
+
+    /// Tells that the member `key` of `members` is required and missing.
+    fn missing(&mut self, members: &Members<'_>, key: &str) {
+        let code = self.missing_code(key);
         self.tell_missing(code, self.missing_at(members, key), members.node.span());
     }
 

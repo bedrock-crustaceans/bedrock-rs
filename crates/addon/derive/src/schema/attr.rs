@@ -222,6 +222,8 @@ pub(crate) struct FieldAttrs {
     pub reads_null: Option<Span>,
     /// `schema::scope`: the field's value is in scope for the members read after it.
     pub scope: Option<Span>,
+    /// `schema::reads_absent`: a member the object lacks is read, as the `null` jsoncpp gives.
+    pub reads_absent: Option<Span>,
     /// `schema::or_kept`: `true` for `"told"`, `false` for `"silent"`.
     pub or_kept: Option<(bool, Span)>,
     /// `schema::members = ["a", "b"]`: the members of the struct's object the field is fed by.
@@ -296,6 +298,7 @@ const FIELD_KEYS: &[&str] = &[
     "ends",
     "reads_null",
     "scope",
+    "reads_absent",
     "or_kept",
     "low_code",
     "high_code",
@@ -380,7 +383,7 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
             Place::Untagged | Place::Tagged if key == "invalid" => continue,
             Place::Tagged if key == "tag_with" => continue,
             _ if key == "tag_with" => {
-                "`schema::tag_with` names the variant of an internally tagged enum: put it on one"
+                "`schema::tag_with` names the variant of a tagged enum with data: put it on one"
                     .to_owned()
             }
             Place::Struct | Place::Enum | Place::Untagged | Place::Tagged if field_key => {
@@ -700,6 +703,7 @@ impl FieldAttrs {
                         once(&mut out.members, (names, span), &key, span, errors);
                     }
                     "scope" => once(&mut out.scope, span, &key, span, errors),
+                    "reads_absent" => once(&mut out.reads_absent, span, &key, span, errors),
                     "or_kept" => {
                         let told = either_word(entry, &key, "told", "silent")?;
                         once(&mut out.or_kept, (told, span), &key, span, errors);
@@ -777,6 +781,7 @@ impl FieldAttrs {
             .or(self.drop)
             .or(self.reads_null)
             .or(self.scope)
+            .or(self.reads_absent)
             .or_else(|| self.or_kept.map(|(_, s)| s))
             .or_else(|| self.members.as_ref().map(|(_, s)| *s))
             .or_else(|| self.check_with.as_ref().map(|(_, s)| *s))

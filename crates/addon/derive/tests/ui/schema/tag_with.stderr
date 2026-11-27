@@ -1,10 +1,10 @@
-error: `schema::tag_with` names the variant of an internally tagged enum: put it on one
+error: `schema::tag_with` names the variant of a tagged enum with data: put it on one
  --> tests/ui/schema/tag_with.rs:5:9
   |
 5 | #[facet(schema::tag_with = name_of)]
   |         ^^^^^^
 
-error: `schema::tag_with` names the variant of an internally tagged enum (`tag = ".."`): an externally tagged one is named by its key
+error: `schema::tag_with` names the variant of an internally tagged enum (`tag = ".."`), or of an externally tagged one flattened into a struct, whose every variant holds a value: a unit variant is named by its string
   --> tests/ui/schema/tag_with.rs:11:9
    |
 11 | #[facet(schema::tag_with = name_of)]

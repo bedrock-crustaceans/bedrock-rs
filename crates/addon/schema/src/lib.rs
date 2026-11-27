@@ -161,7 +161,12 @@ facet::define_attr_grammar! {
         /// and returns the variant's JSON name, or `None` once it has told. In place of the
         /// string at the tag member, for a tag the game normalises (a namespace dropped, an
         /// engine that has no such name) or words its own way. The enum may be flattened into a
-        /// struct (`flatten`), which reads the variant where it declares the enum.
+        /// struct (`flatten`), which reads the variant where it declares the enum. On an
+        /// externally tagged enum whose every variant holds a value, flattened into a struct, the
+        /// variant is a member of the struct's object, keyed by its name: the function names it,
+        /// where by default the first of those members the object has and is not `null` is the
+        /// one (every other one the object has told `core/ignored_payload` at the unknown severity
+        /// and kept; none at all the first one missing).
         TagWith(arbitrary),
         /// `required` (marker, an `Option` field): the document must write the member, though
         /// its value is optional in the type: absence is a missing required member.
@@ -231,6 +236,13 @@ facet::define_attr_grammar! {
         /// struct's read ends (`Read::scope`): the context the game's reader holds while it reads
         /// on (the range of the table a sound of it starts from, the base of a block sound type).
         Scope,
+        /// `reads_absent` (marker, a field): a member the object lacks is read all the same, as
+        /// the `null` jsoncpp's `operator[]` gives for a missing key, by the field's type (or
+        /// `read_with`) at a node that knows it is absent (`Node::is_absent`): the game reads the
+        /// member and tells what it tells of its absence. A value read is the field's; none leaves
+        /// it absent (its default, `None`, or missing where it is required). In a read in declared
+        /// order it is read where it is declared; in file order, after the members.
+        ReadsAbsent,
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
         /// (with the struct's unknown members), its failure told (or not) and failing nothing.
