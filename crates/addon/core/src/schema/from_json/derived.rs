@@ -315,14 +315,18 @@ impl Object<'_> {
 }
 
 /// What a struct declares of its members, for its read: its JSON names in declaration order
-/// (aliases included), the ones it reads from a format version on (`schema::since_format`),
-/// whether a key is one of its members or of a struct it flattens (`knows`), and its tag.
+/// (aliases included), the ones it reads from a format version on (`schema::since_format`) and
+/// the engines of the ones that state them (`schema::since_engine`, `until_engine`), whether a
+/// key is one of its members or of a struct it flattens (`knows`), and its tag.
 #[derive(Clone, Copy, Debug)]
 pub struct Declared<'a, K> {
     /// The JSON names, in declaration order.
     pub names: &'a [&'a str],
     /// The names read from a format version on, with it.
     pub gates: &'a [(&'a str, FormatVersion)],
+    /// The names of an engine's members, with their engines: no members of a read that gates
+    /// by an engine outside them ([`Read::engine`]).
+    pub engines: &'a [(&'a str, crate::schema::EngineWindow)],
     /// Whether a key names a member of the struct (or of one it flattens).
     pub knows: K,
     /// The tag member of an internally tagged enum's variant.
@@ -330,14 +334,21 @@ pub struct Declared<'a, K> {
 }
 
 impl<'a, K: Fn(&str) -> bool> Declared<'a, K> {
-    /// Whether the member `name` is read from a later format version than the document's: no
-    /// member of the struct in that document.
+    /// Whether the member `name` is read from a later format version than the document's, or
+    /// is of other engines than the one the read gates by: no member of the struct in that
+    /// document.
     fn later(&self, read: &Read<'_>, name: &str) -> bool {
-        read.known_format().is_some_and(|format| {
+        let format = read.known_format().is_some_and(|format| {
             self.gates
                 .iter()
                 .any(|(gated, since)| *gated == name && format < *since)
-        })
+        });
+        let engine = read.gating_engine().is_some_and(|engine| {
+            self.engines
+                .iter()
+                .any(|(gated, window)| *gated == name && !window.admits(engine))
+        });
+        format || engine
     }
 
     /// The declared name a member written as `key` is read as when the profile ignores the case
@@ -397,7 +408,8 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
 /// [`MemberOrder::Named`]: crate::json::kit::MemberOrder::Named
 ///
 /// A member read from a later format version than the document's (`schema::since_format`) is
-/// no member of the struct in that document: an unknown one.
+/// no member of the struct in that document: an unknown one; so is a member of other engines
+/// than the one a read gates by ([`Read::engine`]).
 pub fn read_members<K: Fn(&str) -> bool>(
     object: &Object<'_>,
     read: &mut Read<'_>,

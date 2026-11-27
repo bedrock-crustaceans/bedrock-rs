@@ -1092,6 +1092,9 @@ pub struct Read<'d> {
     /// The format version the document is written at, for the members a struct reads from a
     /// version on ([`format`](Self::format)).
     format: Option<crate::version::FormatVersion>,
+    /// The engine a struct's members are gated by at the read (`schema::since_engine`,
+    /// `until_engine`), when the read asks for it ([`engine`](Self::engine)).
+    engine: Option<crate::version::FormatVersion>,
     failed: bool,
     profile: Profile,
     /// The read met its first failure under [`Failures::First`].
@@ -1159,6 +1162,7 @@ impl<'d> Read<'d> {
             phase: None,
             subject: None,
             format: None,
+            engine: None,
             failed: false,
             profile: Profile::EVERY_FAILURE,
             stopped: false,
@@ -1345,6 +1349,7 @@ impl<'d> Read<'d> {
             phase: self.phase,
             subject: self.subject,
             format: self.format,
+            engine: self.engine,
             failed: false,
             profile: self.profile,
             // A fork of a read that has stopped reads nothing either.
@@ -1682,6 +1687,22 @@ impl<'d> Read<'d> {
     /// The format version the read knows the document is written at ([`format`](Self::format)).
     pub fn known_format(&self) -> Option<crate::version::FormatVersion> {
         self.format
+    }
+
+    /// The read gating the members of its structs by the engine `engine`: a member whose
+    /// `schema::since_engine` is above it, or whose `schema::until_engine` is at or below it, is
+    /// no member of the struct (an unknown one), as `since_format` is below the document's
+    /// format. A read that does not ask reads such a member whatever the engine (the derived
+    /// check of the validate stage judges it).
+    #[must_use]
+    pub fn engine(mut self, engine: crate::version::FormatVersion) -> Self {
+        self.engine = Some(engine);
+        self
+    }
+
+    /// The engine the read gates members by ([`engine`](Self::engine)).
+    pub fn gating_engine(&self) -> Option<crate::version::FormatVersion> {
+        self.engine
     }
 
     /// The read of a document loaded in `load`, which a part read by another reader (a

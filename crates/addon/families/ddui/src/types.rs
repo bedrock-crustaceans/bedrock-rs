@@ -3,8 +3,10 @@
 use std::collections::HashSet;
 
 use super::Component;
+use crate::read;
 use bedrock_addon_core::id::{UiCompositionId, UiRootId};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema::{self, Schema};
 
 /// A data-driven UI root (`minecraft:ui-root`): a named screen, a tree of controls.
 ///
@@ -12,7 +14,7 @@ use bedrock_addon_core::json::Value;
 /// "demo:screen"}, "attribs": {"root_point": "minecraft:screen"}, "layout": {"markup":
 /// [{"component": "Panel", "children": []}]}}}`. Every member is required; a member the client
 /// does not bind fails the file.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:ui-root")]
 #[doc(alias = "UIRoot")]
 pub struct UiRoot {
@@ -26,26 +28,29 @@ pub struct UiRoot {
 }
 
 /// The `description` of a root.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 pub struct RootDescription {
     /// The root's name (JSON `identifier`): a non-empty namespace, `:` and a non-empty name.
     /// A document of a pack the game ships must have `minecraft` somewhere in it; a document
     /// of any other pack must not.
+    #[facet(schema::read_with = read::identifier)]
     pub identifier: UiRootId,
 }
 
 /// The `attribs` of a root.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 pub struct RootAttribs {
     /// Where the screen is attached (JSON `root_point`), never empty. Every vanilla root
     /// writes `minecraft:screen`; the client checks no other value when it loads the file.
+    #[facet(schema::read_with = read::non_empty)]
     pub root_point: String,
 }
 
 /// The `layout` of a root or a composition.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, facet::Facet, Schema)]
 pub struct Layout {
     /// The top-level controls (JSON `markup`), at least one.
+    #[facet(schema::read_with = read::markup)]
     pub markup: Vec<Control>,
 }
 
@@ -55,7 +60,7 @@ pub struct Layout {
 /// JSON: `{"format_version": "1.21.130", "minecraft:ui-composition": {"description":
 /// {"identifier": "demo:extra"}, "attribs": {}, "layout": {"markup": [{"component":
 /// "Form.Divider"}]}}}`. `attribs` is required even when it is empty.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:ui-composition")]
 #[doc(alias = "UIComposition")]
 pub struct UiComposition {
@@ -69,18 +74,20 @@ pub struct UiComposition {
 }
 
 /// The `description` of a composition.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 pub struct CompositionDescription {
     /// The composition's name (JSON `identifier`), under the rules of a root's.
+    #[facet(schema::read_with = read::identifier)]
     pub identifier: UiCompositionId,
 }
 
 /// The `attribs` of a composition.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 pub struct CompositionAttribs {
     /// The extension point the composition is spliced in at (JSON `extension_point`), never
     /// empty when written: the `attribs.name` of an `ExtensionPoint` control of a loaded
     /// root. Only a pack the game ships may write it.
+    #[facet(schema::read_with = read::non_empty)]
     pub extension_point: Option<String>,
 }
 
@@ -94,7 +101,7 @@ pub struct CompositionAttribs {
 /// `Debug` are derived and take a stack frame per level, so a tree nested deeper than the
 /// stack holds (some ten thousand levels) must not be cloned, compared or printed. A loaded
 /// tree is never that deep: the reader's depth limit bounds it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet)]
 pub struct Control {
     /// The control type (JSON `component`).
     pub component: Component,
@@ -122,6 +129,9 @@ impl Control {
         Some(name.as_string()?.as_str())
     }
 }
+
+bedrock_addon_core::impl_schema_leaf!(Control);
+bedrock_addon_core::impl_no_molang!(Control);
 
 /// Drops the controls below without a stack frame per level.
 impl Drop for Control {

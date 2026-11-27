@@ -1,9 +1,14 @@
 //! The control catalogue: which control types an engine version knows, which members each
-//! binds and which types may stand below which.
+//! binds and which types may stand below which. What a type is and binds is the control
+//! types' tagged enum's (`component::Bound`: its variants' engines and structs), read here
+//! from its `Shape`; which types a child set holds on each engine is this file's table.
 
 use super::Component;
+use super::component::Bound;
+use bedrock_addon_core::schema::EngineWindow;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
+use facet::{Shape, Type, UserType};
 
 /// The control catalogue of an engine version: the closed set of control types, the members
 /// each binds and its child set.
@@ -66,6 +71,22 @@ pub enum ChildSet {
     ListContent,
     /// The children of `Container.FixedGridLayout`.
     GridContent,
+}
+
+impl ChildSet {
+    /// The set whose `children` type the reader reads `shape` as.
+    fn of(shape: &Shape) -> Option<Self> {
+        use super::component::{GridContent, ListContent, PanelContent, RootControl};
+        use facet::Facet;
+        [
+            (RootControl::SHAPE, Self::RootControl),
+            (PanelContent::SHAPE, Self::PanelContent),
+            (ListContent::SHAPE, Self::ListContent),
+            (GridContent::SHAPE, Self::GridContent),
+        ]
+        .into_iter()
+        .find_map(|(set, child_set)| (set == shape).then_some(child_set))
+    }
 }
 
 use Component as C;
@@ -186,57 +207,30 @@ impl Catalogue {
     }
 
     /// What the catalogue says about `component`; `None` when it has no such control type.
+    /// Read from the control types' tagged enum the reader reads by: the variant's engines,
+    /// whether its struct has `attribs` (on this engine, and `schema::required`) and of which
+    /// child set its `children` are.
     pub fn rule(self, component: Component) -> Option<ControlRule> {
-        use Binding::{Optional, Required, Unbound};
-        use ChildSet::{GridContent, ListContent, PanelContent, RootControl};
-        let later = self >= Self::V1_26_45;
-        let form = self >= Self::V1_26_60;
-        let (attribs, children) = match component {
-            C::ContainerItem if later => return None,
-            C::ContainerSlot | C::ContainerTextField | C::FormImage | C::ScrollableGridLayout
-                if !later =>
-            {
-                return None;
-            }
-            C::FormHorizontalStack
-            | C::FormPanel
-            | C::FormText
-            | C::FormSpacing
-            | C::FormCloseButton
-                if !form =>
-            {
-                return None;
-            }
-            // From 1.26.60 `Form.Divider` binds `attribs` (the vanilla roots write `styleId`
-            // there); 1.26.45 and earlier bind none.
-            C::FormDivider if form => (Optional, None),
-            // The five types new in 1.26.60 follow the older types of the same shape:
-            // `Form.Text` and `Form.CloseButton` require attribs, `Form.Spacing` binds
-            // nothing, `Form.Panel` is a panel, `Form.HorizontalStack` a panel without attribs.
-            C::PanelText | C::FormText | C::FormCloseButton => (Required, None),
-            C::PanelDecoration | C::PanelSpacing | C::FormDivider | C::FormSpacing => {
-                (Unbound, None)
-            }
-            C::ContainerLayout => (Unbound, Some(RootControl)),
-            C::Context => (Optional, Some(RootControl)),
-            C::Panel | C::FormScrollView | C::Visibility | C::FormPanel => {
-                (Optional, Some(PanelContent))
-            }
-            C::FormHorizontalStack => (Unbound, Some(PanelContent)),
-            C::ContextList | C::ScrollableGridLayout => (Optional, Some(ListContent)),
-            C::ContainerFixedGridLayout => (Optional, Some(GridContent)),
-            C::ExtensionPoint
-            | C::PanelCloseButton
-            | C::ContainerItem
-            | C::ContainerSlot
-            | C::ContainerTextField
-            | C::FormButton
-            | C::FormDropdown
-            | C::FormImage
-            | C::FormSlider
-            | C::FormSwitch
-            | C::FormTextField => (Optional, None),
+        let variant = Bound::variant(component)?;
+        let engine = self.engine();
+        if !EngineWindow::of(variant.attributes).admits(engine) {
+            return None;
+        }
+        let Type::User(UserType::Struct(members)) = variant.data.fields.first()?.shape().ty else {
+            return None;
         };
+        let member = |name: &str| members.fields.iter().find(|field| field.name == name);
+        let attribs = match member("attribs") {
+            Some(field) if EngineWindow::of(field.attributes).admits(engine) => {
+                if field.has_attr(Some("schema"), "required") {
+                    Binding::Required
+                } else {
+                    Binding::Optional
+                }
+            }
+            _ => Binding::Unbound,
+        };
+        let children = member("children").and_then(|field| ChildSet::of(field.shape()));
         Some(ControlRule { attribs, children })
     }
 

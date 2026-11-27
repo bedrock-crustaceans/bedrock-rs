@@ -160,6 +160,8 @@ pub struct FieldRow {
     pub since_format: Option<FormatVersion>,
     /// `schema::since_engine`.
     pub since_engine: Option<FormatVersion>,
+    /// `schema::until_engine`.
+    pub until_engine: Option<FormatVersion>,
     /// `schema::unknown`.
     pub unknown: Option<UnknownRule>,
 
@@ -196,11 +198,47 @@ impl FieldRow {
             max_len: None,
             since_format: None,
             since_engine: None,
+            until_engine: None,
             unknown: None,
             foreign_event: false,
             flatten: false,
             read_by: &[],
             getter: None,
         }
+    }
+}
+
+/// The engines a field or a variant of a tagged enum is of: `schema::since_engine` (the first)
+/// and `schema::until_engine` (the first without it), as the `Shape` stores them, for code that
+/// looks a member or a variant up by engine (a `tag_with` function, a view of an enum).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct EngineWindow {
+    /// `schema::since_engine`.
+    pub since: Option<FormatVersion>,
+    /// `schema::until_engine`.
+    pub until: Option<FormatVersion>,
+}
+
+impl EngineWindow {
+    /// The window `attrs` state (a field's or a variant's attributes); open at an end it does
+    /// not state.
+    pub fn of(attrs: &[facet::Attr]) -> Self {
+        let stored = |key: &str| {
+            attrs
+                .iter()
+                .find(|attr| attr.ns() == Some("schema") && attr.key() == key)
+                .and_then(|attr| attr.get_as::<&'static str>())
+                .and_then(|text| crate::version::FormatVersionInput::parse(text)?.version)
+        };
+        Self {
+            since: stored("since_engine"),
+            until: stored("until_engine"),
+        }
+    }
+
+    /// Whether an engine of version `engine` has the member or the variant.
+    pub fn admits(self, engine: FormatVersion) -> bool {
+        self.since.is_none_or(|since| engine >= since)
+            && self.until.is_none_or(|until| engine < until)
     }
 }

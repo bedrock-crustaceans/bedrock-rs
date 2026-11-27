@@ -719,6 +719,10 @@ fn field_row(info: &FieldInfo) -> TokenStream {
         let v = version_option(attrs.since_engine);
         parts.push(quote!(since_engine: #v));
     }
+    if attrs.until_engine.is_some() {
+        let v = version_option(attrs.until_engine);
+        parts.push(quote!(until_engine: #v));
+    }
     if attrs.unknown.is_some() {
         let v = unknown_option(attrs.unknown.as_ref());
         parts.push(quote!(unknown: #v));
@@ -1175,7 +1179,8 @@ fn field_len(info: &FieldInfo) -> Option<TokenStream> {
     })
 }
 
-/// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
+/// A field's own part of `check`: `since_engine` and `until_engine` (the member the pack's
+/// engine has not got, or no longer has),
 /// its bounds (unless one names another field), its length bounds, then the walk into it, or
 /// the field's `check_with`.
 fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
@@ -1200,6 +1205,19 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
             }
         }
     });
+    let until_engine = info.attrs.until_engine.map(|_| {
+        let until = version_option(info.attrs.until_engine);
+        let present = if info.option.is_some() {
+            quote!(#access.is_some())
+        } else {
+            quote!(true)
+        };
+        quote! {
+            if let ::core::option::Option::Some(__until) = #until {
+                cx.until_engine(__until, #present);
+            }
+        }
+    });
     let walk = match &info.attrs.check_with {
         Some((with, _)) if info.option.is_some() => quote! {
             if let ::core::option::Option::Some(__value) = &mut #access {
@@ -1209,7 +1227,7 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
         Some((with, _)) => quote!((#with)(&mut #access, cx);),
         None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
     };
-    at_field(info, quote!(#since_engine #bounds #len #walk))
+    at_field(info, quote!(#since_engine #until_engine #bounds #len #walk))
 }
 
 /// A field's cross-field bounds, which run after every field's own check, so they compare with

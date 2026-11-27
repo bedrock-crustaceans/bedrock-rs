@@ -10,6 +10,7 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | --- | --- | --- | --- |
 | `since_format` | `"1.21.60"` | stored in the `Shape` | `#[derive(Schema)]`; the `Shape` keeps it, `Field::get_attr(Some("schema"), "since_format")` |
 | `since_engine` | `"1.20.0"` | stored | `#[derive(Schema)]` |
+| `until_engine` | `"1.26.45"` | stored | `#[derive(Schema)]`: from this engine on the member is gone |
 | `unknown` | `"keep"`, `"report"`, `"reject"`, `"ignore"`, `"component"` or `"silent"` | stored | `#[derive(Schema)]` |
 | `quiet` | `"a b"`, member names | compile-time | `#[derive(Schema)]` on a struct: unknown members kept and told nothing of |
 | `fallback` | an expression | compile-time | `#[derive(Schema)]` |

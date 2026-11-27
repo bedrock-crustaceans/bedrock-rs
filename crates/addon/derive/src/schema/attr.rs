@@ -260,6 +260,8 @@ pub(crate) struct FieldAttrs {
     pub flatten: bool,
     pub since_format: Option<Version>,
     pub since_engine: Option<Version>,
+    /// `schema::until_engine`: the engine from which the member is gone.
+    pub until_engine: Option<Version>,
     pub unknown: Option<String>,
     pub fallback: Option<(Expr, Span)>,
     pub bounds: Vec<BoundDecl>,
@@ -328,7 +330,8 @@ pub(crate) struct FieldAttrs {
     pub getter: Option<(String, Span)>,
     /// `schema::era(ERA, ..)`, each: the keys that hold in one era of the document's format.
     pub eras: Vec<EraDecl>,
-    /// Where the first stored key (`since_format`, `since_engine`, `unknown`) is written.
+    /// Where the first stored key (`since_format`, `since_engine`, `until_engine`, `unknown`)
+    /// is written.
     pub stored: Option<Span>,
 }
 
@@ -379,6 +382,7 @@ pub(crate) struct ContainerAttrs {
 const FIELD_KEYS: &[&str] = &[
     "since_format",
     "since_engine",
+    "until_engine",
     "fallback",
     "min",
     "max",
@@ -544,6 +548,8 @@ fn placement(entries: &[Entry], place: Place, errors: &mut Vec<Error>) {
                  its fields"
                     .to_owned()
             }
+            // A variant's engines are stored for the code that names it (`tag_with`).
+            Place::TaggedVariant if key == "since_engine" || key == "until_engine" => continue,
             Place::TaggedVariant if field_key || enum_key => format!(
                 "a variant of a tagged enum takes no `schema::{key}`: put it on the field it is \
                  about"
@@ -783,19 +789,17 @@ impl FieldAttrs {
                 continue;
             };
             let span = entry.span;
-            if matches!(key.as_str(), "since_format" | "since_engine" | "unknown") {
+            if matches!(
+                key.as_str(),
+                "since_format" | "since_engine" | "until_engine" | "unknown"
+            ) {
                 out.stored.get_or_insert(span);
             }
             let result: Result<()> = (|| {
                 match key.as_str() {
-                    "since_format" | "since_engine" => {
+                    "since_format" | "since_engine" | "until_engine" => {
                         let version = Version::parse(&string_value(entry, &key)?)?;
-                        let slot = if key == "since_format" {
-                            &mut out.since_format
-                        } else {
-                            &mut out.since_engine
-                        };
-                        once(slot, version, &key, span, errors);
+                        once(out.version_slot(&key), version, &key, span, errors);
                     }
                     "unknown" => {
                         let word = unknown_word(entry)?;
@@ -883,6 +887,15 @@ impl FieldAttrs {
             once(&mut self.getter, (value.value(), span), key, span, errors);
         }
         Ok(())
+    }
+
+    /// The slot of a versioned key: `since_format`, `since_engine` or `until_engine`.
+    fn version_slot(&mut self, key: &str) -> &mut Option<Version> {
+        match key {
+            "since_format" => &mut self.since_format,
+            "since_engine" => &mut self.since_engine,
+            _ => &mut self.until_engine,
+        }
     }
 
     /// Reads one of facet's own keys the derive takes: `default`, `rename`, `alias`, `skip`
@@ -1227,8 +1240,9 @@ pub(crate) fn content_of(attrs: &[Attribute]) -> Option<Span> {
 }
 
 /// What a variant of a tagged enum with data declares: facet's `rename` (its name) and
-/// `rename_all` (its members' names), and a checked `schema::unknown`, which only a struct
-/// variant (`named`) takes. An error for any other `schema::` key.
+/// `rename_all` (its members' names), a checked `schema::unknown`, which only a struct
+/// variant (`named`) takes, and the checked engines it is of (`since_engine`, `until_engine`,
+/// stored for the code that names the variant). An error for any other `schema::` key.
 pub(crate) fn tagged_variant(
     attrs: &[Attribute],
     named: bool,
@@ -1266,6 +1280,11 @@ pub(crate) fn tagged_variant(
                 Ok(word) => unknown = Some(word),
                 Err(error) => errors.push(error),
             },
+            (_, Some(key @ ("since_engine" | "until_engine"))) => {
+                if let Err(error) = string_value(entry, key).and_then(|lit| Version::parse(&lit)) {
+                    errors.push(error);
+                }
+            }
             _ => {}
         }
     }

@@ -79,7 +79,7 @@ pub use goal::int_fallback;
 pub use goal::GoalVisitor;
 pub use goal::{GoalMeta, VersionedParseFn};
 pub use grading::{Grading, grade};
-pub use rows::{Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, UnknownRule};
+pub use rows::{Bound, BoundOp, EngineWindow, FieldKind, FieldRow, Limit, Lit, UnknownRule};
 // hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 pub use sides::{Found, Side, Sides};

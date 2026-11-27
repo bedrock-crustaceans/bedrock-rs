@@ -86,7 +86,7 @@ pub use lex::{Scanned, UnsafeText, scan};
 #[doc(hidden)]
 pub use read::{
     DOCUMENT_NUMBER_TOO_BIG, DOCUMENT_ROOT_NOT_SINGULAR, TRAILING_CONTENT, document_json_refusal,
-    from_str, from_str_jsonc, trailing_content, trailing_content_finding,
+    exponent_beyond_double, from_str, from_str_jsonc, trailing_content, trailing_content_finding,
 };
 pub use scalar::{
     BeyondWidth, Declared, JsonType, Refusal, Respelt, ScalarRules, ScalarShape, Scalars,

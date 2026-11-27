@@ -1095,6 +1095,7 @@ fn fields_body(
     let in_file_order = extra.then(|| quote!(__object.in_file_order(__read, &mut __extra);));
     let build = built_value(construct, fields, infos);
     let (names, gates) = member_names_and_gates(infos);
+    let engines = member_engines(infos);
     let knows = knows(infos, true);
     let unknown_member = unknown_member(&extra_arg, quiet, unknown_with, &quote!(#marked));
     // A flattened enum whose variant failed (a tag that names none) fails the read of its owner
@@ -1282,6 +1283,7 @@ fn fields_body(
         let __declared = #reader::Declared {
             names: &[#(#names),*],
             gates: &[#(#gates),*],
+            engines: &[#(#engines),*],
             knows: |__key: &str| -> bool { #knows },
             tag: __tag,
         };
@@ -1365,6 +1367,36 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
 /// it, when it has no tag: no member of a JSON object has it.
 fn flat_place(info: &FieldInfo<'_>) -> String {
     format!("\u{0}{}", info.rust)
+}
+
+/// The members a struct reads on some engines only (`schema::since_engine`, `until_engine`),
+/// with their engines, under each of their names.
+fn member_engines(infos: &[FieldInfo<'_>]) -> Vec<TokenStream> {
+    let window = |version: Option<crate::attr::Version>| {
+        version.map_or_else(
+            || quote!(::core::option::Option::None),
+            |version| {
+                let version = format_version(version);
+                quote!(::core::option::Option::Some(#version))
+            },
+        )
+    };
+    let core = core();
+    infos
+        .iter()
+        .filter(|info| taken(info) && !info.inline)
+        .filter(|info| info.attrs.since_engine.is_some() || info.attrs.until_engine.is_some())
+        .map(|info| {
+            let (since, until) = (
+                window(info.attrs.since_engine),
+                window(info.attrs.until_engine),
+            );
+            let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
+            quote! {
+                #((#names, #core::schema::EngineWindow { since: #since, until: #until })),*
+            }
+        })
+        .collect()
 }
 
 /// The type parameters a struct flattens: they share its object, so they are read as `Fields`.

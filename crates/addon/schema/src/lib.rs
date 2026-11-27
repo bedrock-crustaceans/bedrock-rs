@@ -2,7 +2,7 @@
 //!
 //! A typed document struct states its per-field facts as facet extension attributes in one
 //! namespace, `#[facet(schema::fallback = 1.0, schema::min = 0.0)]`, beside facet's own
-//! `default`, `rename_all` and `flatten`. facet's derive checks every key by name. Three keys
+//! `default`, `rename_all` and `flatten`. facet's derive checks every key by name. Four keys
 //! are stored in the `Shape`, for the reader while it reads the text; the others are
 //! compile-time only, read from the tokens by `#[derive(Schema)]`.
 //!
@@ -39,8 +39,16 @@ facet::define_attr_grammar! {
         /// on the value as the pipeline holds it, after the upgrade: below `since` on the game's
         /// own engine the member is `core/child_not_valid`, an error; in a pack whose
         /// `min_engine_version` is below it, a `FieldSinceEngine` information. The read reads
-        /// the member whatever the engine.
+        /// the member whatever the engine. On a variant of an internally tagged enum it is the
+        /// engine from which the variant's name is known, stored for the code that names the
+        /// variant (`tag_with`) and for a view of the enum.
         SinceEngine(&'static str),
+        /// `until_engine = "1.26.45"` (stored): the engine version from which the member is no
+        /// longer read, `since_engine`'s other end: from `until` on the game's own engine the
+        /// member is `core/child_not_valid`, an error, in the derived check of a validating
+        /// context. The read reads the member whatever the engine. On a variant of an
+        /// internally tagged enum, the engine from which the variant's name is gone.
+        UntilEngine(&'static str),
         /// `unknown = "keep"` (stored, on a field or a container): what an unknown member
         /// is where this struct differs from the slice's rule: `keep`, `report`, `reject`,
         /// `ignore`, `component` (a name that is no component of its object, as the game
