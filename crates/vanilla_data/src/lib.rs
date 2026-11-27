@@ -211,8 +211,8 @@ impl ContentProvider for VanillaContent {
     }
 }
 
-/// The vanilla air block's modern name, confirmed present in every one of the six pinned
-/// generated tags (`v1.20.10.1` through `v1.26.40.05` -- see `generated::PALETTES`).
+/// The vanilla air block's modern name, confirmed present in every one of the eight pinned
+/// generated tags (`v1.20.10.1` through `v1.26.60.5` -- see `generated::PALETTES`).
 /// [`VanillaContent::is_air`] classifies a [`PaletteEntry::Modern`] entry by comparing
 /// its name against this constant, per architecture decisions 8/9: this crate parses
 /// content by consulting the generated tables, never by hardcoding what a block *means*
