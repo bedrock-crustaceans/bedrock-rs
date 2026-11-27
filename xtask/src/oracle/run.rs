@@ -55,6 +55,13 @@ pub struct OracleConfig {
     pub python_oracle_permission_acknowledged: bool,
 }
 
+/// The `jungle_door` block version this crate's side writes in the verified stamp
+/// transition (see [`explain_jungle_door_pairing`]).
+const VERIFIED_OLD_VERSION: i32 = 17_825_808;
+/// The `jungle_door` block version the oracle's side writes in the verified stamp
+/// transition.
+const VERIFIED_NEW_VERSION: i32 = 17_876_992;
+
 /// A message printed whenever the python oracle path is reachable at all
 /// (whether or not it actually runs), per review: this needs to be visible
 /// on every invocation that could have taken it, not only in `oracle.md`.
@@ -283,8 +290,6 @@ fn apply_paired_rules(
     // line's own region against. Derived from the position-level version
     // maps rather than "any jungle_door in this region on both sides",
     // which is the name-only shape this whole rewrite exists to avoid.
-    const VERIFIED_OLD_VERSION: i32 = 17825808;
-    const VERIFIED_NEW_VERSION: i32 = 17876992;
     let verified_jungle_door_regions: HashSet<String> = jungle_door_versions_ours
         .iter()
         .filter(|(key, version)| {
@@ -418,9 +423,6 @@ fn explain_jungle_door_pairing(
     ours_versions: &std::collections::BTreeMap<String, Option<i32>>,
     oracle_versions: &std::collections::BTreeMap<String, Option<i32>>,
 ) -> Option<&'static str> {
-    const VERIFIED_OLD_VERSION: i32 = 17825808;
-    const VERIFIED_NEW_VERSION: i32 = 17876992;
-
     let bl = dump::parse_block_line(&divergence.line)?;
     if !bl.content.starts_with("minecraft:jungle_door;") {
         return None;

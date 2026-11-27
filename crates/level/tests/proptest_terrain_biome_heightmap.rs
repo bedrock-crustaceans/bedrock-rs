@@ -2,7 +2,7 @@
 //! `0x2b` Biomes3d, the `0x2d` HeightMap/Biomes2d pair
 //! (`crates/level/src/legacy_terrain.rs`, `biome.rs`, `height_map.rs`).
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 
@@ -160,11 +160,11 @@ impl FragmentSpec {
                 out.extend(header);
 
                 let indices: Vec<u16> = (0..4096u32)
-                    .map(|i| (i as usize % values.len()) as u16)
+                    .map(|i| u16::try_from(i as usize % values.len()).unwrap())
                     .collect();
                 out.extend(pack_indices(&indices, bits));
 
-                out.extend_from_slice(&(values.len() as u32).to_le_bytes());
+                out.extend_from_slice(&u32::try_from(values.len()).unwrap().to_le_bytes());
                 for v in values {
                     out.extend_from_slice(&v.to_le_bytes());
                 }
@@ -252,7 +252,7 @@ proptest! {
 /// at both its lower and (width >= 3) upper boundary, with the real header
 /// low bit convention (`BIOME_HEADER_LOW_BIT`) `fragment_spec` also uses.
 fn assert_biomes3d_width_round_trips(n: usize, expected_bits: u8) {
-    let values: Vec<u32> = (0..n as u32).collect();
+    let values: Vec<u32> = (0..u32::try_from(n).unwrap()).collect();
     assert_eq!(minimal_width(values.len()), expected_bits, "n={n}");
 
     let heightmap = vec![0u16; COLUMNS];
@@ -273,8 +273,7 @@ fn assert_biomes3d_width_round_trips(n: usize, expected_bits: u8) {
 /// palette).
 #[test]
 fn every_valid_bit_width_round_trips_byte_identical_at_both_boundaries() {
-    for bits_index in 0..VALID_BITS.len() {
-        let bits = VALID_BITS[bits_index];
+    for (bits_index, &bits) in VALID_BITS.iter().enumerate() {
         assert_biomes3d_width_round_trips(lower_boundary(bits_index), bits);
         if bits >= 3 {
             assert_biomes3d_width_round_trips(upper_boundary(bits_index), bits);

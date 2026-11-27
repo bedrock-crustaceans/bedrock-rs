@@ -20,6 +20,14 @@ use std::path::{Path, PathBuf};
 /// and renders each one, and writes `crates/vanilla_data/src/generated/` fresh --
 /// clearing whatever was there first, so a version removed from the manifest does not
 /// leave an orphaned file behind.
+///
+/// # Errors
+///
+/// Returns the first failure of the pipeline: a manifest, dump or `renames.json` that
+/// cannot be read, does not match its pinned hash, is not UTF-8 or does not parse, a
+/// dump that fails validation, two entries with the same game version, a rename entry
+/// that does not apply, or an output directory or file that cannot be cleared, written
+/// or formatted.
 pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
     let dumps_dir = project_root.join("xtask/dumps/bedrock-samples");
     let out_dir = project_root.join("crates/vanilla_data/src/generated");
@@ -93,7 +101,7 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
         let name = emit::module_name(palette.game_version);
         write_pretty(
             &out_dir.join(format!("{name}.rs")),
-            emit::render_version_file(palette),
+            &emit::render_version_file(palette),
         )?;
         palette_module_names.push(name);
     }
@@ -103,7 +111,7 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
         let name = emit::diff_module_name(d.from_version, d.to_version);
         write_pretty(
             &out_dir.join(format!("{name}.rs")),
-            emit::render_diff_file(d),
+            &emit::render_diff_file(d),
         )?;
         diff_module_names.push(name);
     }
@@ -113,14 +121,14 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
         let name = super::biome::emit::module_name(b.game_version);
         write_pretty(
             &out_dir.join(format!("{name}.rs")),
-            super::biome::emit::render_version_file(b),
+            &super::biome::emit::render_version_file(b),
         )?;
         biome_module_names.push(name);
     }
 
     write_pretty(
         &out_dir.join("mod.rs"),
-        emit::render_mod_file(
+        &emit::render_mod_file(
             &palette_module_names,
             &diff_module_names,
             &biome_module_names,
@@ -139,7 +147,7 @@ pub fn generate(project_root: &Path) -> Result<(), GeneratorError> {
 /// on every integer property). Shelling out to the real `rustfmt` after
 /// `prettyplease::unparse` is what actually earns "generated files are exempt from the
 /// rustfmt check but are rustfmt-clean by construction" rather than merely asserting it.
-fn write_pretty(path: &Path, tokens: proc_macro2::TokenStream) -> Result<(), GeneratorError> {
+fn write_pretty(path: &Path, tokens: &proc_macro2::TokenStream) -> Result<(), GeneratorError> {
     let file = syn::parse2::<syn::File>(tokens.clone()).map_err(|source| {
         GeneratorError::RenderInvalid {
             path: path.to_path_buf(),
@@ -460,13 +468,13 @@ mod tests {
 
     fn sha256_hex(bytes: &[u8]) -> String {
         use sha2::{Digest, Sha256};
+        use std::fmt::Write;
         let mut hasher = Sha256::new();
         hasher.update(bytes);
-        hasher
-            .finalize()
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect()
+        hasher.finalize().iter().fold(String::new(), |mut out, b| {
+            write!(out, "{b:02x}").expect("writing to a String never fails");
+            out
+        })
     }
 
     /// Two manifest entries that resolve to the same `game_version` -- different

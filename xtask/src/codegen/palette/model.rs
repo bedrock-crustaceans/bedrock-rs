@@ -65,6 +65,13 @@ impl VersionPalette {
 /// a duplicate name anywhere a name is meant to be unique. None of these has been observed
 /// in a real dump; they are exactly the "unrecognized input" the generator is required to
 /// fail loudly on rather than silently work around.
+///
+/// # Errors
+///
+/// Returns the first inconsistency found: an unknown property `type` or a value that
+/// disagrees with it, a property declared twice, an unnamed or repeated block, a block
+/// naming a property twice, or a block naming a property `block_properties` does not
+/// declare.
 pub fn build(
     tag: &str,
     game_version: (u8, u8, u8),

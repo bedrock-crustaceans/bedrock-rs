@@ -4,7 +4,7 @@
 //! Nether and End on the fixtures that carry them. `support::fixtures()` is
 //! the same harness `fixtures_test.rs` uses.
 
-mod support;
+pub mod support;
 
 use std::collections::HashMap;
 

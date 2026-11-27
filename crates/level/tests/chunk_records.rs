@@ -2,7 +2,7 @@
 //! matches an independent full scan exactly, and a group written into a
 //! fresh database reads back byte-identical to what went in.
 
-mod support;
+pub mod support;
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -91,6 +91,10 @@ fn open_fresh_db() -> (tempfile::TempDir, Database) {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one sample of chunks per era, checked against the scan and then round-tripped through a fresh database"
+)]
 fn chunk_records_match_scan_and_round_trip_across_eras() {
     let all = support::fixtures();
 

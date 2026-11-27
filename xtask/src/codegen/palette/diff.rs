@@ -38,12 +38,15 @@ pub struct RawRenameEntry {
 
 // `_comment`/`requirements` are hand-authored provenance prose read by a human opening
 // `renames.json`, not by this generator -- same treatment `manifest.rs` gives its own
-// `_comment` field. `#[allow(dead_code)]` rather than dropping the fields: keeping them
+// `_comment` field. `#[expect(dead_code)]` rather than dropping the fields: keeping them
 // named here is what makes an unexpected-shape edit to that prose fail loudly (serde
 // still type-checks the field even though nothing here reads it back), instead of
 // silently parsing as a stray top-level string no one is looking at.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "`requirements` is checked for shape but read by no one"
+)]
 struct RawRenameFile {
     #[serde(default)]
     _comment: Option<String>,
@@ -65,6 +68,13 @@ struct RawRenameFile {
 /// reusing an already-consumed name surfaces there as
 /// [`GeneratorError::RenameEntryNotApplicable`] rather than needing a separate check
 /// here.
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::ReadRenames`] or [`GeneratorError::ParseRenames`] if
+/// `renames.json` cannot be read or parsed, and
+/// [`GeneratorError::RenameMissingProvenance`] for the first entry with a blank
+/// `provenance`.
 pub fn load_renames(dumps_dir: &Path) -> Result<Vec<RawRenameEntry>, GeneratorError> {
     let path = dumps_dir.join("renames.json");
     let text = std::fs::read_to_string(&path).map_err(|source| GeneratorError::ReadRenames {
@@ -172,6 +182,20 @@ pub struct VersionDiff {
 /// removed the way it claims, or the target name does not exist) is exactly the kind of
 /// silently-ignored input this generator's `deny_unknown_fields` discipline exists to
 /// rule out elsewhere; the rename supplement gets the same treatment.
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::RenameEntryNotApplicable`] for the first rename entry of this
+/// step whose `from` was not removed or whose `to` was not added.
+///
+/// # Panics
+///
+/// Panics if a name shared by both palettes is missing from one of them, which cannot
+/// happen: every name looked up comes from that palette's own set.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass per kind of change (names, renames, block properties, property values) over the same two palettes"
+)]
 pub fn diff(
     prev: &VersionPalette,
     next: &VersionPalette,

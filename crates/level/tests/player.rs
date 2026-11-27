@@ -15,7 +15,7 @@
 //! era's shape). That gap belongs to `PlayerData`/`InventoryItem`, not to
 //! the remote-player scan this file actually checks.
 
-mod support;
+pub mod support;
 
 use bedrock_level::key::{Key, KeyVariant};
 use bedrock_level::player::{parse_player_client_key, remote_player_client_ids};

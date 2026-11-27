@@ -3,7 +3,7 @@
 //! width, and the observed value distribution for every real `0x36`
 //! `FinalizedState` record the corpus contains.
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 use std::io::Cursor;

@@ -44,7 +44,7 @@
 //! the upgrade-chain machinery `level_chunk`'s module docs describe as not
 //! yet existing -- revisit once both land.
 
-mod support;
+pub mod support;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 

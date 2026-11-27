@@ -2,6 +2,10 @@
 //! instead of hardcoding a single world. Parses `tests/fixtures/index.json`;
 //! see `tests/fixtures/README.md` for what each fixture is and where it
 //! came from.
+//!
+//! Every test file declares this module `pub mod support;`: no binary uses
+//! all of it, and a public module keeps the helpers one binary leaves unused
+//! from counting as dead code there.
 
 use std::collections::BTreeMap;
 use std::fs::File;
@@ -76,6 +80,10 @@ pub struct GameVersionFields {
 }
 
 #[derive(Facet, Debug, Clone)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the capabilities object of the fixture index"
+)]
 pub struct Capabilities {
     pub paletted: bool,
     pub negative_y: bool,
@@ -109,6 +117,11 @@ impl Fixture {
     /// to it, so the caller must hold onto the `TempDir` for as long as the
     /// `Database` is in use -- dropping it early silently truncates whatever
     /// the database can still see to leftover file-descriptor state.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the temporary directory cannot be created, the tarball
+    /// cannot be read or unpacked, or the database in it cannot be opened.
     pub fn open(&self) -> (tempfile::TempDir, Database) {
         let tmp = tempfile::tempdir().expect("failed to create temp dir");
         let tar_gz_path = format!("tests/fixtures/{}", self.tarball);
@@ -136,9 +149,17 @@ impl Fixture {
 /// input -- and panics if it parses to zero fixtures, since an empty
 /// checked-in fixture set is always a bug and every caller here assumes at
 /// least one fixture exists.
+///
+/// # Panics
+///
+/// Panics if the index cannot be read or parsed, or holds no fixtures.
 pub fn fixtures() -> Vec<Fixture> {
     let path = "tests/fixtures/index.json";
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the index is checked-in test data, and bedrock_level has no dependency on the bounded reader"
+    )]
     let index: FixtureIndex =
         facet_json::from_str(&text).unwrap_or_else(|e| panic!("{path}: failed to parse: {e}"));
     assert!(

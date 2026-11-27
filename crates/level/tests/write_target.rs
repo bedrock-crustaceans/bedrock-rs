@@ -4,7 +4,7 @@
 //! version-diverse fixtures (selected by [`support::fixtures`], never hardcoded), plus the
 //! derived-default and family-grouping guarantees [`bedrock_level::chunk_version`] makes.
 
-mod support;
+pub mod support;
 
 use std::collections::HashMap;
 
@@ -78,7 +78,7 @@ fn first_chunk_with_terrain(level: &Level) -> Option<(Dimension, ChunkPosition, 
 /// Encodes `records` into a fresh database and decodes it straight back into a `Chunk`, to
 /// check what a target actually round-trips to rather than only inspecting the
 /// `StructuralWriteReport`.
-fn round_trip(records: ChunkRecords, position: ChunkPosition, dimension: Dimension) -> Chunk {
+fn round_trip(records: &ChunkRecords, position: ChunkPosition, dimension: Dimension) -> Chunk {
     let (_dir, db) = fresh_db();
     records.write(&db).expect("write encoded records");
     let read_back = ChunkRecords::read(&db, position, dimension)
@@ -179,7 +179,7 @@ fn every_fixture_retargets_to_its_family_ceiling_and_decodes_strictly() {
             fixture.name
         );
 
-        let round_tripped = round_trip(records, position, dimension);
+        let round_tripped = round_trip(&records, position, dimension);
         assert_eq!(
             round_tripped.chunk_version(),
             target,
@@ -337,6 +337,10 @@ fn every_fixture_reports_a_shortfall_and_stamps_the_achieved_version_across_fami
 /// window (27) and back up again must change the on-disk subchunk key form each way while
 /// leaving the decoded terrain and biomes exactly as they started.
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one chunk retargeted down into the window and back, with the key form and the decoded contents checked at each step"
+)]
 fn retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantically() {
     let target_in_window = 27u8;
 
@@ -416,7 +420,7 @@ fn retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantic
         );
     }
 
-    let down = round_trip(down_records, position, dimension);
+    let down = round_trip(&down_records, position, dimension);
     assert_eq!(down.chunk_version(), target_in_window);
     assert_eq!(down.terrain(), chunk.terrain(), "{}", fixture.name);
     assert_eq!(down.biomes(), chunk.biomes(), "{}", fixture.name);
@@ -451,7 +455,7 @@ fn retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantic
         );
     }
 
-    let up = round_trip(up_records, position, dimension);
+    let up = round_trip(&up_records, position, dimension);
     assert_eq!(up.chunk_version(), own_version);
     assert_eq!(
         up.terrain(),
@@ -479,6 +483,10 @@ fn retargeting_a_negative_y_chunk_through_the_offset_window_round_trips_semantic
 /// actually breaks the window, whichever one that turns out to be as fixtures are added or
 /// removed).
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "selects the deepest fixture chunk by scan, then checks the refusal, the version stamp and the exact key byte"
+)]
 fn retargeting_into_the_offset_window_is_refused_for_a_chunk_too_deep_to_represent() {
     let fixture = support::fixtures()
         .into_iter()

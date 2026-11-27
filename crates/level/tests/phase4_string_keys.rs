@@ -7,7 +7,7 @@
 //! `src/biome_ids_table.rs`'s module docs) because it is single-sourced --
 //! and, consistent with that, is also absent from the whole corpus below.
 
-mod support;
+pub mod support;
 
 use bedrock_level::biome_ids_table;
 use bedrock_level::db::Database;
@@ -54,7 +54,7 @@ fn decode_then_encode_reproduces_every_real_map_record() {
         if ids.is_empty() {
             continue;
         }
-        found.insert(name.clone(), ids.len() as u32);
+        found.insert(name.clone(), u32::try_from(ids.len()).unwrap());
 
         for id in ids {
             let bytes = db.get(map_data::key(id)).unwrap().unwrap();
@@ -106,7 +106,7 @@ fn decode_then_encode_reproduces_every_real_portals_record() {
             &*bytes,
             "{name}: re-encoded portals record is not byte-identical"
         );
-        found.insert(name.clone(), decoded.records.len() as u32);
+        found.insert(name.clone(), u32::try_from(decoded.records.len()).unwrap());
     }
 
     assert_eq!(found.len(), expected_counts.len());

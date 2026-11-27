@@ -2,6 +2,10 @@ use facet::Facet;
 
 /// A command block tile entity.
 #[derive(Debug, Clone, PartialEq, Eq, Facet)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the command block NBT compound"
+)]
 #[facet(rename_all = "PascalCase")]
 #[cfg_attr(
     not(feature = "deny-unknown-fields"),

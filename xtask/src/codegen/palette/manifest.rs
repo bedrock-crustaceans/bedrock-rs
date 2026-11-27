@@ -59,6 +59,11 @@ pub struct BiomeManifestEntry {
 }
 
 /// Reads and parses `manifest.json` from `dumps_dir`.
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::ReadManifest`] or [`GeneratorError::ParseManifest`] if the
+/// file cannot be read or parsed.
 pub fn read(dumps_dir: &Path) -> Result<Manifest, GeneratorError> {
     let path = dumps_dir.join("manifest.json");
     let text = std::fs::read_to_string(&path).map_err(|source| GeneratorError::ReadManifest {
@@ -69,6 +74,12 @@ pub fn read(dumps_dir: &Path) -> Result<Manifest, GeneratorError> {
 }
 
 /// Reads the file `entry` names and confirms it hashes to `entry.sha256`.
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::ReadDump`] if the file cannot be read,
+/// [`GeneratorError::HashMismatch`] if it hashes to anything else, and
+/// [`GeneratorError::NotUtf8`] if it is not UTF-8.
 pub fn read_pinned_file(dumps_dir: &Path, entry: &ManifestEntry) -> Result<String, GeneratorError> {
     read_and_hash(dumps_dir, &entry.file, &entry.sha256, |path, source| {
         GeneratorError::ReadDump { path, source }
@@ -78,6 +89,12 @@ pub fn read_pinned_file(dumps_dir: &Path, entry: &ManifestEntry) -> Result<Strin
 /// Same as [`read_pinned_file`], for a [`BiomeManifestEntry`] -- reports a read failure
 /// as [`GeneratorError::ReadBiomeDump`] rather than [`GeneratorError::ReadDump`], so the
 /// error names which pipeline's dump actually failed to read.
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::ReadBiomeDump`] if the file cannot be read,
+/// [`GeneratorError::HashMismatch`] if it hashes to anything else, and
+/// [`GeneratorError::NotUtf8`] if it is not UTF-8.
 pub fn read_pinned_biome_file(
     dumps_dir: &Path,
     entry: &BiomeManifestEntry,

@@ -47,7 +47,7 @@
 //! chunk positions in sorted order per dimension), so the default run still
 //! exercises every heavy fixture, just not exhaustively.
 
-mod support;
+pub mod support;
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -187,9 +187,9 @@ struct FixtureSummary {
     /// also synthesize a `0x2c` stamp for a versionless, contentless record
     /// group, but that was a real bug (fixed on `level_chunk.rs`), so an
     /// unearned version key appearing after a round trip is now an ordinary
-    /// mismatch, tracked separately in [`version_stamp_regressions`](`Self::`
-    /// `version_stamp_regressions`) below for a clearer failure message than
-    /// the generic mismatch list gives.
+    /// mismatch, tracked separately in
+    /// [`version_stamp_regressions`](Self::version_stamp_regressions) below
+    /// for a clearer failure message than the generic mismatch list gives.
     raw_carve_out_padding: usize,
     /// A `0x2c` key present after the round trip where the original record
     /// group had neither `0x2c` nor `0x76` -- pinned at exactly zero. See
@@ -205,6 +205,10 @@ struct FixtureSummary {
 /// every chunk position present), sampling heavy fixtures down to
 /// [`HEAVY_FIXTURE_SAMPLE`] positions per dimension unless
 /// [`exhaustive_enabled`].
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over a fixture: group and sample its positions, then compare the raw and the level reads of each chunk"
+)]
 fn run_fixture(fixture: &support::Fixture) -> FixtureSummary {
     let (_tmp, db) = fixture.open();
     let mut summary = FixtureSummary::default();

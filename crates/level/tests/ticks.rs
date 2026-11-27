@@ -2,7 +2,7 @@
 //! (`tests/level.tar.gz`): byte-identical round trips for every real
 //! `0x33` `PendingTicks` and `0x3a` `RandomTicks` record the corpus contains.
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 use std::io::Cursor;

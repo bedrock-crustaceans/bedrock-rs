@@ -45,7 +45,7 @@ fn root_with_string(payload: &[u8]) -> Vec<u8> {
     b.push(0x08);
     b.extend_from_slice(&1u16.to_le_bytes());
     b.push(b's');
-    b.extend_from_slice(&(payload.len() as u16).to_le_bytes());
+    b.extend_from_slice(&u16::try_from(payload.len()).unwrap().to_le_bytes());
     b.extend_from_slice(payload);
     b.push(0x00);
     b

@@ -27,6 +27,11 @@ use super::palette::manifest::{self, Manifest};
 /// manifest already checked for duplicate block-dump versions; if that stops holding once
 /// the biome ladder grows independently of the block ladder, add the same check `palette`
 /// does.
+///
+/// # Errors
+///
+/// Returns the error of the first entry whose dump cannot be read, does not match its
+/// pinned hash, does not parse, or fails [`model::build`]'s validation.
 pub fn build_all(
     dumps_dir: &Path,
     manifest: &Manifest,

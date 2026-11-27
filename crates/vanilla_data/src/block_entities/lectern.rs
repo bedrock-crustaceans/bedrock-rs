@@ -42,9 +42,17 @@ impl From<Book> for ItemStack {
             count: value.count,
             damage: value.damage,
             name: value.name,
-            tag: Some(todo!("carry the book metadata across as a tag")),
+            tag: metadata_tag(&value.meta),
         }
     }
+}
+
+/// The book's metadata as an item's `tag` compound.
+///
+/// A function of its own rather than a `todo!()` in the field, so that the
+/// fields around it are not unreachable code.
+fn metadata_tag(_meta: &BookMetadata) -> Option<nbtx::Value> {
+    todo!("carry the book metadata across as a tag")
 }
 
 impl TryFrom<ItemStack> for Book {

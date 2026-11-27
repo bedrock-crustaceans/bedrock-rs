@@ -23,7 +23,7 @@
 //! decode fine but not re-encode byte-identically -- that is documented
 //! non-identity, not something these properties assert.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 
@@ -138,11 +138,11 @@ fn layer_bytes(entries: &[EntrySpec]) -> Vec<u8> {
     out.push(bits << 1);
 
     let indices: Vec<u16> = (0..4096u32)
-        .map(|i| (i as usize % entries.len()) as u16)
+        .map(|i| u16::try_from(i as usize % entries.len()).unwrap())
         .collect();
     out.extend(pack_indices(&indices, bits));
 
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    out.extend_from_slice(&u32::try_from(entries.len()).unwrap().to_le_bytes());
     for entry in entries {
         out.extend(entry.bytes());
     }
@@ -175,10 +175,10 @@ fn paletted_subchunk_bytes(
 ) -> Vec<u8> {
     let mut out = vec![version.raw()];
     if version != SubChunkVersion::Legacy {
-        out.push(layers.len() as u8);
+        out.push(u8::try_from(layers.len()).unwrap());
     }
     if version == SubChunkVersion::Limitless {
-        out.push(index as u8);
+        out.push(index.cast_unsigned());
     }
     for layer in layers {
         out.extend(layer_bytes(layer));
@@ -303,7 +303,7 @@ fn assert_width_round_trips(n: usize, expected_bits: u8) {
     let entries: Vec<EntrySpec> = (0..n)
         .map(|i| EntrySpec::Legacy {
             name: format!("minecraft:e{i}"),
-            val: (i % 16) as i16,
+            val: i16::try_from(i % 16).unwrap(),
         })
         .collect();
     assert_eq!(minimal_width(entries.len()), expected_bits, "n={n}");
@@ -335,8 +335,7 @@ fn assert_width_round_trips(n: usize, expected_bits: u8) {
 /// hit rarely (weak coverage) or repeatedly (wasted time).
 #[test]
 fn every_valid_bit_width_round_trips_byte_identical_at_both_boundaries() {
-    for bits_index in 0..VALID_BITS.len() {
-        let bits = VALID_BITS[bits_index];
+    for (bits_index, &bits) in VALID_BITS.iter().enumerate() {
         assert_width_round_trips(lower_boundary(bits_index), bits);
         if bits >= 3 {
             assert_width_round_trips(upper_boundary(bits_index), bits);

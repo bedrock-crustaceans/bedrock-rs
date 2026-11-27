@@ -4,7 +4,7 @@
 //! (`tests/level.tar.gz`), and byte-identical decode/encode round trips for
 //! every real record the scan found.
 
-mod support;
+pub mod support;
 
 use bedrock_level::db::Database;
 use bedrock_level::raw_keys;
@@ -69,7 +69,10 @@ fn decode_then_encode_reproduces_every_always_present_key_in_every_world() {
             total += 1;
         }
     }
-    assert_eq!(total, 14 * ALWAYS_PRESENT_KEYS.len() as u32);
+    assert_eq!(
+        total,
+        14 * u32::try_from(ALWAYS_PRESENT_KEYS.len()).unwrap()
+    );
 }
 
 /// `read`/`write` round-trip the same way as the lower-level
@@ -154,9 +157,10 @@ fn unattested_keys_are_absent_from_the_whole_corpus() {
         if db.get(raw_keys::VILLAGES.as_bytes()).unwrap().is_some() {
             mvillages += 1;
         }
-        village += raw_keys::village_keys(&db).unwrap().len() as u32;
-        structuretemplate += raw_keys::structure_template_keys(&db).unwrap().len() as u32;
-        tickingarea += raw_keys::ticking_area_keys(&db).unwrap().len() as u32;
+        village += u32::try_from(raw_keys::village_keys(&db).unwrap().len()).unwrap();
+        structuretemplate +=
+            u32::try_from(raw_keys::structure_template_keys(&db).unwrap().len()).unwrap();
+        tickingarea += u32::try_from(raw_keys::ticking_area_keys(&db).unwrap().len()).unwrap();
     }
 
     assert_eq!(flatworldlayers, 0, "game_flatworldlayers");

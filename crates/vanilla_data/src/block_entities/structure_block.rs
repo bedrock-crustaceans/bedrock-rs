@@ -14,6 +14,10 @@ pub enum StructureBlockMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Facet)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the structure block NBT compound"
+)]
 #[facet(rename_all = "camelCase")]
 #[cfg_attr(
     not(feature = "deny-unknown-fields"),

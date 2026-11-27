@@ -2,7 +2,7 @@
 //! round trips for every real `0x39` `HardcodedSpawnAreas` record the corpus
 //! contains.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 

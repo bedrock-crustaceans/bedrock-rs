@@ -11,7 +11,7 @@
 //! seed world (`tests/level.tar.gz`) was checked and carries zero `0x2b` records, so it
 //! contributes nothing to these counts.
 
-mod support;
+pub mod support;
 
 use std::collections::BTreeMap;
 use std::io::{Cursor, Write};
@@ -30,6 +30,10 @@ fn subchunk_count(range: bedrock_level::height_range::HeightRange) -> i32 {
 }
 
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one survey pass over the corpus followed by the pinned facts it must reproduce"
+)]
 fn corpus_survey_fragment_counts_vs_subchunk_counts() {
     let fixtures: Vec<_> = support::fixtures()
         .into_iter()
@@ -97,7 +101,7 @@ fn corpus_survey_fragment_counts_vs_subchunk_counts() {
                 .entry(n)
                 .or_insert(0) += 1;
 
-            if (n as i32) < expected_subchunks {
+            if i32::try_from(n).unwrap() < expected_subchunks {
                 tail_omitted += 1;
             }
 
@@ -158,7 +162,7 @@ fn corpus_survey_fragment_counts_vs_subchunk_counts() {
 fn sample_heightmap() -> Box<[u16; COLUMNS]> {
     let mut hm = Box::new([0u16; COLUMNS]);
     for (i, h) in hm.iter_mut().enumerate() {
-        *h = (i % 256) as u16;
+        *h = u16::try_from(i % 256).unwrap();
     }
     hm
 }

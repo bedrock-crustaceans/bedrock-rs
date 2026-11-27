@@ -6,7 +6,7 @@
 //! no-provider path stays byte-identical, and an attached provider's pass touches only the
 //! entries it actually claims.
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 
@@ -59,7 +59,7 @@ fn air_stub() -> BlockDef {
     BlockDef {
         name: "minecraft:air".to_string(),
         version: None,
-        states: Default::default(),
+        states: indexmap::IndexMap::default(),
     }
 }
 
@@ -320,7 +320,7 @@ impl ContentProvider for NeighbourFlaggingProvider {
             block: BlockDef {
                 name: name.to_string(),
                 version: None,
-                states: Default::default(),
+                states: indexmap::IndexMap::default(),
             },
             version: 1,
         })

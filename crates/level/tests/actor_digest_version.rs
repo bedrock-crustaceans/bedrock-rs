@@ -3,7 +3,7 @@
 //! `ActorDigestVersion` record the corpus contains, plus the malformed
 //! synthetic cases.
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 use std::io::Cursor;

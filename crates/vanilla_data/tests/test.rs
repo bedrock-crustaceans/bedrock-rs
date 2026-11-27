@@ -85,8 +85,9 @@ fn block_entity_decode_failures_match_known_gaps() {
 
     let mut total = 0usize;
     let mut ok = 0usize;
-    let mut ok_by_id: std::collections::HashMap<String, usize> = Default::default();
-    let mut failing_ids: std::collections::BTreeSet<String> = Default::default();
+    let mut ok_by_id: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::default();
+    let mut failing_ids: std::collections::BTreeSet<String> = std::collections::BTreeSet::default();
 
     for kv in &mut keys {
         let mut key_buf = Cursor::new(kv.key());

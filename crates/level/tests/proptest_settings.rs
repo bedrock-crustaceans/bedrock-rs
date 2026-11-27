@@ -111,6 +111,10 @@ fn experiments() -> impl Strategy<Value = Experiments> {
 /// struct has, not an exhaustive sweep of the field set (which
 /// `tests/settings_write.rs`'s real-fixture coverage already exercises from
 /// the read side).
+#[expect(
+    clippy::too_many_lines,
+    reason = "sets every field of a struct with about 100 of them"
+)]
 fn level_settings() -> impl Strategy<Value = LevelSettings> {
     (
         any::<i64>(),

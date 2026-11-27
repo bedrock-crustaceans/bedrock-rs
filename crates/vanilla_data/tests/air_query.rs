@@ -116,12 +116,12 @@ fn vanilla_content_classifies_modern_air_by_name() {
     let air = bedrock_level::subchunk::BlockDef {
         name: "minecraft:air".to_string(),
         version: None,
-        states: Default::default(),
+        states: indexmap::IndexMap::default(),
     };
     let stone = bedrock_level::subchunk::BlockDef {
         name: "minecraft:stone".to_string(),
         version: None,
-        states: Default::default(),
+        states: indexmap::IndexMap::default(),
     };
 
     assert_eq!(
@@ -178,6 +178,10 @@ fn vanilla_content_declines_to_classify_legacy_and_numeric_entries() {
 /// the reference project by name (see this repo's convention on citing references in
 /// code/tests).
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one survey over the fixtures, printed and pinned per fixture, with its helpers local to it"
+)]
 fn heightmap_definition_survey() {
     use bedrock_level::level::Level;
     use bedrock_level::level_chunk::{ChunkBlockPosition, Terrain};
@@ -204,10 +208,8 @@ fn heightmap_definition_survey() {
                 let Some(entry) = chunk.block(ChunkBlockPosition::new(x, y, z)) else {
                     continue;
                 };
-                match is_air_name(entry) {
-                    Some(false) => return Some(y + 1),
-                    Some(true) => continue,
-                    None => continue,
+                if is_air_name(entry) == Some(false) {
+                    return Some(y + 1);
                 }
             }
         }
@@ -278,6 +280,10 @@ fn heightmap_definition_survey() {
             }
         }
 
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "column counts stay far below 2^52, and the percentage is only printed"
+        )]
         let pct = |n: usize| {
             if columns_checked == 0 {
                 0.0
@@ -317,7 +323,7 @@ fn heightmap_definition_survey() {
             // for the real definition -- see this test's module doc for what the real
             // one likely needs instead.
             assert!(
-                (best_match as f64) < 0.70 * columns_checked as f64,
+                best_match * 100 < columns_checked * 70,
                 "{fixture}: naive \"highest non-air\" definition matched {best_match}/\
                  {columns_checked} columns ({:.1}%), no longer clearly short of correct",
                 pct(best_match)

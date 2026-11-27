@@ -35,6 +35,10 @@ fn legacy_terrain_bytes(
 /// `from_disk`/`to_disk` byte-identically, tail included, even though the tail is never
 /// interpreted.
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the fill patterns wrap the block index into a byte"
+)]
 fn round_trips_byte_identical_with_a_synthetic_tail() {
     let tail = b"not parsed, only carried";
     let bytes = legacy_terrain_bytes(|i| (i % 200) as u8, |i| (i % 11) as u8, tail);
@@ -51,6 +55,10 @@ fn round_trips_byte_identical_with_a_synthetic_tail() {
 /// An empty tail (a record that is exactly the established length) round-trips too -- the
 /// tail is genuinely optional bytes, not a region assumed to be non-empty.
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the fill patterns wrap the block index into a byte"
+)]
 fn round_trips_with_no_tail() {
     let bytes = legacy_terrain_bytes(|i| i as u8, |i| (i % 16) as u8, &[]);
     assert_eq!(bytes.len(), ESTABLISHED_LEN);
@@ -146,6 +154,10 @@ fn nibble_packing_pins_even_low_odd_high() {
 /// A record shorter than the established 49,152 bytes -- even with no tail expected -- fails
 /// to decode rather than silently returning a partially zero-filled column.
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the fill patterns wrap the block index into a byte"
+)]
 fn truncated_established_region_errors() {
     let mut bytes = legacy_terrain_bytes(|i| i as u8, |i| (i % 16) as u8, &[]);
     bytes.truncate(bytes.len() - 1);

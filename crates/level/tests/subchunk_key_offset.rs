@@ -23,7 +23,7 @@
 //!   the 1.17.20 experimental range through the offset conversion lines its
 //!   absolute range up exactly with the 1.17.40 one.
 
-mod support;
+pub mod support;
 
 use std::collections::BTreeMap;
 use std::io::Cursor;
@@ -56,12 +56,15 @@ fn scan_subchunks(fixture_name: &str, db: &bedrock_level::db::Database) -> Vec<S
             let record_version = value.first().copied().unwrap_or(0);
             // Layout: version(1) | layer_count(1) | index(1, only version 9) | ...
             let record_index = (record_version == 9).then(|| {
-                *value.get(2).unwrap_or_else(|| {
-                    panic!(
-                        "{fixture_name}: version-9 subchunk record at key index {index} is \
+                value
+                    .get(2)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "{fixture_name}: version-9 subchunk record at key index {index} is \
                          shorter than its own header (missing the embedded index byte)"
-                    )
-                }) as i8
+                        )
+                    })
+                    .cast_signed()
             });
 
             rows.push(SubChunkRow {

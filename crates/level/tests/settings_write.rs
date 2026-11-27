@@ -12,7 +12,7 @@
 //! visible as a test failure asking to be looked at rather than a silent
 //! change in behavior.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 
@@ -195,7 +195,7 @@ fn header_length_field_matches_payload_for_every_fixture() {
         );
         let declared_len = i32::from_le_bytes(out[4..8].try_into().unwrap());
         assert_eq!(
-            declared_len as usize,
+            usize::try_from(declared_len).unwrap(),
             out.len() - 8,
             "{name}: header payload-length field does not match the actual NBT byte count"
         );

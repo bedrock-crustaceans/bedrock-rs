@@ -22,7 +22,7 @@
 //!   refusal (not a silent wraparound) once the counter is exhausted at
 //!   `i32::MIN`.
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 
@@ -199,9 +199,9 @@ fn next_actor_session_id_is_one_below_the_lowest_session_actually_used() {
     let mut checked = 0usize;
     for &(name, expected_next, expected_min) in WORLDS_WITH_ACTOR_SESSIONS {
         let fixture = fixture_named(name);
-        let (_tmp, db) = fixture.open();
+        let (tmp, db) = fixture.open();
 
-        let level_dat = std::fs::read(fixture.level_dat_path(&_tmp))
+        let level_dat = std::fs::read(fixture.level_dat_path(&tmp))
             .unwrap_or_else(|e| panic!("{name}: read level.dat: {e}"));
         let settings = LevelSettings::read(level_dat.as_slice())
             .unwrap_or_else(|e| panic!("{name}: settings read: {e}"));
@@ -253,9 +253,9 @@ fn next_actor_session_id_holds_for_every_legacy_0x32_world() {
     let mut checked = 0usize;
     for &(name, expected_next, expected_min) in LEGACY_WORLDS_WITH_ACTOR_SESSIONS {
         let fixture = fixture_named(name);
-        let (_tmp, db) = fixture.open();
+        let (tmp, db) = fixture.open();
 
-        let level_dat = std::fs::read(fixture.level_dat_path(&_tmp))
+        let level_dat = std::fs::read(fixture.level_dat_path(&tmp))
             .unwrap_or_else(|e| panic!("{name}: read level.dat: {e}"));
         let settings = LevelSettings::read(level_dat.as_slice())
             .unwrap_or_else(|e| panic!("{name}: settings read: {e}"));
@@ -287,8 +287,8 @@ fn next_actor_session_id_holds_for_every_legacy_0x32_world() {
 #[test]
 fn reserve_actor_session_id_advances_the_in_memory_counter() {
     let fixture = fixture_named("v1_18_30");
-    let (_tmp, _db) = fixture.open();
-    let level_dat = std::fs::read(fixture.level_dat_path(&_tmp)).unwrap();
+    let (tmp, _db) = fixture.open();
+    let level_dat = std::fs::read(fixture.level_dat_path(&tmp)).unwrap();
     let mut settings = LevelSettings::read(level_dat.as_slice()).unwrap();
 
     let before = settings.next_actor_session_id();
@@ -311,8 +311,8 @@ fn reserve_actor_session_id_advances_the_in_memory_counter() {
 #[test]
 fn reserve_actor_session_id_round_trips_through_write_and_read() {
     let fixture = fixture_named("v1_18_30");
-    let (_tmp, _db) = fixture.open();
-    let level_dat = std::fs::read(fixture.level_dat_path(&_tmp)).unwrap();
+    let (tmp, _db) = fixture.open();
+    let level_dat = std::fs::read(fixture.level_dat_path(&tmp)).unwrap();
     let mut settings = LevelSettings::read(level_dat.as_slice()).unwrap();
 
     let mut claimed_ids = Vec::new();
@@ -353,11 +353,11 @@ fn reserve_actor_session_id_round_trips_through_write_and_read() {
 #[test]
 fn reserve_actor_session_id_refuses_to_wrap_past_i32_min() {
     let fixture = fixture_named("v1_18_30");
-    let (_tmp, _db) = fixture.open();
-    let level_dat = std::fs::read(fixture.level_dat_path(&_tmp)).unwrap();
+    let (tmp, _db) = fixture.open();
+    let level_dat = std::fs::read(fixture.level_dat_path(&tmp)).unwrap();
     let mut settings = LevelSettings::read(level_dat.as_slice()).unwrap();
 
-    settings.world_start_count = i64::from(i32::MIN as u32);
+    settings.world_start_count = i64::from(i32::MIN.cast_unsigned());
     assert_eq!(settings.next_actor_session_id(), i32::MIN);
 
     let result = settings.reserve_actor_session_id();

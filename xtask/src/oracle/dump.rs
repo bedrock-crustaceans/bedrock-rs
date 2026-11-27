@@ -333,7 +333,7 @@ fn dump_biomes(chunk: &Chunk, dim_id: i32, cx: i32, cz: i32, out: &mut Vec<Strin
         }
         Some(ChunkBiomes::Volumes(volumes)) => {
             for (i, fragment) in volumes.fragments().iter().enumerate() {
-                let subchunk_y = i as i32; // relative fragment order, bottom to top
+                let subchunk_y = i; // relative fragment order, bottom to top
                 let (kind, detail) = match fragment {
                     BiomeEncoding::Inherit => ("inherit", String::new()),
                     BiomeEncoding::Single(id) => ("single", id.to_string()),

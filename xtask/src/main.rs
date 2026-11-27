@@ -72,7 +72,7 @@ fn run_diff_oracle(args: Vec<String>) {
         match arg.as_str() {
             "--work-dir" => {
                 if let Some(value) = iter.next() {
-                    work_dir = Some(PathBuf::from(value))
+                    work_dir = Some(PathBuf::from(value));
                 } else {
                     eprintln!("--work-dir needs a value\n{usage}");
                     process::exit(1);
@@ -80,7 +80,7 @@ fn run_diff_oracle(args: Vec<String>) {
             }
             "--java-jar" => {
                 if let Some(value) = iter.next() {
-                    java_jar = Some(PathBuf::from(value))
+                    java_jar = Some(PathBuf::from(value));
                 } else {
                     eprintln!("--java-jar needs a value\n{usage}");
                     process::exit(1);
@@ -88,7 +88,7 @@ fn run_diff_oracle(args: Vec<String>) {
             }
             "--python-bin" => {
                 if let Some(value) = iter.next() {
-                    python_bin = Some(PathBuf::from(value))
+                    python_bin = Some(PathBuf::from(value));
                 } else {
                     eprintln!("--python-bin needs a value\n{usage}");
                     process::exit(1);

@@ -5,7 +5,7 @@
 //! recomputed on every encode rather than passed through untouched -- see
 //! `Chunk::encode_at`'s doc comment for the policy this pins.
 
-mod support;
+pub mod support;
 
 use std::collections::HashSet;
 use std::fs::File;

@@ -46,7 +46,7 @@
 //! its low-word count at 1 each session, which is expected of a per-run
 //! counter and is exactly why the low half needs no persistence).
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 use std::io::Cursor;
@@ -119,6 +119,10 @@ fn all_actor_sessions(db: &Database) -> Vec<RealRecord> {
                 _ => None,
             });
         if let Some(uid) = uid {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "the low word is the low 32 bits of the unique id"
+            )]
             out.push(RealRecord {
                 session: (uid >> 32) as i32,
                 low: uid as i32,
@@ -170,7 +174,7 @@ fn newest_session_low_words_start_at_one_and_are_contiguous() {
             "{name}: newest-session distinct low-word count"
         );
         assert_eq!(
-            (max - min + 1) as usize,
+            usize::try_from(max - min + 1).unwrap(),
             distinct.len(),
             "{name}: newest-session low words are not contiguous"
         );
@@ -237,6 +241,10 @@ fn begin_actor_session_claims_the_advertised_next_session_and_persists_the_decre
 /// distinct ids that share the session's high 32 bits and whose low words
 /// are sequential, starting at `ActorSession::FIRST_LOW` (1).
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the low word is the low 32 bits of the unique id"
+)]
 fn allocating_two_ids_gives_the_same_session_and_sequential_low_words() {
     let fixture = fixture_named("v1_18_30");
     let (_tmp, world_dir) = extract_fixture(&fixture);
@@ -259,6 +267,10 @@ fn allocating_two_ids_gives_the_same_session_and_sequential_low_words() {
 /// key with the digest naming it and the embedded `StorageKey` still equal
 /// to that key.
 #[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one round trip of one actor, checked on the same chunk before the write and after the reopen"
+)]
 fn add_new_round_trips_through_put_chunk_and_reopen() {
     let fixture = fixture_named("v1_18_30");
     let (_tmp, world_dir) = extract_fixture(&fixture);

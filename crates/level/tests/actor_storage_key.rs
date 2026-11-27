@@ -28,7 +28,7 @@
 //!   fabricating one
 //!   (`storage_key_for_record_and_add_with_derived_key_reject_a_record_with_no_unique_id`).
 
-mod support;
+pub mod support;
 
 use std::fs::File;
 use std::io::Cursor;
@@ -229,7 +229,7 @@ fn embedded_key_branch_counts_match_the_corpus() {
 
 /// `derive_storage_key` against one hand-picked real formula-A record:
 /// `v1_18_30`'s first `minecraft:spider` with `internalComponents`,
-/// `UniqueID = -8589934587` (session `-2`, low word `5`), whose real
+/// `UniqueID = -8_589_934_587` (session `-2`, low word `5`), whose real
 /// on-disk key is `[0, 0, 0, 2, 0, 0, 0, 5]`.
 #[test]
 fn derive_storage_key_matches_a_real_formula_a_record() {
@@ -257,7 +257,7 @@ fn derive_storage_key_matches_a_real_formula_a_record() {
         _ => panic!("record has no Long UniqueID"),
     };
 
-    assert_eq!(uid, -8589934587);
+    assert_eq!(uid, -8_589_934_587);
     assert_eq!(record.storage_key, [0, 0, 0, 2, 0, 0, 0, 5]);
     assert_eq!(derive_storage_key(uid, true), record.storage_key);
 }
@@ -301,7 +301,7 @@ fn derive_storage_key_matches_a_real_zero_session_record() {
 
 /// `derive_storage_key` against one hand-picked real formula-B record:
 /// `v1_18_30`'s first `minecraft:painting` lacking `internalComponents`,
-/// `UniqueID = -4294967295` (low word `1`), whose real on-disk key is
+/// `UniqueID = -4_294_967_295` (low word `1`), whose real on-disk key is
 /// `[1, 0, 0, 0, 0, 0, 0, 0]`.
 #[test]
 fn derive_storage_key_matches_a_real_formula_b_record() {
@@ -329,7 +329,7 @@ fn derive_storage_key_matches_a_real_formula_b_record() {
         _ => panic!("record has no Long UniqueID"),
     };
 
-    assert_eq!(uid, -4294967295);
+    assert_eq!(uid, -4_294_967_295);
     assert_eq!(record.storage_key, [1, 0, 0, 0, 0, 0, 0, 0]);
     assert_eq!(derive_storage_key(uid, false), record.storage_key);
 }
@@ -374,14 +374,20 @@ fn add_with_derived_key_round_trips_through_a_real_chunk_and_level() {
     );
     // A UniqueID under a session no real record in this fixture uses, so the
     // derived key cannot collide with anything already on disk.
-    root.insert("UniqueID".into(), nbtx::Value::Long(-4611686018427387899));
+    root.insert(
+        "UniqueID".into(),
+        nbtx::Value::Long(-4_611_686_018_427_387_899),
+    );
     let record = nbtx::Value::Compound(root);
 
     let derived_key = chunk
         .actors_mut()
         .add_with_derived_key(record.clone())
         .unwrap();
-    assert_eq!(derived_key, derive_storage_key(-4611686018427387899, false));
+    assert_eq!(
+        derived_key,
+        derive_storage_key(-4_611_686_018_427_387_899, false)
+    );
     assert!(chunk.actors().digest_keys().contains(&derived_key));
 
     let writes = chunk.encode_actor_writes().unwrap();

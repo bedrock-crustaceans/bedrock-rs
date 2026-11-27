@@ -11,7 +11,7 @@
 //! payload, `BString` carries it through, and a whole record carrying one
 //! round-trips byte for byte through the crate's raw `Value` path.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 

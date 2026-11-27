@@ -10,7 +10,7 @@
 //! them, since it happens to be exactly 13 bytes) still fall through
 //! correctly now that the id check accepts far more values than before.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 

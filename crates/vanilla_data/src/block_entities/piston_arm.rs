@@ -71,11 +71,20 @@ pub struct PistonArm {
 impl PistonArm {
     /// How far through its stroke the arm is, or the raw value if it is not one
     /// of the three positions the game writes.
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw `progress` if it is not one of those three positions.
     pub fn progress(&self) -> Result<PistonProgress, f32> {
         PistonProgress::try_from(self.progress)
     }
 
     /// The stroke position of the previous tick. See [`Self::progress`].
+    ///
+    /// # Errors
+    ///
+    /// Returns the raw `last_progress` if it is not one of the three positions
+    /// the game writes.
     pub fn last_progress(&self) -> Result<PistonProgress, f32> {
         PistonProgress::try_from(self.last_progress)
     }

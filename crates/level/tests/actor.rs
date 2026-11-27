@@ -5,7 +5,7 @@
 //! contains (see the counts pinned below), so that case is synthesized on
 //! top of a real chunk's own records.
 
-mod support;
+pub mod support;
 
 use std::collections::HashSet;
 use std::io::Cursor;

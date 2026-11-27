@@ -2,7 +2,7 @@
 //! version-diverse imported fixtures, as opposed to `test.rs`'s single
 //! hardcoded world.
 
-mod support;
+pub mod support;
 
 use std::collections::BTreeMap;
 use std::io::Cursor;

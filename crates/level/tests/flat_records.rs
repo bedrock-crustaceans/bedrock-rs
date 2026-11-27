@@ -5,7 +5,7 @@
 //! pinned, and a mutated record re-encodes with the change while still
 //! decoding back.
 
-mod support;
+pub mod support;
 
 use bedrock_level::db::Database;
 use bedrock_level::flat_records;

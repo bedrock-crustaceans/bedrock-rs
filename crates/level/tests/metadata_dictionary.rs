@@ -11,7 +11,7 @@
 //! - A chunk's `0x3f` `MetadataDictionaryKey` record value is exactly one of the
 //!   dictionary's entry keys, for every chunk in every world that carries
 //!   the dictionary (`0x3f_link_resolves_for_every_chunk_in_every_dictionary_world`).
-mod support;
+pub mod support;
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -70,7 +70,7 @@ fn every_real_dictionary_has_the_expected_entry_count() {
         if let Some(buf) = db.get(metadata_dictionary::KEY).unwrap() {
             let dict = MetadataDictionary::decode(&buf)
                 .unwrap_or_else(|e| panic!("{name}: failed to decode dictionary: {e}"));
-            found.insert(name, dict.len() as u32);
+            found.insert(name, u32::try_from(dict.len()).unwrap());
         }
     }
 

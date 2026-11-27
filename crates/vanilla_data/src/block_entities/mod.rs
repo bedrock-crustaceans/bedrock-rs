@@ -105,6 +105,11 @@ macro_rules! impl_block_data {
             /// removed.
             ///
             /// `Ok(None)` means no variant claims that id.
+            ///
+            /// # Errors
+            ///
+            /// Returns the decode error if `rest` does not decode as the payload
+            /// of the variant `id` names.
             pub fn from_value(id: &str, rest: Value) -> Result<Option<Self>> {
                 Ok(Some(match id {
                     $(
@@ -118,6 +123,10 @@ macro_rules! impl_block_data {
             /// The payload as the compound of keys it occupies in a record.
             ///
             /// A payload-less variant contributes no keys.
+            ///
+            /// # Errors
+            ///
+            /// Returns the encode error if nbtx cannot encode the payload.
             pub fn to_value(&self) -> Result<Value> {
                 Ok(match self {
                     $(
@@ -239,6 +248,13 @@ fn as_integer(value: &Value) -> Option<i64> {
 }
 
 impl BlockEntity {
+    /// Reads one record as little-endian NBT and splits it as
+    /// [`Self::from_value`] does.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `reader` does not hold a little-endian NBT value,
+    /// or if [`Self::from_value`] rejects the value it holds.
     pub fn from_disk<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
         Cursor<R>: Read,
@@ -248,6 +264,14 @@ impl BlockEntity {
     }
 
     /// Splits a decoded record into its shared keys and its payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if `value` is not a compound, a shared key
+    /// is missing, a coordinate is not an integer that fits an `i32`,
+    /// `isMovable` is not an integer, `id` is not a UTF-8 string or no
+    /// variant claims it; and the decode error if the remaining keys do not
+    /// decode as that variant's payload.
     pub fn from_value(value: Value) -> Result<Self> {
         let Value::Compound(mut entries) = value else {
             return Err(Error::Invalid("block entity record: not a compound"));
@@ -292,6 +316,12 @@ impl BlockEntity {
     /// The shared keys go first, in the order [`Self::from_value`] takes them
     /// off, so that a record decoded and re-encoded keeps the key order it
     /// arrived in. Compound order is part of the bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns the encode error if nbtx cannot encode the payload, and
+    /// [`Error::Invalid`] if the payload encodes to something other than a
+    /// compound.
     pub fn to_value(&self) -> Result<Value> {
         let Value::Compound(payload) = self.data.to_value()? else {
             return Err(Error::Invalid("block entity payload: not a compound"));

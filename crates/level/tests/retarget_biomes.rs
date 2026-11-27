@@ -4,7 +4,7 @@
 //! target >= 25) against the imported fixtures, selected by capability
 //! ([`support::Fixture::capabilities`]) rather than by name.
 
-mod support;
+pub mod support;
 
 use bedrock_level::biome::{Biomes3d, COLUMNS};
 use bedrock_level::chunk::ChunkRecords;
@@ -46,7 +46,7 @@ fn fresh_db() -> (tempfile::TempDir, Database) {
     (dir, db)
 }
 
-fn round_trip(records: ChunkRecords, position: ChunkPosition, dimension: Dimension) -> Chunk {
+fn round_trip(records: &ChunkRecords, position: ChunkPosition, dimension: Dimension) -> Chunk {
     let (_dir, db) = fresh_db();
     records.write(&db).expect("write encoded records");
     let read_back = ChunkRecords::read(&db, position, dimension)
@@ -120,7 +120,10 @@ fn assert_promoted_biomes_match_source(
             for x in 0..16usize {
                 let expected = u32::from(source.id_at(x, z).unwrap());
                 let actual = volumes
-                    .biome_at(subchunk_index, BlockPosition(x as u8, 0, z as u8))
+                    .biome_at(
+                        subchunk_index,
+                        BlockPosition(u8::try_from(x).unwrap(), 0, u8::try_from(z).unwrap()),
+                    )
                     .unwrap_or_else(|| {
                         panic!("{context}: biome_at({subchunk_index}, {x}, {z}) returned None")
                     });
@@ -139,7 +142,7 @@ fn assert_heightmap_bytes_match(
     context: &str,
 ) {
     for i in 0..COLUMNS {
-        let expected = source.heights()[i] as u16;
+        let expected = source.heights()[i].cast_unsigned();
         let actual = promoted.heightmap()[i];
         assert_eq!(actual, expected, "{context}: heightmap column {i}");
     }
@@ -197,7 +200,7 @@ fn every_2d_fixture_promotes_to_the_newest_version_and_decodes_strictly() {
             fixture.name
         );
 
-        let decoded = round_trip(records, position, dimension);
+        let decoded = round_trip(&records, position, dimension);
         assert_eq!(
             decoded.chunk_version(),
             target,
@@ -293,7 +296,7 @@ fn every_2d_fixture_promotes_into_the_offset_window_with_correct_subchunk_keys()
             );
         }
 
-        let decoded = round_trip(records, position, dimension);
+        let decoded = round_trip(&records, position, dimension);
         assert_eq!(
             decoded.chunk_version(),
             target_in_window,

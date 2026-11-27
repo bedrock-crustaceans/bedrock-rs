@@ -3,7 +3,7 @@
 //! `0x2d`. Written directly against `Biomes3d`/`Database`, not the level
 //! layer, so it stays a check of the format decode itself.
 
-mod support;
+pub mod support;
 
 use std::collections::BTreeMap;
 use std::io::Cursor;

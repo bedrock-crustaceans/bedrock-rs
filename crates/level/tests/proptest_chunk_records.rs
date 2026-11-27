@@ -4,7 +4,7 @@
 //! `FinalizedState`, and the (not chunk-scoped, but decode/encode-symmetric
 //! the same way) `LevelChunkMetaDataDictionary`.
 
-mod support;
+pub mod support;
 
 use bedrock_level::aabb_volumes::{
     AabbVolumes, AabbVolumesEntry, decode_aabb_volumes, encode_aabb_volumes,

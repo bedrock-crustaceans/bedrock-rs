@@ -74,7 +74,7 @@
 //! ever *create* itself (by preserving a `0x3f` value read under one
 //! dimension while writing the chunk into another), never one any real
 //! world already has.
-mod support;
+pub mod support;
 
 use bedrock_level::db::Database;
 use bedrock_level::key::{Key, KeyVariant};
@@ -109,23 +109,26 @@ fn all_worlds() -> Vec<(String, tempfile::TempDir, Database)> {
 // justified. ---
 
 fn fnv1a64(bytes: &[u8]) -> u64 {
-    let mut hash: u64 = 0xcbf29ce484222325;
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
     for &b in bytes {
         hash ^= u64::from(b);
-        hash = hash.wrapping_mul(0x100000001b3);
+        hash = hash.wrapping_mul(0x0100_0000_01b3);
     }
     hash
 }
 
 /// xxHash64, matching the reference algorithm's mixing constants and
 /// finalization exactly (seed given by the caller).
-#[allow(clippy::chunks_exact_to_as_chunks)] // fixed-width mixing loops read more clearly as chunks_exact than as_chunks here
+#[expect(
+    clippy::chunks_exact_to_as_chunks,
+    reason = "fixed-width mixing loops read more clearly as chunks_exact than as_chunks here"
+)]
 fn xxhash64(input: &[u8], seed: u64) -> u64 {
-    const PRIME1: u64 = 0x9E3779B185EBCA87;
-    const PRIME2: u64 = 0xC2B2AE3D27D4EB4F;
-    const PRIME3: u64 = 0x165667B19E3779F9;
-    const PRIME4: u64 = 0x85EBCA77C2B2AE63;
-    const PRIME5: u64 = 0x27D4EB2F165667C5;
+    const PRIME1: u64 = 0x9E37_79B1_85EB_CA87;
+    const PRIME2: u64 = 0xC2B2_AE3D_27D4_EB4F;
+    const PRIME3: u64 = 0x1656_67B1_9E37_79F9;
+    const PRIME4: u64 = 0x85EB_CA77_C2B2_AE63;
+    const PRIME5: u64 = 0x27D4_EB2F_1656_67C5;
 
     let len = input.len();
     let mut h64: u64;
@@ -207,9 +210,12 @@ fn xxhash64(input: &[u8], seed: u64) -> u64 {
 
 /// `MurmurHash64A`, the standard 64-bit Murmur2 variant, seed given by the
 /// caller.
-#[allow(clippy::chunks_exact_to_as_chunks)] // fixed-width mixing loops read more clearly as chunks_exact than as_chunks here
+#[expect(
+    clippy::chunks_exact_to_as_chunks,
+    reason = "fixed-width mixing loops read more clearly as chunks_exact than as_chunks here"
+)]
 fn murmur2_64a(data: &[u8], seed: u64) -> u64 {
-    const M: u64 = 0xc6a4a7935bd1e995;
+    const M: u64 = 0xc6a4_a793_5bd1_e995;
     const R: u32 = 47;
 
     let mut h: u64 = seed ^ (data.len() as u64).wrapping_mul(M);
@@ -241,7 +247,7 @@ fn murmur2_64a(data: &[u8], seed: u64) -> u64 {
 /// XOR -- the most common "CRC64" default when an implementation doesn't
 /// name a specific variant.
 fn crc64_xz(data: &[u8]) -> u64 {
-    const POLY: u64 = 0xC96C5795D7870F42;
+    const POLY: u64 = 0xC96C_5795_D787_0F42;
     let mut crc: u64 = !0;
     for &b in data {
         crc ^= u64::from(b);
@@ -257,12 +263,15 @@ fn crc64_xz(data: &[u8]) -> u64 {
 /// both the standard 2-4 variant and the shorter 1-3 variant can be tried
 /// without depending on the standard library's own (deprecated, 2-4 only)
 /// `SipHasher`.
-#[allow(clippy::chunks_exact_to_as_chunks)] // fixed-width mixing loops read more clearly as chunks_exact than as_chunks here
+#[expect(
+    clippy::chunks_exact_to_as_chunks,
+    reason = "fixed-width mixing loops read more clearly as chunks_exact than as_chunks here"
+)]
 fn siphash(data: &[u8], c_rounds: usize, d_rounds: usize, k0: u64, k1: u64) -> u64 {
-    let mut v0: u64 = 0x736f6d6570736575 ^ k0;
-    let mut v1: u64 = 0x646f72616e646f6d ^ k1;
-    let mut v2: u64 = 0x6c7967656e657261 ^ k0;
-    let mut v3: u64 = 0x7465646279746573 ^ k1;
+    let mut v0: u64 = 0x736f_6d65_7073_6575 ^ k0;
+    let mut v1: u64 = 0x646f_7261_6e64_6f6d ^ k1;
+    let mut v2: u64 = 0x6c79_6765_6e65_7261 ^ k0;
+    let mut v3: u64 = 0x7465_6462_7974_6573 ^ k1;
 
     macro_rules! sipround {
         () => {
@@ -323,6 +332,9 @@ type FullNbtCandidate<'a> = (&'a str, Box<dyn Fn(&[u8]) -> u64>);
 /// that needs it alongside the bytes).
 type NameAndBytesCandidate<'a> = (&'a str, Box<dyn Fn(&[u8], Option<&str>) -> u64>);
 
+/// A named way to lay a candidate's 64-bit result out as the 8 key bytes.
+type ByteOrdering = (&'static str, fn(u64) -> [u8; 8]);
+
 /// Every real `(world, key, entry NBT bytes as stored, DimensionName)`
 /// across the whole dictionary-bearing corpus, walked from the raw record
 /// bytes directly (not via `MetadataDictionary::decode`) so each entry's
@@ -342,7 +354,7 @@ fn all_real_entries() -> Vec<RealEntry> {
             offset += 8;
             let mut cursor = std::io::Cursor::new(&bytes[offset..]);
             let value: nbtx::Value = nbtx::from_le_bytes(&mut cursor).unwrap();
-            let consumed = cursor.position() as usize;
+            let consumed = usize::try_from(cursor.position()).unwrap();
             let entry_bytes = bytes[offset..offset + consumed].to_vec();
             offset += consumed;
 
@@ -437,7 +449,6 @@ fn dictionary_key_candidates_match_no_real_entry() {
         ),
     ];
 
-    type ByteOrdering = (&'static str, fn(u64) -> [u8; 8]);
     let orderings: [ByteOrdering; 2] = [("LE", u64::to_le_bytes), ("BE", u64::to_be_bytes)];
 
     eprintln!("\n=== full-nbt candidates (matches/23, LE and BE) ===");

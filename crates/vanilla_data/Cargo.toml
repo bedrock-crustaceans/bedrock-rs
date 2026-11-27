@@ -27,3 +27,5 @@ bstr = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
 tempfile = { workspace = true }
+# Names the `IndexMap` a `BlockDef`'s `states` is, to build an empty one.
+indexmap = { workspace = true }

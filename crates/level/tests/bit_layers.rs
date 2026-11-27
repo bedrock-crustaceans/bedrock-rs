@@ -21,7 +21,7 @@
 //! - `BitArray::to_disk` deriving the header's bit width from the palette size, rather than
 //!   retaining a read width, needs no change: every real layer's header already is that
 //!   minimal width (same test).
-mod support;
+pub mod support;
 
 use std::collections::BTreeMap;
 use std::io::{Cursor, Seek};
@@ -317,7 +317,7 @@ fn for_each_data_layer<F: FnMut(u8, usize, usize)>(value: &[u8], mut on_layer: F
         }
         let per_word = 32u32 / u32::from(bits);
         let word_count = 4096u32.div_ceil(per_word);
-        let index_end = r.position() as usize + (word_count as usize * 4);
+        let index_end = usize::try_from(r.position()).ok()? + (word_count as usize * 4);
         r.seek_relative(i64::from(word_count) * 4).ok()?;
         let len = r.read_u32::<byteorder::LittleEndian>().ok()?;
         for _ in 0..len {

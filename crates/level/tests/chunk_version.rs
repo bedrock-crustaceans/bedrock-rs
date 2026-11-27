@@ -4,7 +4,7 @@
 //! `0x2c`/`0x76` preference the corpus is checked for one real,
 //! converter-stamped disagreement between the two.
 
-mod support;
+pub mod support;
 
 use std::collections::{BTreeSet, HashMap};
 use std::io::Cursor;

@@ -2,7 +2,7 @@
 //! imported version-diverse fixtures, as opposed to the lower-level tests
 //! that drive `Database`/`ChunkRecords`/`Key` directly.
 
-mod support;
+pub mod support;
 
 use std::collections::{HashMap, HashSet};
 use std::fs::File;

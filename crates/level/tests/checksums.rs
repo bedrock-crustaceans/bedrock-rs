@@ -1,7 +1,7 @@
 //! `crate::checksums` against real fixture worlds: byte-identical round
 //! trips for every real `0x3b` Checksums record the corpus contains.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 

@@ -3,7 +3,7 @@
 //! kept as its own smaller pipeline because the biome dump is a single flat id/name table,
 //! not the two-table (properties + blocks) shape the block dump has.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::input::RawBiomeDump;
 use crate::codegen::palette::GeneratorError;
@@ -25,13 +25,19 @@ pub struct VersionBiomes {
 /// Validates and sorts one biome dump: every id and every name must be unique within the
 /// dump (neither has been observed to collide in a real one; both are exactly the
 /// "unrecognized/inconsistent input" this generator is required to fail loudly on).
+///
+/// # Errors
+///
+/// Returns [`GeneratorError::EmptyBiomeName`], [`GeneratorError::DuplicateBiomeName`] or
+/// [`GeneratorError::DuplicateBiomeId`] for the first biome that is unnamed or repeats a
+/// name or id.
 pub fn build(
     tag: &str,
     game_version: (u8, u8, u8),
     raw: RawBiomeDump,
 ) -> Result<VersionBiomes, GeneratorError> {
     let mut by_id: BTreeMap<i32, String> = BTreeMap::new();
-    let mut seen_names: BTreeMap<String, ()> = BTreeMap::new();
+    let mut seen_names: BTreeSet<String> = BTreeSet::new();
 
     for item in raw.data_items {
         if item.name.is_empty() {
@@ -39,7 +45,7 @@ pub fn build(
                 tag: tag.to_string(),
             });
         }
-        if seen_names.insert(item.name.clone(), ()).is_some() {
+        if !seen_names.insert(item.name.clone()) {
             return Err(GeneratorError::DuplicateBiomeName {
                 tag: tag.to_string(),
                 name: item.name,

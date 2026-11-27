@@ -3,7 +3,7 @@
 //! list, `0x41` `ActorDigestVersion` -- `crates/level/src/actor.rs`) and the
 //! `0x33`/`0x3a` tick-list records (`crates/level/src/ticks.rs`).
 
-mod support;
+pub mod support;
 
 use bedrock_level::actor::{
     ActorStorageKey, decode_actor_digest, decode_actor_digest_version, decode_actor_record,

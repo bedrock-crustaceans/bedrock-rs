@@ -2,7 +2,7 @@
 //! round trips for every real `0x38` `BorderBlocks` record the corpus
 //! contains, plus the malformed synthetic cases.
 
-mod support;
+pub mod support;
 
 use std::io::Cursor;
 
