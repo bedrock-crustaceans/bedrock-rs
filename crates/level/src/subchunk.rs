@@ -656,6 +656,48 @@ impl Layer {
         self.hashes.contains_key(&hash)
     }
 
+    /// Builds a layer from its palette and one palette index per block, indexed by
+    /// [`to_offset`] (`x << 8 | z << 4 | y`). Every modern entry is written as `name,
+    /// states, version`, the order most worlds use; a layer taken apart with
+    /// [`into_parts`](Self::into_parts) and built again keeps its blocks, not necessarily
+    /// its bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if the palette is empty, holds more than 4096 entries or a
+    /// [`PaletteEntry::Numeric`] entry (which only a non-paletted subchunk stores), or an
+    /// index points past its end.
+    pub fn from_parts(palette: Vec<PaletteEntry>, indices: Box<[u16; 4096]>) -> Result<Self> {
+        if palette.is_empty() || palette.len() > 4096 {
+            return Err(Error::Invalid("layer palette size"));
+        }
+        if palette
+            .iter()
+            .any(|entry| matches!(entry, PaletteEntry::Numeric { .. }))
+        {
+            return Err(Error::Invalid("numeric entry in a paletted layer"));
+        }
+        if indices.iter().any(|&i| usize::from(i) >= palette.len()) {
+            return Err(Error::Invalid("layer index past the end of its palette"));
+        }
+        let mut hashes =
+            HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
+        for (entry, index) in palette.iter().zip(0u16..) {
+            hashes.entry(Self::hash_entry(entry)).or_insert(index);
+        }
+        Ok(Self {
+            array: BitArray::Greedy(GreedyArray::from(indices)),
+            entry_order: vec![FieldOrder::default(); palette.len()],
+            hashes,
+            palette,
+        })
+    }
+
+    /// Takes this layer apart into its palette and indices.
+    pub fn into_parts(self) -> (Vec<PaletteEntry>, BitArray) {
+        (self.palette, self.array)
+    }
+
     /// Returns the palette used for this chunk
     #[inline]
     pub fn palette(&self) -> &[PaletteEntry] {
@@ -1656,6 +1698,52 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
+    /// Builds a subchunk from its layers. `index` is stored only by
+    /// [`Limitless`](SubChunkVersion::Limitless) subchunks.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] for a [`NonPaletted`](SubChunkVersion::NonPaletted)
+    /// version, whose column is not built from layers, for a
+    /// [`Legacy`](SubChunkVersion::Legacy) one without exactly one layer, and for more
+    /// layers than the one-byte layer count holds.
+    pub fn new(version: SubChunkVersion, index: i8, layers: Vec<Layer>) -> Result<Self> {
+        match version {
+            SubChunkVersion::NonPaletted(_) => {
+                return Err(Error::Invalid("non-paletted subchunk built from layers"));
+            }
+            SubChunkVersion::Legacy if layers.len() != 1 => {
+                return Err(Error::Invalid("legacy subchunk layer count"));
+            }
+            _ if layers.len() > usize::from(u8::MAX) => {
+                return Err(Error::Invalid("subchunk layer count"));
+            }
+            _ => {}
+        }
+        let index = if version == SubChunkVersion::Limitless {
+            index
+        } else {
+            0
+        };
+        Ok(Self {
+            version,
+            index,
+            layers,
+        })
+    }
+
+    /// The layers of this subchunk: blocks first, then (usually) the waterlogging layer.
+    #[inline]
+    pub fn layers(&self) -> &[Layer] {
+        &self.layers
+    }
+
+    /// Takes the layers out of this subchunk.
+    #[inline]
+    pub fn into_layers(self) -> Vec<Layer> {
+        self.layers
+    }
+
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
     #[inline]

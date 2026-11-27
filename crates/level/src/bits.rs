@@ -176,6 +176,16 @@ impl BitArray {
         }
     }
 
+    /// All 4096 indices, unpacking a lazy array. A greedy array hands over its buffer
+    /// without copying.
+    pub fn into_indices(self) -> Box<[u16; 4096]> {
+        match self {
+            BitArray::Greedy(array) => array.into_inner(),
+            BitArray::Lazy(array) => GreedyArray::from(&array).into_inner(),
+            BitArray::Empty => Box::new([0; 4096]),
+        }
+    }
+
     /// Gets the value at the specified index.
     pub fn get(&self, index: usize) -> Option<u16> {
         match self {
