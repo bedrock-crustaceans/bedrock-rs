@@ -8,7 +8,6 @@ use smallvec::SmallVec;
 
 use crate::UnpackingMethod;
 use crate::bits::{BitArray, IndicesType};
-use crate::error::Error;
 use crate::error::Result;
 use crate::greedy::GreedyArray;
 use crate::types::BlockPosition;
@@ -360,20 +359,15 @@ impl Biomes3d {
 
         let mut fragments = SmallVec::new();
         loop {
-            let indices = match BitArray::from_disk::<M, _>(reader) {
-                Ok(indices) => indices,
-                Err(err) => {
-                    if let Error::IoError(io) = &err
-                        && io.kind() == ErrorKind::UnexpectedEof
-                    {
-                        // We found the end of the fragment array, stop the loop
-                        break;
-                    }
-
-                    // Something actually went wrong...
-                    return Err(err);
-                }
-            };
+            // The record ends where a storage would start; running out of bytes inside one
+            // is an error, not the end of the record.
+            let start = reader.position();
+            match reader.read_u8() {
+                Ok(_) => reader.set_position(start),
+                Err(err) if err.kind() == ErrorKind::UnexpectedEof => break,
+                Err(err) => return Err(err.into()),
+            }
+            let indices = BitArray::from_disk::<M, _>(reader)?;
 
             match indices {
                 IndicesType::Data(array) => {
@@ -574,6 +568,38 @@ mod tests {
             heightmap: Box::new([0; COLUMNS]),
             fragments: SmallVec::from_buf([BiomeEncoding::Single(1)]),
         }
+    }
+
+    /// A `0x2b` record with a single-biome storage, then a one-bit paletted storage.
+    fn two_storage_biomes_3d() -> Vec<u8> {
+        let mut out = vec![0; COLUMNS * 2];
+        out.extend([0x01, 1, 0, 0, 0]);
+        out.push(1 << 1 | 1);
+        out.extend([0; 128 * 4]);
+        out.extend(1u32.to_le_bytes());
+        out.extend(7u32.to_le_bytes());
+        out
+    }
+
+    /// The record ends where a storage would start. A value cut inside a storage -- after
+    /// its header, inside its words, inside its palette -- is an error, not a shorter
+    /// record that would be written back without the cut storage.
+    #[test]
+    fn biomes_3d_cut_inside_a_storage_is_an_error() {
+        let bytes = two_storage_biomes_3d();
+        let whole =
+            Biomes3d::from_disk::<crate::Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
+        assert_eq!(whole.fragments().len(), 2);
+
+        let second = COLUMNS * 2 + 5;
+        for cut in [second + 1, second + 1 + 100, bytes.len() - 2] {
+            let result = Biomes3d::from_disk::<crate::Greedy, _>(&mut Cursor::new(&bytes[..cut]));
+            assert!(result.is_err(), "cut at {cut} read as {result:?}");
+        }
+
+        let shorter =
+            Biomes3d::from_disk::<crate::Greedy, _>(&mut Cursor::new(&bytes[..second])).unwrap();
+        assert_eq!(shorter.fragments(), &whole.fragments()[..1]);
     }
 
     #[test]
