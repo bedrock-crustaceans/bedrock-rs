@@ -478,3 +478,147 @@ impl From<&LazyArray> for GreedyArray {
         GreedyArray::unpack(words, array.bits())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bits::{VALID_BITS, expected_word_count};
+
+    fn deterministic_array(bits: u8) -> GreedyArray {
+        let max = if bits == 16 {
+            u16::MAX
+        } else {
+            (1u16 << bits) - 1
+        };
+        let mut array = Box::new([0u16; 4096]);
+        // `max + 1` is a power of two, so masking with `max` is `% (max + 1)`.
+        for (i, slot) in (0u16..).zip(array.iter_mut()) {
+            *slot = i & max;
+        }
+        GreedyArray::from(array)
+    }
+
+    #[test]
+    fn word_count_matches_expected_for_every_valid_width() {
+        for bits in VALID_BITS {
+            let expected_words = expected_word_count(bits);
+            let array = deterministic_array(bits);
+
+            let mut buf = Cursor::new(Vec::new());
+            array.to_disk(&mut buf, u32::from(bits)).unwrap();
+            let bytes = buf.into_inner();
+
+            assert_eq!(
+                bytes.len(),
+                expected_words * 4,
+                "bits={bits}: encoded byte length"
+            );
+
+            let decoded = GreedyArray::from_disk(&mut Cursor::new(bytes.as_slice()), bits).unwrap();
+            assert_eq!(decoded, array, "bits={bits}: round trip through from_disk");
+        }
+    }
+
+    #[test]
+    fn decode_encode_byte_identity_for_every_valid_width() {
+        for bits in VALID_BITS {
+            let array = deterministic_array(bits);
+
+            let mut first = Cursor::new(Vec::new());
+            array.to_disk(&mut first, u32::from(bits)).unwrap();
+            let first_bytes = first.into_inner();
+
+            let decoded =
+                GreedyArray::from_disk(&mut Cursor::new(first_bytes.as_slice()), bits).unwrap();
+
+            let mut second = Cursor::new(Vec::new());
+            decoded.to_disk(&mut second, u32::from(bits)).unwrap();
+            let second_bytes = second.into_inner();
+
+            assert_eq!(
+                first_bytes, second_bytes,
+                "bits={bits}: decode -> encode is not byte-identical"
+            );
+        }
+    }
+
+    /// For bit sizes that do not divide 32 evenly (3, 5, 6), the final word's slots past
+    /// the 4096th index are padding. Garbage left in them by whatever wrote the record must
+    /// not leak into the decoded indices.
+    #[test]
+    fn trailing_slot_garbage_is_ignored_on_decode() {
+        for bits in [3u8, 5, 6] {
+            let per_word = u32::BITS / u32::from(bits);
+            let word_count = expected_word_count(bits);
+            let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
+
+            let mut words = vec![0u32; word_count];
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let tail_values: Vec<u16> = (0..used_in_last_word as u16)
+                .map(|i| i % (1 << bits))
+                .collect();
+
+            let mut last_word = 0u32;
+            for (i, &v) in (0u32..).zip(&tail_values) {
+                last_word |= u32::from(v) << (i * u32::from(bits));
+            }
+            // Poison every bit past the slots actually used in the last word.
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let used_bits = used_in_last_word as u32 * u32::from(bits);
+            last_word |= u32::MAX << used_bits;
+            words[word_count - 1] = last_word;
+
+            let array = GreedyArray::unpack(&words, bits);
+            let base = 4096 - used_in_last_word;
+            for (i, &expected) in tail_values.iter().enumerate() {
+                assert_eq!(
+                    array.get(base + i),
+                    Some(expected),
+                    "bits={bits}: trailing slot {i} corrupted by padding garbage"
+                );
+            }
+        }
+    }
+
+    /// The reverse direction: encoding must zero-fill the unused high bits of a padded
+    /// final word rather than leaving whatever was in the output buffer.
+    #[test]
+    fn encode_zero_fills_the_padded_final_word() {
+        for bits in [3u8, 5, 6] {
+            let per_word = u32::BITS / u32::from(bits);
+            let word_count = expected_word_count(bits);
+            let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
+
+            let mut array = Box::new([0u16; 4096]);
+            // Max value that fits, so any bit that should be zero but isn't would show up.
+            for slot in &mut array[4096 - used_in_last_word..] {
+                *slot = (1u16 << bits) - 1;
+            }
+            let array = GreedyArray::from(array);
+
+            let mut buf = Cursor::new(Vec::new());
+            array.to_disk(&mut buf, u32::from(bits)).unwrap();
+            let bytes = buf.into_inner();
+
+            let last_word_bytes = &bytes[(word_count - 1) * 4..word_count * 4];
+            let last_word = u32::from_le_bytes(last_word_bytes.try_into().unwrap());
+
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let used_bits = used_in_last_word as u32 * u32::from(bits);
+            assert_eq!(
+                last_word & (u32::MAX << used_bits),
+                0,
+                "bits={bits}: padded high bits of the final word were not zero-filled"
+            );
+        }
+    }
+}

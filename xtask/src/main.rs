@@ -4,16 +4,17 @@ pub mod codegen;
 mod entity_schemas;
 mod goal_numeric;
 mod markers;
+pub mod oracle;
 mod script_meta;
 
 use codegen::protocol;
 use std::ffi::OsStr;
 use std::io::Write as _;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{env, fs, io, process};
 
-const USAGE: &str = "usage: cargo xtask [protocol | actor-types --samples <dir> | script-meta --samples <dir> | entity-schemas | addon-features]";
+const USAGE: &str = "usage: cargo xtask [protocol | actor-types --samples <dir> | script-meta --samples <dir> | entity-schemas | addon-features | generate-palette | diff-oracle <world-dir> ...]";
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -24,6 +25,11 @@ fn main() {
         ["script-meta", "--samples", dir] => script_meta::run(Path::new(dir)),
         ["entity-schemas"] => entity_schemas::run(),
         ["addon-features"] => addon_features::run(),
+        ["generate-palette"] => generate_palette(),
+        ["diff-oracle", rest @ ..] => {
+            run_diff_oracle(rest.iter().map(|arg| (*arg).to_owned()).collect());
+            Ok(())
+        }
         _ => {
             eprintln!("{USAGE}");
             process::exit(2);
@@ -40,6 +46,78 @@ fn workspace_root() -> io::Result<&'static Path> {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .ok_or_else(|| io::Error::other("xtask has no parent directory"))
+}
+
+/// Regenerates `crates/vanilla_data/src/generated` from the pinned bedrock-samples dumps.
+fn generate_palette() -> io::Result<()> {
+    codegen::palette::generate(workspace_root()?)
+        .map_err(|error| io::Error::other(format!("generate-palette failed: {error}")))
+}
+
+/// Dumps a fixture world through `bedrock_level` and diffs it against whichever
+/// reference-implementation oracles are available; see `crates/level/tests/support/oracle.md`.
+fn run_diff_oracle(args: Vec<String>) {
+    let mut world_dir: Option<PathBuf> = None;
+    let mut work_dir: Option<PathBuf> = None;
+    let mut java_jar: Option<PathBuf> = None;
+    let mut python_bin: Option<PathBuf> = None;
+    let mut python_oracle_permission_acknowledged = false;
+
+    let usage = "usage: cargo xtask diff-oracle <world-dir> [--work-dir <dir>] \
+                 [--java-jar <path/to/jar>] [--python-bin <path/to/python>] \
+                 [--python-oracle-permission-acknowledged]";
+
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--work-dir" => {
+                if let Some(value) = iter.next() {
+                    work_dir = Some(PathBuf::from(value));
+                } else {
+                    eprintln!("--work-dir needs a value\n{usage}");
+                    process::exit(1);
+                }
+            }
+            "--java-jar" => {
+                if let Some(value) = iter.next() {
+                    java_jar = Some(PathBuf::from(value));
+                } else {
+                    eprintln!("--java-jar needs a value\n{usage}");
+                    process::exit(1);
+                }
+            }
+            "--python-bin" => {
+                if let Some(value) = iter.next() {
+                    python_bin = Some(PathBuf::from(value));
+                } else {
+                    eprintln!("--python-bin needs a value\n{usage}");
+                    process::exit(1);
+                }
+            }
+            "--python-oracle-permission-acknowledged" => {
+                python_oracle_permission_acknowledged = true;
+            }
+            other if world_dir.is_none() => world_dir = Some(PathBuf::from(other)),
+            other => {
+                eprintln!("unrecognized diff-oracle argument `{other}`\n{usage}");
+                process::exit(1);
+            }
+        }
+    }
+
+    let Some(world_dir) = world_dir else {
+        eprintln!("{usage}");
+        process::exit(1);
+    };
+    let work_dir = work_dir.unwrap_or_else(|| PathBuf::from("target/diff-oracle"));
+
+    oracle::run::run(&oracle::run::OracleConfig {
+        world_dir,
+        work_dir,
+        java_jar,
+        python_bin,
+        python_oracle_permission_acknowledged,
+    });
 }
 
 /// The edition the generated Rust files are formatted as: the workspace's.

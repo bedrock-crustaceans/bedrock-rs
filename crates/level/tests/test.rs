@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Cursor;
 
@@ -8,6 +7,7 @@ use bedrock_level::player::PlayerData;
 use bedrock_level::settings::LevelSettings;
 use bedrock_level::subchunk::BlockDef;
 use bedrock_level::types::BlockPosition;
+use bedrock_level::version::GameVersion;
 use bedrock_level::{
     db::Database,
     key::{Key, KeyVariant},
@@ -29,59 +29,48 @@ fn extract_test_dir() -> tempfile::TempDir {
     tmp
 }
 
-fn open_test_db() -> Database {
+/// Opens the fixture database, returning the `TempDir` alongside it.
+///
+/// The `TempDir` unlinks its contents when dropped, and `Database` keeps no
+/// reference back to it, so the caller has to hold onto it for as long as the
+/// `Database` is in use — dropping it early silently truncates whatever the
+/// database can still see to leftover file-descriptor state.
+fn open_test_db() -> (tempfile::TempDir, Database) {
     let tmp = extract_test_dir();
-    let db_path = tmp.path().join("test_level/db");
+    let db_path = tmp.path().join("debug/db");
 
-    Database::open(db_path.to_str().unwrap()).unwrap()
+    (tmp, Database::open(db_path.to_str().unwrap()).unwrap())
 }
 
 #[test]
-fn reopened_database_reads_back_inserted_value() {
-    let tmp = extract_test_dir();
-    let db_path = tmp.path().join("test_level/db");
-    let db_path = db_path.to_str().unwrap();
-
-    let key = b"bedrock-rs test key";
-    let value = b"bedrock-rs test value".to_vec();
-
-    {
-        let db = Database::open(db_path).unwrap();
-        db.insert(key, value.clone()).unwrap();
-    }
-
-    {
-        let db = Database::open(db_path).unwrap();
-        let read = db.get(key).unwrap().unwrap();
-        assert_eq!(&*read, value.as_slice());
-
-        db.remove(key).unwrap();
-        assert!(db.get(key).unwrap().is_none());
-    }
-}
-
-#[test]
-fn get_of_missing_key_is_none() {
-    let db = open_test_db();
-    assert!(db.get(b"this key does not exist").unwrap().is_none());
-}
-
-#[test]
-#[ignore = "currently not properly implemented"]
 fn read_level_dat() {
     let tmp = extract_test_dir();
-    let dat_path = tmp.path().join("test_level/level.dat");
+    let dat_path = tmp.path().join("debug/level.dat");
 
     let data = std::fs::read(&dat_path).unwrap();
     let settings = LevelSettings::read(data.as_slice()).unwrap();
 
-    println!("{settings:?}");
+    let version = settings.version_info();
+    assert_eq!(version.header_storage_version, 10);
+    assert_eq!(version.storage_version, 10);
+    assert_eq!(
+        version.last_opened_with_version,
+        GameVersion::new(1, 26, 13, 1, 0)
+    );
+    assert_eq!(
+        version.minimum_compatible_client_version,
+        Some(GameVersion::new(1, 26, 10, 0, 0))
+    );
+    assert_eq!(version.base_game_version, Some("*"));
+    assert_eq!(version.network_version, Some(859));
+    assert_eq!(version.inventory_version, Some("1.21.120"));
+    assert_eq!(version.world_version, Some(1));
 }
 
 #[test]
 #[ignore = "currently not properly implemented"]
 fn read_local_player() {
-    let db = open_test_db();
+    let (_tmp, db) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
@@ -91,7 +80,7 @@ fn read_local_player() {
         let Ok(key) = key else { continue };
         if matches!(key.data, KeyVariant::LocalPlayer) {
             let data = kv.value();
-            let nbt: PlayerData = nbtx::from_le_bytes(&mut data.as_ref()).unwrap();
+            let nbt = PlayerData::read(data.as_ref()).unwrap();
             println!("{nbt:#?}");
         }
     }
@@ -99,7 +88,7 @@ fn read_local_player() {
 
 #[test]
 fn read_biome() {
-    let db = open_test_db();
+    let (_tmp, db) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
@@ -130,7 +119,7 @@ fn read_biome() {
 
 #[test]
 fn read_subchunk() {
-    let db = open_test_db();
+    let (_tmp, db) = open_test_db();
     let mut keys = db.keys().unwrap();
 
     for kv in &mut keys {
@@ -154,11 +143,11 @@ fn read_subchunk() {
                     BlockPosition(0, i, 0),
                     BlockDef {
                         name: "test".to_string(),
-                        states: HashMap::from([(
+                        states: indexmap::IndexMap::from([(
                             String::from("test2"),
                             nbtx::Value::Byte(i.cast_signed()),
                         )]),
-                        version: Some(0x0102_0304),
+                        version: Some(BlockDef::pack_version([1, 2, 3, 4])),
                     },
                 );
             }

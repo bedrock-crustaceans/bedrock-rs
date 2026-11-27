@@ -80,7 +80,7 @@ jobs:
             packages: -p bedrock_auth
           - name: level
             key: level
-            packages: -p bedrock_level
+            packages: -p bedrock_level -p bedrock_vanilla_data
           - name: general
             key: general
             packages: -p bedrock -p bedrock_shared
@@ -104,6 +104,11 @@ jobs:
         if: matrix.group.key == 'protocol-network'
         shell: bash
         run: just check-versions
+      # The generated per-version block-palette tables are off by default; their tests run here.
+      - name: Vanilla data with the generated palettes
+        if: matrix.group.key == 'level'
+        shell: bash
+        run: just test -p bedrock_vanilla_data --features generated-palettes
       # nextest does not run doctests.
       - name: Doctests
         shell: bash
