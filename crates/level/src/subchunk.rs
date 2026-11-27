@@ -583,6 +583,10 @@ impl Layer {
     pub fn set<K: Into<BlockPosition>>(&mut self, position: K, block: BlockDef) {
         let hash = Self::hash_def(&block);
 
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "palette indices are stored as u16, so a layer's palette never exceeds u16 range"
+        )]
         let palette_index = if let Some(&candidate) = self.hashes.get(&hash) {
             if self.palette[candidate as usize].as_block() == Some(&block) {
                 candidate
@@ -783,6 +787,10 @@ impl Layer {
 
         let mut hashes =
             HashMap::with_capacity_and_hasher(palette.len(), BuildNoHashHasher::default());
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "palette indices are stored as u16, so a layer's palette never exceeds u16 range"
+        )]
         hashes.extend(palette.iter().enumerate().map(|(i, entry)| {
             let hash = Self::hash_entry(entry);
             (hash, i as u16)
@@ -790,8 +798,8 @@ impl Layer {
 
         Ok(Self {
             array,
-            hashes,
             palette,
+            hashes,
             entry_order,
         })
     }
@@ -812,7 +820,12 @@ impl Layer {
             return Ok(());
         }
 
-        writer.write_u32::<LittleEndian>(plen as u32)?;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "palette indices are stored as u16, so a layer's palette never exceeds u16 range"
+        )]
+        let plen = plen as u32;
+        writer.write_u32::<LittleEndian>(plen)?;
         for (entry, &order) in self.palette.iter().zip(&self.entry_order) {
             write_palette_entry(writer, entry, order)?;
         }
@@ -1159,12 +1172,15 @@ mod palette_tests {
         let keys = ["a", "b", "c", "d", "e", "f", "g"];
 
         let mut forward = indexmap::IndexMap::new();
-        for (i, k) in keys.iter().enumerate() {
-            forward.insert(k.to_string(), nbtx::Value::Int(i as i32));
+        for (k, i) in keys.iter().zip(0..) {
+            forward.insert(k.to_string(), nbtx::Value::Int(i));
         }
         let mut backward = indexmap::IndexMap::new();
         for (i, k) in keys.iter().enumerate().rev() {
-            backward.insert(k.to_string(), nbtx::Value::Int(i as i32));
+            #[expect(clippy::cast_possible_truncation, reason = "there are seven keys")]
+            #[expect(clippy::cast_possible_wrap, reason = "there are seven keys")]
+            let i = i as i32;
+            backward.insert(k.to_string(), nbtx::Value::Int(i));
         }
 
         let a = BlockDef {
@@ -1319,9 +1335,15 @@ pub const fn to_offset(position: BlockPosition) -> usize {
 /// This offset should be in the range [0, 4096).
 #[inline]
 pub const fn from_offset(offset: usize) -> BlockPosition {
-    let x = (offset >> 8) as u8 & 0xf;
-    let y = offset as u8 & 0xf;
-    let z = (offset >> 4) as u8 & 0xf;
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "each coordinate is masked to its low nibble"
+    )]
+    let (x, y, z) = (
+        (offset >> 8) as u8 & 0xf,
+        offset as u8 & 0xf,
+        (offset >> 4) as u8 & 0xf,
+    );
 
     BlockPosition(x, y, z)
 }
@@ -1351,6 +1373,10 @@ impl NonPalettedLayerBuilder {
     fn set(&mut self, offset: usize, id: u8, data: u8) {
         let entry = PaletteEntry::Numeric { id, data };
         let hash = Layer::hash_entry(&entry);
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "a 4096-block layer holds at most 4096 distinct id/data pairs"
+        )]
         let index = *self.hashes.entry(hash).or_insert_with(|| {
             self.palette.push(entry);
             self.entry_order.push(FieldOrder::default());
@@ -1373,7 +1399,7 @@ impl NonPalettedLayerBuilder {
 /// one non-paletted [`Layer`] per 16-block vertical slice, bottom slice first.
 ///
 /// This is the layout shared by every non-paletted subchunk version byte (0 and 2 through
-/// 7, `height == 16`) and by the established portion of `0x30` LegacyTerrain (`height ==
+/// 7, `height == 16`) and by the established portion of `0x30` `LegacyTerrain` (`height ==
 /// 128`, giving the eight vertical slices a whole pre-subchunk column is split into):
 /// `16*16*height` raw block ids, X-major then Z then Y (Y fastest), followed by
 /// `16*16*height/2` metadata nibbles in the same order, even index in the low nibble and
@@ -1407,11 +1433,14 @@ pub(crate) fn decode_nonpaletted_column<R: Read>(
         // in reverse, Y first (fastest-varying), then Z, then X.
         let y = raw_index % height;
         let xz = raw_index / height;
-        let z = (xz % 16) as u8;
-        let x = (xz / 16) as u8;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "`xz` is below 256, so every coordinate is below 16"
+        )]
+        let (x, local_y, z) = ((xz / 16) as u8, (y % 16) as u8, (xz % 16) as u8);
 
         let cy = y / 16;
-        let local_offset = to_offset(BlockPosition(x, (y % 16) as u8, z));
+        let local_offset = to_offset(BlockPosition(x, local_y, z));
         builders[cy].set(local_offset, id, data);
     }
 
@@ -1437,11 +1466,14 @@ pub(crate) fn encode_nonpaletted_column<W: Write>(writer: &mut W, layers: &[Laye
     for (raw_index, id_out) in ids.iter_mut().enumerate() {
         let y = raw_index % height;
         let xz = raw_index / height;
-        let z = (xz % 16) as u8;
-        let x = (xz / 16) as u8;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "`xz` is below 256, so every coordinate is below 16"
+        )]
+        let (x, local_y, z) = ((xz / 16) as u8, (y % 16) as u8, (xz % 16) as u8);
 
         let cy = y / 16;
-        let position = BlockPosition(x, (y % 16) as u8, z);
+        let position = BlockPosition(x, local_y, z);
         let entry = layers[cy]
             .get(position)
             .ok_or(Error::Invalid("non-paletted column layer position"))?;
@@ -1491,6 +1523,10 @@ mod nonpaletted_tests {
     #[test]
     fn every_nonpaletted_version_byte_round_trips_byte_identical() {
         for version in [0u8, 2, 3, 4, 5, 6, 7] {
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "both values are reduced below 256 first"
+            )]
             let bytes = nonpaletted_bytes(version, |i| (i % 251) as u8, |i| (i % 13) as u8);
 
             let chunk =
@@ -1567,6 +1603,10 @@ mod nonpaletted_tests {
     /// silently decoding a partial or zero-filled layer.
     #[test]
     fn truncated_nonpaletted_record_errors() {
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "ids wrap on purpose; data is reduced below 16 first"
+        )]
         let mut bytes = nonpaletted_bytes(0, |i| i as u8, |i| (i % 16) as u8);
         bytes.truncate(bytes.len() - 1);
         assert!(SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice())).is_err());
@@ -1652,6 +1692,18 @@ impl SubChunk {
     /// [`SubChunkVersion::NonPaletted`] record has no packed index array for it to govern at
     /// all, so both unpacking methods decode it identically; see the branch below.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the version byte is not a known [`SubChunkVersion`], if a layer
+    /// header names an invalid bit size or is the inherit marker, if a palette entry is not
+    /// valid NBT or does not decode to a block, or if `reader` ends before the whole record
+    /// has been read.
+    ///
+    /// # Panics
+    ///
+    /// Does not panic: the `expect` on the non-paletted branch holds because decoding one
+    /// 16-block-tall column always yields exactly one layer.
+    ///
     /// [`from_disk_lazy`]: Self::from_disk_lazy
     /// [`from_disk_greedy`]: Self::from_disk_greedy
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Self>
@@ -1715,6 +1767,10 @@ impl SubChunk {
     /// None of that applies to a [`SubChunkVersion::NonPaletted`] record: it has no packed
     /// index array to defer unpacking of, so this and [`from_disk_greedy`] decode it
     /// identically, with the same eager cost either way.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`from_disk`](Self::from_disk).
     #[inline]
     pub fn from_disk_lazy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -1726,6 +1782,10 @@ impl SubChunk {
     /// Greedily unpacks the subchunk. This means that the entire index array is unpacked immediately. This allows the deserialisation process to be
     /// accelerated with SIMD which makes it about 2.5x faster. Additionally this means the chunk does not have to be re-encoded whenever the bit size changes.
     /// It however uses more memory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`from_disk`](Self::from_disk).
     #[inline]
     pub fn from_disk_greedy<R>(reader: &mut Cursor<R>) -> Result<Self>
     where
@@ -1735,6 +1795,12 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails, or, for a
+    /// [`SubChunkVersion::NonPaletted`] subchunk, if a block's palette entry is not
+    /// [`PaletteEntry::Numeric`].
     pub fn to_disk<M: UnpackingMethod, W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -1751,7 +1817,12 @@ impl SubChunk {
         // A legacy subchunk always has exactly one layer and carries no layer-count byte
         // -- `from_disk` never reads one for this version either.
         if self.version != SubChunkVersion::Legacy {
-            writer.write_u8(self.layers.len() as u8)?;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "layers only come from `from_disk`, which reads their count from one byte"
+            )]
+            let layer_count = self.layers.len() as u8;
+            writer.write_u8(layer_count)?;
         }
 
         if self.version == SubChunkVersion::Limitless {

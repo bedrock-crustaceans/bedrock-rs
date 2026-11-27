@@ -61,7 +61,7 @@ pub enum BiomeEncoding {
     Palette(BiomeArray),
 }
 
-/// Palette-based per-subchunk biome data (LevelDB key tag `0x2b`).
+/// Palette-based per-subchunk biome data (`LevelDB` key tag `0x2b`).
 ///
 /// One [`BiomeEncoding`] fragment per subchunk, ordered bottom to top, each covering that
 /// subchunk's full 16x16x16 volume. A [`BiomeEncoding::Palette`] fragment's packed index
@@ -143,6 +143,12 @@ impl Biomes3d {
     /// empty, and its first entry must not be [`BiomeEncoding::Inherit`]. There is
     /// deliberately no upper bound on `fragments.len()` -- see [`Biomes3d`]'s doc comment
     /// for why a dimension-derived bound would reject real data.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Biomes3dError::Empty`] if `fragments` is empty, or
+    /// [`Biomes3dError::FirstFragmentInherits`] if its first entry is
+    /// [`BiomeEncoding::Inherit`].
     pub fn new(
         heightmap: Box<[u16; COLUMNS]>,
         fragments: SmallVec<[BiomeEncoding; 1]>,
@@ -190,8 +196,8 @@ impl Biomes3d {
         fragment_count: NonZeroUsize,
     ) -> Biomes3d {
         let ids = biomes.ids();
-        let first_id = ids[0] as u32;
-        let uniform = ids.iter().all(|&id| id as u32 == first_id);
+        let first_id = u32::from(ids[0]);
+        let uniform = ids.iter().all(|&id| u32::from(id) == first_id);
 
         let bottom = if uniform {
             BiomeEncoding::Single(first_id)
@@ -273,6 +279,11 @@ impl Biomes3d {
         HEIGHTMAP_SIZE + self.fragments.len() * std::mem::size_of::<BiomeEncoding>()
     }
 
+    /// Writes this record in the `0x2b` on-disk layout.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -295,7 +306,7 @@ impl Biomes3d {
         for fragment in &self.fragments {
             match fragment {
                 BiomeEncoding::Inherit => {
-                    writer.write_u8((INHERIT_FLAG << 1) | BIOME_HEADER_LOW_BIT)?
+                    writer.write_u8((INHERIT_FLAG << 1) | BIOME_HEADER_LOW_BIT)?;
                 }
                 BiomeEncoding::Single(v) => {
                     writer.write_u8((EMPTY_FLAG << 1) | BIOME_HEADER_LOW_BIT)?;
@@ -313,7 +324,12 @@ impl Biomes3d {
                     packed[0] |= BIOME_HEADER_LOW_BIT;
                     writer.write_all(&packed)?;
 
-                    writer.write_u32::<LittleEndian>(v.palette.len() as u32)?;
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "a biome palette holds at most 4096 entries"
+                    )]
+                    let palette_len = v.palette.len() as u32;
+                    writer.write_u32::<LittleEndian>(palette_len)?;
 
                     for entry in &v.palette {
                         writer.write_u32::<LittleEndian>(*entry)?;
@@ -325,6 +341,14 @@ impl Biomes3d {
         Ok(())
     }
 
+    /// Reads a record in the `0x2b` on-disk layout. The fragment list ends where `reader`
+    /// runs out while reading a fragment's header or packed indices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `reader` ends inside the heightmap, a palette or a single biome
+    /// id, if a fragment header names a bit size that is not valid, or if reading from
+    /// `reader` fails for a reason other than running out of data.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes3d>
     where
         Cursor<R>: Read,
@@ -363,7 +387,7 @@ impl Biomes3d {
                 }
                 IndicesType::Empty => {
                     let single = reader.read_u32::<LittleEndian>()?;
-                    fragments.push(BiomeEncoding::Single(single))
+                    fragments.push(BiomeEncoding::Single(single));
                 }
                 IndicesType::Inherit => fragments.push(BiomeEncoding::Inherit),
             }
@@ -387,14 +411,16 @@ fn column_biome_array(ids: &[u8; COLUMNS]) -> BiomeArray {
 
     for x in 0..16usize {
         for z in 0..16usize {
-            let id = ids[z * 16 + x] as u32;
-            let palette_index = match palette.iter().position(|&v| v == id) {
-                Some(i) => i,
-                None => {
-                    palette.push(id);
-                    palette.len() - 1
-                }
-            } as u16;
+            let id = u32::from(ids[z * 16 + x]);
+            let palette_index = palette.iter().position(|&v| v == id).unwrap_or_else(|| {
+                palette.push(id);
+                palette.len() - 1
+            });
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "the palette holds at most one entry per column, so at most 256"
+            )]
+            let palette_index = palette_index as u16;
 
             for y in 0..16usize {
                 indices[256 * x + 16 * z + y] = palette_index;
@@ -436,6 +462,11 @@ impl Biomes2d {
         COLUMNS
     }
 
+    /// Writes the per-column biome ids.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -445,6 +476,11 @@ impl Biomes2d {
         Ok(())
     }
 
+    /// Reads the per-column biome ids.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `reader` holds fewer than 256 bytes.
     pub fn from_disk<R>(reader: &mut Cursor<R>) -> Result<Biomes2d>
     where
         Cursor<R>: Read,
@@ -479,6 +515,11 @@ impl Biomes {
         }
     }
 
+    /// Writes the biome data in its own on-disk layout.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -492,6 +533,10 @@ impl Biomes {
     /// Decodes the palette-based `0x2b` layout. Column biomes (`0x2d`) are
     /// read through [`Biomes2d::from_disk`], since that record is paired
     /// with a heightmap of a different layout entirely.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error under the same conditions as [`Biomes3d::from_disk`].
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<Biomes>
     where
         Cursor<R>: Read,
@@ -518,8 +563,8 @@ mod tests {
 
     fn sample_2d() -> Biomes2d {
         let mut ids = Box::new([0u8; COLUMNS]);
-        for (i, id) in ids.iter_mut().enumerate() {
-            *id = (i % 256) as u8;
+        for (id, value) in ids.iter_mut().zip((0..=u8::MAX).cycle()) {
+            *id = value;
         }
         Biomes2d { ids }
     }

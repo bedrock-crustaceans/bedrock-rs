@@ -486,13 +486,14 @@ mod tests {
 
     fn deterministic_array(bits: u8) -> GreedyArray {
         let max = if bits == 16 {
-            u16::MAX as u32
+            u16::MAX
         } else {
-            (1u32 << bits) - 1
+            (1u16 << bits) - 1
         };
         let mut array = Box::new([0u16; 4096]);
-        for (i, slot) in array.iter_mut().enumerate() {
-            *slot = (i as u32 % (max + 1)) as u16;
+        // `max + 1` is a power of two, so masking with `max` is `% (max + 1)`.
+        for (i, slot) in (0u16..).zip(array.iter_mut()) {
+            *slot = i & max;
         }
         GreedyArray::from(array)
     }
@@ -504,7 +505,7 @@ mod tests {
             let array = deterministic_array(bits);
 
             let mut buf = Cursor::new(Vec::new());
-            array.to_disk(&mut buf, bits as u32).unwrap();
+            array.to_disk(&mut buf, u32::from(bits)).unwrap();
             let bytes = buf.into_inner();
 
             assert_eq!(
@@ -524,14 +525,14 @@ mod tests {
             let array = deterministic_array(bits);
 
             let mut first = Cursor::new(Vec::new());
-            array.to_disk(&mut first, bits as u32).unwrap();
+            array.to_disk(&mut first, u32::from(bits)).unwrap();
             let first_bytes = first.into_inner();
 
             let decoded =
                 GreedyArray::from_disk(&mut Cursor::new(first_bytes.as_slice()), bits).unwrap();
 
             let mut second = Cursor::new(Vec::new());
-            decoded.to_disk(&mut second, bits as u32).unwrap();
+            decoded.to_disk(&mut second, u32::from(bits)).unwrap();
             let second_bytes = second.into_inner();
 
             assert_eq!(
@@ -547,21 +548,29 @@ mod tests {
     #[test]
     fn trailing_slot_garbage_is_ignored_on_decode() {
         for bits in [3u8, 5, 6] {
-            let per_word = u32::BITS / bits as u32;
+            let per_word = u32::BITS / u32::from(bits);
             let word_count = expected_word_count(bits);
             let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
 
             let mut words = vec![0u32; word_count];
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
             let tail_values: Vec<u16> = (0..used_in_last_word as u16)
                 .map(|i| i % (1 << bits))
                 .collect();
 
             let mut last_word = 0u32;
-            for (i, &v) in tail_values.iter().enumerate() {
-                last_word |= (v as u32) << (i as u32 * bits as u32);
+            for (i, &v) in (0u32..).zip(&tail_values) {
+                last_word |= u32::from(v) << (i * u32::from(bits));
             }
             // Poison every bit past the slots actually used in the last word.
-            let used_bits = used_in_last_word as u32 * bits as u32;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let used_bits = used_in_last_word as u32 * u32::from(bits);
             last_word |= u32::MAX << used_bits;
             words[word_count - 1] = last_word;
 
@@ -582,25 +591,29 @@ mod tests {
     #[test]
     fn encode_zero_fills_the_padded_final_word() {
         for bits in [3u8, 5, 6] {
-            let per_word = u32::BITS / bits as u32;
+            let per_word = u32::BITS / u32::from(bits);
             let word_count = expected_word_count(bits);
             let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
 
             let mut array = Box::new([0u16; 4096]);
             // Max value that fits, so any bit that should be zero but isn't would show up.
-            for slot in array[4096 - used_in_last_word..].iter_mut() {
+            for slot in &mut array[4096 - used_in_last_word..] {
                 *slot = (1u16 << bits) - 1;
             }
             let array = GreedyArray::from(array);
 
             let mut buf = Cursor::new(Vec::new());
-            array.to_disk(&mut buf, bits as u32).unwrap();
+            array.to_disk(&mut buf, u32::from(bits)).unwrap();
             let bytes = buf.into_inner();
 
             let last_word_bytes = &bytes[(word_count - 1) * 4..word_count * 4];
             let last_word = u32::from_le_bytes(last_word_bytes.try_into().unwrap());
 
-            let used_bits = used_in_last_word as u32 * bits as u32;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let used_bits = used_in_last_word as u32 * u32::from(bits);
             assert_eq!(
                 last_word & (u32::MAX << used_bits),
                 0,

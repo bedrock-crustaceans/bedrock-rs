@@ -1,6 +1,7 @@
 use crate::bits::VALID_BITS;
 use crate::error::Result;
 use crate::greedy::GreedyArray;
+use std::cmp::Ordering;
 use std::io::{Cursor, Read, Write};
 use std::iter::FusedIterator;
 
@@ -49,16 +50,26 @@ impl LazyArray {
             return None;
         }
 
-        let blocks_per_word = 32 / self.bits as u32;
+        let blocks_per_word = 32 / u32::from(self.bits);
         let mask = !(!0u32 << self.bits);
 
-        let word_index = index as u32 % blocks_per_word;
-        let array_index = index as u32 / blocks_per_word;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "index is below 4096, checked above"
+        )]
+        let index = index as u32;
+        let word_index = index % blocks_per_word;
+        let array_index = index / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let shift = self.bits as u32 * word_index;
+        let shift = u32::from(self.bits) * word_index;
 
-        Some(((word >> shift) & mask) as u16)
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the mask is at most 16 bits wide, the largest valid bit size"
+        )]
+        let value = ((word >> shift) & mask) as u16;
+        Some(value)
     }
 
     /// Unpacks and then packs the array to use the new bit size. The indices will saturate if the bit size is too small for the array.
@@ -68,23 +79,19 @@ impl LazyArray {
         // Ensure the bit size is valid.
         bits = VALID_BITS
             .iter()
-            .find_map(|&b| {
-                if b == bits {
-                    // If the requested size is valid, leave it unchanged.
-                    Some(bits)
-                } else if b > bits {
-                    // If the requested bit size was not found, take the first one larger than it.
-                    Some(b)
-                } else {
-                    None
-                }
+            .find_map(|&b| match b.cmp(&bits) {
+                // If the requested size is valid, leave it unchanged.
+                Ordering::Equal => Some(bits),
+                // If the requested bit size was not found, take the first one larger than it.
+                Ordering::Greater => Some(b),
+                Ordering::Less => None,
             })
             .unwrap_or(16); // Clamp the bit size to at most 16.
 
         // Unpack the whole array and repack it again
         let greedy = GreedyArray::unpack(self.words(), self.bits);
 
-        let blocks_per_word = 32u32 / bits as u32;
+        let blocks_per_word = 32u32 / u32::from(bits);
         // `div_ceil`, not `/`: bit sizes that do not divide 32 evenly (3, 5, 6) need one
         // extra, partially-filled word to hold all 4096 indices.
         let total_words = 4096u32.div_ceil(blocks_per_word) as usize;
@@ -108,6 +115,10 @@ impl LazyArray {
 
         // The amount of bits required to store the given value. This is not necessarily a
         // valid bit size. `ilog2` panics on 0, and 0 needs no bits at all to represent.
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "the base-2 logarithm of a u16 is at most 15"
+        )]
         let required_bits = if value == 0 {
             0
         } else {
@@ -118,32 +129,42 @@ impl LazyArray {
             self.repack(required_bits);
         }
 
-        let blocks_per_word = 32 / self.bits as u32;
+        let blocks_per_word = 32 / u32::from(self.bits);
         let base_mask = !(!0u32 << self.bits);
 
-        let word_index = index as u32 % blocks_per_word;
-        let array_index = index as u32 / blocks_per_word;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "index is below 4096, checked above"
+        )]
+        let index = index as u32;
+        let word_index = index % blocks_per_word;
+        let array_index = index / blocks_per_word;
         let word = self.words[array_index as usize];
 
-        let mask = base_mask << (self.bits as u32 * word_index);
+        let mask = base_mask << (u32::from(self.bits) * word_index);
 
         // Zero all bits in the location
         let zeroed = word & !mask;
         // Clamp value to correct amount of bits
-        let clamped = value as u32 & base_mask;
+        let clamped = u32::from(value) & base_mask;
         // Then set the zeroed bits to the clamped value
-        let set = zeroed | (clamped << (self.bits as u32 * word_index));
+        let set = zeroed | (clamped << (u32::from(self.bits) * word_index));
 
         self.words[array_index as usize] = set;
 
         true
     }
 
+    /// Reads the packed words of an array with `bits` bits per index.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `reader` ends before every packed word has been read.
     pub fn from_disk<R>(reader: &mut Cursor<R>, bits: u8) -> Result<Self>
     where
         Cursor<R>: Read,
     {
-        let per_word = u32::BITS / bits as u32;
+        let per_word = u32::BITS / u32::from(bits);
         let word_count = 4096u32.div_ceil(per_word);
 
         let mut words = vec![0; word_count as usize];
@@ -152,6 +173,11 @@ impl LazyArray {
         Ok(Self { bits, words })
     }
 
+    /// Writes the packed words of this array.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>) -> Result<()>
     where
         Cursor<W>: Write,
@@ -169,7 +195,7 @@ pub struct LazyArrayIter<'a> {
     array: &'a LazyArray,
 }
 
-impl<'a> Iterator for LazyArrayIter<'a> {
+impl Iterator for LazyArrayIter<'_> {
     type Item = u16;
 
     fn next(&mut self) -> Option<u16> {
@@ -184,9 +210,9 @@ impl<'a> Iterator for LazyArrayIter<'a> {
     }
 }
 
-impl<'a> FusedIterator for LazyArrayIter<'a> {}
+impl FusedIterator for LazyArrayIter<'_> {}
 
-impl<'a> ExactSizeIterator for LazyArrayIter<'a> {
+impl ExactSizeIterator for LazyArrayIter<'_> {
     fn len(&self) -> usize {
         4096 - self.index
     }
@@ -214,11 +240,12 @@ mod tests {
 
     fn deterministic_values(bits: u8) -> Vec<u16> {
         let max = if bits == 16 {
-            u16::MAX as u32
+            u16::MAX
         } else {
-            (1u32 << bits) - 1
+            (1u16 << bits) - 1
         };
-        (0..4096u32).map(|i| (i % (max + 1)) as u16).collect()
+        // `max + 1` is a power of two, so masking with `max` is `% (max + 1)`.
+        (0..4096u16).map(|i| i & max).collect()
     }
 
     fn build(bits: u8, values: &[u16]) -> LazyArray {
@@ -302,7 +329,7 @@ mod tests {
     #[test]
     fn repack_zero_fills_the_padded_final_word() {
         for bits in [3u8, 5, 6] {
-            let per_word = 32u32 / bits as u32;
+            let per_word = 32u32 / u32::from(bits);
             let word_count = expected_word_count(bits);
             let used_in_last_word = 4096 - (word_count - 1) * per_word as usize;
 
@@ -313,7 +340,11 @@ mod tests {
             array.repack(bits);
 
             let last_word = array.words()[word_count - 1];
-            let used_bits = used_in_last_word as u32 * bits as u32;
+            #[expect(
+                clippy::cast_possible_truncation,
+                reason = "a word holds at most 32 indices"
+            )]
+            let used_bits = used_in_last_word as u32 * u32::from(bits);
             assert_eq!(
                 last_word & (u32::MAX << used_bits),
                 0,

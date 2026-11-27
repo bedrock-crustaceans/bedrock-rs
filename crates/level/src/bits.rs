@@ -19,7 +19,7 @@ pub const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 /// cannot drift apart from each other or from the packing code itself.
 #[cfg(test)]
 pub(crate) fn expected_word_count(bits: u8) -> usize {
-    let per_word = u32::BITS / bits as u32;
+    let per_word = u32::BITS / u32::from(bits);
     4096u32.div_ceil(per_word) as usize
 }
 
@@ -120,6 +120,11 @@ impl BitArray {
     }
 
     /// Deserializes an array from disk format.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidBitSize`] if the header names a bit size that is not valid, or an
+    /// I/O error if `reader` ends before the header or the packed words have been read.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
     where
         Cursor<R>: Read,
@@ -136,6 +141,10 @@ impl BitArray {
     ///
     /// [`BitArray::Empty`] writes only the header byte: a zero bits-per-index layer carries
     /// no packed words on disk, regardless of `palette_size`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if writing to `writer` fails.
     pub fn to_disk<W>(&self, writer: &mut Cursor<W>, palette_size: usize) -> Result<()>
     where
         Cursor<W>: Write,
@@ -152,17 +161,17 @@ impl BitArray {
         // for, and it would not match what the game itself writes for the same palette.
         let bits = VALID_BITS
             .into_iter()
-            .find(|&b| 2usize.pow(b as u32) >= palette_size)
+            .find(|&b| 2usize.pow(u32::from(b)) >= palette_size)
             .unwrap_or(16);
 
         writer.write_u8(bits << 1)?;
 
         match self {
-            BitArray::Greedy(array) => array.to_disk(writer, bits as u32),
+            BitArray::Greedy(array) => array.to_disk(writer, u32::from(bits)),
             // A lazy array keeps whatever width it was read or repacked at, which can be wider
             // than the header just written; only its own words are valid when the widths match.
             BitArray::Lazy(array) if array.bits() == bits => array.to_disk(writer),
-            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, bits as u32),
+            BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, u32::from(bits)),
             BitArray::Empty => unreachable!("handled above"),
         }
     }

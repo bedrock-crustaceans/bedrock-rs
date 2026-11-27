@@ -91,6 +91,10 @@ impl ChunkBlockPosition {
     /// position local to that subchunk.
     fn split(self) -> (i32, BlockPosition) {
         let subchunk = self.y.div_euclid(16);
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "`rem_euclid(16)` is in `0..16`"
+        )]
         let local_y = self.y.rem_euclid(16) as u8;
         (subchunk, BlockPosition(self.x, local_y, self.z))
     }
@@ -111,7 +115,7 @@ impl From<(u8, i32, u8)> for ChunkBlockPosition {
 /// to reproduce, rather than to model two different kinds of block data.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Terrain {
-    /// `0x30` LegacyTerrain: one record for the whole column. `None` if the
+    /// `0x30` `LegacyTerrain`: one record for the whole column. `None` if the
     /// chunk's format profile calls for this shape but no such record was
     /// actually present (an otherwise-empty chunk stub). The present case is
     /// boxed: a `LegacyTerrain` is over 900 bytes (eight full [`Layer`]s
@@ -362,10 +366,10 @@ fn resolve_retarget(
 
     RetargetDecision {
         achieved: candidate,
-        retarget: if candidate != source {
-            RetargetOutcome::SameFamily
-        } else {
+        retarget: if candidate == source {
             RetargetOutcome::Unretargeted
+        } else {
+            RetargetOutcome::SameFamily
         },
         shortfall,
     }
@@ -464,17 +468,29 @@ impl Chunk {
     /// `0x2c`/`0x76` version keys, `digp`, `0x32`, and every record this
     /// crate has no decoder for -- stays in it untouched, which is what
     /// [`Chunk::unmodelled_records`] returns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the `digp` digest is malformed, if an actor record it names
+    /// cannot be read from `db` or is not valid NBT, if the legacy `0x32` entity record is
+    /// not valid NBT, or if a terrain (`0x30`/`0x2f`) or biome (`0x2b`/`0x2d`) record fails
+    /// to decode.
+    ///
+    /// # Panics
+    ///
+    /// Does not panic: the `unreachable!` and `expect` in the subchunk loop guard keys
+    /// that were filtered to subchunk records and observed present a line earlier.
     pub fn decode(mut records: ChunkRecords, db: &Database) -> Result<Self> {
         let position = records.position();
         let dimension = records.dimension();
 
-        let version_0x2c = records
+        let chunk_version_0x2c = records
             .get(KeyVariant::ChunkVersion)
             .and_then(|bytes| bytes.first().copied());
-        let version_0x76 = records
+        let legacy_version_0x76 = records
             .get(KeyVariant::LegacyVersion)
             .and_then(|bytes| bytes.first().copied());
-        let source_version = DecodeVersion::select(version_0x2c, version_0x76);
+        let source_version = DecodeVersion::select(chunk_version_0x2c, legacy_version_0x76);
         let format = source_version.format_profile();
         let chunk_version = source_version.chunk_version();
 
@@ -780,8 +796,12 @@ impl Chunk {
     /// Phase 5 TODO entry) to know whether this chunk's own version is one
     /// the digest scheme applies to -- that judgment stays the caller's.
     ///
-    /// Errors (without mutating anything) if `keys` does not yield exactly
-    /// one key per legacy entity; on success, returns the number migrated.
+    /// On success, returns the number migrated.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`], without mutating anything, if `keys` does not yield
+    /// exactly one key per legacy entity.
     pub fn migrate_legacy_entities(
         &mut self,
         keys: impl IntoIterator<Item = ActorStorageKey>,
@@ -821,6 +841,10 @@ impl Chunk {
     /// actors will not actually reach disk (`digp` will point at records
     /// that were never written, or stop pointing at ones that were never
     /// deleted).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an added or changed actor's value cannot be encoded as NBT.
     pub fn encode_actor_writes(&self) -> Result<ActorWriteSet> {
         self.actors.write_plan(&self.actor_digest_at_decode)
     }
@@ -856,7 +880,7 @@ impl Chunk {
     /// # Scope: `Terrain::SubChunks` only
     ///
     /// Only [`Terrain::SubChunks`] terrain is walked. A [`Terrain::Legacy`] chunk (chunk
-    /// versions 0-2, `0x30` LegacyTerrain) is left untouched: those chunks predate
+    /// versions 0-2, `0x30` `LegacyTerrain`) is left untouched: those chunks predate
     /// flattening entirely, so every one of their entries is already
     /// [`PaletteEntry::Numeric`], and correctly upgrading them needs the same
     /// [`ContentProvider::numeric_block_state`] lookup this pass already applies to a
@@ -893,16 +917,20 @@ impl Chunk {
         for (&subchunk_index, subchunk) in subchunks.iter_mut() {
             let mut layer_index = 0usize;
             while let Some(layer) = subchunk.get_layer_mut(layer_index) {
-                let count = layer.palette().len();
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "palette indices are stored as u16, so a layer's palette never exceeds u16 range"
+                )]
+                let count = layer.palette().len() as u16;
                 for palette_index in 0..count {
-                    let outcome = layer.update_palette_entry(palette_index as u16, |entry| {
+                    let outcome = layer.update_palette_entry(palette_index, |entry| {
                         upgrade_one_entry(entry, provider, target)
                     });
                     report.push_entry(
                         EntryLocation {
                             subchunk: subchunk_index,
                             layer: layer_index,
-                            palette_index: palette_index as u16,
+                            palette_index,
                         },
                         outcome,
                     );
@@ -992,7 +1020,7 @@ impl Chunk {
             return flagged;
         };
 
-        for (&subchunk_index, subchunk) in subchunks.iter() {
+        for (&subchunk_index, subchunk) in subchunks {
             let Some(layer) = subchunk.get_layer(0) else {
                 continue;
             };
@@ -1005,7 +1033,7 @@ impl Chunk {
                     continue;
                 };
                 if provider.needs_neighbours(block) {
-                    let absolute_y = (subchunk_index as i32) * 16 + local.1 as i32;
+                    let absolute_y = i32::from(subchunk_index) * 16 + i32::from(local.1);
                     flagged.push((
                         ChunkBlockPosition::new(local.0, absolute_y, local.2),
                         block.clone(),
@@ -1020,6 +1048,12 @@ impl Chunk {
     /// Encodes this chunk back to its own [`Chunk::position`]/
     /// [`Chunk::dimension`], at its own [`Chunk::chunk_version`] (no retarget). Equivalent
     /// to `self.encode_at(self.position(), self.dimension())`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a non-paletted subchunk or the `0x30` legacy terrain holds a
+    /// block that does not resolve to a [`PaletteEntry::Numeric`] entry: those layouts can
+    /// only store raw id/data pairs.
     pub fn encode(&self) -> Result<ChunkRecords> {
         self.encode_at(self.position, self.dimension)
     }
@@ -1031,6 +1065,12 @@ impl Chunk {
     /// [`StructuralWriteReport`] discarded -- see [`Chunk::encode_as`] for the version-stamp
     /// and record-layout details this shares with it, and for the retargeting form of this
     /// call.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a non-paletted subchunk or the `0x30` legacy terrain holds a
+    /// block that does not resolve to a [`PaletteEntry::Numeric`] entry: those layouts can
+    /// only store raw id/data pairs.
     pub fn encode_at(&self, position: ChunkPosition, dimension: Dimension) -> Result<ChunkRecords> {
         self.encode_as(position, dimension, self.chunk_version())
             .map(|(records, _report)| records)
@@ -1148,6 +1188,16 @@ impl Chunk {
     ///   terrain or biome content to decode that stamp against; an
     ///   `Unversioned` chunk with neither stays exactly as versionless on
     ///   the way out as it was on the way in.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if a non-paletted subchunk or the `0x30` legacy terrain holds a
+    /// block that does not resolve to a [`PaletteEntry::Numeric`] entry: those layouts can
+    /// only store raw id/data pairs.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one linear pass writing each record kind in turn; most of the length is the per-step rationale"
+    )]
     pub fn encode_as(
         &self,
         position: ChunkPosition,
@@ -1181,7 +1231,7 @@ impl Chunk {
             self.records.clone()
         } else {
             let mut fresh = ChunkRecords::new(position, dimension);
-            for (key, bytes) in self.records.iter() {
+            for (key, bytes) in &self.records {
                 fresh.insert(
                     Key {
                         chunk: position,
@@ -1374,7 +1424,7 @@ fn promoted_biomes_record(heightmap: &HeightMap, achieved: u8) -> Result<Vec<u8>
     // `0x2d` heights are signed `i16`; `0x2b` heights are unsigned `u16`. `as u16` on a
     // same-width integer is a bit-preserving reinterpretation, not a value conversion --
     // the promoted record's heightmap bytes equal the source's exactly.
-    let heights: Box<[u16; COLUMNS]> = Box::new((*heightmap.heights()).map(|h| h as u16));
+    let heights: Box<[u16; COLUMNS]> = Box::new((*heightmap.heights()).map(i16::cast_unsigned));
     let volumes = Biomes3d::from_columns(heights, heightmap.biomes(), fragment_count_for(achieved));
     let mut out = Cursor::new(Vec::new());
     volumes.to_disk(&mut out)?;
@@ -1390,14 +1440,19 @@ fn neighbour_block(
     pos: ChunkBlockPosition,
     offset: RelativeOffset,
 ) -> Option<&BlockDef> {
-    let x = pos.x as i32 + offset.dx;
-    let z = pos.z as i32 + offset.dz;
+    let x = i32::from(pos.x) + offset.dx;
+    let z = i32::from(pos.z) + offset.dz;
     let y = pos.y + offset.dy;
 
     if !(0..16).contains(&x) || !(0..16).contains(&z) {
         return None;
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "`x` and `z` were just checked to be in `0..16`"
+    )]
     let neighbour = ChunkBlockPosition::new(x as u8, y, z as u8);
     chunk.block(neighbour).and_then(PaletteEntry::as_block)
 }
@@ -1684,7 +1739,13 @@ mod tests {
         // Build a synthetic `0x2d` payload by hand (heights, then one biome id per column)
         // and decode it into a `HeightMap`, the same shape `Chunk::decode` hands
         // `promoted_biomes_record` in practice.
+        #[expect(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            reason = "a column index is below 256"
+        )]
         let heights: [i16; COLUMNS] = std::array::from_fn(|i| (i as i16) * 3 - 128);
+        #[expect(clippy::cast_possible_truncation, reason = "reduced below 7 first")]
         let biome_ids: [u8; COLUMNS] = std::array::from_fn(|i| (i % 7) as u8);
         let mut payload = Vec::new();
         for h in heights {
@@ -1703,14 +1764,12 @@ mod tests {
             fragment_count_for(achieved).get()
         );
         for (i, &h) in heights.iter().enumerate() {
-            assert_eq!(volumes.heightmap()[i], h as u16, "column {i}");
+            assert_eq!(volumes.heightmap()[i], h.cast_unsigned(), "column {i}");
         }
-        for z in 0..16usize {
-            for x in 0..16usize {
-                let expected = biome_ids[z * 16 + x] as u32;
-                let actual = volumes
-                    .biome_at(0, BlockPosition(x as u8, 0, z as u8))
-                    .unwrap();
+        for z in 0..16u8 {
+            for x in 0..16u8 {
+                let expected = u32::from(biome_ids[usize::from(z) * 16 + usize::from(x)]);
+                let actual = volumes.biome_at(0, BlockPosition(x, 0, z)).unwrap();
                 assert_eq!(actual, expected, "column ({x}, {z})");
             }
         }
@@ -1736,7 +1795,7 @@ mod tests {
             block: BlockDef {
                 name: name.to_string(),
                 version: None,
-                states: Default::default(),
+                states: indexmap::IndexMap::default(),
             },
             version,
         }
@@ -1799,8 +1858,7 @@ mod tests {
                     );
                     ContextResolution::Resolved(resolved)
                 }
-                Some(_) => ContextResolution::NoEntry(state),
-                None => ContextResolution::NoEntry(state),
+                Some(_) | None => ContextResolution::NoEntry(state),
             }
         }
 
@@ -1829,9 +1887,9 @@ mod tests {
     /// compound, no index array at all -- see `Layer::from_disk`'s doc comment). Starting
     /// from this and growing the palette through the public [`Layer::set`] afterward avoids
     /// hand-packing a bit-indexed array by hand.
-    fn chunk_with_one_entry(entry: nbtx::Value) -> Chunk {
+    fn chunk_with_one_entry(entry: &nbtx::Value) -> Chunk {
         let mut bytes = vec![SubChunkVersion::Legacy.raw(), 0u8];
-        bytes.extend(nbtx::to_le_bytes(&entry).unwrap());
+        bytes.extend(nbtx::to_le_bytes(entry).unwrap());
         let subchunk =
             SubChunk::from_disk::<crate::Greedy, _>(&mut Cursor::new(bytes.as_slice())).unwrap();
 
@@ -1844,7 +1902,7 @@ mod tests {
 
     #[test]
     fn upgrade_content_resolves_legacy_and_continues_toward_target() {
-        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+        let mut chunk = chunk_with_one_entry(&nbtx::Value::Compound(nbtx::Compound::from_iter([
             ("name".into(), nbtx::Value::String("legacy:wood".into())),
             ("val".into(), nbtx::Value::Short(0)),
         ])));
@@ -1865,7 +1923,7 @@ mod tests {
 
     #[test]
     fn upgrade_content_leaves_an_unrecognized_legacy_entry_unconverted() {
-        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+        let mut chunk = chunk_with_one_entry(&nbtx::Value::Compound(nbtx::Compound::from_iter([
             ("name".into(), nbtx::Value::String("legacy:unknown".into())),
             ("val".into(), nbtx::Value::Short(0)),
         ])));
@@ -1883,7 +1941,7 @@ mod tests {
 
     #[test]
     fn upgrade_content_reports_malformed_and_leaves_the_entry_unchanged() {
-        let mut chunk = chunk_with_one_entry(modern_entry_nbt("malformed:entry", Some(1)));
+        let mut chunk = chunk_with_one_entry(&modern_entry_nbt("malformed:entry", Some(1)));
 
         let report = chunk.upgrade_content(&TestProvider, 5).clone();
         let (_, outcome) = report.entries().next().unwrap();
@@ -1895,7 +1953,7 @@ mod tests {
                     UnconvertedReason::Malformed("bad state".to_string())
                 );
             }
-            other => panic!("expected Unconverted, got {other:?}"),
+            other @ EntryOutcome::Converted(_) => panic!("expected Unconverted, got {other:?}"),
         }
 
         let entry = chunk.layer(0, 0).unwrap().palette().first().unwrap();
@@ -1913,7 +1971,7 @@ mod tests {
     #[test]
     fn upgrade_content_legacy_resolution_then_malformed_schema_step_keeps_progress_but_reports_unconverted()
      {
-        let mut chunk = chunk_with_one_entry(nbtx::Value::Compound(nbtx::Compound::from_iter([
+        let mut chunk = chunk_with_one_entry(&nbtx::Value::Compound(nbtx::Compound::from_iter([
             (
                 "name".into(),
                 nbtx::Value::String("legacy:malformed".into()),
@@ -1931,7 +1989,7 @@ mod tests {
                     UnconvertedReason::Malformed("bad state".to_string())
                 );
             }
-            other => panic!("expected Unconverted, got {other:?}"),
+            other @ EntryOutcome::Converted(_) => panic!("expected Unconverted, got {other:?}"),
         }
 
         // The palette slot itself did move: legacy resolution succeeded and is kept,
@@ -1950,7 +2008,7 @@ mod tests {
 
     #[test]
     fn upgrade_content_stamps_a_stampless_modern_entry_from_the_nbt_blockstate_floor() {
-        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", None));
+        let mut chunk = chunk_with_one_entry(&modern_entry_nbt("minecraft:stone", None));
 
         chunk.upgrade_content(&TestProvider, EARLIEST_BLOCK_STATE_VERSION + 1);
 
@@ -1963,7 +2021,7 @@ mod tests {
 
     #[test]
     fn upgrade_content_leaves_an_already_target_entry_untouched_and_uncalled() {
-        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(42)));
+        let mut chunk = chunk_with_one_entry(&modern_entry_nbt("minecraft:stone", Some(42)));
 
         let report = chunk.upgrade_content(&TestProvider, 10).clone();
         let (_, outcome) = report.entries().next().unwrap();
@@ -1974,7 +2032,7 @@ mod tests {
 
     #[test]
     fn achieved_block_state_version_is_the_minimum_across_entries() {
-        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(1)));
+        let mut chunk = chunk_with_one_entry(&modern_entry_nbt("minecraft:stone", Some(1)));
         if let Terrain::SubChunks(subchunks) = chunk.terrain_mut() {
             let layer = subchunks.get_mut(&0).unwrap().get_layer_mut(0).unwrap();
             layer.set(
@@ -1982,7 +2040,7 @@ mod tests {
                 BlockDef {
                     name: "legacy:unknown".to_string(),
                     version: None,
-                    states: Default::default(),
+                    states: indexmap::IndexMap::default(),
                 },
             );
         }
@@ -2003,7 +2061,7 @@ mod tests {
 
     #[test]
     fn neighbour_pass_resolves_from_a_same_chunk_neighbour_above() {
-        let mut chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:oak_stairs", Some(1)));
+        let mut chunk = chunk_with_one_entry(&modern_entry_nbt("minecraft:oak_stairs", Some(1)));
         if let Terrain::SubChunks(subchunks) = chunk.terrain_mut() {
             let layer = subchunks.get_mut(&0).unwrap().get_layer_mut(0).unwrap();
             // Every position defaults to the stairs entry (index 0); place air directly
@@ -2013,7 +2071,7 @@ mod tests {
                 BlockDef {
                     name: "minecraft:air".to_string(),
                     version: Some(1),
-                    states: Default::default(),
+                    states: indexmap::IndexMap::default(),
                 },
             );
         }
@@ -2050,7 +2108,7 @@ mod tests {
 
     #[test]
     fn no_provider_pass_leaves_content_upgrade_absent() {
-        let chunk = chunk_with_one_entry(modern_entry_nbt("minecraft:stone", Some(1)));
+        let chunk = chunk_with_one_entry(&modern_entry_nbt("minecraft:stone", Some(1)));
         assert!(chunk.content_upgrade().is_none());
         assert_eq!(chunk.achieved_block_state_version(), None);
     }
