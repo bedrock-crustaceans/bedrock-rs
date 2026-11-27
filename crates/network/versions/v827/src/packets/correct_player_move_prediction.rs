@@ -10,9 +10,9 @@ pub struct CorrectPlayerMovePredictionPacket<V: ProtoVersion> {
     #[endianness(le)]
     pub velocity: (f32, f32, f32),
     #[endianness(le)]
-    rotation: (f32, f32),
+    pub rotation: (f32, f32),
     #[endianness(le)]
-    vehicle_angular_velocity: Option<f32>,
+    pub vehicle_angular_velocity: Option<f32>,
     pub on_ground: bool,
     #[endianness(var)]
     pub tick: u64,
