@@ -38,3 +38,12 @@ fn biomes_for_version_reports_none_for_a_block_only_version() {
     // over that by falling back to a neighbouring table.
     assert!(biome::biomes_for_version(1, 20, 10).is_none());
 }
+
+#[test]
+fn biomes_for_version_covers_v1_26_50_and_v1_26_60() {
+    for (minor, patch) in [(26, 50), (26, 60)] {
+        let table = biome::biomes_for_version(1, minor, patch)
+            .unwrap_or_else(|| panic!("v1.{minor}.{patch} should be generated"));
+        assert_eq!(table.name(0), Some("minecraft:ocean"));
+    }
+}

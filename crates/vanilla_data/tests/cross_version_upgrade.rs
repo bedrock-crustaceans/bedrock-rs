@@ -32,9 +32,11 @@ const V1_20_10: i32 = BlockDef::pack_version([1, 20, 10, 0]);
 const V1_21_0: i32 = BlockDef::pack_version([1, 21, 0, 0]);
 const V1_21_60: i32 = BlockDef::pack_version([1, 21, 60, 0]);
 const V1_26_40: i32 = BlockDef::pack_version([1, 26, 40, 0]);
+const V1_26_50: i32 = BlockDef::pack_version([1, 26, 50, 0]);
+const V1_26_60: i32 = BlockDef::pack_version([1, 26, 60, 0]);
 
 /// `minecraft:acacia_fence` is a real block that persists, unchanged, across every one
-/// of the six pinned versions -- confirmed directly against the vendored dumps, not
+/// of the eight pinned versions -- confirmed directly against the vendored dumps, not
 /// assumed. A full-range walk should reach the target exactly.
 #[test]
 fn walks_the_full_pinned_range_when_the_block_persists_throughout() {
@@ -145,5 +147,21 @@ fn no_entry_when_neither_version_is_pinned() {
     match provider.upgrade_block_state(original.clone(), unpinned_a, unpinned_b) {
         StateUpgrade::NoEntry(returned) => assert_eq!(returned, original),
         other => panic!("expected NoEntry, got {other:?}"),
+    }
+}
+
+/// The ladder continues past `v1.26.40.05`: a block that persists walks on to the newest
+/// pinned stable release, one step per adjacent pair of pinned versions.
+#[test]
+fn walks_on_through_v1_26_50_to_v1_26_60() {
+    let provider = VanillaContent;
+    for target in [V1_26_50, V1_26_60] {
+        match provider.upgrade_block_state(state("minecraft:acacia_fence"), V1_26_40, target) {
+            StateUpgrade::Upgraded(upgraded) => {
+                assert_eq!(upgraded.version, target);
+                assert_eq!(upgraded.block.name, "minecraft:acacia_fence");
+            }
+            other => panic!("expected Upgraded, got {other:?}"),
+        }
     }
 }
