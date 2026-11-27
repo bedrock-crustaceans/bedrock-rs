@@ -2475,6 +2475,29 @@ fn a_tuple_struct_tells_its_shape_under_its_own_codes() {
     );
 }
 
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = ordered_span)]
+struct Span2(u8, u8);
+
+/// Tells a span whose bounds are the wrong way round, at the array.
+fn ordered_span(span: &mut Span2, node: &Node<'_>, read: &mut Read<'_>) {
+    use crate::diagnostic::{Diagnostic, codes};
+    if span.0 > span.1 {
+        read.push(Diagnostic::info(&codes::INVALID_VALUE).at(node.path().clone()));
+    }
+}
+
+/// A tuple struct's `schema::after_read` runs over the value read from the array, at the array.
+#[test]
+fn a_tuple_struct_runs_its_after_read_at_its_array() {
+    let (value, told) = as_read::<Span2>("[1, 2]");
+    assert!(told.is_empty(), "{told:?}");
+    assert_eq!(value, Some(Span2(1, 2)));
+    let (value, told) = as_read::<Span2>("[3, 2]");
+    assert_eq!(value, Some(Span2(3, 2)));
+    assert_eq!(told, ["Info root core/invalid_value"]);
+}
+
 /// A member the writer writes and no file holds (geometry's `__legacy` side-car).
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct WrittenOnly {
@@ -2661,4 +2684,88 @@ fn a_scope_field_is_what_the_reads_after_it_see() {
         "the inner table's default"
     );
     assert_eq!(value.loose, Loudness(-1.0), "no table is in scope after it");
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Jukebox {
+    #[facet(default)]
+    volume: f64,
+    #[facet(default)]
+    tracks: IndexMap<String, String>,
+    shelf: Option<Box<Jukebox>>,
+}
+
+/// Under `MemberOrder::Named` a struct reads its members in declaration order and a map its
+/// entries in key-byte order; under `Objects::Fork` a value that is no object reads as one with
+/// no members, told nothing: the game's jsoncpp fork.
+#[test]
+fn a_jsoncpp_fork_read_iterates_maps_in_key_order_and_reads_a_scalar_as_no_members() {
+    use crate::json::kit::{MemberOrder, Objects};
+    let fork = Profile::DECLARED_ORDER
+        .with_members(MemberOrder::Named)
+        .with_objects(Objects::Fork);
+    let text = r#"{"tracks": {"b": "2", "B": "1", "a": "0"}, "shelf": [1], "volume": 2}"#;
+    let reading = Reading::OWN.with_scalars(Scalars::Fork);
+    let (value, told) = read_as::<Jukebox>(text, reading, fork);
+    assert!(told.is_empty(), "{told:?}");
+    let value = value.expect("read");
+    let keys: Vec<&str> = value.tracks.keys().map(String::as_str).collect();
+    assert_eq!(keys, ["B", "a", "b"]);
+    assert!((value.volume - 2.0).abs() < f64::EPSILON);
+    let shelf = value.shelf.expect("an array reads as no members");
+    assert!(shelf.tracks.is_empty() && shelf.shelf.is_none());
+    // Declared order without the fork: the array is a wrong type.
+    let (_, told) = read_as::<Jukebox>(text, reading, Profile::DECLARED_ORDER);
+    assert_eq!(told, ["Error root/shelf core/invalid_type"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = noted)]
+struct Middle {
+    #[facet(default)]
+    middle: String,
+}
+
+/// Tells that `Middle` was read, where its rule runs.
+fn noted(_: &mut Middle, node: &Node<'_>, read: &mut Read<'_>) {
+    use crate::diagnostic::{Diagnostic, codes};
+    read.push(Diagnostic::info(&codes::INVALID_VALUE).at(node.path().child("noted")));
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Sandwich {
+    #[facet(default)]
+    first: String,
+    #[facet(flatten)]
+    inner: Middle,
+    #[facet(default)]
+    last: String,
+}
+
+/// A read in declaration order reads a flattened struct where its owner declares it, and runs
+/// the struct's `after_read` there; a read in file order reads it after the owner's members.
+#[test]
+fn a_flattened_struct_is_read_where_it_is_declared_with_its_rule() {
+    let text = r#"{"last": 3, "middle": 2, "first": 1}"#;
+    let reading = Reading::OWN.with_scalars(Scalars::Fork);
+    let (_, told) = read_as::<Sandwich>(text, reading, Profile::DECLARED_ORDER);
+    assert_eq!(
+        told,
+        [
+            "Info root/first core/invalid_value",
+            "Info root/middle core/invalid_value",
+            "Info root/noted core/invalid_value",
+            "Info root/last core/invalid_value",
+        ]
+    );
+    let (_, told) = read_as::<Sandwich>(text, reading, Profile::EVERY_FAILURE);
+    assert_eq!(
+        told,
+        [
+            "Info root/last core/invalid_value",
+            "Info root/first core/invalid_value",
+            "Info root/middle core/invalid_value",
+            "Info root/noted core/invalid_value",
+        ]
+    );
 }

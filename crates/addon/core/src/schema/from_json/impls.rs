@@ -486,7 +486,7 @@ fn map_entries<K: MapKey, V>(
         });
     let mut held = Vec::new();
     let mut failed = false;
-    for (name, member) in read.ordered(&members) {
+    for (name, member) in read.ordered_entries(&members) {
         if read.stopped() {
             return None;
         }

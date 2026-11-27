@@ -768,6 +768,7 @@ fn fields_body(
     rule: Option<&String>,
     quiet: &[String],
     after_members: Option<&syn::Expr>,
+    after_read: Option<&TokenStream>,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -798,8 +799,10 @@ fn fields_body(
                 let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
                     ::core::option::Option::None;
             });
+            let place = flat_place(info);
             flat_arms.push(quote_spanned! {ty.span()=>
-                _ if ::core::option::Option::Some(__key) == <#ty as #fields_trait>::TAG => {
+                _ if ::core::option::Option::Some(__key) == <#ty as #fields_trait>::TAG
+                    || (<#ty as #fields_trait>::TAG.is_none() && __key == #place) => {
                     if #slot.is_none() {
                         #slot = ::core::option::Option::Some(
                             <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
@@ -916,7 +919,9 @@ fn fields_body(
             if !__ok {
                 return ::core::option::Option::None;
             }
-            ::core::option::Option::Some(#build)
+            let mut __value = ::core::option::Option::Some(#build);
+            #after_read
+            __value
         },
         Some(rule) => {
             // The value is built and its rule run before the unknown members told after the
@@ -973,7 +978,9 @@ fn fields_body(
                 if !__object.settle(__read) {
                     return ::core::option::Option::None;
                 }
-                __built
+                let mut __value = __built;
+                #after_read
+                __value
             }
         }
     };
@@ -1035,8 +1042,10 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
     let names = own()
         .flat_map(|info| {
             if info.inline {
-                let ty = info.ty;
-                return vec![quote_spanned!(ty.span()=> #reader::tag_name(<#ty as #fields>::TAG))];
+                let (ty, place) = (info.ty, flat_place(info));
+                return vec![
+                    quote_spanned!(ty.span()=> #reader::flat_name(<#ty as #fields>::TAG, #place)),
+                ];
             }
             json_names(info)
                 .into_iter()
@@ -1055,6 +1064,12 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
     (names, gates)
 }
 
+/// The name a read in declaration order asks for a flattened field by where its owner declares
+/// it, when it has no tag: no member of a JSON object has it.
+fn flat_place(info: &FieldInfo<'_>) -> String {
+    format!("\u{0}{}", info.rust)
+}
+
 /// The type parameters a struct flattens: they share its object, so they are read as `Fields`.
 fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
     infos
@@ -1067,12 +1082,14 @@ fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
         .collect()
 }
 
-/// The call of the struct's `schema::after_read` rule on the value just read, if it has one.
-fn after_read(container: &ContainerAttrs) -> Option<TokenStream> {
+/// The call of the struct's `schema::after_read` rule on the value just read, if it has one,
+/// with `node`, the value as written: a struct's object where it is read (its owner's when it
+/// is flattened), a tuple struct's array.
+fn after_read(container: &ContainerAttrs, node: &TokenStream) -> Option<TokenStream> {
     let (after, _) = container.after_read.as_ref()?;
     Some(quote! {
         if let ::core::option::Option::Some(__built) = &mut __value {
-            (#after)(__built, __node, __read);
+            (#after)(__built, #node, __read);
         }
     })
 }
@@ -1174,7 +1191,7 @@ pub(super) fn struct_read(
             }
         }
     });
-    let after_read = after_read(container);
+    let after_read = after_read(container, &quote!(__object.node()));
     let body = fields_body(
         &quote!(#ident),
         fields,
@@ -1182,6 +1199,7 @@ pub(super) fn struct_read(
         container.unknown.as_ref(),
         &container.quiet,
         container.after_members.as_ref().map(|(rule, _)| rule),
+        after_read.as_ref(),
     );
     quote! {
         #[automatically_derived]
@@ -1191,14 +1209,13 @@ pub(super) fn struct_read(
 
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 let __object = #object::open(__node, __read)?;
-                let mut __value = <Self as #fields_trait>::read_fields(
+                let __value = <Self as #fields_trait>::read_fields(
                     &__object,
                     __read,
                     true,
                     ::core::option::Option::None,
                 );
                 __object.close(__read);
-                #after_read
                 __value
             }
         }
@@ -1368,7 +1385,7 @@ pub(super) fn tuple_read(
             quote!(#value?)
         }
     });
-    let after_read = after_read(container);
+    let after_read = after_read(container, &quote!(__node));
     quote! {
         #[automatically_derived]
         #from_json_impl {
@@ -1469,6 +1486,7 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         variant.fields,
         variant.unknown.as_ref(),
         &[],
+        None,
         None,
     );
     quote! {

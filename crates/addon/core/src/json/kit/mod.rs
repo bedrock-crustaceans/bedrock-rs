@@ -722,6 +722,10 @@ pub enum Objects {
     /// ([`FromJson::from_json`](crate::schema::FromJson::from_json)): a leaf that returns `None`
     /// silently is a defect, and a debug build panics on it.
     Tree,
+    /// As [`Members`](Self::Members), and a value that is no object is read as an object with
+    /// no members, told nothing: the const `operator[]` of the game's jsoncpp fork, which
+    /// gives `null` for every member of a scalar or an array (the sound files' readers).
+    Fork,
 }
 
 /// How a member's name is compared with the names a struct declares and the prefix of a key
@@ -798,6 +802,18 @@ pub enum MemberOrder {
     /// order: a reader that walks jsoncpp's `std::map` (the server's `secrets.json`, whose
     /// warnings come in the names' byte order) of a document the crate writes back as written.
     SortedInPlace,
+    /// As the struct declares its fields, and a map's entries in the sorted order of the keys'
+    /// bytes: a jsoncpp reader that asks for each member by name and iterates an object, which
+    /// its `std::map` holds in key order (the sound files' readers). Unknown members stay in
+    /// file order.
+    Named,
+}
+
+impl MemberOrder {
+    /// Whether a struct's members are read in declaration order.
+    pub(crate) fn declared(self) -> bool {
+        matches!(self, Self::Declaration | Self::Named)
+    }
 }
 
 /// Where a struct tells the unknown members of its object ([`Profile::unknown`]), each in file
@@ -1879,8 +1895,23 @@ impl<'d> Read<'d> {
         self.respelled.push((node.path.clone(), node.span()));
     }
 
-    /// The members of `members` in the order the profile reads them: the file's, or the sorted
-    /// order of their keys ([`MemberOrder::Sorted`], [`MemberOrder::SortedInPlace`]).
+    /// The entries of the map `members` in the order the profile reads them: the file's, or
+    /// the sorted order of their keys' bytes ([`MemberOrder::Sorted`],
+    /// [`MemberOrder::SortedInPlace`], [`MemberOrder::Named`]).
+    pub fn ordered_entries<'v>(&self, members: &Members<'v>) -> Vec<(&'v str, Node<'v>)> {
+        let mut out: Vec<(&'v str, Node<'v>)> = members.iter().collect();
+        if matches!(
+            self.profile.members,
+            MemberOrder::Sorted | MemberOrder::SortedInPlace | MemberOrder::Named
+        ) {
+            out.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+        }
+        out
+    }
+
+    /// The members of `members` in the order the profile reads a struct's members in: the
+    /// file's, or the sorted order of their keys ([`MemberOrder::Sorted`],
+    /// [`MemberOrder::SortedInPlace`]).
     pub fn ordered<'m, 'v>(&self, members: &'m Members<'v>) -> Vec<(&'v str, Node<'v>)> {
         let mut out: Vec<(&'v str, Node<'v>)> = members.iter().collect();
         if matches!(
@@ -2133,7 +2164,15 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error minecraft:block/description wrong JSON type"]);
     /// ```
     pub fn object<'v>(&mut self, node: &Node<'v>) -> Option<Members<'v>> {
-        let Some(object) = node.value.as_object() else {
+        /// The object of no members a value that is no object is read as under [`Objects::Fork`].
+        static NO_MEMBERS: std::sync::LazyLock<Value> =
+            std::sync::LazyLock::new(|| Value::from(VObject::new()));
+        let fork = self.profile.objects == Objects::Fork;
+        let Some(object) = node
+            .value
+            .as_object()
+            .or_else(|| NO_MEMBERS.as_object().filter(|_| fork))
+        else {
             self.wrong_kind(node, Expected::Object);
             return None;
         };

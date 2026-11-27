@@ -16,9 +16,7 @@ use crate::json::NULL_MEMBER_READ_AS_ABSENT;
 use crate::json::Token;
 use crate::json::arms::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::json::kit::Mark;
-use crate::json::kit::{
-    Elements, Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
-};
+use crate::json::kit::{Elements, Expected, Members, Names, Node, Objects, Pass, Read, UnknownAt};
 use crate::schema::UnknownRule;
 use crate::version::FormatVersion;
 use crate::versioning::NullHandling;
@@ -329,7 +327,7 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
     let profile = read.telling();
     match profile.unknown {
         UnknownAt::First => (true, false),
-        UnknownAt::WhereMet => (false, profile.members != MemberOrder::Declaration),
+        UnknownAt::WhereMet => (false, !profile.members.declared()),
         UnknownAt::Last => (false, false),
     }
 }
@@ -338,12 +336,16 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
 /// `field` reads one (`true` when it is one of the struct's, a flattened struct's or the tag; the
 /// member is `None` where a read in declaration order asks for one the object lacks),
 /// `unknown_member` tells and keeps one no field takes (when `unknown`: a flattened struct's
-/// are its owner's to tell). In [`MemberOrder::File`] each member is read where the file has
-/// it; in [`MemberOrder::Declaration`] the struct's names ([`Declared`]) are looked up one by
-/// one. The unknown members are told, each in file order, before
+/// are its owner's to tell). In file order ([`MemberOrder::File`]) each member is read where
+/// the file has it; in declaration order ([`MemberOrder::Declaration`], [`MemberOrder::Named`])
+/// the struct's names ([`Declared`]) are looked up one by one. The unknown members are told, each in file order, before
 /// ([`UnknownAt::First`]) or among ([`UnknownAt::WhereMet`], file order) the members; the ones
 /// told after them are [`read_unknown_last`]'s, so that the struct can keep what it could not
 /// read first. Nothing more is read once the read has stopped.
+///
+/// [`MemberOrder::File`]: crate::json::kit::MemberOrder::File
+/// [`MemberOrder::Declaration`]: crate::json::kit::MemberOrder::Declaration
+/// [`MemberOrder::Named`]: crate::json::kit::MemberOrder::Named
 ///
 /// A member read from a later format version than the document's (`schema::since_format`) is
 /// no member of the struct in that document: an unknown one.
@@ -356,7 +358,7 @@ pub fn read_members<K: Fn(&str) -> bool>(
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
     let profile = read.telling();
-    let in_file_order = profile.members != MemberOrder::Declaration;
+    let in_file_order = !profile.members.declared();
     let (first, among) = unknown_placement(read);
     let members = read.ordered(&object.members);
     if unknown && first {
@@ -395,8 +397,8 @@ pub fn read_members<K: Fn(&str) -> bool>(
             }
         }
     } else {
-        // An empty name stands for a flattened struct, which is read after the members.
-        for name in declared.names.iter().filter(|name| !name.is_empty()) {
+        // A flattened struct is asked for by its place (`flat_name`), where it is declared.
+        for name in declared.names {
             if read.stopped() {
                 return;
             }
@@ -1149,13 +1151,15 @@ pub fn variant_of(
     name
 }
 
-/// The member name a struct that flattens a type with this `tag` is read at (an empty one for a
-/// type with none): where its variant is read, among the members of the struct.
+/// The member name a struct that flattens a type with this `tag` is read at, among the members of
+/// the struct: where its variant is read; for a type with none `place`, which no member of an
+/// object has, so that a read in declaration order reads the flattened struct where its owner
+/// declares it.
 #[must_use]
-pub const fn tag_name(tag: Option<&'static str>) -> &'static str {
+pub const fn flat_name(tag: Option<&'static str>, place: &'static str) -> &'static str {
     match tag {
         Some(tag) => tag,
-        None => "",
+        None => place,
     }
 }
 
