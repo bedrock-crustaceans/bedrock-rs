@@ -196,7 +196,7 @@ fn run_java_oracle(config: &OracleConfig, jar: &Path, ours: &[String], ours_leve
 /// The three position-paired checks a plain substring rule could not make
 /// safely narrow (see the doc comment above `java_expected_differences`).
 /// Each one re-derives the specific claim its class makes from the two
-/// dumps (and, for the jungle_door check, a second decode pass restricted
+/// dumps (and, for the `jungle_door` check, a second decode pass restricted
 /// to the one field -- `BlockDef::version` -- that check needs and the
 /// main dump deliberately omits) rather than matching on content alone, so
 /// a divergence in the same block name or record type that does *not* fit
@@ -330,7 +330,7 @@ fn apply_paired_rules(
     }
 }
 
-/// Position-paired half of the kelp_age normalization: explains an
+/// Position-paired half of the `kelp_age` normalization: explains an
 /// ours-only kelp `BLOCK` line only when the oracle has a `BLOCK` line for
 /// the exact same position whose content is the normalized
 /// `minecraft:kelp;kelp_age=Int(25)` -- the specific, verified
@@ -363,10 +363,10 @@ fn explain_kelp_pairing(
     }
 }
 
-/// Region-paired half of the kelp_age normalization for `PALETTE` lines:
+/// Region-paired half of the `kelp_age` normalization for `PALETTE` lines:
 /// the same phenomenon [`explain_kelp_pairing`] explains at the `BLOCK`
 /// level also empties a subchunk's palette down to the single normalized
-/// `kelp_age=25` entry, which turns every *other* kelp_age this crate's
+/// `kelp_age=25` entry, which turns every *other* `kelp_age` this crate's
 /// own palette for that subchunk still carries (each one genuinely
 /// referenced by a real block, so [`explain_palette_orphan`] correctly
 /// declines to touch them) into its own PALETTE-only divergence. Explains
@@ -400,15 +400,15 @@ fn explain_kelp_palette_pairing(
     }
 }
 
-/// Position-paired jungle_door check, both directions: explains a
-/// jungle_door `BLOCK` line only when (a) the other side has a jungle_door
+/// Position-paired `jungle_door` check, both directions: explains a
+/// `jungle_door` `BLOCK` line only when (a) the other side has a `jungle_door`
 /// `BLOCK` line at the exact same position (so the divergence is confined
 /// to that block's own properties -- direction/hinge/open bits are the
-/// only properties a jungle_door ever carries, so a shared block name at a
+/// only properties a `jungle_door` ever carries, so a shared block name at a
 /// shared position already confines the diff to them) and (b) a second,
 /// version-only decode pass confirms the exact verified stamp transition
 /// at that position: `17825808` on this crate's side, `17876992` on the
-/// oracle's. A jungle_door divergence missing either condition -- no paired
+/// oracle's. A `jungle_door` divergence missing either condition -- no paired
 /// door at that position, or a version pair other than the verified one --
 /// surfaces instead of being explained.
 fn explain_jungle_door_pairing(
@@ -448,16 +448,16 @@ fn explain_jungle_door_pairing(
     }
 }
 
-/// Region-paired half of the jungle_door check, for `PALETTE` lines: the
+/// Region-paired half of the `jungle_door` check, for `PALETTE` lines: the
 /// same neighbour re-resolution [`explain_jungle_door_pairing`] explains
 /// at the `BLOCK` level also changes which hinge/direction/open-bit
-/// combinations appear in a subchunk's palette at all, so a jungle_door
+/// combinations appear in a subchunk's palette at all, so a `jungle_door`
 /// `PALETTE` entry this crate has can go missing from the oracle's palette
-/// (or vice versa) even though every jungle_door *position* in that
-/// subchunk was already explained. Explains a jungle_door `PALETTE` line
+/// (or vice versa) even though every `jungle_door` *position* in that
+/// subchunk was already explained. Explains a `jungle_door` `PALETTE` line
 /// only when its own subchunk/layer region is one where the position-level
 /// check above actually confirmed the verified version transition for at
-/// least one door -- not merely "some jungle_door exists on both sides
+/// least one door -- not merely "some `jungle_door` exists on both sides
 /// somewhere in this region", which would be the name-only rule a review
 /// already rejected once.
 fn explain_jungle_door_palette_pairing(

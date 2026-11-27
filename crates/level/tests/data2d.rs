@@ -69,8 +69,8 @@ fn decodes_and_round_trips_every_record() {
             // subchunks actually span, with one block of slack below the
             // floor for an all-air column.
             if let Some([min, max]) = fixture.subchunk_height_range.get(&dim_name) {
-                for &h in decoded.heights().iter() {
-                    let h = h as i32;
+                for &h in decoded.heights() {
+                    let h = i32::from(h);
                     assert!(
                         h >= *min - 1 && h <= *max,
                         "{}: chunk {:?}: heightmap value {h} outside dimension range {min}-1..={max}",

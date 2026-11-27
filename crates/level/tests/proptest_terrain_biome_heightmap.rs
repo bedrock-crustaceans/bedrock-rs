@@ -1,4 +1,4 @@
-//! Round-trip and malformed-input property tests for `0x30` LegacyTerrain,
+//! Round-trip and malformed-input property tests for `0x30` `LegacyTerrain`,
 //! `0x2b` Biomes3d, the `0x2d` HeightMap/Biomes2d pair
 //! (`crates/level/src/legacy_terrain.rs`, `biome.rs`, `height_map.rs`).
 

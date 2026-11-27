@@ -1,5 +1,5 @@
 //! `crate::hardcoded_spawn_areas` against real fixture worlds: byte-identical
-//! round trips for every real `0x39` HardcodedSpawnAreas record the corpus
+//! round trips for every real `0x39` `HardcodedSpawnAreas` record the corpus
 //! contains.
 
 mod support;
@@ -21,7 +21,7 @@ fn fixture_named(name: &str) -> Fixture {
         .unwrap_or_else(|| panic!("{name} fixture is part of the checked-in fixture set"))
 }
 
-/// All `0x39` HardcodedSpawnAreas values found in `db`, in scan order.
+/// All `0x39` `HardcodedSpawnAreas` values found in `db`, in scan order.
 fn scan_hardcoded_spawn_areas(db: &Database) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     let mut keys = db.keys().expect("iterate database");

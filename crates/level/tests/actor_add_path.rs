@@ -247,8 +247,8 @@ fn allocating_two_ids_gives_the_same_session_and_sequential_low_words() {
     let second = session.next_unique_id().unwrap();
 
     assert_ne!(first, second);
-    assert_eq!(first >> 32, session.session() as i64);
-    assert_eq!(second >> 32, session.session() as i64);
+    assert_eq!(first >> 32, i64::from(session.session()));
+    assert_eq!(second >> 32, i64::from(session.session()));
     assert_eq!(first as i32, 1, "first allocated low word must be 1, not 0");
     assert_eq!(second as i32, 2);
 }
@@ -299,7 +299,7 @@ fn add_new_round_trips_through_put_chunk_and_reopen() {
 
     // The expected UniqueID is the session's first allocated low word (1),
     // since this is the first `add_new` call on this session.
-    let expected_unique_id = ((claimed_session as i64) << 32) | 1;
+    let expected_unique_id = (i64::from(claimed_session) << 32) | 1;
     assert_eq!(
         storage_key,
         bedrock_level::actor::derive_storage_key(expected_unique_id, true)

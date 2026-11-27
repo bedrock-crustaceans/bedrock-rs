@@ -182,11 +182,11 @@ pub fn diff(
 
     let mut blocks_removed: Vec<String> = prev_names
         .difference(&next_names)
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .collect();
     let mut blocks_added: Vec<String> = next_names
         .difference(&prev_names)
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .collect();
 
     let mut step_renames = Vec::new();
@@ -245,10 +245,14 @@ pub fn diff(
             .expect("name came from next's own block set");
         let pprops: BTreeSet<&str> = pb.properties.iter().map(String::as_str).collect();
         let nprops: BTreeSet<&str> = nb.properties.iter().map(String::as_str).collect();
-        let properties_added: Vec<String> =
-            nprops.difference(&pprops).map(|s| s.to_string()).collect();
-        let properties_removed: Vec<String> =
-            pprops.difference(&nprops).map(|s| s.to_string()).collect();
+        let properties_added: Vec<String> = nprops
+            .difference(&pprops)
+            .map(std::string::ToString::to_string)
+            .collect();
+        let properties_removed: Vec<String> = pprops
+            .difference(&nprops)
+            .map(std::string::ToString::to_string)
+            .collect();
         if !properties_added.is_empty() || !properties_removed.is_empty() {
             block_changes.push(BlockChange {
                 block: name.to_string(),
@@ -343,7 +347,7 @@ mod tests {
                 .into_iter()
                 .map(|(name, props)| BlockSpec {
                     name: name.to_string(),
-                    properties: props.iter().map(|p| p.to_string()).collect(),
+                    properties: props.iter().map(std::string::ToString::to_string).collect(),
                 })
                 .collect(),
         }

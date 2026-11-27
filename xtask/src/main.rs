@@ -70,27 +70,30 @@ fn run_diff_oracle(args: Vec<String>) {
     let mut iter = args.into_iter();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
-            "--work-dir" => match iter.next() {
-                Some(value) => work_dir = Some(PathBuf::from(value)),
-                None => {
+            "--work-dir" => {
+                if let Some(value) = iter.next() {
+                    work_dir = Some(PathBuf::from(value))
+                } else {
                     eprintln!("--work-dir needs a value\n{usage}");
                     process::exit(1);
                 }
-            },
-            "--java-jar" => match iter.next() {
-                Some(value) => java_jar = Some(PathBuf::from(value)),
-                None => {
+            }
+            "--java-jar" => {
+                if let Some(value) = iter.next() {
+                    java_jar = Some(PathBuf::from(value))
+                } else {
                     eprintln!("--java-jar needs a value\n{usage}");
                     process::exit(1);
                 }
-            },
-            "--python-bin" => match iter.next() {
-                Some(value) => python_bin = Some(PathBuf::from(value)),
-                None => {
+            }
+            "--python-bin" => {
+                if let Some(value) = iter.next() {
+                    python_bin = Some(PathBuf::from(value))
+                } else {
                     eprintln!("--python-bin needs a value\n{usage}");
                     process::exit(1);
                 }
-            },
+            }
             "--python-oracle-permission-acknowledged" => {
                 python_oracle_permission_acknowledged = true;
             }

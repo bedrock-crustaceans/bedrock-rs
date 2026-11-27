@@ -20,7 +20,7 @@ pub const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 pub fn minimal_width(palette_size: usize) -> u8 {
     VALID_BITS
         .into_iter()
-        .find(|&b| 2usize.pow(b as u32) >= palette_size)
+        .find(|&b| 2usize.pow(u32::from(b)) >= palette_size)
         .unwrap_or(16)
 }
 
@@ -30,18 +30,18 @@ pub fn minimal_width(palette_size: usize) -> u8 {
 /// (the canonicalization carve-out for widths 3/5/6, whose packed words
 /// don't divide 4096 evenly).
 pub fn pack_indices(indices: &[u16], bits: u8) -> Vec<u8> {
-    let per_word = 32u32 / bits as u32;
+    let per_word = 32u32 / u32::from(bits);
     let word_count = 4096u32.div_ceil(per_word) as usize;
     let mut words = vec![0u32; word_count];
 
     let mut offset = 0usize;
-    for word in words.iter_mut() {
+    for word in &mut words {
         let mut w = 0u32;
         for slot in 0..per_word {
             if offset == indices.len() {
                 break;
             }
-            w |= (indices[offset] as u32) << (slot * bits as u32);
+            w |= u32::from(indices[offset]) << (slot * u32::from(bits));
             offset += 1;
         }
         *word = w;
@@ -61,12 +61,12 @@ pub fn lower_boundary(bits_index: usize) -> usize {
     if bits_index == 0 {
         1
     } else {
-        2usize.pow(VALID_BITS[bits_index - 1] as u32) + 1
+        2usize.pow(u32::from(VALID_BITS[bits_index - 1])) + 1
     }
 }
 
 /// The palette size `VALID_BITS[bits_index]` can address at most (`2^bits`)
 /// -- the upper boundary a width-sweep property checks.
 pub fn upper_boundary(bits_index: usize) -> usize {
-    2usize.pow(VALID_BITS[bits_index] as u32)
+    2usize.pow(u32::from(VALID_BITS[bits_index]))
 }

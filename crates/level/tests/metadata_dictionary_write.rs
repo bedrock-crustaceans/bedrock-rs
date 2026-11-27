@@ -18,7 +18,7 @@
 //! stored NBT bytes (exactly as they sit on disk, and with the trailing
 //! `TAG_End` dropped), of a canonical field subset (`DimensionName` plus
 //! the height-range bounds), and of `DimensionName` alone -- FNV-1a 64,
-//! xxHash64 (seed 0), MurmurHash64A (seed 0), CRC-64/XZ, SipHash-1-3 and
+//! xxHash64 (seed 0), `MurmurHash64A` (seed 0), CRC-64/XZ, SipHash-1-3 and
 //! SipHash-2-4 (zero key), and plain truncation to the first 8 bytes -- each
 //! checked both little- and big-endian. `dictionary_key_candidates_match_no_real_entry`
 //! pins the result: **0 matches out of 23 real entries, for every
@@ -111,7 +111,7 @@ fn all_worlds() -> Vec<(String, tempfile::TempDir, Database)> {
 fn fnv1a64(bytes: &[u8]) -> u64 {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in bytes {
-        hash ^= b as u64;
+        hash ^= u64::from(b);
         hash = hash.wrapping_mul(0x100000001b3);
     }
     hash
@@ -184,7 +184,7 @@ fn xxhash64(input: &[u8], seed: u64) -> u64 {
         rem = &rem[8..];
     }
     if rem.len() >= 4 {
-        let k1 = u32::from_le_bytes(rem[0..4].try_into().unwrap()) as u64;
+        let k1 = u64::from(u32::from_le_bytes(rem[0..4].try_into().unwrap()));
         h64 ^= k1.wrapping_mul(PRIME1);
         h64 = h64
             .rotate_left(23)
@@ -193,7 +193,7 @@ fn xxhash64(input: &[u8], seed: u64) -> u64 {
         rem = &rem[4..];
     }
     for &b in rem {
-        h64 ^= (b as u64).wrapping_mul(PRIME5);
+        h64 ^= u64::from(b).wrapping_mul(PRIME5);
         h64 = h64.rotate_left(11).wrapping_mul(PRIME1);
     }
 
@@ -205,7 +205,7 @@ fn xxhash64(input: &[u8], seed: u64) -> u64 {
     h64
 }
 
-/// MurmurHash64A, the standard 64-bit Murmur2 variant, seed given by the
+/// `MurmurHash64A`, the standard 64-bit Murmur2 variant, seed given by the
 /// caller.
 #[allow(clippy::chunks_exact_to_as_chunks)] // fixed-width mixing loops read more clearly as chunks_exact than as_chunks here
 fn murmur2_64a(data: &[u8], seed: u64) -> u64 {
@@ -244,7 +244,7 @@ fn crc64_xz(data: &[u8]) -> u64 {
     const POLY: u64 = 0xC96C5795D7870F42;
     let mut crc: u64 = !0;
     for &b in data {
-        crc ^= b as u64;
+        crc ^= u64::from(b);
         for _ in 0..8 {
             let mask = (crc & 1).wrapping_neg();
             crc = (crc >> 1) ^ (POLY & mask);
@@ -253,7 +253,7 @@ fn crc64_xz(data: &[u8]) -> u64 {
     !crc
 }
 
-/// SipHash with a caller-chosen round count (`c_rounds`/`d_rounds`), so
+/// `SipHash` with a caller-chosen round count (`c_rounds`/`d_rounds`), so
 /// both the standard 2-4 variant and the shorter 1-3 variant can be tried
 /// without depending on the standard library's own (deprecated, 2-4 only)
 /// `SipHasher`.
@@ -296,7 +296,7 @@ fn siphash(data: &[u8], c_rounds: usize, d_rounds: usize, k0: u64, k1: u64) -> u
     let rem = chunks.remainder();
     let mut b = (len as u64) << 56;
     for (i, &byte) in rem.iter().enumerate() {
-        b |= (byte as u64) << (8 * i);
+        b |= u64::from(byte) << (8 * i);
     }
     v3 ^= b;
     for _ in 0..c_rounds {

@@ -1,7 +1,7 @@
 //! Round-trip and malformed-input property tests for the small fixed-shape
-//! and count-prefixed chunk records: `0x38` BorderBlocks, `0x77`
-//! AabbVolumes, `0x3b` Checksums, `0x39` HardcodedSpawnAreas, `0x36`
-//! FinalizedState, and the (not chunk-scoped, but decode/encode-symmetric
+//! and count-prefixed chunk records: `0x38` `BorderBlocks`, `0x77`
+//! `AabbVolumes`, `0x3b` Checksums, `0x39` `HardcodedSpawnAreas`, `0x36`
+//! `FinalizedState`, and the (not chunk-scoped, but decode/encode-symmetric
 //! the same way) `LevelChunkMetaDataDictionary`.
 
 mod support;

@@ -59,9 +59,9 @@ impl PropertyKind {
 /// Reads an NBT integer tag of any width as `i64`, or `None` for a non-integer tag.
 fn as_i64(value: &nbtx::Value) -> Option<i64> {
     match *value {
-        nbtx::Value::Byte(b) => Some(b as i64),
-        nbtx::Value::Short(s) => Some(s as i64),
-        nbtx::Value::Int(i) => Some(i as i64),
+        nbtx::Value::Byte(b) => Some(i64::from(b)),
+        nbtx::Value::Short(s) => Some(i64::from(s)),
+        nbtx::Value::Int(i) => Some(i64::from(i)),
         nbtx::Value::Long(l) => Some(l),
         _ => None,
     }

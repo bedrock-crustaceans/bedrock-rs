@@ -1,5 +1,5 @@
 //! `crate::border_blocks` against real fixture worlds: byte-identical
-//! round trips for every real `0x38` BorderBlocks record the corpus
+//! round trips for every real `0x38` `BorderBlocks` record the corpus
 //! contains, plus the malformed synthetic cases.
 
 mod support;
@@ -19,7 +19,7 @@ fn fixture_named(name: &str) -> Fixture {
         .unwrap_or_else(|| panic!("{name} fixture is part of the checked-in fixture set"))
 }
 
-/// All `0x38` BorderBlocks values found in `db`, in scan order.
+/// All `0x38` `BorderBlocks` values found in `db`, in scan order.
 fn scan_border_blocks(db: &Database) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     let mut keys = db.keys().expect("iterate database");

@@ -189,9 +189,16 @@ pub fn state_versions(
                                 if !names.contains(&block.name.as_str()) {
                                     continue;
                                 }
-                                let y = subchunk_y as i32 * 16 + local_y as i32;
-                                let key =
-                                    position_key(dim_id, cx, cz, x as i32, y, z as i32, layer_idx);
+                                let y = i32::from(subchunk_y) * 16 + i32::from(local_y);
+                                let key = position_key(
+                                    dim_id,
+                                    cx,
+                                    cz,
+                                    i32::from(x),
+                                    y,
+                                    i32::from(z),
+                                    layer_idx,
+                                );
                                 out.insert(key, block.version);
                             }
                         }
@@ -261,7 +268,7 @@ fn dump_layer_positions(
                 let Some(entry) = layer.get(BlockPosition(x, local_y, z)) else {
                     continue;
                 };
-                let y = subchunk_y as i32 * 16 + local_y as i32;
+                let y = i32::from(subchunk_y) * 16 + i32::from(local_y);
                 out.push(format!(
                     "BLOCK\t{dim_id}\t{cx}\t{cz}\t{x}\t{y}\t{z}\t{layer_idx}\t{}",
                     block_key(entry)
@@ -411,9 +418,9 @@ fn nbt_int(value: &nbtx::Value, keys: &[&str]) -> Option<i64> {
     };
     for key in keys {
         match map.get(key.as_bytes() as &[u8]) {
-            Some(nbtx::Value::Int(v)) => return Some(*v as i64),
-            Some(nbtx::Value::Byte(v)) => return Some(*v as i64),
-            Some(nbtx::Value::Short(v)) => return Some(*v as i64),
+            Some(nbtx::Value::Int(v)) => return Some(i64::from(*v)),
+            Some(nbtx::Value::Byte(v)) => return Some(i64::from(*v)),
+            Some(nbtx::Value::Short(v)) => return Some(i64::from(*v)),
             Some(nbtx::Value::Long(v)) => return Some(*v),
             _ => {}
         }
@@ -434,7 +441,7 @@ fn nbt_pos(value: &nbtx::Value) -> Option<(f64, f64, f64)> {
     }
     let get = |v: &nbtx::Value| -> Option<f64> {
         match v {
-            nbtx::Value::Float(f) => Some(*f as f64),
+            nbtx::Value::Float(f) => Some(f64::from(*f)),
             nbtx::Value::Double(d) => Some(*d),
             _ => None,
         }

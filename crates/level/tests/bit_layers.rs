@@ -1,6 +1,6 @@
 //! Evidence for several Phase 1 tasks (see `crates/level/TODO.md`), gathered and pinned
 //! against every fixture world plus the 1.26 seed world (`tests/level.tar.gz`), in
-//! streaming passes over every `0x2f` SubChunk record:
+//! streaming passes over every `0x2f` `SubChunk` record:
 //!
 //! - The `0x00` bit-array header (zero bits per index): confirms the on-disk layout is
 //!   "header byte, then exactly one NBT compound -- no palette-length word, no index
@@ -82,9 +82,9 @@ fn layer_headers(value: &[u8]) -> Vec<u8> {
             continue;
         }
 
-        let per_word = 32u32 / bits as u32;
+        let per_word = 32u32 / u32::from(bits);
         let word_count = 4096u32.div_ceil(per_word);
-        if r.seek_relative(word_count as i64 * 4).is_err() {
+        if r.seek_relative(i64::from(word_count) * 4).is_err() {
             return headers;
         }
         let Ok(len) = r.read_u32::<byteorder::LittleEndian>() else {
@@ -259,7 +259,7 @@ fn minimal_bits(palette_size: usize) -> u8 {
     const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
     VALID_BITS
         .into_iter()
-        .find(|&b| 2usize.pow(b as u32) >= palette_size)
+        .find(|&b| 2usize.pow(u32::from(b)) >= palette_size)
         .unwrap_or(16)
 }
 
@@ -315,10 +315,10 @@ fn for_each_data_layer<F: FnMut(u8, usize, usize)>(value: &[u8], mut on_layer: F
             nbtx::from_le_bytes::<nbtx::Value>(&mut r).ok()?;
             continue;
         }
-        let per_word = 32u32 / bits as u32;
+        let per_word = 32u32 / u32::from(bits);
         let word_count = 4096u32.div_ceil(per_word);
         let index_end = r.position() as usize + (word_count as usize * 4);
-        r.seek_relative(word_count as i64 * 4).ok()?;
+        r.seek_relative(i64::from(word_count) * 4).ok()?;
         let len = r.read_u32::<byteorder::LittleEndian>().ok()?;
         for _ in 0..len {
             nbtx::from_le_bytes::<nbtx::Value>(&mut r).ok()?;

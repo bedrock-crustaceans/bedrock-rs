@@ -1,6 +1,6 @@
 //! `crate::actor::{decode,encode}_actor_digest_version` against real
 //! fixture worlds: byte-identical round trips for every real `0x41`
-//! ActorDigestVersion record the corpus contains, plus the malformed
+//! `ActorDigestVersion` record the corpus contains, plus the malformed
 //! synthetic cases.
 
 mod support;
@@ -38,7 +38,7 @@ fn open_1_26_world() -> (tempfile::TempDir, Database) {
     (tmp, db)
 }
 
-/// All `0x41` ActorDigestVersion values found in `db`, in scan order.
+/// All `0x41` `ActorDigestVersion` values found in `db`, in scan order.
 fn scan_actor_digest_versions(db: &Database) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     let mut keys = db.keys().expect("iterate database");

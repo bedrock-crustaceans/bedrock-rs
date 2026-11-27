@@ -1,4 +1,4 @@
-//! `0x30` LegacyTerrain decode/encode: synthetic round-trips against a hand-built column,
+//! `0x30` `LegacyTerrain` decode/encode: synthetic round-trips against a hand-built column,
 //! since no fixture in the corpus carries this era (the oldest chunk version among the
 //! imported worlds is 15 -- see `crates/level/TODO.md`'s Phase 2 tasks). The established
 //! 49,152-byte region is confirmed by one reference implementation, which actually parses

@@ -430,9 +430,9 @@ fn removing_every_actor_deletes_the_digest_key_entirely() {
 
     let writes = chunk.encode_actor_writes().unwrap();
     let mut deletions = writes.deletions.clone();
-    deletions.sort();
+    deletions.sort_unstable();
     let mut expected = original_keys.clone();
-    expected.sort();
+    expected.sort_unstable();
     assert_eq!(deletions, expected);
 }
 
@@ -466,7 +466,7 @@ fn migrate_legacy_entities_moves_a_real_chunks_0x32_list_into_the_modern_scheme(
     assert!(legacy_count > 0);
     assert!(chunk.actors().digest_keys().is_empty());
 
-    let keys: Vec<ActorStorageKey> = (0..legacy_count as u64).map(|i| i.to_be_bytes()).collect();
+    let keys: Vec<ActorStorageKey> = (0..legacy_count as u64).map(u64::to_be_bytes).collect();
 
     let migrated = chunk.migrate_legacy_entities(keys.clone()).unwrap();
     assert_eq!(migrated, legacy_count);

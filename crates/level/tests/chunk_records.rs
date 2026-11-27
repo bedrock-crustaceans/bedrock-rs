@@ -383,7 +383,7 @@ fn local_player_key_is_excluded_from_every_group() {
     }
 }
 
-/// `0x34` LegacyBlockExtraData and `0x37` ConversionData are recognized
+/// `0x34` `LegacyBlockExtraData` and `0x37` `ConversionData` are recognized
 /// `KeyVariant`s with no payload decode -- absent from the whole corpus, so
 /// nothing above (which is entirely fixture-driven) ever exercises them.
 /// A synthetic record under either tag must still flow into a

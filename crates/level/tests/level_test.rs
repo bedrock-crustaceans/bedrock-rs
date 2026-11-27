@@ -342,13 +342,12 @@ fn read_encode_write_round_trip_preserves_records_byte_for_byte() {
                     ));
                 }
             }
-            if !problems.is_empty() {
-                panic!(
-                    "{}: chunk {position:?}/{dimension:?} did not round-trip byte-identically through a fresh database:\n{}",
-                    fixture.name,
-                    problems.join("\n")
-                );
-            }
+            assert!(
+                problems.is_empty(),
+                "{}: chunk {position:?}/{dimension:?} did not round-trip byte-identically through a fresh database:\n{}",
+                fixture.name,
+                problems.join("\n")
+            );
         }
         checked += 1;
     }
@@ -414,7 +413,7 @@ fn block_accessor_matches_a_direct_subchunk_scan() {
 fn known_observed_exceeds_bounds(fixture_name: &str, dimension: Dimension) -> bool {
     matches!(
         (fixture_name, dimension),
-        ("v1_20_81", Dimension::Overworld) | ("v1_20_81", Dimension::Nether)
+        ("v1_20_81", Dimension::Overworld | Dimension::Nether)
     )
 }
 
@@ -779,7 +778,7 @@ fn remove_chunk_on_read_only_handle_errors_and_does_not_remove() {
 /// [`bedrock_level::error::ChunkError`] carries the position and dimension
 /// alongside the underlying decode error. Fixtures carry no malformed
 /// chunks (they are all real, game-written data), so this synthesizes one
-/// directly: a `0x30` LegacyTerrain record too short to hold the established
+/// directly: a `0x30` `LegacyTerrain` record too short to hold the established
 /// 49,152-byte column, which `Chunk::decode` cannot decode at all --
 /// wired in through a raw `db/` write and a fresh position-index scan
 /// (`Level::open`), rather than through any public chunk-writing API.

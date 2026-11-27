@@ -1,7 +1,7 @@
 //! Pins the behavior of the NBT string codec for the on-disk (little-endian)
 //! format used by block-palette entries, level settings, and actor records.
 //!
-//! Bedrock's on-disk NBT stores TAG_String payloads in a modified UTF-8 form:
+//! Bedrock's on-disk NBT stores `TAG_String` payloads in a modified UTF-8 form:
 //!   - an embedded NUL is written as the overlong two-byte sequence 0xC0 0x80
 //!   - a supplementary-plane scalar (e.g. an emoji) is written as a surrogate
 //!     pair of two three-byte sequences rather than one four-byte sequence
@@ -35,9 +35,9 @@ use bstr::{BStr, BString};
 
 /// Builds a little-endian NBT root compound `{ "s": TAG_String(payload) }`.
 ///
-/// Layout: TAG_Compound(0x0A), u16 root-name length (0), then one field:
-/// TAG_String(0x08), u16 name length, name bytes, u16 payload length,
-/// payload bytes, terminated by TAG_End(0x00).
+/// Layout: `TAG_Compound(0x0A)`, u16 root-name length (0), then one field:
+/// `TAG_String(0x08)`, u16 name length, name bytes, u16 payload length,
+/// payload bytes, terminated by `TAG_End(0x00)`.
 fn root_with_string(payload: &[u8]) -> Vec<u8> {
     let mut b = Vec::new();
     b.push(0x0A);

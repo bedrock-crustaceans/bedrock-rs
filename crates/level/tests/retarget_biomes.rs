@@ -118,7 +118,7 @@ fn assert_promoted_biomes_match_source(
     for subchunk_index in 0..fragment_count {
         for z in 0..16usize {
             for x in 0..16usize {
-                let expected = source.id_at(x, z).unwrap() as u32;
+                let expected = u32::from(source.id_at(x, z).unwrap());
                 let actual = volumes
                     .biome_at(subchunk_index, BlockPosition(x as u8, 0, z as u8))
                     .unwrap_or_else(|| {

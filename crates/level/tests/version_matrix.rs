@@ -187,8 +187,8 @@ struct FixtureSummary {
     /// also synthesize a `0x2c` stamp for a versionless, contentless record
     /// group, but that was a real bug (fixed on `level_chunk.rs`), so an
     /// unearned version key appearing after a round trip is now an ordinary
-    /// mismatch, tracked separately in [`version_stamp_regressions`](Self::
-    /// version_stamp_regressions) below for a clearer failure message than
+    /// mismatch, tracked separately in [`version_stamp_regressions`](`Self::`
+    /// `version_stamp_regressions`) below for a clearer failure message than
     /// the generic mismatch list gives.
     raw_carve_out_padding: usize,
     /// A `0x2c` key present after the round trip where the original record
@@ -333,7 +333,7 @@ fn run_fixture(fixture: &support::Fixture) -> FixtureSummary {
             // its argument and `round_tripped` was already iterated above --
             // the bytes are identical either way.
             let mut round_tripped_records = ChunkRecords::new(position, dimension);
-            for (variant, bytes) in round_tripped.iter() {
+            for (variant, bytes) in &round_tripped {
                 round_tripped_records.insert(
                     bedrock_level::key::Key {
                         chunk: position,

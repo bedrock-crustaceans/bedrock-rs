@@ -200,7 +200,7 @@ fn heightmap_definition_survey() {
         };
         for (&index, _) in subchunks.iter().rev() {
             for local_y in (0..16i32).rev() {
-                let y = index as i32 * 16 + local_y;
+                let y = i32::from(index) * 16 + local_y;
                 let Some(entry) = chunk.block(ChunkBlockPosition::new(x, y, z)) else {
                     continue;
                 };
@@ -218,7 +218,7 @@ fn heightmap_definition_survey() {
 
     for fixture in fixture_names {
         let tmp = tempfile::tempdir().unwrap();
-        let tar_gz_path = format!("../level/tests/fixtures/{}.tar.gz", fixture);
+        let tar_gz_path = format!("../level/tests/fixtures/{fixture}.tar.gz");
         let tar_gz = std::fs::File::open(&tar_gz_path).unwrap();
         let tar = flate2::read::GzDecoder::new(tar_gz);
         tar::Archive::new(tar).unpack(tmp.path()).unwrap();
@@ -242,7 +242,7 @@ fn heightmap_definition_survey() {
         let mut match_minus_min_y = 0usize;
         let mut unresolvable = 0usize;
 
-        let min_y = level.bounds(dimension).map(|r| r.min).unwrap_or(0);
+        let min_y = level.bounds(dimension).map_or(0, |r| r.min);
 
         let mut chunks_visited = 0usize;
         for position in level.chunk_positions(dimension) {

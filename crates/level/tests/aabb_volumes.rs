@@ -1,5 +1,5 @@
 //! `crate::aabb_volumes` against the real fixture world: byte-identical
-//! round trips for every real `0x77` AabbVolumes record the corpus
+//! round trips for every real `0x77` `AabbVolumes` record the corpus
 //! contains, plus the malformed synthetic cases.
 //!
 //! Only one world in the corpus carries this key at all -- the 1.26 world
@@ -29,7 +29,7 @@ fn open_1_26_world() -> (tempfile::TempDir, Database) {
     (tmp, db)
 }
 
-/// All `0x77` AabbVolumes values found in `db`, in scan order.
+/// All `0x77` `AabbVolumes` values found in `db`, in scan order.
 fn scan_aabb_volumes(db: &Database) -> Vec<Vec<u8>> {
     let mut out = Vec::new();
     let mut keys = db.keys().expect("iterate database");

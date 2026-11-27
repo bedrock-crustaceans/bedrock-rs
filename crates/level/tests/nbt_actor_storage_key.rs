@@ -45,7 +45,7 @@ fn storage_key_bytes(component: &nbtx::Compound) -> Option<&[u8]> {
 
 /// Formats bytes as space-separated hex, for failure messages that need to
 /// name a specific record (`actorprefix` records have no chunk position to
-/// print, unlike `fixtures_test.rs`/`data2d.rs`; the LevelDB key is the
+/// print, unlike `fixtures_test.rs`/`data2d.rs`; the `LevelDB` key is the
 /// closest equivalent identifier).
 fn hex(bytes: &[u8]) -> String {
     bytes
@@ -56,7 +56,7 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 /// A real `actorprefix` record whose `StorageKey` string tag is not valid
-/// UTF-8: the record's LevelDB key (to identify it in a failure message),
+/// UTF-8: the record's `LevelDB` key (to identify it in a failure message),
 /// the raw NBT bytes exactly as stored, the decoded
 /// `EntityStorageKeyComponent` compound, and the offending `StorageKey`
 /// bytes.
@@ -110,7 +110,7 @@ fn find_nonutf8_storage_key_record() -> NonUtf8StorageKeyRecord {
 /// The motivating case itself: a real `actorprefix` record whose
 /// `StorageKey` string tag holds eight bytes of raw binary that fail UTF-8
 /// validation. This is what settles the open question in TODO.md -- the
-/// storage key does live in a string tag, inside NBT, not only in LevelDB
+/// storage key does live in a string tag, inside NBT, not only in `LevelDB`
 /// key bytes and `digp` values.
 #[test]
 fn storage_key_is_a_real_nonutf8_string_tag_in_practice() {

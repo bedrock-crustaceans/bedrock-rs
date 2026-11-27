@@ -97,8 +97,7 @@ impl VersionDiff {
         self.renames
             .iter()
             .find(|r| r.from == name)
-            .map(|r| r.to)
-            .unwrap_or(name)
+            .map_or(name, |r| r.to)
     }
 }
 

@@ -145,7 +145,7 @@ fn compound_key_diff(
                 removed.push(format!("{prefix}{key}"));
             }
         }
-        for (key, before_child) in b.iter() {
+        for (key, before_child) in b {
             if let Some(after_child) = a.get(key)
                 && before_child != after_child
             {
@@ -252,7 +252,7 @@ fn written_output_is_globally_key_sorted() {
                 keys, sorted,
                 "{name}: compound at {path:?} is not key-sorted in the written output"
             );
-            for (key, child) in entries.iter() {
+            for (key, child) in entries {
                 assert_sorted(name, &format!("{path}{key}."), child);
             }
         }

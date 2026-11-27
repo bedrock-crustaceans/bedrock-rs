@@ -1,4 +1,4 @@
-//! Round-trip and malformed-input property tests for `0x2f` SubChunk records
+//! Round-trip and malformed-input property tests for `0x2f` `SubChunk` records
 //! (`crates/level/src/subchunk.rs`): every subchunk version (1, the
 //! non-paletted family 0/2-7, 8, 9), every bit width (including the zero-bit
 //! layout) at both unpacking strategies (`Greedy`/`Lazy`), and every palette

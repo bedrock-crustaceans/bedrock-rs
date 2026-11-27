@@ -20,7 +20,7 @@ use bedrock_shared::world::dimension::Dimension;
 /// from each fixture's real level.dat while this table was written): the
 /// three 1.17.x "plain" worlds (`v1_17_20`, `v1_17_40`, `v1_17_40_superflat`)
 /// carry the flag unset and resolve to the legacy range; the 1.17.x
-/// "caves_and_cliffs" pair carries it set and resolves to the extended
+/// "`caves_and_cliffs`" pair carries it set and resolves to the extended
 /// range; every 1.18-and-later fixture resolves to the extended range
 /// regardless of the flag's own on-disk value, including `v1_18_30` and
 /// `v1_19_30`, which carry it unset (1.18 made the extension the default
@@ -81,7 +81,7 @@ fn expected_overworld_nominal() -> HashMap<&'static str, HeightRange> {
 fn known_observed_exceeds_nominal(fixture_name: &str, dimension: Dimension) -> bool {
     matches!(
         (fixture_name, dimension),
-        ("v1_20_81", Dimension::Overworld) | ("v1_20_81", Dimension::Nether)
+        ("v1_20_81", Dimension::Overworld | Dimension::Nether)
     )
 }
 

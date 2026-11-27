@@ -357,7 +357,7 @@ fn reserve_actor_session_id_refuses_to_wrap_past_i32_min() {
     let level_dat = std::fs::read(fixture.level_dat_path(&_tmp)).unwrap();
     let mut settings = LevelSettings::read(level_dat.as_slice()).unwrap();
 
-    settings.world_start_count = (i32::MIN as u32) as i64;
+    settings.world_start_count = i64::from(i32::MIN as u32);
     assert_eq!(settings.next_actor_session_id(), i32::MIN);
 
     let result = settings.reserve_actor_session_id();

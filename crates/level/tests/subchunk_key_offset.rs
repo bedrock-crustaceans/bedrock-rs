@@ -112,7 +112,7 @@ fn subchunk_key_matches_v9_record_index_everywhere() {
                 continue;
             };
             v9_count += 1;
-            let delta = row.key_index as i32 - record_index as i32;
+            let delta = i32::from(row.key_index) - i32::from(record_index);
             if delta != 0 {
                 *mismatches.entry(delta).or_default() += 1;
             }

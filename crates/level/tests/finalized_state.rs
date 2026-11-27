@@ -1,7 +1,7 @@
 //! `crate::finalized_state` against every real fixture world plus the 1.26
 //! seed world (`tests/level.tar.gz`): byte-identical round trips, on-disk
 //! width, and the observed value distribution for every real `0x36`
-//! FinalizedState record the corpus contains.
+//! `FinalizedState` record the corpus contains.
 
 mod support;
 

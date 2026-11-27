@@ -561,7 +561,7 @@ fn dimension_record_mutation_re_encodes_with_the_change_and_decodes_back() {
     };
     dragon_fight.insert(
         "DragonKilled".into(),
-        nbtx::Value::Byte(if was_killed { 0 } else { 1 }),
+        nbtx::Value::Byte(i8::from(!was_killed)),
     );
 
     let re_encoded = flat_records::encode_dimension_record(&record).unwrap();

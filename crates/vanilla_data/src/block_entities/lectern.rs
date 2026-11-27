@@ -50,7 +50,7 @@ impl From<Book> for ItemStack {
 impl TryFrom<ItemStack> for Book {
     type Error = ();
 
-    fn try_from(value: ItemStack) -> Result<Self, Self::Error> {
+    fn try_from(_value: ItemStack) -> Result<Self, Self::Error> {
         todo!()
     }
 }

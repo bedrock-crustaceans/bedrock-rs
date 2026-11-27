@@ -202,7 +202,7 @@ fn typed_accessors_read_real_fields_from_the_1_26_seed_world() {
 
     let mut saw_extended_overworld = false;
     let mut saw_end_range = false;
-    for (_, entry) in dict.iter() {
+    for (_, entry) in &dict {
         match entry.dimension_name() {
             Some("Overworld") => {
                 if let Some(range) = entry.original_dimension_height_range() {

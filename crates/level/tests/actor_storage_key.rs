@@ -111,7 +111,7 @@ fn all_actorprefix_records(db: &Database) -> Vec<RealRecord> {
 }
 
 /// Per-world corpus pin: `(world name, total actorprefix records with a
-/// decodable `UniqueID`, records carrying `internalComponents` [formula
+/// decodable ``UniqueID``, records carrying `internalComponents` [formula
 /// A / embedded-key branch], records without it [formula B])`. Matches the
 /// counts TODO.md's Phase 5 incidental finding and the "Actor storage-key
 /// derivation" task cite: 7,631 + 81 = 7,712 total across all four worlds.
