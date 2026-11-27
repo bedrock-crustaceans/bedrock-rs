@@ -865,3 +865,41 @@ fn a_member_written_as_null_reads_as_absent_and_is_not_written_back() {
     let written = round_trip(document.value(), "spawn_rules/x.json", &context());
     assert!(!written.contains("min_size"), "{written}");
 }
+
+/// The delay and village rules are told as the filter's members are bound, before the crate's
+/// word on the members the game never reads.
+#[test]
+fn s09p_filter_rules_before_unknown_members() {
+    let order = |body: &str| {
+        let (_, _, d) = condition(body);
+        d.iter()
+            .map(|finding| finding.code.id().to_string())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        order(r#""minecraft:delay_filter": {"zz": 0, "min": 4, "max": 2}"#),
+        [
+            "spawn/delay_swapped",
+            "spawn/delay_without_identifier",
+            "core/unrecognized_field",
+        ]
+    );
+    // Between the members, where the game's reader compares them: the swap after `max`, the
+    // missing identifier after `identifier`.
+    assert_eq!(
+        order(
+            r#""minecraft:delay_filter": {"zz": 0, "min": 4, "max": 2, "identifier": 5, "spawn_chance": true}"#
+        ),
+        [
+            "spawn/delay_swapped",
+            "core/invalid_type",
+            "spawn/delay_without_identifier",
+            "core/invalid_type",
+            "core/unrecognized_field",
+        ]
+    );
+    assert_eq!(
+        order(r#""minecraft:player_in_village_filter": {"zz": 0}"#),
+        ["spawn/village_distance_missing", "core/unrecognized_field"]
+    );
+}

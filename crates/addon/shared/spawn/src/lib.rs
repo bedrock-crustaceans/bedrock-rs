@@ -1,5 +1,6 @@
 //! What the `spawn_rules` and `spawn_groups` families share: the 1.8.0 condition and its filters,
-//! the spawn rules a condition gives, the readers of the hand-written parsers, the codes of the
+//! the spawn rules a condition gives, the reader of the game's hand-written parsers (the
+//! identifier first, then the derived reader of the types under the jsoncpp accessors), the codes of the
 //! loaders (`codes`) and the steps of loading one spawn file. A family composes these; the crate depends on
 //! `bedrock_addon_core` and `bedrock_addon_shared_shapes` only.
 //!
@@ -45,7 +46,6 @@ mod type_tests {
     fn public_types_implement_debug() {
         assert_debug::<crate::load::FileLoad<()>>();
         assert_debug::<crate::legacy::Read>();
-        assert_debug::<crate::condition::ReadCx<'static>>();
     }
 
     #[test]

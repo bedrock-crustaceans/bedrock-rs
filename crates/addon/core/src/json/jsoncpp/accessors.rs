@@ -111,6 +111,16 @@ mod tests {
     #[test]
     fn an_integer_keeps_its_low_bits_for_the_width() {
         assert_eq!(
+            read("-2147483648", 32, true),
+            Integer::Fits(i128::from(i32::MIN))
+        );
+        assert_eq!(read("0", 32, false), Integer::Fits(0));
+        assert_eq!(
+            read("4294967295", 32, false),
+            Integer::Fits(i128::from(u32::MAX))
+        );
+        assert_eq!(read("0", 64, false), Integer::Fits(0));
+        assert_eq!(
             read("2147483647", 32, true),
             Integer::Fits(i128::from(i32::MAX))
         );

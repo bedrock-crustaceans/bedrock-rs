@@ -136,7 +136,7 @@ fn a_value_of_the_members_own_type_is_quiet() {
     assert!(told.is_empty(), "{told:?}");
 }
 
-/// The flavour tells at the severity it names (the trade table's legacy reader warns).
+/// The flavour tells at the severity it names.
 #[test]
 fn the_accessors_tell_at_their_severity() {
     let (_, told) = read_accessors::<Coerced>(

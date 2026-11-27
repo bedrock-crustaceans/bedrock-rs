@@ -51,9 +51,9 @@ pub enum Scalars {
     /// that reads a `null` member as absent never asks).
     Lenient,
     /// The jsoncpp accessors as the spawn files' hand parsers read every member (`asInt`,
-    /// `asUInt`, `asInt64`, `asFloat`, `asBool`, `asString`; the trade table's legacy reader
-    /// too): every member is coerced, no token is refused, and the crate tells at the severity
-    /// it carries what the game reads in silence: a value of another JSON type than the
+    /// `asUInt`, `asInt64`, `asFloat`, `asBool`, `asString`): every member is coerced, no
+    /// token is refused, and the crate tells at the severity it carries (the spawn files':
+    /// `Info`) what the game reads in silence: a value of another JSON type than the
     /// member's `INVALID_TYPE` (a real for an integer, truncated and saturating, an `asInt64`
     /// one through 32 bits; a bool 0 or 1; a number for a bool `!= 0`; a bool for a text its
     /// name; anything else the type's zero, a `null` that reaches the read included), an
