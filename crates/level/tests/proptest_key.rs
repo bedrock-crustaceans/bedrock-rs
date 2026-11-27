@@ -125,8 +125,8 @@ proptest! {
 
         if is_offset_window(chunk_version, dimension) {
             // Only fails to round-trip if the forward conversion itself
-            // saturated (source was within 4 of an `i8` bound).
-            if absolute_index >= i8::MIN.saturating_add(4) {
+            // saturated: adding the offset pushed it past `i8::MAX`.
+            if absolute_index <= i8::MAX - 4 {
                 prop_assert_eq!(back, absolute_index);
             }
         } else {
