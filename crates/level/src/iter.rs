@@ -70,6 +70,23 @@ impl<'db> Keys<'db> {
         Some((self.iter.key()?, self.iter.value()?))
     }
 
+    /// The record the iterator stands on: the one the last call to [`next_ref`](Keys::next_ref)
+    /// or [`next`](Iterator::next) returned, or after [`seek`](Keys::seek) the one the next call
+    /// returns. `None` past the last record.
+    pub fn current(&self) -> Option<(&[u8], &[u8])> {
+        Some((self.iter.key()?, self.iter.value()?))
+    }
+
+    /// The error that ended the iteration early, if any. The iterator stops at a record it cannot
+    /// read as if it had reached the last one; this tells the two apart.
+    ///
+    /// # Errors
+    ///
+    /// Returns the read error that stopped the iterator.
+    pub fn status(&self) -> Result<()> {
+        Ok(self.iter.status()?)
+    }
+
     /// Moves to the record the next call returns; `false` past the last one.
     fn step(&mut self) -> bool {
         if std::mem::take(&mut self.sought) {
