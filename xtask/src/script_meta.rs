@@ -28,7 +28,8 @@ use bedrock_addon_family_script::meta::model::script::{
     Class, ClassConstant, ConstValue, Function, Interface, PeerDependency, Property, RawTypeDesc,
 };
 use bedrock_addon_family_script::meta::model::vanilla::{
-    BiomeEntry, BlockEntry, EnchantmentEntry, ItemEntry, NameEntry, VanillaDataFile,
+    BiomeEntry, BlockEntry, BlockPropertyDef, BlockPropertyType, BlockStateValue, EnchantmentEntry,
+    ItemEntry, NameEntry, VanillaDataFile,
 };
 use bedrock_addon_family_script::meta::{
     MetaError, ModuleMetadata, NativeModule, PrivilegeList, TypeDescriptor,
@@ -1115,6 +1116,16 @@ struct VanillaLists {
     features: Vec<String>,
     potion_effects: Vec<String>,
     potion_types: Vec<String>,
+    block_states: Vec<BlockStatesRow>,
+}
+
+/// One block of `mojang-blocks.json` with the value lists of its states.
+#[derive(Debug)]
+struct BlockStatesRow {
+    name: String,
+    raw_id: i32,
+    serialization_id: String,
+    states: Vec<(String, String)>,
 }
 
 /// The strict reader of a vanilla data file with entries `T`
@@ -1214,6 +1225,7 @@ fn read_vanilla_data(samples: &Samples, findings: &mut Findings) -> Option<Vanil
     ) {
         Some(blocks) => {
             check_block_properties(&blocks, findings);
+            lists.block_states = block_state_rows(&blocks);
             lists.blocks = blocks.data_items.into_iter().map(|b| b.name).collect();
             // The blocks the file leaves out, after its own, each once.
             for name in UNLISTED_BLOCKS {
@@ -1252,6 +1264,50 @@ fn read_vanilla_data(samples: &Samples, findings: &mut Findings) -> Option<Vanil
         None => complete = false,
     }
     complete.then_some(lists)
+}
+
+/// The rows of the block-state table, sorted by identifier: each state with the Rust text of
+/// its `BlockStateValues`.
+fn block_state_rows(blocks: &VanillaDataFile<BlockEntry>) -> Vec<BlockStatesRow> {
+    let definitions = blocks.block_properties.as_deref().unwrap_or_default();
+    let mut rows: Vec<BlockStatesRow> = blocks
+        .data_items
+        .iter()
+        .map(|block| BlockStatesRow {
+            name: block.name.clone(),
+            raw_id: block.raw_id,
+            serialization_id: block.serialization_id.clone(),
+            states: block
+                .properties
+                .iter()
+                .filter_map(|property| {
+                    let definition = definitions.iter().find(|d| d.name == property.name)?;
+                    Some((property.name.clone(), render_state_values(definition)))
+                })
+                .collect(),
+        })
+        .collect();
+    rows.sort_by(|a, b| a.name.cmp(&b.name));
+    rows
+}
+
+/// `BlockStateValues::…(&[…])` for one definition.
+fn render_state_values(definition: &BlockPropertyDef) -> String {
+    let values: Vec<String> = definition
+        .values
+        .iter()
+        .map(|v| match &v.value {
+            BlockStateValue::Bool(b) => b.to_string(),
+            BlockStateValue::Int(i) => i.to_string(),
+            BlockStateValue::Str(s) => lit(s),
+        })
+        .collect();
+    let kind = match definition.ty {
+        BlockPropertyType::Bool => "Bool",
+        BlockPropertyType::Int => "Int",
+        BlockPropertyType::String => "Str",
+    };
+    format!("BlockStateValues::{kind}(&[{}])", values.join(", "))
 }
 
 /// Check 16, and that every state value has its property's type.
@@ -1772,7 +1828,7 @@ fn render_vanilla_ids(header: &str, lists: &VanillaLists) -> String {
         "// `blocks`, `items` and `potion_effects` end with the identifiers the game registers that\n\
          // the metadata lacks (technical and retired blocks and items).\n",
     );
-    out.push_str("\nuse crate::VanillaIds;\n\n/// The identifier lists.\n");
+    out.push_str("\nuse crate::{BlockState, BlockStateValues, BlockStates, VanillaIds};\n\n/// The identifier lists.\n");
     out.push_str("pub(crate) static IDS: VanillaIds = VanillaIds {\n");
     let rows: [(&str, &[String]); 6] = [
         ("blocks", &lists.blocks),
@@ -1803,6 +1859,26 @@ fn render_vanilla_ids(header: &str, lists: &VanillaLists) -> String {
         let _ = writeln!(out, "{field}: {},", list(items));
     }
     out.push_str("};\n");
+    out.push_str(
+        "\n/// The blocks of `mojang-blocks.json` with their states, sorted by identifier.\n\
+         pub(crate) static BLOCK_STATES: &[BlockStates] = &[\n",
+    );
+    for row in &lists.block_states {
+        let states: Vec<String> = row
+            .states
+            .iter()
+            .map(|(name, values)| format!("BlockState {{ name: {}, values: {values} }}", lit(name)))
+            .collect();
+        let _ = writeln!(
+            out,
+            "BlockStates {{ name: {}, raw_id: {}, serialization_id: {}, states: &[{}] }},",
+            lit(&row.name),
+            row.raw_id,
+            lit(&row.serialization_id),
+            states.join(", ")
+        );
+    }
+    out.push_str("];\n");
     out
 }
 

@@ -3,7 +3,7 @@
 // `blocks`, `items` and `potion_effects` end with the identifiers the game registers that
 // the metadata lacks (technical and retired blocks and items).
 
-use crate::VanillaIds;
+use crate::{BlockState, BlockStateValues, BlockStates, VanillaIds};
 
 /// The identifier lists.
 pub(crate) static IDS: VanillaIds = VanillaIds {
@@ -3888,3 +3888,16368 @@ pub(crate) static IDS: VanillaIds = VanillaIds {
     ],
     potion_types: &["Consume", "ThrownLingering", "ThrownSplash"],
 };
+
+/// The blocks of `mojang-blocks.json` with their states, sorted by identifier.
+pub(crate) static BLOCK_STATES: &[BlockStates] = &[
+    BlockStates {
+        name: "minecraft:acacia_button",
+        raw_id: 395,
+        serialization_id: "tile.acacia_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_door",
+        raw_id: 196,
+        serialization_id: "tile.acacia_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_double_slab",
+        raw_id: 1067,
+        serialization_id: "tile.double_wooden_slab.acacia",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_fence",
+        raw_id: 830,
+        serialization_id: "tile.acacia_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_fence_gate",
+        raw_id: 187,
+        serialization_id: "tile.acacia_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_hanging_sign",
+        raw_id: 759,
+        serialization_id: "tile.acacia_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_leaves",
+        raw_id: 161,
+        serialization_id: "tile.leaves.acacia",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_log",
+        raw_id: 162,
+        serialization_id: "tile.log.acacia",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_planks",
+        raw_id: 997,
+        serialization_id: "tile.acacia_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:acacia_pressure_plate",
+        raw_id: 405,
+        serialization_id: "tile.acacia_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_sapling",
+        raw_id: 1083,
+        serialization_id: "tile.sapling.acacia",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_shelf",
+        raw_id: 1306,
+        serialization_id: "tile.acacia_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_slab",
+        raw_id: 1062,
+        serialization_id: "tile.wooden_slab.acacia",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_stairs",
+        raw_id: 163,
+        serialization_id: "tile.acacia_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_standing_sign",
+        raw_id: 445,
+        serialization_id: "tile.acacia_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_trapdoor",
+        raw_id: 400,
+        serialization_id: "tile.acacia_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:acacia_wall_sign",
+        raw_id: 446,
+        serialization_id: "tile.acacia_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:acacia_wood",
+        raw_id: 1072,
+        serialization_id: "tile.wood.acacia",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:activator_rail",
+        raw_id: 126,
+        serialization_id: "tile.activator_rail",
+        states: &[
+            BlockState {
+                name: "rail_data_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "rail_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:air",
+        raw_id: 0,
+        serialization_id: "tile.air",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:allium",
+        raw_id: 1086,
+        serialization_id: "tile.red_flower.allium",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:allow",
+        raw_id: 210,
+        serialization_id: "tile.allow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:amethyst_block",
+        raw_id: 582,
+        serialization_id: "tile.amethyst_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:amethyst_cluster",
+        raw_id: 584,
+        serialization_id: "tile.amethyst_cluster",
+        states: &[BlockState {
+            name: "minecraft:block_face",
+            values: BlockStateValues::Str(&["down", "up", "north", "south", "west", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:ancient_debris",
+        raw_id: 526,
+        serialization_id: "tile.ancient_debris",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:andesite",
+        raw_id: 849,
+        serialization_id: "tile.stone.andesite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:andesite_double_slab",
+        raw_id: 1175,
+        serialization_id: "tile.double_stone_slab3.andesite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:andesite_slab",
+        raw_id: 1148,
+        serialization_id: "tile.stone_slab3.andesite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:andesite_stairs",
+        raw_id: 426,
+        serialization_id: "tile.andesite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:andesite_wall",
+        raw_id: 1229,
+        serialization_id: "tile.cobblestone_wall.andesite",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:anvil",
+        raw_id: 145,
+        serialization_id: "tile.anvil.intact",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:azalea",
+        raw_id: 592,
+        serialization_id: "tile.azalea",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:azalea_leaves",
+        raw_id: 579,
+        serialization_id: "tile.azalea_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:azalea_leaves_flowered",
+        raw_id: 580,
+        serialization_id: "tile.azalea_leaves_flowered",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:azure_bluet",
+        raw_id: 1087,
+        serialization_id: "tile.red_flower.houstonia",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bamboo",
+        raw_id: 418,
+        serialization_id: "tile.bamboo",
+        states: &[
+            BlockState {
+                name: "age_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "bamboo_leaf_size",
+                values: BlockStateValues::Str(&["no_leaves", "small_leaves", "large_leaves"]),
+            },
+            BlockState {
+                name: "bamboo_stalk_thickness",
+                values: BlockStateValues::Str(&["thin", "thick"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_block",
+        raw_id: 782,
+        serialization_id: "tile.bamboo_block",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_button",
+        raw_id: 766,
+        serialization_id: "tile.bamboo_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_door",
+        raw_id: 772,
+        serialization_id: "tile.bamboo_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_double_slab",
+        raw_id: 776,
+        serialization_id: "tile.bamboo_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_fence",
+        raw_id: 770,
+        serialization_id: "tile.bamboo_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_fence_gate",
+        raw_id: 771,
+        serialization_id: "tile.bamboo_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_hanging_sign",
+        raw_id: 777,
+        serialization_id: "tile.bamboo_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_mosaic",
+        raw_id: 764,
+        serialization_id: "tile.bamboo_mosaic",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_mosaic_double_slab",
+        raw_id: 780,
+        serialization_id: "tile.bamboo_mosaic_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_mosaic_slab",
+        raw_id: 779,
+        serialization_id: "tile.bamboo_mosaic_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_mosaic_stairs",
+        raw_id: 778,
+        serialization_id: "tile.bamboo_mosaic_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_planks",
+        raw_id: 765,
+        serialization_id: "tile.bamboo_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_pressure_plate",
+        raw_id: 769,
+        serialization_id: "tile.bamboo_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_sapling",
+        raw_id: 419,
+        serialization_id: "tile.bamboo_sapling",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_shelf",
+        raw_id: 1311,
+        serialization_id: "tile.bamboo_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_slab",
+        raw_id: 768,
+        serialization_id: "tile.bamboo_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_stairs",
+        raw_id: 767,
+        serialization_id: "tile.bamboo_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_standing_sign",
+        raw_id: 773,
+        serialization_id: "tile.bamboo_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_trapdoor",
+        raw_id: 775,
+        serialization_id: "tile.bamboo_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bamboo_wall_sign",
+        raw_id: 774,
+        serialization_id: "tile.bamboo_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:barrel",
+        raw_id: 458,
+        serialization_id: "tile.barrel",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:barrier",
+        raw_id: 416,
+        serialization_id: "tile.barrier",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:basalt",
+        raw_id: 489,
+        serialization_id: "tile.basalt",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:beacon",
+        raw_id: 138,
+        serialization_id: "tile.beacon",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bed",
+        raw_id: 26,
+        serialization_id: "tile.bed",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "head_piece_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "occupied_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bedrock",
+        raw_id: 7,
+        serialization_id: "tile.bedrock",
+        states: &[BlockState {
+            name: "infiniburn_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bee_nest",
+        raw_id: 473,
+        serialization_id: "tile.bee_nest",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "honey_level",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:beehive",
+        raw_id: 474,
+        serialization_id: "tile.beehive",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "honey_level",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:beetroot",
+        raw_id: 244,
+        serialization_id: "tile.beetroot",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bell",
+        raw_id: 461,
+        serialization_id: "tile.bell",
+        states: &[
+            BlockState {
+                name: "attachment",
+                values: BlockStateValues::Str(&["standing", "hanging", "side", "multiple"]),
+            },
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "toggle_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:big_dripleaf",
+        raw_id: 578,
+        serialization_id: "tile.big_dripleaf",
+        states: &[
+            BlockState {
+                name: "big_dripleaf_head",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "big_dripleaf_tilt",
+                values: BlockStateValues::Str(&["none", "unstable", "partial_tilt", "full_tilt"]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_button",
+        raw_id: 396,
+        serialization_id: "tile.birch_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_door",
+        raw_id: 194,
+        serialization_id: "tile.birch_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_double_slab",
+        raw_id: 1065,
+        serialization_id: "tile.double_wooden_slab.birch",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_fence",
+        raw_id: 831,
+        serialization_id: "tile.birch_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_fence_gate",
+        raw_id: 184,
+        serialization_id: "tile.birch_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_hanging_sign",
+        raw_id: 757,
+        serialization_id: "tile.birch_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_leaves",
+        raw_id: 1056,
+        serialization_id: "tile.leaves.birch",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_log",
+        raw_id: 825,
+        serialization_id: "tile.log.birch",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_planks",
+        raw_id: 995,
+        serialization_id: "tile.birch_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:birch_pressure_plate",
+        raw_id: 406,
+        serialization_id: "tile.birch_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_sapling",
+        raw_id: 1081,
+        serialization_id: "tile.sapling.birch",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_shelf",
+        raw_id: 1304,
+        serialization_id: "tile.birch_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_slab",
+        raw_id: 1060,
+        serialization_id: "tile.wooden_slab.birch",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_stairs",
+        raw_id: 135,
+        serialization_id: "tile.birch_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_standing_sign",
+        raw_id: 441,
+        serialization_id: "tile.birch_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_trapdoor",
+        raw_id: 401,
+        serialization_id: "tile.birch_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:birch_wall_sign",
+        raw_id: 442,
+        serialization_id: "tile.birch_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:birch_wood",
+        raw_id: 1070,
+        serialization_id: "tile.wood.birch",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_candle",
+        raw_id: 683,
+        serialization_id: "tile.black_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:black_candle_cake",
+        raw_id: 700,
+        serialization_id: "tile.black_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_carpet",
+        raw_id: 866,
+        serialization_id: "tile.carpet.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_concrete",
+        raw_id: 897,
+        serialization_id: "tile.concrete.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_concrete_double_slab",
+        raw_id: 1489,
+        serialization_id: "tile.black_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_concrete_powder",
+        raw_id: 978,
+        serialization_id: "tile.concretePowder.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_concrete_slab",
+        raw_id: 1473,
+        serialization_id: "tile.black_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_concrete_stairs",
+        raw_id: 1469,
+        serialization_id: "tile.black_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:black_glazed_terracotta",
+        raw_id: 235,
+        serialization_id: "tile.glazedTerracotta.black",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_shulker_box",
+        raw_id: 882,
+        serialization_id: "tile.shulkerBoxBlack",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_stained_glass",
+        raw_id: 942,
+        serialization_id: "tile.stained_glass.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_stained_glass_pane",
+        raw_id: 912,
+        serialization_id: "tile.stained_glass_pane.black",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:black_terracotta",
+        raw_id: 993,
+        serialization_id: "tile.stained_hardened_clay.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_wool",
+        raw_id: 809,
+        serialization_id: "tile.wool.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:black_wool_double_slab",
+        raw_id: 1439,
+        serialization_id: "tile.black_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_wool_slab",
+        raw_id: 1423,
+        serialization_id: "tile.black_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:black_wool_stairs",
+        raw_id: 1419,
+        serialization_id: "tile.black_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blackstone",
+        raw_id: 528,
+        serialization_id: "tile.blackstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blackstone_double_slab",
+        raw_id: 538,
+        serialization_id: "tile.blackstone_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blackstone_slab",
+        raw_id: 537,
+        serialization_id: "tile.blackstone_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blackstone_stairs",
+        raw_id: 531,
+        serialization_id: "tile.blackstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blackstone_wall",
+        raw_id: 532,
+        serialization_id: "tile.blackstone_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blast_furnace",
+        raw_id: 451,
+        serialization_id: "tile.blast_furnace",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_candle",
+        raw_id: 679,
+        serialization_id: "tile.blue_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blue_candle_cake",
+        raw_id: 696,
+        serialization_id: "tile.blue_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_carpet",
+        raw_id: 862,
+        serialization_id: "tile.carpet.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_concrete",
+        raw_id: 893,
+        serialization_id: "tile.concrete.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_concrete_double_slab",
+        raw_id: 1498,
+        serialization_id: "tile.blue_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_concrete_powder",
+        raw_id: 974,
+        serialization_id: "tile.concretePowder.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_concrete_slab",
+        raw_id: 1482,
+        serialization_id: "tile.blue_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_concrete_stairs",
+        raw_id: 1456,
+        serialization_id: "tile.blue_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blue_glazed_terracotta",
+        raw_id: 231,
+        serialization_id: "tile.glazedTerracotta.blue",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_ice",
+        raw_id: 266,
+        serialization_id: "tile.blue_ice",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_orchid",
+        raw_id: 1085,
+        serialization_id: "tile.red_flower.blueOrchid",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_shulker_box",
+        raw_id: 878,
+        serialization_id: "tile.shulkerBoxBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_stained_glass",
+        raw_id: 938,
+        serialization_id: "tile.stained_glass.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_stained_glass_pane",
+        raw_id: 908,
+        serialization_id: "tile.stained_glass_pane.blue",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:blue_terracotta",
+        raw_id: 989,
+        serialization_id: "tile.stained_hardened_clay.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_wool",
+        raw_id: 818,
+        serialization_id: "tile.wool.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:blue_wool_double_slab",
+        raw_id: 1448,
+        serialization_id: "tile.blue_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_wool_slab",
+        raw_id: 1432,
+        serialization_id: "tile.blue_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:blue_wool_stairs",
+        raw_id: 1406,
+        serialization_id: "tile.blue_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bone_block",
+        raw_id: 216,
+        serialization_id: "tile.bone_block",
+        states: &[
+            BlockState {
+                name: "deprecated",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "pillar_axis",
+                values: BlockStateValues::Str(&["y", "x", "z"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bookshelf",
+        raw_id: 47,
+        serialization_id: "tile.bookshelf",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:border_block",
+        raw_id: 212,
+        serialization_id: "tile.border_block",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brain_coral",
+        raw_id: 836,
+        serialization_id: "tile.coral.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brain_coral_block",
+        raw_id: 1104,
+        serialization_id: "tile.coral_block.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brain_coral_fan",
+        raw_id: 1095,
+        serialization_id: "tile.coral_fan.pink_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brain_coral_wall_fan",
+        raw_id: 1159,
+        serialization_id: "tile.brain_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brewing_stand",
+        raw_id: 117,
+        serialization_id: "tile.brewing_stand",
+        states: &[
+            BlockState {
+                name: "brewing_stand_slot_a_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "brewing_stand_slot_b_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "brewing_stand_slot_c_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brick_block",
+        raw_id: 45,
+        serialization_id: "tile.brick_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brick_double_slab",
+        raw_id: 1135,
+        serialization_id: "tile.double_stone_slab.brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brick_slab",
+        raw_id: 1129,
+        serialization_id: "tile.stone_slab.brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brick_stairs",
+        raw_id: 108,
+        serialization_id: "tile.brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brick_wall",
+        raw_id: 1231,
+        serialization_id: "tile.cobblestone_wall.brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brown_candle",
+        raw_id: 680,
+        serialization_id: "tile.brown_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brown_candle_cake",
+        raw_id: 697,
+        serialization_id: "tile.brown_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_carpet",
+        raw_id: 863,
+        serialization_id: "tile.carpet.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_concrete",
+        raw_id: 894,
+        serialization_id: "tile.concrete.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_concrete_double_slab",
+        raw_id: 1490,
+        serialization_id: "tile.brown_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_concrete_powder",
+        raw_id: 975,
+        serialization_id: "tile.concretePowder.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_concrete_slab",
+        raw_id: 1474,
+        serialization_id: "tile.brown_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_concrete_stairs",
+        raw_id: 1468,
+        serialization_id: "tile.brown_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brown_glazed_terracotta",
+        raw_id: 232,
+        serialization_id: "tile.glazedTerracotta.brown",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_mushroom",
+        raw_id: 39,
+        serialization_id: "tile.brown_mushroom",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_mushroom_block",
+        raw_id: 99,
+        serialization_id: "tile.brown_mushroom_block.cap",
+        states: &[BlockState {
+            name: "huge_mushroom_bits",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_shulker_box",
+        raw_id: 879,
+        serialization_id: "tile.shulkerBoxBrown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_stained_glass",
+        raw_id: 939,
+        serialization_id: "tile.stained_glass.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_stained_glass_pane",
+        raw_id: 909,
+        serialization_id: "tile.stained_glass_pane.brown",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:brown_terracotta",
+        raw_id: 990,
+        serialization_id: "tile.stained_hardened_clay.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_wool",
+        raw_id: 810,
+        serialization_id: "tile.wool.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:brown_wool_double_slab",
+        raw_id: 1440,
+        serialization_id: "tile.brown_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_wool_slab",
+        raw_id: 1424,
+        serialization_id: "tile.brown_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:brown_wool_stairs",
+        raw_id: 1418,
+        serialization_id: "tile.brown_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:bubble_column",
+        raw_id: 415,
+        serialization_id: "tile.bubble_column",
+        states: &[BlockState {
+            name: "drag_down",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bubble_coral",
+        raw_id: 837,
+        serialization_id: "tile.coral.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bubble_coral_block",
+        raw_id: 1105,
+        serialization_id: "tile.coral_block.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bubble_coral_fan",
+        raw_id: 1096,
+        serialization_id: "tile.coral_fan.purple_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:bubble_coral_wall_fan",
+        raw_id: 391,
+        serialization_id: "tile.bubble_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:budding_amethyst",
+        raw_id: 583,
+        serialization_id: "tile.budding_amethyst",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:bush",
+        raw_id: 1278,
+        serialization_id: "tile.bush",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cactus",
+        raw_id: 81,
+        serialization_id: "tile.cactus",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cactus_flower",
+        raw_id: 1285,
+        serialization_id: "tile.cactus_flower",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cake",
+        raw_id: 92,
+        serialization_id: "tile.cake",
+        states: &[BlockState {
+            name: "bite_counter",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:calcite",
+        raw_id: 581,
+        serialization_id: "tile.calcite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:calibrated_sculk_sensor",
+        raw_id: 835,
+        serialization_id: "tile.calibrated_sculk_sensor",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "sculk_sensor_phase",
+                values: BlockStateValues::Int(&[0, 1, 2]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:camera",
+        raw_id: 242,
+        serialization_id: "tile.camera",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:campfire",
+        raw_id: 464,
+        serialization_id: "tile.campfire",
+        states: &[
+            BlockState {
+                name: "extinguished",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:candle",
+        raw_id: 667,
+        serialization_id: "tile.candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:candle_cake",
+        raw_id: 684,
+        serialization_id: "tile.candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:carrots",
+        raw_id: 141,
+        serialization_id: "tile.carrots",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cartography_table",
+        raw_id: 455,
+        serialization_id: "tile.cartography_table",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:carved_pumpkin",
+        raw_id: 410,
+        serialization_id: "tile.carved_pumpkin",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cauldron",
+        raw_id: 118,
+        serialization_id: "tile.cauldron",
+        states: &[
+            BlockState {
+                name: "cauldron_liquid",
+                values: BlockStateValues::Str(&["water", "lava", "powder_snow"]),
+            },
+            BlockState {
+                name: "fill_level",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cave_vines",
+        raw_id: 577,
+        serialization_id: "tile.cave_vines",
+        states: &[BlockState {
+            name: "growing_plant_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cave_vines_body_with_berries",
+        raw_id: 630,
+        serialization_id: "tile.cave_vines_body_with_berries",
+        states: &[BlockState {
+            name: "growing_plant_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cave_vines_head_with_berries",
+        raw_id: 631,
+        serialization_id: "tile.cave_vines_head_with_berries",
+        states: &[BlockState {
+            name: "growing_plant_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chain_command_block",
+        raw_id: 189,
+        serialization_id: "tile.chain_command_block",
+        states: &[
+            BlockState {
+                name: "conditional_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:chemical_heat",
+        raw_id: 192,
+        serialization_id: "tile.chemical_heat",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cherry_button",
+        raw_id: 785,
+        serialization_id: "tile.cherry_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_door",
+        raw_id: 786,
+        serialization_id: "tile.cherry_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_double_slab",
+        raw_id: 795,
+        serialization_id: "tile.cherry_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_fence",
+        raw_id: 787,
+        serialization_id: "tile.cherry_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_fence_gate",
+        raw_id: 788,
+        serialization_id: "tile.cherry_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_hanging_sign",
+        raw_id: 789,
+        serialization_id: "tile.cherry_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_leaves",
+        raw_id: 803,
+        serialization_id: "tile.cherry_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_log",
+        raw_id: 791,
+        serialization_id: "tile.cherry_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_planks",
+        raw_id: 792,
+        serialization_id: "tile.cherry_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cherry_pressure_plate",
+        raw_id: 793,
+        serialization_id: "tile.cherry_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_sapling",
+        raw_id: 802,
+        serialization_id: "tile.cherry_sapling",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_shelf",
+        raw_id: 1309,
+        serialization_id: "tile.cherry_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_slab",
+        raw_id: 794,
+        serialization_id: "tile.cherry_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_stairs",
+        raw_id: 796,
+        serialization_id: "tile.cherry_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_standing_sign",
+        raw_id: 797,
+        serialization_id: "tile.cherry_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_trapdoor",
+        raw_id: 798,
+        serialization_id: "tile.cherry_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cherry_wall_sign",
+        raw_id: 799,
+        serialization_id: "tile.cherry_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cherry_wood",
+        raw_id: 801,
+        serialization_id: "tile.cherry_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chest",
+        raw_id: 54,
+        serialization_id: "tile.chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chipped_anvil",
+        raw_id: 1214,
+        serialization_id: "tile.anvil.slightlyDamaged",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_bookshelf",
+        raw_id: 781,
+        serialization_id: "tile.chiseled_bookshelf",
+        states: &[
+            BlockState {
+                name: "books_stored",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                    42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61,
+                    62, 63,
+                ]),
+            },
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_cinnabar",
+        raw_id: 1379,
+        serialization_id: "tile.chiseled_cinnabar",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_copper",
+        raw_id: 1015,
+        serialization_id: "tile.chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_deepslate",
+        raw_id: 650,
+        serialization_id: "tile.chiseled_deepslate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_nether_bricks",
+        raw_id: 557,
+        serialization_id: "tile.chiseled_nether_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_polished_blackstone",
+        raw_id: 534,
+        serialization_id: "tile.chiseled_polished_blackstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_quartz_block",
+        raw_id: 1208,
+        serialization_id: "tile.quartz_block.chiseled",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_red_sandstone",
+        raw_id: 1211,
+        serialization_id: "tile.red_sandstone.chiseled",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_resin_bricks",
+        raw_id: 1275,
+        serialization_id: "tile.chiseled_resin_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_sandstone",
+        raw_id: 1199,
+        serialization_id: "tile.sandstone.chiseled",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_stone_bricks",
+        raw_id: 1125,
+        serialization_id: "tile.stonebrick.chiseled",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_sulfur",
+        raw_id: 1362,
+        serialization_id: "tile.chiseled_sulfur",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_tuff",
+        raw_id: 1008,
+        serialization_id: "tile.chiseled_tuff",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chiseled_tuff_bricks",
+        raw_id: 1014,
+        serialization_id: "tile.chiseled_tuff_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:chorus_flower",
+        raw_id: 200,
+        serialization_id: "tile.chorus_flower",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:chorus_plant",
+        raw_id: 240,
+        serialization_id: "tile.chorus_plant",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar",
+        raw_id: 1364,
+        serialization_id: "tile.cinnabar",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_brick_double_slab",
+        raw_id: 1376,
+        serialization_id: "tile.cinnabar_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_brick_slab",
+        raw_id: 1375,
+        serialization_id: "tile.cinnabar_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_brick_stairs",
+        raw_id: 1377,
+        serialization_id: "tile.cinnabar_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_brick_wall",
+        raw_id: 1378,
+        serialization_id: "tile.cinnabar_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_bricks",
+        raw_id: 1374,
+        serialization_id: "tile.cinnabar_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_double_slab",
+        raw_id: 1366,
+        serialization_id: "tile.cinnabar_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_slab",
+        raw_id: 1365,
+        serialization_id: "tile.cinnabar_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_stairs",
+        raw_id: 1367,
+        serialization_id: "tile.cinnabar_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cinnabar_wall",
+        raw_id: 1368,
+        serialization_id: "tile.cinnabar_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:clay",
+        raw_id: 82,
+        serialization_id: "tile.clay",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:closed_eyeblossom",
+        raw_id: 1274,
+        serialization_id: "tile.closed_eyeblossom",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:coal_block",
+        raw_id: 173,
+        serialization_id: "tile.coal_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:coal_ore",
+        raw_id: 16,
+        serialization_id: "tile.coal_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:coarse_dirt",
+        raw_id: 1217,
+        serialization_id: "tile.dirt.coarse",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cobbled_deepslate",
+        raw_id: 634,
+        serialization_id: "tile.cobbled_deepslate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cobbled_deepslate_double_slab",
+        raw_id: 651,
+        serialization_id: "tile.cobbled_deepslate_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cobbled_deepslate_slab",
+        raw_id: 635,
+        serialization_id: "tile.cobbled_deepslate_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cobbled_deepslate_stairs",
+        raw_id: 636,
+        serialization_id: "tile.cobbled_deepslate_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cobbled_deepslate_wall",
+        raw_id: 637,
+        serialization_id: "tile.cobbled_deepslate_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cobblestone",
+        raw_id: 4,
+        serialization_id: "tile.cobblestone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cobblestone_double_slab",
+        raw_id: 1134,
+        serialization_id: "tile.double_stone_slab.cobble",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cobblestone_slab",
+        raw_id: 1128,
+        serialization_id: "tile.stone_slab.cobble",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cobblestone_wall",
+        raw_id: 139,
+        serialization_id: "tile.cobblestone_wall.normal",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cocoa",
+        raw_id: 127,
+        serialization_id: "tile.cocoa",
+        states: &[
+            BlockState {
+                name: "age",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:colored_torch_blue",
+        raw_id: 204,
+        serialization_id: "tile.colored_torch.blue",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:colored_torch_green",
+        raw_id: 1218,
+        serialization_id: "tile.colored_torch.green",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:colored_torch_purple",
+        raw_id: 1219,
+        serialization_id: "tile.colored_torch.purple",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:colored_torch_red",
+        raw_id: 202,
+        serialization_id: "tile.colored_torch.red",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:command_block",
+        raw_id: 137,
+        serialization_id: "tile.command_block",
+        states: &[
+            BlockState {
+                name: "conditional_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:composter",
+        raw_id: 468,
+        serialization_id: "tile.composter",
+        states: &[BlockState {
+            name: "composter_fill_level",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:compound_creator",
+        raw_id: 238,
+        serialization_id: "tile.compoundcreator",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:conduit",
+        raw_id: 412,
+        serialization_id: "tile.conduit",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:copper_bars",
+        raw_id: 1321,
+        serialization_id: "tile.copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:copper_block",
+        raw_id: 595,
+        serialization_id: "tile.copper_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:copper_bulb",
+        raw_id: 1031,
+        serialization_id: "tile.copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:copper_chain",
+        raw_id: 1329,
+        serialization_id: "tile.copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:copper_chest",
+        raw_id: 1286,
+        serialization_id: "tile.copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:copper_door",
+        raw_id: 1039,
+        serialization_id: "tile.copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:copper_golem_statue",
+        raw_id: 1294,
+        serialization_id: "tile.copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:copper_grate",
+        raw_id: 1023,
+        serialization_id: "tile.copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:copper_lantern",
+        raw_id: 1338,
+        serialization_id: "tile.copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:copper_ore",
+        raw_id: 566,
+        serialization_id: "tile.copper_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:copper_torch",
+        raw_id: 1337,
+        serialization_id: "tile.copper_torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:copper_trapdoor",
+        raw_id: 1047,
+        serialization_id: "tile.copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cornflower",
+        raw_id: 1093,
+        serialization_id: "tile.red_flower.cornflower",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cracked_deepslate_bricks",
+        raw_id: 665,
+        serialization_id: "tile.cracked_deepslate_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cracked_deepslate_tiles",
+        raw_id: 664,
+        serialization_id: "tile.cracked_deepslate_tiles",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cracked_nether_bricks",
+        raw_id: 558,
+        serialization_id: "tile.cracked_nether_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cracked_polished_blackstone_bricks",
+        raw_id: 535,
+        serialization_id: "tile.cracked_polished_blackstone_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cracked_stone_bricks",
+        raw_id: 1124,
+        serialization_id: "tile.stonebrick.cracked",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:crafter",
+        raw_id: 568,
+        serialization_id: "tile.crafter",
+        states: &[
+            BlockState {
+                name: "crafting",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "orientation",
+                values: BlockStateValues::Str(&[
+                    "down_east",
+                    "down_north",
+                    "down_south",
+                    "down_west",
+                    "up_east",
+                    "up_north",
+                    "up_south",
+                    "up_west",
+                    "west_up",
+                    "east_up",
+                    "north_up",
+                    "south_up",
+                ]),
+            },
+            BlockState {
+                name: "triggered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crafting_table",
+        raw_id: 58,
+        serialization_id: "tile.crafting_table",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:creaking_heart",
+        raw_id: 1267,
+        serialization_id: "tile.creaking_heart",
+        states: &[
+            BlockState {
+                name: "creaking_heart_state",
+                values: BlockStateValues::Str(&["uprooted", "dormant", "awake"]),
+            },
+            BlockState {
+                name: "natural",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "pillar_axis",
+                values: BlockStateValues::Str(&["y", "x", "z"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:creeper_head",
+        raw_id: 1223,
+        serialization_id: "tile.skull.creeper",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_button",
+        raw_id: 515,
+        serialization_id: "tile.crimson_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_door",
+        raw_id: 499,
+        serialization_id: "tile.crimson_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_double_slab",
+        raw_id: 521,
+        serialization_id: "tile.crimson_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_fence",
+        raw_id: 511,
+        serialization_id: "tile.crimson_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_fence_gate",
+        raw_id: 513,
+        serialization_id: "tile.crimson_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_fungus",
+        raw_id: 483,
+        serialization_id: "tile.crimson_fungus",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:crimson_hanging_sign",
+        raw_id: 761,
+        serialization_id: "tile.crimson_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_hyphae",
+        raw_id: 554,
+        serialization_id: "tile.crimson_hyphae",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_nylium",
+        raw_id: 487,
+        serialization_id: "tile.crimson_nylium",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:crimson_planks",
+        raw_id: 497,
+        serialization_id: "tile.crimson_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:crimson_pressure_plate",
+        raw_id: 517,
+        serialization_id: "tile.crimson_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_roots",
+        raw_id: 478,
+        serialization_id: "tile.crimson_roots.crimsonRoots",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:crimson_shelf",
+        raw_id: 1312,
+        serialization_id: "tile.crimson_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_slab",
+        raw_id: 519,
+        serialization_id: "tile.crimson_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_stairs",
+        raw_id: 509,
+        serialization_id: "tile.crimson_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_standing_sign",
+        raw_id: 505,
+        serialization_id: "tile.crimson_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_stem",
+        raw_id: 480,
+        serialization_id: "tile.crimson_stem",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crimson_trapdoor",
+        raw_id: 501,
+        serialization_id: "tile.crimson_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:crimson_wall_sign",
+        raw_id: 507,
+        serialization_id: "tile.crimson_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:crying_obsidian",
+        raw_id: 544,
+        serialization_id: "tile.crying_obsidian",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cut_copper",
+        raw_id: 602,
+        serialization_id: "tile.cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cut_copper_slab",
+        raw_id: 616,
+        serialization_id: "tile.cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cut_copper_stairs",
+        raw_id: 609,
+        serialization_id: "tile.cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cut_red_sandstone",
+        raw_id: 1212,
+        serialization_id: "tile.red_sandstone.cut",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cut_red_sandstone_double_slab",
+        raw_id: 1183,
+        serialization_id: "tile.double_stone_slab4.cut_red_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cut_red_sandstone_slab",
+        raw_id: 1156,
+        serialization_id: "tile.stone_slab4.cut_red_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cut_sandstone",
+        raw_id: 1200,
+        serialization_id: "tile.sandstone.cut",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cut_sandstone_double_slab",
+        raw_id: 1182,
+        serialization_id: "tile.double_stone_slab4.cut_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cut_sandstone_slab",
+        raw_id: 1155,
+        serialization_id: "tile.stone_slab4.cut_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_candle",
+        raw_id: 677,
+        serialization_id: "tile.cyan_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cyan_candle_cake",
+        raw_id: 694,
+        serialization_id: "tile.cyan_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_carpet",
+        raw_id: 860,
+        serialization_id: "tile.carpet.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_concrete",
+        raw_id: 891,
+        serialization_id: "tile.concrete.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_concrete_double_slab",
+        raw_id: 1496,
+        serialization_id: "tile.cyan_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_concrete_powder",
+        raw_id: 972,
+        serialization_id: "tile.concretePowder.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_concrete_slab",
+        raw_id: 1480,
+        serialization_id: "tile.cyan_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_concrete_stairs",
+        raw_id: 1465,
+        serialization_id: "tile.cyan_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cyan_glazed_terracotta",
+        raw_id: 229,
+        serialization_id: "tile.glazedTerracotta.cyan",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_shulker_box",
+        raw_id: 876,
+        serialization_id: "tile.shulkerBoxCyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_stained_glass",
+        raw_id: 936,
+        serialization_id: "tile.stained_glass.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_stained_glass_pane",
+        raw_id: 906,
+        serialization_id: "tile.stained_glass_pane.cyan",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:cyan_terracotta",
+        raw_id: 987,
+        serialization_id: "tile.stained_hardened_clay.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_wool",
+        raw_id: 816,
+        serialization_id: "tile.wool.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:cyan_wool_double_slab",
+        raw_id: 1446,
+        serialization_id: "tile.cyan_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_wool_slab",
+        raw_id: 1430,
+        serialization_id: "tile.cyan_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:cyan_wool_stairs",
+        raw_id: 1415,
+        serialization_id: "tile.cyan_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:damaged_anvil",
+        raw_id: 1215,
+        serialization_id: "tile.anvil.veryDamaged",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dandelion",
+        raw_id: 37,
+        serialization_id: "tile.yellow_flower.dandelion",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_button",
+        raw_id: 397,
+        serialization_id: "tile.dark_oak_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_door",
+        raw_id: 197,
+        serialization_id: "tile.dark_oak_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_double_slab",
+        raw_id: 1068,
+        serialization_id: "tile.double_wooden_slab.big_oak",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_fence",
+        raw_id: 832,
+        serialization_id: "tile.dark_oak_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_fence_gate",
+        raw_id: 186,
+        serialization_id: "tile.dark_oak_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_hanging_sign",
+        raw_id: 760,
+        serialization_id: "tile.dark_oak_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_leaves",
+        raw_id: 1058,
+        serialization_id: "tile.leaves.big_oak",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_log",
+        raw_id: 827,
+        serialization_id: "tile.log.big_oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_planks",
+        raw_id: 998,
+        serialization_id: "tile.dark_oak_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_pressure_plate",
+        raw_id: 407,
+        serialization_id: "tile.dark_oak_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_sapling",
+        raw_id: 1084,
+        serialization_id: "tile.sapling.big_oak",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_shelf",
+        raw_id: 1307,
+        serialization_id: "tile.dark_oak_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_slab",
+        raw_id: 1063,
+        serialization_id: "tile.wooden_slab.big_oak",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_stairs",
+        raw_id: 164,
+        serialization_id: "tile.dark_oak_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_trapdoor",
+        raw_id: 402,
+        serialization_id: "tile.dark_oak_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dark_oak_wood",
+        raw_id: 1073,
+        serialization_id: "tile.wood.dark_oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_prismarine",
+        raw_id: 1202,
+        serialization_id: "tile.prismarine.dark",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dark_prismarine_double_slab",
+        raw_id: 1168,
+        serialization_id: "tile.double_stone_slab2.prismarine.dark",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_prismarine_slab",
+        raw_id: 1141,
+        serialization_id: "tile.stone_slab2.prismarine.dark",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dark_prismarine_stairs",
+        raw_id: 258,
+        serialization_id: "tile.dark_prismarine_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:darkoak_standing_sign",
+        raw_id: 447,
+        serialization_id: "tile.darkoak_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:darkoak_wall_sign",
+        raw_id: 448,
+        serialization_id: "tile.darkoak_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:daylight_detector",
+        raw_id: 151,
+        serialization_id: "tile.daylight_detector",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:daylight_detector_inverted",
+        raw_id: 178,
+        serialization_id: "tile.daylight_detector_inverted",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_brain_coral",
+        raw_id: 841,
+        serialization_id: "tile.coral.pink_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_brain_coral_block",
+        raw_id: 1109,
+        serialization_id: "tile.coral_block.pink_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_brain_coral_fan",
+        raw_id: 1099,
+        serialization_id: "tile.coral_fan_dead.pink_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_brain_coral_wall_fan",
+        raw_id: 1161,
+        serialization_id: "tile.dead_brain_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_bubble_coral",
+        raw_id: 842,
+        serialization_id: "tile.coral.purple_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_bubble_coral_block",
+        raw_id: 1110,
+        serialization_id: "tile.coral_block.purple_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_bubble_coral_fan",
+        raw_id: 1100,
+        serialization_id: "tile.coral_fan_dead.purple_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_bubble_coral_wall_fan",
+        raw_id: 1163,
+        serialization_id: "tile.dead_bubble_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_fire_coral",
+        raw_id: 843,
+        serialization_id: "tile.coral.red_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_fire_coral_block",
+        raw_id: 1111,
+        serialization_id: "tile.coral_block.red_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_fire_coral_fan",
+        raw_id: 1101,
+        serialization_id: "tile.coral_fan_dead.red_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_fire_coral_wall_fan",
+        raw_id: 1164,
+        serialization_id: "tile.dead_fire_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_horn_coral",
+        raw_id: 844,
+        serialization_id: "tile.coral.yellow_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_horn_coral_block",
+        raw_id: 1112,
+        serialization_id: "tile.coral_block.yellow_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_horn_coral_fan",
+        raw_id: 1102,
+        serialization_id: "tile.coral_fan_dead.yellow_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_horn_coral_wall_fan",
+        raw_id: 1165,
+        serialization_id: "tile.dead_horn_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_tube_coral",
+        raw_id: 840,
+        serialization_id: "tile.coral.blue_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_tube_coral_block",
+        raw_id: 1108,
+        serialization_id: "tile.coral_block.blue_dead",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dead_tube_coral_fan",
+        raw_id: 389,
+        serialization_id: "tile.coral_fan_dead.blue_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dead_tube_coral_wall_fan",
+        raw_id: 1160,
+        serialization_id: "tile.dead_tube_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deadbush",
+        raw_id: 32,
+        serialization_id: "tile.deadbush",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:decorated_pot",
+        raw_id: 806,
+        serialization_id: "tile.decorated_pot",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate",
+        raw_id: 633,
+        serialization_id: "tile.deepslate",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_brick_double_slab",
+        raw_id: 654,
+        serialization_id: "tile.deepslate_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_brick_slab",
+        raw_id: 647,
+        serialization_id: "tile.deepslate_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_brick_stairs",
+        raw_id: 648,
+        serialization_id: "tile.deepslate_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_brick_wall",
+        raw_id: 649,
+        serialization_id: "tile.deepslate_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_bricks",
+        raw_id: 646,
+        serialization_id: "tile.deepslate_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_coal_ore",
+        raw_id: 661,
+        serialization_id: "tile.deepslate_coal_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_copper_ore",
+        raw_id: 663,
+        serialization_id: "tile.deepslate_copper_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_diamond_ore",
+        raw_id: 660,
+        serialization_id: "tile.deepslate_diamond_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_emerald_ore",
+        raw_id: 662,
+        serialization_id: "tile.deepslate_emerald_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_gold_ore",
+        raw_id: 657,
+        serialization_id: "tile.deepslate_gold_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_iron_ore",
+        raw_id: 656,
+        serialization_id: "tile.deepslate_iron_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_lapis_ore",
+        raw_id: 655,
+        serialization_id: "tile.deepslate_lapis_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_redstone_ore",
+        raw_id: 658,
+        serialization_id: "tile.deepslate_redstone_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_tile_double_slab",
+        raw_id: 653,
+        serialization_id: "tile.deepslate_tile_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_tile_slab",
+        raw_id: 643,
+        serialization_id: "tile.deepslate_tile_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_tile_stairs",
+        raw_id: 644,
+        serialization_id: "tile.deepslate_tile_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_tile_wall",
+        raw_id: 645,
+        serialization_id: "tile.deepslate_tile_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:deepslate_tiles",
+        raw_id: 642,
+        serialization_id: "tile.deepslate_tiles",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:deny",
+        raw_id: 211,
+        serialization_id: "tile.deny",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:detector_rail",
+        raw_id: 28,
+        serialization_id: "tile.detector_rail",
+        states: &[
+            BlockState {
+                name: "rail_data_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "rail_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:diamond_block",
+        raw_id: 57,
+        serialization_id: "tile.diamond_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:diamond_ore",
+        raw_id: 56,
+        serialization_id: "tile.diamond_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:diorite",
+        raw_id: 847,
+        serialization_id: "tile.stone.diorite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:diorite_double_slab",
+        raw_id: 1176,
+        serialization_id: "tile.double_stone_slab3.diorite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:diorite_slab",
+        raw_id: 1149,
+        serialization_id: "tile.stone_slab3.diorite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:diorite_stairs",
+        raw_id: 425,
+        serialization_id: "tile.diorite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:diorite_wall",
+        raw_id: 1228,
+        serialization_id: "tile.cobblestone_wall.diorite",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dirt",
+        raw_id: 3,
+        serialization_id: "tile.dirt.default",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dirt_with_roots",
+        raw_id: 573,
+        serialization_id: "tile.dirt_with_roots",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dispenser",
+        raw_id: 23,
+        serialization_id: "tile.dispenser",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "triggered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:double_cut_copper_slab",
+        raw_id: 623,
+        serialization_id: "tile.double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dragon_egg",
+        raw_id: 122,
+        serialization_id: "tile.dragon_egg",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dragon_head",
+        raw_id: 1224,
+        serialization_id: "tile.skull.dragon",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:dried_ghast",
+        raw_id: 1282,
+        serialization_id: "tile.dried_ghast",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "rehydration_level",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:dried_kelp_block",
+        raw_id: 394,
+        serialization_id: "tile.dried_kelp_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dripstone_block",
+        raw_id: 572,
+        serialization_id: "tile.dripstone_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:dropper",
+        raw_id: 125,
+        serialization_id: "tile.dropper",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "triggered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:element_0",
+        raw_id: 36,
+        serialization_id: "tile.element_0",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_1",
+        raw_id: 267,
+        serialization_id: "tile.element_1",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_10",
+        raw_id: 276,
+        serialization_id: "tile.element_10",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_100",
+        raw_id: 366,
+        serialization_id: "tile.element_100",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_101",
+        raw_id: 367,
+        serialization_id: "tile.element_101",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_102",
+        raw_id: 368,
+        serialization_id: "tile.element_102",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_103",
+        raw_id: 369,
+        serialization_id: "tile.element_103",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_104",
+        raw_id: 370,
+        serialization_id: "tile.element_104",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_105",
+        raw_id: 371,
+        serialization_id: "tile.element_105",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_106",
+        raw_id: 372,
+        serialization_id: "tile.element_106",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_107",
+        raw_id: 373,
+        serialization_id: "tile.element_107",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_108",
+        raw_id: 374,
+        serialization_id: "tile.element_108",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_109",
+        raw_id: 375,
+        serialization_id: "tile.element_109",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_11",
+        raw_id: 277,
+        serialization_id: "tile.element_11",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_110",
+        raw_id: 376,
+        serialization_id: "tile.element_110",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_111",
+        raw_id: 377,
+        serialization_id: "tile.element_111",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_112",
+        raw_id: 378,
+        serialization_id: "tile.element_112",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_113",
+        raw_id: 379,
+        serialization_id: "tile.element_113",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_114",
+        raw_id: 380,
+        serialization_id: "tile.element_114",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_115",
+        raw_id: 381,
+        serialization_id: "tile.element_115",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_116",
+        raw_id: 382,
+        serialization_id: "tile.element_116",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_117",
+        raw_id: 383,
+        serialization_id: "tile.element_117",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_118",
+        raw_id: 384,
+        serialization_id: "tile.element_118",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_12",
+        raw_id: 278,
+        serialization_id: "tile.element_12",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_13",
+        raw_id: 279,
+        serialization_id: "tile.element_13",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_14",
+        raw_id: 280,
+        serialization_id: "tile.element_14",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_15",
+        raw_id: 281,
+        serialization_id: "tile.element_15",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_16",
+        raw_id: 282,
+        serialization_id: "tile.element_16",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_17",
+        raw_id: 283,
+        serialization_id: "tile.element_17",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_18",
+        raw_id: 284,
+        serialization_id: "tile.element_18",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_19",
+        raw_id: 285,
+        serialization_id: "tile.element_19",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_2",
+        raw_id: 268,
+        serialization_id: "tile.element_2",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_20",
+        raw_id: 286,
+        serialization_id: "tile.element_20",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_21",
+        raw_id: 287,
+        serialization_id: "tile.element_21",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_22",
+        raw_id: 288,
+        serialization_id: "tile.element_22",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_23",
+        raw_id: 289,
+        serialization_id: "tile.element_23",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_24",
+        raw_id: 290,
+        serialization_id: "tile.element_24",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_25",
+        raw_id: 291,
+        serialization_id: "tile.element_25",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_26",
+        raw_id: 292,
+        serialization_id: "tile.element_26",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_27",
+        raw_id: 293,
+        serialization_id: "tile.element_27",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_28",
+        raw_id: 294,
+        serialization_id: "tile.element_28",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_29",
+        raw_id: 295,
+        serialization_id: "tile.element_29",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_3",
+        raw_id: 269,
+        serialization_id: "tile.element_3",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_30",
+        raw_id: 296,
+        serialization_id: "tile.element_30",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_31",
+        raw_id: 297,
+        serialization_id: "tile.element_31",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_32",
+        raw_id: 298,
+        serialization_id: "tile.element_32",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_33",
+        raw_id: 299,
+        serialization_id: "tile.element_33",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_34",
+        raw_id: 300,
+        serialization_id: "tile.element_34",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_35",
+        raw_id: 301,
+        serialization_id: "tile.element_35",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_36",
+        raw_id: 302,
+        serialization_id: "tile.element_36",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_37",
+        raw_id: 303,
+        serialization_id: "tile.element_37",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_38",
+        raw_id: 304,
+        serialization_id: "tile.element_38",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_39",
+        raw_id: 305,
+        serialization_id: "tile.element_39",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_4",
+        raw_id: 270,
+        serialization_id: "tile.element_4",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_40",
+        raw_id: 306,
+        serialization_id: "tile.element_40",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_41",
+        raw_id: 307,
+        serialization_id: "tile.element_41",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_42",
+        raw_id: 308,
+        serialization_id: "tile.element_42",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_43",
+        raw_id: 309,
+        serialization_id: "tile.element_43",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_44",
+        raw_id: 310,
+        serialization_id: "tile.element_44",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_45",
+        raw_id: 311,
+        serialization_id: "tile.element_45",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_46",
+        raw_id: 312,
+        serialization_id: "tile.element_46",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_47",
+        raw_id: 313,
+        serialization_id: "tile.element_47",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_48",
+        raw_id: 314,
+        serialization_id: "tile.element_48",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_49",
+        raw_id: 315,
+        serialization_id: "tile.element_49",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_5",
+        raw_id: 271,
+        serialization_id: "tile.element_5",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_50",
+        raw_id: 316,
+        serialization_id: "tile.element_50",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_51",
+        raw_id: 317,
+        serialization_id: "tile.element_51",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_52",
+        raw_id: 318,
+        serialization_id: "tile.element_52",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_53",
+        raw_id: 319,
+        serialization_id: "tile.element_53",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_54",
+        raw_id: 320,
+        serialization_id: "tile.element_54",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_55",
+        raw_id: 321,
+        serialization_id: "tile.element_55",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_56",
+        raw_id: 322,
+        serialization_id: "tile.element_56",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_57",
+        raw_id: 323,
+        serialization_id: "tile.element_57",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_58",
+        raw_id: 324,
+        serialization_id: "tile.element_58",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_59",
+        raw_id: 325,
+        serialization_id: "tile.element_59",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_6",
+        raw_id: 272,
+        serialization_id: "tile.element_6",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_60",
+        raw_id: 326,
+        serialization_id: "tile.element_60",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_61",
+        raw_id: 327,
+        serialization_id: "tile.element_61",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_62",
+        raw_id: 328,
+        serialization_id: "tile.element_62",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_63",
+        raw_id: 329,
+        serialization_id: "tile.element_63",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_64",
+        raw_id: 330,
+        serialization_id: "tile.element_64",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_65",
+        raw_id: 331,
+        serialization_id: "tile.element_65",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_66",
+        raw_id: 332,
+        serialization_id: "tile.element_66",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_67",
+        raw_id: 333,
+        serialization_id: "tile.element_67",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_68",
+        raw_id: 334,
+        serialization_id: "tile.element_68",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_69",
+        raw_id: 335,
+        serialization_id: "tile.element_69",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_7",
+        raw_id: 273,
+        serialization_id: "tile.element_7",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_70",
+        raw_id: 336,
+        serialization_id: "tile.element_70",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_71",
+        raw_id: 337,
+        serialization_id: "tile.element_71",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_72",
+        raw_id: 338,
+        serialization_id: "tile.element_72",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_73",
+        raw_id: 339,
+        serialization_id: "tile.element_73",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_74",
+        raw_id: 340,
+        serialization_id: "tile.element_74",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_75",
+        raw_id: 341,
+        serialization_id: "tile.element_75",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_76",
+        raw_id: 342,
+        serialization_id: "tile.element_76",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_77",
+        raw_id: 343,
+        serialization_id: "tile.element_77",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_78",
+        raw_id: 344,
+        serialization_id: "tile.element_78",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_79",
+        raw_id: 345,
+        serialization_id: "tile.element_79",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_8",
+        raw_id: 274,
+        serialization_id: "tile.element_8",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_80",
+        raw_id: 346,
+        serialization_id: "tile.element_80",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_81",
+        raw_id: 347,
+        serialization_id: "tile.element_81",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_82",
+        raw_id: 348,
+        serialization_id: "tile.element_82",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_83",
+        raw_id: 349,
+        serialization_id: "tile.element_83",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_84",
+        raw_id: 350,
+        serialization_id: "tile.element_84",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_85",
+        raw_id: 351,
+        serialization_id: "tile.element_85",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_86",
+        raw_id: 352,
+        serialization_id: "tile.element_86",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_87",
+        raw_id: 353,
+        serialization_id: "tile.element_87",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_88",
+        raw_id: 354,
+        serialization_id: "tile.element_88",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_89",
+        raw_id: 355,
+        serialization_id: "tile.element_89",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_9",
+        raw_id: 275,
+        serialization_id: "tile.element_9",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_90",
+        raw_id: 356,
+        serialization_id: "tile.element_90",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_91",
+        raw_id: 357,
+        serialization_id: "tile.element_91",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_92",
+        raw_id: 358,
+        serialization_id: "tile.element_92",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_93",
+        raw_id: 359,
+        serialization_id: "tile.element_93",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_94",
+        raw_id: 360,
+        serialization_id: "tile.element_94",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_95",
+        raw_id: 361,
+        serialization_id: "tile.element_95",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_96",
+        raw_id: 362,
+        serialization_id: "tile.element_96",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_97",
+        raw_id: 363,
+        serialization_id: "tile.element_97",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_98",
+        raw_id: 364,
+        serialization_id: "tile.element_98",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_99",
+        raw_id: 365,
+        serialization_id: "tile.element_99",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:element_constructor",
+        raw_id: 1242,
+        serialization_id: "tile.elementconstructor",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:emerald_block",
+        raw_id: 133,
+        serialization_id: "tile.emerald_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:emerald_ore",
+        raw_id: 129,
+        serialization_id: "tile.emerald_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:enchanting_table",
+        raw_id: 116,
+        serialization_id: "tile.enchanting_table",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:end_brick_stairs",
+        raw_id: 433,
+        serialization_id: "tile.end_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:end_bricks",
+        raw_id: 206,
+        serialization_id: "tile.end_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:end_portal",
+        raw_id: 119,
+        serialization_id: "tile.end_portal",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:end_portal_frame",
+        raw_id: 120,
+        serialization_id: "tile.end_portal_frame",
+        states: &[
+            BlockState {
+                name: "end_portal_eye_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:end_rod",
+        raw_id: 208,
+        serialization_id: "tile.end_rod",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:end_stone",
+        raw_id: 121,
+        serialization_id: "tile.end_stone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:end_stone_brick_double_slab",
+        raw_id: 422,
+        serialization_id: "tile.double_stone_slab3.end_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:end_stone_brick_slab",
+        raw_id: 417,
+        serialization_id: "tile.stone_slab3.end_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:end_stone_brick_wall",
+        raw_id: 1235,
+        serialization_id: "tile.cobblestone_wall.end_brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:ender_chest",
+        raw_id: 130,
+        serialization_id: "tile.ender_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_chiseled_copper",
+        raw_id: 1016,
+        serialization_id: "tile.exposed_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper",
+        raw_id: 596,
+        serialization_id: "tile.exposed_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_bars",
+        raw_id: 1322,
+        serialization_id: "tile.exposed_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_bulb",
+        raw_id: 1032,
+        serialization_id: "tile.exposed_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_chain",
+        raw_id: 1330,
+        serialization_id: "tile.exposed_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_chest",
+        raw_id: 1287,
+        serialization_id: "tile.exposed_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_door",
+        raw_id: 1040,
+        serialization_id: "tile.exposed_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_golem_statue",
+        raw_id: 1295,
+        serialization_id: "tile.exposed_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_grate",
+        raw_id: 1024,
+        serialization_id: "tile.exposed_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_lantern",
+        raw_id: 1339,
+        serialization_id: "tile.exposed_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_copper_trapdoor",
+        raw_id: 1048,
+        serialization_id: "tile.exposed_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:exposed_cut_copper",
+        raw_id: 603,
+        serialization_id: "tile.exposed_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:exposed_cut_copper_slab",
+        raw_id: 617,
+        serialization_id: "tile.exposed_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_cut_copper_stairs",
+        raw_id: 610,
+        serialization_id: "tile.exposed_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:exposed_double_cut_copper_slab",
+        raw_id: 624,
+        serialization_id: "tile.exposed_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:exposed_lightning_rod",
+        raw_id: 1314,
+        serialization_id: "tile.exposed_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:farmland",
+        raw_id: 60,
+        serialization_id: "tile.farmland",
+        states: &[BlockState {
+            name: "moisturized_amount",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:fence_gate",
+        raw_id: 107,
+        serialization_id: "tile.fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:fern",
+        raw_id: 1103,
+        serialization_id: "tile.tallgrass.fern",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:fire",
+        raw_id: 51,
+        serialization_id: "tile.fire",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:fire_coral",
+        raw_id: 838,
+        serialization_id: "tile.coral.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:fire_coral_block",
+        raw_id: 1106,
+        serialization_id: "tile.coral_block.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:fire_coral_fan",
+        raw_id: 1097,
+        serialization_id: "tile.coral_fan.red_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:fire_coral_wall_fan",
+        raw_id: 1162,
+        serialization_id: "tile.fire_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:firefly_bush",
+        raw_id: 1280,
+        serialization_id: "tile.firefly_bush",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:fletching_table",
+        raw_id: 456,
+        serialization_id: "tile.fletching_table",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:flower_pot",
+        raw_id: 140,
+        serialization_id: "tile.flower_pot",
+        states: &[BlockState {
+            name: "update_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:flowering_azalea",
+        raw_id: 593,
+        serialization_id: "tile.flowering_azalea",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:flowing_lava",
+        raw_id: 10,
+        serialization_id: "tile.flowing_lava",
+        states: &[BlockState {
+            name: "liquid_depth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:flowing_water",
+        raw_id: 8,
+        serialization_id: "tile.flowing_water",
+        states: &[BlockState {
+            name: "liquid_depth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:frame",
+        raw_id: 199,
+        serialization_id: "tile.frame",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "item_frame_map_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "item_frame_photo_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:frog_spawn",
+        raw_id: 723,
+        serialization_id: "tile.frog_spawn",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:frosted_ice",
+        raw_id: 207,
+        serialization_id: "tile.frosted_ice",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:furnace",
+        raw_id: 61,
+        serialization_id: "tile.furnace",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gilded_blackstone",
+        raw_id: 536,
+        serialization_id: "tile.gilded_blackstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:glass",
+        raw_id: 20,
+        serialization_id: "tile.glass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:glass_pane",
+        raw_id: 102,
+        serialization_id: "tile.glass_pane",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:glow_frame",
+        raw_id: 594,
+        serialization_id: "tile.glow_frame",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "item_frame_map_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "item_frame_photo_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:glow_lichen",
+        raw_id: 666,
+        serialization_id: "tile.glow_lichen",
+        states: &[BlockState {
+            name: "multi_face_direction_bits",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:glowstone",
+        raw_id: 89,
+        serialization_id: "tile.glowstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gold_block",
+        raw_id: 41,
+        serialization_id: "tile.gold_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gold_ore",
+        raw_id: 14,
+        serialization_id: "tile.gold_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:golden_dandelion",
+        raw_id: 1346,
+        serialization_id: "tile.golden_dandelion",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:golden_rail",
+        raw_id: 27,
+        serialization_id: "tile.golden_rail",
+        states: &[
+            BlockState {
+                name: "rail_data_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "rail_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:granite",
+        raw_id: 845,
+        serialization_id: "tile.stone.granite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:granite_double_slab",
+        raw_id: 1178,
+        serialization_id: "tile.double_stone_slab3.granite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:granite_slab",
+        raw_id: 1151,
+        serialization_id: "tile.stone_slab3.granite",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:granite_stairs",
+        raw_id: 424,
+        serialization_id: "tile.granite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:granite_wall",
+        raw_id: 1227,
+        serialization_id: "tile.cobblestone_wall.granite",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:grass_block",
+        raw_id: 2,
+        serialization_id: "tile.grass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:grass_path",
+        raw_id: 198,
+        serialization_id: "tile.grass_path",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gravel",
+        raw_id: 13,
+        serialization_id: "tile.gravel",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_candle",
+        raw_id: 675,
+        serialization_id: "tile.gray_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:gray_candle_cake",
+        raw_id: 692,
+        serialization_id: "tile.gray_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_carpet",
+        raw_id: 858,
+        serialization_id: "tile.carpet.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_concrete",
+        raw_id: 889,
+        serialization_id: "tile.concrete.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_concrete_double_slab",
+        raw_id: 1488,
+        serialization_id: "tile.gray_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_concrete_powder",
+        raw_id: 970,
+        serialization_id: "tile.concretePowder.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_concrete_slab",
+        raw_id: 1472,
+        serialization_id: "tile.gray_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_concrete_stairs",
+        raw_id: 1463,
+        serialization_id: "tile.gray_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:gray_glazed_terracotta",
+        raw_id: 227,
+        serialization_id: "tile.glazedTerracotta.gray",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_shulker_box",
+        raw_id: 874,
+        serialization_id: "tile.shulkerBoxGray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_stained_glass",
+        raw_id: 934,
+        serialization_id: "tile.stained_glass.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_stained_glass_pane",
+        raw_id: 904,
+        serialization_id: "tile.stained_glass_pane.gray",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:gray_terracotta",
+        raw_id: 985,
+        serialization_id: "tile.stained_hardened_clay.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_wool",
+        raw_id: 808,
+        serialization_id: "tile.wool.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:gray_wool_double_slab",
+        raw_id: 1438,
+        serialization_id: "tile.gray_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_wool_slab",
+        raw_id: 1422,
+        serialization_id: "tile.gray_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:gray_wool_stairs",
+        raw_id: 1413,
+        serialization_id: "tile.gray_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:green_candle",
+        raw_id: 681,
+        serialization_id: "tile.green_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:green_candle_cake",
+        raw_id: 698,
+        serialization_id: "tile.green_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_carpet",
+        raw_id: 864,
+        serialization_id: "tile.carpet.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_concrete",
+        raw_id: 895,
+        serialization_id: "tile.concrete.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_concrete_double_slab",
+        raw_id: 1495,
+        serialization_id: "tile.green_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_concrete_powder",
+        raw_id: 976,
+        serialization_id: "tile.concretePowder.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_concrete_slab",
+        raw_id: 1479,
+        serialization_id: "tile.green_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_concrete_stairs",
+        raw_id: 1467,
+        serialization_id: "tile.green_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:green_glazed_terracotta",
+        raw_id: 233,
+        serialization_id: "tile.glazedTerracotta.green",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_shulker_box",
+        raw_id: 880,
+        serialization_id: "tile.shulkerBoxGreen",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_stained_glass",
+        raw_id: 940,
+        serialization_id: "tile.stained_glass.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_stained_glass_pane",
+        raw_id: 910,
+        serialization_id: "tile.stained_glass_pane.green",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:green_terracotta",
+        raw_id: 991,
+        serialization_id: "tile.stained_hardened_clay.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_wool",
+        raw_id: 815,
+        serialization_id: "tile.wool.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:green_wool_double_slab",
+        raw_id: 1445,
+        serialization_id: "tile.green_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_wool_slab",
+        raw_id: 1429,
+        serialization_id: "tile.green_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:green_wool_stairs",
+        raw_id: 1417,
+        serialization_id: "tile.green_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:grindstone",
+        raw_id: 450,
+        serialization_id: "tile.grindstone",
+        states: &[
+            BlockState {
+                name: "attachment",
+                values: BlockStateValues::Str(&["standing", "hanging", "side", "multiple"]),
+            },
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hanging_roots",
+        raw_id: 574,
+        serialization_id: "tile.hanging_roots",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_black_stained_glass",
+        raw_id: 957,
+        serialization_id: "tile.hard_stained_glass.black",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_black_stained_glass_pane",
+        raw_id: 927,
+        serialization_id: "tile.hard_stained_glass_pane.black",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_blue_stained_glass",
+        raw_id: 953,
+        serialization_id: "tile.hard_stained_glass.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_blue_stained_glass_pane",
+        raw_id: 923,
+        serialization_id: "tile.hard_stained_glass_pane.blue",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_brown_stained_glass",
+        raw_id: 954,
+        serialization_id: "tile.hard_stained_glass.brown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_brown_stained_glass_pane",
+        raw_id: 924,
+        serialization_id: "tile.hard_stained_glass_pane.brown",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_cyan_stained_glass",
+        raw_id: 951,
+        serialization_id: "tile.hard_stained_glass.cyan",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_cyan_stained_glass_pane",
+        raw_id: 921,
+        serialization_id: "tile.hard_stained_glass_pane.cyan",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_glass",
+        raw_id: 253,
+        serialization_id: "tile.hard_glass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_glass_pane",
+        raw_id: 190,
+        serialization_id: "tile.hard_glass_pane",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_gray_stained_glass",
+        raw_id: 949,
+        serialization_id: "tile.hard_stained_glass.gray",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_gray_stained_glass_pane",
+        raw_id: 919,
+        serialization_id: "tile.hard_stained_glass_pane.gray",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_green_stained_glass",
+        raw_id: 955,
+        serialization_id: "tile.hard_stained_glass.green",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_green_stained_glass_pane",
+        raw_id: 925,
+        serialization_id: "tile.hard_stained_glass_pane.green",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_light_blue_stained_glass",
+        raw_id: 945,
+        serialization_id: "tile.hard_stained_glass.light_blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_light_blue_stained_glass_pane",
+        raw_id: 915,
+        serialization_id: "tile.hard_stained_glass_pane.light_blue",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_light_gray_stained_glass",
+        raw_id: 950,
+        serialization_id: "tile.hard_stained_glass.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_light_gray_stained_glass_pane",
+        raw_id: 920,
+        serialization_id: "tile.hard_stained_glass_pane.silver",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_lime_stained_glass",
+        raw_id: 947,
+        serialization_id: "tile.hard_stained_glass.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_lime_stained_glass_pane",
+        raw_id: 917,
+        serialization_id: "tile.hard_stained_glass_pane.lime",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_magenta_stained_glass",
+        raw_id: 944,
+        serialization_id: "tile.hard_stained_glass.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_magenta_stained_glass_pane",
+        raw_id: 914,
+        serialization_id: "tile.hard_stained_glass_pane.magenta",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_orange_stained_glass",
+        raw_id: 943,
+        serialization_id: "tile.hard_stained_glass.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_orange_stained_glass_pane",
+        raw_id: 913,
+        serialization_id: "tile.hard_stained_glass_pane.orange",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_pink_stained_glass",
+        raw_id: 948,
+        serialization_id: "tile.hard_stained_glass.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_pink_stained_glass_pane",
+        raw_id: 918,
+        serialization_id: "tile.hard_stained_glass_pane.pink",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_purple_stained_glass",
+        raw_id: 952,
+        serialization_id: "tile.hard_stained_glass.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_purple_stained_glass_pane",
+        raw_id: 922,
+        serialization_id: "tile.hard_stained_glass_pane.purple",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_red_stained_glass",
+        raw_id: 956,
+        serialization_id: "tile.hard_stained_glass.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_red_stained_glass_pane",
+        raw_id: 926,
+        serialization_id: "tile.hard_stained_glass_pane.red",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_white_stained_glass",
+        raw_id: 254,
+        serialization_id: "tile.hard_stained_glass.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_white_stained_glass_pane",
+        raw_id: 191,
+        serialization_id: "tile.hard_stained_glass_pane.white",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hard_yellow_stained_glass",
+        raw_id: 946,
+        serialization_id: "tile.hard_stained_glass.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hard_yellow_stained_glass_pane",
+        raw_id: 916,
+        serialization_id: "tile.hard_stained_glass_pane.yellow",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:hardened_clay",
+        raw_id: 172,
+        serialization_id: "tile.hardened_clay",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hay_block",
+        raw_id: 170,
+        serialization_id: "tile.hay_block",
+        states: &[
+            BlockState {
+                name: "deprecated",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "pillar_axis",
+                values: BlockStateValues::Str(&["y", "x", "z"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:heavy_core",
+        raw_id: 571,
+        serialization_id: "tile.heavy_core",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:heavy_weighted_pressure_plate",
+        raw_id: 148,
+        serialization_id: "tile.heavy_weighted_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:honey_block",
+        raw_id: 475,
+        serialization_id: "tile.honey_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:honeycomb_block",
+        raw_id: 476,
+        serialization_id: "tile.honeycomb_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:hopper",
+        raw_id: 154,
+        serialization_id: "tile.hopper",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "toggle_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:horn_coral",
+        raw_id: 839,
+        serialization_id: "tile.coral.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:horn_coral_block",
+        raw_id: 1107,
+        serialization_id: "tile.coral_block.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:horn_coral_fan",
+        raw_id: 1098,
+        serialization_id: "tile.coral_fan.yellow_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:horn_coral_wall_fan",
+        raw_id: 392,
+        serialization_id: "tile.horn_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:ice",
+        raw_id: 79,
+        serialization_id: "tile.ice",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_chiseled_stone_bricks",
+        raw_id: 1117,
+        serialization_id: "tile.monster_egg.chiseledbrick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_cobblestone",
+        raw_id: 1113,
+        serialization_id: "tile.monster_egg.cobble",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_cracked_stone_bricks",
+        raw_id: 1116,
+        serialization_id: "tile.monster_egg.crackedbrick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_deepslate",
+        raw_id: 709,
+        serialization_id: "tile.infested_deepslate",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:infested_mossy_stone_bricks",
+        raw_id: 1115,
+        serialization_id: "tile.monster_egg.mossybrick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_stone",
+        raw_id: 97,
+        serialization_id: "tile.monster_egg.stone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:infested_stone_bricks",
+        raw_id: 1114,
+        serialization_id: "tile.monster_egg.brick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:iron_bars",
+        raw_id: 101,
+        serialization_id: "tile.iron_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:iron_block",
+        raw_id: 42,
+        serialization_id: "tile.iron_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:iron_chain",
+        raw_id: 541,
+        serialization_id: "tile.iron_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:iron_door",
+        raw_id: 71,
+        serialization_id: "tile.iron_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:iron_ore",
+        raw_id: 15,
+        serialization_id: "tile.iron_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:iron_trapdoor",
+        raw_id: 167,
+        serialization_id: "tile.iron_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jigsaw",
+        raw_id: 466,
+        serialization_id: "tile.jigsaw",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "rotation",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jukebox",
+        raw_id: 84,
+        serialization_id: "tile.jukebox",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:jungle_button",
+        raw_id: 398,
+        serialization_id: "tile.jungle_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_door",
+        raw_id: 195,
+        serialization_id: "tile.jungle_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_double_slab",
+        raw_id: 1066,
+        serialization_id: "tile.double_wooden_slab.jungle",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_fence",
+        raw_id: 833,
+        serialization_id: "tile.jungle_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_fence_gate",
+        raw_id: 185,
+        serialization_id: "tile.jungle_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_hanging_sign",
+        raw_id: 758,
+        serialization_id: "tile.jungle_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_leaves",
+        raw_id: 1057,
+        serialization_id: "tile.leaves.jungle",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_log",
+        raw_id: 826,
+        serialization_id: "tile.log.jungle",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_planks",
+        raw_id: 996,
+        serialization_id: "tile.jungle_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:jungle_pressure_plate",
+        raw_id: 408,
+        serialization_id: "tile.jungle_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_sapling",
+        raw_id: 1082,
+        serialization_id: "tile.sapling.jungle",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_shelf",
+        raw_id: 1305,
+        serialization_id: "tile.jungle_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_slab",
+        raw_id: 1061,
+        serialization_id: "tile.wooden_slab.jungle",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_stairs",
+        raw_id: 136,
+        serialization_id: "tile.jungle_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_standing_sign",
+        raw_id: 443,
+        serialization_id: "tile.jungle_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_trapdoor",
+        raw_id: 403,
+        serialization_id: "tile.jungle_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:jungle_wall_sign",
+        raw_id: 444,
+        serialization_id: "tile.jungle_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:jungle_wood",
+        raw_id: 1071,
+        serialization_id: "tile.wood.jungle",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:kelp",
+        raw_id: 393,
+        serialization_id: "tile.kelp",
+        states: &[BlockState {
+            name: "kelp_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lab_table",
+        raw_id: 1243,
+        serialization_id: "tile.labtable",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:ladder",
+        raw_id: 65,
+        serialization_id: "tile.ladder",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lantern",
+        raw_id: 463,
+        serialization_id: "tile.lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lapis_block",
+        raw_id: 22,
+        serialization_id: "tile.lapis_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lapis_ore",
+        raw_id: 21,
+        serialization_id: "tile.lapis_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:large_amethyst_bud",
+        raw_id: 585,
+        serialization_id: "tile.large_amethyst_bud",
+        states: &[BlockState {
+            name: "minecraft:block_face",
+            values: BlockStateValues::Str(&["down", "up", "north", "south", "west", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:large_fern",
+        raw_id: 1120,
+        serialization_id: "tile.double_plant.fern",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lava",
+        raw_id: 11,
+        serialization_id: "tile.lava",
+        states: &[BlockState {
+            name: "liquid_depth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:leaf_litter",
+        raw_id: 1281,
+        serialization_id: "tile.leaf_litter",
+        states: &[
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lectern",
+        raw_id: 449,
+        serialization_id: "tile.lectern",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lever",
+        raw_id: 69,
+        serialization_id: "tile.lever",
+        states: &[
+            BlockState {
+                name: "lever_direction",
+                values: BlockStateValues::Str(&[
+                    "down_east_west",
+                    "east",
+                    "west",
+                    "south",
+                    "north",
+                    "up_north_south",
+                    "up_east_west",
+                    "down_north_south",
+                ]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_block_0",
+        raw_id: 470,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_1",
+        raw_id: 1184,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_10",
+        raw_id: 1193,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_11",
+        raw_id: 1194,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_12",
+        raw_id: 1195,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_13",
+        raw_id: 1196,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_14",
+        raw_id: 1197,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_15",
+        raw_id: 1198,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_2",
+        raw_id: 1185,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_3",
+        raw_id: 1186,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_4",
+        raw_id: 1187,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_5",
+        raw_id: 1188,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_6",
+        raw_id: 1189,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_7",
+        raw_id: 1190,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_8",
+        raw_id: 1191,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_block_9",
+        raw_id: 1192,
+        serialization_id: "tile.light_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_candle",
+        raw_id: 671,
+        serialization_id: "tile.light_blue_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_candle_cake",
+        raw_id: 688,
+        serialization_id: "tile.light_blue_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_carpet",
+        raw_id: 854,
+        serialization_id: "tile.carpet.lightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_concrete",
+        raw_id: 885,
+        serialization_id: "tile.concrete.lightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_concrete_double_slab",
+        raw_id: 1497,
+        serialization_id: "tile.light_blue_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_concrete_powder",
+        raw_id: 966,
+        serialization_id: "tile.concretePowder.lightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_concrete_slab",
+        raw_id: 1481,
+        serialization_id: "tile.light_blue_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_concrete_stairs",
+        raw_id: 1459,
+        serialization_id: "tile.light_blue_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_glazed_terracotta",
+        raw_id: 223,
+        serialization_id: "tile.glazedTerracotta.light_blue",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_shulker_box",
+        raw_id: 870,
+        serialization_id: "tile.shulkerBoxLightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_stained_glass",
+        raw_id: 930,
+        serialization_id: "tile.stained_glass.light_blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_stained_glass_pane",
+        raw_id: 900,
+        serialization_id: "tile.stained_glass_pane.light_blue",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_terracotta",
+        raw_id: 981,
+        serialization_id: "tile.stained_hardened_clay.lightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_wool",
+        raw_id: 817,
+        serialization_id: "tile.wool.lightBlue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_wool_double_slab",
+        raw_id: 1447,
+        serialization_id: "tile.light_blue_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_wool_slab",
+        raw_id: 1431,
+        serialization_id: "tile.light_blue_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_blue_wool_stairs",
+        raw_id: 1409,
+        serialization_id: "tile.light_blue_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_candle",
+        raw_id: 676,
+        serialization_id: "tile.light_gray_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_candle_cake",
+        raw_id: 693,
+        serialization_id: "tile.light_gray_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_carpet",
+        raw_id: 859,
+        serialization_id: "tile.carpet.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_concrete",
+        raw_id: 890,
+        serialization_id: "tile.concrete.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_concrete_double_slab",
+        raw_id: 1487,
+        serialization_id: "tile.light_gray_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_concrete_powder",
+        raw_id: 971,
+        serialization_id: "tile.concretePowder.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_concrete_slab",
+        raw_id: 1471,
+        serialization_id: "tile.light_gray_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_concrete_stairs",
+        raw_id: 1464,
+        serialization_id: "tile.light_gray_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_shulker_box",
+        raw_id: 875,
+        serialization_id: "tile.shulkerBoxSilver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_stained_glass",
+        raw_id: 935,
+        serialization_id: "tile.stained_glass.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_stained_glass_pane",
+        raw_id: 905,
+        serialization_id: "tile.stained_glass_pane.silver",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_terracotta",
+        raw_id: 986,
+        serialization_id: "tile.stained_hardened_clay.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_wool",
+        raw_id: 807,
+        serialization_id: "tile.wool.silver",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_wool_double_slab",
+        raw_id: 1437,
+        serialization_id: "tile.light_gray_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_wool_slab",
+        raw_id: 1421,
+        serialization_id: "tile.light_gray_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:light_gray_wool_stairs",
+        raw_id: 1414,
+        serialization_id: "tile.light_gray_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:light_weighted_pressure_plate",
+        raw_id: 147,
+        serialization_id: "tile.light_weighted_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lightning_rod",
+        raw_id: 567,
+        serialization_id: "tile.lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lilac",
+        raw_id: 1118,
+        serialization_id: "tile.double_plant.syringa",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lily_of_the_valley",
+        raw_id: 1094,
+        serialization_id: "tile.red_flower.lilyOfTheValley",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_candle",
+        raw_id: 673,
+        serialization_id: "tile.lime_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lime_candle_cake",
+        raw_id: 690,
+        serialization_id: "tile.lime_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_carpet",
+        raw_id: 856,
+        serialization_id: "tile.carpet.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_concrete",
+        raw_id: 887,
+        serialization_id: "tile.concrete.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_concrete_double_slab",
+        raw_id: 1494,
+        serialization_id: "tile.lime_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_concrete_powder",
+        raw_id: 968,
+        serialization_id: "tile.concretePowder.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_concrete_slab",
+        raw_id: 1478,
+        serialization_id: "tile.lime_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_concrete_stairs",
+        raw_id: 1461,
+        serialization_id: "tile.lime_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lime_glazed_terracotta",
+        raw_id: 225,
+        serialization_id: "tile.glazedTerracotta.lime",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_shulker_box",
+        raw_id: 872,
+        serialization_id: "tile.shulkerBoxLime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_stained_glass",
+        raw_id: 932,
+        serialization_id: "tile.stained_glass.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_stained_glass_pane",
+        raw_id: 902,
+        serialization_id: "tile.stained_glass_pane.lime",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lime_terracotta",
+        raw_id: 983,
+        serialization_id: "tile.stained_hardened_clay.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_wool",
+        raw_id: 814,
+        serialization_id: "tile.wool.lime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lime_wool_double_slab",
+        raw_id: 1444,
+        serialization_id: "tile.lime_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_wool_slab",
+        raw_id: 1428,
+        serialization_id: "tile.lime_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lime_wool_stairs",
+        raw_id: 1411,
+        serialization_id: "tile.lime_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:lit_blast_furnace",
+        raw_id: 469,
+        serialization_id: "tile.lit_blast_furnace",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lit_deepslate_redstone_ore",
+        raw_id: 659,
+        serialization_id: "tile.lit_deepslate_redstone_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lit_furnace",
+        raw_id: 62,
+        serialization_id: "tile.lit_furnace",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lit_pumpkin",
+        raw_id: 91,
+        serialization_id: "tile.lit_pumpkin",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lit_redstone_lamp",
+        raw_id: 124,
+        serialization_id: "tile.lit_redstone_lamp",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lit_redstone_ore",
+        raw_id: 74,
+        serialization_id: "tile.lit_redstone_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:lit_smoker",
+        raw_id: 454,
+        serialization_id: "tile.lit_smoker",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:lodestone",
+        raw_id: 477,
+        serialization_id: "tile.lodestone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:loom",
+        raw_id: 459,
+        serialization_id: "tile.loom",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_candle",
+        raw_id: 670,
+        serialization_id: "tile.magenta_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:magenta_candle_cake",
+        raw_id: 687,
+        serialization_id: "tile.magenta_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_carpet",
+        raw_id: 853,
+        serialization_id: "tile.carpet.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_concrete",
+        raw_id: 884,
+        serialization_id: "tile.concrete.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_concrete_double_slab",
+        raw_id: 1500,
+        serialization_id: "tile.magenta_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_concrete_powder",
+        raw_id: 965,
+        serialization_id: "tile.concretePowder.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_concrete_slab",
+        raw_id: 1484,
+        serialization_id: "tile.magenta_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_concrete_stairs",
+        raw_id: 1458,
+        serialization_id: "tile.magenta_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:magenta_glazed_terracotta",
+        raw_id: 222,
+        serialization_id: "tile.glazedTerracotta.magenta",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_shulker_box",
+        raw_id: 869,
+        serialization_id: "tile.shulkerBoxMagenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_stained_glass",
+        raw_id: 929,
+        serialization_id: "tile.stained_glass.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_stained_glass_pane",
+        raw_id: 899,
+        serialization_id: "tile.stained_glass_pane.magenta",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:magenta_terracotta",
+        raw_id: 980,
+        serialization_id: "tile.stained_hardened_clay.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_wool",
+        raw_id: 820,
+        serialization_id: "tile.wool.magenta",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:magenta_wool_double_slab",
+        raw_id: 1450,
+        serialization_id: "tile.magenta_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_wool_slab",
+        raw_id: 1434,
+        serialization_id: "tile.magenta_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:magenta_wool_stairs",
+        raw_id: 1408,
+        serialization_id: "tile.magenta_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:magma",
+        raw_id: 213,
+        serialization_id: "tile.magma",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_button",
+        raw_id: 742,
+        serialization_id: "tile.mangrove_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_door",
+        raw_id: 748,
+        serialization_id: "tile.mangrove_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_double_slab",
+        raw_id: 754,
+        serialization_id: "tile.mangrove_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_fence",
+        raw_id: 746,
+        serialization_id: "tile.mangrove_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_fence_gate",
+        raw_id: 747,
+        serialization_id: "tile.mangrove_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_hanging_sign",
+        raw_id: 763,
+        serialization_id: "tile.mangrove_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_leaves",
+        raw_id: 727,
+        serialization_id: "tile.mangrove_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_log",
+        raw_id: 739,
+        serialization_id: "tile.mangrove_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_planks",
+        raw_id: 741,
+        serialization_id: "tile.mangrove_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_pressure_plate",
+        raw_id: 745,
+        serialization_id: "tile.mangrove_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_propagule",
+        raw_id: 729,
+        serialization_id: "tile.mangrove_propagule",
+        states: &[
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "propagule_stage",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_roots",
+        raw_id: 737,
+        serialization_id: "tile.mangrove_roots",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_shelf",
+        raw_id: 1308,
+        serialization_id: "tile.mangrove_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_slab",
+        raw_id: 744,
+        serialization_id: "tile.mangrove_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_stairs",
+        raw_id: 743,
+        serialization_id: "tile.mangrove_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_standing_sign",
+        raw_id: 749,
+        serialization_id: "tile.mangrove_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_trapdoor",
+        raw_id: 751,
+        serialization_id: "tile.mangrove_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_wall_sign",
+        raw_id: 750,
+        serialization_id: "tile.mangrove_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mangrove_wood",
+        raw_id: 752,
+        serialization_id: "tile.mangrove_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:material_reducer",
+        raw_id: 1241,
+        serialization_id: "tile.materialreducer",
+        states: &[BlockState {
+            name: "direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:medium_amethyst_bud",
+        raw_id: 586,
+        serialization_id: "tile.medium_amethyst_bud",
+        states: &[BlockState {
+            name: "minecraft:block_face",
+            values: BlockStateValues::Str(&["down", "up", "north", "south", "west", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:melon_block",
+        raw_id: 103,
+        serialization_id: "tile.melon_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:melon_stem",
+        raw_id: 105,
+        serialization_id: "tile.melon_stem",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mob_spawner",
+        raw_id: 52,
+        serialization_id: "tile.mob_spawner",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:moss_block",
+        raw_id: 575,
+        serialization_id: "tile.moss_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:moss_carpet",
+        raw_id: 590,
+        serialization_id: "tile.moss_carpet",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mossy_cobblestone",
+        raw_id: 48,
+        serialization_id: "tile.mossy_cobblestone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mossy_cobblestone_double_slab",
+        raw_id: 1170,
+        serialization_id: "tile.double_stone_slab2.mossy_cobblestone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mossy_cobblestone_slab",
+        raw_id: 1143,
+        serialization_id: "tile.stone_slab2.mossy_cobblestone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mossy_cobblestone_stairs",
+        raw_id: 434,
+        serialization_id: "tile.mossy_cobblestone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mossy_cobblestone_wall",
+        raw_id: 1226,
+        serialization_id: "tile.cobblestone_wall.mossy",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mossy_stone_brick_double_slab",
+        raw_id: 423,
+        serialization_id: "tile.double_stone_slab4.mossy_stone_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mossy_stone_brick_slab",
+        raw_id: 421,
+        serialization_id: "tile.stone_slab4.mossy_stone_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mossy_stone_brick_stairs",
+        raw_id: 430,
+        serialization_id: "tile.mossy_stone_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mossy_stone_brick_wall",
+        raw_id: 1233,
+        serialization_id: "tile.cobblestone_wall.mossy_stone_brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mossy_stone_bricks",
+        raw_id: 1123,
+        serialization_id: "tile.stonebrick.mossy",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mud",
+        raw_id: 728,
+        serialization_id: "tile.mud",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:mud_brick_double_slab",
+        raw_id: 734,
+        serialization_id: "tile.mud_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mud_brick_slab",
+        raw_id: 733,
+        serialization_id: "tile.mud_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mud_brick_stairs",
+        raw_id: 735,
+        serialization_id: "tile.mud_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mud_brick_wall",
+        raw_id: 736,
+        serialization_id: "tile.mud_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:mud_bricks",
+        raw_id: 730,
+        serialization_id: "tile.mud_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:muddy_mangrove_roots",
+        raw_id: 738,
+        serialization_id: "tile.muddy_mangrove_roots",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mushroom_stem",
+        raw_id: 1263,
+        serialization_id: "tile.brown_mushroom_block.stem",
+        states: &[BlockState {
+            name: "huge_mushroom_bits",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:mycelium",
+        raw_id: 110,
+        serialization_id: "tile.mycelium",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick",
+        raw_id: 112,
+        serialization_id: "tile.nether_brick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick_double_slab",
+        raw_id: 1138,
+        serialization_id: "tile.double_stone_slab.nether_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick_fence",
+        raw_id: 113,
+        serialization_id: "tile.nether_brick_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick_slab",
+        raw_id: 1132,
+        serialization_id: "tile.stone_slab.nether_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick_stairs",
+        raw_id: 114,
+        serialization_id: "tile.nether_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:nether_brick_wall",
+        raw_id: 1234,
+        serialization_id: "tile.cobblestone_wall.nether_brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:nether_gold_ore",
+        raw_id: 543,
+        serialization_id: "tile.nether_gold_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:nether_sprouts",
+        raw_id: 493,
+        serialization_id: "tile.nether_sprouts",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:nether_wart",
+        raw_id: 115,
+        serialization_id: "tile.nether_wart",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:nether_wart_block",
+        raw_id: 214,
+        serialization_id: "tile.nether_wart_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:netherite_block",
+        raw_id: 525,
+        serialization_id: "tile.netherite_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:netherrack",
+        raw_id: 87,
+        serialization_id: "tile.netherrack",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:normal_stone_double_slab",
+        raw_id: 1181,
+        serialization_id: "tile.double_stone_slab4.stone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:normal_stone_slab",
+        raw_id: 1154,
+        serialization_id: "tile.stone_slab4.stone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:normal_stone_stairs",
+        raw_id: 435,
+        serialization_id: "tile.normal_stone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:noteblock",
+        raw_id: 25,
+        serialization_id: "tile.noteblock",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oak_double_slab",
+        raw_id: 157,
+        serialization_id: "tile.double_wooden_slab.oak",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oak_fence",
+        raw_id: 85,
+        serialization_id: "tile.oak_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oak_hanging_sign",
+        raw_id: 755,
+        serialization_id: "tile.oak_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oak_leaves",
+        raw_id: 18,
+        serialization_id: "tile.leaves.oak",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oak_log",
+        raw_id: 17,
+        serialization_id: "tile.log.oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oak_planks",
+        raw_id: 5,
+        serialization_id: "tile.oak_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oak_sapling",
+        raw_id: 6,
+        serialization_id: "tile.sapling.oak",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oak_shelf",
+        raw_id: 1302,
+        serialization_id: "tile.oak_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oak_slab",
+        raw_id: 158,
+        serialization_id: "tile.wooden_slab.oak",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oak_stairs",
+        raw_id: 53,
+        serialization_id: "tile.oak_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oak_wood",
+        raw_id: 467,
+        serialization_id: "tile.wood.oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:observer",
+        raw_id: 251,
+        serialization_id: "tile.observer",
+        states: &[
+            BlockState {
+                name: "minecraft:facing_direction",
+                values: BlockStateValues::Str(&["down", "up", "north", "south", "west", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:obsidian",
+        raw_id: 49,
+        serialization_id: "tile.obsidian",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:ochre_froglight",
+        raw_id: 726,
+        serialization_id: "tile.ochre_froglight",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:open_eyeblossom",
+        raw_id: 1273,
+        serialization_id: "tile.open_eyeblossom",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_candle",
+        raw_id: 669,
+        serialization_id: "tile.orange_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:orange_candle_cake",
+        raw_id: 686,
+        serialization_id: "tile.orange_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_carpet",
+        raw_id: 852,
+        serialization_id: "tile.carpet.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_concrete",
+        raw_id: 883,
+        serialization_id: "tile.concrete.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_concrete_double_slab",
+        raw_id: 1492,
+        serialization_id: "tile.orange_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_concrete_powder",
+        raw_id: 964,
+        serialization_id: "tile.concretePowder.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_concrete_slab",
+        raw_id: 1476,
+        serialization_id: "tile.orange_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_concrete_stairs",
+        raw_id: 1457,
+        serialization_id: "tile.orange_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:orange_glazed_terracotta",
+        raw_id: 221,
+        serialization_id: "tile.glazedTerracotta.orange",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_poplar_leaves",
+        raw_id: 1399,
+        serialization_id: "tile.orange_poplar_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:orange_shulker_box",
+        raw_id: 868,
+        serialization_id: "tile.shulkerBoxOrange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_stained_glass",
+        raw_id: 928,
+        serialization_id: "tile.stained_glass.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_stained_glass_pane",
+        raw_id: 898,
+        serialization_id: "tile.stained_glass_pane.orange",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:orange_terracotta",
+        raw_id: 979,
+        serialization_id: "tile.stained_hardened_clay.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_tulip",
+        raw_id: 1089,
+        serialization_id: "tile.red_flower.tulipOrange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_wool",
+        raw_id: 812,
+        serialization_id: "tile.wool.orange",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:orange_wool_double_slab",
+        raw_id: 1442,
+        serialization_id: "tile.orange_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_wool_slab",
+        raw_id: 1426,
+        serialization_id: "tile.orange_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:orange_wool_stairs",
+        raw_id: 1407,
+        serialization_id: "tile.orange_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxeye_daisy",
+        raw_id: 1092,
+        serialization_id: "tile.red_flower.oxeyeDaisy",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_chiseled_copper",
+        raw_id: 1018,
+        serialization_id: "tile.oxidized_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper",
+        raw_id: 598,
+        serialization_id: "tile.oxidized_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_bars",
+        raw_id: 1324,
+        serialization_id: "tile.oxidized_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_bulb",
+        raw_id: 1034,
+        serialization_id: "tile.oxidized_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_chain",
+        raw_id: 1332,
+        serialization_id: "tile.oxidized_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_chest",
+        raw_id: 1289,
+        serialization_id: "tile.oxidized_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_door",
+        raw_id: 1042,
+        serialization_id: "tile.oxidized_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_golem_statue",
+        raw_id: 1297,
+        serialization_id: "tile.oxidized_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_grate",
+        raw_id: 1026,
+        serialization_id: "tile.oxidized_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_lantern",
+        raw_id: 1341,
+        serialization_id: "tile.oxidized_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_copper_trapdoor",
+        raw_id: 1050,
+        serialization_id: "tile.oxidized_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_cut_copper",
+        raw_id: 605,
+        serialization_id: "tile.oxidized_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_cut_copper_slab",
+        raw_id: 619,
+        serialization_id: "tile.oxidized_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_cut_copper_stairs",
+        raw_id: 612,
+        serialization_id: "tile.oxidized_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_double_cut_copper_slab",
+        raw_id: 626,
+        serialization_id: "tile.oxidized_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:oxidized_lightning_rod",
+        raw_id: 1316,
+        serialization_id: "tile.oxidized_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:packed_ice",
+        raw_id: 174,
+        serialization_id: "tile.packed_ice",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:packed_mud",
+        raw_id: 732,
+        serialization_id: "tile.packed_mud",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pale_hanging_moss",
+        raw_id: 1266,
+        serialization_id: "tile.pale_hanging_moss",
+        states: &[BlockState {
+            name: "tip",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_moss_block",
+        raw_id: 1264,
+        serialization_id: "tile.pale_moss_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pale_moss_carpet",
+        raw_id: 1265,
+        serialization_id: "tile.pale_moss_carpet",
+        states: &[
+            BlockState {
+                name: "pale_moss_carpet_side_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "pale_moss_carpet_side_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "pale_moss_carpet_side_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "pale_moss_carpet_side_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_button",
+        raw_id: 1244,
+        serialization_id: "tile.pale_oak_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_door",
+        raw_id: 1245,
+        serialization_id: "tile.pale_oak_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_double_slab",
+        raw_id: 1254,
+        serialization_id: "tile.pale_oak_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_fence",
+        raw_id: 1246,
+        serialization_id: "tile.pale_oak_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_fence_gate",
+        raw_id: 1247,
+        serialization_id: "tile.pale_oak_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_hanging_sign",
+        raw_id: 1248,
+        serialization_id: "tile.pale_oak_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_leaves",
+        raw_id: 1262,
+        serialization_id: "tile.pale_oak_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_log",
+        raw_id: 1250,
+        serialization_id: "tile.pale_oak_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_planks",
+        raw_id: 1251,
+        serialization_id: "tile.pale_oak_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_pressure_plate",
+        raw_id: 1252,
+        serialization_id: "tile.pale_oak_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_sapling",
+        raw_id: 1261,
+        serialization_id: "tile.pale_oak_sapling",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_shelf",
+        raw_id: 1310,
+        serialization_id: "tile.pale_oak_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_slab",
+        raw_id: 1253,
+        serialization_id: "tile.pale_oak_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_stairs",
+        raw_id: 1255,
+        serialization_id: "tile.pale_oak_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_standing_sign",
+        raw_id: 1256,
+        serialization_id: "tile.pale_oak_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_trapdoor",
+        raw_id: 1257,
+        serialization_id: "tile.pale_oak_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_wall_sign",
+        raw_id: 1258,
+        serialization_id: "tile.pale_oak_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pale_oak_wood",
+        raw_id: 1260,
+        serialization_id: "tile.pale_oak_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pearlescent_froglight",
+        raw_id: 724,
+        serialization_id: "tile.pearlescent_froglight",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:peony",
+        raw_id: 1122,
+        serialization_id: "tile.double_plant.paeonia",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:petrified_oak_double_slab",
+        raw_id: 1158,
+        serialization_id: "tile.double_stone_slab.wood",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:petrified_oak_slab",
+        raw_id: 1157,
+        serialization_id: "tile.stone_slab.wood",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:piglin_head",
+        raw_id: 1225,
+        serialization_id: "tile.skull.piglin",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_candle",
+        raw_id: 674,
+        serialization_id: "tile.pink_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pink_candle_cake",
+        raw_id: 691,
+        serialization_id: "tile.pink_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_carpet",
+        raw_id: 857,
+        serialization_id: "tile.carpet.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_concrete",
+        raw_id: 888,
+        serialization_id: "tile.concrete.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_concrete_double_slab",
+        raw_id: 1501,
+        serialization_id: "tile.pink_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_concrete_powder",
+        raw_id: 969,
+        serialization_id: "tile.concretePowder.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_concrete_slab",
+        raw_id: 1485,
+        serialization_id: "tile.pink_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_concrete_stairs",
+        raw_id: 1462,
+        serialization_id: "tile.pink_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pink_glazed_terracotta",
+        raw_id: 226,
+        serialization_id: "tile.glazedTerracotta.pink",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_petals",
+        raw_id: 804,
+        serialization_id: "tile.pink_petals",
+        states: &[
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pink_shulker_box",
+        raw_id: 873,
+        serialization_id: "tile.shulkerBoxPink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_stained_glass",
+        raw_id: 933,
+        serialization_id: "tile.stained_glass.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_stained_glass_pane",
+        raw_id: 903,
+        serialization_id: "tile.stained_glass_pane.pink",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pink_terracotta",
+        raw_id: 984,
+        serialization_id: "tile.stained_hardened_clay.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_tulip",
+        raw_id: 1091,
+        serialization_id: "tile.red_flower.tulipPink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_wool",
+        raw_id: 821,
+        serialization_id: "tile.wool.pink",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pink_wool_double_slab",
+        raw_id: 1451,
+        serialization_id: "tile.pink_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_wool_slab",
+        raw_id: 1435,
+        serialization_id: "tile.pink_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pink_wool_stairs",
+        raw_id: 1412,
+        serialization_id: "tile.pink_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:piston",
+        raw_id: 33,
+        serialization_id: "tile.piston",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:piston_arm_collision",
+        raw_id: 34,
+        serialization_id: "tile.piston_arm_collision",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pitcher_crop",
+        raw_id: 829,
+        serialization_id: "tile.pitcher_crop",
+        states: &[
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pitcher_plant",
+        raw_id: 867,
+        serialization_id: "tile.pitcher_plant",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:player_head",
+        raw_id: 1222,
+        serialization_id: "tile.skull.char",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:podzol",
+        raw_id: 243,
+        serialization_id: "tile.podzol",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:pointed_dripstone",
+        raw_id: 563,
+        serialization_id: "tile.pointed_dripstone",
+        states: &[
+            BlockState {
+                name: "dripstone_thickness",
+                values: BlockStateValues::Str(&["tip", "frustum", "middle", "base", "merge"]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_andesite",
+        raw_id: 850,
+        serialization_id: "tile.stone.andesiteSmooth",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_andesite_double_slab",
+        raw_id: 1174,
+        serialization_id: "tile.double_stone_slab3.andesite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_andesite_slab",
+        raw_id: 1147,
+        serialization_id: "tile.stone_slab3.andesite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_andesite_stairs",
+        raw_id: 429,
+        serialization_id: "tile.polished_andesite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_basalt",
+        raw_id: 490,
+        serialization_id: "tile.polished_basalt",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone",
+        raw_id: 546,
+        serialization_id: "tile.polished_blackstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_brick_double_slab",
+        raw_id: 540,
+        serialization_id: "tile.polished_blackstone_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_brick_slab",
+        raw_id: 539,
+        serialization_id: "tile.polished_blackstone_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_brick_stairs",
+        raw_id: 530,
+        serialization_id: "tile.polished_blackstone_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_brick_wall",
+        raw_id: 533,
+        serialization_id: "tile.polished_blackstone_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_bricks",
+        raw_id: 529,
+        serialization_id: "tile.polished_blackstone_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_button",
+        raw_id: 551,
+        serialization_id: "tile.polished_blackstone_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_double_slab",
+        raw_id: 549,
+        serialization_id: "tile.polished_blackstone_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_pressure_plate",
+        raw_id: 550,
+        serialization_id: "tile.polished_blackstone_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_slab",
+        raw_id: 548,
+        serialization_id: "tile.polished_blackstone_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_stairs",
+        raw_id: 547,
+        serialization_id: "tile.polished_blackstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_blackstone_wall",
+        raw_id: 552,
+        serialization_id: "tile.polished_blackstone_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_cinnabar",
+        raw_id: 1369,
+        serialization_id: "tile.polished_cinnabar",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_cinnabar_double_slab",
+        raw_id: 1371,
+        serialization_id: "tile.polished_cinnabar_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_cinnabar_slab",
+        raw_id: 1370,
+        serialization_id: "tile.polished_cinnabar_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_cinnabar_stairs",
+        raw_id: 1372,
+        serialization_id: "tile.polished_cinnabar_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_cinnabar_wall",
+        raw_id: 1373,
+        serialization_id: "tile.polished_cinnabar_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_deepslate",
+        raw_id: 638,
+        serialization_id: "tile.polished_deepslate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_deepslate_double_slab",
+        raw_id: 652,
+        serialization_id: "tile.polished_deepslate_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_deepslate_slab",
+        raw_id: 639,
+        serialization_id: "tile.polished_deepslate_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_deepslate_stairs",
+        raw_id: 640,
+        serialization_id: "tile.polished_deepslate_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_deepslate_wall",
+        raw_id: 641,
+        serialization_id: "tile.polished_deepslate_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_diorite",
+        raw_id: 848,
+        serialization_id: "tile.stone.dioriteSmooth",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_diorite_double_slab",
+        raw_id: 1177,
+        serialization_id: "tile.double_stone_slab3.diorite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_diorite_slab",
+        raw_id: 1150,
+        serialization_id: "tile.stone_slab3.diorite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_diorite_stairs",
+        raw_id: 428,
+        serialization_id: "tile.polished_diorite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_granite",
+        raw_id: 846,
+        serialization_id: "tile.stone.graniteSmooth",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_granite_double_slab",
+        raw_id: 1179,
+        serialization_id: "tile.double_stone_slab3.granite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_granite_slab",
+        raw_id: 1152,
+        serialization_id: "tile.stone_slab3.granite.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_granite_stairs",
+        raw_id: 427,
+        serialization_id: "tile.polished_granite_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_sulfur",
+        raw_id: 1352,
+        serialization_id: "tile.polished_sulfur",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_sulfur_double_slab",
+        raw_id: 1354,
+        serialization_id: "tile.polished_sulfur_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_sulfur_slab",
+        raw_id: 1353,
+        serialization_id: "tile.polished_sulfur_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_sulfur_stairs",
+        raw_id: 1355,
+        serialization_id: "tile.polished_sulfur_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_sulfur_wall",
+        raw_id: 1356,
+        serialization_id: "tile.polished_sulfur_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_tuff",
+        raw_id: 1003,
+        serialization_id: "tile.polished_tuff",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:polished_tuff_double_slab",
+        raw_id: 1005,
+        serialization_id: "tile.polished_tuff_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_tuff_slab",
+        raw_id: 1004,
+        serialization_id: "tile.polished_tuff_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:polished_tuff_stairs",
+        raw_id: 1006,
+        serialization_id: "tile.polished_tuff_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:polished_tuff_wall",
+        raw_id: 1007,
+        serialization_id: "tile.polished_tuff_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_button",
+        raw_id: 1381,
+        serialization_id: "tile.poplar_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_door",
+        raw_id: 1382,
+        serialization_id: "tile.poplar_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_double_slab",
+        raw_id: 1391,
+        serialization_id: "tile.poplar_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_fence",
+        raw_id: 1383,
+        serialization_id: "tile.poplar_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_fence_gate",
+        raw_id: 1384,
+        serialization_id: "tile.poplar_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_hanging_sign",
+        raw_id: 1385,
+        serialization_id: "tile.poplar_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_log",
+        raw_id: 1387,
+        serialization_id: "tile.poplar_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_planks",
+        raw_id: 1388,
+        serialization_id: "tile.poplar_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:poplar_pressure_plate",
+        raw_id: 1389,
+        serialization_id: "tile.poplar_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_sapling",
+        raw_id: 1398,
+        serialization_id: "tile.poplar_sapling",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_shelf",
+        raw_id: 1402,
+        serialization_id: "tile.poplar_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_slab",
+        raw_id: 1390,
+        serialization_id: "tile.poplar_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_stairs",
+        raw_id: 1392,
+        serialization_id: "tile.poplar_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_standing_sign",
+        raw_id: 1393,
+        serialization_id: "tile.poplar_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_trapdoor",
+        raw_id: 1394,
+        serialization_id: "tile.poplar_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:poplar_wall_sign",
+        raw_id: 1395,
+        serialization_id: "tile.poplar_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poplar_wood",
+        raw_id: 1397,
+        serialization_id: "tile.poplar_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:poppy",
+        raw_id: 38,
+        serialization_id: "tile.red_flower.poppy",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:portal",
+        raw_id: 90,
+        serialization_id: "tile.portal",
+        states: &[BlockState {
+            name: "portal_axis",
+            values: BlockStateValues::Str(&["unknown", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:potatoes",
+        raw_id: 142,
+        serialization_id: "tile.potatoes",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:potent_sulfur",
+        raw_id: 1363,
+        serialization_id: "tile.potent_sulfur",
+        states: &[BlockState {
+            name: "potent_sulfur_state",
+            values: BlockStateValues::Str(&["dry", "wet", "dormant", "erupting", "continuous"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:powder_snow",
+        raw_id: 561,
+        serialization_id: "tile.powder_snow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:powered_comparator",
+        raw_id: 150,
+        serialization_id: "tile.powered_comparator",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "output_lit_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "output_subtract_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:powered_repeater",
+        raw_id: 94,
+        serialization_id: "tile.powered_repeater",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "repeater_delay",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:prismarine",
+        raw_id: 168,
+        serialization_id: "tile.prismarine.rough",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_brick_double_slab",
+        raw_id: 1169,
+        serialization_id: "tile.double_stone_slab2.prismarine.bricks",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_brick_slab",
+        raw_id: 1142,
+        serialization_id: "tile.stone_slab2.prismarine.bricks",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_bricks",
+        raw_id: 1203,
+        serialization_id: "tile.prismarine.bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_bricks_stairs",
+        raw_id: 259,
+        serialization_id: "tile.prismarine_bricks_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_double_slab",
+        raw_id: 1167,
+        serialization_id: "tile.double_stone_slab2.prismarine.rough",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_slab",
+        raw_id: 1140,
+        serialization_id: "tile.stone_slab2.prismarine.rough",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_stairs",
+        raw_id: 257,
+        serialization_id: "tile.prismarine_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:prismarine_wall",
+        raw_id: 1236,
+        serialization_id: "tile.cobblestone_wall.prismarine",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:pumpkin",
+        raw_id: 86,
+        serialization_id: "tile.pumpkin",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:pumpkin_stem",
+        raw_id: 104,
+        serialization_id: "tile.pumpkin_stem",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:purple_candle",
+        raw_id: 678,
+        serialization_id: "tile.purple_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:purple_candle_cake",
+        raw_id: 695,
+        serialization_id: "tile.purple_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_carpet",
+        raw_id: 861,
+        serialization_id: "tile.carpet.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_concrete",
+        raw_id: 892,
+        serialization_id: "tile.concrete.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_concrete_double_slab",
+        raw_id: 1499,
+        serialization_id: "tile.purple_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_concrete_powder",
+        raw_id: 973,
+        serialization_id: "tile.concretePowder.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_concrete_slab",
+        raw_id: 1483,
+        serialization_id: "tile.purple_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_concrete_stairs",
+        raw_id: 1466,
+        serialization_id: "tile.purple_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:purple_glazed_terracotta",
+        raw_id: 219,
+        serialization_id: "tile.glazedTerracotta.purple",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_shulker_box",
+        raw_id: 877,
+        serialization_id: "tile.shulkerBoxPurple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_stained_glass",
+        raw_id: 937,
+        serialization_id: "tile.stained_glass.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_stained_glass_pane",
+        raw_id: 907,
+        serialization_id: "tile.stained_glass_pane.purple",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:purple_terracotta",
+        raw_id: 988,
+        serialization_id: "tile.stained_hardened_clay.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_wool",
+        raw_id: 819,
+        serialization_id: "tile.wool.purple",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:purple_wool_double_slab",
+        raw_id: 1449,
+        serialization_id: "tile.purple_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_wool_slab",
+        raw_id: 1433,
+        serialization_id: "tile.purple_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purple_wool_stairs",
+        raw_id: 1416,
+        serialization_id: "tile.purple_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:purpur_block",
+        raw_id: 201,
+        serialization_id: "tile.purpur_block.default",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purpur_double_slab",
+        raw_id: 1166,
+        serialization_id: "tile.double_stone_slab2.purpur",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purpur_pillar",
+        raw_id: 1206,
+        serialization_id: "tile.purpur_block.lines",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purpur_slab",
+        raw_id: 1139,
+        serialization_id: "tile.stone_slab2.purpur",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:purpur_stairs",
+        raw_id: 203,
+        serialization_id: "tile.purpur_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:quartz_block",
+        raw_id: 155,
+        serialization_id: "tile.quartz_block.default",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:quartz_bricks",
+        raw_id: 559,
+        serialization_id: "tile.quartz_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:quartz_double_slab",
+        raw_id: 1137,
+        serialization_id: "tile.double_stone_slab.quartz",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:quartz_ore",
+        raw_id: 153,
+        serialization_id: "tile.quartz_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:quartz_pillar",
+        raw_id: 1209,
+        serialization_id: "tile.quartz_block.lines",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:quartz_slab",
+        raw_id: 1131,
+        serialization_id: "tile.stone_slab.quartz",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:quartz_stairs",
+        raw_id: 156,
+        serialization_id: "tile.quartz_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:rail",
+        raw_id: 66,
+        serialization_id: "tile.rail",
+        states: &[BlockState {
+            name: "rail_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:raw_copper_block",
+        raw_id: 707,
+        serialization_id: "tile.raw_copper_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:raw_gold_block",
+        raw_id: 708,
+        serialization_id: "tile.raw_gold_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:raw_iron_block",
+        raw_id: 706,
+        serialization_id: "tile.raw_iron_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_candle",
+        raw_id: 682,
+        serialization_id: "tile.red_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_candle_cake",
+        raw_id: 699,
+        serialization_id: "tile.red_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_carpet",
+        raw_id: 865,
+        serialization_id: "tile.carpet.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_concrete",
+        raw_id: 896,
+        serialization_id: "tile.concrete.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_concrete_double_slab",
+        raw_id: 1491,
+        serialization_id: "tile.red_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_concrete_powder",
+        raw_id: 977,
+        serialization_id: "tile.concretePowder.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_concrete_slab",
+        raw_id: 1475,
+        serialization_id: "tile.red_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_concrete_stairs",
+        raw_id: 1454,
+        serialization_id: "tile.red_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_glazed_terracotta",
+        raw_id: 234,
+        serialization_id: "tile.glazedTerracotta.red",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_mushroom",
+        raw_id: 40,
+        serialization_id: "tile.red_mushroom",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_mushroom_block",
+        raw_id: 100,
+        serialization_id: "tile.red_mushroom_block",
+        states: &[BlockState {
+            name: "huge_mushroom_bits",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_nether_brick",
+        raw_id: 215,
+        serialization_id: "tile.red_nether_brick",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_nether_brick_double_slab",
+        raw_id: 1172,
+        serialization_id: "tile.double_stone_slab2.red_nether_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_nether_brick_slab",
+        raw_id: 1145,
+        serialization_id: "tile.stone_slab2.red_nether_brick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_nether_brick_stairs",
+        raw_id: 439,
+        serialization_id: "tile.red_nether_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_nether_brick_wall",
+        raw_id: 1238,
+        serialization_id: "tile.cobblestone_wall.red_nether_brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_poplar_leaves",
+        raw_id: 1400,
+        serialization_id: "tile.red_poplar_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_sand",
+        raw_id: 1204,
+        serialization_id: "tile.sand.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_sandstone",
+        raw_id: 179,
+        serialization_id: "tile.red_sandstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_sandstone_double_slab",
+        raw_id: 181,
+        serialization_id: "tile.double_stone_slab2.red_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_sandstone_slab",
+        raw_id: 182,
+        serialization_id: "tile.stone_slab2.red_sandstone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_sandstone_stairs",
+        raw_id: 180,
+        serialization_id: "tile.red_sandstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_sandstone_wall",
+        raw_id: 1237,
+        serialization_id: "tile.cobblestone_wall.red_sandstone",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_shrub",
+        raw_id: 1403,
+        serialization_id: "tile.red_shrub",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_shulker_box",
+        raw_id: 881,
+        serialization_id: "tile.shulkerBoxRed",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_stained_glass",
+        raw_id: 941,
+        serialization_id: "tile.stained_glass.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_stained_glass_pane",
+        raw_id: 911,
+        serialization_id: "tile.stained_glass_pane.red",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:red_terracotta",
+        raw_id: 992,
+        serialization_id: "tile.stained_hardened_clay.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_tulip",
+        raw_id: 1088,
+        serialization_id: "tile.red_flower.tulipRed",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_wool",
+        raw_id: 811,
+        serialization_id: "tile.wool.red",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:red_wool_double_slab",
+        raw_id: 1441,
+        serialization_id: "tile.red_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_wool_slab",
+        raw_id: 1425,
+        serialization_id: "tile.red_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:red_wool_stairs",
+        raw_id: 1404,
+        serialization_id: "tile.red_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:redstone_block",
+        raw_id: 152,
+        serialization_id: "tile.redstone_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:redstone_lamp",
+        raw_id: 123,
+        serialization_id: "tile.redstone_lamp",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:redstone_ore",
+        raw_id: 73,
+        serialization_id: "tile.redstone_ore",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:redstone_torch",
+        raw_id: 76,
+        serialization_id: "tile.redstone_torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:redstone_wire",
+        raw_id: 55,
+        serialization_id: "tile.redstone_wire",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:reeds",
+        raw_id: 83,
+        serialization_id: "tile.reeds",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:reinforced_deepslate",
+        raw_id: 721,
+        serialization_id: "tile.reinforced_deepslate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:repeating_command_block",
+        raw_id: 188,
+        serialization_id: "tile.repeating_command_block",
+        states: &[
+            BlockState {
+                name: "conditional_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:resin_block",
+        raw_id: 1276,
+        serialization_id: "tile.resin_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:resin_brick_double_slab",
+        raw_id: 1270,
+        serialization_id: "tile.resin_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:resin_brick_slab",
+        raw_id: 1269,
+        serialization_id: "tile.resin_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:resin_brick_stairs",
+        raw_id: 1271,
+        serialization_id: "tile.resin_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:resin_brick_wall",
+        raw_id: 1272,
+        serialization_id: "tile.resin_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:resin_bricks",
+        raw_id: 1268,
+        serialization_id: "tile.resin_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:resin_clump",
+        raw_id: 1277,
+        serialization_id: "tile.resin_clump",
+        states: &[BlockState {
+            name: "multi_face_direction_bits",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:respawn_anchor",
+        raw_id: 527,
+        serialization_id: "tile.respawn_anchor",
+        states: &[BlockState {
+            name: "respawn_anchor_charge",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:rose_bush",
+        raw_id: 1121,
+        serialization_id: "tile.double_plant.rose",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sand",
+        raw_id: 12,
+        serialization_id: "tile.sand.default",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sandstone",
+        raw_id: 24,
+        serialization_id: "tile.sandstone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sandstone_double_slab",
+        raw_id: 1133,
+        serialization_id: "tile.double_stone_slab.sand",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sandstone_slab",
+        raw_id: 1127,
+        serialization_id: "tile.stone_slab.sand",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sandstone_stairs",
+        raw_id: 128,
+        serialization_id: "tile.sandstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sandstone_wall",
+        raw_id: 1230,
+        serialization_id: "tile.cobblestone_wall.sandstone",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:scaffolding",
+        raw_id: 420,
+        serialization_id: "tile.scaffolding",
+        states: &[
+            BlockState {
+                name: "stability",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "stability_check",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sculk",
+        raw_id: 713,
+        serialization_id: "tile.sculk",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sculk_catalyst",
+        raw_id: 715,
+        serialization_id: "tile.sculk_catalyst",
+        states: &[BlockState {
+            name: "bloom",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sculk_sensor",
+        raw_id: 562,
+        serialization_id: "tile.sculk_sensor",
+        states: &[BlockState {
+            name: "sculk_sensor_phase",
+            values: BlockStateValues::Int(&[0, 1, 2]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sculk_shrieker",
+        raw_id: 716,
+        serialization_id: "tile.sculk_shrieker",
+        states: &[
+            BlockState {
+                name: "active",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "can_summon",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sculk_vein",
+        raw_id: 714,
+        serialization_id: "tile.sculk_vein",
+        states: &[BlockState {
+            name: "multi_face_direction_bits",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+                44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sea_lantern",
+        raw_id: 169,
+        serialization_id: "tile.seaLantern",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sea_pickle",
+        raw_id: 411,
+        serialization_id: "tile.sea_pickle",
+        states: &[
+            BlockState {
+                name: "cluster_count",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "dead_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:seagrass",
+        raw_id: 385,
+        serialization_id: "tile.seagrass",
+        states: &[BlockState {
+            name: "sea_grass_type",
+            values: BlockStateValues::Str(&["default", "double_top", "double_bot"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:shelf_mushroom",
+        raw_id: 1452,
+        serialization_id: "tile.shelf_mushroom",
+        states: &[
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:short_dry_grass",
+        raw_id: 1283,
+        serialization_id: "tile.short_dry_grass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:short_grass",
+        raw_id: 31,
+        serialization_id: "tile.tallgrass.grass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:shroomlight",
+        raw_id: 485,
+        serialization_id: "tile.shroomlight",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:silver_glazed_terracotta",
+        raw_id: 228,
+        serialization_id: "tile.glazedTerracotta.silver",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:skeleton_skull",
+        raw_id: 144,
+        serialization_id: "tile.skull.skeleton",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:slime",
+        raw_id: 165,
+        serialization_id: "tile.slime",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:small_amethyst_bud",
+        raw_id: 587,
+        serialization_id: "tile.small_amethyst_bud",
+        states: &[BlockState {
+            name: "minecraft:block_face",
+            values: BlockStateValues::Str(&["down", "up", "north", "south", "west", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:small_dripleaf_block",
+        raw_id: 591,
+        serialization_id: "tile.small_dripleaf_block",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:smithing_table",
+        raw_id: 457,
+        serialization_id: "tile.smithing_table",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:smoker",
+        raw_id: 453,
+        serialization_id: "tile.smoker",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_basalt",
+        raw_id: 632,
+        serialization_id: "tile.smooth_basalt",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:smooth_quartz",
+        raw_id: 1210,
+        serialization_id: "tile.quartz_block.smooth",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_quartz_double_slab",
+        raw_id: 1180,
+        serialization_id: "tile.double_stone_slab4.smooth_quartz",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_quartz_slab",
+        raw_id: 1153,
+        serialization_id: "tile.stone_slab4.smooth_quartz",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_quartz_stairs",
+        raw_id: 440,
+        serialization_id: "tile.smooth_quartz_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:smooth_red_sandstone",
+        raw_id: 1213,
+        serialization_id: "tile.red_sandstone.smooth",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:smooth_red_sandstone_double_slab",
+        raw_id: 1173,
+        serialization_id: "tile.double_stone_slab3.red_sandstone.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_red_sandstone_slab",
+        raw_id: 1146,
+        serialization_id: "tile.stone_slab3.red_sandstone.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_red_sandstone_stairs",
+        raw_id: 431,
+        serialization_id: "tile.smooth_red_sandstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:smooth_sandstone",
+        raw_id: 1201,
+        serialization_id: "tile.sandstone.smooth",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:smooth_sandstone_double_slab",
+        raw_id: 1171,
+        serialization_id: "tile.double_stone_slab2.sandstone.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_sandstone_slab",
+        raw_id: 1144,
+        serialization_id: "tile.stone_slab2.sandstone.smooth",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_sandstone_stairs",
+        raw_id: 432,
+        serialization_id: "tile.smooth_sandstone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:smooth_stone",
+        raw_id: 438,
+        serialization_id: "tile.smooth_stone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:smooth_stone_double_slab",
+        raw_id: 43,
+        serialization_id: "tile.double_stone_slab.stone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:smooth_stone_slab",
+        raw_id: 44,
+        serialization_id: "tile.stone_slab.stone",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sniffer_egg",
+        raw_id: 851,
+        serialization_id: "tile.sniffer_egg",
+        states: &[BlockState {
+            name: "cracked_state",
+            values: BlockStateValues::Str(&["no_cracks", "cracked", "max_cracked"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:snow",
+        raw_id: 80,
+        serialization_id: "tile.snow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:snow_layer",
+        raw_id: 78,
+        serialization_id: "tile.snow_layer",
+        states: &[
+            BlockState {
+                name: "covered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "height",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:soul_campfire",
+        raw_id: 545,
+        serialization_id: "tile.soul_campfire",
+        states: &[
+            BlockState {
+                name: "extinguished",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:soul_fire",
+        raw_id: 492,
+        serialization_id: "tile.soul_fire",
+        states: &[BlockState {
+            name: "age",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:soul_lantern",
+        raw_id: 524,
+        serialization_id: "tile.soul_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:soul_sand",
+        raw_id: 88,
+        serialization_id: "tile.soul_sand",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:soul_soil",
+        raw_id: 491,
+        serialization_id: "tile.soul_soil",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:soul_torch",
+        raw_id: 523,
+        serialization_id: "tile.soul_torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sponge",
+        raw_id: 19,
+        serialization_id: "tile.sponge.dry",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:spore_blossom",
+        raw_id: 576,
+        serialization_id: "tile.spore_blossom",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:spruce_button",
+        raw_id: 399,
+        serialization_id: "tile.spruce_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_door",
+        raw_id: 193,
+        serialization_id: "tile.spruce_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_double_slab",
+        raw_id: 1064,
+        serialization_id: "tile.double_wooden_slab.spruce",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_fence",
+        raw_id: 834,
+        serialization_id: "tile.spruce_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_fence_gate",
+        raw_id: 183,
+        serialization_id: "tile.spruce_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_hanging_sign",
+        raw_id: 756,
+        serialization_id: "tile.spruce_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_leaves",
+        raw_id: 1055,
+        serialization_id: "tile.leaves.spruce",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_log",
+        raw_id: 824,
+        serialization_id: "tile.log.spruce",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_planks",
+        raw_id: 994,
+        serialization_id: "tile.spruce_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:spruce_pressure_plate",
+        raw_id: 409,
+        serialization_id: "tile.spruce_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_sapling",
+        raw_id: 1080,
+        serialization_id: "tile.sapling.spruce",
+        states: &[BlockState {
+            name: "age_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_shelf",
+        raw_id: 1303,
+        serialization_id: "tile.spruce_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_slab",
+        raw_id: 1059,
+        serialization_id: "tile.wooden_slab.spruce",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_stairs",
+        raw_id: 134,
+        serialization_id: "tile.spruce_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_standing_sign",
+        raw_id: 436,
+        serialization_id: "tile.spruce_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_trapdoor",
+        raw_id: 404,
+        serialization_id: "tile.spruce_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:spruce_wall_sign",
+        raw_id: 437,
+        serialization_id: "tile.spruce_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:spruce_wood",
+        raw_id: 1069,
+        serialization_id: "tile.wood.spruce",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:standing_banner",
+        raw_id: 176,
+        serialization_id: "tile.standing_banner",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:standing_sign",
+        raw_id: 63,
+        serialization_id: "tile.standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sticky_piston",
+        raw_id: 29,
+        serialization_id: "tile.sticky_piston",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sticky_piston_arm_collision",
+        raw_id: 472,
+        serialization_id: "tile.sticky_piston_arm_collision",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stone",
+        raw_id: 1,
+        serialization_id: "tile.stone.stone",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:stone_brick_double_slab",
+        raw_id: 1136,
+        serialization_id: "tile.double_stone_slab.smoothStoneBrick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stone_brick_slab",
+        raw_id: 1130,
+        serialization_id: "tile.stone_slab.smoothStoneBrick",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stone_brick_stairs",
+        raw_id: 109,
+        serialization_id: "tile.stone_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:stone_brick_wall",
+        raw_id: 1232,
+        serialization_id: "tile.cobblestone_wall.stone_brick",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:stone_bricks",
+        raw_id: 98,
+        serialization_id: "tile.stonebrick.default",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:stone_button",
+        raw_id: 77,
+        serialization_id: "tile.stone_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:stone_pressure_plate",
+        raw_id: 70,
+        serialization_id: "tile.stone_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stone_stairs",
+        raw_id: 67,
+        serialization_id: "tile.stone_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:stonecutter_block",
+        raw_id: 452,
+        serialization_id: "tile.stonecutter_block",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:straw_bed",
+        raw_id: 1453,
+        serialization_id: "tile.straw_bed",
+        states: &[
+            BlockState {
+                name: "head_piece_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "occupied_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:stripped_acacia_log",
+        raw_id: 263,
+        serialization_id: "tile.stripped_acacia_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_acacia_wood",
+        raw_id: 1078,
+        serialization_id: "tile.wood.stripped.acacia",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_bamboo_block",
+        raw_id: 783,
+        serialization_id: "tile.stripped_bamboo_block",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_birch_log",
+        raw_id: 261,
+        serialization_id: "tile.stripped_birch_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_birch_wood",
+        raw_id: 1076,
+        serialization_id: "tile.wood.stripped.birch",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_cherry_log",
+        raw_id: 790,
+        serialization_id: "tile.stripped_cherry_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_cherry_wood",
+        raw_id: 800,
+        serialization_id: "tile.stripped_cherry_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_crimson_hyphae",
+        raw_id: 555,
+        serialization_id: "tile.stripped_crimson_hyphae",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_crimson_stem",
+        raw_id: 495,
+        serialization_id: "tile.stripped_crimson_stem",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_dark_oak_log",
+        raw_id: 264,
+        serialization_id: "tile.stripped_dark_oak_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_dark_oak_wood",
+        raw_id: 1079,
+        serialization_id: "tile.wood.stripped.dark_oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_jungle_log",
+        raw_id: 262,
+        serialization_id: "tile.stripped_jungle_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_jungle_wood",
+        raw_id: 1077,
+        serialization_id: "tile.wood.stripped.jungle",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_mangrove_log",
+        raw_id: 740,
+        serialization_id: "tile.stripped_mangrove_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_mangrove_wood",
+        raw_id: 753,
+        serialization_id: "tile.stripped_mangrove_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_oak_log",
+        raw_id: 265,
+        serialization_id: "tile.stripped_oak_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_oak_wood",
+        raw_id: 1074,
+        serialization_id: "tile.wood.stripped.oak",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_pale_oak_log",
+        raw_id: 1249,
+        serialization_id: "tile.stripped_pale_oak_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_pale_oak_wood",
+        raw_id: 1259,
+        serialization_id: "tile.stripped_pale_oak_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_poplar_log",
+        raw_id: 1386,
+        serialization_id: "tile.stripped_poplar_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_poplar_wood",
+        raw_id: 1396,
+        serialization_id: "tile.stripped_poplar_wood",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_spruce_log",
+        raw_id: 260,
+        serialization_id: "tile.stripped_spruce_log",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_spruce_wood",
+        raw_id: 1075,
+        serialization_id: "tile.wood.stripped.spruce",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_warped_hyphae",
+        raw_id: 556,
+        serialization_id: "tile.stripped_warped_hyphae",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:stripped_warped_stem",
+        raw_id: 496,
+        serialization_id: "tile.stripped_warped_stem",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:structure_block",
+        raw_id: 252,
+        serialization_id: "tile.structure_block",
+        states: &[BlockState {
+            name: "structure_block_type",
+            values: BlockStateValues::Str(&["data", "save", "load", "corner", "invalid", "export"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:structure_void",
+        raw_id: 217,
+        serialization_id: "tile.structure_void",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sulfur",
+        raw_id: 1347,
+        serialization_id: "tile.sulfur",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_brick_double_slab",
+        raw_id: 1359,
+        serialization_id: "tile.sulfur_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_brick_slab",
+        raw_id: 1358,
+        serialization_id: "tile.sulfur_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_brick_stairs",
+        raw_id: 1360,
+        serialization_id: "tile.sulfur_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_brick_wall",
+        raw_id: 1361,
+        serialization_id: "tile.sulfur_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_bricks",
+        raw_id: 1357,
+        serialization_id: "tile.sulfur_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_double_slab",
+        raw_id: 1349,
+        serialization_id: "tile.sulfur_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_slab",
+        raw_id: 1348,
+        serialization_id: "tile.sulfur_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_spike",
+        raw_id: 1380,
+        serialization_id: "tile.sulfur_spike",
+        states: &[
+            BlockState {
+                name: "dripstone_thickness",
+                values: BlockStateValues::Str(&["tip", "frustum", "middle", "base", "merge"]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_stairs",
+        raw_id: 1350,
+        serialization_id: "tile.sulfur_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sulfur_wall",
+        raw_id: 1351,
+        serialization_id: "tile.sulfur_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sunflower",
+        raw_id: 175,
+        serialization_id: "tile.double_plant.sunflower",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:suspicious_gravel",
+        raw_id: 828,
+        serialization_id: "tile.suspicious_gravel",
+        states: &[
+            BlockState {
+                name: "brushed_progress",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:suspicious_sand",
+        raw_id: 784,
+        serialization_id: "tile.suspicious_sand",
+        states: &[
+            BlockState {
+                name: "brushed_progress",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:sweet_berry_bush",
+        raw_id: 462,
+        serialization_id: "tile.sweet_berry_bush",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tall_dry_grass",
+        raw_id: 1284,
+        serialization_id: "tile.tall_dry_grass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tall_grass",
+        raw_id: 1119,
+        serialization_id: "tile.double_plant.grass",
+        states: &[BlockState {
+            name: "upper_block_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:target",
+        raw_id: 494,
+        serialization_id: "tile.target",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tinted_glass",
+        raw_id: 589,
+        serialization_id: "tile.tinted_glass",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tnt",
+        raw_id: 46,
+        serialization_id: "tile.tnt",
+        states: &[BlockState {
+            name: "explode_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:torch",
+        raw_id: 50,
+        serialization_id: "tile.torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:torchflower",
+        raw_id: 823,
+        serialization_id: "tile.torchflower",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:torchflower_crop",
+        raw_id: 822,
+        serialization_id: "tile.torchflower_crop",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:trapdoor",
+        raw_id: 96,
+        serialization_id: "tile.trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:trapped_chest",
+        raw_id: 146,
+        serialization_id: "tile.trapped_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:trial_spawner",
+        raw_id: 570,
+        serialization_id: "tile.trial_spawner",
+        states: &[
+            BlockState {
+                name: "ominous",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "trial_spawner_state",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:trip_wire",
+        raw_id: 132,
+        serialization_id: "tile.tripWire",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "disarmed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "suspended_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:tripwire_hook",
+        raw_id: 131,
+        serialization_id: "tile.tripwire_hook",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:tube_coral",
+        raw_id: 386,
+        serialization_id: "tile.coral.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tube_coral_block",
+        raw_id: 387,
+        serialization_id: "tile.coral_block.blue",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tube_coral_fan",
+        raw_id: 388,
+        serialization_id: "tile.coral_fan.blue_fan",
+        states: &[BlockState {
+            name: "coral_fan_direction",
+            values: BlockStateValues::Int(&[0, 1]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tube_coral_wall_fan",
+        raw_id: 390,
+        serialization_id: "tile.tube_coral_wall_fan",
+        states: &[BlockState {
+            name: "coral_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tuff",
+        raw_id: 588,
+        serialization_id: "tile.tuff",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tuff_brick_double_slab",
+        raw_id: 1011,
+        serialization_id: "tile.tuff_brick_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tuff_brick_slab",
+        raw_id: 1010,
+        serialization_id: "tile.tuff_brick_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tuff_brick_stairs",
+        raw_id: 1012,
+        serialization_id: "tile.tuff_brick_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:tuff_brick_wall",
+        raw_id: 1013,
+        serialization_id: "tile.tuff_brick_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:tuff_bricks",
+        raw_id: 1009,
+        serialization_id: "tile.tuff_bricks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:tuff_double_slab",
+        raw_id: 1000,
+        serialization_id: "tile.tuff_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tuff_slab",
+        raw_id: 999,
+        serialization_id: "tile.tuff_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:tuff_stairs",
+        raw_id: 1001,
+        serialization_id: "tile.tuff_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:tuff_wall",
+        raw_id: 1002,
+        serialization_id: "tile.tuff_wall",
+        states: &[
+            BlockState {
+                name: "wall_connection_type_east",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_north",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_south",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_connection_type_west",
+                values: BlockStateValues::Str(&["none", "short", "tall"]),
+            },
+            BlockState {
+                name: "wall_post_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:turtle_egg",
+        raw_id: 414,
+        serialization_id: "tile.turtle_egg",
+        states: &[
+            BlockState {
+                name: "cracked_state",
+                values: BlockStateValues::Str(&["no_cracks", "cracked", "max_cracked"]),
+            },
+            BlockState {
+                name: "turtle_egg_count",
+                values: BlockStateValues::Str(&["one_egg", "two_egg", "three_egg", "four_egg"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:twisting_vines",
+        raw_id: 542,
+        serialization_id: "tile.twisting_vines",
+        states: &[BlockState {
+            name: "twisting_vines_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:underwater_tnt",
+        raw_id: 1240,
+        serialization_id: "tile.tnt",
+        states: &[BlockState {
+            name: "explode_bit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:underwater_torch",
+        raw_id: 239,
+        serialization_id: "tile.underwater_torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:undyed_shulker_box",
+        raw_id: 205,
+        serialization_id: "tile.shulkerBox",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:unknown",
+        raw_id: 560,
+        serialization_id: "tile.unknown",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:unlit_redstone_torch",
+        raw_id: 75,
+        serialization_id: "tile.unlit_redstone_torch",
+        states: &[BlockState {
+            name: "torch_facing_direction",
+            values: BlockStateValues::Str(&["unknown", "west", "east", "north", "south", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:unpowered_comparator",
+        raw_id: 149,
+        serialization_id: "tile.unpowered_comparator",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "output_lit_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "output_subtract_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:unpowered_repeater",
+        raw_id: 93,
+        serialization_id: "tile.unpowered_repeater",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "repeater_delay",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:vault",
+        raw_id: 569,
+        serialization_id: "tile.vault",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "ominous",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "vault_state",
+                values: BlockStateValues::Str(&["inactive", "active", "unlocking", "ejecting"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:verdant_froglight",
+        raw_id: 725,
+        serialization_id: "tile.verdant_froglight",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:vine",
+        raw_id: 106,
+        serialization_id: "tile.vine",
+        states: &[BlockState {
+            name: "vine_direction_bits",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:wall_banner",
+        raw_id: 177,
+        serialization_id: "tile.wall_banner",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:wall_sign",
+        raw_id: 68,
+        serialization_id: "tile.wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_button",
+        raw_id: 516,
+        serialization_id: "tile.warped_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_door",
+        raw_id: 500,
+        serialization_id: "tile.warped_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_double_slab",
+        raw_id: 522,
+        serialization_id: "tile.warped_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_fence",
+        raw_id: 512,
+        serialization_id: "tile.warped_fence",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_fence_gate",
+        raw_id: 514,
+        serialization_id: "tile.warped_fence_gate",
+        states: &[
+            BlockState {
+                name: "in_wall_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_fungus",
+        raw_id: 484,
+        serialization_id: "tile.warped_fungus",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:warped_hanging_sign",
+        raw_id: 762,
+        serialization_id: "tile.warped_hanging_sign",
+        states: &[
+            BlockState {
+                name: "attached_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "ground_sign_direction",
+                values: BlockStateValues::Int(&[
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                ]),
+            },
+            BlockState {
+                name: "hanging",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_hyphae",
+        raw_id: 553,
+        serialization_id: "tile.warped_hyphae",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_nylium",
+        raw_id: 488,
+        serialization_id: "tile.warped_nylium",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:warped_planks",
+        raw_id: 498,
+        serialization_id: "tile.warped_planks",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:warped_pressure_plate",
+        raw_id: 518,
+        serialization_id: "tile.warped_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_roots",
+        raw_id: 479,
+        serialization_id: "tile.warped_roots.warpedRoots",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:warped_shelf",
+        raw_id: 1313,
+        serialization_id: "tile.warped_shelf",
+        states: &[
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_shelf_type",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_slab",
+        raw_id: 520,
+        serialization_id: "tile.warped_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_stairs",
+        raw_id: 510,
+        serialization_id: "tile.warped_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_standing_sign",
+        raw_id: 506,
+        serialization_id: "tile.warped_standing_sign",
+        states: &[BlockState {
+            name: "ground_sign_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_stem",
+        raw_id: 481,
+        serialization_id: "tile.warped_stem",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_trapdoor",
+        raw_id: 502,
+        serialization_id: "tile.warped_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:warped_wall_sign",
+        raw_id: 508,
+        serialization_id: "tile.warped_wall_sign",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:warped_wart_block",
+        raw_id: 482,
+        serialization_id: "tile.warped_wart_block",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:water",
+        raw_id: 9,
+        serialization_id: "tile.water",
+        states: &[BlockState {
+            name: "liquid_depth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waterlily",
+        raw_id: 111,
+        serialization_id: "tile.waterlily",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_chiseled_copper",
+        raw_id: 1019,
+        serialization_id: "tile.waxed_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper",
+        raw_id: 599,
+        serialization_id: "tile.waxed_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_bars",
+        raw_id: 1325,
+        serialization_id: "tile.waxed_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_bulb",
+        raw_id: 1035,
+        serialization_id: "tile.waxed_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_chain",
+        raw_id: 1333,
+        serialization_id: "tile.waxed_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_chest",
+        raw_id: 1290,
+        serialization_id: "tile.waxed_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_door",
+        raw_id: 1043,
+        serialization_id: "tile.waxed_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_golem_statue",
+        raw_id: 1298,
+        serialization_id: "tile.waxed_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_grate",
+        raw_id: 1027,
+        serialization_id: "tile.waxed_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_lantern",
+        raw_id: 1342,
+        serialization_id: "tile.waxed_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_copper_trapdoor",
+        raw_id: 1051,
+        serialization_id: "tile.waxed_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_cut_copper",
+        raw_id: 606,
+        serialization_id: "tile.waxed_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_cut_copper_slab",
+        raw_id: 620,
+        serialization_id: "tile.waxed_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_cut_copper_stairs",
+        raw_id: 613,
+        serialization_id: "tile.waxed_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_double_cut_copper_slab",
+        raw_id: 627,
+        serialization_id: "tile.waxed_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_chiseled_copper",
+        raw_id: 1020,
+        serialization_id: "tile.waxed_exposed_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper",
+        raw_id: 600,
+        serialization_id: "tile.waxed_exposed_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_bars",
+        raw_id: 1326,
+        serialization_id: "tile.waxed_exposed_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_bulb",
+        raw_id: 1036,
+        serialization_id: "tile.waxed_exposed_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_chain",
+        raw_id: 1334,
+        serialization_id: "tile.waxed_exposed_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_chest",
+        raw_id: 1291,
+        serialization_id: "tile.waxed_exposed_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_door",
+        raw_id: 1044,
+        serialization_id: "tile.waxed_exposed_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_golem_statue",
+        raw_id: 1299,
+        serialization_id: "tile.waxed_exposed_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_grate",
+        raw_id: 1028,
+        serialization_id: "tile.waxed_exposed_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_lantern",
+        raw_id: 1343,
+        serialization_id: "tile.waxed_exposed_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_copper_trapdoor",
+        raw_id: 1052,
+        serialization_id: "tile.waxed_exposed_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_cut_copper",
+        raw_id: 607,
+        serialization_id: "tile.waxed_exposed_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_cut_copper_slab",
+        raw_id: 621,
+        serialization_id: "tile.waxed_exposed_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_cut_copper_stairs",
+        raw_id: 614,
+        serialization_id: "tile.waxed_exposed_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_double_cut_copper_slab",
+        raw_id: 628,
+        serialization_id: "tile.waxed_exposed_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_exposed_lightning_rod",
+        raw_id: 1318,
+        serialization_id: "tile.waxed_exposed_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_lightning_rod",
+        raw_id: 1317,
+        serialization_id: "tile.waxed_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_chiseled_copper",
+        raw_id: 1021,
+        serialization_id: "tile.waxed_oxidized_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper",
+        raw_id: 701,
+        serialization_id: "tile.waxed_oxidized_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_bars",
+        raw_id: 1328,
+        serialization_id: "tile.waxed_oxidized_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_bulb",
+        raw_id: 1038,
+        serialization_id: "tile.waxed_oxidized_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_chain",
+        raw_id: 1336,
+        serialization_id: "tile.waxed_oxidized_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_chest",
+        raw_id: 1293,
+        serialization_id: "tile.waxed_oxidized_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_door",
+        raw_id: 1046,
+        serialization_id: "tile.waxed_oxidized_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_golem_statue",
+        raw_id: 1301,
+        serialization_id: "tile.waxed_oxidized_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_grate",
+        raw_id: 1030,
+        serialization_id: "tile.waxed_oxidized_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_lantern",
+        raw_id: 1345,
+        serialization_id: "tile.waxed_oxidized_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_copper_trapdoor",
+        raw_id: 1054,
+        serialization_id: "tile.waxed_oxidized_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_cut_copper",
+        raw_id: 702,
+        serialization_id: "tile.waxed_oxidized_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_cut_copper_slab",
+        raw_id: 704,
+        serialization_id: "tile.waxed_oxidized_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_cut_copper_stairs",
+        raw_id: 703,
+        serialization_id: "tile.waxed_oxidized_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_double_cut_copper_slab",
+        raw_id: 705,
+        serialization_id: "tile.waxed_oxidized_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_oxidized_lightning_rod",
+        raw_id: 1320,
+        serialization_id: "tile.waxed_oxidized_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_chiseled_copper",
+        raw_id: 1022,
+        serialization_id: "tile.waxed_weathered_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper",
+        raw_id: 601,
+        serialization_id: "tile.waxed_weathered_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_bars",
+        raw_id: 1327,
+        serialization_id: "tile.waxed_weathered_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_bulb",
+        raw_id: 1037,
+        serialization_id: "tile.waxed_weathered_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_chain",
+        raw_id: 1335,
+        serialization_id: "tile.waxed_weathered_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_chest",
+        raw_id: 1292,
+        serialization_id: "tile.waxed_weathered_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_door",
+        raw_id: 1045,
+        serialization_id: "tile.waxed_weathered_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_golem_statue",
+        raw_id: 1300,
+        serialization_id: "tile.waxed_weathered_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_grate",
+        raw_id: 1029,
+        serialization_id: "tile.waxed_weathered_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_lantern",
+        raw_id: 1344,
+        serialization_id: "tile.waxed_weathered_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_copper_trapdoor",
+        raw_id: 1053,
+        serialization_id: "tile.waxed_weathered_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_cut_copper",
+        raw_id: 608,
+        serialization_id: "tile.waxed_weathered_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_cut_copper_slab",
+        raw_id: 622,
+        serialization_id: "tile.waxed_weathered_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_cut_copper_stairs",
+        raw_id: 615,
+        serialization_id: "tile.waxed_weathered_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_double_cut_copper_slab",
+        raw_id: 629,
+        serialization_id: "tile.waxed_weathered_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:waxed_weathered_lightning_rod",
+        raw_id: 1319,
+        serialization_id: "tile.waxed_weathered_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_chiseled_copper",
+        raw_id: 1017,
+        serialization_id: "tile.weathered_chiseled_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper",
+        raw_id: 597,
+        serialization_id: "tile.weathered_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_bars",
+        raw_id: 1323,
+        serialization_id: "tile.weathered_copper_bars",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_bulb",
+        raw_id: 1033,
+        serialization_id: "tile.weathered_copper_bulb",
+        states: &[
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_chain",
+        raw_id: 1331,
+        serialization_id: "tile.weathered_copper_chain",
+        states: &[BlockState {
+            name: "pillar_axis",
+            values: BlockStateValues::Str(&["y", "x", "z"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_chest",
+        raw_id: 1288,
+        serialization_id: "tile.weathered_copper_chest",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_door",
+        raw_id: 1041,
+        serialization_id: "tile.weathered_copper_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_golem_statue",
+        raw_id: 1296,
+        serialization_id: "tile.weathered_copper_golem_statue",
+        states: &[BlockState {
+            name: "minecraft:cardinal_direction",
+            values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_grate",
+        raw_id: 1025,
+        serialization_id: "tile.weathered_copper_grate",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_lantern",
+        raw_id: 1340,
+        serialization_id: "tile.weathered_copper_lantern",
+        states: &[BlockState {
+            name: "hanging",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_copper_trapdoor",
+        raw_id: 1049,
+        serialization_id: "tile.weathered_copper_trapdoor",
+        states: &[
+            BlockState {
+                name: "direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_cut_copper",
+        raw_id: 604,
+        serialization_id: "tile.weathered_cut_copper",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:weathered_cut_copper_slab",
+        raw_id: 618,
+        serialization_id: "tile.weathered_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_cut_copper_stairs",
+        raw_id: 611,
+        serialization_id: "tile.weathered_cut_copper_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:weathered_double_cut_copper_slab",
+        raw_id: 625,
+        serialization_id: "tile.weathered_double_cut_copper_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:weathered_lightning_rod",
+        raw_id: 1315,
+        serialization_id: "tile.weathered_lightning_rod",
+        states: &[
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+            BlockState {
+                name: "powered_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:web",
+        raw_id: 30,
+        serialization_id: "tile.web",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:weeping_vines",
+        raw_id: 486,
+        serialization_id: "tile.weeping_vines",
+        states: &[BlockState {
+            name: "weeping_vines_age",
+            values: BlockStateValues::Int(&[
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                23, 24, 25,
+            ]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:wet_sponge",
+        raw_id: 1239,
+        serialization_id: "tile.sponge.wet",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:wheat",
+        raw_id: 59,
+        serialization_id: "tile.wheat",
+        states: &[BlockState {
+            name: "growth",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_candle",
+        raw_id: 668,
+        serialization_id: "tile.white_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:white_candle_cake",
+        raw_id: 685,
+        serialization_id: "tile.white_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_carpet",
+        raw_id: 171,
+        serialization_id: "tile.carpet.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_concrete",
+        raw_id: 236,
+        serialization_id: "tile.concrete.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_concrete_double_slab",
+        raw_id: 1486,
+        serialization_id: "tile.white_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_concrete_powder",
+        raw_id: 237,
+        serialization_id: "tile.concretePowder.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_concrete_slab",
+        raw_id: 1470,
+        serialization_id: "tile.white_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_concrete_stairs",
+        raw_id: 1455,
+        serialization_id: "tile.white_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:white_glazed_terracotta",
+        raw_id: 220,
+        serialization_id: "tile.glazedTerracotta.white",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_shulker_box",
+        raw_id: 218,
+        serialization_id: "tile.shulkerBoxWhite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_stained_glass",
+        raw_id: 241,
+        serialization_id: "tile.stained_glass.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_stained_glass_pane",
+        raw_id: 160,
+        serialization_id: "tile.stained_glass_pane.white",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:white_terracotta",
+        raw_id: 159,
+        serialization_id: "tile.stained_hardened_clay.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_tulip",
+        raw_id: 1090,
+        serialization_id: "tile.red_flower.tulipWhite",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_wool",
+        raw_id: 35,
+        serialization_id: "tile.wool.white",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:white_wool_double_slab",
+        raw_id: 1436,
+        serialization_id: "tile.white_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_wool_slab",
+        raw_id: 1420,
+        serialization_id: "tile.white_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:white_wool_stairs",
+        raw_id: 1405,
+        serialization_id: "tile.white_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:wildflowers",
+        raw_id: 1279,
+        serialization_id: "tile.wildflowers",
+        states: &[
+            BlockState {
+                name: "growth",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:wither_rose",
+        raw_id: 471,
+        serialization_id: "tile.wither_rose",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:wither_skeleton_skull",
+        raw_id: 1220,
+        serialization_id: "tile.skull.wither",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:wooden_button",
+        raw_id: 143,
+        serialization_id: "tile.wooden_button",
+        states: &[
+            BlockState {
+                name: "button_pressed_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "facing_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:wooden_door",
+        raw_id: 64,
+        serialization_id: "tile.wooden_door",
+        states: &[
+            BlockState {
+                name: "door_hinge_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:cardinal_direction",
+                values: BlockStateValues::Str(&["south", "west", "north", "east"]),
+            },
+            BlockState {
+                name: "open_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "upper_block_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:wooden_pressure_plate",
+        raw_id: 72,
+        serialization_id: "tile.wooden_pressure_plate",
+        states: &[BlockState {
+            name: "redstone_signal",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_candle",
+        raw_id: 672,
+        serialization_id: "tile.yellow_candle",
+        states: &[
+            BlockState {
+                name: "candles",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+            BlockState {
+                name: "lit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:yellow_candle_cake",
+        raw_id: 689,
+        serialization_id: "tile.yellow_candle_cake",
+        states: &[BlockState {
+            name: "lit",
+            values: BlockStateValues::Bool(&[false, true]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_carpet",
+        raw_id: 855,
+        serialization_id: "tile.carpet.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_concrete",
+        raw_id: 886,
+        serialization_id: "tile.concrete.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_concrete_double_slab",
+        raw_id: 1493,
+        serialization_id: "tile.yellow_concrete_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_concrete_powder",
+        raw_id: 967,
+        serialization_id: "tile.concretePowder.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_concrete_slab",
+        raw_id: 1477,
+        serialization_id: "tile.yellow_concrete_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_concrete_stairs",
+        raw_id: 1460,
+        serialization_id: "tile.yellow_concrete_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:yellow_glazed_terracotta",
+        raw_id: 224,
+        serialization_id: "tile.glazedTerracotta.yellow",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_poplar_leaves",
+        raw_id: 1401,
+        serialization_id: "tile.yellow_poplar_leaves",
+        states: &[
+            BlockState {
+                name: "persistent_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "update_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:yellow_shulker_box",
+        raw_id: 871,
+        serialization_id: "tile.shulkerBoxYellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_stained_glass",
+        raw_id: 931,
+        serialization_id: "tile.stained_glass.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_stained_glass_pane",
+        raw_id: 901,
+        serialization_id: "tile.stained_glass_pane.yellow",
+        states: &[
+            BlockState {
+                name: "minecraft:connection_east",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_north",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_south",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "minecraft:connection_west",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:yellow_terracotta",
+        raw_id: 982,
+        serialization_id: "tile.stained_hardened_clay.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_wool",
+        raw_id: 813,
+        serialization_id: "tile.wool.yellow",
+        states: &[],
+    },
+    BlockStates {
+        name: "minecraft:yellow_wool_double_slab",
+        raw_id: 1443,
+        serialization_id: "tile.yellow_wool_double_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_wool_slab",
+        raw_id: 1427,
+        serialization_id: "tile.yellow_wool_slab",
+        states: &[BlockState {
+            name: "minecraft:vertical_half",
+            values: BlockStateValues::Str(&["bottom", "top"]),
+        }],
+    },
+    BlockStates {
+        name: "minecraft:yellow_wool_stairs",
+        raw_id: 1410,
+        serialization_id: "tile.yellow_wool_stairs",
+        states: &[
+            BlockState {
+                name: "minecraft:corner",
+                values: BlockStateValues::Str(&[
+                    "none",
+                    "inner_left",
+                    "inner_right",
+                    "outer_left",
+                    "outer_right",
+                ]),
+            },
+            BlockState {
+                name: "upside_down_bit",
+                values: BlockStateValues::Bool(&[false, true]),
+            },
+            BlockState {
+                name: "weirdo_direction",
+                values: BlockStateValues::Int(&[0, 1, 2, 3]),
+            },
+        ],
+    },
+    BlockStates {
+        name: "minecraft:zombie_head",
+        raw_id: 1221,
+        serialization_id: "tile.skull.zombie",
+        states: &[BlockState {
+            name: "facing_direction",
+            values: BlockStateValues::Int(&[0, 1, 2, 3, 4, 5]),
+        }],
+    },
+];

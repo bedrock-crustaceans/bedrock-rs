@@ -135,3 +135,55 @@ pub fn command_enum(name: &str) -> Option<&'static CommandEnum> {
         .iter()
         .find(|command_enum| command_enum.name.eq_ignore_ascii_case(name))
 }
+
+/// The values a block state takes, by the state's type, in the metadata's order (the first is
+/// the default).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum BlockStateValues {
+    /// A `bool` state.
+    Bool(&'static [bool]),
+    /// An `int` state.
+    Int(&'static [i64]),
+    /// A `string` state.
+    Str(&'static [&'static str]),
+}
+
+/// One block state (`mojang-blocks.json`, `block_properties`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct BlockState {
+    /// `name`: the state as saved (`weirdo_direction`, `minecraft:cardinal_direction`).
+    pub name: &'static str,
+    /// `values`: the values the state takes. The list is the state's, shared by every block that
+    /// has it; a block may use fewer.
+    pub values: BlockStateValues,
+}
+
+/// One block with its states (`mojang-blocks.json`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct BlockStates {
+    /// `name`: the identifier (`minecraft:oak_stairs`).
+    pub name: &'static str,
+    /// `raw_id`: the numeric id.
+    pub raw_id: i32,
+    /// `serialization_id`: the legacy name (`tile.*`); not unique.
+    pub serialization_id: &'static str,
+    /// `properties`: the states the block has, by name.
+    pub states: &'static [BlockState],
+}
+
+/// The blocks of `mojang-blocks.json` with their states, sorted by identifier. The technical
+/// blocks [`VanillaIds::blocks`] adds after the file's own are not here.
+pub fn block_states() -> &'static [BlockStates] {
+    generated::vanilla_ids::BLOCK_STATES
+}
+
+/// One block's states by its full identifier (`minecraft:…`), exactly.
+pub fn block_state(name: &str) -> Option<&'static BlockStates> {
+    let rows = block_states();
+    rows.binary_search_by(|row| row.name.cmp(name))
+        .ok()
+        .map(|i| &rows[i])
+}
