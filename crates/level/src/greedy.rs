@@ -17,6 +17,12 @@ pub struct GreedyArray {
 }
 
 impl GreedyArray {
+    /// Takes the unpacked indices out of this array.
+    #[inline]
+    pub fn into_inner(self) -> Box<[u16; 4096]> {
+        self.array
+    }
+
     /// Returns the item at the given index.
     pub fn get(&self, index: usize) -> Option<u16> {
         self.array.get(index).copied()

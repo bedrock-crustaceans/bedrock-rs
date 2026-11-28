@@ -39,6 +39,22 @@ pub struct BiomeArray {
 }
 
 impl BiomeArray {
+    /// Builds a paletted storage from biome ids and one palette index per block, indexed
+    /// like a subchunk layer (`x << 8 | z << 4 | y`).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`] if the palette is empty or an index points past its end.
+    pub fn from_parts(palette: Vec<u32>, indices: Box<[u16; 4096]>) -> Result<Self> {
+        if palette.is_empty() || indices.iter().any(|&i| usize::from(i) >= palette.len()) {
+            return Err(Error::Invalid("biome index past the end of its palette"));
+        }
+        Ok(Self {
+            array: BitArray::Greedy(GreedyArray::from(indices)),
+            palette,
+        })
+    }
+
     pub fn palette(&self) -> &[u32] {
         &self.palette
     }
@@ -48,6 +64,16 @@ impl BiomeArray {
     /// out of range for the underlying array.
     pub fn index_at(&self, offset: usize) -> Option<u16> {
         self.array.get(offset)
+    }
+
+    /// One palette index per block.
+    pub fn indices(&self) -> &BitArray {
+        &self.array
+    }
+
+    /// Takes this storage apart into its palette and indices.
+    pub fn into_parts(self) -> (Vec<u32>, BitArray) {
+        (self.palette, self.array)
     }
 }
 
@@ -110,6 +136,12 @@ pub enum Biomes3dError {
 }
 
 impl Biomes3d {
+    /// Takes this record apart into its heightmap and fragments, the inverse of
+    /// [`Biomes3d::new`].
+    pub fn into_parts(self) -> (Box<[u16; COLUMNS]>, SmallVec<[BiomeEncoding; 1]>) {
+        (self.heightmap, self.fragments)
+    }
+
     /// This chunk's heightmap.
     #[inline]
     pub fn heightmap(&self) -> &[u16; COLUMNS] {
