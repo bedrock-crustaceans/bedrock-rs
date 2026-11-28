@@ -493,6 +493,11 @@ pub(crate) fn read_converted<T: FromJson>(
         .unknown_severity(grade)
         .profile(profile)
         .texts(LENIENT_TEXTS);
+    if !strict {
+        // `written_back` leaves `-0.0` a real for the float members; an integer member reads
+        // it as the integer zero the game writes back.
+        read = read.negative_zero_as_integer();
+    }
     if let Some(cx) = cx {
         read = read.load(cx);
     }

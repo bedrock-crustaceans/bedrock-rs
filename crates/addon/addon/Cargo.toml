@@ -277,6 +277,8 @@ aes = { workspace = true }
 criterion = { workspace = true }
 # The helpers the tests of the addon crates share.
 bedrock_addon_test_support = { path = "../test_support" }
+# The legacy probes (`writable_legacy*`) judge the places of a document on many threads.
+rayon = { workspace = true }
 
 [[example]]
 name = "in_memory_pack"

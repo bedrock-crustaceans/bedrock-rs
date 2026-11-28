@@ -6,6 +6,7 @@ use std::path::Path;
 
 use bedrock_addon::load::AppData;
 use bedrock_addon::pack::WorldPacks;
+use bedrock_addon::storage::PathRejected;
 use bedrock_addon_std::{HostOp, ReadError, read_app_data, read_world_packs};
 
 fn write(dir: &Path, path: &str, bytes: &[u8]) {
@@ -171,11 +172,18 @@ mod app_data {
 
     #[test]
     fn an_app_data_name_that_is_no_pack_path_is_not_an_io_error() {
+        // A name past the 64-segment limit, the one pack-path rule a Windows file name can
+        // break: Windows forbids `:` and control characters in a name, and NTFS reads
+        // `c:oak.json` as the stream `oak.json` of a file `c`.
         let root = tempfile::tempdir().unwrap();
-        write(root.path(), "definitions/features/c:oak.json", b"oak");
+        let name = format!("definitions/features/{}oak.json", "a/".repeat(64));
+        write(root.path(), &name, b"oak");
         assert!(matches!(
             read_app_data(root.path()),
-            Err(ReadError::NotAPackPath { .. })
+            Err(ReadError::NotAPackPath {
+                source: PathRejected::TooManySegments,
+                ..
+            })
         ));
     }
 

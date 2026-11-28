@@ -7,7 +7,8 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-proc-macro2 = "1.0.106"
+# `span-locations`: a definition error is reported with the line and column of its span.
+proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
 quote = "1.0.45"
 syn = { version = "3.0.6", features = ["full"] }
 prettyplease = "0.3.0"
@@ -16,8 +17,17 @@ toml = { version = "1.1", default-features = false, features = ["std", "parse", 
 # `script-meta` parses the game's metadata files with the strict model of the script family.
 bedrock_addon_core = { path = "../crates/addon/core" }
 bedrock_addon_family_script = { path = "../crates/addon/families/script" }
+# `generate-palette` and `diff-oracle`: the vanilla block/biome tables and the oracle diff.
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+bedrock_level = { path = "../crates/level" }
+nbtx.workspace = true
 
 [dev-dependencies]
 # The one line of a skipped corpus test (`corpus::skipped`); it builds core with no feature
 # beyond the ones above.
 bedrock_addon_test_support = { path = "../crates/addon/test_support" }
+# The tree the protocol generator's edge reads and writes, in a test.
+tempfile.workspace = true

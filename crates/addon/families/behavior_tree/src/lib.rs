@@ -387,9 +387,7 @@ impl Node {
             }
             Self::RepeatUntilSuccess { child, .. }
             | Self::RepeatUntilFailure { child, .. }
-            | Self::Inverter { child, .. } => {
-                child.take().map(|node| vec![*node]).unwrap_or_default()
-            }
+            | Self::Inverter { child, .. } => child.take().map_or_default(|node| vec![*node]),
             _ => Vec::new(),
         }
     }

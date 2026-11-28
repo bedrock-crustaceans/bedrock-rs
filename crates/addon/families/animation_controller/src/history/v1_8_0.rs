@@ -274,8 +274,7 @@ fn upgrade_state(
     let inputs = state
         .parameters
         .as_ref()
-        .map(|p| p.inputs.as_slice())
-        .unwrap_or_default();
+        .map_or_default(|p| p.inputs.as_slice());
     let mut variables: Option<IndexMap<String, StateVariable>> = None;
     // How many of the inputs a curve of the state reads (the longest list of curves).
     let mut read = 0;

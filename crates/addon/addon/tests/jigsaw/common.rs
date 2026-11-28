@@ -153,12 +153,11 @@ fn string(value: &Value, key: &str) -> Option<String> {
 fn strings(value: &Value, key: &str) -> Vec<String> {
     member(value, key)
         .and_then(Value::as_array)
-        .map(|a| {
+        .map_or_default(|a| {
             a.iter()
                 .filter_map(|v| v.as_string().map(|s| s.as_str().to_owned()))
                 .collect()
         })
-        .unwrap_or_default()
 }
 
 /// The severity word of `expected.json`.
@@ -241,8 +240,7 @@ pub fn check_expected(name: &str, jigsaw: &Jigsaw, expected: &Value) {
     );
     let entries: Vec<Value> = member(expected, "diagnostics")
         .and_then(Value::as_array)
-        .map(|a| a.iter().cloned().collect())
-        .unwrap_or_default();
+        .map_or_default(|a| a.iter().cloned().collect());
     let findings: Vec<&Diagnostic> = jigsaw.diagnostics().collect();
     let mut used = vec![false; entries.len()];
     for finding in &findings {

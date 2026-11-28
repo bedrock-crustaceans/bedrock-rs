@@ -1,0 +1,10 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 34, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct BlockPickRequestPacket<V: ProtoVersion> {
+    pub position: V::BlockPos,
+    pub with_data: bool,
+    pub max_slots: i8,
+}

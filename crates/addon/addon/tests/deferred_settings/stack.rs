@@ -832,11 +832,7 @@ fn link_warnings(d: &Diagnostics) -> Vec<(&'static str, String, String, String)>
         .map(|f| {
             (
                 f.code.id(),
-                f.location
-                    .path
-                    .as_ref()
-                    .map(PackPath::to_string)
-                    .unwrap_or_default(),
+                f.location.path.as_ref().map_or_default(PackPath::to_string),
                 f.location.json_path.to_string(),
                 f.code.to_string(),
             )

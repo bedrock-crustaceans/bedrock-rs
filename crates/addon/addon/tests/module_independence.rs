@@ -1330,7 +1330,7 @@ fn declared_for_tests(file: &Path) -> bool {
         let Some(name) = dir.file_name() else {
             return false;
         };
-        let up = dir.parent().map(Path::to_path_buf).unwrap_or_default();
+        let up = dir.parent().map_or_default(Path::to_path_buf);
         (
             name.to_string_lossy().into_owned(),
             vec![

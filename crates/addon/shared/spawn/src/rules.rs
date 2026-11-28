@@ -221,7 +221,7 @@ impl Condition {
     pub fn rules_with(&self, profile: Profile) -> MobSpawnRules {
         let flag = |value: &Option<bedrock_addon_core::json::Value>| value.is_some();
         let descriptors = |list: Option<&super::condition::OneOrMany<BlockDescriptor>>| {
-            list.map(|l| l.as_slice().to_vec()).unwrap_or_default()
+            list.map_or_default(|l| l.as_slice().to_vec())
         };
         let (brightness_min, brightness_max, adjust_for_weather) =
             self.brightness_filter.as_ref().map_or((0, 15, false), |b| {
@@ -288,8 +288,7 @@ impl Condition {
                         max,
                         f.identifier
                             .as_ref()
-                            .map(|id| id.as_str().to_owned())
-                            .unwrap_or_default(),
+                            .map_or_default(|id| id.as_str().to_owned()),
                         f.spawn_chance.unwrap_or(100),
                     )
                 },

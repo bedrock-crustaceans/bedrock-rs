@@ -569,8 +569,7 @@ fn legacy_identifier(
     description
         .get("identifier")
         .and_then(|v| v.as_string())
-        .map(|s| s.as_str().to_owned())
-        .unwrap_or_default()
+        .map_or_default(|s| s.as_str().to_owned())
 }
 
 /// The finding of an unreadable file.

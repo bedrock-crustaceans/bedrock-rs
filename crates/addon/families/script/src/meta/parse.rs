@@ -38,8 +38,7 @@ pub(crate) fn strict<T: FromJson>(bytes: &[u8]) -> Result<(T, Value), MetaError>
         let path = told
             .iter()
             .find(|finding| finding.severity == Severity::Error)
-            .map(|finding| finding.location.json_path.clone())
-            .unwrap_or_default();
+            .map_or_default(|finding| finding.location.json_path.clone());
         return Err(MetaError::Json(JsonFault::Shape { path }));
     };
     // The members no field takes are told after the read, in the file's order.

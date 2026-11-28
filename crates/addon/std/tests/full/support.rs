@@ -351,14 +351,13 @@ pub fn default_world(
     root: &Path,
     repository: &bedrock_addon::pack::PackRepository,
 ) -> bedrock_addon::pack::WorldPacks {
-    let mut worlds: Vec<PathBuf> = std::fs::read_dir(root.join("worlds"))
-        .map(|entries| {
+    let mut worlds: Vec<PathBuf> =
+        std::fs::read_dir(root.join("worlds")).map_or_default(|entries| {
             entries
                 .filter_map(|entry| entry.ok().map(|entry| entry.path()))
                 .filter(|path| path.is_dir())
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     worlds.sort();
     let mut world = match worlds.first() {
         Some(dir) => bedrock_addon_std::read_world_packs(dir).expect("the world's pack lists"),
@@ -542,11 +541,7 @@ pub fn line(finding: &Diagnostic) -> String {
                 pack.name(),
                 pack.id().version
             )),
-        location
-            .path
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
+        location.path.as_ref().map_or_default(ToString::to_string),
         location.json_path
     )
 }
@@ -559,8 +554,7 @@ fn comparable(finding: &Diagnostic) -> Finding {
             .location
             .path
             .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
+            .map_or_default(ToString::to_string),
         finding.location.json_path.to_string(),
     )
 }

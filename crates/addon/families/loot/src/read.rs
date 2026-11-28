@@ -369,7 +369,7 @@ pub(crate) fn pool_rules(_: &mut Pool, node: &Node<'_>, read: &mut Read<'_>) {
 /// The entry's `type`, matched exactly by length and bytes; any other value drops the entry,
 /// vanilla's error printing the type as written (`schema::tag_with` of [`EntryKind`]).
 pub(crate) fn entry_type(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'static str> {
-    let given = member(node, "type").map(as_written).unwrap_or_default();
+    let given = member(node, "type").map_or_default(as_written);
     let found = <EntryKind as Fields>::VARIANTS
         .iter()
         .find(|name| **name == given);
@@ -383,7 +383,7 @@ pub(crate) fn entry_type(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'stati
 /// (`schema::tag_with` of [`FunctionKind`]). The name as jsoncpp's `asString` gives it, which a
 /// value that is not a string prints too.
 pub(crate) fn function_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'static str> {
-    let written = member(node, "function").map(as_written).unwrap_or_default();
+    let written = member(node, "function").map_or_default(as_written);
     let (_, name) = split_namespace(&written);
     let (engine, ucf) = gates(read);
     let has_carry_over = engine >= CARRY_OVER_SINCE;
@@ -407,7 +407,7 @@ pub(crate) fn function_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'st
 /// The text of JSON `function` up to its last `:` is kept for write-back
 /// (`schema::after_read` of [`LootFunction`]).
 pub(crate) fn function_namespace(function: &mut LootFunction, node: &Node<'_>, _: &mut Read<'_>) {
-    let written = member(node, "function").map(as_written).unwrap_or_default();
+    let written = member(node, "function").map_or_default(as_written);
     function.namespace = split_namespace(&written).0;
 }
 
@@ -425,9 +425,7 @@ pub(crate) fn condition_name(node: &Node<'_>, read: &mut Read<'_>) -> Option<&'s
             return None;
         }
     }
-    let name = member(node, "condition")
-        .map(as_written)
-        .unwrap_or_default();
+    let name = member(node, "condition").map_or_default(as_written);
     // The 20th condition of the game's map; engines before 1.26.30 have only 19, so an older
     // engine does not know the name.
     let found = <ConditionKind as Fields>::VARIANTS.iter().find(|known| {
@@ -581,7 +579,7 @@ pub(crate) fn enchant_options(node: &Node<'_>, read: &mut Read<'_>) -> Option<Ve
             // No enchantment has that name (by the context's provider: the game's tables or a
             // host): the option is dropped with an error-level line of the game's content log
             // and the table is kept: a kept error.
-            let shown = written.map(as_written).unwrap_or_default();
+            let shown = written.map_or_default(as_written);
             tell(read, element, codes::ENCHANT_NAME.with([&shown]));
             return None;
         }

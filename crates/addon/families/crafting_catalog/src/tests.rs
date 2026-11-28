@@ -442,7 +442,7 @@ fn located(found: &Diagnostics) -> Vec<(String, String)> {
         .map(|finding| {
             let pack = finding.location.pack.as_ref();
             (
-                pack.map(|pack| pack.name().to_owned()).unwrap_or_default(),
+                pack.map_or_default(|pack| pack.name().to_owned()),
                 finding.location.json_path.to_string(),
             )
         })

@@ -32,3 +32,7 @@ build
 
 # OS-specific
 .DS_Store
+
+# proptest saves failing-case seeds alongside the test file that found them
+# on the first local failure; local scratch, not checked in.
+proptest-regressions/

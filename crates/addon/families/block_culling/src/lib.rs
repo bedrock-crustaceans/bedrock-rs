@@ -109,7 +109,7 @@ impl Family for CullingFamily {
                     | "core/unsupported_version_worded"
                     | "core/version_below_min" => {
                         finding.code = core_codes::NO_PARSER_FOR_VERSION
-                            .with([document.map(written_version).unwrap_or_default()]);
+                            .with([document.map_or_default(written_version)]);
                         above = true;
                     }
                     "core/format_version_required"

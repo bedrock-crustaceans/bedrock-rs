@@ -89,8 +89,7 @@ impl ContentsJson {
             let path = told
                 .iter()
                 .find(|finding| finding.severity == Severity::Error)
-                .map(|finding| finding.location.json_path.clone())
-                .unwrap_or_default();
+                .map_or_default(|finding| finding.location.json_path.clone());
             ContentsError::Json(Box::new(ContentsJsonError::Shape { path }))
         })
     }

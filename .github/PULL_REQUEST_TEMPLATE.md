@@ -24,3 +24,4 @@ Closes #
 - [ ] I kept the PR scope focused.
 - [ ] I updated docs/examples when needed.
 - [ ] I added or updated tests where relevant.
+- [ ] `just ready` passes.

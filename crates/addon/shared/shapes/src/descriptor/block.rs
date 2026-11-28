@@ -250,8 +250,7 @@ fn invalid_code(value: &Value) -> Code {
                 .as_object()
                 .and_then(|o| o.get("name"))
                 .and_then(Value::as_string)
-                .map(|n| n.as_str().to_owned())
-                .unwrap_or_default(),
+                .map_or_default(|n| n.as_str().to_owned()),
             state,
             jsoncpp_type(&state_value).to_string(),
         ]),

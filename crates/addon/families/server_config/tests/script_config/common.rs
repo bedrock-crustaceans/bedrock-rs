@@ -249,12 +249,7 @@ pub fn seen<'a>(diagnostics: impl IntoIterator<Item = &'a Diagnostic>) -> Vec<Fi
             code: d.code.id().to_owned(),
             severity: d.severity.to_string(),
             phase: phase(d.phase).to_owned(),
-            file: d
-                .location
-                .path
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+            file: d.location.path.as_ref().map_or_default(ToString::to_string),
             path: d.location.json_path.to_string(),
             text: Some(d.code.to_string()),
         })

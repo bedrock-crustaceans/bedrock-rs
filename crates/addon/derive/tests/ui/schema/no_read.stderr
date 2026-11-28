@@ -26,8 +26,9 @@ help: the trait `FromJson` is not implemented for `Unread`
 note: required by a bound in `bedrock_addon_core::schema::derive_support::Slot::<T>::read_option`
   --> $WORKSPACE/crates/addon/core/src/schema/from_json/derived.rs
    |
+   | impl<T> Slot<T> {
+...
    |     pub fn read_option(
-   |            ----------- required by a bound in this associated function
 ...
    |         T: FromJson,
    |            ^^^^^^^^ required by this bound in `Slot::<T>::read_option`

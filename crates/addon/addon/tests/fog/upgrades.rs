@@ -117,12 +117,11 @@ fn u01_identity_of_every_vanilla_1_16_100_file_of_the_corpus() {
     let corpus = std::path::PathBuf::from(corpus);
     let mut folders = vec![corpus.join("bedrock-samples/resource_pack/fogs")];
     let mut packs: Vec<_> = std::fs::read_dir(corpus.join("gdk-retail/resource_packs"))
-        .map(|packs| {
+        .map_or_default(|packs| {
             packs
                 .map(|pack| pack.unwrap().path().join("fogs"))
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     packs.sort();
     folders.extend(packs);
     let (mut checked, mut newer) = (0, 0);

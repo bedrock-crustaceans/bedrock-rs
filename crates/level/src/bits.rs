@@ -12,12 +12,25 @@ use std::iter::FusedIterator;
 /// Valid bit sizes to use for indices.
 pub const VALID_BITS: [u8; 8] = [1, 2, 3, 4, 5, 6, 8, 16];
 
+/// The number of 32-bit words needed to pack 4096 indices at the given bit width. Bit
+/// sizes that do not divide 32 evenly (3, 5, 6) need one extra, partially-filled word.
+///
+/// Shared by `greedy.rs` and `lazy.rs`'s tests so their expectations for a given width
+/// cannot drift apart from each other or from the packing code itself.
+#[cfg(test)]
+pub(crate) fn expected_word_count(bits: u8) -> usize {
+    let per_word = u32::BITS / u32::from(bits);
+    4096u32.div_ceil(per_word) as usize
+}
+
 /// An iterator over a bit array.
 pub enum BitArrayIter<'a> {
     /// See [`GreedyArray`].
     Greedy(GreedyArrayIter<'a>),
     /// See [`LazyArray`].
     Lazy(LazyArrayIter<'a>),
+    /// See [`BitArray::Empty`]: yields 4096 zeros.
+    Empty(std::iter::RepeatN<u16>),
 }
 
 impl Iterator for BitArrayIter<'_> {
@@ -27,6 +40,7 @@ impl Iterator for BitArrayIter<'_> {
         match self {
             BitArrayIter::Greedy(iter) => iter.next(),
             BitArrayIter::Lazy(iter) => iter.next(),
+            BitArrayIter::Empty(iter) => iter.next(),
         }
     }
 
@@ -34,6 +48,7 @@ impl Iterator for BitArrayIter<'_> {
         match self {
             BitArrayIter::Greedy(iter) => iter.size_hint(),
             BitArrayIter::Lazy(iter) => iter.size_hint(),
+            BitArrayIter::Empty(iter) => iter.size_hint(),
         }
     }
 }
@@ -43,6 +58,7 @@ impl ExactSizeIterator for BitArrayIter<'_> {
         match self {
             BitArrayIter::Greedy(iter) => iter.len(),
             BitArrayIter::Lazy(iter) => iter.len(),
+            BitArrayIter::Empty(iter) => iter.len(),
         }
     }
 }
@@ -67,6 +83,10 @@ pub enum BitArray {
     Greedy(GreedyArray),
     /// See [`LazyArray`].
     Lazy(LazyArray),
+    /// A zero bits-per-index array: every index is 0, and the palette this array indexes
+    /// into holds exactly one entry. Carries no packed words at all -- the on-disk form is
+    /// the header byte alone, with nothing else belonging to the index array.
+    Empty,
 }
 
 impl BitArray {
@@ -80,27 +100,6 @@ impl BitArray {
     #[inline]
     pub fn is_lazy(&self) -> bool {
         matches!(self, BitArray::Lazy(_))
-    }
-
-    /// Creates an array where every index is zero, which is what a layer without index data means.
-    pub fn zeroed<M: UnpackingMethod>() -> Self {
-        if M::IS_LAZY {
-            BitArray::Lazy(LazyArray::new(1, vec![0; 4096 / 32]))
-        } else {
-            BitArray::Greedy(GreedyArray::from(Box::new([0u16; 4096])))
-        }
-    }
-
-    /// The smallest bit size able to index a palette of `palette_size` entries, or 0 when
-    /// the palette has at most one entry and no indices need to be stored.
-    pub fn bits_for(palette_size: usize) -> u8 {
-        if palette_size <= 1 {
-            return 0;
-        }
-        VALID_BITS
-            .into_iter()
-            .find(|&bits| 1usize << bits >= palette_size)
-            .unwrap_or(16)
     }
 
     /// Deserializes a data bit array.
@@ -125,7 +124,7 @@ impl BitArray {
     /// # Errors
     ///
     /// Returns [`Error::InvalidBitSize`] if the header names a bit size that is not valid, or an
-    /// I/O error if reading from `reader` fails.
+    /// I/O error if `reader` ends before the header or the packed words have been read.
     pub fn from_disk<M: UnpackingMethod, R>(reader: &mut Cursor<R>) -> Result<IndicesType>
     where
         Cursor<R>: Read,
@@ -138,8 +137,10 @@ impl BitArray {
         })
     }
 
-    /// Serializes this array in disk format, packed with the smallest bit size that fits `palette_size`.
-    /// A palette of at most one entry writes no index data at all.
+    /// Serializes this array in disk format.
+    ///
+    /// [`BitArray::Empty`] writes only the header byte: a zero bits-per-index layer carries
+    /// no packed words on disk, regardless of `palette_size`.
     ///
     /// # Errors
     ///
@@ -148,16 +149,30 @@ impl BitArray {
     where
         Cursor<W>: Write,
     {
-        let bits = Self::bits_for(palette_size);
-        writer.write_u8(bits << 1)?;
-        if bits == 0 {
+        if let BitArray::Empty = self {
+            writer.write_u8(0)?;
             return Ok(());
         }
 
+        // The width written is the *smallest* valid bit size that can still address every
+        // palette entry (`VALID_BITS` is ascending, and this stops at the first match) --
+        // not merely *a* valid size. Writing a wider-than-necessary index array is not
+        // wrong on its own terms, but it is not what the format's packed-word design is
+        // for, and it would not match what the game itself writes for the same palette.
+        let bits = VALID_BITS
+            .into_iter()
+            .find(|&b| 2usize.pow(u32::from(b)) >= palette_size)
+            .unwrap_or(16);
+
+        writer.write_u8(bits << 1)?;
+
         match self {
             BitArray::Greedy(array) => array.to_disk(writer, u32::from(bits)),
+            // A lazy array keeps whatever width it was read or repacked at, which can be wider
+            // than the header just written; only its own words are valid when the widths match.
             BitArray::Lazy(array) if array.bits() == bits => array.to_disk(writer),
             BitArray::Lazy(array) => GreedyArray::from(array).to_disk(writer, u32::from(bits)),
+            BitArray::Empty => unreachable!("handled above"),
         }
     }
 
@@ -166,14 +181,23 @@ impl BitArray {
         match self {
             Self::Greedy(array) => array.get(index),
             Self::Lazy(array) => array.get(index),
+            Self::Empty => (index < 4096).then_some(0),
         }
     }
 
     /// Sets the value at the specified index.
+    ///
+    /// [`BitArray::Empty`] carries no storage, so the first write to one materializes it
+    /// into a real (initially all-zero) [`GreedyArray`] before applying the write.
     pub fn set(&mut self, pos: usize, value: u16) -> bool {
+        if let Self::Empty = self {
+            *self = Self::Greedy(GreedyArray::from(Box::new([0u16; 4096])));
+        }
+
         match self {
             Self::Greedy(array) => array.set(pos, value),
             Self::Lazy(array) => array.set(pos, value),
+            Self::Empty => unreachable!("materialized above"),
         }
     }
 }
@@ -186,6 +210,65 @@ impl<'a> IntoIterator for &'a BitArray {
         match self {
             BitArray::Lazy(array) => BitArrayIter::Lazy(array.into_iter()),
             BitArray::Greedy(array) => BitArrayIter::Greedy(array.into_iter()),
+            BitArray::Empty => BitArrayIter::Empty(std::iter::repeat_n(0u16, 4096)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_iter_yields_4096_zeros() {
+        let array = BitArray::Empty;
+        let values: Vec<u16> = array.iter().collect();
+
+        assert_eq!(values.len(), 4096);
+        assert!(values.iter().all(|&v| v == 0));
+    }
+
+    #[test]
+    fn empty_set_materializes_into_greedy_and_leaves_other_indices_zero() {
+        let mut array = BitArray::Empty;
+
+        assert!(array.set(17, 5));
+
+        assert!(matches!(array, BitArray::Greedy(_)));
+        assert_eq!(array.get(17), Some(5));
+        assert_eq!(array.get(0), Some(0));
+        assert_eq!(array.get(4095), Some(0));
+        assert_eq!(array.iter().filter(|&v| v != 0).count(), 1);
+    }
+
+    /// `to_disk` writes the *smallest* valid bit width that fits `palette_size`, not merely
+    /// a valid one large enough -- pins the direction of the header-byte fix (the prior
+    /// overwrite-loop picked the largest valid width for every non-trivial palette).
+    #[test]
+    fn to_disk_writes_the_minimal_valid_width_for_the_palette_size() {
+        let cases: [(usize, u8); 9] = [
+            (1, 1),
+            (2, 1),
+            (3, 2),
+            (4, 2),
+            (5, 3),
+            (8, 3),
+            (9, 4),
+            (256, 8),
+            (257, 16),
+        ];
+
+        for (palette_size, expected_bits) in cases {
+            let array = BitArray::Greedy(GreedyArray::from(Box::new([0u16; 4096])));
+            let mut writer = Cursor::new(Vec::new());
+            array.to_disk(&mut writer, palette_size).unwrap();
+
+            let header = writer.into_inner()[0];
+            assert_eq!(
+                header >> 1,
+                expected_bits,
+                "palette_size={palette_size}: expected {expected_bits} bits, header byte was {header}"
+            );
         }
     }
 }

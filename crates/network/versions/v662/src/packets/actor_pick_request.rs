@@ -1,0 +1,10 @@
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 35, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ActorPickRequestPacket {
+    #[endianness(le)]
+    pub actor_id: i64,
+    pub max_slots: i8,
+    pub with_data: bool,
+}

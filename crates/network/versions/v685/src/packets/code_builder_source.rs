@@ -1,0 +1,10 @@
+use bedrock_network_version_traits::ProtoVersion;
+use bedrock_network_macros::{packet, ProtoCodec};
+
+#[packet(id = 178, direction = "client_to_server")]
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct CodeBuilderSourcePacket<V: ProtoVersion> {
+    pub operation: V::CodeBuilderStorageOperation,
+    pub category: V::CodeBuilderStorageCategory,
+    pub code_staus: V::CodeBuilderCodeStatus,
+}

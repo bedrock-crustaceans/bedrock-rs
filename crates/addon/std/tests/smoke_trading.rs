@@ -31,8 +31,7 @@ use common::world::world_list;
 /// The pack folders directly below `dir`.
 fn pack_roots(dir: &Path) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     roots.retain(|path| path.is_dir());
     roots.sort();
     roots
@@ -58,8 +57,7 @@ fn trading_mcb(dirs: &[&Path]) -> usize {
 /// Every `.json` file below `dir`, sorted.
 fn json_files(dir: &Path, out: &mut Vec<PathBuf>) {
     let mut entries: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     entries.sort();
     for path in entries {
         if path.is_dir() {

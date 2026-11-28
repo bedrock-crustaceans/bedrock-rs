@@ -47,7 +47,12 @@
 //!   name that gains its namespace);
 //! * **absent**: the replacement is `null`, `[]` or `{}` and `W'` is what the document without
 //!   the member writes (a `null` member is an absent member);
-//! * **empty**: the replacement is `[]` or `{}` and `W'` is another text than `W`.
+//! * **empty**: the replacement is `[]` or `{}` and `W'` is another text than `W`;
+//! * **written as read**: the family writes its typed value as the client reads it, without
+//!   a word on a member of another type (`places::WRITES_ITS_READING`), and `W'` holds the
+//!   client's reading of the replacement: a reading of the non-strict reader at the place, the
+//!   member's fallback for a value it does not take, or the document without the member for a
+//!   value the client reads as no value.
 //!
 //! Anything else is a FAULT, of one of six kinds:
 //!

@@ -61,8 +61,7 @@ fn the_vanilla_tables_recipes_trades_and_items_name_only_what_the_game_has() {
     let corpus = PathBuf::from(corpus);
     let mut roots = vec![corpus.join("bedrock-samples").join("behavior_pack")];
     let mut server: Vec<PathBuf> = std::fs::read_dir(corpus.join("bds-1.26.36.1/behavior_packs"))
-        .map(|entries| entries.flatten().map(|entry| entry.path()).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.flatten().map(|entry| entry.path()).collect());
     server.sort();
     roots.extend(server);
     // The items the game's packs define themselves: a pack of this test is a world's pack,

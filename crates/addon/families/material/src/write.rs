@@ -476,7 +476,7 @@ pub(super) fn list_json(list: &MaterialList) -> Result<Value, EncodeError> {
     let value = array.into_value();
     let mut found = Diagnostics::default();
     let read = read_list(list.kind, &value, &mut found);
-    let read = read.map(|read| read.entries).unwrap_or_default();
+    let read = read.map_or_default(|read| read.entries);
     if read == list.entries {
         return Ok(value);
     }

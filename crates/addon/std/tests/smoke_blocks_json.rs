@@ -26,14 +26,12 @@ use common::world::base_game_world;
 
 /// How many pack folders directly below `dir` hold a `blocks.json`.
 fn on_disk(dir: &Path) -> usize {
-    std::fs::read_dir(dir)
-        .map(|entries| {
-            entries
-                .filter_map(Result::ok)
-                .filter(|entry| entry.path().join("blocks.json").is_file())
-                .count()
-        })
-        .unwrap_or_default()
+    std::fs::read_dir(dir).map_or_default(|entries| {
+        entries
+            .filter_map(Result::ok)
+            .filter(|entry| entry.path().join("blocks.json").is_file())
+            .count()
+    })
 }
 
 /// The stacks of every pack below `dir` (all `Package` origin), each resource pack listed.
@@ -124,13 +122,12 @@ fn check(source: &str, dir: &Path, warnings: &[(&str, usize)]) -> Counts {
     assert!(!blocks.is_empty(), "{source}: no block loaded");
     let white_wool = blocks
         .get(&bedrock_addon::id::BlockId::parse("minecraft:white_wool"))
-        .map(|block| {
+        .map_or_default(|block| {
             (
                 block.origin().pack.name().to_owned(),
                 block.face_textures()[0].to_owned(),
             )
-        })
-        .unwrap_or_default();
+        });
     Counts {
         blocks: blocks.len(),
         merged,

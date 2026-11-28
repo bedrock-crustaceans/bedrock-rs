@@ -149,7 +149,7 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
         read_document::<Codes>(&Node::new(&root, JsonPath::new()), &mut read)
     };
     let languages = Languages {
-        codes: codes.map(|codes| codes.0).unwrap_or_default(),
+        codes: codes.map_or_default(|codes| codes.0),
         names: LanguageNames::default(),
     };
     Ok((languages, diagnostics))
@@ -188,15 +188,13 @@ pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), B
         let mut read = Read::new(reading, &mut diagnostics);
         read_document::<Pairs>(&Node::new(&root, JsonPath::new()), &mut read)
     };
-    let entries = pairs
-        .map(|pairs| {
-            pairs
-                .0
-                .into_iter()
-                .map(|Pair(code, name)| (Language::new(code), name))
-                .collect()
-        })
-        .unwrap_or_default();
+    let entries = pairs.map_or_default(|pairs| {
+        pairs
+            .0
+            .into_iter()
+            .map(|Pair(code, name)| (Language::new(code), name))
+            .collect()
+    });
     Ok((LanguageNames { entries }, diagnostics))
 }
 

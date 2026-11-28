@@ -210,6 +210,5 @@ pub fn pack_of(finding: &Diagnostic) -> String {
         .location
         .pack
         .as_ref()
-        .map(|pack| pack.name().to_owned())
-        .unwrap_or_default()
+        .map_or_default(|pack| pack.name().to_owned())
 }

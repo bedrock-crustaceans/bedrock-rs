@@ -25,13 +25,12 @@ const CATEGORIES: [&str; 3] = ["platforms", "treatments", "stores"];
 /// A splash list as the game reads it: every iterated element read as a string with an empty
 /// default. The game iterates the list without testing its type.
 fn texts(list: Option<&Value>) -> Vec<String> {
-    list.map(|list| {
+    list.map_or_default(|list| {
         iterated(list, &JsonPath::new())
             .into_iter()
             .map(|(_, element)| to_text(element))
             .collect()
     })
-    .unwrap_or_default()
 }
 
 /// The findings of a splash list: a member that is no array (the crate's own), and every

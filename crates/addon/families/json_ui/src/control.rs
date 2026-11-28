@@ -416,15 +416,11 @@ impl Control {
     /// The members of the flattened definition: its own in the order written, then the
     /// inherited ones.
     fn members(&self) -> Vec<(&str, &Value)> {
-        let mut members: Vec<(&str, &Value)> = self
-            .raw
-            .as_object()
-            .map(|own| {
-                own.iter()
-                    .map(|(key, value)| (key.as_str(), value))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let mut members: Vec<(&str, &Value)> = self.raw.as_object().map_or_default(|own| {
+            own.iter()
+                .map(|(key, value)| (key.as_str(), value))
+                .collect()
+        });
         let mut seen: HashSet<&str> = members.iter().map(|(key, _)| *key).collect();
         members.extend(self.inherited.members(&mut seen));
         members
@@ -458,7 +454,7 @@ impl Control {
 
     /// The children written in the definition's `controls`: each element's key and body.
     pub fn children(&self) -> Vec<(DefKey, &Value)> {
-        self.get("controls").map(children_in).unwrap_or_default()
+        self.get("controls").map_or_default(children_in)
     }
 
     /// The texture of a sprite. With `uv` or `uv_size`, a `texture:<n>` member (the texture
@@ -663,8 +659,7 @@ impl Control {
             Some(variables) if variables.is_object() => vec![variables],
             Some(variables) => variables
                 .as_array()
-                .map(|entries| entries.as_slice().iter().collect())
-                .unwrap_or_default(),
+                .map_or_default(|entries| entries.as_slice().iter().collect()),
             None => Vec::new(),
         };
         for entry in entries {
@@ -706,17 +701,14 @@ impl Control {
 
 /// The children a `controls` array writes: each element's first key and its body.
 fn children_in(controls: &Value) -> Vec<(DefKey, &Value)> {
-    controls
-        .as_array()
-        .map(|children| {
-            children
-                .as_slice()
-                .iter()
-                .filter_map(|child| {
-                    let key = super::value::first_key(child)?;
-                    Some((DefKey::parse(key), child.as_object()?.get(key)?))
-                })
-                .collect()
-        })
-        .unwrap_or_default()
+    controls.as_array().map_or_default(|children| {
+        children
+            .as_slice()
+            .iter()
+            .filter_map(|child| {
+                let key = super::value::first_key(child)?;
+                Some((DefKey::parse(key), child.as_object()?.get(key)?))
+            })
+            .collect()
+    })
 }

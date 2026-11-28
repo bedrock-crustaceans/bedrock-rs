@@ -248,8 +248,7 @@ impl Tally {
 fn addon_crates() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
-        .map(Path::to_path_buf)
-        .unwrap_or_default()
+        .map_or_default(Path::to_path_buf)
 }
 
 /// Every file below `root` whose name `keep` takes, sorted; folders named `target` or `.git`

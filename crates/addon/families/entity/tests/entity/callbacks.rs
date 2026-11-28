@@ -38,8 +38,7 @@ impl Case {
             .and_then(Value::as_object)
             .and_then(|d| d.get("identifier"))
             .and_then(Value::as_string)
-            .map(|s| s.as_str().to_owned())
-            .unwrap_or_default();
+            .map_or_default(|s| s.as_str().to_owned());
         Self {
             base,
             step: |input, run, checks| step_output::<S>(input, run, checks),

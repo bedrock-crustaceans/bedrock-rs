@@ -29,7 +29,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: cargo fmt --all --check
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+      - run: just fmt-check
 
   clippy:
     name: Clippy (${{ matrix.os }})
@@ -38,21 +41,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo clippy --workspace --all-targets --all-features
+      - run: just clippy
 
   # The workspace is tested in groups, one job per group and OS. Each job builds only its group's
   # test binaries, which keeps every job inside the runner's disk and runs the groups in parallel.
-  # Every workspace member is in exactly one group; a new crate has to join one here.
+  # Every workspace member is in exactly one group; a new crate has to join one here, unless a
+  # group's glob already takes it in (a protocol version, an add-on crate).
   test:
     name: Test ${{ matrix.group.name }} (${{ matrix.os }})
     strategy:
@@ -62,9 +67,8 @@ jobs:
         group:
           - name: protocol & network
             key: protocol-network
-            packages: >-
-              -p bedrock_protocol -p bedrock_protocol_core -p bedrock_macros
-              -p bedrock_network
+            # The glob is every crate under `crates/network/`, the version crates among them.
+            packages: -p 'bedrock_network*'
           - name: addon
             key: addon
             packages: -p 'bedrock_addon*' -p xtask
@@ -76,7 +80,7 @@ jobs:
             packages: -p bedrock_auth
           - name: level
             key: level
-            packages: -p bedrock_level
+            packages: -p bedrock_level -p bedrock_vanilla_data
           - name: general
             key: general
             packages: -p bedrock -p bedrock_shared
@@ -86,15 +90,26 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@v2
         with:
-          tool: cargo-nextest
+          tool: just,cargo-nextest
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.group.key }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Tests
         shell: bash
-        run: cargo nextest run --profile ci ${{ matrix.group.packages }}
+        run: just test ${{ matrix.group.packages }}
+      # Selected as a package, a version crate builds with its `version` feature, which no
+      # dependent turns on; this builds each the way the facade does, without its packet enum.
+      - name: Version crates as their dependents build them
+        if: matrix.group.key == 'protocol-network'
+        shell: bash
+        run: just check-versions
+      # The generated per-version block-palette tables are off by default; their tests run here.
+      - name: Vanilla data with the generated palettes
+        if: matrix.group.key == 'level'
+        shell: bash
+        run: just test -p bedrock_vanilla_data --features generated-palettes
       # nextest does not run doctests.
       - name: Doctests
         shell: bash
-        run: cargo test --doc ${{ matrix.group.packages }}
+        run: just doctest ${{ matrix.group.packages }}

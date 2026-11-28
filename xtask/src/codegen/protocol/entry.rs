@@ -1,10 +1,12 @@
 use crate::codegen::protocol::diff::DefineVersionsDiffList;
 use crate::codegen::protocol::kw;
-use proc_macro2::Ident;
+use proc_macro2::{Ident, Span};
 use syn::parse::{Parse, ParseStream};
 use syn::{LitInt, LitStr, Token, braced, parenthesized};
 
 pub struct DefineVersionsEntry {
+    /// Where the entry starts: its protocol number.
+    pub span: Span,
     pub version: u32,
     pub branch: LitStr,
     pub game_version: LitStr,
@@ -21,7 +23,8 @@ impl Parse for DefineVersionsEntry {
         let brace;
         parenthesized!(paren in input);
 
-        let version = paren.parse::<LitInt>()?.base10_parse()?;
+        let number = paren.parse::<LitInt>()?;
+        let version = number.base10_parse()?;
         paren.parse::<Token![,]>()?;
         let branch = paren.parse::<LitStr>()?;
         paren.parse::<Token![,]>()?;
@@ -80,6 +83,7 @@ impl Parse for DefineVersionsEntry {
         };
 
         Ok(Self {
+            span: number.span(),
             version,
             branch,
             game_version,

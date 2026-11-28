@@ -1,6 +1,6 @@
-use bedrock_protocol_core::ProtoCodec;
-use bedrock_protocol_core::ProtoCodecVAR;
-use bedrock_protocol_core::error::ProtoCodecError;
+use bedrock_network_core::ProtoCodec;
+use bedrock_network_core::ProtoCodecVAR;
+use bedrock_network_core::error::ProtoCodecError;
 use std::io::{Read, Write};
 use std::mem::size_of;
 

@@ -256,10 +256,7 @@ fn unresolved(d: &bedrock_addon::diagnostic::Diagnostics) -> Vec<String> {
                 "{:?} {}{}",
                 f.severity,
                 f.code,
-                f.detail
-                    .as_ref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default()
+                f.detail.as_ref().map_or_default(ToString::to_string)
             )
         })
         .collect()

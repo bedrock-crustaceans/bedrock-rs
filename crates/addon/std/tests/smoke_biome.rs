@@ -57,8 +57,7 @@ fn biome_mcb(roots: &[PathBuf]) -> game_files::McbCount {
 /// The pack folders directly below `dir`.
 fn pack_roots(dir: &Path) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect())
-        .unwrap_or_default();
+        .map_or_default(|entries| entries.filter_map(|e| e.ok().map(|e| e.path())).collect());
     roots.retain(|path| path.is_dir());
     roots.sort();
     roots
@@ -100,8 +99,7 @@ fn load_biomes(driver: &Driver, repository: &PackRepository, roots: &[PathBuf]) 
                 .location
                 .path
                 .as_ref()
-                .map(std::string::ToString::to_string)
-                .unwrap_or_default(),
+                .map_or_default(std::string::ToString::to_string),
             finding.location.json_path,
             finding.code,
             finding.code,

@@ -230,12 +230,7 @@ fn unresolved(d: &Diagnostics) -> Vec<String> {
             f.code.kind() == Kind::UnresolvedReference
                 && matches!(f.severity, Severity::Warning | Severity::Error)
         })
-        .map(|f| {
-            f.detail
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default()
-        })
+        .map(|f| f.detail.as_ref().map_or_default(ToString::to_string))
         .collect()
 }
 
@@ -289,12 +284,7 @@ fn a_camera_presets_aim_assist_preset_resolves_against_the_aim_assist_presets() 
     let told: Vec<String> = d
         .iter()
         .filter(|f| f.code.kind() == Kind::UnresolvedReference && f.severity == Severity::Info)
-        .map(|f| {
-            f.detail
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default()
-        })
+        .map(|f| f.detail.as_ref().map_or_default(ToString::to_string))
         .collect();
     assert_eq!(told, [": aim assist preset 'test:no_such_preset'"], "{d:?}");
     assert!(unresolved(&d).is_empty(), "{d:?}");

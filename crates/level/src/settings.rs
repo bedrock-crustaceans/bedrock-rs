@@ -1,10 +1,15 @@
+use crate::error::{Error, Result};
+use crate::version::GameVersion;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use facet::Facet;
-use nbtx::Error;
+use nbtx::{Compound, Value};
 use std::io::{Read, Write};
 
 #[derive(Facet, Debug, PartialEq)]
-#[facet(deny_unknown_fields)]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 #[expect(
     clippy::struct_excessive_bools,
     reason = "mirrors the abilities compound in level.dat"
@@ -30,21 +35,53 @@ pub struct Abilities {
     pub teleport: bool,
     #[facet(rename = "flySpeed")]
     pub fly_speed: f32,
-    #[facet(rename = "verticalFlySpeed")]
+    #[facet(rename = "verticalFlySpeed", default)]
     pub vertical_fly_speed: f32,
     #[facet(rename = "walkSpeed")]
     pub walk_speed: f32,
+    // Older worlds duplicate the root-level `permissionsLevel` /
+    // `playerPermissionsLevel` pair into `abilities`; newer worlds only
+    // write them at the root (see `LevelSettings::permissions_level`).
+    #[facet(rename = "permissionsLevel")]
+    pub permissions_level: Option<i32>,
+    #[facet(rename = "playerPermissionsLevel")]
+    pub player_permissions_level: Option<i32>,
 }
 
 #[derive(Facet, Debug, PartialEq, Eq)]
-#[facet(deny_unknown_fields)]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "mirrors the experiments compound in level.dat"
+)]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
+    // Individual experiment toggles. Which of these a world carries depends
+    // on which experiments existed and were surfaced in the world-create UI
+    // at the time it was saved, so each is absent rather than false on a
+    // world saved before it existed.
+    #[facet(default)]
+    pub caves_and_cliffs: bool,
+    // No fixture carries this one -- it is modeled so a level.dat that does isn't
+    // rejected outright under `deny-unknown-fields`, and so a world saved with it
+    // set is honored the same as `caves_and_cliffs` rather than silently ignored.
+    #[facet(default)]
+    pub caves_and_cliffs_internal: bool,
+    #[facet(default)]
+    pub armadillo: bool,
+    #[facet(rename = "updateAnnouncedLive2023", default)]
+    pub update_announced_live_2023: bool,
 }
 
 #[derive(Facet, Debug, PartialEq, Eq)]
-#[facet(deny_unknown_fields)]
+#[cfg_attr(
+    not(feature = "deny-unknown-fields"),
+    facet(nbtx::allow_unknown_fields)
+)]
 pub struct Policies {
     // Not sure what is supposed to be in here
 }
@@ -56,30 +93,43 @@ pub struct Policies {
     reason = "the Facet derive builds a field table with one entry per field of this large compound"
 )]
 mod level_settings {
-    use super::{Abilities, Experiments, Facet, Policies};
+    use super::{Abilities, Experiments, Facet, GameVersion, Policies};
 
     #[derive(Facet, Debug, PartialEq)]
     #[facet(rename_all = "camelCase")]
-    #[facet(deny_unknown_fields)]
+    #[cfg_attr(
+        not(feature = "deny-unknown-fields"),
+        facet(nbtx::allow_unknown_fields)
+    )]
     #[expect(
         clippy::struct_excessive_bools,
         reason = "mirrors the level.dat compound"
     )]
     pub struct LevelSettings {
+        // The i32 storage version from the 8-byte level.dat header, not part of
+        // the NBT payload itself. Kept alongside `storage_version` (the NBT
+        // `StorageVersion` field) since the two are set independently and can in
+        // principle disagree.
+        //
+        // `#[facet(default)]` because the key is never present in the payload; it is
+        // patched in by `read` afterwards. Typed `i32` rather than `u32` because NBT
+        // has no unsigned tag and nbtx refuses to encode a `u32` field at all.
         #[facet(default)]
-        #[facet(skip_serializing)]
-        pub file_version: u32,
-        pub editor_world_type: i32,
-        #[facet(rename = "isCreatedInEditor")]
+        pub header_storage_version: i32,
+        // Absent on worlds saved before the world-editor feature existed.
+        pub editor_world_type: Option<i32>,
+        #[facet(rename = "isCreatedInEditor", default)]
         pub created_in_editor: bool,
-        #[facet(rename = "isExportedFromEditor")]
+        #[facet(rename = "isExportedFromEditor", default)]
         pub exported_from_editor: bool,
-        #[facet(rename = "isRandomSeedAllowed")]
+        #[facet(rename = "isRandomSeedAllowed", default)]
         pub random_seed_allowed: bool,
+        // Absent on worlds saved before this rule was introduced.
         #[facet(rename = "playerssleepingpercentage")]
-        pub sleeping_percentage: i32,
-        #[facet(rename = "recipesunlock")]
+        pub sleeping_percentage: Option<i32>,
+        #[facet(rename = "recipesunlock", default)]
         pub recipes_unlock: bool,
+        #[facet(default)]
         pub cheats_enabled: bool,
         pub lightning_level: f32,
         pub lightning_time: i32,
@@ -97,15 +147,18 @@ mod level_settings {
         pub limited_world_origin_y: i32,
         #[facet(rename = "LimitedWorldOriginZ")]
         pub limited_world_origin_z: i32,
-        pub limited_world_depth: i32,
-        pub limited_world_width: i32,
+        // Absent on worlds saved before the limited-world generator existed.
+        pub limited_world_depth: Option<i32>,
+        pub limited_world_width: Option<i32>,
+        // Absent on worlds saved before this field was introduced.
         #[facet(rename = "MinimumCompatibleClientVersion")]
-        pub minimum_compatible_client_version: [i32; 5],
-        // pub minimum_compatible_client_version: f32,
+        pub minimum_compatible_client_version: Option<GameVersion>,
         #[facet(rename = "NetherScale")]
         pub nether_scale: i32,
+        // Protocol version of the network codec the world was last saved with.
+        // Absent on worlds saved before this field was introduced.
         #[facet(rename = "NetworkVersion")]
-        pub network_version: i32,
+        pub network_version: Option<i32>,
         #[facet(rename = "Platform")]
         pub platform: i32,
         #[facet(rename = "PlatformBroadcastIntent")]
@@ -120,21 +173,35 @@ mod level_settings {
         pub spawn_y: i32,
         #[facet(rename = "SpawnZ")]
         pub spawn_z: i32,
+        // The NBT `StorageVersion` field, distinct from the header's storage
+        // version stored in `header_storage_version`.
         #[facet(rename = "StorageVersion")]
         pub storage_version: i32,
         #[facet(rename = "Time")]
         pub time: i64,
+        // Absent on worlds saved before this field was introduced.
         #[facet(rename = "WorldVersion")]
-        pub world_version: i32,
+        pub world_version: Option<i32>,
         #[facet(rename = "XBLBroadcastIntent")]
         pub xbox_broadcast_intent: i32,
         pub current_tick: i64,
-        pub experiments: Experiments,
+        // Absent on the oldest worlds, which instead write the single
+        // `experimentalgameplay` flag below rather than a compound of
+        // individually named experiments.
+        pub experiments: Option<Experiments>,
+        // Predecessor to `experiments`: one flag standing in for all
+        // experimental toggles at once, on worlds saved before the compound
+        // existed.
+        #[facet(rename = "experimentalgameplay", default)]
+        pub experimental_gameplay: bool,
         pub abilities: Abilities,
-        pub edu_offer: i32,
+        // Absent on worlds saved before this field was introduced; `eduLevel`
+        // is what the same setting was called before.
+        pub edu_offer: Option<i32>,
+        pub edu_level: Option<i8>,
         pub education_features_enabled: bool,
         #[facet(rename = "lastOpenedWithVersion")]
-        pub last_opened_with_version: [i32; 5],
+        pub last_opened_with_version: GameVersion,
         pub bonus_chest_enabled: bool,
         pub bonus_chest_spawned: bool,
         #[facet(rename = "commandblockoutput")]
@@ -146,10 +213,11 @@ mod level_settings {
         pub commands_enabled: bool,
         #[facet(rename = "ConfirmedPlatformLockedContent")]
         pub confirmed_platform_locked_content: bool,
-        pub daylight_cycle: i32,
+        // Absent on worlds saved before this field was introduced.
+        pub daylight_cycle: Option<i32>,
         #[facet(rename = "dodaylightcycle")]
         pub daylight_lock: bool,
-        #[facet(rename = "dolimitedcrafting")]
+        #[facet(rename = "dolimitedcrafting", default)]
         pub limited_crafting: bool,
         #[facet(rename = "doentitydrops")]
         pub entity_drops: bool,
@@ -167,13 +235,16 @@ mod level_settings {
         pub tile_drops: bool,
         #[facet(rename = "doweathercycle")]
         pub weather_cycle: bool,
+        // Absent on worlds saved before this rule was introduced.
+        #[facet(rename = "projectilescanbreakblocks", default)]
+        pub projectiles_can_break_blocks: bool,
         #[facet(rename = "drowningdamage")]
         pub drowning_damage: bool,
         #[facet(rename = "falldamage")]
         pub fall_damage: bool,
         #[facet(rename = "firedamage")]
         pub fire_damage: bool,
-        #[facet(rename = "freezedamage")]
+        #[facet(rename = "freezedamage", default)]
         pub freeze_damage: bool,
         #[facet(rename = "keepinventory")]
         pub keep_inventory: bool,
@@ -188,22 +259,31 @@ mod level_settings {
         pub pvp: bool,
         #[facet(rename = "randomtickspeed")]
         pub random_tick_speed: i32,
-        #[facet(rename = "respawnblocksexplode")]
+        #[facet(rename = "respawnblocksexplode", default)]
         pub respawn_blocks_explode: bool,
         #[facet(rename = "sendcommandfeedback")]
         pub send_command_feedback: bool,
-        #[facet(rename = "showbordereffect")]
+        #[facet(rename = "showbordereffect", default)]
         pub show_border_effect: bool,
         #[facet(rename = "showcoordinates")]
         pub show_coordinates: bool,
         #[facet(rename = "showdeathmessages")]
         pub show_death_messages: bool,
-        #[facet(rename = "showtags")]
+        #[facet(rename = "showtags", default)]
         pub show_tags: bool,
+        // Absent on worlds saved before these settings were introduced.
+        #[facet(rename = "showdaysplayed", default)]
+        pub show_days_played: bool,
+        #[facet(rename = "showrecipemessages", default)]
+        pub show_recipe_messages: bool,
+        #[facet(rename = "locatorbar", default)]
+        pub locator_bar: bool,
         #[facet(rename = "spawnradius")]
         pub spawn_radius: i32,
         #[facet(rename = "tntexplodes")]
         pub tnt_explodes: bool,
+        #[facet(rename = "tntexplosiondropdecay", default)]
+        pub tnt_explosion_drop_decay: bool,
         #[facet(rename = "ForceGameType")]
         pub force_game_mode: bool,
         pub has_been_loaded_in_creative: bool,
@@ -212,10 +292,18 @@ mod level_settings {
         pub immutable_world: bool,
         pub is_from_locked_template: bool,
         pub is_from_world_template: bool,
+        #[facet(default)]
         pub is_single_use_world: bool,
         pub is_world_template_option_locked: bool,
         pub requires_copied_pack_removal_check: bool,
         pub texture_packs_required: bool,
+        // Absent on worlds saved before these fields were introduced.
+        #[facet(rename = "IsHardcore", default)]
+        pub is_hardcore: bool,
+        #[facet(rename = "PlayerHasDied", default)]
+        pub player_has_died: bool,
+        #[facet(rename = "HasUncompleteWorldFileOnDisk", default)]
+        pub has_uncomplete_world_file_on_disk: bool,
         #[facet(rename = "LANBroadcast")]
         pub lan_broadcast: bool,
         #[facet(rename = "LANBroadcastIntent")]
@@ -226,13 +314,20 @@ mod level_settings {
         pub multiplayer_game_intent: i8,
         #[facet(rename = "LastPlayed")]
         pub last_played: i64,
-        pub base_game_version: String,
-        #[facet(rename = "BiomeOverride")]
+        // Absent on worlds saved before this field was introduced; holds "*" or
+        // a version string like "1.17" once present.
+        pub base_game_version: Option<String>,
+        // Every fixture that writes this key writes it as an empty string when
+        // no override is set; only the oldest worlds, which predate the
+        // per-world biome override feature, omit the key. Absence and "" are
+        // therefore the same state, so defaulting to "" loses nothing.
+        #[facet(rename = "BiomeOverride", default)]
         pub biome_override: String,
         #[facet(rename = "FlatWorldLayers")]
         pub flat_world_layers: String,
+        // Absent on worlds saved before this field was introduced.
         #[facet(rename = "InventoryVersion")]
-        pub inventory_version: String,
+        pub inventory_version: Option<String>,
         #[facet(rename = "LevelName")]
         pub level_name: String,
         pub use_msa_gamertags_only: bool,
@@ -240,70 +335,425 @@ mod level_settings {
         pub start_with_map_enabled: bool,
         pub spawn_mobs: bool,
         pub server_chunk_tick_range: i32,
-        pub permissions_level: i32,
-        pub player_permissions_level: i32,
+        // Absent at the root on worlds that instead write these two inside
+        // `abilities` (see `Abilities::permissions_level`).
+        pub permissions_level: Option<i32>,
+        pub player_permissions_level: Option<i32>,
         pub prid: String,
+        // Absent on worlds saved before this key was introduced.
         #[facet(rename = "world_policies")]
-        pub world_policies: Policies,
-        #[facet(rename = "HasUncompleteWorldFileOnDisk")]
-        pub has_uncomplete_world_file_on_disk: bool,
-        #[facet(rename = "IsHardcore")]
-        pub is_hardcore: bool,
-        #[facet(rename = "PlayerHasDied")]
-        pub player_has_died: bool,
-        #[facet(rename = "allowAnonymousBlockDropsInEditorWorlds")]
-        pub allow_anonymous_block_drops_in_editor_worlds: bool,
-        #[facet(rename = "playerwaypoints")]
-        pub player_waypoints: i32,
-        #[facet(rename = "projectilescanbreakblocks")]
-        pub projectiles_can_break_blocks: bool,
-        #[facet(rename = "serverEditorConnectionPolicy")]
-        pub server_editor_connection_policy: i32,
-        #[facet(rename = "showdaysplayed")]
-        pub show_days_played: bool,
-        #[facet(rename = "showrecipemessages")]
-        pub show_recipe_messages: bool,
-        #[facet(rename = "tntexplosiondropdecay")]
-        pub tnt_explosion_drop_decay: bool,
+        pub world_policies: Option<Policies>,
+        // Superseded by `PlatformBroadcastIntent` / `XBLBroadcastIntent` on
+        // newer worlds, which no longer write these.
+        #[facet(rename = "PlatformBroadcast")]
+        pub platform_broadcast: Option<i8>,
+        #[facet(rename = "PlatformBroadcastMode")]
+        pub platform_broadcast_mode: Option<i32>,
+        #[facet(rename = "XBLBroadcast")]
+        pub xbl_broadcast: Option<i8>,
+        #[facet(rename = "XBLBroadcastMode")]
+        pub xbl_broadcast_mode: Option<i32>,
     }
 }
 
 pub use level_settings::LevelSettings;
 
+/// How a world was written, gathered from level.dat's header and NBT
+/// version fields. Does not decide anything on its own; version-dispatch
+/// and upgrade logic build on top of this.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VersionInfo<'a> {
+    pub header_storage_version: i32,
+    pub storage_version: i32,
+    pub last_opened_with_version: GameVersion,
+    pub minimum_compatible_client_version: Option<GameVersion>,
+    pub base_game_version: Option<&'a str>,
+    pub network_version: Option<i32>,
+    pub inventory_version: Option<&'a str>,
+    pub world_version: Option<i32>,
+}
+
+/// The two NBT keys that hold a [`GameVersion`] as an int list rather than a
+/// compound. Both are read with the key spelling level.dat uses on disk.
+const GAME_VERSION_KEYS: [&str; 2] = ["lastOpenedWithVersion", "MinimumCompatibleClientVersion"];
+
+/// Reshapes the two game-version keys from the int list they are on disk into
+/// the compound [`GameVersion`]'s five fields decode from.
+///
+/// nbtx reflects any struct as a compound and has no hook for converting one
+/// on the way in, so the reshaping is done here on the decoded tree. It stays
+/// confined to this function because these are the only two places in the
+/// format where a game version appears; nothing else nests one.
+///
+/// A key that is absent, or already a compound, or holds anything other than a
+/// five-element int list is left exactly as it is — `from_value` then reports
+/// the mismatch as it would have anyway.
+fn unpack_game_versions(value: &mut Value) {
+    let Value::Compound(entries) = value else {
+        return;
+    };
+
+    for key in GAME_VERSION_KEYS {
+        let Some(entry) = entries.get_mut(bstr::BStr::new(key)) else {
+            continue;
+        };
+        // `List<Int>` is what Bedrock writes (confirmed corpus-wide: all 14
+        // real level.dats sampled during implementation, zero exceptions);
+        // an `IntArray` of the same five ints is accepted too, on the
+        // chance some writer emits that tag instead -- nothing in the
+        // corpus rules it out as firmly as it rules out anything but a
+        // five-element list of ints for the tag actually observed.
+        let parts: Vec<i32> = match entry {
+            Value::IntArray(parts) => parts.clone(),
+            Value::List(items) => {
+                let ints: Option<Vec<i32>> = items.iter().map(|i| i.as_int().copied()).collect();
+                match ints {
+                    Some(ints) => ints,
+                    None => continue,
+                }
+            }
+            _ => continue,
+        };
+        let [major, minor, patch, revision, beta] = parts[..] else {
+            continue;
+        };
+
+        *entry = Value::Compound(Compound::from_iter([
+            ("major".into(), Value::Int(major)),
+            ("minor".into(), Value::Int(minor)),
+            ("patch".into(), Value::Int(patch)),
+            ("revision".into(), Value::Int(revision)),
+            ("beta".into(), Value::Int(beta)),
+        ]));
+    }
+}
+
+/// Inverse of [`unpack_game_versions`]: refolds the two [`GameVersion`]
+/// compounds `nbtx::to_value` produced back into the five-element
+/// `List<Int>`s Bedrock actually stores on disk -- confirmed corpus-wide
+/// (all 14 real level.dats sampled during implementation write `TAG_List`
+/// here, zero `TAG_IntArray`). A key that is absent (an unset
+/// `MinimumCompatibleClientVersion`, already omitted by `to_value`'s
+/// `None`-skipping) or that is not the compound shape `unpack_game_versions`
+/// builds is left alone.
+fn pack_game_versions(value: &mut Value) {
+    let Value::Compound(entries) = value else {
+        return;
+    };
+
+    for key in GAME_VERSION_KEYS {
+        let Some(entry) = entries.get_mut(bstr::BStr::new(key)) else {
+            continue;
+        };
+        let Value::Compound(fields) = entry else {
+            continue;
+        };
+        let field = |name: &str| match fields.get(bstr::BStr::new(name)) {
+            Some(Value::Int(v)) => Some(*v),
+            _ => None,
+        };
+        let (Some(major), Some(minor), Some(patch), Some(revision), Some(beta)) = (
+            field("major"),
+            field("minor"),
+            field("patch"),
+            field("revision"),
+            field("beta"),
+        ) else {
+            continue;
+        };
+        *entry = Value::List(nbtx::ValueList::Int(vec![
+            major, minor, patch, revision, beta,
+        ]));
+    }
+}
+
+/// Recursively sorts every compound's keys into ascending byte order.
+///
+/// This is the order every one of the fourteen real level.dats sampled
+/// during implementation used, uniformly, at every nesting depth (the root
+/// compound and each of `abilities`/`experiments`/`world_policies`) — 53
+/// compounds checked, zero exceptions. It is not merely plausible-looking:
+/// it is exactly what `Vec<u8>`/`BString`'s `Ord` produces, which sorts
+/// every ASCII uppercase letter before every lowercase one, and the sampled
+/// files interleave `PascalCase` and `camelCase` keys at the root in
+/// exactly that byte order rather than, say, a case-insensitive one.
+/// [`LevelSettings::write`] applies this after reshaping the struct's own
+/// declaration order (ad hoc, per the strict-decode task) into a `Value`
+/// tree, so the file it produces matches the game's own ordering rather
+/// than reproducing this crate's field layout.
+fn sort_compound_keys(value: &mut Value) {
+    match value {
+        Value::Compound(entries) => {
+            for child in entries.values_mut() {
+                sort_compound_keys(child);
+            }
+            entries.sort_unstable_keys();
+        }
+        Value::List(items) => sort_list_keys(items),
+        _ => {}
+    }
+}
+
+/// [`sort_compound_keys`] for every compound a list holds, at any depth.
+fn sort_list_keys(items: &mut nbtx::ValueList) {
+    match items {
+        nbtx::ValueList::Compound(compounds) => {
+            for entries in compounds {
+                for child in entries.values_mut() {
+                    sort_compound_keys(child);
+                }
+                entries.sort_unstable_keys();
+            }
+        }
+        nbtx::ValueList::List(lists) => {
+            for list in lists {
+                sort_list_keys(list);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// `world_start_count`'s on-disk value is a 32-bit signed actor session
+/// counter, zero-extended -- not sign-extended -- into the wider `i64` NBT
+/// tag it is stored under: every real value across the corpus is a small
+/// negative `i32` whose bit pattern, reinterpreted as a `u32`, is exactly
+/// what the field holds (see [`LevelSettings::next_actor_session_id`]'s doc
+/// comment for the corpus and reference evidence this reinterpretation is
+/// built on). Both directions are needed -- reading the counter and writing
+/// a claimed one back -- so they are factored here once rather than
+/// repeated at each call site.
+fn session_id_from_stored(stored: i64) -> i32 {
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the counter lives in the low 32 bits; the high bits are zero-extension"
+    )]
+    let low = stored as u32;
+    low.cast_signed()
+}
+
+/// The inverse of [`session_id_from_stored`]: packs a session id back into
+/// `world_start_count`'s on-disk zero-extended form.
+fn session_id_to_stored(id: i32) -> i64 {
+    i64::from(id.cast_unsigned())
+}
+
 impl LevelSettings {
-    /// Writes the `level.dat` header followed by these settings as little-endian NBT.
+    /// Encodes `self` as a level.dat: the 8-byte header (`i32` header
+    /// storage version, `i32` payload length, both little-endian) followed
+    /// by that many bytes of uncompressed little-endian NBT, with nothing
+    /// after it.
+    ///
+    /// # Field-set fidelity contract
+    ///
+    /// `Option` fields round-trip absence faithfully: a `None` is omitted
+    /// from the written compound exactly as `nbtx::to_value` omits it
+    /// (`unpack_game_versions`'s inverse, [`pack_game_versions`], does not
+    /// change that — it only reshapes the two game-version fields that are
+    /// present). Decode such a settings value, write it, and every field the
+    /// source world omitted is still omitted.
+    ///
+    /// The fields behind `#[facet(default)]` do **not** have that property:
+    /// plain `bool`s (the great majority), `abilities.verticalFlySpeed`
+    /// (`f32`), and `BiomeOverride` (`String`, defaulting to `""` -- see
+    /// its own field doc for why empty and absent are the same observed
+    /// state). That attribute exists so `read` can accept a key some
+    /// worlds never wrote — the pre-experiments-compound `armadillo` flag,
+    /// `respawnblocksexplode`, and the rest — by defaulting it on decode;
+    /// nothing in nbtx (checked against the vendored attribute grammar:
+    /// `allow_unknown_fields`, `variant_as`, `lenient_width`, none of which
+    /// skip a default-valued field on encode) can tell the decoded struct
+    /// "this was absent" after the fact, and turning every one of these
+    /// fields into an `Option` to recover that distinction would ripple
+    /// through every reader of this struct for a write-side nicety. So the
+    /// contract here is the pragmatic one: **write re-emits every
+    /// `#[facet(default)]` field explicitly**, its type's default value
+    /// where the source omitted it. A decode-write-decode round trip is
+    /// therefore semantically faithful — `LevelSettings::read` on the freshly written
+    /// file, compared with `PartialEq` against a version of the original
+    /// with every defaulted field materialized, matches — but not always
+    /// byte-identical to the original file. See `tests/settings_write.rs`
+    /// for exactly which fixtures do and do not survive as identical bytes,
+    /// and why.
+    ///
+    /// # Field order
+    ///
+    /// Fields are written in ascending byte order of their on-disk key
+    /// name, at every nesting depth, not the struct's own declaration
+    /// order. See [`sort_compound_keys`] for the corpus evidence this is
+    /// uniform across real worlds.
+    ///
+    /// # `RandomSeed`
+    ///
+    /// Always written as a `Long`, regardless of `header_storage_version`.
+    /// The storage-version-8 boundary sometimes described for this field
+    /// is about the game truncating the *value* to 32 bits for older
+    /// clients, not the tag width changing — `random_seed` is `i64` on this
+    /// struct unconditionally, so this is automatic rather than something
+    /// this method branches on.
     ///
     /// # Errors
     ///
-    /// Returns an error if the settings cannot be encoded as NBT or writing to `writer` fails.
-    pub fn write<W: Write>(&self, mut writer: W) -> Result<(), Error> {
-        let settings = nbtx::to_le_bytes(self)?;
+    /// Returns an error if the settings cannot be encoded as NBT, if the
+    /// encoded payload is longer than `i32::MAX` bytes, or if writing to
+    /// `writer` fails.
+    pub fn write<W: Write>(&self, mut writer: W) -> Result<()> {
+        let mut value = nbtx::to_value(self)?;
 
-        writer.write_u32::<LittleEndian>(self.file_version)?;
-        #[expect(
-            clippy::cast_possible_truncation,
-            reason = "the level.dat length field is 32 bits and the settings are far smaller"
-        )]
-        let settings_len = settings.len() as u32;
-        writer.write_u32::<LittleEndian>(settings_len)?;
-        writer.write_all(&settings)?;
+        // `header_storage_version` (on disk: `headerStorageVersion`, via the
+        // struct's `camelCase` renaming) exists only to carry the 8-byte
+        // header's version field alongside the NBT-decoded one -- see the
+        // field's own doc comment. It has no on-disk key of its own; `read`
+        // patches it in after decoding rather than reading it from the
+        // payload, and it must not be written into the payload either.
+        if let Value::Compound(entries) = &mut value {
+            entries.shift_remove(bstr::BStr::new("headerStorageVersion"));
+        }
+
+        pack_game_versions(&mut value);
+        sort_compound_keys(&mut value);
+
+        let payload = nbtx::to_le_bytes(&value)?;
+        let payload_len =
+            i32::try_from(payload.len()).map_err(|_| Error::Invalid("level.dat payload size"))?;
+
+        writer.write_i32::<LittleEndian>(self.header_storage_version)?;
+        writer.write_i32::<LittleEndian>(payload_len)?;
+        writer.write_all(&payload)?;
 
         Ok(())
     }
 
-    /// Reads the `level.dat` header and the little-endian NBT settings that follow it.
+    /// Decodes a level.dat: the 8-byte header followed by little-endian NBT.
     ///
     /// # Errors
     ///
-    /// Returns an error if reading from `data` fails or the NBT does not match the settings.
-    pub fn read<R: Read>(mut data: R) -> Result<Self, Error> {
-        let file_version = data.read_u32::<LittleEndian>()?;
+    /// Returns an error if reading from `data` fails, if the payload is not
+    /// valid NBT, or if the NBT does not match the [`LevelSettings`] shape.
+    pub fn read<R: Read>(mut data: R) -> Result<Self> {
+        let header_storage_version = data.read_u32::<LittleEndian>()?;
         let _file_size = data.read_u32::<LittleEndian>()?;
 
-        let mut settings: Self = nbtx::from_le_bytes::<LevelSettings>(&mut data)?;
+        // Decoded through a `Value` rather than straight into `Self`: the two
+        // game-version keys need reshaping (below) before the struct can be
+        // built from them.
+        let mut value: Value = nbtx::from_le_bytes(&mut data)?;
+        unpack_game_versions(&mut value);
 
-        settings.file_version = file_version;
+        let mut settings: Self = nbtx::from_value(value)?;
+        settings.header_storage_version = header_storage_version.cast_signed();
 
         Ok(settings)
+    }
+
+    pub fn version_info(&self) -> VersionInfo<'_> {
+        VersionInfo {
+            header_storage_version: self.header_storage_version,
+            storage_version: self.storage_version,
+            last_opened_with_version: self.last_opened_with_version,
+            minimum_compatible_client_version: self.minimum_compatible_client_version,
+            base_game_version: self.base_game_version.as_deref(),
+            network_version: self.network_version,
+            inventory_version: self.inventory_version.as_deref(),
+            world_version: self.world_version,
+        }
+    }
+
+    /// The next actor "session id" this world has not yet used -- the value
+    /// a writer must claim as the high 32 bits of a new actor's `UniqueID`
+    /// to stay collision-safe with every session the game itself has ever
+    /// allocated, including ones from before this world was last opened.
+    ///
+    /// `world_start_count` is an `i64` NBT field, but every real value across
+    /// the fourteen-world corpus fits a `u32` bit pattern that decodes as a
+    /// *negative* `i32` when reinterpreted -- the field holds a 32-bit signed
+    /// session counter, zero-extended (not sign-extended) into the wider NBT
+    /// tag. This reinterprets it that way: `(self.world_start_count as u32)
+    /// as i32`.
+    ///
+    /// # Evidence
+    ///
+    /// Corpus: of the fourteen real worlds, four carry `actorprefix` records
+    /// with a decodable `UniqueID` long (`v1_18_30`: 3,748; `v1_19_30`:
+    /// 3,754; `v1_20_81`: 121; the 1.26 seed world: 89 -- 7,712 actors
+    /// total). For every one of those four worlds, the most negative
+    /// session id actually used by any of that world's actors
+    /// (`min(UniqueID >> 32)`) is exactly one more than this method's
+    /// return value -- i.e. this is the next session down, never yet used.
+    /// The match is exact in all four worlds and the relationship does not
+    /// require sessions to be contiguous (`v1_19_30` uses 11 of 13 possible
+    /// session ids between its minimum and -1; the 1.26 world uses 5 of 10).
+    ///
+    /// Reference cross-check (read-only; not vendored, not linked): both
+    /// prior Bedrock converters key an actor's `UniqueID` off this same
+    /// field, under the same zero-extended-negative-`i32` reading. One
+    /// claims the *current* value of the field as this run's session,
+    /// decrements it by one, and writes the decremented value back to
+    /// level.dat immediately -- before creating a single actor -- so that no
+    /// other process opening the same world afterward can be handed the
+    /// session it just claimed. The comment on that implementation states
+    /// the same reinterpretation this method encodes: "this is a signed int
+    /// stored in a signed long. manually apply the sign correctly." The
+    /// other converter does not read the source world's value at all; it
+    /// unconditionally overwrites the field with a fixed constant on every
+    /// write and stamps every migrated actor with a single fixed session --
+    /// the constant itself is one more negative than the session actually
+    /// used (constant = session - 1), matching this method's own
+    /// post-reservation invariant exactly, even though that converter never
+    /// reads a prior value to derive it from. Consistent with, but a
+    /// degenerate case of, the same rule (a full-world rewrite has no
+    /// "current session count" to preserve).
+    ///
+    /// # What this method does not establish
+    ///
+    /// The low 32 bits of an actor's `UniqueID` are not level.dat state at
+    /// all in either reference or in this corpus -- both converters keep a
+    /// per-run, in-memory sequential counter for them and never persist it,
+    /// and this crate does not track or allocate them either. A caller that
+    /// wants to add actors under a reserved session still owns picking that
+    /// counter's starting point and every subsequent value; this method (and
+    /// [`Self::reserve_actor_session_id`]) hand out only the session id.
+    /// Deriving the `actorprefix` storage key from a `UniqueID` remains
+    /// entirely out of scope here too -- see `crate::actor`'s module docs.
+    pub fn next_actor_session_id(&self) -> i32 {
+        session_id_from_stored(self.world_start_count)
+    }
+
+    /// Claims [`Self::next_actor_session_id`]'s current value and advances
+    /// the counter past it (one further negative), so a second call -- on
+    /// this instance or, once persisted, on a fresh read of the same
+    /// level.dat -- never hands out the same session id twice. See
+    /// [`Self::next_actor_session_id`] for the evidence behind the
+    /// reinterpretation and what this crate does and does not track.
+    ///
+    /// Mutating `world_start_count` alone is not
+    /// collision-safe by itself: per the corpus and reference evidence
+    /// above, the value must actually reach level.dat before the reserved
+    /// session is used, which is why [`crate::level::Level`] exposes a
+    /// paired method that persists immediately rather than deferring to
+    /// [`Self::write`]/`Level::save` -- see its doc comment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Invalid`], leaving `self` unmodified, if the
+    /// current session id is already `i32::MIN`: there is no further
+    /// session to hand out without wrapping around to `i32::MAX`, which
+    /// would violate the "always negative, never yet used" invariant this
+    /// method exists to uphold (a wrapped id could collide with a
+    /// previously-used *positive* high 32 bits -- the corpus shows the
+    /// 1.26 world already has a `0` session -- or with the game's own
+    /// future allocations, which this method has no way to rule out for
+    /// values it has never observed). No real corpus world is within
+    /// billions of this boundary; refusing is cheap and the alternative
+    /// (silently wrapping) is a correctness bug waiting for an
+    /// astronomically long-lived world.
+    pub fn reserve_actor_session_id(&mut self) -> Result<i32> {
+        let id = self.next_actor_session_id();
+        let next = id.checked_sub(1).ok_or(Error::Invalid(
+            "actor session counter exhausted (world_start_count is already i32::MIN)",
+        ))?;
+        self.world_start_count = session_id_to_stored(next);
+        Ok(id)
     }
 }

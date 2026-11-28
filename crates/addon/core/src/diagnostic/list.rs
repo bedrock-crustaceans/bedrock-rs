@@ -163,8 +163,7 @@ impl Diagnostics {
     pub fn take_unknown(&mut self) -> Unknown {
         self.0
             .as_mut()
-            .map(|held| std::mem::take(&mut held.unknown))
-            .unwrap_or_default()
+            .map_or_default(|held| std::mem::take(&mut held.unknown))
     }
 
     /// Records that the list at `list` now holds, in order, the elements it had at the
@@ -221,7 +220,7 @@ impl Diagnostics {
     /// unknown members the list holds are not among them: [`take_unknown`](Self::take_unknown)
     /// first.
     pub fn into_told(self) -> Vec<Told> {
-        let held = self.0.map(|held| *held).unwrap_or_default();
+        let held = self.0.map_or_default(|held| *held);
         // The unknown members are not told: a reader hands them on with `take_unknown`.
         debug_assert!(
             held.unknown.is_empty(),

@@ -34,8 +34,7 @@ fn interactions(value: &mut Value) -> Vec<&mut VObject> {
         return list.as_object_mut().into_iter().collect();
     }
     list.as_array_mut()
-        .map(|array| array.iter_mut().filter_map(Value::as_object_mut).collect())
-        .unwrap_or_default()
+        .map_or_default(|array| array.iter_mut().filter_map(Value::as_object_mut).collect())
 }
 
 /// 1.13.0, `interact` (documents below 1.13.0): in the object, or each element of an array,

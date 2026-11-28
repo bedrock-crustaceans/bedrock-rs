@@ -80,11 +80,7 @@ fn rejection(rejected: &Rejected) -> (&Code, String, String) {
     let location = &diagnostics[0].location;
     (
         &diagnostics[0].code,
-        location
-            .path
-            .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_default(),
+        location.path.as_ref().map_or_default(ToString::to_string),
         location.json_path.to_string(),
     )
 }

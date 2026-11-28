@@ -14,7 +14,6 @@ mod common;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[cfg(unix)]
 use bedrock_addon::diagnostic::{Diagnostics, Severity};
 use bedrock_addon::families::script::{
     CatalogEntry, CatalogModule, ModuleCatalog, ScriptContext, ScriptDiscovery, ScriptFiles,

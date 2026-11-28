@@ -56,13 +56,12 @@ fn describe(stacks: &StackSet) -> Option<Summary> {
 
     let families: Vec<&str> = dynamic(&walker.components, "minecraft:type_family")
         .and_then(|json| json.as_object()?.get("family")?.as_array())
-        .map(|family| {
+        .map_or_default(|family| {
             family
                 .iter()
                 .filter_map(|name| Some(name.as_string()?.as_str()))
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     println!(
         "defined in {} ({}), families {families:?}",
         walker.origin().pack.name(),

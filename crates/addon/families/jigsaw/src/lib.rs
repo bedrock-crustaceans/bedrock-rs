@@ -604,8 +604,7 @@ impl PoolChecks {
             let contents = (
                 processors
                     .as_ref()
-                    .map(|p| p.as_str().to_owned())
-                    .unwrap_or_default(),
+                    .map_or_default(|p| p.as_str().to_owned()),
                 projection.unwrap_or_default(),
             );
             match self.elements.get(location.as_str()) {

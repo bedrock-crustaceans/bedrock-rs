@@ -30,6 +30,7 @@
             [
               rust-toolchain
               cargo-nextest
+              just
               taplo
             ]
             ++ lib.optionals stdenv.hostPlatform.isDarwin [

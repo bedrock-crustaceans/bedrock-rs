@@ -1,0 +1,31 @@
+[package]
+name = "bedrock_vanilla_data"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+deny-unknown-fields = []
+default = ["deny-unknown-fields"]
+# Compiles in the generated per-version block-palette tables (architecture decision 12).
+# Not in `default` yet -- its cost/benefit is exactly what the Phase 3 measurement task
+# decides; see `crates/level/TODO.md`.
+generated-palettes = []
+
+[dependencies]
+bedrock_level = { path = "../level" }
+nbtx = { workspace = true }
+# `#[derive(Facet)]` expands to `::facet::`-rooted paths, so a crate that
+# derives it needs facet directly, at the rev nbtx pins.
+facet = { workspace = true }
+# Compound keys are raw bytes (`bstr::BString`).
+bstr = { workspace = true }
+
+[dev-dependencies]
+tar = { workspace = true }
+flate2 = { workspace = true }
+tempfile = { workspace = true }
+# Names the `IndexMap` a `BlockDef`'s `states` is, to build an empty one.
+indexmap = { workspace = true }

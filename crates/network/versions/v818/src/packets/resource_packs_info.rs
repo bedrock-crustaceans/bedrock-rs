@@ -1,0 +1,32 @@
+use bedrock_network_macros::{ProtoCodec, packet};
+use uuid::Uuid;
+
+#[packet(id = 6, direction = "server_to_client")]
+#[derive(ProtoCodec, Clone, Debug)]
+#[expect(clippy::struct_excessive_bools, reason = "mirrors the packet layout")]
+pub struct ResourcePacksInfoPacket {
+    pub resource_pack_required: bool,
+    pub has_addon_packs: bool,
+    pub has_scripts: bool,
+    pub force_disable_vibrant_visuals: bool,
+    pub world_template_uuid: Uuid,
+    pub world_template_version: String,
+    #[vec_repr(u16)]
+    #[vec_endianness(le)]
+    pub resource_packs: Vec<ResourcePackEntry>,
+}
+
+#[derive(ProtoCodec, Clone, Debug)]
+pub struct ResourcePackEntry {
+    pub id: Uuid,
+    pub version: String,
+    #[endianness(le)]
+    pub size: u64,
+    pub content_key: String,
+    pub sub_pack_name: String,
+    pub content_identity: String,
+    pub has_scripts: bool,
+    pub is_addon: bool,
+    pub is_ray_tracing_capable: bool,
+    pub cdn_url: String,
+}

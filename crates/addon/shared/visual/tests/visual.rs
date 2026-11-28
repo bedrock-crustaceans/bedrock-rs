@@ -34,8 +34,7 @@ fn sem(text: &str) -> SemVersion {
 
 /// The texts of a `Vec<String>` member.
 fn strings(list: Option<&Vec<String>>) -> Vec<&str> {
-    list.map(|list| list.iter().map(String::as_str).collect())
-        .unwrap_or_default()
+    list.map_or_default(|list| list.iter().map(String::as_str).collect())
 }
 
 fn expression(value: Option<&Molang>) -> Option<&str> {

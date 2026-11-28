@@ -474,15 +474,12 @@ fn member_order(text: &str) -> Vec<(String, Vec<String>)> {
         .unwrap()
         .iter()
         .map(|(key, entry)| {
-            let members = entry
-                .as_object()
-                .map(|entry| {
-                    entry
-                        .iter()
-                        .map(|(name, _)| name.as_str().to_owned())
-                        .collect()
-                })
-                .unwrap_or_default();
+            let members = entry.as_object().map_or_default(|entry| {
+                entry
+                    .iter()
+                    .map(|(name, _)| name.as_str().to_owned())
+                    .collect()
+            });
             (key.as_str().to_owned(), members)
         })
         .collect()

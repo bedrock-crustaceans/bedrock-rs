@@ -154,11 +154,7 @@ fn infos(stack: &PackStack<Resource>, code: &str) -> Vec<(String, Option<usize>)
         .filter(|d| d.code.id() == code && d.severity == Severity::Info)
         .map(|d| {
             (
-                d.location
-                    .path
-                    .as_ref()
-                    .map(ToString::to_string)
-                    .unwrap_or_default(),
+                d.location.path.as_ref().map_or_default(ToString::to_string),
                 d.location
                     .pack
                     .as_ref()
