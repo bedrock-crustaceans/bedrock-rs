@@ -219,6 +219,18 @@ impl Database {
         Ok(())
     }
 
+    /// Applies `batch` like [`write`](Self::write) and waits until the log is flushed to disk, so
+    /// the write survives a crash of the machine, not only of the process. Slower; meant for
+    /// saves the user asked for.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the write to the log or the flush fails.
+    pub fn write_sync(&self, batch: WriteBatch) -> Result<()> {
+        self.db.write(batch.0, true)?;
+        Ok(())
+    }
+
     /// Creates a forward iterator over the underlying database handle.
     ///
     /// # Errors
