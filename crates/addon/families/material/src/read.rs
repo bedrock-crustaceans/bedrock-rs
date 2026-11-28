@@ -933,7 +933,7 @@ fn read_material(
     let mut read = reader(out, format_of(rules));
     let def: Option<Def> = read_document(&Node::new(object, at), &mut read);
     let refused = out.iter().skip(before).any(Diagnostic::rejects);
-    (def.map(MaterialDef::from).unwrap_or_default(), refused)
+    (def.map_or_default(MaterialDef::from), refused)
 }
 
 /// Reads a list file from its root value; `None` when the root is no array.

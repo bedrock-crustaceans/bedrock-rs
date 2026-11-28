@@ -123,7 +123,7 @@ impl Authored for EmoticonList {
         let mut read = strict_reader(diagnostics);
         let elements = read_document::<Elements>(&Node::new(root, at), &mut read);
         Self {
-            emoticons: elements.map(|elements| elements.0).unwrap_or_default(),
+            emoticons: elements.map_or_default(|elements| elements.0),
             written: bedrock_addon_core::json::kit::Written::default(),
         }
     }
