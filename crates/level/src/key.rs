@@ -245,7 +245,8 @@ pub const SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR: i8 = -SUBCHUNK_KEY_INDEX_OFFSE
 /// The checked counterpart to [`subchunk_index_to_key`]: `None` when `chunk_version`/
 /// `dimension` puts the key in the 25-28 offset window *and* `absolute_index` is below
 /// [`SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR`], i.e. has no valid representation as a
-/// non-negative key byte inside that window. [`subchunk_index_to_key`] itself stays
+/// non-negative key byte inside that window, or so high that adding the offset overflows
+/// `i8`. [`subchunk_index_to_key`] itself stays
 /// infallible (saturating) because every real record this crate has ever decoded through
 /// that function already came from a key that was written successfully -- it is only a
 /// *retarget* (moving an index that was never bound for this window into it) that can ask
@@ -261,7 +262,7 @@ pub fn subchunk_index_to_key_checked(
         if absolute_index < SUBCHUNK_KEY_INDEX_OFFSET_WINDOW_FLOOR {
             None
         } else {
-            Some(absolute_index.saturating_add(SUBCHUNK_KEY_INDEX_OFFSET))
+            absolute_index.checked_add(SUBCHUNK_KEY_INDEX_OFFSET)
         }
     } else {
         Some(absolute_index)
@@ -917,6 +918,20 @@ mod tests {
         // Chunk version 28 is the last version in the window.
         assert_eq!(subchunk_index_from_key(0, 28, Dimension::Overworld), -4);
         assert_eq!(subchunk_index_to_key(-4, 28, Dimension::Overworld), 0);
+    }
+
+    #[test]
+    fn subchunk_index_to_key_checked_rejects_an_index_the_offset_pushes_past_i8() {
+        // 123 + 4 is the largest key byte; 124 + 4 does not fit and used to saturate to 127,
+        // which reads back as 123.
+        assert_eq!(
+            subchunk_index_to_key_checked(123, 25, Dimension::Overworld),
+            Some(127)
+        );
+        assert_eq!(
+            subchunk_index_to_key_checked(124, 25, Dimension::Overworld),
+            None
+        );
     }
 
     #[test]
