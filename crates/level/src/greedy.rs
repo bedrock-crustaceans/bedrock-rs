@@ -1,4 +1,4 @@
-use crate::{error::Result, lazy::LazyArray};
+use crate::{bits::VALID_BITS, error::Result, lazy::LazyArray};
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::{
     io::{Cursor, Read, Write},
@@ -39,10 +39,44 @@ impl GreedyArray {
 
     /// Packs the array into a given array of words using the given amount of bits per block.
     pub(crate) fn pack_into(&self, words: &mut [u32], bits: u8) {
-        // Amount of indices that fit in a single 32-bit integer.
-        let per_word = (u32::BITS / u32::from(bits)) as usize;
-        for (out, indices) in words.iter_mut().zip(self.array.chunks(per_word)) {
-            *out = Self::pack_word(indices, u32::from(bits));
+        match bits {
+            1 => self.pack::<1>(words),
+            2 => self.pack::<2>(words),
+            3 => self.pack::<3>(words),
+            4 => self.pack::<4>(words),
+            5 => self.pack::<5>(words),
+            6 => self.pack::<6>(words),
+            8 => self.pack::<8>(words),
+            16 => self.pack::<16>(words),
+            _ => {
+                // Amount of indices that fit in a single 32-bit integer.
+                let per_word = (u32::BITS / u32::from(bits)) as usize;
+                for (out, indices) in words.iter_mut().zip(self.array.chunks(per_word)) {
+                    *out = Self::pack_word(indices, u32::from(bits));
+                }
+            }
+        }
+    }
+
+    /// [`pack_into`](Self::pack_into) for a bit size known at compile time, which lets the
+    /// compiler unroll each word.
+    fn pack<const BITS: u32>(&self, words: &mut [u32]) {
+        let per_word = (u32::BITS / BITS) as usize;
+        let mask = !(!0u32 << BITS);
+        let mut chunks = self.array.chunks_exact(per_word);
+        let mut out = words.iter_mut();
+        for (indices, word) in chunks.by_ref().zip(out.by_ref()) {
+            let mut packed = 0;
+            for (slot, &index) in (0..).zip(indices) {
+                packed |= (u32::from(index) & mask) << (slot * BITS);
+            }
+            *word = packed;
+        }
+        // 3, 5 and 6 bits leave a last, partly filled word.
+        if let (Some(word), rest) = (out.next(), chunks.remainder())
+            && !rest.is_empty()
+        {
+            *word = Self::pack_word(rest, BITS);
         }
     }
 
@@ -56,6 +90,19 @@ impl GreedyArray {
         Cursor<W>: Write,
     {
         let per_word = (u32::BITS / bits) as usize;
+        if let Ok(small) = u8::try_from(bits)
+            && VALID_BITS.contains(&small)
+        {
+            // Packed whole and written at once: at most 2048 words, for 16 bits.
+            let mut words = [0u32; 4096 / 2];
+            let words = &mut words[..4096usize.div_ceil(per_word)];
+            self.pack_into(words, small);
+            for word in words.iter_mut() {
+                *word = word.to_le();
+            }
+            writer.write_all(bytemuck::cast_slice::<u32, u8>(words))?;
+            return Ok(());
+        }
         for indices in self.array.chunks(per_word) {
             writer.write_u32::<LittleEndian>(Self::pack_word(indices, bits))?;
         }
@@ -128,7 +175,9 @@ impl GreedyArray {
             2 => Self::unpack_oct::<2>(words, indices),
             4 => Self::unpack_oct::<4>(words, indices),
             // TODO: Maybe accelerate with SIMD?
-            3 | 5 | 6 => Self::unpack_nonsimd(bits, words, indices),
+            3 => Self::unpack_scalar::<3>(words, indices),
+            5 => Self::unpack_scalar::<5>(words, indices),
+            6 => Self::unpack_scalar::<6>(words, indices),
             8 => Self::unpack_oct::<8>(words, indices),
             16 => Self::unpack_oct::<16>(words, indices),
             _ => unimplemented!(),
@@ -396,6 +445,40 @@ impl GreedyArray {
         }
     }
 
+    /// [`unpack_nonsimd`](Self::unpack_nonsimd) for a bit size known at compile time, which lets
+    /// the compiler unroll each word.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `words` is shorter than `4096 / (32 / BITS)`, rounded up.
+    fn unpack_scalar<const BITS: u32>(words: &[u32], indices: &mut [u16; 4096]) {
+        let per_word = (u32::BITS / BITS) as usize;
+        let mask = !(!0u32 << BITS);
+        let words = &words[..4096usize.div_ceil(per_word)];
+        let mut chunks = indices.chunks_exact_mut(per_word);
+        let mut words = words.iter();
+        for (out, &word) in chunks.by_ref().zip(words.by_ref()) {
+            for (slot, index) in (0..).zip(out) {
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "the mask keeps at most 16 bits, the largest valid bit size"
+                )]
+                let value = ((word >> (slot * BITS)) & mask) as u16;
+                *index = value;
+            }
+        }
+        if let Some(&word) = words.next() {
+            for (slot, index) in (0..).zip(chunks.into_remainder()) {
+                #[expect(
+                    clippy::cast_possible_truncation,
+                    reason = "the mask keeps at most 16 bits, the largest valid bit size"
+                )]
+                let value = ((word >> (slot * BITS)) & mask) as u16;
+                *index = value;
+            }
+        }
+    }
+
     #[inline]
     pub fn unpack_nonsimd(bits: u8, mut words: &[u32], indices: &mut [u16]) {
         let per_word = u32::BITS / u32::from(bits);
@@ -619,6 +702,36 @@ mod tests {
                 0,
                 "bits={bits}: padded high bits of the final word were not zero-filled"
             );
+        }
+    }
+
+    /// The words the plain per-word packer writes.
+    fn packed_per_word(array: &GreedyArray, bits: u8) -> Vec<u8> {
+        let per_word = (u32::BITS / u32::from(bits)) as usize;
+        array
+            .array
+            .chunks(per_word)
+            .flat_map(|indices| GreedyArray::pack_word(indices, u32::from(bits)).to_le_bytes())
+            .collect()
+    }
+
+    /// The unrolled packers and unpackers agree with the plain per-word packer.
+    #[test]
+    fn packing_matches_the_per_word_packer_at_every_bit_size() {
+        for bits in VALID_BITS {
+            let array = deterministic_array(bits);
+            let mut out = Cursor::new(Vec::new());
+            array.to_disk(&mut out, u32::from(bits)).unwrap();
+            let out = out.into_inner();
+            assert_eq!(out, packed_per_word(&array, bits), "{bits} bits");
+
+            let words: Vec<u32> = out
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|w| u32::from_le_bytes(*w))
+                .collect();
+            assert_eq!(GreedyArray::unpack(&words, bits), array, "{bits} bits");
         }
     }
 }

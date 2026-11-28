@@ -4,10 +4,7 @@ use leveldb::{
     Compressor, CompressorList, DB, DBIterator, Options, Status, StatusCode,
     compressor::SnappyCompressor,
 };
-use miniz_oxide::{
-    deflate::{compress_to_vec, compress_to_vec_zlib},
-    inflate::{decompress_to_vec, decompress_to_vec_zlib},
-};
+use miniz_oxide::deflate::{compress_to_vec, compress_to_vec_zlib};
 
 pub use leveldb::CompactionMode;
 
@@ -38,6 +35,10 @@ pub struct OpenOptions {
     /// Deflate level from 0 (store) to 10 (slowest). Level 1 writes about three times faster than
     /// level 6 for roughly 7% more disk space.
     pub compression_level: u8,
+    /// Bytes of decompressed table blocks kept in memory. The game writes blocks of about
+    /// 160 KiB, and reading a chunk decompresses a block in every level the chunk is in, so
+    /// `LevelDB`'s 8 MiB default holds the blocks of only a few chunks.
+    pub block_cache_bytes: usize,
 }
 
 impl Default for OpenOptions {
@@ -45,6 +46,7 @@ impl Default for OpenOptions {
         Self {
             compaction_mode: CompactionMode::Background,
             compression_level: 1,
+            block_cache_bytes: 40 << 20,
         }
     }
 }
@@ -58,10 +60,7 @@ impl Compressor for ZlibCompressor {
     }
 
     fn decode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
-        decompress_to_vec_zlib(block).map_err(|err| Status {
-            code: StatusCode::CompressionError,
-            err: err.to_string(),
-        })
+        inflate(block, true)
     }
 }
 
@@ -74,10 +73,41 @@ impl Compressor for RawDeflateCompressor {
     }
 
     fn decode(&self, block: &[u8]) -> leveldb::Result<Vec<u8>> {
-        decompress_to_vec(block).map_err(|err| Status {
-            code: StatusCode::CompressionError,
-            err: err.to_string(),
-        })
+        inflate(block, false)
+    }
+}
+
+/// Decompresses a whole block, with a `zlib` header and trailer or without (raw deflate).
+///
+/// zlib-rs inflates about twice as fast as `miniz_oxide`, which matters because every read of a
+/// record decompresses its whole block.
+fn inflate(block: &[u8], zlib_header: bool) -> leveldb::Result<Vec<u8>> {
+    let error = |err: &str| Status {
+        code: StatusCode::CompressionError,
+        err: err.to_owned(),
+    };
+    let mut inflate = zlib_rs::Inflate::new(zlib_header, 15);
+    let mut out: Vec<u8> = Vec::with_capacity(block.len().saturating_mul(4).max(4096));
+    loop {
+        let consumed = usize::try_from(inflate.total_in()).unwrap_or(usize::MAX);
+        let input = block.get(consumed..).unwrap_or_default();
+        let written = out.len();
+        let status = inflate
+            .decompress_uninit(
+                input,
+                out.spare_capacity_mut(),
+                zlib_rs::InflateFlush::Finish,
+            )
+            .map_err(|err| error(err.as_str()))?;
+        let total = usize::try_from(inflate.total_out()).unwrap_or(usize::MAX);
+        // SAFETY: inflate initialized the `total - written` bytes after `written`.
+        unsafe { out.set_len(total) };
+        match status {
+            zlib_rs::Status::StreamEnd => return Ok(out),
+            _ if out.len() == out.capacity() => out.reserve(out.capacity()),
+            _ if out.len() > written || inflate.total_in() > consumed as u64 => {}
+            _ => return Err(error("truncated deflate stream")),
+        }
     }
 }
 
@@ -94,6 +124,7 @@ fn options(open: OpenOptions) -> Options {
         block_size: BLOCK_SIZE,
         create_if_missing: true,
         compaction_mode: open.compaction_mode,
+        block_cache_capacity_bytes: open.block_cache_bytes,
         ..Default::default()
     }
 }
@@ -420,5 +451,31 @@ mod tests {
 
         let db = Database::open(path).unwrap();
         assert!(db.get(&entries[0].0).is_err());
+    }
+
+    /// Compressible data that inflates to many times its compressed size.
+    fn sample() -> Vec<u8> {
+        (0..200_000u32).map(|i| (i % 251 / 7) as u8).collect()
+    }
+
+    #[test]
+    fn inflate_reads_what_miniz_writes() {
+        for data in [Vec::new(), b"x".to_vec(), sample()] {
+            assert_eq!(inflate(&compress_to_vec(&data, 1), false).unwrap(), data);
+            assert_eq!(
+                inflate(&compress_to_vec_zlib(&data, 6), true).unwrap(),
+                data
+            );
+        }
+    }
+
+    #[test]
+    fn inflate_rejects_damaged_blocks() {
+        let raw = compress_to_vec(&sample(), 1);
+        let zlib = compress_to_vec_zlib(&sample(), 1);
+        assert!(inflate(&raw[..raw.len() / 2], false).is_err());
+        assert!(inflate(&zlib[..zlib.len() - 1], true).is_err());
+        assert!(inflate(&raw, true).is_err());
+        assert!(inflate(&[0xff; 64], false).is_err());
     }
 }

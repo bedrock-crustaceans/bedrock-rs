@@ -21,6 +21,7 @@ harness = false
 [dependencies]
 leveldb = { git = "https://github.com/bedrock-crustaceans/leveldb" }
 miniz_oxide = { version = "0.9" }
+zlib-rs = { version = "0.6", default-features = false, features = ["std", "c-allocator"] }
 
 bedrock_shared = { path = "../shared" }
 nbtx.workspace = true

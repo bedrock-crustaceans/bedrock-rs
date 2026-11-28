@@ -35,7 +35,7 @@ use bedrock_shared::world::dimension::Dimension;
 
 use crate::db::Database;
 use crate::error::Result;
-use crate::key::{Key, KeyVariant};
+use crate::key::{ACTOR_DIGEST_PREFIX, Key, KeyVariant};
 use crate::types::ChunkPosition;
 
 /// One chunk position's complete record group, exactly as stored on disk.
@@ -212,14 +212,10 @@ impl ChunkRecords {
 
     /// Reads one chunk position's record group from `db`.
     ///
-    /// `db` exposes no key-prefix iteration, only a full linear scan (see
-    /// [`Database::keys`]), so this necessarily visits every key in the
-    /// database to find the ones belonging to `position`/`dimension` --
-    /// O(keys in the world), not O(records in the chunk). Calling this in a
-    /// loop over many chunks repeats that full scan every time; use
-    /// [`read_many`](Self::read_many) or [`read_all`](Self::read_all)
-    /// instead, which do the scan once no matter how many chunks are
-    /// requested.
+    /// This seeks to the chunk's keys (see [`Keys::seek`](crate::iter::Keys::seek)), so
+    /// it reads only the table blocks that hold them, not the rest of the world. To read
+    /// most chunks of a world, [`read_all`](Self::read_all) is still cheaper: it reads
+    /// every block once.
     ///
     /// Returns `Ok(None)` if no record for this position/dimension exists at
     /// all -- an absent chunk is an ordinary outcome, not an error. The
@@ -235,8 +231,33 @@ impl ChunkRecords {
         position: ChunkPosition,
         dimension: Dimension,
     ) -> Result<Option<Self>> {
-        let mut groups = Self::read_many(db, [(position, dimension)])?;
-        Ok(groups.remove(&(position, dimension)))
+        // Every key of a chunk starts with its coordinates, or with `digp` and its
+        // coordinates, so two seeks find them all without scanning the rest of the world.
+        // Other dimensions' chunks at the same coordinates share the prefix and are
+        // skipped by the same checks as in `scan`.
+        let mut coords = Vec::with_capacity(12);
+        coords.extend_from_slice(&position.0.to_le_bytes());
+        coords.extend_from_slice(&position.1.to_le_bytes());
+        let digest = [ACTOR_DIGEST_PREFIX.as_slice(), &coords].concat();
+
+        let mut group = Self::new(position, dimension);
+        let mut keys = db.keys()?;
+        for prefix in [coords, digest] {
+            keys.seek(&prefix);
+            while let Some((raw, value)) = keys.next_ref() {
+                if !raw.starts_with(&prefix) {
+                    break;
+                }
+                let Ok(key) = Key::deserialize(&mut Cursor::new(raw)) else {
+                    continue;
+                };
+                if key.data.is_chunk_scoped() && (key.chunk, key.dimension) == (position, dimension)
+                {
+                    group.records.insert(key.data, value.to_vec());
+                }
+            }
+        }
+        Ok((!group.records.is_empty()).then_some(group))
     }
 
     /// Reads the record groups for every `(position, dimension)` pair in

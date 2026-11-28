@@ -26,6 +26,7 @@ pub mod local_player;
 pub mod map_data;
 pub mod metadata_dictionary;
 pub mod nbt_variants;
+mod palette;
 pub mod player;
 pub mod portals;
 pub mod position_track;

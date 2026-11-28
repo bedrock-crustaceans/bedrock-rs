@@ -489,3 +489,35 @@ fn take_without_reinsert_deletes_the_stale_record_on_write() {
         fixture.name
     );
 }
+
+/// Reading one chunk gives the same group as the whole-world scan, for every chunk of
+/// every dimension, `digp` digests included.
+#[test]
+fn reading_one_chunk_matches_the_whole_world_scan() {
+    let mut checked = 0usize;
+    for name in ["v1_18", "v1_20_81"] {
+        let fixture = support::fixtures()
+            .into_iter()
+            .find(|f| f.name == name)
+            .unwrap_or_else(|| panic!("{name} is part of the checked-in fixture set"));
+        let (_tmp, db) = fixture.open();
+        let all = ChunkRecords::read_all(&db).unwrap();
+        for (&(pos, dim), group) in &all {
+            let one = ChunkRecords::read(&db, pos, dim)
+                .unwrap()
+                .unwrap_or_else(|| panic!("{name}: {pos:?}/{dim:?} not found alone"));
+            let mut expected: Vec<(Key, &[u8])> = group.iter().collect();
+            let mut actual: Vec<(Key, &[u8])> = one.iter().collect();
+            expected.sort_by_key(|(k, _)| format!("{:?}", k.data));
+            actual.sort_by_key(|(k, _)| format!("{:?}", k.data));
+            assert_eq!(actual, expected, "{name}: {pos:?}/{dim:?}");
+            checked += 1;
+        }
+        assert!(
+            ChunkRecords::read(&db, ChunkPosition(i32::MAX, i32::MIN), Dimension::Overworld)
+                .unwrap()
+                .is_none()
+        );
+    }
+    assert!(checked > 1000, "only {checked} chunks checked");
+}

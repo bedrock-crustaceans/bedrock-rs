@@ -299,7 +299,7 @@ impl Hash for PaletteEntry {
 /// palette. Recording this one bit per entry is what makes a byte-identical
 /// re-encode possible.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-enum FieldOrder {
+pub(crate) enum FieldOrder {
     /// `name, states, version` -- the order the majority of real records use
     /// (480,372 of 585,804 modern entries surveyed), and what a freshly
     /// built entry not read from disk is written as.
@@ -360,7 +360,23 @@ fn is_legacy_entry(value: &nbtx::Value) -> bool {
 /// [`nbtx::from_value`] then does the same name-matching, default-filling,
 /// unknown-field handling the direct byte decode would have -- reused rather
 /// than duplicated.
-fn read_palette_entry<R: Read>(reader: &mut R) -> Result<(PaletteEntry, FieldOrder)> {
+///
+/// The common modern shape is read directly by [`crate::palette`] first, which gives the
+/// same result faster.
+fn read_palette_entry<R>(reader: &mut Cursor<R>) -> Result<(PaletteEntry, FieldOrder)>
+where
+    Cursor<R>: Read,
+{
+    if let Some((block, order)) = crate::palette::read_modern(reader) {
+        return Ok((PaletteEntry::Modern(block), order));
+    }
+    read_palette_entry_nbtx(reader)
+}
+
+/// [`read_palette_entry`] through [`nbtx::Value`], for every shape.
+pub(crate) fn read_palette_entry_nbtx<R: Read>(
+    reader: &mut R,
+) -> Result<(PaletteEntry, FieldOrder)> {
     // No fallback or `lenient_width` here: every modern palette entry across the whole
     // real test world (every layer of every subchunk) has `version` written as an `Int`,
     // so there is nothing to reconcile, and this runs once per entry.
@@ -389,7 +405,24 @@ fn read_palette_entry<R: Read>(reader: &mut R) -> Result<(PaletteEntry, FieldOrd
 /// moving `version` to the end of the compound (a no-op if it was already
 /// absent) leaves `states` before it, matching what [`FieldOrder::of`]
 /// detects on the way back in.
+///
+/// A modern entry of scalar states is written directly by [`crate::palette`], to the same
+/// bytes.
 fn write_palette_entry<W: Write>(
+    writer: &mut W,
+    entry: &PaletteEntry,
+    order: FieldOrder,
+) -> Result<()> {
+    if let PaletteEntry::Modern(block) = entry
+        && crate::palette::write_modern(writer, block, order)?
+    {
+        return Ok(());
+    }
+    write_palette_entry_nbtx(writer, entry, order)
+}
+
+/// [`write_palette_entry`] through [`nbtx::Value`], for every entry.
+pub(crate) fn write_palette_entry_nbtx<W: Write>(
     writer: &mut W,
     entry: &PaletteEntry,
     order: FieldOrder,
