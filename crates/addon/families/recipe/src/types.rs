@@ -1,13 +1,17 @@
 //! The recipe types, the `Recipes` collection, and their defaults and derived views.
 
+use facet::Facet;
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::Diagnostic;
 use bedrock_addon_core::document::{Document, Registry, Rejected, registry};
 use bedrock_addon_core::id::RecipeId;
 use bedrock_addon_core::molang::MolangList;
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_shared_shapes::OneOrMany;
+
+use crate::read;
 
 /// A recipe file (`minecraft:recipe_*`): one of eight recipe types, each with the members its
 /// type reads.
@@ -17,25 +21,38 @@ use bedrock_addon_shared_shapes::OneOrMany;
 /// first present one in the order of [`RecipeKind`]. Vanilla registers shaped, shapeless and
 /// furnace recipes once per tag in `tags`, so one without tags registers nothing, although its
 /// identifier still overrides lower packs.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// Read as a member of the file's root (`flatten`), keyed by the variant: the first payload key
+/// the root has and is not `null`, in declaration order (`read::payload_kind`).
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::tag_with = read::payload_kind)]
 #[non_exhaustive]
+#[repr(u8)]
 #[doc(alias = "recipes")]
 pub enum Recipe {
     /// `minecraft:recipe_shaped`.
+    #[facet(rename = "minecraft:recipe_shaped")]
     Shaped(Shaped),
     /// `minecraft:recipe_shapeless`.
+    #[facet(rename = "minecraft:recipe_shapeless")]
     Shapeless(Shapeless),
     /// `minecraft:recipe_furnace`.
+    #[facet(rename = "minecraft:recipe_furnace")]
     Furnace(Furnace),
     /// `minecraft:recipe_brewing_mix`.
+    #[facet(rename = "minecraft:recipe_brewing_mix")]
     BrewingMix(BrewingMix),
     /// `minecraft:recipe_brewing_container`.
+    #[facet(rename = "minecraft:recipe_brewing_container")]
     BrewingContainer(BrewingContainer),
     /// `minecraft:recipe_material_reduction`.
+    #[facet(rename = "minecraft:recipe_material_reduction")]
     MaterialReduction(MaterialReduction),
     /// `minecraft:recipe_smithing_transform`.
+    #[facet(rename = "minecraft:recipe_smithing_transform")]
     SmithingTransform(SmithingTransform),
     /// `minecraft:recipe_smithing_trim`.
+    #[facet(rename = "minecraft:recipe_smithing_trim")]
     SmithingTrim(SmithingTrim),
 }
 
@@ -114,7 +131,7 @@ pub struct Recipes {
 }
 
 /// `description` of every recipe type.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Description {
     /// The recipe's identifier, any non-empty string (JSON `identifier`).
     pub identifier: RecipeId,
@@ -130,7 +147,12 @@ pub type Tags = OneOrMany<String>;
 ///
 /// The string form is `"namespace:name[:aux]"` (namespace `minecraft` when omitted, case
 /// ignored, an `item.` prefix dropped) or a potion, `"minecraft:potion_type:<potion>"`.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// Read by a leaf of its own (`read::ingredient`): what a member may hold depends on where it is
+/// (`count` and `tag` allowed or not), and vanilla reads an object's members in its own order,
+/// the first failure ending the ingredient.
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum Ingredient {
     /// `"minecraft:stick"`, `"minecraft:wool:3"`, `"minecraft:potion_type:awkward"`.
     Name(String),
@@ -139,7 +161,7 @@ pub enum Ingredient {
 }
 
 /// The object form of an [`Ingredient`].
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Facet)]
 pub struct IngredientObject {
     /// The item, `"namespace:name[:aux]"`; an inline aux wins over `data` (JSON `item`).
     pub item: Option<String>,
@@ -156,6 +178,7 @@ pub struct IngredientObject {
     /// expression that does not fold to a constant) or a list. Derived at load, not written and
     /// not part of equality; read it through [`Ingredient::aux`].
     #[doc(hidden)]
+    #[facet(skip)]
     pub data_value: Option<i32>,
 }
 
@@ -189,7 +212,8 @@ pub struct ItemName {
 pub type Output = OneOrMany<Ingredient>;
 
 /// `unlock`: what unlocks the recipe in the recipe book.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum Unlock {
     /// `[ingredient, …]`: holding any of these items.
     Ingredients(Vec<Ingredient>),
@@ -204,8 +228,9 @@ pub enum Unlock {
 }
 
 /// `unlock.context`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Facet)]
 #[non_exhaustive]
+#[repr(u8)]
 pub enum UnlockContext {
     /// `"None"`: no context unlocks it.
     None,
@@ -247,159 +272,222 @@ impl PotionMix {
     ];
 }
 
+// The payload structs declare their members in the order vanilla's walker reads them, which is
+// the order their findings are told in; the members vanilla tells nothing of when they are
+// missing or mistyped are kept as written (`or_kept`), the ones it reads when absent too
+// (`reads_absent`: jsoncpp's `null` for a missing key) are read by the family's leaves.
+
 /// `minecraft:recipe_shaped`: a crafting-grid pattern of at most 3×3 symbols.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_members = read::symbols)]
 #[doc(alias = "minecraft:recipe_shaped")]
 pub struct Shaped {
     /// The file's `format_version`; `None` when absent or unreadable (vanilla then uses 1.0.0).
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
     /// Lower is tried first, default 0 (JSON `priority`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = read::priority)]
     pub priority: Option<i32>,
     /// Whether the mirrored pattern also matches, default `true` (JSON `assume_symmetry`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = read::boolean)]
     pub assume_symmetry: Option<bool>,
-    /// The grid rows, one symbol per character, at most 3 rows of 3 (JSON `pattern`).
-    pub pattern: Vec<String>,
-    /// The ingredient of each symbol; a member name's first byte is the symbol (JSON `key`).
-    pub key: IndexMap<String, Ingredient>,
     /// What the recipe makes; several items are allowed (JSON `result`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::result)]
     pub result: Output,
     /// Required from `format_version` 1.20.10 (JSON `unlock`).
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::gated_unlock)]
     pub unlock: Option<Unlock>,
+    /// The grid rows, one symbol per character, at most 3 rows of 3 (JSON `pattern`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::pattern)]
+    pub pattern: Vec<String>,
+    /// The ingredient of each symbol; a member name's first byte is the symbol (JSON `key`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::key)]
+    pub key: IndexMap<String, Ingredient>,
 }
 
 /// `minecraft:recipe_shapeless`: ingredients in any arrangement.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_shapeless")]
 pub struct Shapeless {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
     /// Lower is tried first, default 0 (JSON `priority`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = read::priority)]
     pub priority: Option<i32>,
-    /// The ingredients; one with `count` n fills n slots, none when n ≤ 0 (JSON
-    /// `ingredients`).
-    pub ingredients: Vec<Ingredient>,
     /// What the recipe makes; only the first item of a list is used (JSON `result`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::shapeless_result)]
     pub result: Output,
     /// Required from `format_version` 1.20.10 (JSON `unlock`).
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::gated_unlock)]
     pub unlock: Option<Unlock>,
+    /// The ingredients; one with `count` n fills n slots, none when n ≤ 0 (JSON
+    /// `ingredients`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::ingredients)]
+    pub ingredients: Vec<Ingredient>,
 }
 
 /// `minecraft:recipe_furnace`: one input smelted into one output, once per station tag
 /// (`furnace`, `smoker`, `blast_furnace`, `campfire`, `soul_campfire`).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_furnace")]
 pub struct Furnace {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
     /// Lower is tried first, default 0 (JSON `priority`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = read::priority)]
     pub priority: Option<i32>,
     /// What is smelted, one item, never with `count` (JSON `input`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::FurnaceInput>)]
     pub input: Ingredient,
     /// What it smelts into (JSON `output`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::FurnaceOutput>)]
     pub output: Ingredient,
     /// Optional at every version; absent means always unlocked (JSON `unlock`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = read::unlock)]
     pub unlock: Option<Unlock>,
 }
 
 /// `minecraft:recipe_brewing_mix`: a reagent turns one potion (or item) into another.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_brewing_mix")]
 pub struct BrewingMix {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
-    /// The potion or item brewed (JSON `input`).
-    pub input: Ingredient,
-    /// What is added: one item, without `count` or `tag` (JSON `reagent`).
+    /// What is added: one item, without `count` or `tag` (JSON `reagent`); read first.
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::MixReagent>)]
     pub reagent: Ingredient,
+    /// The potion or item brewed (JSON `input`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::MixInput>)]
+    pub input: Ingredient,
     /// The potion or item it becomes (JSON `output`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::MixOutput>)]
     pub output: Ingredient,
 }
 
 /// `minecraft:recipe_brewing_container`: a reagent turns one potion container into another.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_brewing_container")]
 pub struct BrewingContainer {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
     /// The container brewed (JSON `input`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::ContainerInput>)]
     pub input: Ingredient,
     /// What is added: one item, without `count` or `tag` (JSON `reagent`).
+    #[facet(default, schema::reads_absent)]
+    #[facet(schema::read_with = read::part::<read::ContainerReagent>)]
     pub reagent: Ingredient,
     /// The container it becomes (JSON `output`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::ContainerOutput>)]
     pub output: Ingredient,
 }
 
 /// `minecraft:recipe_material_reduction`: what the material reducer splits an item into.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_material_reduction")]
 pub struct MaterialReduction {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// JSON `tags`.
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Crafting>)]
     pub tags: Option<Tags>,
     /// The item reduced (JSON `input`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::ReductionInput>)]
     pub input: Ingredient,
     /// At most nine items, as one object or a list (JSON `output`).
+    #[facet(schema::reads_null, schema::read_with = read::reduction_output)]
     pub output: Option<Output>,
 }
 
 /// `minecraft:recipe_smithing_transform`: a smithing-table upgrade of `base` with `addition`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_smithing_transform")]
 pub struct SmithingTransform {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// Exactly `["smithing_table"]` (JSON `tags`).
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Transform>)]
     pub tags: Option<Tags>,
     /// The smithing template; not read in worlds older than 1.20 (JSON `template`).
+    #[facet(schema::reads_null, schema::read_with = read::template)]
     pub template: Option<Ingredient>,
     /// The armour or tool upgraded (JSON `base`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::TransformBase>)]
     pub base: Ingredient,
     /// The material: an item tagged `minecraft:transform_materials` (JSON `addition`).
+    #[facet(default, schema::reads_absent)]
+    #[facet(schema::read_with = read::part::<read::TransformAddition>)]
     pub addition: Ingredient,
     /// What it becomes, always one item (JSON `result`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::TransformResult>)]
     pub result: Ingredient,
 }
 
 /// `minecraft:recipe_smithing_trim`: a smithing-table armour trim, only in worlds from 1.20.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[doc(alias = "minecraft:recipe_smithing_trim")]
 pub struct SmithingTrim {
     /// The file's `format_version`; `None` when absent or unreadable.
+    #[facet(skip)]
     pub format_version: Option<FormatVersion>,
     /// JSON `description`.
     pub description: Description,
     /// Exactly `["smithing_table"]` (JSON `tags`).
+    #[facet(schema::reads_absent, schema::reads_null, schema::or_kept = "told")]
+    #[facet(schema::read_with = read::tags::<read::Trim>)]
     pub tags: Option<Tags>,
     /// The trim pattern template (JSON `template`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::TrimPart>)]
     pub template: Ingredient,
     /// The armour trimmed (JSON `base`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::TrimPart>)]
     pub base: Ingredient,
     /// The trim material (JSON `addition`).
+    #[facet(default, schema::reads_absent, schema::read_with = read::part::<read::TrimPart>)]
     pub addition: Ingredient,
 }
 
@@ -621,6 +709,10 @@ macro_rules! each {
     };
 }
 pub(crate) use each;
+
+// Read by the family's leaves, which check and walk nothing below them.
+bedrock_addon_core::impl_schema_leaf!(Ingredient, Unlock);
+bedrock_addon_core::impl_no_molang!(Ingredient, Unlock);
 
 impl Recipe {
     /// The recipe's type.

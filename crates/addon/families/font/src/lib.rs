@@ -2,6 +2,15 @@
 //! `font/emoticons.json`, the MSDF page metrics and remapping table (binary), and which pack
 //! supplies each font file. No file carries a `format_version`; the metadata's own `version`
 //! must be 1.
+//!
+//! The two lists are read by core's reader (`FromJson`) under the fixed-path read: every finding
+//! an information, nothing failing the file. The types derive their read: an entry the game skips
+//! at its first bad member ends there (`schema::ends`) and is left out of its list
+//! (`schema::drop`), a member the typed field cannot say is kept as written (`schema::or_kept`),
+//! and the checks the game runs as it binds an entry are its rule (`schema::after_members`). The
+//! lists, iterated without a type test, a range, a page and the decimal scales are the hand reads
+//! (`metadata.rs`); the name checks run after both lists, in the order the game registers the
+//! names.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -33,7 +42,9 @@ use bedrock_addon_core::json::{EncodeError, WriteStyle};
 use bedrock_addon_core::load::Reported;
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 pub use binary::{GlyphRemapping, RemapEntry, check_glyph_sheet, png_size};
+use facet::Facet;
 pub use stack::{FontFile, MsdfPage, SMOOTH_PREFIX, remapping_path};
 
 /// The path of the font list, in every resource pack.
@@ -100,12 +111,19 @@ impl Fonts {
 /// `font_name`, an alias it drops) are not held. Where a member is written in a way the typed
 /// field cannot say (a `version` that is no integer, a scale written `1`), the field is `None`
 /// and the member is kept in `extra` as written.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(
+    schema::quiet = "version",
+    schema::after_members = metadata::font_names,
+    schema::after_read = metadata::alias_names
+)]
 #[doc(alias = "font_metadata.json")]
 pub struct FontMetadata {
     /// JSON `fonts`, in order. A later entry replaces an earlier one of its name.
+    #[facet(schema::read_with = metadata::fonts, schema::reads_null)]
     pub fonts: Option<Vec<FontEntry>>,
     /// JSON `font_aliases`, in order, read after every font.
+    #[facet(schema::read_with = metadata::aliases, schema::reads_null)]
     pub font_aliases: Option<Vec<FontAlias>>,
     /// The other members (`version` is not one: a loaded file's is 1).
     pub extra: UnknownMembers,
@@ -117,6 +135,7 @@ pub struct FontMetadata {
     /// the written file, not only those beside the edited member. `Debug` shows the root;
     /// `PartialEq` leaves it out: a loaded value that kept one equals a hand-built value with
     /// the same fields.
+    #[facet(skip)]
     pub written: Written,
 }
 
@@ -135,36 +154,71 @@ pub enum FontFormat {
 }
 
 /// One entry of `fonts` in a `font_metadata.json`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_members = metadata::entry_rules)]
 pub struct FontEntry {
     /// JSON `font_format`: `bitmap`, `ttf`, `ttfmsdf` or `msdf`, compared byte for byte; an
     /// entry with any other text loads nothing.
+    #[facet(
+        schema::missing = codes::NO_FORMAT,
+        schema::wrong_type = codes::NO_FORMAT,
+        schema::ends
+    )]
     pub font_format: String,
     /// JSON `font_name`: the name aliases and UI files refer to.
+    #[facet(
+        schema::missing = codes::NO_NAME,
+        schema::wrong_type = codes::NO_NAME,
+        schema::ends
+    )]
     pub font_name: String,
     /// JSON `lowPerformanceCompatible` when a boolean (see
     /// [`is_low_performance_compatible`](Self::is_low_performance_compatible)).
+    #[facet(
+        rename = "lowPerformanceCompatible",
+        schema::or_kept = "silent",
+        schema::reads_null
+    )]
     pub low_performance_compatible: Option<bool>,
     /// JSON `generate_pages_on_start` when an array: the pages drawn at start.
+    #[facet(schema::read_with = schema::read_later)]
     pub generate_pages_on_start: Option<Vec<PageSpec>>,
     /// JSON `ascii_font_file` (bitmap): the sheet of the first 256 characters, no extension.
+    #[facet(
+        schema::read_with = metadata::path,
+        schema::or_kept = "silent",
+        schema::reads_null
+    )]
     pub ascii_font_file: Option<String>,
     /// JSON `unicode_file_prefix` (bitmap): the prefix of the glyph pages.
+    #[facet(
+        schema::read_with = metadata::path,
+        schema::or_kept = "silent",
+        schema::reads_null
+    )]
     pub unicode_file_prefix: Option<String>,
     /// JSON `font_file`. For `ttf` and `ttfmsdf` the file without its extension; for `msdf`
     /// the prefix of the pages (`font/smooth/smooth_`).
+    #[facet(
+        schema::read_with = metadata::path,
+        schema::or_kept = "silent",
+        schema::reads_null
+    )]
     pub font_file: Option<String>,
     /// JSON `version` (`ttf`, `ttfmsdf`) when an integer; the game uses 1 otherwise.
+    #[facet(schema::or_kept = "silent", schema::reads_null)]
     pub version: Option<i32>,
     /// JSON `target_font_render_size` (`ttf`) when an integer; the game uses 64 otherwise
     /// ([`render_size`](Self::render_size) gives the size it ends up with).
+    #[facet(schema::or_kept = "silent", schema::reads_null)]
     pub target_font_render_size: Option<i32>,
     /// The other members, and the members above as written when the field cannot say them.
     pub extra: UnknownMembers,
 }
 
 /// One element of `generate_pages_on_start`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum PageSpec {
     /// A page number.
     Page(i32),
@@ -180,38 +234,76 @@ pub enum PageSpec {
 }
 
 /// One entry of `font_aliases`: a name for a list of fonts tried in order.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct FontAlias {
     /// JSON `alias`: the name.
+    #[facet(
+        schema::missing = codes::NO_ALIAS,
+        schema::wrong_type = codes::NO_ALIAS,
+        schema::ends
+    )]
     pub alias: String,
     /// JSON `fonts`: at least one.
+    #[facet(
+        schema::read_with = metadata::alias_fonts,
+        schema::missing = codes::ALIAS_FONTS,
+        schema::ends
+    )]
     pub fonts: Vec<FontAliasRef>,
     /// JSON `font_scale_factor_override` when written as a decimal number; the game ignores an
     /// integer.
+    #[facet(
+        schema::read_with = metadata::real,
+        schema::or_kept = "told",
+        schema::reads_null
+    )]
     pub font_scale_factor_override: Option<f64>,
     /// The other members, and `font_scale_factor_override` as written when it is no decimal.
     pub extra: UnknownMembers,
 }
 
 /// One font of an alias.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = metadata::reference_rules)]
 pub struct FontAliasRef {
     /// JSON `font_reference`: a built-in font, a `fonts` entry or an earlier alias, by its
     /// exact name.
+    #[facet(
+        schema::missing = codes::NO_REFERENCE,
+        schema::wrong_type = codes::NO_REFERENCE,
+        schema::ends
+    )]
     pub font_reference: String,
+    /// JSON `font_ranges`: the code points the font is used for. A range whose bounds are no
+    /// integers drops the alias.
+    #[facet(
+        schema::read_with = metadata::ranges,
+        schema::or_kept = "told",
+        schema::reads_null,
+        schema::ends
+    )]
+    pub font_ranges: Option<Vec<FontRange>>,
     /// JSON `font_language_code`: the language the font is used for. A value that is neither
     /// a string nor `null` reads as the empty code.
+    #[facet(
+        schema::read_with = metadata::language_code,
+        schema::or_kept = "told",
+        schema::reads_null
+    )]
     pub font_language_code: Option<String>,
-    /// JSON `font_ranges`: the code points the font is used for.
-    pub font_ranges: Option<Vec<FontRange>>,
     /// JSON `font_scale` when written as a decimal number; the game ignores an integer.
+    #[facet(
+        schema::read_with = metadata::real,
+        schema::or_kept = "told",
+        schema::reads_null
+    )]
     pub font_scale: Option<f64>,
     /// The other members, and the members above as written when the field cannot say them.
     pub extra: UnknownMembers,
 }
 
 /// A range of code points of an alias font: `{"first": 57344, "last": 63743}`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Facet)]
 pub struct FontRange {
     /// JSON `first`.
     pub first: i32,
@@ -249,7 +341,7 @@ pub struct EmoticonList {
 }
 
 /// One emoticon.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 pub struct Emoticon {
     /// JSON `name`: matched in text between colons; only letters, digits and `_` can match.
     pub name: String,
@@ -316,6 +408,8 @@ fn read_metadata(origin: Origin, bytes: &[u8]) -> FontFileCopy<FontMetadata> {
         &mut beyond,
     );
     let metadata = FontMetadata::from_value(&root, &mut diagnostics);
+    // The checks after the lists name each entry by the place it is held at.
+    diagnostics.name_as_the_file_has_it();
     // A scale is held at the width of a float and says so itself at the number.
     for finding in beyond {
         let at = &finding.location.json_path;

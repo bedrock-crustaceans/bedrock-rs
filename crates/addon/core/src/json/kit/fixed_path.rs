@@ -17,17 +17,7 @@ pub fn raw_member<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     value.as_object().and_then(|object| object.get(key))
 }
 
-/// `Json::Value::asString("")`: a string is its text, a boolean `true` / `false`, and null,
-/// numbers, arrays and objects are empty.
-pub fn to_text(value: &Value) -> String {
-    if let Some(text) = value.as_string() {
-        text.as_str().to_owned()
-    } else if let Some(flag) = value.as_bool() {
-        flag.to_string()
-    } else {
-        String::new()
-    }
-}
+pub use crate::json::jsoncpp::to_text;
 
 /// What `begin()` / `end()` iterate of a value, each with its path below `at`: the elements of
 /// an array, the member values of an object in key order (jsoncpp's objects are a `std::map`),

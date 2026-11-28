@@ -11,6 +11,8 @@ struct Shapes {
     never_null: u8,
     #[facet(schema::drop)]
     not_a_list: Option<u8>,
+    #[facet(schema::if_kind)]
+    always_read: u8,
 }
 
 fn main() {}

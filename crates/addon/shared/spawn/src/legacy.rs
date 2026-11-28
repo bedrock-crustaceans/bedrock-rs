@@ -1,23 +1,30 @@
 //! The two 1.8.0-shaped documents, standard spawn rules and spawn groups: the game reads both
-//! with one hand-written parser over the raw text, which differs only in the payload key and
-//! the spawn-distance cap.
+//! with one hand-written parser over the raw text, which differs only in the payload key, the
+//! members it tells and the spawn-distance cap. Here the identifier is read first by hand (it
+//! ends the file), the root's unknown members are told, and the payload is read by the derived
+//! reader of its types under the game's jsoncpp accessors.
 
+use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::codes;
-use super::condition::{
-    self, Condition, OneOrMany, Profile, ReadCx, members, put_extra, read_condition,
-};
-use super::read::{self, child, element, finding, finding_with, wrong_type};
+use super::condition::{self, Condition, OneOrMany, put_extra};
+use super::read::{finding, finding_with};
 use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity, builders,
 };
 use bedrock_addon_core::document::UnknownMembers;
+use bedrock_addon_core::json::kit::{self, Node, Profile, Recovery, UnknownAt};
+use bedrock_addon_core::json::parse::{Options, parse_slice};
 use bedrock_addon_core::json::{JsonSlice, Value};
 use bedrock_addon_core::molang::{
-    Admission, EmptyRule, MolangFieldSpec, MolangFields, MolangVersionSource, MolangVisitor,
+    Admission, EmptyRule, MolangFieldSpec, MolangVersionSource, MolangVisitor,
+};
+use bedrock_addon_core::schema::{
+    self, ElementFailure, FromJson, Schema, UnknownRule, read_document, read_list,
 };
 use bedrock_addon_core::version::FormatVersion;
+use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading, Scalars};
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
 /// The payload key of spawn rules.
@@ -47,7 +54,7 @@ impl Flavor {
     }
 
     /// The condition profile the flavor's conditions are checked against.
-    pub fn profile(self) -> Profile {
+    pub fn profile(self) -> condition::Profile {
         match self {
             Self::Rules => condition::SPAWN_RULES,
             Self::Groups => condition::SPAWN_GROUPS,
@@ -74,36 +81,69 @@ pub struct Read {
     pub has_version: bool,
 }
 
-/// The members of `object` other than `known`: warned (spawn rules) or kept silently (spawn
-/// groups).
-fn others(
-    object: &VObject,
-    known: &[&str],
-    kept: &[&str],
-    at: &JsonPath,
-    flavor: Flavor,
-    d: &mut Diagnostics,
-) -> UnknownMembers {
-    match flavor {
-        Flavor::Rules => members(object, known, kept, at, d),
-        Flavor::Groups => {
-            let mut extra = UnknownMembers::default();
-            for (key, value) in object {
-                if kept.contains(&key.as_str()) || !known.contains(&key.as_str()) {
-                    extra.insert(key.as_str().to_owned(), value.clone());
-                }
-            }
-            extra
-        }
-    }
+/// `description` of either payload.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Description {
+    /// A string: [`read`] ends the file before the payload is read otherwise.
+    identifier: String,
+    population_control: Option<String>,
+    extra: UnknownMembers,
 }
 
-/// The parse over the whole document (the raw-text path: the envelope is never
-/// checked, a third root member is kept).
-#[allow(clippy::too_many_lines, reason = "vanilla's parser, step by step")]
+/// The payload of spawn rules: its unknown members and its description's are told.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct RulesPayload {
+    description: Description,
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = rules_conditions)]
+    conditions: Option<Vec<Condition>>,
+    extra: UnknownMembers,
+}
+
+/// The payload of spawn groups: its unknown members and its description's are kept silently.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "silent")]
+struct GroupsPayload {
+    #[facet(schema::unknown = "silent")]
+    description: Description,
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = groups_conditions)]
+    conditions: Option<Vec<Condition>>,
+    extra: UnknownMembers,
+}
+
+/// `conditions` as an array: a condition that is no object is an `InvalidType` information and
+/// skipped (this crate's choice; vanilla adds a default condition), what is told of a condition
+/// from there on at the index the file has. Not an array: vanilla ends the parse with no
+/// conditions and no message, and the member is kept as written.
+fn conditions(node: &Node<'_>, read: &mut kit::Read<'_>) -> Option<Vec<Condition>> {
+    if !node.value().is_array() {
+        return None;
+    }
+    read_list(node, read, ElementFailure::Drop, Condition::from_json)
+}
+
+/// [`conditions`] of spawn rules: one that is no array (nor `null`) is an `InvalidType`
+/// information, the crate's.
+fn rules_conditions(node: &Node<'_>, read: &mut kit::Read<'_>) -> Option<Vec<Condition>> {
+    if !node.value().is_array() && !node.value().is_null() {
+        read.wrong_type(node);
+    }
+    conditions(node, read)
+}
+
+/// [`conditions`] of spawn groups: one that is no array gets the `EmptyDocument` warning of the
+/// group's validate, nothing here.
+fn groups_conditions(node: &Node<'_>, read: &mut kit::Read<'_>) -> Option<Vec<Condition>> {
+    conditions(node, read)
+}
+
+/// The parse over the whole document (the raw-text path: the envelope is never checked, a third
+/// root member is kept): the identifier first, which ends the file when it is missing, then the
+/// root's unknown members, then the payload by the derived reader under the game's jsoncpp
+/// accessors (`Scalars::Accessors`, each coercion an information), a `null` member absent, a
+/// member that fails kept as written.
 pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Option<Read> {
-    let root = match bedrock_addon_core::json::from_str_jsonc(document.text) {
-        Ok(root) => root,
+    let parsed = match parse_slice(document, Options::default()) {
+        Ok(parsed) => parsed,
         Err(error) => {
             finding_with(
                 Diagnostic::of(builders::syntax(error.kind.to_string())),
@@ -113,7 +153,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
             return None;
         }
     };
-    let Some(root) = root.as_object() else {
+    let Some(root) = parsed.value.as_object() else {
         finding_with(
             Diagnostic::of(&codes::NOT_AN_OBJECT).detail(DiagnosticDetail::Syntax(
                 "the root is not an object".to_owned(),
@@ -124,15 +164,12 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
         return None;
     };
     let key = flavor.key();
-    let mut at = JsonPath::new();
-    at.push(key);
     let payload = root.get(key);
     // The identifier is read first, through the const `operator[]`: a missing payload, a
     // non-object payload or description, a `null` or non-string identifier all end here.
-    let description = payload
+    let identifier = payload
         .and_then(Value::as_object)
-        .and_then(|p| p.get("description"));
-    let identifier = description
+        .and_then(|p| p.get("description"))
         .and_then(Value::as_object)
         .and_then(|o| o.get("identifier"))
         .and_then(Value::as_string)
@@ -147,7 +184,7 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
                 d,
             );
         } else {
-            let mut path = child(&at, "description");
+            let mut path = JsonPath::new().child(key).child("description");
             path.push("identifier");
             finding(
                 Code::from(&codes::MISSING_IDENTIFIER),
@@ -158,80 +195,50 @@ pub fn read(document: JsonSlice<'_>, flavor: Flavor, d: &mut Diagnostics) -> Opt
         }
         return None;
     };
-    let root_extra = others(
-        root,
-        &["format_version", key],
-        &[],
-        &JsonPath::new(),
-        flavor,
-        d,
-    );
-    let payload = payload.and_then(Value::as_object)?;
-    let description = description.and_then(Value::as_object)?;
-    let description_at = child(&at, "description");
-    let population_control = read::string(
-        description.get("population_control"),
-        &child(&description_at, "population_control"),
-        d,
-    );
-    let description_extra = others(
-        description,
-        &["identifier", "population_control"],
-        &[],
-        &description_at,
-        flavor,
-        d,
-    );
-    let conditions_at = child(&at, "conditions");
-    let conditions = match payload.get("conditions") {
-        None => None,
-        Some(value) => {
-            if let Some(array) = value.as_array() {
-                let mut cx = ReadCx {
-                    identifier: &identifier,
-                    profile: flavor.profile(),
-                    d,
-                };
-                let mut list = Vec::with_capacity(array.len());
-                let mut places = Vec::with_capacity(array.len());
-                for (i, entry) in array.iter().enumerate() {
-                    let read = read_condition(entry, &element(&conditions_at, i), &mut cx);
-                    if let Some(condition) = read {
-                        list.push(condition);
-                        places.push(i);
-                    }
-                }
-                // What is told of a condition from here on is at the index the file has.
-                d.left_out(&conditions_at, &places);
-                Some(list)
-            } else {
-                // Not an array: vanilla ends the parse with no conditions and no message. For
-                // spawn rules the crate warns; a spawn group gets the `EmptyDocument` warning.
-                if flavor == Flavor::Rules && !value.is_null() {
-                    wrong_type(&conditions_at, d);
-                }
-                None
-            }
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Accessors(Severity::Info))
+        .with_null(NullHandling::AbsentSilently)
+        .with_on_member_failure(MemberFailure::DefaultAndTell);
+    let mut read = kit::Read::new(reading, d)
+        .profile(
+            Profile::DECLARED_ORDER
+                .with_unknown(UnknownAt::Last)
+                .with_recovery(Recovery::Value),
+        )
+        .unknown_severity(Severity::Info)
+        // What a struct kept, among its unknown members where the file has it, as the hand
+        // parsers collected them.
+        .keep_in_file_order()
+        // The condition texts name the identifier.
+        .subject(&identifier);
+    let root_node = Node::parsed(&parsed, JsonPath::new());
+    let members = read.object(&root_node)?;
+    // The crate's own information for spawn rules (vanilla never looks); kept silently for
+    // spawn groups.
+    let rule = match flavor {
+        Flavor::Rules => UnknownRule::Keep,
+        Flavor::Groups => UnknownRule::Silent,
+    };
+    let root_extra = read
+        .unknown(&members, &["format_version", key], rule)
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value.clone()))
+        .collect();
+    let payload = members.get(key)?;
+    let (description, conditions, extra) = match flavor {
+        Flavor::Rules => {
+            let payload: RulesPayload = read_document(&payload, &mut read)?;
+            (payload.description, payload.conditions, payload.extra)
+        }
+        Flavor::Groups => {
+            let payload: GroupsPayload = read_document(&payload, &mut read)?;
+            (payload.description, payload.conditions, payload.extra)
         }
     };
-    // A `conditions` that is not an array is kept as written, so write-back loses nothing.
-    let kept: &[&str] = if conditions.is_none() && payload.contains_key("conditions") {
-        &["conditions"]
-    } else {
-        &[]
-    };
-    let extra = others(
-        payload,
-        &["description", "conditions"],
-        kept,
-        &at,
-        flavor,
-        d,
-    );
     Some(Read {
         identifier,
-        population_control,
-        description_extra,
+        population_control: description.population_control,
+        description_extra: description.extra,
         conditions,
         extra,
         root_extra,
@@ -316,21 +323,20 @@ fn visit_list(key: &str, list: &mut OneOrMany<BlockDescriptor>, visitor: &mut Mo
     visitor.leave();
 }
 
-impl MolangFields for Condition {
-    fn visit_molang(&mut self, visitor: &mut MolangVisitor<'_>) {
-        if let Some(list) = &mut self.spawns_on_block_filter {
-            visit_list(condition::KEYS[2], list, visitor);
-        }
-        if let Some(list) = &mut self.spawns_on_block_prevented_filter {
-            visit_list(condition::KEYS[3], list, visitor);
-        }
-        if let Some(above) = &mut self.spawns_above_block_filter
-            && let Some(list) = &mut above.blocks
-        {
-            visitor.enter(condition::KEYS[4].into());
-            visit_list("blocks", list, visitor);
-            visitor.leave();
-        }
+/// The Molang of a condition: the `tags` of its block descriptors.
+pub(crate) fn visit_condition(condition: &mut Condition, visitor: &mut MolangVisitor<'_>) {
+    if let Some(list) = &mut condition.spawns_on_block_filter {
+        visit_list(condition::KEYS[2], list, visitor);
+    }
+    if let Some(list) = &mut condition.spawns_on_block_prevented_filter {
+        visit_list(condition::KEYS[3], list, visitor);
+    }
+    if let Some(above) = &mut condition.spawns_above_block_filter
+        && let Some(list) = &mut above.blocks
+    {
+        visitor.enter(condition::KEYS[4].into());
+        visit_list("blocks", list, visitor);
+        visitor.leave();
     }
 }
 

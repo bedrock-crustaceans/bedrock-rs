@@ -1,7 +1,12 @@
-//! The reader: one dialogue file to its scenes, walking the parsed JSON tree the way the game's
-//! own dialogue reader does (file, then scene, then button).
+//! The reader: one dialogue file to its scenes, as the game's own dialogue reader reads it (file,
+//! then scene, then button).
 //!
-//! Every finding is built here without pack and file; the loader locates them.
+//! The file's envelope is the game's sequence of checks over the parsed tree, each with its own
+//! text (the version, the payload, `scenes`). Each scene is then a document of its own, read by
+//! the derived read of [`DialogueScene`] and [`Button`] with the file's stem as the read's
+//! subject; the hand code below the envelope is the fields' `read_with` functions and the
+//! structs' guards and rule. Every finding is built here without pack and file; the loader
+//! locates them.
 
 use super::codes;
 use super::command::command_version;
@@ -11,13 +16,15 @@ use bedrock_addon_core::diagnostic::{
     Code, Diagnostic, DiagnosticDetail, Diagnostics, JsonPath, Severity,
 };
 use bedrock_addon_core::document::Unknown;
-use bedrock_addon_core::id::DialogueSceneTag;
-use bedrock_addon_core::json::kit::{Elements, Members, Node, Read};
+use bedrock_addon_core::json::kit::{Elements, Failures, Members, Node, Profile, Read, UnknownAt};
 use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::load::LoadContext;
-use bedrock_addon_core::schema::UnknownRule;
+use bedrock_addon_core::schema::{
+    ElementFailure, FromJson, UnknownRule, read_document, read_each, read_list,
+};
 use bedrock_addon_core::version::{FormatVersion, SemVersion};
-use bedrock_addon_core::versioning::Reading;
+use bedrock_addon_core::versioning::{NullHandling, Reading};
+use facet_value::VObject;
 
 /// The payload member.
 pub(crate) const PAYLOAD: &str = "minecraft:npc_dialogue";
@@ -28,19 +35,12 @@ pub(crate) const FLOOR: FormatVersion = FormatVersion::new(1, 14, 0);
 /// The most valid buttons a scene may have.
 const MAX_NUM_BUTTONS: usize = 6;
 
-/// The members the game reads from a scene.
-const SCENE_MEMBERS: &[&str] = &[
-    "npc_name",
-    "scene_tag",
-    "text",
-    "buttons",
-    "on_open_commands",
-    "on_close_commands",
-];
-
 /// How the game reads a dialogue file: jsoncpp's const `operator[]` and `isNull`, so a member
-/// written `null` is absent.
-const READING: Reading = Reading::NULL_ABSENT;
+/// written `null` is absent, without a word; a member is of its own JSON type or it is not (no
+/// scalar is converted).
+const READING: Reading = Reading::NULL_ABSENT
+    .with_null(NullHandling::AbsentSilently)
+    .strict();
 
 /// A file vanilla reads: its version, its scenes and the file-level findings.
 pub(crate) struct ReadFile {
@@ -73,24 +73,11 @@ pub(crate) enum SceneOutcome {
     Untagged(Diagnostics),
 }
 
-/// What the read of one scene came to, before its findings are attached.
-enum Scene {
-    /// It loaded.
-    Loaded(DialogueScene),
-    /// The rule `code` at the path dropped it; the tag when it had a string one.
-    Dropped(Option<String>, Code, JsonPath),
-    /// It parsed with an empty tag.
-    Untagged,
-}
-
 /// Reads one file: the file, or every finding when the whole file is skipped. `stem` (the
 /// file's name without folders and extension) is the `%s` of every vanilla text; `cx` gives the
 /// command version.
 pub(crate) fn read(stem: &str, bytes: &[u8], cx: &LoadContext) -> Result<ReadFile, Diagnostics> {
-    let reader = Reader {
-        stem,
-        command_version: command_version(cx.min_engine_version.as_ref()),
-    };
+    let reader = Reader { stem, cx };
     // A number no double holds is read as the largest finite one, with a warning, so the
     // document can be written back.
     let finite = bedrock_addon_core::document::FiniteText::of(bytes);
@@ -170,8 +157,8 @@ fn error(read: &mut Read<'_>, code: Code, at: JsonPath) {
 struct Reader<'s> {
     /// The file's stem.
     stem: &'s str,
-    /// The pack's command version.
-    command_version: u8,
+    /// The load the file is read in: the pack's command version.
+    cx: &'s LoadContext,
 }
 
 impl Reader<'_> {
@@ -318,243 +305,231 @@ impl Reader<'_> {
         Some(version)
     }
 
-    /// One scene element, with its own findings.
+    /// One scene element, read as a document of its own: the derived read of
+    /// [`DialogueScene`], the stem the subject of every text. A value that is no object is read
+    /// as one without members (jsoncpp reads every member of it as `null`).
     fn scene(&self, scene: &Node<'_>) -> SceneOutcome {
+        let empty = empty_object();
+        let scene = jsoncpp_object(scene, &empty);
         let mut diagnostics = Diagnostics::default();
-        let mut kept = Unknown::new();
-        let read = self.scene_members(scene, &mut kit(&mut diagnostics), &mut kept);
-        match read {
-            Scene::Loaded(scene) => {
-                *diagnostics.unknown_mut() = kept;
-                SceneOutcome::Loaded(scene, diagnostics)
+        let mut read = kit(&mut diagnostics)
+            .profile(SCENE)
+            .subject(self.stem)
+            .load(self.cx);
+        let read_scene = read_document::<DialogueScene>(&scene, &mut read);
+        drop(read);
+        match read_scene {
+            Some(read_scene) => {
+                // The unknown members of the scene and of its buttons, at paths from the scene.
+                diagnostics
+                    .unknown_mut()
+                    .rebase(scene.path(), &JsonPath::new());
+                SceneOutcome::Loaded(read_scene, diagnostics)
             }
-            // A dropped scene keeps no unknown member.
-            Scene::Dropped(tag, code, at) => {
-                diagnostics.push(Diagnostic::error(code).at(at));
+            // A dropped scene keeps no unknown member (the read keeps none of a value it fails).
+            None if diagnostics.iter().any(Diagnostic::rejects) => {
+                let tag = dropped_tag(&scene, &diagnostics);
                 SceneOutcome::Dropped(tag, diagnostics)
             }
-            Scene::Untagged => SceneOutcome::Untagged(diagnostics),
+            // A scene whose read failed without an error is one of an empty tag (`tagged`).
+            None => SceneOutcome::Untagged(diagnostics),
         }
     }
+}
 
-    /// The members of one scene element; the unknown members of the scene and of its buttons
-    /// go in `kept`, at paths from the scene.
-    fn scene_members(&self, scene: &Node<'_>, read: &mut Read<'_>, kept: &mut Unknown) -> Scene {
-        let at = scene.path();
-        // The game's order: `npc_name`, `scene_tag`, `text`, `buttons` and their count, the open
-        // and the close commands; the first failing rule drops the scene and ends the checks.
-        // A null or absent name is the empty name; a string or an object is a name; anything else
-        // drops the scene.
-        let npc_name = match member(read, scene, "npc_name") {
-            None => None,
-            Some(name) => {
-                let Some(name) = text(name.value()) else {
-                    let code = codes::NPC_NAME.with([self.stem]);
-                    return Scene::Dropped(None, code, at.child("npc_name"));
-                };
-                Some(name)
-            }
-        };
-        // Absent, null or any other type than a string: one text.
-        let Some(tag) = member(read, scene, "scene_tag") else {
-            let code = codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD.with([self.stem]);
-            return Scene::Dropped(None, code, at.child("scene_tag"));
-        };
-        let Some(tag) = tag.value().as_string() else {
-            let code = codes::NO_SCENE_TAG_INVALID_TYPE.with([self.stem]);
-            return Scene::Dropped(None, code, at.child("scene_tag"));
-        };
-        let tag = tag.as_str().to_owned();
-        // An object is kept as its JSON text and anything else is read as a string with the empty
-        // default: a bool reads as its word, a number or an array as the empty text.
-        let text = match member(read, scene, "text") {
-            None => {
-                let code = codes::NO_TEXT.with([self.stem]);
-                return Scene::Dropped(Some(tag), code, at.child("text"));
-            }
-            Some(node) => text(node.value()).unwrap_or_else(|| {
-                // The game reads these without a content-log line, so the crate reports the
-                // coercion as an information.
-                read.push(
-                    Diagnostic::of(&core_codes::INVALID_TYPE)
-                        .severity(Severity::Info)
-                        .at(at.child("text")),
-                );
-                DialogueText::Plain(
-                    match node.value().as_bool() {
-                        Some(true) => "true",
-                        Some(false) => "false",
-                        None => "",
-                    }
-                    .to_owned(),
-                )
-            }),
-        };
-        // Anything but an array is ignored.
-        let buttons_at = at.child("buttons");
-        let buttons: Option<Vec<Button>> = match member(read, scene, "buttons") {
-            Some(buttons) => elements(read, &buttons).map(|buttons| {
-                let mut read_buttons = Vec::new();
-                for button in buttons.iter() {
-                    // Kept at the index the button is written at: dropped ones do not count.
-                    let keep_at = JsonPath::new().child("buttons").index(read_buttons.len());
-                    read_buttons.extend(self.button(&button, read, kept, &keep_at));
-                }
-                read_buttons
-            }),
-            None => None,
-        };
-        // The count is taken after every button has been read, so dropped buttons do not count.
-        if buttons
-            .as_ref()
-            .is_some_and(|kept| kept.len() > MAX_NUM_BUTTONS)
-        {
-            let code = codes::MAX_BUTTONS.with([self.stem, &MAX_NUM_BUTTONS.to_string()]);
-            return Scene::Dropped(Some(tag), code, buttons_at);
-        }
-        let on_open_commands = self.scene_commands(scene, "on_open_commands", read);
-        let on_close_commands = self.scene_commands(scene, "on_close_commands", read);
-        // A scene that parsed with an empty tag is dropped without a message.
-        if tag.is_empty() {
-            return Scene::Untagged;
-        }
-        unknown(read, scene, SCENE_MEMBERS, kept, &JsonPath::new());
-        Scene::Loaded(DialogueScene {
-            scene_tag: DialogueSceneTag::parse(tag),
-            npc_name,
-            text,
-            buttons,
-            on_open_commands,
-            on_close_commands,
-        })
+/// How a scene is read: its members in the game's order (the order [`DialogueScene`] declares),
+/// the first rule it breaks dropping it and ending its checks, the members the game never reads
+/// told after the others.
+const SCENE: Profile = Profile::DECLARED_ORDER
+    .with_failures(Failures::First)
+    .with_unknown(UnknownAt::Last);
+
+/// An object without members, for a value jsoncpp reads as one.
+fn empty_object() -> Value {
+    Value::from(VObject::new())
+}
+
+/// `node` as jsoncpp's const `operator[]` sees it: itself when it is an object, else `empty`
+/// at its path (every member of a value that is no object reads as `null`).
+fn jsoncpp_object<'v>(node: &Node<'v>, empty: &'v Value) -> Node<'v> {
+    if node.value().is_object() {
+        node.clone()
+    } else {
+        Node::new(empty, node.path().clone())
     }
+}
 
-    /// One button element; `None` when it is dropped: with a kept error by a rule, silently for
-    /// an empty name. The game logs each of these (a missing name, both commands and a URL, a
-    /// command that is no string, a URL that is no string) at the content log's error level and
-    /// skips the button while the scene goes on, so each finding is a kept error. Its unknown
-    /// members go in `kept` at `keep_at`.
-    fn button(
-        &self,
-        button: &Node<'_>,
-        read: &mut Read<'_>,
-        kept: &mut Unknown,
-        keep_at: &JsonPath,
-    ) -> Option<Button> {
-        let at = button.path();
-        let warn = |read: &mut Read<'_>, code: Code, at: JsonPath| {
-            read.push(Diagnostic::error(code).at(at).into_kept());
-        };
-        // An absent or null name and one that is neither a string nor an object share one text.
-        let Some(name) = member(read, button, "name") else {
-            warn(
-                read,
-                codes::NO_BUTTON_NAME_MISSING_REQUIRED_FIELD.with([self.stem]),
-                at.child("name"),
-            );
-            return None;
-        };
-        let Some(name) = text(name.value()) else {
-            warn(
-                read,
-                codes::NO_BUTTON_NAME_INVALID_TYPE.with([self.stem]),
-                at.child("name"),
-            );
-            return None;
-        };
-        // Both present and non-null, checked before either type is looked at.
-        let commands = member(read, button, "commands");
-        let url = member(read, button, "url");
-        if commands.is_some() && url.is_some() {
-            warn(read, codes::COMMANDS_AND_URL.with([self.stem]), at.clone());
-            return None;
-        }
-        // A non-array is ignored; a non-string element drops the button.
-        let commands = match commands.and_then(|commands| elements(read, &commands)) {
-            None => None,
-            Some(list) => {
-                let mut stored = Vec::new();
-                for command in list.iter() {
-                    let Some(raw) = command.value().as_string() else {
-                        warn(
-                            read,
-                            codes::COMMAND_TYPE.with([self.stem]),
-                            command.path().clone(),
-                        );
-                        return None;
-                    };
-                    stored.extend(self.command(raw.as_str()));
-                }
-                Some(stored)
-            }
-        };
-        // An absent or null `url` is none; any other type than a string drops the button.
-        let url = match url {
-            None => None,
-            Some(url) => {
-                let Some(url) = url.value().as_string() else {
-                    warn(read, codes::URL_TYPE.with([self.stem]), at.child("url"));
-                    return None;
-                };
-                Some(url.as_str().to_owned())
-            }
-        };
-        // A button that parsed with an empty name is dropped without a message.
-        if matches!(&name, DialogueText::Plain(name) if name.is_empty()) {
-            return None;
-        }
-        unknown(read, button, &["name", "commands", "url"], kept, keep_at);
-        let button = Button {
-            name,
-            commands,
-            url,
-        };
-        if button.label_is_cut() {
-            // The label is cut, not the name; the game says nothing, so the crate reports an
-            // information.
-            read.push(Diagnostic::of(&core_codes::CLAMPED_VALUE).at(at.child("name")));
-        }
-        Some(button)
+/// The tag a dropped scene is rejected under: its `scene_tag` when that is a string and the read
+/// came past it (the rule that dropped the scene is about neither the name nor the tag, the two
+/// members the game reads first).
+fn dropped_tag(scene: &Node<'_>, diagnostics: &Diagnostics) -> Option<String> {
+    let dropping = diagnostics.iter().find(|finding| finding.rejects())?;
+    let at = dropping.location.json_path.last_key();
+    if matches!(at, Some("npc_name" | "scene_tag")) {
+        return None;
     }
+    let tag = scene.value().as_object()?.get("scene_tag")?.as_string()?;
+    Some(tag.as_str().to_owned())
+}
 
-    /// The scene's command list `key` (`on_open_commands`, `on_close_commands`): `None` when
-    /// it is absent or not an array; an element that is not a string is skipped with a kept
-    /// error and the rest are kept.
-    fn scene_commands(
-        &self,
-        scene: &Node<'_>,
-        key: &'static str,
-        read: &mut Read<'_>,
-    ) -> Option<Vec<StoredCommand>> {
-        let list = member(read, scene, key)?;
-        let list = elements(read, &list)?;
-        // The game's text names the list in the singular: `on_open_command`, `on_close_command`.
-        let name = key.strip_suffix('s').unwrap_or(key);
-        let mut stored = Vec::new();
-        for command in list.iter() {
-            match command.value().as_string() {
-                Some(raw) => stored.extend(self.command(raw.as_str())),
-                // The game logs it at the content log's error level and skips the command, so
-                // the finding is a kept error.
-                None => read.push(
-                    Diagnostic::of(codes::SCENE_COMMAND_TYPE.with([self.stem, name]))
-                        .at(command.path().clone()),
-                ),
-            }
-        }
-        Some(stored)
+/// The member `key` of the object `node` when it is written and not `null`.
+fn written<'v>(node: &Node<'v>, key: &str) -> Option<&'v Value> {
+    node.value()
+        .as_object()?
+        .get(key)
+        .filter(|value| !value.is_null())
+}
+
+/// The subject of the read, the file's stem every text names.
+fn stem<'d>(read: &Read<'d>) -> &'d str {
+    read.subject_text().unwrap_or_default()
+}
+
+/// `schema::guard` of a scene: a scene that parsed with an empty tag is dropped without a word.
+pub(crate) fn tagged(scene: &Node<'_>, _: &mut Read<'_>) -> bool {
+    written(scene, "scene_tag")
+        .and_then(Value::as_string)
+        .is_none_or(|tag| !tag.is_empty())
+}
+
+/// `schema::guard` of a button, before its commands: a button with both commands and a URL
+/// (both present and not `null`, checked before either type is looked at) is dropped.
+pub(crate) fn one_action(button: &Node<'_>, read: &mut Read<'_>) -> bool {
+    let both = written(button, "commands").is_some() && written(button, "url").is_some();
+    if both {
+        read.refuse(button, codes::COMMANDS_AND_URL.with([stem(read)]));
     }
+    !both
+}
 
-    /// One command as the game stores it: trimmed, with the pack's command version; `None` when
-    /// nothing is left. A leading `/` stays.
-    fn command(&self, raw: &str) -> Option<StoredCommand> {
-        let raw = raw.trim_ascii();
-        (!raw.is_empty()).then(|| StoredCommand {
-            version: self.command_version,
+/// `schema::guard` of a button, after its members: a button that parsed with an empty name is
+/// dropped without a word.
+pub(crate) fn named(button: &Node<'_>, _: &mut Read<'_>) -> bool {
+    written(button, "name")
+        .and_then(Value::as_string)
+        .is_none_or(|name| !name.is_empty())
+}
+
+/// `schema::after_read` of a button: a label the game cuts. The label is cut, not the name; the
+/// game says nothing, so the crate reports an information.
+pub(crate) fn label_rule(button: &mut Button, node: &Node<'_>, read: &mut Read<'_>) {
+    if button.label_is_cut() {
+        let mut finding = Diagnostic::of(&core_codes::CLAMPED_VALUE).at(node.path().child("name"));
+        finding.location.span = read
+            .object(node)
+            .and_then(|members| members.get("name"))
+            .and_then(|name| name.span());
+        read.push(finding);
+    }
+}
+
+/// The scene's `text`: a string or an object as written; anything else is read as a string with
+/// the empty default, a bool as its word, a number or an array as the empty text.
+#[allow(clippy::unnecessary_wraps, reason = "the `read_with` signature")]
+pub(crate) fn scene_text(node: &Node<'_>, read: &mut Read<'_>) -> Option<DialogueText> {
+    if let Some(text) = text(node.value()) {
+        return Some(text);
+    }
+    // The game reads these without a content-log line, so the crate reports the coercion as an
+    // information.
+    let mut finding = Diagnostic::of(&core_codes::INVALID_TYPE)
+        .severity(Severity::Info)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
+    let word = match node.value().as_bool() {
+        Some(true) => "true",
+        Some(false) => "false",
+        None => "",
+    };
+    Some(DialogueText::Plain(word.to_owned()))
+}
+
+/// The scene's buttons: each read by itself, the first rule one breaks skipping it (the scene
+/// goes on); more than six that stay drop the scene. A button that is no object is read as one
+/// without members. Each is kept at the index it has among the buttons kept.
+pub(crate) fn buttons(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Button>> {
+    let empty = empty_object();
+    let buttons = read_list(node, read, ElementFailure::Unit, |button, read| {
+        Button::from_json(&jsoncpp_object(button, &empty), read)
+    })?;
+    // The count is taken after every button has been read, so dropped buttons do not count.
+    if buttons.len() > MAX_NUM_BUTTONS {
+        let most = MAX_NUM_BUTTONS.to_string();
+        read.refuse(node, codes::MAX_BUTTONS.with([stem(read), &most]));
+        return None;
+    }
+    Some(buttons)
+}
+
+/// A button's `commands`: a command that is no string drops the button.
+pub(crate) fn button_commands(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<StoredCommand>> {
+    let commands = read_each(node, read, |command, read| {
+        if command.value().as_string().is_none() {
+            read.refuse(command, codes::COMMAND_TYPE.with([stem(read)]));
+            return None;
+        }
+        StoredCommand::from_json(command, read)
+    })?;
+    Some(kept(commands))
+}
+
+/// The scene's `on_open_commands` or `on_close_commands`: a command that is no string is
+/// skipped with a kept error (the game logs it at the content log's error level), the rest kept.
+pub(crate) fn scene_commands(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<StoredCommand>> {
+    // The game's text names the list in the singular: `on_open_command`, `on_close_command`.
+    let key = node.path().last_key().unwrap_or_default();
+    let name = key.strip_suffix('s').unwrap_or(key);
+    let commands = read_each(node, read, |command, read| {
+        if command.value().as_string().is_none() {
+            let mut finding = Diagnostic::of(codes::SCENE_COMMAND_TYPE.with([stem(read), name]))
+                .at(command.path().clone());
+            finding.location.span = command.span();
+            read.push(finding);
+            return Some(None);
+        }
+        StoredCommand::from_json(command, read).map(Some)
+    })?;
+    Some(kept(commands.into_iter().flatten().collect()))
+}
+
+/// The commands the game keeps: those with text left once trimmed.
+fn kept(mut commands: Vec<StoredCommand>) -> Vec<StoredCommand> {
+    commands.retain(|command| !command.raw.is_empty());
+    commands
+}
+
+/// One command as the game stores it: the string trimmed (a leading `/` stays), with the pack's
+/// command version; another value is a wrong type.
+impl FromJson for StoredCommand {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let raw = read.string(node)?.trim_ascii();
+        let pack = read
+            .load_context()
+            .and_then(|cx| cx.min_engine_version.as_ref());
+        Some(Self {
+            version: command_version(pack),
             raw: raw.to_owned(),
         })
     }
 }
+
+/// A string or any object; another value is a wrong type (worded by the member's code).
+impl FromJson for DialogueText {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        if read.stopped() {
+            return None;
+        }
+        let text = text(node.value());
+        if text.is_none() {
+            read.wrong_type(node);
+        }
+        text
+    }
+}
+
+bedrock_addon_core::impl_schema_leaf!(DialogueText, StoredCommand);
+bedrock_addon_core::impl_no_molang!(DialogueText, StoredCommand);
 
 /// A version string as the game reads it without wildcards: `"beta"` is
 /// 9999.9999.9999-beta; `"*"` is unreadable; otherwise each number is `0` or up to five digits

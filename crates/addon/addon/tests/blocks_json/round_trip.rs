@@ -101,10 +101,15 @@ fn a_file_writes_what_it_holds_and_nothing_else() {
 "#;
     let document = parse(text).unwrap();
     let written = round_trips(&document);
-    // Everything is in file order, `format_version` included, untouched.
+    // Everything is in file order, untouched, but `format_version`, which is written first.
     assert_eq!(
         written,
         r#"{
+  "format_version": [
+    1,
+    1,
+    0
+  ],
   "obsidian": {
     "sound": 5,
     "textures": {
@@ -114,11 +119,6 @@ fn a_file_writes_what_it_holds_and_nothing_else() {
     },
     "brightness_gamma": 0.7
   },
-  "format_version": [
-    1,
-    1,
-    0
-  ],
   "x": 3,
   "wool": {
     "isotropic": {
@@ -163,9 +163,10 @@ fn a_file_built_by_hand_round_trips() {
 }
 
 #[test]
-fn format_version_is_written_where_the_author_put_it() {
+fn format_version_is_written_first() {
     // The client's reader sorts the members, so the place of `format_version` means nothing
-    // to it; the file holds the place and writes it back.
+    // to it; the file writes the version first, as vanilla's files have it, wherever the
+    // author put it.
     for text in [
         r#"{"format_version": "1.21.40", "a": {}, "b": {}}"#,
         r#"{"a": {}, "format_version": "1.21.40", "b": {}}"#,
@@ -174,77 +175,45 @@ fn format_version_is_written_where_the_author_put_it() {
     ] {
         let document = parse(text).unwrap();
         let written = round_trips(&document);
-        assert_eq!(member_order(&written), member_order(text), "{text}");
+        assert_eq!(
+            member_order(&written),
+            version_first(member_order(text)),
+            "{text}"
+        );
         assert_eq!(
             bedrock_addon::json::from_str_jsonc(&written).unwrap(),
             bedrock_addon::json::from_str_jsonc(text).unwrap()
         );
     }
-    // A repeated `format_version` is written once, where its last value stands, as every
-    // repeated key is.
+    // Two files that differ only in the place of the version are the same file.
+    assert_eq!(
+        parse(r#"{"a": {}, "format_version": "1.21.40"}"#)
+            .unwrap()
+            .value(),
+        parse(r#"{"format_version": "1.21.40", "a": {}}"#)
+            .unwrap()
+            .value()
+    );
+    // A repeated `format_version` is written once, with its last value, as every repeated
+    // key is.
     let document =
         parse(r#"{"format_version": "1.1.0", "a": {}, "format_version": "1.21.40", "b": {}}"#)
             .unwrap();
     let written = round_trips(&document);
     assert_eq!(
         member_order(&written),
-        member_order(r#"{"a": {}, "format_version": "1.21.40", "b": {}}"#)
+        member_order(r#"{"format_version": "1.21.40", "a": {}, "b": {}}"#)
     );
     assert_eq!(document.effective_version().to_string(), "1.21.40");
-    // A place beyond the entries is the end; a file without a version has no place to keep.
+    // A file built by hand writes its version first too.
     let mut built = BlocksJson::new();
     built.entries.insert("a".to_owned(), Value::from(1));
-    built.format_version_index = 9;
     let written = built.to_json().unwrap();
     assert_eq!(
         member_order(&written),
-        member_order(r#"{"a": 1, "format_version": "1.21.40"}"#)
+        member_order(r#"{"format_version": "1.21.40", "a": 1}"#)
     );
-    assert_eq!(parse(&written).unwrap().format_version_index, 1);
-    assert_eq!(
-        parse(r#"{"a": {}, "b": {}}"#).unwrap().format_version_index,
-        0
-    );
-}
-
-#[test]
-fn two_files_are_equal_when_the_version_is_written_at_the_same_place() {
-    // `format_version_index` is compared as the place it writes: a number beyond the entries
-    // is the end, and without a `format_version` it is no place at all. A file built by hand
-    // therefore equals what its own text reads back to.
-    let mut built = BlocksJson::new();
-    built.entries.insert("a".to_owned(), Value::from(1));
-    built.format_version_index = 9;
-    let read = parse(&built.to_json().unwrap()).unwrap();
-    assert_eq!(read.format_version_index, 1);
-    assert_eq!(read.value(), &built);
-    let at_the_end = BlocksJson {
-        format_version_index: 1,
-        ..built.clone()
-    };
-    assert_eq!(at_the_end, built);
-    // Inside the entries every place is its own.
-    let first = BlocksJson {
-        format_version_index: 0,
-        ..built.clone()
-    };
-    assert_ne!(first, built);
-    assert_ne!(first, at_the_end);
-    // Without a version the number says nothing.
-    let unversioned = |index: usize| BlocksJson {
-        format_version: None,
-        format_version_index: index,
-        ..built.clone()
-    };
-    assert_eq!(unversioned(0), unversioned(1));
-    assert_eq!(unversioned(0), unversioned(9));
-    let read = parse(&unversioned(9).to_json().unwrap()).unwrap();
-    assert_eq!(read.value(), &unversioned(9));
-    // The version and the entries are compared as before.
-    assert_ne!(unversioned(0), first);
-    let mut other = first.clone();
-    other.entries.insert("b".to_owned(), Value::from(2));
-    assert_ne!(other, first);
+    assert_eq!(parse(&written).unwrap().value(), &built);
 }
 
 #[test]
@@ -287,6 +256,8 @@ struct Generated {
     /// reader keeps of it (the last value, where it stands). `text` itself when
     /// no entry repeats a member.
     authored: String,
+    /// `authored` with `format_version` first: what the writer writes of it.
+    written: String,
     /// Whether an entry repeats a member.
     repeats_a_member: bool,
 }
@@ -448,6 +419,7 @@ fn generate(g: &mut Generator) -> Generated {
         authored.push(format!(r#""{name}": {{{}}}"#, kept.join(", ")));
     }
     // The version stands first, as vanilla's files have it, or anywhere among the entries.
+    let mut written = authored.clone();
     if !version.is_empty() {
         let at = if g.next(2) == 0 {
             0
@@ -456,10 +428,12 @@ fn generate(g: &mut Generator) -> Generated {
         };
         members.insert(at, format!(r#""format_version": {version}"#));
         authored.insert(at, format!(r#""format_version": {version}"#));
+        written.insert(0, format!(r#""format_version": {version}"#));
     }
     Generated {
         text: format!("{{{}}}", members.join(", ")),
         authored: format!("{{{}}}", authored.join(", ")),
+        written: format!("{{{}}}", written.join(", ")),
         repeats_a_member,
     }
 }
@@ -511,6 +485,15 @@ fn member_order(text: &str) -> Vec<(String, Vec<String>)> {
         .collect()
 }
 
+/// `order` (of [`member_order`]) with `format_version` first, where the writer puts it.
+fn version_first(mut order: Vec<(String, Vec<String>)>) -> Vec<(String, Vec<String>)> {
+    if let Some(at) = order.iter().position(|(key, _)| key == "format_version") {
+        let version = order.remove(at);
+        order.insert(0, version);
+    }
+    order
+}
+
 /// The findings but the repeated keys, which are written once, and the numbers beyond a
 /// double, which are written finite.
 fn findings_but_rewrites(d: &Diagnostics) -> Vec<(&'static str, String)> {
@@ -543,6 +526,7 @@ fn four_thousand_generated_files_round_trip() {
         let Generated {
             text,
             authored,
+            written: expected,
             repeats_a_member,
         } = generate(&mut g);
         assert_eq!(authored != text, repeats_a_member, "{text}");
@@ -555,7 +539,7 @@ fn four_thousand_generated_files_round_trip() {
             .to_json()
             .unwrap_or_else(|error| panic!("{error}: {text}"));
         // Write-back as authored: a file no finding says was rewritten is written member for
-        // member as it was read. The recorded rewrites: a repeated key is written once, with
+        // member as it was read, `format_version` first. The recorded rewrites: a repeated key is written once, with
         // its last value (`DuplicateIdentifier`); a number beyond a double is written
         // finite (`ClampedValue`); and a member an entry repeats is written once,
         // where its last value stands, without a finding: `authored` is the file
@@ -575,22 +559,21 @@ fn four_thousand_generated_files_round_trip() {
             assert_eq!(value(&written), value(&authored), "{text}\n{written}");
             assert_eq!(
                 member_order(&written),
-                member_order(&authored),
+                member_order(&expected),
                 "{text}\n{written}"
             );
             // A number is written as a number: an integer beyond 64 bits too, which is a
             // number token like any other and never a string.
             assert_eq!(
                 number_tokens(&written),
-                number_tokens(&authored),
+                number_tokens(&expected),
                 "{text}\n{written}"
             );
             wide += usize::from(
                 authored.contains("18446744073709551616")
                     || authored.contains("123456789012345678901234567890"),
             );
-            // `format_version` is a root member like any other: it is written where the
-            // author put it.
+            // `format_version` is written first, wherever the author put it.
             let authored = member_order(&authored);
             if authored
                 .iter()
@@ -621,7 +604,7 @@ fn four_thousand_generated_files_round_trip() {
     }
     assert!(warned > 1000, "the generator makes findings: {warned}");
     eprintln!(
-        "generated: {as_authored} written as authored ({version_not_first} with the version not first), {repeated} with a repeated key, {repeated_member} with a member repeated inside an entry and no other rewrite, {clamped} with a clamped number, {wide} with an integer beyond 64 bits written as authored"
+        "generated: {as_authored} written as authored ({version_not_first} with the version moved first), {repeated} with a repeated key, {repeated_member} with a member repeated inside an entry and no other rewrite, {clamped} with a clamped number, {wide} with an integer beyond 64 bits written as authored"
     );
     assert!(
         as_authored > 1000,
@@ -634,7 +617,7 @@ fn four_thousand_generated_files_round_trip() {
     );
     assert!(
         version_not_first > 100,
-        "files written as authored whose version is not the first member: {version_not_first}"
+        "files written as authored whose version was moved first: {version_not_first}"
     );
     assert!(
         clamped > 100,

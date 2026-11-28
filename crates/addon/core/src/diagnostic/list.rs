@@ -129,6 +129,17 @@ impl Diagnostics {
         self.record_move(from, to);
     }
 
+    /// Records that the member the file has at `file` is held at `held` from here on, for the
+    /// findings alone: a finding told at or below `held` after the record is about the member
+    /// at `file` ([`Diagnostics::name_as_the_file_has_it`]). The unknown members kept below
+    /// either stay where they are: a list whose values the file names by key and the document
+    /// holds by index (an object jsoncpp iterates).
+    pub fn held_at(&mut self, file: JsonPath, held: JsonPath) {
+        if file != held {
+            self.record_move(file, held);
+        }
+    }
+
     /// Records a move for the findings alone.
     fn record_move(&mut self, from: JsonPath, to: JsonPath) {
         let told = self.list().len();

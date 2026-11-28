@@ -27,7 +27,7 @@
 //! | axis | what the kit does with it |
 //! |---|---|
 //! | [`Reading::null`] | [`NullHandling::Absent`] (and `AbsentSilently`, which tells nothing): [`opt`](Read::opt) reads a `null` member as absent, [`required`](Read::required) as missing; otherwise the member is there and its read takes the `null` |
-//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`, [`Scalars::Lenient`] by the texture files' of `jsoncpp::lenient`). In the hand reads every profile reads alike: a token of another kind is a wrong type, and [`int`](Read::int) takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
+//! | [`Reading::scalars`] | every profile in [`scalar`](Read::scalar), through `json::judge` (the `ConvertAndTell` conversions as the plain typed read makes them; [`Scalars::Fork`] by the sound files' coercions of `jsoncpp::fork`, [`Scalars::Lenient`] by the texture files' of `jsoncpp::lenient`, [`Scalars::Accessors`] by the spawn files' accessors, told at its severity). In the hand reads every profile reads alike: a token of another kind is a wrong type, and [`int`](Read::int) takes what `isInt` takes. [`bool`](Read::bool) and [`string`](Read::string) coerce under none |
 //! | [`Reading::beyond_width`] | in [`scalar`](Read::scalar): a number beyond its float reads as the infinity it is, told so the load clamps it and reads again ([`BeyondWidth::ClampAndTell`](crate::json::BeyondWidth::ClampAndTell)), or is a wrong type ([`BeyondWidth::Error`](crate::json::BeyondWidth::Error)) |
 //! | [`Reading::unknown`] | the severity of [`unknown`](Read::unknown) |
 //! | [`Reading::on_member_failure`] | a failed read (a wrong type, a missing member), graded by [`schema::grade`](crate::schema::grade): [`MemberFailure::DefaultAndTell`](crate::versioning::MemberFailure::DefaultAndTell) an information, since the member then takes its default (the game says nothing); any other an error that fails what is read ([`Read::failed`]), the caller dropping what the rule drops |
@@ -87,6 +87,7 @@ use crate::versioning::{NullHandling, RangeMembers, Reading, Scalars};
 #[doc(hidden)]
 pub mod fixed_path;
 // hidden: API not yet reviewed
+mod dialect;
 mod misread;
 mod scalar;
 #[cfg(test)]
@@ -95,6 +96,7 @@ mod tests;
 pub mod write;
 mod written;
 
+pub use dialect::{Dialect, Dialects};
 pub use misread::{BEYOND_FLOAT_MEMBER, Misread, Misreading};
 pub use scalar::Scalar;
 pub use written::{Present, Written};
@@ -116,6 +118,9 @@ pub struct Node<'v> {
 enum Text<'v> {
     /// No text: no span.
     None,
+    /// A member the object does not have, read as the `null` jsoncpp gives for it
+    /// ([`Node::absent`]): no text, no span.
+    Absent,
     /// A node of a parse's span tree. The root of a read of a whole text has that text as
     /// `whole`, white space and comments round the value included, as a slice has it.
     Tree {
@@ -128,6 +133,7 @@ impl std::fmt::Debug for Text<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::None => f.write_str("None"),
+            Self::Absent => f.write_str("Absent"),
             Self::Tree { node, .. } => f.debug_tuple("Tree").field(&node.span()).finish(),
         }
     }
@@ -141,14 +147,14 @@ impl<'v> Text<'v> {
 
     fn slice(self) -> Option<JsonSlice<'v>> {
         match self {
-            Self::None => None,
+            Self::None | Self::Absent => None,
             Self::Tree { node, whole } => Some(whole.unwrap_or_else(|| node.text())),
         }
     }
 
     fn span(self) -> Option<Span> {
         match self {
-            Self::None => None,
+            Self::None | Self::Absent => None,
             Self::Tree { node, whole } => Some(whole.map_or_else(|| node.span(), span_of)),
         }
     }
@@ -208,6 +214,26 @@ impl<'v> Node<'v> {
                 whole: Some(parsed.spans.text()),
             },
         }
+    }
+
+    /// The member at `path` that its object does not have, read as the `null` jsoncpp's
+    /// `operator[]` gives for a missing key: a read that asks for a member and takes what is
+    /// there (`schema::reads_absent`). Findings at it carry no span; [`is_absent`](Self::is_absent)
+    /// tells it from a `null` the file writes.
+    #[must_use]
+    pub fn absent(path: JsonPath) -> Node<'static> {
+        static NULL: Value = Value::NULL;
+        Node {
+            value: &NULL,
+            path,
+            text: Text::Absent,
+        }
+    }
+
+    /// Whether the node is a member its object does not have ([`absent`](Self::absent)).
+    #[must_use]
+    pub fn is_absent(&self) -> bool {
+        matches!(self.text, Text::Absent)
     }
 
     /// The value.
@@ -575,6 +601,12 @@ pub struct Texts {
     /// not found"`), in place of [`missing`](Self::missing): the client's older schema tree words
     /// it with the name.
     pub missing_named: Option<&'static CodeDef<1>>,
+    /// The code of a missing required member, in place of
+    /// [`MISSING_REQUIRED_FIELD`](core_codes::MISSING_REQUIRED_FIELD) and
+    /// [`missing`](Self::missing) (not of [`missing_named`](Self::missing_named)): a reader of the
+    /// game whose report names the absence its own way (the legacy manifest parser's
+    /// `MissingProperty`).
+    pub missing_code: Option<&'static CodeDef<0>>,
     /// The code an unknown member told as an `UnrecognizedField` ([`UnknownRule::Keep`]) is told
     /// under, made from the member's key (`"child '%s' not valid here."`), in place of
     /// [`unknown_code`](Self::unknown_code) and [`unknown`](Self::unknown). Its severity is the
@@ -611,6 +643,7 @@ impl Texts {
         wrong_kind: None,
         wrong_at: None,
         missing_named: None,
+        missing_code: None,
         unknown_named: None,
         missing_in_object: false,
         invalid_enum: None,
@@ -638,6 +671,18 @@ impl Expected {
             Self::String => "string",
             Self::Number => "float",
             Self::Bool => "bool",
+        }
+    }
+
+    /// Whether `value` is of this JSON kind.
+    #[must_use]
+    pub fn takes(self, value: &Value) -> bool {
+        match self {
+            Self::Object => value.is_object(),
+            Self::Array => value.is_array(),
+            Self::String => value.is_string(),
+            Self::Number => value.is_number(),
+            Self::Bool => value.is_bool(),
         }
     }
 }
@@ -681,6 +726,8 @@ pub struct Profile {
     pub names: Names,
     /// Whether a number a float member does not hold exactly is told.
     pub lossy: Lossy,
+    /// Whether a finding of the read spans the bytes it is about.
+    pub spans: SpanRule,
 }
 
 /// When an object fails, and where and whether its missing members are told
@@ -699,6 +746,10 @@ pub enum Objects {
     /// ([`FromJson::from_json`](crate::schema::FromJson::from_json)): a leaf that returns `None`
     /// silently is a defect, and a debug build panics on it.
     Tree,
+    /// As [`Members`](Self::Members), and a value that is no object is read as an object with
+    /// no members, told nothing: the const `operator[]` of the game's jsoncpp fork, which
+    /// gives `null` for every member of a scalar or an array (the sound files' readers).
+    Fork,
 }
 
 /// How a member's name is compared with the names a struct declares and the prefix of a key
@@ -724,6 +775,18 @@ pub enum Lossy {
     /// It reads as the nearest float, and a `LOSSY_CONVERSION` information at the number says
     /// so (the crate's own: the document is written back with the float).
     Told,
+}
+
+/// Whether a finding of the read spans the bytes of the value it is about ([`Profile::spans`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum SpanRule {
+    /// Every finding spans its value, as the one rule of the reader says.
+    Told,
+    /// No finding has a span: a file whose bytes no finding may address (the server's
+    /// `secrets.json`, whose findings are printed where the file is not), or a reader that
+    /// names a place by its path alone. What a finding says is unchanged.
+    Withheld,
 }
 
 /// How many failures a read tells ([`Profile::failures`]).
@@ -759,6 +822,22 @@ pub enum MemberOrder {
     /// In the sorted order of the keys' bytes, jsoncpp's `std::map` (the render controller and
     /// older fog loaders); a map's entries too, which it then holds in that order.
     Sorted,
+    /// Read and told as [`Sorted`](Self::Sorted), a map holding its entries in the file's
+    /// order: a reader that walks jsoncpp's `std::map` (the server's `secrets.json`, whose
+    /// warnings come in the names' byte order) of a document the crate writes back as written.
+    SortedInPlace,
+    /// As the struct declares its fields, and a map's entries in the sorted order of the keys'
+    /// bytes: a jsoncpp reader that asks for each member by name and iterates an object, which
+    /// its `std::map` holds in key order (the sound files' readers). Unknown members stay in
+    /// file order.
+    Named,
+}
+
+impl MemberOrder {
+    /// Whether a struct's members are read in declaration order.
+    pub(crate) fn declared(self) -> bool {
+        matches!(self, Self::Declaration | Self::Named)
+    }
 }
 
 /// Where a struct tells the unknown members of its object ([`Profile::unknown`]), each in file
@@ -806,6 +885,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
     /// Every failure and every finding where the read meets it, in file order: a game reader
     /// that binds every member and tells each failure. [`Read::new`]'s.
@@ -818,6 +898,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
     /// As [`EVERY_FAILURE`](Self::EVERY_FAILURE), an object's unknown members told before its
     /// members.
@@ -874,6 +955,12 @@ impl Profile {
         Self { lossy, ..self }
     }
 
+    /// The profile spanning its findings as `spans` says.
+    #[must_use]
+    pub const fn with_spans(self, spans: SpanRule) -> Self {
+        Self { spans, ..self }
+    }
+
     /// The game's JSON schema node tree: every failure where it is met, in file order, an
     /// object failed by any error below it ([`Objects::Tree`]); a loader names its tree's
     /// order, names and floats with the builders.
@@ -891,6 +978,7 @@ impl Profile {
         objects: Objects::Members,
         names: Names::Exact,
         lossy: Lossy::Silent,
+        spans: SpanRule::Told,
     };
 
     /// Whether the read stops at its first failure ([`Failures::First`]).
@@ -998,9 +1086,15 @@ pub struct Read<'d> {
     /// The phase every finding of the read is told in, where it is not the default
     /// ([`phase`](Self::phase)).
     phase: Option<Phase>,
+    /// What the document is read for, fed to a field's code of one argument
+    /// ([`subject`](Self::subject)).
+    subject: Option<&'d str>,
     /// The format version the document is written at, for the members a struct reads from a
     /// version on ([`format`](Self::format)).
     format: Option<crate::version::FormatVersion>,
+    /// The engine a struct's members are gated by at the read (`schema::since_engine`,
+    /// `until_engine`), when the read asks for it ([`engine`](Self::engine)).
+    engine: Option<crate::version::FormatVersion>,
     failed: bool,
     profile: Profile,
     /// The read met its first failure under [`Failures::First`].
@@ -1046,7 +1140,17 @@ pub struct Read<'d> {
     errors: usize,
     /// The members read as a declared name spelled in another case ([`Names::IgnoreAsciiCase`]).
     respelled: Vec<(JsonPath, Option<Span>)>,
+    /// What the reads above the one being made put in scope, innermost last ([`scope`](Self::scope)).
+    scopes: Vec<(&'static str, Scoped)>,
+    /// A struct's own unknown members hold what it kept in the order its object has them
+    /// ([`keep_in_file_order`](Self::keep_in_file_order)).
+    in_file_order: bool,
+    /// The family's own read of Molang ([`molang_leaf`](Self::molang_leaf)).
+    molang_leaf: Option<crate::schema::MolangLeaf>,
 }
+
+/// A value a read put in scope for the reads below it ([`Read::scope`]).
+type Scoped = std::sync::Arc<dyn std::any::Any + Send + Sync>;
 
 impl<'d> Read<'d> {
     /// A read under `reading`, telling into `findings`.
@@ -1059,7 +1163,9 @@ impl<'d> Read<'d> {
             findings: Sink::Borrowed(findings),
             rewrite_note: None,
             phase: None,
+            subject: None,
             format: None,
+            engine: None,
             failed: false,
             profile: Profile::EVERY_FAILURE,
             stopped: false,
@@ -1078,6 +1184,9 @@ impl<'d> Read<'d> {
             negative_zero_integer: false,
             errors: 0,
             respelled: Vec::new(),
+            scopes: Vec::new(),
+            in_file_order: false,
+            molang_leaf: None,
         }
     }
 
@@ -1119,6 +1228,74 @@ impl<'d> Read<'d> {
         self
     }
 
+    /// The read naming `subject` (the block an entry is read for, the file a document is in) in
+    /// every code of one argument a field states for its member: `schema::wrong_type`,
+    /// `missing`, `invalid` or `negative` given a `CodeDef<1>`. A read without a subject tells
+    /// its own code where a field states one of those (a code of no argument is told either
+    /// way).
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath};
+    /// # use bedrock_addon_core::json::kit::{Node, Read};
+    /// # use bedrock_addon_core::json::{Value, from_str_jsonc};
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// let json: Value = from_str_jsonc("{}").unwrap();
+    /// let mut found = Diagnostics::default();
+    /// let read = Read::new(Reading::DOCUMENT, &mut found).subject("minecraft:stone");
+    /// assert_eq!(read.subject_text(), Some("minecraft:stone"));
+    /// ```
+    #[must_use]
+    pub fn subject(mut self, subject: &'d str) -> Self {
+        self.subject = Some(subject);
+        self
+    }
+
+    /// What the document is read for ([`subject`](Self::subject)), for a leaf that words its
+    /// own finding with it.
+    pub fn subject_text(&self) -> Option<&'d str> {
+        self.subject
+    }
+
+    /// The code `code` tells under this read: fed the subject when it takes one, `None` when it
+    /// does and the read names none.
+    pub(crate) fn member_code(
+        &self,
+        code: crate::schema::derive_support::MemberCode,
+    ) -> Option<Code> {
+        code.code(self.subject)
+    }
+
+    /// The code the field whose member is `node` states for a value its type refuses
+    /// (`schema::invalid`), fed the read's subject; `None` where it states none, or one of one
+    /// argument and the read has no subject. For a leaf that tells its refusal at the code's own
+    /// severity, as the game logs it, where [`refuse`](Self::refuse) grades it by the reading.
+    pub fn invalid_code(&self, node: &Node<'_>) -> Option<Code> {
+        self.member_rules(node)
+            .and_then(|rules| rules.invalid)
+            .and_then(|code| self.member_code(code))
+    }
+
+    /// The read reading every `Molang` and `[Molang; N]` member by `leaf`, the family's own read
+    /// of Molang, in place of core's.
+    #[must_use]
+    pub fn molang_leaf(mut self, leaf: crate::schema::MolangLeaf) -> Self {
+        self.molang_leaf = Some(leaf);
+        self
+    }
+
+    /// The family's own read of Molang the read reads by ([`molang_leaf`](Self::molang_leaf)).
+    pub fn reads_molang_by(&self) -> Option<crate::schema::MolangLeaf> {
+        self.molang_leaf
+    }
+
+    /// The Molang spec the era the document is in states for the field whose member is `node`
+    /// (`schema::era(.., molang = SPEC)`), at that member; `None` where no era the read is in
+    /// states one. For a Molang leaf that reads as the spec's reader does (the value its
+    /// `on_failure` replaces a value with).
+    pub fn member_molang(&self, node: &Node<'_>) -> Option<crate::molang::MolangFieldSpec> {
+        self.member_rules(node).and_then(|rules| rules.molang)
+    }
+
     /// The profile the read tells by.
     pub fn telling(&self) -> Profile {
         self.profile
@@ -1128,6 +1305,14 @@ impl<'d> Read<'d> {
     /// read or told, and every read returns `None`.
     pub fn stopped(&self) -> bool {
         self.stopped
+    }
+
+    /// Stops the read whatever its profile: nothing more is read or told, and every read
+    /// returns `None`, as after the first failure of a [`Failures::First`] read. For a game
+    /// reader that returns at a message of its own and gives up the document there (a trade
+    /// table's legacy parser returns an empty table), after it has told that message.
+    pub fn stop(&mut self) {
+        self.stopped = true;
     }
 
     /// A read with this read's reading, texts, severities and profile that tells into a list of
@@ -1166,7 +1351,9 @@ impl<'d> Read<'d> {
             findings: Sink::Owned(Diagnostics::default()),
             rewrite_note: self.rewrite_note,
             phase: self.phase,
+            subject: self.subject,
             format: self.format,
+            engine: self.engine,
             failed: false,
             profile: self.profile,
             // A fork of a read that has stopped reads nothing either.
@@ -1186,6 +1373,9 @@ impl<'d> Read<'d> {
             negative_zero_integer: self.negative_zero_integer,
             errors: 0,
             respelled: Vec::new(),
+            scopes: self.scopes.clone(),
+            in_file_order: self.in_file_order,
+            molang_leaf: self.molang_leaf,
         }
     }
 
@@ -1533,6 +1723,22 @@ impl<'d> Read<'d> {
         self.format
     }
 
+    /// The read gating the members of its structs by the engine `engine`: a member whose
+    /// `schema::since_engine` is above it, or whose `schema::until_engine` is at or below it, is
+    /// no member of the struct (an unknown one), as `since_format` is below the document's
+    /// format. A read that does not ask reads such a member whatever the engine (the derived
+    /// check of the validate stage judges it).
+    #[must_use]
+    pub fn engine(mut self, engine: crate::version::FormatVersion) -> Self {
+        self.engine = Some(engine);
+        self
+    }
+
+    /// The engine the read gates members by ([`engine`](Self::engine)).
+    pub fn gating_engine(&self) -> Option<crate::version::FormatVersion> {
+        self.engine
+    }
+
     /// The read of a document loaded in `load`, which a part read by another reader (a
     /// component map's rows, `versioning::read_component_map_by`) is read in too.
     /// `versioning::read_payload` gives the slice's.
@@ -1545,6 +1751,65 @@ impl<'d> Read<'d> {
     /// The load the document is read in, when the read knows it ([`load`](Self::load)).
     pub fn load_context(&self) -> Option<&'d crate::load::LoadContext> {
         self.load
+    }
+
+    /// The value of type `T` the nearest read above this one put in scope under `name`
+    /// ([`scoped`](Self::scoped), or a field that says `schema::scope`): what a leaf reads
+    /// with that its own value does not say (the range of the table it is in, the file it is
+    /// read for). `None` when no read above put one, or the nearest under `name` is no `T`.
+    ///
+    /// ```
+    /// # use bedrock_addon_core::diagnostic::Diagnostics;
+    /// # use bedrock_addon_core::json::kit::Read;
+    /// # use bedrock_addon_core::versioning::Reading;
+    /// let mut found = Diagnostics::default();
+    /// let mut read = Read::new(Reading::OWN, &mut found);
+    /// let inner = read.scoped("volume", 0.5_f32, |read| {
+    ///     read.scoped("volume", 2.0_f32, |read| read.scope::<f32>("volume").copied())
+    /// });
+    /// assert_eq!(inner, Some(2.0));
+    /// assert_eq!(read.scope::<f32>("volume"), None);
+    /// ```
+    pub fn scope<T: std::any::Any>(&self, name: &str) -> Option<&T> {
+        let (_, value) = self.scopes.iter().rev().find(|(key, _)| *key == name)?;
+        value.downcast_ref()
+    }
+
+    /// Makes the reads of `read` with `value` in scope under `name` ([`scope`](Self::scope)):
+    /// context a caller or a parent gives the leaves below it.
+    pub fn scoped<T: std::any::Any + Send + Sync, R>(
+        &mut self,
+        name: &'static str,
+        value: T,
+        read: impl FnOnce(&mut Self) -> R,
+    ) -> R {
+        let mark = self.scope_mark();
+        self.put_in_scope(name, value);
+        let out = read(self);
+        self.scope_reset(mark);
+        out
+    }
+
+    /// How many values are in scope: for [`scope_reset`](Self::scope_reset).
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn scope_mark(&self) -> usize {
+        self.scopes.len()
+    }
+
+    /// Puts `value` in scope under `name` until [`scope_reset`](Self::scope_reset): a field
+    /// that says `schema::scope`, for the members its struct reads after it.
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn put_in_scope<T: std::any::Any + Send + Sync>(&mut self, name: &'static str, value: T) {
+        self.scopes.push((name, std::sync::Arc::new(value)));
+    }
+
+    /// Ends the scope of every value put in it after `mark` ([`scope_mark`](Self::scope_mark)).
+    // the derived reads' protocol
+    #[doc(hidden)]
+    pub fn scope_reset(&mut self, mark: usize) {
+        self.scopes.truncate(mark);
     }
 
     /// The read with `null` for its null handling instead of the reading's: a reader the game
@@ -1562,6 +1827,23 @@ impl<'d> Read<'d> {
     pub fn scalars(mut self, scalars: crate::versioning::Scalars) -> Self {
         self.reading = self.reading.with_scalars(scalars);
         self
+    }
+
+    /// The read keeping, in a struct's own unknown members (an `UnknownMembers` field), what it
+    /// keeps in the order its object has it: a member a field could not read (`schema::or_kept`),
+    /// a `null` kept as written, and the unknown members, as a walk that takes each member in
+    /// turn keeps them. Without it what the fields kept comes after the unknown members.
+    #[must_use]
+    pub fn keep_in_file_order(mut self) -> Self {
+        self.in_file_order = true;
+        self
+    }
+
+    /// Whether a struct's own unknown members keep the order of its object
+    /// ([`keep_in_file_order`](Self::keep_in_file_order)).
+    // the derived reads' protocol
+    pub(crate) fn keeps_in_file_order(&self) -> bool {
+        self.in_file_order
     }
 
     /// The read with `keeps_unknown` for whether a struct that says nothing keeps its unknown
@@ -1683,10 +1965,37 @@ impl<'d> Read<'d> {
         if let Some(phase) = self.phase {
             finding.phase = phase;
         }
+        if self.profile.spans == SpanRule::Withheld {
+            finding.location.span = None;
+        }
         let rejects = finding.rejects();
         self.failed |= rejects;
         self.errors += usize::from(rejects);
         self.findings.get().push(finding);
+    }
+
+    /// Reads one unit of a game reader that logs the first rule a unit breaks and goes on
+    /// without it ([`ElementFailure::Unit`](crate::schema::ElementFailure::Unit)): `read` stops
+    /// at its first failure whatever the profile, and when it fails the read is as failed and
+    /// as stopped as before it, and every error it told is kept.
+    pub(crate) fn unit<T>(&mut self, read: impl FnOnce(&mut Self) -> Option<T>) -> Option<T> {
+        let (profile, failed, errors) = (self.profile, self.failed, self.errors);
+        let (told, stopped) = (self.findings.len(), self.stopped);
+        self.profile.failures = Failures::First;
+        let value = read(self);
+        self.profile = profile;
+        if value.is_some() && !self.stopped {
+            return value;
+        }
+        self.stopped = stopped;
+        self.failed = failed;
+        self.errors = errors;
+        for finding in self.findings.get().iter_mut().skip(told) {
+            if finding.rejects() {
+                finding.kept = true;
+            }
+        }
+        None
     }
 
     /// What the read has told so far, to ask afterwards what was told since
@@ -1736,11 +2045,29 @@ impl<'d> Read<'d> {
         self.respelled.push((node.path.clone(), node.span()));
     }
 
-    /// The members of `members` in the order the profile reads them: the file's, or the sorted
-    /// order of their keys ([`MemberOrder::Sorted`]).
+    /// The entries of the map `members` in the order the profile reads them: the file's, or
+    /// the sorted order of their keys' bytes ([`MemberOrder::Sorted`],
+    /// [`MemberOrder::SortedInPlace`], [`MemberOrder::Named`]).
+    pub fn ordered_entries<'v>(&self, members: &Members<'v>) -> Vec<(&'v str, Node<'v>)> {
+        let mut out: Vec<(&'v str, Node<'v>)> = members.iter().collect();
+        if matches!(
+            self.profile.members,
+            MemberOrder::Sorted | MemberOrder::SortedInPlace | MemberOrder::Named
+        ) {
+            out.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+        }
+        out
+    }
+
+    /// The members of `members` in the order the profile reads a struct's members in: the
+    /// file's, or the sorted order of their keys ([`MemberOrder::Sorted`],
+    /// [`MemberOrder::SortedInPlace`]).
     pub fn ordered<'m, 'v>(&self, members: &'m Members<'v>) -> Vec<(&'v str, Node<'v>)> {
         let mut out: Vec<(&'v str, Node<'v>)> = members.iter().collect();
-        if self.profile.members == MemberOrder::Sorted {
+        if matches!(
+            self.profile.members,
+            MemberOrder::Sorted | MemberOrder::SortedInPlace
+        ) {
             out.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
         }
         out
@@ -1814,11 +2141,47 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error size invalid value"]);
     /// ```
     pub fn refuse(&mut self, node: &Node<'_>, code: Code) {
-        let code = match self.member_rules(node).and_then(|rules| rules.invalid) {
-            Some(invalid) => Code::from(invalid),
-            None => code,
-        };
+        if let Some(code) = self.own_code(node, |rules| rules.invalid) {
+            return self.fail_as_told(code, node.path.clone(), node.span());
+        }
+        let code = self.invalid_code(node).unwrap_or(code);
         self.fail(code, node.path.clone(), node.span());
+    }
+
+    /// The code `pick` takes from the rules of the field whose member `node` is, where those
+    /// rules are a game reader's lines (`schema::era`: [`MemberRules::own_severity`]), fed the
+    /// read's subject.
+    ///
+    /// [`MemberRules::own_severity`]: crate::schema::derive_support::MemberRules::own_severity
+    fn own_code(
+        &self,
+        node: &Node<'_>,
+        pick: fn(
+            &crate::schema::derive_support::MemberRules,
+        ) -> Option<crate::schema::derive_support::MemberCode>,
+    ) -> Option<Code> {
+        self.member_rules(node)
+            .filter(|rules| rules.own_severity)
+            .and_then(pick)
+            .and_then(|code| self.member_code(code))
+    }
+
+    /// A failed member told under `code` at the code's own severity (a game reader's line,
+    /// [`Diagnostic::of`]): it fails the owner, or resets, as the reading grades a failed
+    /// member, whatever severity the line has.
+    fn fail_as_told(&mut self, code: Code, path: JsonPath, span: Option<Span>) {
+        if self.stopped {
+            return;
+        }
+        let grading = self.member_failure();
+        self.failed |= grading.fails_owner;
+        if self.silent_failure() {
+            return;
+        }
+        let mut finding = Diagnostic::of(code).at(path);
+        finding.location.span = span;
+        self.push(finding);
+        self.stopped = self.profile.stops();
     }
 
     /// Tells that `node` is a value its enum has no variant for, under `code` (the enum's
@@ -1864,8 +2227,12 @@ impl<'d> Read<'d> {
     /// told ([`Texts::wrong_at`]). One word for every wrong type of the member, a refused `null`
     /// included.
     pub(crate) fn worded_wrong_type(&self, node: &Node<'_>) -> Option<Code> {
-        if let Some(code) = self.member_rules(node).and_then(|rules| rules.wrong_type) {
-            return Some(Code::from(code));
+        if let Some(code) = self
+            .member_rules(node)
+            .and_then(|rules| rules.wrong_type)
+            .and_then(|code| self.member_code(code))
+        {
+            return Some(code);
         }
         let WrongAt(word) = self.texts.wrong_at?;
         Some(word(&node.path))
@@ -1893,6 +2260,9 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error count wrong JSON type"]);
     /// ```
     pub fn wrong_type(&mut self, node: &Node<'_>) {
+        if let Some(code) = self.own_code(node, |rules| rules.wrong_type) {
+            return self.fail_as_told(code, node.path.clone(), node.span());
+        }
         let code = self
             .worded_wrong_type(node)
             .unwrap_or_else(|| Code::from(&core_codes::INVALID_TYPE));
@@ -1926,7 +2296,9 @@ impl<'d> Read<'d> {
     pub fn wrong_kind(&mut self, node: &Node<'_>, expected: Expected) {
         if self
             .member_rules(node)
-            .is_some_and(|rules| rules.wrong_type.is_some())
+            .and_then(|rules| rules.wrong_type)
+            .and_then(|code| self.member_code(code))
+            .is_some()
         {
             return self.wrong_type(node);
         }
@@ -1984,12 +2356,20 @@ impl<'d> Read<'d> {
     /// assert_eq!(told(&found), ["Error minecraft:block/description wrong JSON type"]);
     /// ```
     pub fn object<'v>(&mut self, node: &Node<'v>) -> Option<Members<'v>> {
-        let Some(object) = node.value.as_object() else {
+        /// The object of no members a value that is no object is read as under [`Objects::Fork`].
+        static NO_MEMBERS: std::sync::LazyLock<Value> =
+            std::sync::LazyLock::new(|| Value::from(VObject::new()));
+        let fork = self.profile.objects == Objects::Fork;
+        let Some(object) = node
+            .value
+            .as_object()
+            .or_else(|| NO_MEMBERS.as_object().filter(|_| fork))
+        else {
             self.wrong_kind(node, Expected::Object);
             return None;
         };
         let texts = match node.text {
-            Text::None => None,
+            Text::None | Text::Absent => None,
             Text::Tree { node, .. } => Some(node),
         };
         Some(Members {
@@ -2027,7 +2407,7 @@ impl<'d> Read<'d> {
             return None;
         };
         let texts = match node.text {
-            Text::None => None,
+            Text::None | Text::Absent => None,
             Text::Tree { node, .. } => Some(node),
         };
         Some(Elements {
@@ -2068,7 +2448,7 @@ impl<'d> Read<'d> {
         let absent = node.value.is_null()
             && matches!(
                 self.reading.null,
-                NullHandling::Absent | NullHandling::AbsentSilently
+                NullHandling::Absent | NullHandling::AbsentSilently | NullHandling::AbsentKept
             );
         (!absent).then_some(node)
     }
@@ -2110,10 +2490,34 @@ impl<'d> Read<'d> {
         self.missing(members, key);
     }
 
+    /// Tells that the member at `node`, which its object lacks ([`Node::absent`]: a
+    /// `schema::reads_absent` field's read), is required and missing: what
+    /// [`missing_member`](Self::missing_member) tells of it, with no span.
+    pub fn missing_absent(&mut self, node: &Node<'_>) {
+        let key = node.path().last_key().unwrap_or_default();
+        let object = node.path().prefix(node.path().len().saturating_sub(1));
+        let code = self.missing_code(key);
+        let at = self.missing_path(&object, key);
+        self.tell_missing(code, at, None);
+    }
+
     /// Tells that the member `key` of `members` is required and missing, with `code` (a
     /// field's `schema::missing`).
     pub(crate) fn missing_member_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
         self.tell_missing(code, self.missing_at(members, key), members.node.span());
+    }
+
+    /// Tells, under `code` and at that code's own severity, that the member `key` of `members` is
+    /// absent: the line a game reader writes where it finds no member (a field's
+    /// `schema::era(.., missing = CODE)`). Told at the member, over the object; it fails nothing
+    /// itself (a required field's slot fails its owner).
+    pub(crate) fn absent_as(&mut self, members: &Members<'_>, key: &str, code: Code) {
+        if self.stopped {
+            return;
+        }
+        let mut finding = Diagnostic::of(code).at(members.node.path.child(key));
+        finding.location.span = members.node.span();
+        self.push(finding);
     }
 
     /// Tells a missing member: a failed member, or under the game's schema tree an error
@@ -2160,23 +2564,38 @@ impl<'d> Read<'d> {
     /// where the read words a defaulted failure as one ([`Texts::defaulted`]) or is a tree's
     /// ([`Objects::Tree`]).
     fn missing_at(&self, members: &Members<'_>, key: &str) -> JsonPath {
+        self.missing_path(&members.node.path, key)
+    }
+
+    /// Where the member `key` of the object at `object` is told missing.
+    fn missing_path(&self, object: &JsonPath, key: &str) -> JsonPath {
         if self.texts.missing_in_object
             || self.profile.objects == Objects::Tree
             || (self.texts.defaulted.is_some() && self.defaults())
         {
-            members.node.path.clone()
+            object.clone()
         } else {
-            members.node.path.child(key)
+            object.child(key)
+        }
+    }
+
+    /// The code the member `key` is told missing under.
+    fn missing_code(&self, key: &str) -> Code {
+        match (
+            self.texts.missing_named,
+            self.texts.missing_code,
+            self.texts.missing,
+        ) {
+            (Some(named), _, _) => named.with([key.to_owned()]),
+            (None, Some(code), _) => Code::from(code),
+            (None, None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
+            (None, None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
         }
     }
 
     /// Tells that the member `key` of `members` is required and missing.
     fn missing(&mut self, members: &Members<'_>, key: &str) {
-        let code = match (self.texts.missing_named, self.texts.missing) {
-            (Some(named), _) => named.with([key.to_owned()]),
-            (None, Some(text)) => core_codes::MISSING_REQUIRED_FIELD_WORDED.with([text]),
-            (None, None) => Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-        };
+        let code = self.missing_code(key);
         self.tell_missing(code, self.missing_at(members, key), members.node.span());
     }
 

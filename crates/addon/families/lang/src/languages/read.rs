@@ -8,7 +8,7 @@ use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Severity
 use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::json::{Prepared, Value};
 use bedrock_addon_core::schema::{self, ElementFailure, Schema, read_document, read_iterated};
-use bedrock_addon_core::versioning::{MemberFailure, Reading};
+use bedrock_addon_core::versioning::{MemberFailure, Reading, Scalars};
 
 impl Languages {
     /// The base language: the first code. Every other language starts from a copy of its
@@ -102,21 +102,6 @@ fn root(bytes: &[u8]) -> Result<Value, Box<Diagnostic>> {
     .map_err(|error| malformed(error.kind.to_string()))
 }
 
-/// `Json::Value::asString("")`: a string is its text, a boolean `true` / `false`, and null,
-/// numbers, arrays and objects are empty.
-fn as_string(value: Option<&Value>) -> String {
-    let Some(value) = value else {
-        return String::new();
-    };
-    if let Some(text) = value.as_string() {
-        text.as_str().to_owned()
-    } else if let Some(flag) = value.as_bool() {
-        flag.to_string()
-    } else {
-        String::new()
-    }
-}
-
 /// The codes of `texts/languages.json`: the elements vanilla iterates of the root (an array's, an
 /// object's member values in key order; a root that is no array is told a wrong type, a warning
 /// of ours), each once.
@@ -170,59 +155,46 @@ pub(super) fn read_languages(bytes: &[u8]) -> Result<(Languages, Diagnostics), B
     Ok((languages, diagnostics))
 }
 
-/// The `[code, name]` pairs of `texts/language_names.json`, in order.
-///
-/// An element that is no array is skipped, and an array of another size than two gives its
-/// first two elements (a missing one reads as empty); both with a warning that carries
-/// vanilla's assert text (L10). The two elements are read as vanilla reads any value as a
-/// string.
+/// The `[code, name]` pairs of `texts/language_names.json`, in order: the elements vanilla
+/// iterates of the root, as for `languages.json`; an element that is no pair is skipped.
 #[derive(facet::Facet, Schema)]
 #[facet(transparent)]
-struct Pairs(#[facet(schema::read_with = pairs)] Vec<(Language, String)>);
+struct Pairs(#[facet(schema::iterated, schema::drop)] Vec<Pair>);
 
-// Not an array → skipped; size ≠ 2 → `[0]` and `[1]` still used.
-fn pairs(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<(Language, String)>> {
-    read_iterated(node, read, ElementFailure::Drop, |element, read| {
-        let at = element.path().clone();
-        // `vanilla = "handleAssert only"`.
-        let Some(pair) = element.value().as_array() else {
-            read.push(Diagnostic::of(&codes::NAME_ENTRY_SHAPE_INVALID_TYPE).at(at));
-            return None;
-        };
-        // Ours: an element that is no string is read as vanilla reads it (a bool
-        // as its text, anything else as the empty text) and told at the element, since the
-        // file is written with the text read.
-        for (index, part) in pair.as_slice().iter().take(2).enumerate() {
-            if !part.is_string() {
-                read.push(
-                    Diagnostic::of(&core_codes::INVALID_TYPE)
-                        .severity(Severity::Info)
-                        .at(at.index(index)),
-                );
-            }
-        }
-        if pair.len() != 2 {
-            read.push(Diagnostic::of(&codes::NAME_ENTRY_SHAPE_INVALID_VALUE).at(at));
-        }
-        Some((
-            Language::new(as_string(pair.first())),
-            as_string(pair.get(1)),
-        ))
-    })
-}
+/// One `[code, name]` pair. An element that is no array is skipped, and an array of another
+/// size than two gives its first two elements (a missing one reads as empty); both with a
+/// warning that carries vanilla's assert text (L10). Each element is read as vanilla reads any
+/// value as a string (`asString("")`, [`read_names`]' scalars).
+// Not an array → skipped; size ≠ 2 → `[0]` and `[1]` still used (`vanilla = "handleAssert
+// only"`).
+#[derive(Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    schema::wrong_type = codes::NAME_ENTRY_SHAPE_INVALID_TYPE,
+    schema::arity = codes::NAME_ENTRY_SHAPE_INVALID_VALUE
+)]
+struct Pair(#[facet(default)] String, #[facet(default)] String);
 
-/// Reads `texts/language_names.json`: the `[code, name]` pairs in order.
+/// Reads `texts/language_names.json`: the `[code, name]` pairs in order. An element of a pair is
+/// read as vanilla reads any value as a string (`Json::Value::asString("")`: a bool as its text,
+/// anything else but a string as the empty text); ours, one that is no string is told at the
+/// element (an `INVALID_TYPE` information), since the file is written with the text read.
 pub(super) fn read_names(bytes: &[u8]) -> Result<(LanguageNames, Diagnostics), Box<Diagnostic>> {
     let root = root(bytes)?;
     let mut diagnostics = Diagnostics::default();
     let reading = Reading::OWN
-        .strict()
+        .with_scalars(Scalars::Accessors(Severity::Info))
         .with_on_member_failure(MemberFailure::DefaultAndTell);
     let pairs = {
         let mut read = Read::new(reading, &mut diagnostics);
         read_document::<Pairs>(&Node::new(&root, JsonPath::new()), &mut read)
     };
-    let entries = pairs.map_or_default(|pairs| pairs.0);
+    let entries = pairs.map_or_default(|pairs| {
+        pairs
+            .0
+            .into_iter()
+            .map(|Pair(code, name)| (Language::new(code), name))
+            .collect()
+    });
     Ok((LanguageNames { entries }, diagnostics))
 }
 

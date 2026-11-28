@@ -17,6 +17,7 @@ molang = ["bedrock_addon_core/molang"]
 
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
+facet = { workspace = true }
 indexmap = { workspace = true }
 
 [dev-dependencies]

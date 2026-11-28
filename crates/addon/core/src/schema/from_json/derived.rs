@@ -10,15 +10,13 @@ use facet::{Facet, Type, UserType};
 
 use super::FromJson;
 use crate::diagnostic::codes as core_codes;
-use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail};
+use crate::diagnostic::{Code, CodeDef, CodeMeta, Diagnostic, DiagnosticDetail};
 use crate::document::UnknownMembers;
 use crate::json::NULL_MEMBER_READ_AS_ABSENT;
 use crate::json::Token;
 use crate::json::arms::{ScalarArm, choose_scalar_arm, untagged_arm as object_arm};
 use crate::json::kit::Mark;
-use crate::json::kit::{
-    Expected, MemberOrder, Members, Names, Node, Objects, Pass, Read, UnknownAt,
-};
+use crate::json::kit::{Elements, Expected, Members, Names, Node, Objects, Pass, Read, UnknownAt};
 use crate::schema::UnknownRule;
 use crate::version::FormatVersion;
 use crate::versioning::NullHandling;
@@ -36,8 +34,21 @@ pub trait Fields: Sized {
     const TAG: Option<&'static str> = None;
 
     /// The JSON names of the variants of an internally tagged enum, which a function that names
-    /// the variant of an object (`schema::tag_with`) looks its name up in.
+    /// the variant of an object (`schema::tag_with`) looks its name up in; of a flattened
+    /// externally tagged enum, the members that hold a variant, in declaration order.
     const VARIANTS: &'static [&'static str] = &[];
+
+    /// The member a struct that flattens the type asks for in a read in declared order, where it
+    /// reads it: an internally tagged enum's tag, the first variant of an externally tagged one;
+    /// `None` for a struct, which is read after the members.
+    const AT: Option<&'static str> = Self::TAG;
+
+    /// Whether a read in file order reads the type where the file has the member `key`: at the
+    /// tag of an internally tagged enum, at any member that holds a variant of an externally
+    /// tagged one.
+    fn reads_at(key: &str) -> bool {
+        Some(key) == Self::TAG
+    }
 
     /// Whether a member named `key` is one of the fields (a flattened struct's included).
     fn knows(key: &str) -> bool;
@@ -97,6 +108,9 @@ pub struct Object<'v> {
     /// What the variant of a flattened internally tagged enum, once read from the object, knows
     /// ([`choose`](Self::choose)).
     chosen: std::cell::Cell<Option<Knows>>,
+    /// The members written `null` read as absent and kept as written
+    /// ([`NullHandling::AbsentKept`]), for [`keep_nulls`](Self::keep_nulls).
+    nulls: std::cell::RefCell<Vec<String>>,
 }
 
 impl<'v> Object<'v> {
@@ -115,6 +129,7 @@ impl<'v> Object<'v> {
             mark: read.mark(),
             failed: std::cell::Cell::new(false),
             chosen: std::cell::Cell::new(None),
+            nulls: std::cell::RefCell::new(Vec::new()),
         })
     }
 
@@ -161,6 +176,12 @@ impl<'v> Object<'v> {
         self.members.node()
     }
 
+    /// The member `key`, as written (a `null` too): one of those a field is fed by
+    /// (`schema::members`).
+    pub fn member(&self, key: &str) -> Option<Node<'v>> {
+        self.members.get(key)
+    }
+
     /// What the object's unknown members are, for a struct that says `rule` (its
     /// `schema::unknown`) and is `marked` (an `extra: Extra` or `UnknownMembers` field keeps
     /// them): kept when marked, when the word (the field's before the struct's) is `keep`, or
@@ -182,13 +203,19 @@ impl<'v> Object<'v> {
     }
 
     /// Whether the member `node` is read as absent for its `null` ([`NullHandling::Absent`],
-    /// which is then told ([`Pass::Absent`]); [`NullHandling::AbsentSilently`], which is not).
+    /// which is then told ([`Pass::Absent`]); [`NullHandling::AbsentSilently`], which is not;
+    /// [`NullHandling::AbsentKept`], which keeps it as written).
     pub fn absent(&self, node: &Node<'_>, read: &mut Read<'_>) -> bool {
         if !node.value().is_null() {
             return false;
         }
         match read.reading().null {
             NullHandling::AbsentSilently => return true,
+            NullHandling::AbsentKept => {
+                let key = node.path().last_key().unwrap_or_default().to_owned();
+                self.nulls.borrow_mut().push(key);
+                return true;
+            }
             NullHandling::Absent => {}
             _ => return false,
         }
@@ -219,6 +246,14 @@ impl<'v> Object<'v> {
                 read.findings_mut().unknown_mut().put(&owner, key, value);
             }
             None => {}
+        }
+    }
+
+    /// Keeps each member written `null` that a field read as absent under
+    /// [`NullHandling::AbsentKept`], as written, told nothing.
+    pub fn keep_nulls(&self, read: &mut Read<'_>, mut extra: Option<&mut UnknownMembers>) {
+        for key in self.nulls.take() {
+            self.keep(&key, crate::json::Value::NULL, read, extra.as_deref_mut());
         }
     }
 
@@ -261,15 +296,37 @@ impl<'v> Object<'v> {
     }
 }
 
+impl Object<'_> {
+    /// Puts what the struct kept in `extra` (its unknown members, what a field could not read, a
+    /// `null` kept as written) in the order the object has them, where the read keeps them so
+    /// ([`Read::keep_in_file_order`]); else what the fields kept stays after the unknown members.
+    pub fn in_file_order(&self, read: &Read<'_>, extra: &mut UnknownMembers) {
+        if !read.keeps_in_file_order() || extra.len() < 2 {
+            return;
+        }
+        let places: std::collections::HashMap<&str, usize> = read
+            .ordered(&self.members)
+            .iter()
+            .enumerate()
+            .map(|(place, (key, _))| (*key, place))
+            .collect();
+        extra.sort_by_place(|key| places.get(key).copied().unwrap_or(usize::MAX));
+    }
+}
+
 /// What a struct declares of its members, for its read: its JSON names in declaration order
-/// (aliases included), the ones it reads from a format version on (`schema::since_format`),
-/// whether a key is one of its members or of a struct it flattens (`knows`), and its tag.
+/// (aliases included), the ones it reads from a format version on (`schema::since_format`) and
+/// the engines of the ones that state them (`schema::since_engine`, `until_engine`), whether a
+/// key is one of its members or of a struct it flattens (`knows`), and its tag.
 #[derive(Clone, Copy, Debug)]
 pub struct Declared<'a, K> {
     /// The JSON names, in declaration order.
     pub names: &'a [&'a str],
     /// The names read from a format version on, with it.
     pub gates: &'a [(&'a str, FormatVersion)],
+    /// The names of an engine's members, with their engines: no members of a read that gates
+    /// by an engine outside them ([`Read::engine`]).
+    pub engines: &'a [(&'a str, crate::schema::VersionRange)],
     /// Whether a key names a member of the struct (or of one it flattens).
     pub knows: K,
     /// The tag member of an internally tagged enum's variant.
@@ -277,14 +334,21 @@ pub struct Declared<'a, K> {
 }
 
 impl<'a, K: Fn(&str) -> bool> Declared<'a, K> {
-    /// Whether the member `name` is read from a later format version than the document's: no
-    /// member of the struct in that document.
+    /// Whether the member `name` is read from a later format version than the document's, or
+    /// is of other engines than the one the read gates by: no member of the struct in that
+    /// document.
     fn later(&self, read: &Read<'_>, name: &str) -> bool {
-        read.known_format().is_some_and(|format| {
+        let format = read.known_format().is_some_and(|format| {
             self.gates
                 .iter()
                 .any(|(gated, since)| *gated == name && format < *since)
-        })
+        });
+        let engine = read.gating_engine().is_some_and(|engine| {
+            self.engines
+                .iter()
+                .any(|(gated, window)| *gated == name && !window.holds(Some(engine)))
+        });
+        format || engine
     }
 
     /// The declared name a member written as `key` is read as when the profile ignores the case
@@ -323,7 +387,7 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
     let profile = read.telling();
     match profile.unknown {
         UnknownAt::First => (true, false),
-        UnknownAt::WhereMet => (false, profile.members != MemberOrder::Declaration),
+        UnknownAt::WhereMet => (false, !profile.members.declared()),
         UnknownAt::Last => (false, false),
     }
 }
@@ -332,15 +396,20 @@ fn unknown_placement(read: &Read<'_>) -> (bool, bool) {
 /// `field` reads one (`true` when it is one of the struct's, a flattened struct's or the tag; the
 /// member is `None` where a read in declaration order asks for one the object lacks),
 /// `unknown_member` tells and keeps one no field takes (when `unknown`: a flattened struct's
-/// are its owner's to tell). In [`MemberOrder::File`] each member is read where the file has
-/// it; in [`MemberOrder::Declaration`] the struct's names ([`Declared`]) are looked up one by
-/// one. The unknown members are told, each in file order, before
+/// are its owner's to tell). In file order ([`MemberOrder::File`]) each member is read where
+/// the file has it; in declaration order ([`MemberOrder::Declaration`], [`MemberOrder::Named`])
+/// the struct's names ([`Declared`]) are looked up one by one. The unknown members are told, each in file order, before
 /// ([`UnknownAt::First`]) or among ([`UnknownAt::WhereMet`], file order) the members; the ones
 /// told after them are [`read_unknown_last`]'s, so that the struct can keep what it could not
 /// read first. Nothing more is read once the read has stopped.
 ///
+/// [`MemberOrder::File`]: crate::json::kit::MemberOrder::File
+/// [`MemberOrder::Declaration`]: crate::json::kit::MemberOrder::Declaration
+/// [`MemberOrder::Named`]: crate::json::kit::MemberOrder::Named
+///
 /// A member read from a later format version than the document's (`schema::since_format`) is
-/// no member of the struct in that document: an unknown one.
+/// no member of the struct in that document: an unknown one; so is a member of other engines
+/// than the one a read gates by ([`Read::engine`]).
 pub fn read_members<K: Fn(&str) -> bool>(
     object: &Object<'_>,
     read: &mut Read<'_>,
@@ -350,7 +419,7 @@ pub fn read_members<K: Fn(&str) -> bool>(
     mut unknown_member: impl FnMut(&str, &Node<'_>, &mut Read<'_>),
 ) {
     let profile = read.telling();
-    let in_file_order = profile.members != MemberOrder::Declaration;
+    let in_file_order = !profile.members.declared();
     let (first, among) = unknown_placement(read);
     let members = read.ordered(&object.members);
     if unknown && first {
@@ -389,8 +458,8 @@ pub fn read_members<K: Fn(&str) -> bool>(
             }
         }
     } else {
-        // An empty name stands for a flattened struct, which is read after the members.
-        for name in declared.names.iter().filter(|name| !name.is_empty()) {
+        // A flattened struct is asked for by its place (`flat_name`), where it is declared.
+        for name in declared.names {
             if read.stopped() {
                 return;
             }
@@ -463,22 +532,70 @@ enum State<T> {
     Kept(crate::json::Value),
 }
 
+/// The code a field states for one of its member's findings (`schema::wrong_type`, `missing`,
+/// `invalid`, `negative`): a `CodeDef<0>`, told as it is, or a `CodeDef<1>`, fed the read's
+/// subject ([`Read::subject`]: the block an entry is read for, the file a document is in).
+#[derive(Clone, Copy, Debug)]
+pub struct MemberCode {
+    meta: &'static CodeMeta,
+    /// The code's one argument is the read's subject.
+    fed: bool,
+}
+
+impl MemberCode {
+    /// The code of `def`, of no argument or of one, the read's subject.
+    ///
+    /// # Panics
+    ///
+    /// When `def` takes more than one argument: at compile time, in the `static` the derive
+    /// emits for the field.
+    #[must_use]
+    pub const fn of<const N: usize>(def: &'static CodeDef<N>) -> Self {
+        assert!(
+            N <= 1,
+            "a member's code takes no argument or one, the read's subject (`Read::subject`)"
+        );
+        Self {
+            meta: def.meta(),
+            fed: N == 1,
+        }
+    }
+
+    /// The code told, fed `subject` when it takes one; `None` for a code of one argument where
+    /// the read names no subject: the read's own code is told then.
+    pub(crate) fn code(self, subject: Option<&str>) -> Option<Code> {
+        match (self.fed, subject) {
+            (false, _) => Some(Code::of_meta(self.meta, Box::new([]))),
+            (true, Some(subject)) => Some(Code::of_meta(self.meta, Box::new([subject.to_owned()]))),
+            (true, None) => None,
+        }
+    }
+}
+
 /// What a field says of its member's findings and numbers (`schema::wrong_type`, `missing`,
 /// `invalid`, `finite`): the codes in place of the read's, at the member itself (not at a
 /// value inside it), and whether a float beyond its width reads as its largest finite value.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MemberRules {
     /// The code of a value of the wrong JSON type at the member.
-    pub wrong_type: Option<&'static CodeDef<0>>,
+    pub wrong_type: Option<MemberCode>,
     /// The code of the member missing.
-    pub missing: Option<&'static CodeDef<0>>,
+    pub missing: Option<MemberCode>,
     /// The code of a value the member's type refuses.
-    pub invalid: Option<&'static CodeDef<0>>,
+    pub invalid: Option<MemberCode>,
     /// The code of a negative whole number given to an unsigned integer member, in place of the
     /// wrong type the strict profiles tell and the invalid value the converting one does.
-    pub negative: Option<&'static CodeDef<0>>,
+    pub negative: Option<MemberCode>,
     /// A number beyond the member's float reads as its largest finite value of that sign.
     pub finite: bool,
+    /// The codes are one of the game's readers' lines (`schema::era`): each is told at its own
+    /// severity, as [`Diagnostic::of`](crate::diagnostic::Diagnostic::of) grades it (a kept
+    /// error kept), where the others are graded by the reading; the member fails or resets as
+    /// the reading says all the same.
+    pub own_severity: bool,
+    /// The Molang spec of the member in the era the document is in (`schema::era(.., molang =
+    /// SPEC)`), for a leaf that reads by it ([`Read::member_molang`]).
+    pub molang: Option<crate::molang::MolangFieldSpec>,
 }
 
 impl MemberRules {
@@ -489,6 +606,8 @@ impl MemberRules {
         invalid: None,
         negative: None,
         finite: false,
+        own_severity: false,
+        molang: None,
     };
 }
 
@@ -506,6 +625,8 @@ pub struct Slot<T> {
     left_out: bool,
     /// Whether the member's absence was told where it was asked for ([`missing_now`](Self::missing_now)).
     missing_told: bool,
+    /// Whether the field's `schema::absent_with` was asked ([`absent_with`](Self::absent_with)).
+    absent_asked: bool,
 }
 
 impl<T> Default for Slot<T> {
@@ -516,6 +637,7 @@ impl<T> Default for Slot<T> {
             depth: 0,
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         }
     }
 }
@@ -536,6 +658,7 @@ impl<T> Slot<T> {
             depth: 0,
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         }
     }
 
@@ -567,6 +690,80 @@ impl<T> Slot<T> {
             // A value that is not read keeps none of the unknown members it held: the owner
             // fails, or the member is reset, and the default carries none.
             read.findings_mut().unknown_mut().forget(node.path());
+        }
+    }
+
+    /// The value read, while the slot holds one: what a `schema::scope` field puts in scope
+    /// for the members after it.
+    pub fn value(&self) -> Option<&T> {
+        match &self.state {
+            State::Read(value) => Some(value),
+            _ => None,
+        }
+    }
+
+    /// Reads the member `key` the object lacks, as a field that `reads_absent` reads it: `with`
+    /// at the `null` jsoncpp gives for it ([`Node::absent`]), telling what the game tells of the
+    /// absence. A value is the field's; `None` leaves the member absent (the field's default or
+    /// `None`, or missing where it is required), whatever was told.
+    pub fn read_absent(
+        &mut self,
+        object: &Object<'_>,
+        key: &str,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if read.stopped() {
+            return;
+        }
+        let node = Node::absent(object.node().path().child(key));
+        self.depth = node.path().len();
+        self.missing_told = true;
+        if let Some(value) = with(&node, read) {
+            self.state = State::Read(value);
+        }
+    }
+
+    /// [`read_absent`](Self::read_absent) after the members of a read in file order, which asks
+    /// for the members the object has alone: the field's member was not among them.
+    pub fn read_absent_after(
+        &mut self,
+        object: &Object<'_>,
+        key: &str,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if matches!(self.state, State::Absent) && !self.missing_told {
+            self.read_absent(object, key, read, with);
+        }
+    }
+
+    /// An empty slot of a field whose rules for its member are `rules`, `None` for none: the
+    /// rules of the era the document is in (`schema::era`), else the field's own.
+    #[must_use]
+    pub fn with_rules(rules: Option<&'static MemberRules>) -> Self {
+        Self {
+            rules,
+            ..Self::default()
+        }
+    }
+
+    /// Where the member `key` is absent and the field takes its default: tells its absence
+    /// under the era's `missing` code, at the code's own severity, once (a field with an era's
+    /// `missing` code, `schema::era`, where the era does not require it: the game's line before
+    /// it goes on with the default). Nothing without an era's code.
+    pub fn absent_told(&mut self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
+        if !matches!(self.state, State::Absent) || self.missing_told {
+            return;
+        }
+        self.missing_told = true;
+        if let Some(code) = self
+            .rules
+            .filter(|rules| rules.own_severity)
+            .and_then(|rules| rules.missing)
+            .and_then(|code| read.member_code(code))
+        {
+            read.absent_as(&object.members, key, code);
         }
     }
 
@@ -604,8 +801,14 @@ impl<T> Slot<T> {
 
     /// Tells the member `key` missing, under the field's own code when it has one.
     fn tell_missing(&self, object: &Object<'_>, key: &str, read: &mut Read<'_>) {
-        match self.rules.and_then(|rules| rules.missing) {
-            Some(code) => read.missing_member_as(&object.members, key, Code::from(code)),
+        let own = self.rules.is_some_and(|rules| rules.own_severity);
+        match self
+            .rules
+            .and_then(|rules| rules.missing)
+            .and_then(|code| read.member_code(code))
+        {
+            Some(code) if own => read.absent_as(&object.members, key, code),
+            Some(code) => read.missing_member_as(&object.members, key, code),
             None => read.missing_member(&object.members, key),
         }
     }
@@ -621,6 +824,44 @@ impl<T> Slot<T> {
         {
             self.tell_missing(object, key, read);
             self.missing_told = true;
+        }
+    }
+
+    /// A plain field of a tuple struct, whose element the array has: the value, or the owner
+    /// fails.
+    pub fn element(self, ok: &mut bool) -> Option<T> {
+        if let State::Read(value) = self.state {
+            return Some(value);
+        }
+        *ok = false;
+        None
+    }
+
+    /// Whether the member of a field that `ends` its struct's read ends it: it failed, or it is
+    /// missing and was told so where a read in declared order asked for it.
+    pub fn ended(&self) -> bool {
+        match self.state {
+            State::Failed | State::Defaulted => true,
+            State::Absent => self.missing_told,
+            State::Null | State::Read(_) | State::Kept(_) => false,
+        }
+    }
+
+    /// Asks `with` (`schema::absent_with`), once, for the value of the member `object` lacks
+    /// (or holds as a `null` the reading takes for absence): the field's value when it gives
+    /// one; it tells what it must. Nothing for a member that is written, or a read that stopped.
+    pub fn absent_with(
+        &mut self,
+        object: &Object<'_>,
+        read: &mut Read<'_>,
+        with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
+    ) {
+        if self.absent_asked || !matches!(self.state, State::Absent) || read.stopped() {
+            return;
+        }
+        self.absent_asked = true;
+        if let Some(value) = with(object.node(), read) {
+            self.state = State::Read(value);
         }
     }
 
@@ -653,7 +894,9 @@ impl<T> Slot<T> {
     /// (for a type of `kind`) and anything else by `with`. A value read is the field's, its
     /// findings told; a value that fails leaves the field absent and is kept as written
     /// ([`take_kept`](Self::take_kept)), its findings told when `told`, failing nothing. A
-    /// field that `reads_null` has a `null` read by `with` too, and kept when it fails.
+    /// field that `reads_null` has a `null` read by `with` too, and kept when it fails. A field
+    /// that `ends` its struct's read keeps only a value of another JSON kind than its type
+    /// takes: one of that kind that fails is a failure, told.
     #[allow(clippy::too_many_arguments)] // the derive's one call per field
     pub fn read_or_kept(
         &mut self,
@@ -663,6 +906,7 @@ impl<T> Slot<T> {
         kind: Kind,
         told: bool,
         reads_null: bool,
+        ends: bool,
         with: impl FnOnce(&Node<'_>, &mut Read<'_>) -> Option<T>,
     ) {
         if read.stopped() {
@@ -675,6 +919,7 @@ impl<T> Slot<T> {
             depth: node.path().len(),
             left_out: false,
             missing_told: false,
+            absent_asked: false,
         };
         if reads_null {
             inner.read_with(node, &mut attempt, unknown, with);
@@ -682,6 +927,12 @@ impl<T> Slot<T> {
             inner.read_option_with(node, &mut attempt, unknown, kind, with);
         }
         self.state = match inner.state {
+            State::Failed | State::Defaulted
+                if ends && kind.expected.is_some_and(|kind| kind.takes(node.value())) =>
+            {
+                read.commit(attempt);
+                State::Failed
+            }
             State::Failed | State::Defaulted => {
                 if told {
                     read.commit_findings(attempt);
@@ -861,6 +1112,51 @@ pub fn list<E: FromJson>(
     }
 }
 
+/// The elements of the array a tuple struct reads, or a wrong type: under the member's own
+/// `schema::wrong_type` when it states one, else the struct's (`wrong_type`), else the read's.
+pub fn elements<'v>(
+    node: &Node<'v>,
+    read: &mut Read<'_>,
+    wrong_type: Option<&'static CodeDef<0>>,
+) -> Option<Elements<'v>> {
+    if read.stopped() {
+        return None;
+    }
+    if let Some(code) = wrong_type
+        && !node.value().is_array()
+        && read
+            .member_rules(node)
+            .is_none_or(|rules| rules.wrong_type.is_none())
+    {
+        read.refuse(node, Code::from(code));
+        return None;
+    }
+    read.array(node)
+}
+
+/// Tells `code` at `node`, over it, failing nothing: what the game tells of a value it reads on
+/// (a tuple struct's array of another length, `schema::arity`).
+pub fn tell_at(node: &Node<'_>, code: &'static CodeDef<0>, read: &mut Read<'_>) {
+    let mut finding = Diagnostic::of(code).at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
+}
+
+/// Whether the member `node` is of the JSON kind `T` takes (`FromJson::EXPECTED`; any kind when
+/// `T` names none): a field that says `schema::if_kind` reads it only then, and is absent for a
+/// member of another kind.
+pub fn of_kind<T: FromJson>(node: &Node<'_>) -> bool {
+    let value = node.value();
+    match T::EXPECTED {
+        None => true,
+        Some(Expected::Object) => value.is_object(),
+        Some(Expected::Array) => value.is_array(),
+        Some(Expected::String) => value.as_string().is_some(),
+        Some(Expected::Number) => value.as_number().is_some(),
+        Some(Expected::Bool) => value.as_bool().is_some(),
+    }
+}
+
 /// A flattened struct's fields, read from its owner's object: the value, or the owner fails.
 pub fn flattened<T>(value: Option<T>, ok: &mut bool) -> Option<T> {
     if value.is_none() {
@@ -1008,13 +1304,81 @@ pub fn variant_of(
     name
 }
 
-/// The member name a struct that flattens a type with this `tag` is read at (an empty one for a
-/// type with none): where its variant is read, among the members of the struct.
+/// The member name a struct that flattens a type with this `tag` is read at, among the members of
+/// the struct: where its variant is read; for a type with none `place`, which no member of an
+/// object has, so that a read in declaration order reads the flattened struct where its owner
+/// declares it.
 #[must_use]
-pub const fn tag_name(tag: Option<&'static str>) -> &'static str {
+pub const fn flat_name(tag: Option<&'static str>, place: &'static str) -> &'static str {
     match tag {
         Some(tag) => tag,
-        None => "",
+        None => place,
+    }
+}
+
+/// The variant a flattened externally tagged enum reads from its owner's object, and the member
+/// that holds it: the one `with` (`schema::tag_with`) names, or else the first of `names` (the
+/// variants' members, in declaration order) the object has and is not `null`. Without `with`, every
+/// other of `names` the object has is a payload the read does not take ([`ignored_member`]); with
+/// none present the first one is missing.
+pub fn variant_member<'v>(
+    object: &Object<'v>,
+    read: &mut Read<'_>,
+    names: &'static [&'static str],
+    with: Option<TagWith>,
+) -> Option<(&'static str, Node<'v>)> {
+    if read.stopped() {
+        return None;
+    }
+    let name = if let Some(with) = with {
+        with(object.node(), read)?
+    } else {
+        let Some(chosen) = present_member(object.node(), names) else {
+            read.missing_member(&object.members, names.first().copied().unwrap_or_default());
+            return None;
+        };
+        for name in names.iter().filter(|name| **name != chosen) {
+            ignored_member(object.node(), name, read);
+        }
+        chosen
+    };
+    let Some(member) = object.members.get(name) else {
+        read.missing_member(&object.members, name);
+        return None;
+    };
+    Some((name, member))
+}
+
+/// The first of `names` the object `node` has as a member that is not `null`: the variant of a
+/// flattened externally tagged enum, as the game probes its payload keys.
+#[must_use]
+pub fn present_member(node: &Node<'_>, names: &'static [&'static str]) -> Option<&'static str> {
+    let object = node.value().as_object()?;
+    names
+        .iter()
+        .copied()
+        .find(|name| object.get(name).is_some_and(|value| !value.is_null()))
+}
+
+/// Tells the member `key` of the object `node`, a variant the read does not take beside the one
+/// it reads, if the object has it: `core/ignored_payload` at the read's unknown severity, the
+/// member kept as written with the object's unknown members.
+pub fn ignored_member(node: &Node<'_>, key: &str, read: &mut Read<'_>) {
+    let Some(value) = node.value().as_object().and_then(|object| object.get(key)) else {
+        return;
+    };
+    let span = read
+        .object(node)
+        .and_then(|members| members.get(key))
+        .and_then(|member| member.span());
+    let mut finding = Diagnostic::of(&core_codes::IGNORED_PAYLOAD).severity(read.unknown_grade());
+    finding.location.json_path = node.path().child(key);
+    finding.location.span = span;
+    read.push(finding);
+    if read.keepable() {
+        read.findings_mut()
+            .unknown_mut()
+            .put(node.path(), key, value.clone());
     }
 }
 

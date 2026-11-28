@@ -1,84 +1,27 @@
-//! Writing `skins.json` back.
+//! Writing `skins.json` back: the root as written while the fields still say it, else the
+//! fields by core's generic writer (`schema::write_value`: the members in declaration order,
+//! then the members kept as written whose key no member took).
 
-use super::{Skin, SkinPack};
+use super::SkinPack;
 use bedrock_addon_core::diagnostic::Diagnostics;
-use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::json::Value;
-
-impl Skin {
-    pub(super) fn to_value(&self) -> Value {
-        let text = |text: &Option<String>| text.as_deref().map(Value::from);
-        let mut object = Written::default();
-        object.put("localization_name", text(&self.localization_name));
-        object.put("geometry", text(&self.geometry));
-        object.put("texture", text(&self.texture));
-        object.put("type", text(&self.type_));
-        object.put("cape", text(&self.cape));
-        object.put("animations", self.animations.clone());
-        object.put("enable_attachables", self.enable_attachables.clone());
-        object.put(
-            "held_item_ignores_lighting",
-            self.held_item_ignores_lighting.clone(),
-        );
-        object.put("hide_armor", self.hide_armor.clone());
-        object.finish(&self.extra)
-    }
-}
+use bedrock_addon_core::json::{EncodeError, Value};
 
 impl SkinPack {
     /// The file as it is written: the root as the author wrote it while the fields are still
     /// the game's reading of it, else the fields.
-    pub(crate) fn to_value(&self) -> Value {
+    pub(crate) fn to_value(&self) -> Result<Value, EncodeError> {
         if let Some(written) = self.written.as_ref() {
             let unchanged = Self::from_value(written, &mut Diagnostics::default()) == *self;
             if unchanged {
-                return written.clone();
+                return Ok(written.clone());
             }
         }
         self.fields_value()
     }
 
     /// The fields as the JSON object they are written as.
-    pub(super) fn fields_value(&self) -> Value {
-        let text = |text: &Option<String>| text.as_deref().map(Value::from);
-        let mut object = Written::default();
-        object.put("serialize_name", text(&self.serialize_name));
-        object.put("localization_name", text(&self.localization_name));
-        object.put(
-            "skins",
-            self.skins.as_ref().map(|skins| {
-                let mut array = facet_value::VArray::new();
-                for skin in skins {
-                    array.push(skin.to_value());
-                }
-                array.into_value()
-            }),
-        );
-        object.finish(&self.extra)
-    }
-}
-
-/// An object being written: the typed members, then the members kept as written whose key no
-/// typed member wrote.
-#[derive(Default)]
-struct Written {
-    object: facet_value::VObject,
-}
-
-impl Written {
-    fn put(&mut self, name: &str, value: Option<Value>) {
-        if let Some(value) = value {
-            self.object.insert(name, value);
-        }
-    }
-
-    fn finish(mut self, extra: &UnknownMembers) -> Value {
-        for (name, value) in extra.iter() {
-            if !self.object.contains_key(name) {
-                self.object.insert(name, value.clone());
-            }
-        }
-        self.object.into_value()
+    pub(super) fn fields_value(&self) -> Result<Value, EncodeError> {
+        bedrock_addon_core::schema::write_value(self)
     }
 }
 
@@ -102,8 +45,8 @@ mod tests {
             ..SkinPack::default()
         };
         assert_eq!(loaded, built);
-        assert_eq!(loaded.to_value(), root);
-        assert_ne!(built.to_value(), root);
+        assert_eq!(loaded.to_value().unwrap(), root);
+        assert_ne!(built.to_value().unwrap(), root);
     }
 
     /// A write of a skin pack that keeps its root reads the kept root again and compares
@@ -129,7 +72,7 @@ mod tests {
             pack
         };
         assert_linear_at("SkinPack::to_value", 2_000, build, |pack| {
-            assert_eq!(Some(pack.to_value()), *pack.written);
+            assert_eq!(Some(pack.to_value().unwrap()), *pack.written);
         });
     }
 }

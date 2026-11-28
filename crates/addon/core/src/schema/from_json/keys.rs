@@ -168,7 +168,7 @@ pub fn read_keyed<V>(
     let mark = read.mark();
     let mut out = IndexMap::new();
     let mut failed = false;
-    for (key, member) in read.ordered(&members) {
+    for (key, member) in read.ordered_entries(&members) {
         if read.stopped() {
             return None;
         }

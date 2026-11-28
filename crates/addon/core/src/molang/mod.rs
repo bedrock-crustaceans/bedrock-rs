@@ -87,7 +87,7 @@ pub use check::{FieldOutcome, check_fields};
 #[doc(hidden)]
 pub use fields::{
     MolangField, MolangFieldMut, MolangFields, MolangPass, MolangSlot, MolangVisitor, Step,
-    count_sources, not_checked, pass_one, visit_fields, visit_fields_under,
+    count_sources, not_checked, pass_one, visit_fields, visit_fields_at, visit_fields_under,
 };
 // hidden: Molang pass machinery of the crate family, outside SemVer
 #[doc(hidden)]

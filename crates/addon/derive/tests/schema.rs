@@ -1573,6 +1573,31 @@ fn the_rows_state_the_length_bounds() {
     );
 }
 
+/// Members that say which parts of the game read them, and with what getter.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct ReadByParts {
+    #[facet(schema::read_by = "sprite text", schema::getter = "array_or_string")]
+    pub color: Option<i32>,
+    #[facet(schema::getter = "bool")]
+    pub visible: Option<bool>,
+    pub layer: Option<i32>,
+}
+
+#[test]
+fn the_rows_name_the_parts_that_read_a_member_and_its_getter() {
+    let rows = ReadByParts::FIELDS;
+    let read: Vec<(&[&str], Option<&str>)> = rows.iter().map(|r| (r.read_by, r.getter)).collect();
+    assert_eq!(
+        read,
+        [
+            (&["sprite", "text"][..], Some("array_or_string")),
+            (&[][..], Some("bool")),
+            (&[][..], None),
+        ],
+        "the rows carry `schema::read_by` and `schema::getter`"
+    );
+}
+
 /// A member the engine may not have yet, and a hook across the fields and one in place of the
 /// walk.
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
@@ -1687,6 +1712,157 @@ fn a_member_newer_than_the_engine_is_not_valid_here() {
         check(&mut engine_gated(), MemberFailure::Refuse)
             .0
             .is_empty()
+    );
+}
+
+/// A member the engine no longer has, from 1.26.45 on.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+pub struct EngineRetired {
+    #[facet(schema::until_engine = "1.26.45")]
+    pub old: Option<bool>,
+    #[facet(schema::since_engine = "1.26.20", schema::until_engine = "1.26.60")]
+    pub between: Option<bool>,
+}
+
+fn told_on(engine: FormatVersion, value: &mut EngineRetired) -> Vec<(String, String)> {
+    let mut load = LoadContext::detached();
+    load.engine_version = engine;
+    load.min_engine_version = None;
+    let mut out = Diagnostics::default();
+    let mut cx = SchemaCx::validating(
+        Reading::DOCUMENT,
+        JsonPath::of_keys(["feature"]),
+        &load,
+        FormatVersion::new(1, 0, 0),
+        &mut out,
+    );
+    value.check(&mut cx);
+    // `between`'s `since_engine` information is the other key's: left out.
+    out.iter()
+        .filter(|d| d.code.id() != "core/field_since_engine")
+        .map(|d| (d.location.json_path.to_string(), d.code.id().to_owned()))
+        .collect()
+}
+
+#[test]
+fn a_member_the_engine_no_longer_has_is_not_valid_here() {
+    assert_eq!(
+        EngineRetired::FIELDS[0].until_engine,
+        Some(FormatVersion::new(1, 26, 45))
+    );
+    let both = || EngineRetired {
+        old: Some(true),
+        between: Some(true),
+    };
+    let not_valid = |at: &str| (format!("feature/{at}"), "core/child_not_valid".to_owned());
+    assert_eq!(
+        told_on(FormatVersion::new(1, 26, 45), &mut both()),
+        [not_valid("old")]
+    );
+    assert_eq!(
+        told_on(FormatVersion::new(1, 26, 60), &mut both()),
+        [not_valid("old"), not_valid("between")]
+    );
+    // Below `until` the member is the engine's; an absent one is never told.
+    assert_eq!(told_on(FormatVersion::new(1, 26, 44), &mut both()), []);
+    assert!(told_on(FormatVersion::new(1, 27, 0), &mut EngineRetired::default()).is_empty());
+    // Outside the validate stage nothing is gated.
+    assert!(check(&mut both(), MemberFailure::Refuse).0.is_empty());
+}
+
+/// The engines of a variant, stored in the `Shape` for the code that names it.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(tag = "kind")]
+#[repr(u8)]
+pub enum Retiring {
+    #[facet(rename = "old", schema::until_engine = "1.26.45")]
+    Old { size: Option<i32> },
+    #[facet(rename = "new", schema::since_engine = "1.26.45")]
+    New { size: Option<i32> },
+    #[facet(rename = "always")]
+    Always,
+}
+
+#[test]
+fn a_variant_s_engines_are_read_back_from_the_shape() {
+    use bedrock_addon_core::schema::VersionRange;
+    let Type::User(UserType::Enum(en)) = Retiring::SHAPE.ty else {
+        panic!("an enum");
+    };
+    let windows: Vec<VersionRange> = en
+        .variants
+        .iter()
+        .map(|variant| VersionRange::engines(variant.attributes))
+        .collect();
+    let v = FormatVersion::new(1, 26, 45);
+    assert_eq!(
+        windows,
+        [
+            VersionRange {
+                since: None,
+                until: Some(v)
+            },
+            VersionRange {
+                since: Some(v),
+                until: None
+            },
+            VersionRange::default(),
+        ]
+    );
+    let below = FormatVersion::new(1, 26, 44);
+    let admitted = |engine| {
+        windows
+            .iter()
+            .map(|w| w.holds(Some(engine)))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(admitted(below), [true, false, true]);
+    assert_eq!(admitted(v), [false, true, true]);
+}
+
+/// A read that asks for it gates the members by the engine: a member the engine has not got,
+/// or no longer has, is an unknown member.
+#[test]
+fn a_read_by_engine_takes_a_member_outside_its_engines_as_unknown() {
+    use bedrock_addon_core::json::{Value, from_str_jsonc};
+    let json: Value = from_str_jsonc(r#"{"old": true, "between": false}"#).unwrap();
+    let read_on = |engine: Option<FormatVersion>| {
+        let mut found = Diagnostics::default();
+        let value = {
+            let mut read = Read::new(Reading::DOCUMENT, &mut found);
+            if let Some(engine) = engine {
+                read = read.engine(engine);
+            }
+            EngineRetired::from_json(&Node::new(&json, JsonPath::new()), &mut read)
+        };
+        let told: Vec<String> = found
+            .iter()
+            .map(|d| format!("{} {}", d.code.id(), d.location.json_path))
+            .collect();
+        (value, told)
+    };
+    let both = EngineRetired {
+        old: Some(true),
+        between: Some(false),
+    };
+    assert_eq!(read_on(None), (Some(both.clone()), vec![]));
+    assert_eq!(
+        read_on(Some(FormatVersion::new(1, 26, 44))),
+        (Some(both), vec![])
+    );
+    assert_eq!(
+        read_on(Some(FormatVersion::new(1, 26, 45))),
+        (
+            Some(EngineRetired {
+                old: None,
+                between: Some(false)
+            }),
+            vec!["core/unrecognized_field old".to_owned()]
+        )
+    );
+    assert_eq!(
+        read_on(Some(FormatVersion::new(1, 26, 0))).1,
+        ["core/unrecognized_field between"]
     );
 }
 

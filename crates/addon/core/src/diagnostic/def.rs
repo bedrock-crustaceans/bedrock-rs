@@ -269,6 +269,12 @@ pub struct Code {
 }
 
 impl Code {
+    /// The code of `meta` with `args`: a definition held by what it is, whatever its arity (a
+    /// field's code for its member, `schema::derive_support::MemberCode`).
+    pub(crate) fn of_meta(meta: &'static CodeMeta, args: Box<[String]>) -> Self {
+        Self { meta, args }
+    }
+
     /// Who declares the code.
     pub fn owner(&self) -> &'static str {
         self.meta.owner

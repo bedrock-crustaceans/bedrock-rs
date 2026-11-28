@@ -8,8 +8,11 @@
 //! ignores.
 //!
 //! Each list is read as vanilla's JSON library iterates it (an array's elements, an object's
-//! values in key order), by a function the list's one-field type names (`schema::read_with`):
-//! the codes once each, the pairs by their first two elements.
+//! values in key order). The codes are read once each by a function their list names
+//! (`schema::read_with`); the names file is declared: a list (`schema::iterated`,
+//! `schema::drop`) of `[code, name]` pairs, a tuple struct with the game's codes for an entry
+//! that is no array (`schema::wrong_type`) or of another size (`schema::arity`), each element
+//! read as vanilla reads any value as a string (`Scalars::Accessors`).
 
 mod content;
 mod read;

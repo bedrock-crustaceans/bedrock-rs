@@ -33,3 +33,9 @@ error: a variant of a string enum takes no `schema::` key, `schema::string_only`
    |
 17 |     #[facet(schema::string_only)]
    |             ^^^^^^
+
+error: `schema::guard` is a rule of a struct's read: put it on the struct or on one of its fields
+  --> tests/ui/schema/placement.rs:26:9
+   |
+26 | #[facet(schema::guard = always)]
+   |         ^^^^^^

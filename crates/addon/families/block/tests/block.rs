@@ -33,6 +33,9 @@ mod fallbacks;
 #[path = "block/legacy_reader.rs"]
 mod legacy_reader;
 
+#[path = "block/legacy_shell.rs"]
+mod legacy_shell;
+
 #[path = "block/members_of_ours.rs"]
 mod members_of_ours;
 

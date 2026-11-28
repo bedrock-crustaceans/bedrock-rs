@@ -80,7 +80,7 @@ impl Content for PieceMetadata {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&self.to_value(), out, style)
+        write_json(&self.to_value()?, out, style)
     }
 }
 
@@ -104,7 +104,7 @@ impl Content for PieceStoreInfo {
     }
 
     fn write_json(&self, out: &mut Vec<u8>, style: WriteStyle) -> Result<(), EncodeError> {
-        write_json(&self.to_value(), out, style)
+        write_json(&self.to_value()?, out, style)
     }
 }
 

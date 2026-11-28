@@ -2,7 +2,8 @@
 //! writing their typed value): every fixture of the crate the family reads, and probes that
 //! reach each member, read and written with `Content::to_json`, and some of them written
 //! again after an edit of the typed value. The written texts are pinned in a file beside the
-//! family's tests; `BEDROCK_ADDON_SOUND_PIN=write` writes the file instead of comparing.
+//! family's tests; `BEDROCK_ADDON_SOUND_PIN=write` writes the file instead of comparing. The
+//! families whose writer is the generic one (`schema::write_value`) pin theirs the same way.
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -19,9 +20,15 @@ fn tests(manifest_dir: &str) -> PathBuf {
 /// Every fixture file whose path ends in `suffix`, by its path below
 /// `<manifest_dir>/tests/fixtures`, sorted.
 pub fn fixtures(manifest_dir: &str, suffix: &str) -> Vec<(String, String)> {
+    fixtures_below(manifest_dir, "", suffix)
+}
+
+/// [`fixtures`] of the folder `below` (a path below `<manifest_dir>/tests/fixtures`) alone,
+/// named as there.
+pub fn fixtures_below(manifest_dir: &str, below: &str, suffix: &str) -> Vec<(String, String)> {
     let root = tests(manifest_dir).join("fixtures");
     let mut found = Vec::new();
-    let mut dirs = vec![root.clone()];
+    let mut dirs = vec![root.join(below)];
     while let Some(dir) = dirs.pop() {
         for entry in std::fs::read_dir(&dir).expect("the fixtures") {
             let path = entry.expect("an entry").path();

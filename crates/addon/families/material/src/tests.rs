@@ -88,7 +88,7 @@ fn checking_a_hundred_thousand_keys_for_duplicates_is_linear() {
             |n| object(n, prefix, "", "{}"),
             |map| {
                 let mut found = Diagnostics::default();
-                check_duplicates(map.as_object().unwrap(), "materials/a.material", &mut found);
+                check_duplicates(map, "materials/a.material", &mut found);
                 found.len()
             },
         );
@@ -106,9 +106,8 @@ fn reading_a_hundred_thousand_materials_is_linear() {
         |map| {
             let mut found = Diagnostics::default();
             let rules = |_: &str| Some(KeyRules::Versioned);
-            let map = map.as_object().unwrap();
-            let read = read_file(map, None, "a", &rules, &|_| false, &mut found);
-            assert_eq!(read.refused.len(), map.len());
+            let read = read_file(map, None, "a", &rules, &mut found);
+            assert_eq!(read.refused.len(), map.as_object().unwrap().len());
             // One finding per refused material.
             assert_eq!(found.len(), read.refused.len());
             read.file.materials.len()

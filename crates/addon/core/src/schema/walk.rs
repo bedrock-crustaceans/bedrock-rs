@@ -282,6 +282,11 @@ crate::impl_schema_leaf!(
     crate::molang::MolangSource,
     crate::molang::MolangList,
     crate::json::StrictBool,
+    crate::version::FormatVersion,
+    crate::version::SemVersion,
+    crate::version::MinEngineVersion,
+    crate::version::BaseGameVersion,
+    uuid::Uuid,
 );
 
 /// A number a bound compares: the derive converts the value and the limit with `to_f64` for

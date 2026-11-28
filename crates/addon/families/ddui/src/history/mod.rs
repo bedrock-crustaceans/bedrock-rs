@@ -6,7 +6,7 @@
 //! [`Catalogue`](super::Catalogue), without a format bump. Form styles (engine 1.26.60 and
 //! later) have the beta struct alone.
 
-use super::{UiComposition, UiRoot, UiStyle};
+use super::UiStyle;
 use bedrock_addon_core::versioning::Single;
 
 /// The `minecraft:ui-root` family of the version-chain machinery (hidden: only the loader
@@ -27,8 +27,6 @@ pub type RootHistory = Single<RootFamily>;
 /// A composition parsed by the struct its `format_version` selects: there is one (format
 /// 1.21.130 exactly).
 pub type CompositionHistory = Single<CompositionFamily>;
-
-bedrock_addon_core::impl_no_molang!(UiRoot, UiComposition);
 
 /// The `minecraft:ui-style` family.
 #[doc(hidden)]

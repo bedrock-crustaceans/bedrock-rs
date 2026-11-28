@@ -386,6 +386,20 @@ fn tl15e_content_after_the_root_is_no_strict_json_deviation() {
     assert_eq!(found(&stack), [v1()]);
 }
 
+// jsoncpp's reader takes no comma before a closing bracket at any depth: a list breaks off in
+// the element that holds one, and the elements after it are not read.
+#[test]
+fn a_trailing_comma_inside_an_element_breaks_the_list_off_there_deviation() {
+    let mut findings = Diagnostics::default();
+    let text = br#"["textures/a", {"p": 1,}, "textures/b"]"#;
+    let list = TextureList::read(Some(text), &mut findings);
+    assert_eq!(list.root, TextureListRoot::Array);
+    assert_eq!(list.entries, ["textures/a"]);
+    assert_eq!(list.skipped_non_strings, 0);
+    assert!(list.partial);
+    assert_eq!(shown(findings.iter()), [at("core/syntax", Info, ":")]);
+}
+
 #[test]
 fn tl16_a_bom_and_comments_are_no_finding() {
     let stack = stack("tl16_bom_and_comments");

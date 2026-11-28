@@ -4,7 +4,7 @@
 //! a `JsonCpp` reader takes ([`document_json_refusal`]).
 
 use super::Value;
-use super::lex::scan;
+use super::lex::{Kind, Lexer, Rules, scan};
 use super::parse::{Fault, Options, parse};
 use super::slice::JsonSlice;
 use crate::diagnostic::codes as core_codes;
@@ -85,6 +85,42 @@ pub fn document_json_refusal(document: JsonSlice<'_>) -> Option<Diagnostic> {
     Some(finding.detail(DiagnosticDetail::Syntax(message.to_owned())))
 }
 
+/// The numbers of `text` whose positive exponent is past `308` plus the digits of their
+/// fraction: where `RapidJSON`'s number reader stops with its "number too big" error before it
+/// has a value to compare, a finite one included (`0e999`, zero to a reader that computes it),
+/// which [`document_json_refusal`] does not see. Each is the byte range of its token; strings
+/// and comments are skipped, and the scan ends at a token the lexer refuses.
+pub fn exponent_beyond_double(text: &str) -> Vec<std::ops::Range<usize>> {
+    let mut lexer = Lexer::new(text.as_bytes(), Rules::strict(true));
+    let mut found = Vec::new();
+    while let Ok(Some(token)) = lexer.next_token() {
+        if token.kind != Kind::Number {
+            continue;
+        }
+        let number = text.get(token.range()).unwrap_or_default();
+        let Some((mantissa, exponent)) = number.split_once(['e', 'E']) else {
+            continue;
+        };
+        if exponent.starts_with('-') {
+            continue;
+        }
+        let fraction = mantissa
+            .split_once('.')
+            .map_or(0, |(_, digits)| digits.len());
+        let exponent = exponent
+            .trim_start_matches('+')
+            .bytes()
+            .fold(0_usize, |n, digit| {
+                n.saturating_mul(10)
+                    .saturating_add(usize::from(digit - b'0'))
+            });
+        if exponent > 308 + fraction {
+            found.push(token.range());
+        }
+    }
+    found
+}
+
 /// `RapidJSON`'s text for a number too big for a double.
 pub const DOCUMENT_NUMBER_TOO_BIG: &str = "Number too big to be stored in double.";
 /// `RapidJSON`'s text for content after the document's root value.
@@ -126,4 +162,31 @@ pub(super) fn first_fault(text: &str) -> Option<usize> {
     parse(text, Options::default())
         .err()
         .map(|fault| fault.span.offset as usize)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::exponent_beyond_double;
+
+    /// The token of every number `RapidJSON`'s exponent rule refuses.
+    fn refused(text: &str) -> Vec<&str> {
+        exponent_beyond_double(text)
+            .into_iter()
+            .map(|range| &text[range])
+            .collect()
+    }
+
+    #[test]
+    fn an_exponent_past_308_and_the_fraction_s_digits_is_refused() {
+        assert_eq!(
+            refused("[0e999, 1e308, 1.5e309, 1.25e310, -2E+400, 1e-999, 7]"),
+            ["0e999", "-2E+400"]
+        );
+    }
+
+    #[test]
+    fn strings_and_comments_hold_no_number() {
+        let text = "{ \"a\": \"0e999 \\\" 1e999\", // 1e999\n /* 2e999 */ \"b\": 3e999 }";
+        assert_eq!(refused(text), ["3e999"]);
+    }
 }

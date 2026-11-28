@@ -99,16 +99,6 @@ pub fn as_int(value: &Value, default: i32) -> i32 {
     value.as_int(default, PROFILE)
 }
 
-/// `asString()`: a string as is, a bool `"true"` or `"false"`, and `null`, a number, an array
-/// or an object `""`.
-pub fn to_text(value: &Value) -> String {
-    match stored(value) {
-        Stored::String => text(value).unwrap_or_default().to_owned(),
-        Stored::Bool => if value.is_true() { "true" } else { "false" }.to_owned(),
-        _ => String::new(),
-    }
-}
-
 /// The const `operator[]`: the member `key` of an object, and `null` for a missing member or
 /// a value that is no object. Nothing is changed.
 pub fn member<'a>(value: &'a Value, key: &str) -> &'a Value {
@@ -247,16 +237,6 @@ mod tests {
         assert_eq!(as_int(&json("\"2\""), 7), 0);
         assert_eq!(as_int(&json("[2]"), 7), 0);
         assert_eq!(as_int(&json("null"), 7), 7);
-    }
-
-    #[test]
-    fn to_text_spells_bools_and_empties_numbers() {
-        assert_eq!(to_text(&json("\"a\"")), "a");
-        assert_eq!(to_text(&json("true")), "true");
-        assert_eq!(to_text(&json("false")), "false");
-        assert_eq!(to_text(&json("5")), "");
-        assert_eq!(to_text(&json("null")), "");
-        assert_eq!(to_text(&json("[\"a\"]")), "");
     }
 
     #[test]

@@ -2,11 +2,11 @@
 //!
 //! NPC dialogue: `dialogue/**/*.json` of a behaviour pack (`minecraft:npc_dialogue`), a list of
 //! scenes keyed by `scene_tag`. One unversioned shape covers every accepted `format_version`
-//! (1.14.0 or above, no maximum): the game reads the files with a hand-written walk over the
-//! parsed JSON tree, member by member, rather than through a typed schema. Its rules (which
-//! member is optional, which type is tolerated, what drops a scene) are not those of a derived
-//! deserialiser, so this module walks a parsed `json::Value` the same way instead of
-//! deserialising typed structs.
+//! (1.14.0 or above, no maximum). The file's envelope is read by the game's own sequence of
+//! checks (`read`); each scene, and each button in it, is read by the derived read of
+//! [`DialogueScene`] and [`Button`]: their members in the game's order, the first rule a scene
+//! or a button breaks dropping it (`schema::guard` for the rules between the members), every
+//! text naming the file's stem (the read's subject).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -33,7 +33,9 @@ use bedrock_addon_core::json::parse::{Options, parse};
 use bedrock_addon_core::json::{EncodeError, Precedence, WriteStyle};
 use bedrock_addon_core::load::{CollectionLoader, LoadContext, StackCx, Walk, WalkFile};
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_core::version::SemVersion;
+use facet::Facet;
 use indexmap::IndexMap;
 
 /// One dialogue file (`dialogue/**/*.json`): the scenes it defines.
@@ -56,44 +58,79 @@ pub struct DialogueFile {
 ///
 /// A scene is what `/dialogue open` and `/dialogue change` name by its tag. Vanilla keeps the
 /// first scene stored under a tag: across packs the lowest-priority pack's.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// The members are declared in the order the game reads them: the first rule one breaks drops
+/// the scene and ends its checks. A scene of an empty tag is dropped without a word, after its
+/// members, before anything is said of the ones the game never reads.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::unknown = "keep", schema::guard = read::tagged)]
 pub struct DialogueScene {
-    /// The scene's tag, case-sensitive and unique over the behaviour stack (JSON `scene_tag`).
-    /// A scene with an empty tag is dropped.
-    pub scene_tag: DialogueSceneTag,
     /// The NPC's name while the scene shows (JSON `npc_name`); `None` when absent, which vanilla
     /// reads as the empty name (the NPC's own name is not used).
+    #[facet(schema::wrong_type = codes::NPC_NAME)]
     pub npc_name: Option<DialogueText>,
+    /// The scene's tag, case-sensitive and unique over the behaviour stack (JSON `scene_tag`).
+    /// A scene with an empty tag is dropped.
+    #[facet(
+        schema::missing = codes::NO_SCENE_TAG_MISSING_REQUIRED_FIELD,
+        schema::wrong_type = codes::NO_SCENE_TAG_INVALID_TYPE
+    )]
+    pub scene_tag: DialogueSceneTag,
     /// The dialogue text (JSON `text`, required).
+    #[facet(schema::missing = codes::NO_TEXT, schema::read_with = read::scene_text)]
     pub text: DialogueText,
     /// The buttons, at most six (JSON `buttons`); `None` when absent or not an array, which
     /// vanilla ignores.
+    #[facet(schema::if_kind, schema::read_with = read::buttons)]
     pub buttons: Option<Vec<Button>>,
     /// The commands run when the scene opens (JSON `on_open_commands`); `None` when absent or not
     /// an array. A present list, even an empty one, is one action.
+    #[facet(schema::if_kind, schema::read_with = read::scene_commands)]
     pub on_open_commands: Option<Vec<StoredCommand>>,
     /// The commands run when the scene closes (JSON `on_close_commands`); as
     /// [`on_open_commands`](Self::on_open_commands).
+    #[facet(schema::if_kind, schema::read_with = read::scene_commands)]
     pub on_close_commands: Option<Vec<StoredCommand>>,
 }
 
 /// One button of a scene: a label and either commands or a URL.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// The game logs the first rule a button breaks (a missing name, both commands and a URL, a
+/// command or a URL that is no string) at the content log's error level and skips the button
+/// while the scene goes on: each is an error the scene keeps. A button of an empty name is
+/// skipped without a word.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(
+    schema::unknown = "keep",
+    schema::guard = read::named,
+    schema::after_read = read::label_rule
+)]
 pub struct Button {
     /// The button's name as written (JSON `name`, required, non-empty). The label the button
     /// shows is [`label`](Self::label).
+    #[facet(
+        schema::missing = codes::NO_BUTTON_NAME_MISSING_REQUIRED_FIELD,
+        schema::wrong_type = codes::NO_BUTTON_NAME_INVALID_TYPE
+    )]
     pub name: DialogueText,
     /// The commands the button runs (JSON `commands`); `None` when absent or not an array. Never
     /// together with a [`url`](Self::url).
+    #[facet(
+        schema::guard = read::one_action,
+        schema::if_kind,
+        schema::read_with = read::button_commands
+    )]
     pub commands: Option<Vec<StoredCommand>>,
     /// The URL the button opens (JSON `url`); `None` when absent. A non-empty URL makes the
     /// button a URL button; an empty one a command button without commands.
+    #[facet(schema::wrong_type = codes::URL_TYPE)]
     pub url: Option<String>,
 }
 
 /// A text of a scene or a button: a plain string, or any JSON object (the intended form is a
 /// raw-text object, `{"rawtext": [{"text": "Hi"}]}`), which vanilla keeps as its JSON text.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet)]
+#[repr(u8)]
 pub enum DialogueText {
     /// A string, kept as written.
     Plain(String),
@@ -106,7 +143,7 @@ pub enum DialogueText {
 ///
 /// Commands are not checked when a pack loads: vanilla compiles each one when the action runs,
 /// with the command version of the pack that defined the scene.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Facet)]
 pub struct StoredCommand {
     /// The command version: the one the pack's `min_engine_version` maps to (46 for a pack
     /// without one).

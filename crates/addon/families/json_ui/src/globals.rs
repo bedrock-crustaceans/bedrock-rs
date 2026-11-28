@@ -6,6 +6,7 @@ use indexmap::IndexMap;
 use super::merge::CopyContent;
 use super::value::{number, sorted_members};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::schema;
 
 /// The colour variables the game reads from the global variables, in the order of its colour
 /// table: the sixteen `§` format colours, the coin colour and the eleven material colours.
@@ -166,14 +167,9 @@ impl GlobalVariables {
             .filter_map(|name| Some((*name, self.color(name)?)))
     }
 
-    /// The variables of a root value: its members when it is an object.
+    /// The variables of a root value: its members when it is an object, none otherwise.
     pub(crate) fn from_value(root: &Value) -> Self {
-        let variables = root.as_object().map_or_default(|object| {
-            object
-                .iter()
-                .map(|(name, value)| (name.as_str().to_owned(), value.clone()))
-                .collect()
-        });
+        let variables = schema::read_value(root).unwrap_or_default();
         Self { variables }
     }
 }

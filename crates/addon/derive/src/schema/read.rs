@@ -9,7 +9,7 @@ use quote::{format_ident, quote, quote_spanned};
 use syn::spanned::Spanned;
 use syn::{DataEnum, Error, Fields, Ident, Member, Type, Variant};
 
-use super::attr::{ContainerAttrs, FieldAttrs};
+use super::attr::{ContainerAttrs, DefaultDecl, FieldAttrs};
 use super::{FieldInfo, Target, core, json_name, ty, unknown_option};
 
 /// The paths the emitted read names.
@@ -101,10 +101,33 @@ fn has_extra(fields: &Fields) -> bool {
         .any(|field| named(&field.ty, "UnknownMembers"))
 }
 
+/// The field that holds the kept unknown members (an `UnknownMembers` field that is not
+/// `skip`), by its member.
+fn extra_member(infos: &[FieldInfo]) -> Option<TokenStream> {
+    infos
+        .iter()
+        .find(|info| !taken(info) && !info.attrs.skip)
+        .map(|info| {
+            let member = &info.member;
+            quote!(#member)
+        })
+}
+
 /// Whether `info` is the read's to take: not an `UnknownMembers` field (it holds the unknown
 /// members).
 fn taken(info: &FieldInfo) -> bool {
     !named(info.ty, "UnknownMembers")
+}
+
+/// The JSON names a field is read by: the members it is fed by (`schema::members`), else its
+/// own name and its alias.
+fn json_names<'a>(info: &'a FieldInfo<'_>) -> Vec<&'a String> {
+    match &info.attrs.members {
+        Some((names, _)) => names.iter().collect(),
+        None => std::iter::once(&info.json)
+            .chain(info.attrs.alias.as_ref())
+            .collect(),
+    }
 }
 
 /// `knows`: the JSON names of the fields, a flattened struct's included, of the member
@@ -116,8 +139,13 @@ pub(super) fn knows(infos: &[FieldInfo], dynamic: bool) -> TokenStream {
     let names: Vec<&String> = infos
         .iter()
         .filter(|info| taken(info) && !info.inline)
-        .flat_map(|info| std::iter::once(&info.json).chain(info.attrs.alias.as_ref()))
-        .collect();
+        .flat_map(json_names)
+        .fold(Vec::new(), |mut names, name| {
+            if !names.contains(&name) {
+                names.push(name);
+            }
+            names
+        });
     let own = if names.is_empty() {
         quote!(false)
     } else {
@@ -161,22 +189,10 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     }
     validate_drop(info, errors);
     validate_keys(info, errors);
-    if let Some(span) = attrs.reads_null
-        && (info.option.is_none() || attrs.flatten)
-    {
-        errors.push(Error::new(
-            span,
-            "`schema::reads_null` reads a `null` as a value: an `Option` field",
-        ));
-    }
-    if let Some((_, span)) = attrs.or_kept
-        && (info.option.is_none() || attrs.flatten)
-    {
-        errors.push(Error::new(
-            span,
-            "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
-        ));
-    }
+    validate_members(info, errors);
+    validate_option_keys(info, errors);
+    validate_reads_absent(info, errors);
+    validate_eras(info, errors);
     let ruled = [
         &attrs.wrong_type,
         &attrs.missing,
@@ -211,6 +227,12 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
             "`schema::finite` applies to an `f32` or `f64` field (or an `Option` of one)",
         ));
     }
+    validate_read_with(info, errors);
+}
+
+/// The refusals of a field's own read: `read_with` on a field that reads no one member (a
+/// flattened one, an `UnknownMembers` one), `read_beside` there or beside a `read_with`.
+fn validate_read_with(info: &FieldInfo, errors: &mut Vec<Error>) {
     if let Some((_, span)) = &info.attrs.read_with {
         if info.attrs.flatten {
             errors.push(Error::new(
@@ -225,6 +247,142 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
                  members no field takes",
             ));
         }
+    }
+    if let Some((_, span)) = &info.attrs.read_beside
+        && (info.attrs.read_with.is_some() || info.attrs.flatten || !taken(info))
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::read_beside` is a member's read given its object: a field with its own \
+             `read_with`, a flattened field and an `UnknownMembers` field have none",
+        ));
+    }
+}
+
+/// The refusals of the keys of an `Option` field: `reads_null`, `absent_with`, `if_kind` and
+/// `or_kept` on a field that is no `Option` or is flattened (`absent_with` also with `required`
+/// or `reads_null`).
+fn validate_option_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    if let Some(span) = attrs.reads_null
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_null` reads a `null` as a value: an `Option` field",
+        ));
+    }
+    if let Some((_, span)) = &attrs.absent_with
+        && (info.option.is_none()
+            || attrs.flatten
+            || attrs.required.is_some()
+            || attrs.reads_null.is_some())
+    {
+        errors.push(Error::new(
+            *span,
+            "`schema::absent_with` gives the value of a member the object lacks: an `Option` \
+             field the document may leave out (not `required`, not `reads_null`)",
+        ));
+    }
+    if let Some(span) = attrs.if_kind
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::if_kind` reads a member of another kind as absent: an `Option` field",
+        ));
+    }
+    if let Some((_, span)) = attrs.or_kept
+        && (info.option.is_none() || attrs.flatten)
+    {
+        errors.push(Error::new(
+            span,
+            "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
+        ));
+    }
+}
+
+/// The refusals of `schema::reads_absent` beside the other reads of an absent member: with
+/// `read_beside` (the absent member would be read by the type, not by the function) and with
+/// `absent_with` (both would read it).
+fn validate_reads_absent(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some(span) = attrs.reads_absent else {
+        return;
+    };
+    if attrs.read_beside.is_some() {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_absent` reads an absent member by the field's `read_with` or its \
+             type: a `read_beside` field's function is not called for it",
+        ));
+    }
+    if attrs.absent_with.is_some() {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_absent` and `schema::absent_with` both give the value of a member \
+             the object lacks: keep one",
+        ));
+    }
+}
+
+/// The refusals of `schema::members`: a field that shares its owner's object or holds its
+/// unknown members, a key that words or shapes one member of the field's own name, and a field
+/// with no value for an object that writes none of its members (no `default`, no `Option`).
+fn validate_members(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some((_, span)) = &attrs.members else {
+        return;
+    };
+    let one_member = attrs.flatten
+        || !taken(info)
+        || attrs.alias.is_some()
+        || attrs.since_format.is_some()
+        || attrs.or_kept.is_some()
+        || attrs.reads_null.is_some()
+        || attrs.required.is_some()
+        || attrs.iterated.is_some()
+        || attrs.drop.is_some()
+        || attrs.keys.is_some()
+        || attrs.finite.is_some()
+        || [
+            &attrs.wrong_type,
+            &attrs.missing,
+            &attrs.invalid,
+            &attrs.negative,
+        ]
+        .iter()
+        .any(|code| code.is_some());
+    if one_member {
+        errors.push(Error::new(
+            *span,
+            "`schema::members` feeds the field from several members, which its type's \
+             `FromMembers` (or its `read_with`) reads: a key of one member of the field's own \
+             name (`alias`, `since_format`, `or_kept`, `reads_null`, `required`, a list's or a \
+             code's), `flatten` and an `UnknownMembers` field have none",
+        ));
+    } else if info.option.is_none() && attrs.default.is_none() {
+        errors.push(Error::new(
+            *span,
+            "a field fed by `schema::members` is handed its value for a document that writes \
+             none of them: give it a `default` (or make it an `Option`)",
+        ));
+    }
+}
+
+/// The refusals of `schema::era`: a field with no member of its own name (flattened, fed by
+/// several members, the one that holds the unknown members).
+fn validate_eras(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some(era) = attrs.eras.first() else {
+        return;
+    };
+    if attrs.flatten || !taken(info) || attrs.members.is_some() {
+        errors.push(Error::new(
+            era.span,
+            "`schema::era` words one member of the field's own name: a flattened field, one fed \
+             by `schema::members` and an `UnknownMembers` field have none",
+        ));
     }
 }
 
@@ -273,6 +431,8 @@ fn validate_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
 /// What the read emits for one field it takes by name: its slot, its match arm and the
 /// finish that says what absence and failure make of it.
 struct FieldRead {
+    /// The read of a `reads_absent` member a read in file order did not meet.
+    absent_after: Option<TokenStream>,
     slot: TokenStream,
     arm: TokenStream,
     /// The keep of a value it could not read (`schema::or_kept`), after the members.
@@ -280,16 +440,53 @@ struct FieldRead {
     finish: TokenStream,
 }
 
+/// The read of a `reads_absent` field's member the object lacks, as the `null` jsoncpp gives
+/// for it: the field's `read_with`, or its type's read.
+fn absent_read(info: &FieldInfo, held: &syn::Type) -> Option<TokenStream> {
+    info.attrs.reads_absent.map(|_| {
+        info.attrs.read_with.as_ref().map_or_else(
+            || quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json),
+            |(with, _)| quote!(#with),
+        )
+    })
+}
+
+/// `read_call` where the field reads a member of another JSON kind than its type takes as absent
+/// (`schema::if_kind`): run only when the member is of that kind.
+fn if_kind(info: &FieldInfo, read_call: TokenStream) -> TokenStream {
+    if info.attrs.if_kind.is_none() {
+        return read_call;
+    }
+    let reader = paths().reader;
+    let held = info.option.unwrap_or(info.ty);
+    quote! {
+        if #reader::of_kind::<#held>(__member) {
+            #read_call
+        }
+    }
+}
+
+/// A rule at the member's place (`schema::guard`): `false` ends the struct's read there.
+fn field_guard(info: &FieldInfo) -> Option<TokenStream> {
+    info.attrs.guard.as_ref().map(|(guard, _)| {
+        quote! {
+            if !(#guard)(__object.node(), __read) {
+                __guarded.set(true);
+                return true;
+            }
+        }
+    })
+}
+
 /// The read of the field `info`, its value bound to `__v{index}`. The calls that need the
 /// field's type to have a read are spanned at the type, so a type without one is the error
 /// there.
 fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldRead {
-    let reader = paths().reader;
     let slot = format_ident!("__s{index}");
     let rules = member_rules(info);
     let value = format_ident!("__v{index}");
     let held = info.option.unwrap_or(info.ty);
-    let read_call = member_read(info, &slot);
+    let read_call = if_kind(info, member_read(info, &slot));
     let json = &info.json;
     let names = info
         .attrs
@@ -309,50 +506,68 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
         // is the field's own, `Some(..)` for the `Option`.
         quote!(let #value = #slot.required(__object, #json, __read, &mut __ok);)
     };
-    let new_slot = rules.map_or_else(
-        || quote!(#reader::Slot::<#held>::new()),
-        |rules| {
-            quote! {{
-                static __RULES: #reader::MemberRules = #rules;
-                #reader::Slot::<#held>::ruled(&__RULES)
-            }}
-        },
-    );
+    let new_slot = new_slot(info, held, rules);
     // A required field with one name tells its absence where a read in declared order asks for
     // the member.
     let required = !(info.option.is_some() && info.attrs.required.is_none())
         && info.attrs.default.is_none()
         && info.attrs.alias.is_none();
-    let when_absent = if required {
+    let absent_read = absent_read(info, held);
+    let absent_after = absent_read
+        .as_ref()
+        .map(|with| quote!(#slot.read_absent_after(__object, #json, __read, #with);));
+    let (absent_told, finish) = era_absence(info, &slot, required, finish);
+    let missing_now = if let Some(with) = &absent_read {
+        quote!(#slot.read_absent(__object, #json, __read, #with);)
+    } else if required {
         quote!(#slot.missing_now(__object, #json, __read);)
     } else {
-        quote!()
+        absent_told
     };
+    // A member the object lacks is asked of the field's `absent_with` fn: in its place where the
+    // read asks for it (declared order, or a `null` read as absent), else after the members.
+    let absent = info
+        .attrs
+        .absent_with
+        .as_ref()
+        .map(|(with, _)| quote!(#slot.absent_with(__object, __read, #with);));
+    let when_absent = quote!(#missing_now #absent);
+    let scope = scope_put(info, &slot);
+    let guard = field_guard(info);
     FieldRead {
+        absent_after,
         slot: quote!(let mut #slot = #new_slot;),
         // A field that reads a `null` as a value reads it, whatever the reading does with a
         // `null` member of the others (it is not absent for it).
         arm: if info.attrs.reads_null.is_some() {
             quote! {
                 #names => {
+                    #guard
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
+                        #scope
                         return true;
                     };
                     #read_call
+                    #scope
                     true
                 }
             }
         } else {
             quote! {
                 #names => {
+                    #guard
                     let ::core::option::Option::Some(__member) = __member else {
                         #when_absent
+                        #scope
                         return true;
                     };
-                    if !__object.absent(__member, __read) {
+                    if __object.absent(__member, __read) {
+                        #absent
+                    } else {
                         #read_call
                     }
+                    #scope
                     true
                 }
             }
@@ -364,8 +579,118 @@ fn field_read(info: &FieldInfo, index: usize, extra_arg: &TokenStream) -> FieldR
                 }
             }
         }),
-        finish,
+        finish: quote!(#absent #finish),
     }
+}
+
+/// The read of a field fed by several members of the object (`schema::members`), its value
+/// bound to `__v{index}`: read once, where the first of its names is asked for (or met in the
+/// file), else after the members, by its `read_with` or its type's `FromMembers`, given each
+/// member as written and the field's default. Its arm is not its own: a member may feed several
+/// fields, so the arms are by name ([`member_arms`]), each reading every field it feeds that is
+/// not read yet; `.1` is the field's slot and its read, for them.
+fn members_read(
+    info: &FieldInfo,
+    index: usize,
+    names: &[String],
+) -> (FieldRead, (Ident, TokenStream)) {
+    let core = core();
+    let slot = format_ident!("__s{index}");
+    let value = format_ident!("__v{index}");
+    let ty = info.ty;
+    let count = names.len();
+    let default = match &info.attrs.default {
+        Some(DefaultDecl {
+            value: Some(expr), ..
+        }) => super::typed(expr, ty),
+        Some(_) => quote!(<#ty as ::core::default::Default>::default()),
+        None => quote!(::core::option::Option::None),
+    };
+    let with = info.attrs.read_with.as_ref().map_or_else(
+        || quote_spanned!(ty.span()=> <#ty as #core::schema::FromMembers<#count>>::from_members),
+        |(with, _)| quote!(#with),
+    );
+    let read_now = quote! {{
+        let __members = [#(__object.member(#names)),*];
+        (#with)(__object.node(), &__members, #default, __read)
+    }};
+    let read = FieldRead {
+        absent_after: None,
+        slot: quote! {
+            let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
+                ::core::option::Option::None;
+        },
+        arm: TokenStream::new(),
+        kept: None,
+        finish: quote! {
+            let #value = match #slot {
+                ::core::option::Option::Some(__read_value) => __read_value,
+                ::core::option::Option::None => #read_now,
+            };
+            if #value.is_none() {
+                __ok = false;
+            }
+        },
+    };
+    (read, (slot.clone(), read_now))
+}
+
+/// The arms of the members that feed fields (`schema::members`): one per name, reading each
+/// field it feeds that is not read yet, in declaration order. `fed` is each such field's names,
+/// slot and read.
+fn member_arms(fed: &[(&[String], Ident, TokenStream)]) -> Vec<TokenStream> {
+    let mut names: Vec<&String> = Vec::new();
+    for (own, _, _) in fed {
+        for name in *own {
+            if !names.contains(&name) {
+                names.push(name);
+            }
+        }
+    }
+    names
+        .into_iter()
+        .map(|name| {
+            let reads =
+                fed.iter()
+                    .filter(|(own, _, _)| own.contains(name))
+                    .map(|(_, slot, read_now)| {
+                        quote! {
+                            if #slot.is_none() {
+                                #slot = ::core::option::Option::Some(#read_now);
+                            }
+                        }
+                    });
+            quote! {
+                #name => {
+                    #(#reads)*
+                    true
+                }
+            }
+        })
+        .collect()
+}
+
+/// What a `schema::scope` field puts in scope once its member is read or found absent: the value
+/// read, else the field's `default` (for an `Option`, the value read or nothing).
+fn scope_put(info: &FieldInfo, slot: &Ident) -> Option<TokenStream> {
+    info.attrs.scope?;
+    let json = &info.json;
+    let fallback = if let (Some(default), None) = (&info.attrs.default, info.option) {
+        let value = default.value.as_ref().map_or_else(
+            || quote!(::core::default::Default::default()),
+            |expr| super::typed(expr, info.ty),
+        );
+        quote!(::core::option::Option::Some(#value))
+    } else {
+        quote!(::core::option::Option::None)
+    };
+    Some(quote! {
+        if let ::core::option::Option::Some(__scoped) =
+            #slot.value().cloned().or_else(|| #fallback)
+        {
+            __read.put_in_scope(#json, __scoped);
+        }
+    })
 }
 
 /// The call that reads the member of field `info` into its slot: the field's `read_with`, the
@@ -380,7 +705,7 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
     // What the type says of its `null`. A `schema::read_with` fn never sees one (the null rule
     // reads it first), so the type's `HOLDS_NULL` is not for it: a member that fn reads refuses a
     // `null` as every other member does.
-    let kind = if info.attrs.read_with.is_some() {
+    let kind = if info.attrs.read_with.is_some() || info.attrs.read_beside.is_some() {
         quote! {{
             #[allow(unused_imports)]
             use #reader::{KindOfNone as _, KindOfRead as _};
@@ -421,11 +746,18 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
             }
         })
     });
+    // A read given the object the member is in: what its siblings say decides it.
+    let beside = info.attrs.read_beside.as_ref().map(|(beside, _)| {
+        quote! {
+            |__node: &#node<'_>, __read: &mut #read<'_>| (#beside)(__node, __object.node(), __read)
+        }
+    });
     let with = info
         .attrs
         .read_with
         .as_ref()
         .map(|(with, _)| quote!(#with))
+        .or(beside)
         .or(list)
         .or(keyed);
     match (info.attrs.or_kept, with, info.option.is_some()) {
@@ -435,7 +767,8 @@ fn member_read(info: &FieldInfo, slot: &Ident) -> TokenStream {
                 quote_spanned!(held.span()=> <#held as ::bedrock_addon_core::schema::FromJson>::from_json)
             });
             let reads_null = info.attrs.reads_null.is_some();
-            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #reads_null, #with);)
+            let ends = info.attrs.ends.is_some();
+            quote!(#slot.read_or_kept(__member, __read, #field_rule, #kind, #told, #reads_null, #ends, #with);)
         }
         // An iterated list reads a `null` as a value that is no array, a `reads_null` field as
         // a value.
@@ -462,6 +795,129 @@ fn format_version(version: crate::attr::Version) -> TokenStream {
     quote!(::bedrock_addon_core::version::FormatVersion::new(#major, #minor, #patch))
 }
 
+/// The slot a field's member is read into: ruled by the field's member rules, or by an era's.
+fn new_slot(info: &FieldInfo, held: &syn::Type, rules: Option<TokenStream>) -> TokenStream {
+    let reader = paths().reader;
+    if !info.attrs.eras.is_empty() {
+        return era_slot(info, held, rules.as_ref());
+    }
+    rules.map_or_else(
+        || quote!(#reader::Slot::<#held>::new()),
+        |rules| {
+            quote! {{
+                static __RULES: #reader::MemberRules = #rules;
+                #reader::Slot::<#held>::ruled(&__RULES)
+            }}
+        },
+    )
+}
+
+/// A field an era words the absence of (`schema::era(.., missing = CODE)`) and that is not
+/// required: what it tells where it finds the member absent, and its finish, which tells it
+/// once more before the field takes its default in a read in file order (told once).
+fn era_absence(
+    info: &FieldInfo,
+    slot: &Ident,
+    required: bool,
+    finish: TokenStream,
+) -> (TokenStream, TokenStream) {
+    let json = &info.json;
+    let absent_told = info
+        .attrs
+        .eras
+        .iter()
+        .any(|era| era.missing.is_some())
+        .then(|| quote!(#slot.absent_told(__object, #json, __read);));
+    if required {
+        return (TokenStream::new(), finish);
+    }
+    let told = absent_told.unwrap_or_default();
+    (told.clone(), quote!(#told #finish))
+}
+
+/// The slot of a field with `schema::era` keys: the rules of the first era the document's
+/// format is in (`Read::known_format`), each era's codes in place of the field's own and told
+/// at their own severity, else the field's own (`base`, `None` for none).
+fn era_slot(info: &FieldInfo, held: &syn::Type, base: Option<&TokenStream>) -> TokenStream {
+    let core = core();
+    let reader = paths().reader;
+    let attrs = &info.attrs;
+    let era_code = |code: &Option<syn::Expr>| {
+        code.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |expr| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
+        )
+    };
+    let field_code = |code: &Option<(syn::Expr, proc_macro2::Span)>| {
+        code.as_ref().map_or_else(
+            || quote!(::core::option::Option::None),
+            |(expr, _)| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
+        )
+    };
+    let negative = field_code(&attrs.negative);
+    let finite = attrs.finite.is_some();
+    let (statics, arms): (Vec<TokenStream>, Vec<TokenStream>) = attrs
+        .eras
+        .iter()
+        .enumerate()
+        .map(|(index, era)| {
+            let name = format_ident!("__ERA{index}");
+            // An era that states no code keeps the field's own, graded as they are.
+            let own = era.has_codes();
+            let (wrong_type, missing, invalid) = if own {
+                (
+                    era_code(&era.wrong_type),
+                    era_code(&era.missing),
+                    era_code(&era.invalid),
+                )
+            } else {
+                (
+                    field_code(&attrs.wrong_type),
+                    field_code(&attrs.missing),
+                    field_code(&attrs.invalid),
+                )
+            };
+            let molang = era.molang.as_ref().map_or_else(
+                || quote!(::core::option::Option::None),
+                |spec| quote!(::core::option::Option::Some(#spec)),
+            );
+            let expr = &era.era;
+            let rules = quote! {
+                static #name: #reader::MemberRules = #reader::MemberRules {
+                    wrong_type: #wrong_type,
+                    missing: #missing,
+                    invalid: #invalid,
+                    negative: #negative,
+                    finite: #finite,
+                    own_severity: #own,
+                    molang: #molang,
+                };
+            };
+            let arm = quote! {
+                if #core::schema::VersionRange::holds(#expr, __format) {
+                    ::core::option::Option::Some(&#name)
+                } else
+            };
+            (rules, arm)
+        })
+        .unzip();
+    let (base_static, base) = base.map_or_else(
+        || (quote!(), quote!(::core::option::Option::None)),
+        |rules| {
+            (
+                quote!(static __RULES: #reader::MemberRules = #rules;),
+                quote!(::core::option::Option::Some(&__RULES)),
+            )
+        },
+    );
+    quote! {{
+        #base_static
+        #(#statics)*
+        let __format = __read.known_format();
+        #reader::Slot::<#held>::with_rules(#(#arms)* { #base })
+    }}
+}
+
 /// The field's rules for its member (`schema::wrong_type`, `missing`, `invalid`, `finite`), a
 /// `MemberRules` value; `None` when it states none.
 fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
@@ -478,7 +934,7 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
     let code = |code: &Option<(syn::Expr, proc_macro2::Span)>| {
         code.as_ref().map_or_else(
             || quote!(::core::option::Option::None),
-            |(expr, _)| quote!(::core::option::Option::Some(&#expr)),
+            |(expr, _)| quote!(::core::option::Option::Some(#reader::MemberCode::of(&#expr))),
         )
     };
     let (wrong_type, missing, invalid, negative) = (
@@ -495,6 +951,8 @@ fn member_rules(info: &FieldInfo) -> Option<TokenStream> {
             invalid: #invalid,
             negative: #negative,
             finite: #finite,
+            own_severity: false,
+            molang: ::core::option::Option::None,
         }
     })
 }
@@ -510,14 +968,27 @@ fn extra_arg(extra: bool) -> TokenStream {
 
 /// The disposal of an unknown member `__key`: the struct's, and for the members it says are
 /// `quiet` the same members kept and told nothing.
-fn disposal(quiet: &[String]) -> TokenStream {
+fn disposal(
+    quiet: &[String],
+    unknown_with: Option<&syn::Expr>,
+    marked: &TokenStream,
+) -> TokenStream {
+    let disposal = unknown_with.map_or_else(
+        || quote!(__disposal),
+        |with| {
+            quote!({
+                let __rule = (#with)(__key, __member, __read);
+                __object.disposal(__read, ::core::option::Option::Some(__rule), #marked)
+            })
+        },
+    );
     if quiet.is_empty() {
-        return quote!(__disposal);
+        return disposal;
     }
     quote!(if ::core::matches!(__key, #(#quiet)|*) {
-        __disposal.silenced()
+        (#disposal).silenced()
     } else {
-        __disposal
+        #disposal
     })
 }
 
@@ -534,6 +1005,7 @@ fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) ->
         let value = format_ident!("__v{index}");
         let built = match infos.iter().find(|info| info.member == member) {
             Some(info) if !taken(info) => quote!(__extra),
+            Some(info) if info.attrs.members.is_some() => quote!(#value?),
             Some(info) if info.option.is_some() => quote!(#value),
             Some(_) => quote!(#value?),
             None => untaken_value(field, &own_names),
@@ -548,7 +1020,8 @@ fn built_value(construct: &TokenStream, fields: &Fields, infos: &[FieldInfo]) ->
 /// `knows` is the function that names the fields' members.
 #[allow(
     clippy::too_many_lines,
-    reason = "one arm per kind of field and variant"
+    clippy::too_many_arguments,
+    reason = "one arm per kind of field and variant; one argument per struct-level rule"
 )]
 fn fields_body(
     construct: &TokenStream,
@@ -556,6 +1029,10 @@ fn fields_body(
     infos: &[FieldInfo],
     rule: Option<&String>,
     quiet: &[String],
+    after_members: Option<&syn::Expr>,
+    after_read: Option<&TokenStream>,
+    guard: Option<&syn::Expr>,
+    unknown_with: Option<&syn::Expr>,
 ) -> TokenStream {
     let p = paths();
     let (fields_trait, reader, node, read) = (&p.fields, &p.reader, &p.node, &p.read);
@@ -574,6 +1051,8 @@ fn fields_body(
         (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new());
     let (mut flat_slots, mut flat_arms) = (Vec::new(), Vec::new());
     let mut kept = Vec::new();
+    let mut fed = Vec::new();
+    let mut absent_afters = Vec::new();
     for info in infos.iter().filter(|info| taken(info)) {
         let index = index_of(info);
         if info.inline {
@@ -585,8 +1064,10 @@ fn fields_body(
                 let mut #slot: ::core::option::Option<::core::option::Option<#ty>> =
                     ::core::option::Option::None;
             });
+            let place = flat_place(info);
             flat_arms.push(quote_spanned! {ty.span()=>
-                _ if ::core::option::Option::Some(__key) == <#ty as #fields_trait>::TAG => {
+                _ if <#ty as #fields_trait>::reads_at(__key)
+                    || (<#ty as #fields_trait>::AT.is_none() && __key == #place) => {
                     if #slot.is_none() {
                         #slot = ::core::option::Option::Some(
                             <#ty as #fields_trait>::read_fields(__object, __read, false, __tag),
@@ -611,24 +1092,37 @@ fn fields_body(
             continue;
         }
         let FieldRead {
+            absent_after,
             slot,
             arm,
             kept: keep,
             finish,
-        } = field_read(info, index, &extra_arg);
+        } = match &info.attrs.members {
+            Some((names, _)) => {
+                let (read, (slot, read_now)) = members_read(info, index, names);
+                fed.push((names.as_slice(), slot, read_now));
+                read
+            }
+            None => field_read(info, index, &extra_arg),
+        };
+        absent_afters.extend(absent_after);
         slots.push(slot);
         arms.push(arm);
         kept.extend(keep);
         finishes.push(finish);
     }
+    arms.extend(member_arms(&fed));
     let extra_decl = extra.then(|| {
         let core = core();
         quote!(let mut __extra = #core::document::UnknownMembers::default();)
     });
+    // What the struct kept takes the order of its object where the read keeps it so.
+    let in_file_order = extra.then(|| quote!(__object.in_file_order(__read, &mut __extra);));
     let build = built_value(construct, fields, infos);
     let (names, gates) = member_names_and_gates(infos);
+    let engines = member_engines(infos);
     let knows = knows(infos, true);
-    let unknown_member = unknown_member(&extra_arg, quiet);
+    let unknown_member = unknown_member(&extra_arg, quiet, unknown_with, &quote!(#marked));
     // A flattened enum whose variant failed (a tag that names none) fails the read of its owner
     // there: the members after it, the unknown ones and the missing ones are not told.
     let abandoned = infos
@@ -638,6 +1132,16 @@ fn fields_body(
             let slot = format_ident!("__f{}", index_of(info));
             quote!(|| ::core::matches!(#slot, ::core::option::Option::Some(::core::option::Option::None)))
         })
+        // A member that `ends` the read, once it failed or was told missing.
+        .chain(
+            infos
+                .iter()
+                .filter(|info| info.attrs.ends.is_some() && taken(info) && !info.inline)
+                .map(|info| {
+                    let slot = format_ident!("__s{}", index_of(info));
+                    quote!(|| #slot.ended())
+                }),
+        )
         .collect::<Vec<_>>();
     let (give_up, unknown_last, abandon) = if abandoned.is_empty() {
         (quote!(), quote!(), quote!())
@@ -647,6 +1151,7 @@ fn fields_body(
             quote!(let __abandoned = false #(#abandoned)*;),
             quote!(if __abandoned {
                 __object.abandon();
+                __ok = false;
             }),
         )
     };
@@ -659,14 +1164,171 @@ fn fields_body(
             }
         }
     };
+    // The rules at their places (`schema::guard`): one that says `false` ends the read there,
+    // the struct's after its members, before its `after_members` rule and the unknown members.
+    let guarded = guard.is_some() || infos.iter().any(|info| info.attrs.guard.is_some());
+    let (guard_decl, give_up, guard_after, guard_end) = if guarded {
+        let after = guard.map(|guard| {
+            quote! {
+                if !__guarded.get() && !__read.stopped() && !(#guard)(__object.node(), __read) {
+                    __guarded.set(true);
+                }
+            }
+        });
+        (
+            quote!(let __guarded = ::core::cell::Cell::new(false);),
+            quote!(if __guarded.get() { return true; } #give_up),
+            quote!(#after),
+            quote! {
+                if __guarded.get() {
+                    __object.abandon();
+                    __ok = false;
+                }
+            },
+        )
+    } else {
+        (quote!(), give_up, quote!(), quote!())
+    };
+    // The unknown members are not read once a guard ended the struct.
+    let unguarded = |unknown_after: TokenStream| {
+        if guarded {
+            quote! {
+                if !__guarded.get() {
+                    #unknown_after
+                }
+            }
+        } else {
+            unknown_after
+        }
+    };
+    let unknown_after = unguarded(unknown_after);
+    let scoped = infos
+        .iter()
+        .any(|info| taken(info) && info.attrs.scope.is_some());
+    let (scope_mark, scope_reset) = if scoped {
+        (
+            quote!(let __scope = __read.scope_mark();),
+            quote!(__read.scope_reset(__scope);),
+        )
+    } else {
+        (quote!(), quote!())
+    };
+    // Once a guard or a member that `ends` the read gave the struct up, nothing more of it is
+    // read or told: no flattened struct, no field fed by several members, no `absent_with`.
+    let left_off = match (abandoned.is_empty(), guarded) {
+        (true, false) => None,
+        (false, false) => Some(quote!(__abandoned)),
+        (true, true) => Some(quote!(__guarded.get())),
+        (false, true) => Some(quote!(__abandoned || __guarded.get())),
+    };
+    let read_no_more = left_off.map(|left_off| {
+        quote! {
+            if #left_off {
+                #scope_reset
+                return ::core::option::Option::None;
+            }
+        }
+    });
+    let ending = match after_members {
+        None => quote! {
+            #guard_after
+            #unknown_after
+            #in_file_order
+            // Under the game's schema tree an error raised while the members were read fails the
+            // struct, and its missing members are then not told.
+            let mut __ok = __object.settle(__read);
+            #abandon
+            #guard_end
+            #read_no_more
+            #(#flattened)*
+            #(#finishes)*
+            // What the fields put in scope is for the members of this object alone.
+            #scope_reset
+            if !__ok {
+                return ::core::option::Option::None;
+            }
+            let mut __value = ::core::option::Option::Some(#build);
+            #after_read
+            __value
+        },
+        Some(rule) => {
+            // The value is built and its rule run before the unknown members told after the
+            // members, which the value's own field then takes, all of them in the order of the
+            // object where the read keeps them so.
+            let (later_decl, later_arg, later_take) = match extra_member(infos) {
+                Some(member) => {
+                    let core = core();
+                    (
+                        quote!(let mut __later = #core::document::UnknownMembers::default();),
+                        quote!(::core::option::Option::Some(&mut __later)),
+                        quote! {
+                            if let ::core::option::Option::Some(__built) = &mut __built {
+                                __built.#member.extend(__later.iter().map(|(__key, __value)| {
+                                    (
+                                        ::std::borrow::ToOwned::to_owned(__key),
+                                        ::core::clone::Clone::clone(__value),
+                                    )
+                                }));
+                                __object.in_file_order(__read, &mut __built.#member);
+                            }
+                        },
+                    )
+                }
+                None => (quote!(), quote!(::core::option::Option::None), quote!()),
+            };
+            let later_member =
+                self::unknown_member(&later_arg, quiet, unknown_with, &quote!(#marked));
+            let unknown_after = unguarded(if abandoned.is_empty() {
+                quote!(#reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);)
+            } else {
+                quote! {
+                    if !__abandoned {
+                        #reader::read_unknown_last(__object, __read, __unknown, &__declared, #later_member);
+                    }
+                }
+            });
+            quote! {
+                #guard_after
+                let mut __ok = __object.settle(__read);
+                #abandon
+                #guard_end
+                #read_no_more
+                #(#flattened)*
+                #(#finishes)*
+                // What the fields put in scope is for the members of this object alone.
+                #scope_reset
+                let mut __built = if __ok {
+                    (|| ::core::option::Option::Some(#build))()
+                } else {
+                    ::core::option::Option::None
+                };
+                if let ::core::option::Option::Some(__built) = &mut __built {
+                    (#rule)(__built, __object.node(), __read);
+                }
+                #later_decl
+                #unknown_after
+                #later_take
+                // Under the game's schema tree an error raised by an unknown member fails it too.
+                if !__object.settle(__read) {
+                    return ::core::option::Option::None;
+                }
+                let mut __value = __built;
+                #after_read
+                __value
+            }
+        }
+    };
     quote! {
+        #scope_mark
         let __disposal = __object.disposal(__read, #rule, #marked);
         #extra_decl
         #(#slots)*
         #(#flat_slots)*
+        #guard_decl
         let __declared = #reader::Declared {
             names: &[#(#names),*],
             gates: &[#(#gates),*],
+            engines: &[#(#engines),*],
             knows: |__key: &str| -> bool { #knows },
             tag: __tag,
         };
@@ -687,32 +1349,30 @@ fn fields_body(
             },
             #unknown_member,
         );
+        #(#absent_afters)*
         // What the members could not read is kept before the unknown members told after them.
         #(#kept)*
+        __object.keep_nulls(__read, #extra_arg);
         #unknown_last
-        #unknown_after
-        // Under the game's schema tree an error raised while the members were read fails the
-        // struct, and its missing members are then not told.
-        let mut __ok = __object.settle(__read);
-        #abandon
-        #(#flattened)*
-        #(#finishes)*
-        if !__ok {
-            return ::core::option::Option::None;
-        }
-        ::core::option::Option::Some(#build)
+        #ending
     }
 }
 
 /// The tell of one unknown member, given to the read twice: for the unknown members told with the
 /// members and for the ones told after the keeps of what the members could not read.
-fn unknown_member(extra_arg: &TokenStream, quiet: &[String]) -> TokenStream {
+fn unknown_member(
+    extra_arg: &TokenStream,
+    quiet: &[String],
+    unknown_with: Option<&syn::Expr>,
+    marked: &TokenStream,
+) -> TokenStream {
     let p = paths();
     let (node, read) = (&p.node, &p.read);
-    let disposal = disposal(quiet);
+    let disposal = disposal(quiet, unknown_with, marked);
     quote! {
         |__key: &str, __member: &#node<'_>, __read: &mut #read<'_>| {
-            __object.unknown(__key, __member, __read, #disposal, #extra_arg);
+            let __told = #disposal;
+            __object.unknown(__key, __member, __read, __told, #extra_arg);
         }
     }
 }
@@ -726,11 +1386,13 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
     let names = own()
         .flat_map(|info| {
             if info.inline {
-                let ty = info.ty;
-                return vec![quote_spanned!(ty.span()=> #reader::tag_name(<#ty as #fields>::TAG))];
+                let (ty, place) = (info.ty, flat_place(info));
+                return vec![
+                    quote_spanned!(ty.span()=> #reader::flat_name(<#ty as #fields>::AT, #place)),
+                ];
             }
-            std::iter::once(&info.json)
-                .chain(info.attrs.alias.as_ref())
+            json_names(info)
+                .into_iter()
                 .map(|name| quote!(#name))
                 .collect()
         })
@@ -746,6 +1408,42 @@ fn member_names_and_gates(infos: &[FieldInfo<'_>]) -> (Vec<TokenStream>, Vec<Tok
     (names, gates)
 }
 
+/// The name a read in declaration order asks for a flattened field by where its owner declares
+/// it, when it has no tag: no member of a JSON object has it.
+fn flat_place(info: &FieldInfo<'_>) -> String {
+    format!("\u{0}{}", info.rust)
+}
+
+/// The members a struct reads on some engines only (`schema::since_engine`, `until_engine`),
+/// with their engines, under each of their names.
+fn member_engines(infos: &[FieldInfo<'_>]) -> Vec<TokenStream> {
+    let window = |version: Option<crate::attr::Version>| {
+        version.map_or_else(
+            || quote!(::core::option::Option::None),
+            |version| {
+                let version = format_version(version);
+                quote!(::core::option::Option::Some(#version))
+            },
+        )
+    };
+    let core = core();
+    infos
+        .iter()
+        .filter(|info| taken(info) && !info.inline)
+        .filter(|info| info.attrs.since_engine.is_some() || info.attrs.until_engine.is_some())
+        .map(|info| {
+            let (since, until) = (
+                window(info.attrs.since_engine),
+                window(info.attrs.until_engine),
+            );
+            let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
+            quote! {
+                #((#names, #core::schema::VersionRange { since: #since, until: #until })),*
+            }
+        })
+        .collect()
+}
+
 /// The type parameters a struct flattens: they share its object, so they are read as `Fields`.
 fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
     infos
@@ -758,12 +1456,14 @@ fn flattened_parameters<'a>(infos: &'a [FieldInfo<'_>]) -> Vec<&'a Ident> {
         .collect()
 }
 
-/// The call of the struct's `schema::after_read` rule on the value just read, if it has one.
-fn after_read(container: &ContainerAttrs) -> Option<TokenStream> {
+/// The call of the struct's `schema::after_read` rule on the value just read, if it has one,
+/// with `node`, the value as written: a struct's object where it is read (its owner's when it
+/// is flattened), a tuple struct's array.
+fn after_read(container: &ContainerAttrs, node: &TokenStream) -> Option<TokenStream> {
     let (after, _) = container.after_read.as_ref()?;
     Some(quote! {
         if let ::core::option::Option::Some(__built) = &mut __value {
-            (#after)(__built, __node, __read);
+            (#after)(__built, #node, __read);
         }
     })
 }
@@ -799,15 +1499,32 @@ pub(super) fn struct_read(
             return TokenStream::new();
         };
         let ty = info.ty;
+        // A list the field iterates or drops from is read as its keys say.
+        let iterated = info.attrs.iterated.is_some();
+        let dropping = info.attrs.drop.is_some();
+        let list = (iterated || dropping).then(|| ty::elements(ty)).flatten();
         // A field read by its own function takes no wording or `null` of the type's.
-        let (inner, kind) = match &info.attrs.read_with {
-            Some((with, _)) => (
+        let (inner, kind) = match (&info.attrs.read_with, list) {
+            (None, Some(element)) => (
+                quote_spanned!(ty.span()=> #reader::list::<#element>(__node, __read, #iterated, #dropping)),
+                // An iterated list takes any value.
+                if iterated {
+                    quote! {
+                        const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
+                    }
+                } else {
+                    quote_spanned! {ty.span()=>
+                        const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
+                    }
+                },
+            ),
+            (Some((with, _)), _) => (
                 quote!((#with)(__node, __read)),
                 quote! {
                     const EXPECTED: ::core::option::Option<#expected> = ::core::option::Option::None;
                 },
             ),
-            None => (
+            (None, None) => (
                 quote_spanned!(ty.span()=> <#ty as #from_json>::from_json(__node, __read)),
                 quote_spanned! {ty.span()=>
                     const EXPECTED: ::core::option::Option<#expected> = <#ty as #from_json>::EXPECTED;
@@ -848,13 +1565,17 @@ pub(super) fn struct_read(
             }
         }
     });
-    let after_read = after_read(container);
+    let after_read = after_read(container, &quote!(__object.node()));
     let body = fields_body(
         &quote!(#ident),
         fields,
         infos,
         container.unknown.as_ref(),
         &container.quiet,
+        container.after_members.as_ref().map(|(rule, _)| rule),
+        after_read.as_ref(),
+        container.guard.as_ref().map(|(guard, _)| guard),
+        container.unknown_with.as_ref().map(|(with, _)| with),
     );
     quote! {
         #[automatically_derived]
@@ -864,14 +1585,13 @@ pub(super) fn struct_read(
 
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 let __object = #object::open(__node, __read)?;
-                let mut __value = <Self as #fields_trait>::read_fields(
+                let __value = <Self as #fields_trait>::read_fields(
                     &__object,
                     __read,
                     true,
                     ::core::option::Option::None,
                 );
                 __object.close(__read);
-                #after_read
                 __value
             }
         }
@@ -884,7 +1604,12 @@ pub(super) fn struct_read(
 
             #knows_given
 
-            #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
+            #[allow(
+                unused_variables,
+                unused_mut,
+                clippy::too_many_lines,
+                reason = "generated: the read binds what each kind of field may use and is as long as the struct's fields"
+            )]
             fn read_fields(
                 __object: &#object<'_>,
                 __read: &mut #read<'_>,
@@ -892,6 +1617,203 @@ pub(super) fn struct_read(
                 __tag: ::core::option::Option<&'static str>,
             ) -> ::core::option::Option<Self> {
                 #body
+            }
+        }
+    }
+}
+
+/// The refusals of a tuple struct's fields, each read from the element at its place: no field
+/// that would move the places (`skip`) or names a member (`flatten`, `rename`, `alias`, an
+/// `UnknownMembers` field), none of the keys about a member's presence; under `schema::arity`
+/// each field says what a missing element is (an `Option`, or a `default`).
+pub(super) fn validate_positional(
+    fields: &Fields,
+    container: &ContainerAttrs,
+    infos: &[FieldInfo],
+    errors: &mut Vec<Error>,
+) {
+    for field in fields {
+        let mut scratch = Vec::new();
+        if FieldAttrs::read(&field.attrs, &mut scratch).skip {
+            errors.push(Error::new_spanned(
+                field,
+                "a tuple struct reads each field from the element at its place: a `skip` field \
+                 would move the places of the ones after it",
+            ));
+        }
+    }
+    for info in infos {
+        let attrs = &info.attrs;
+        let named =
+            attrs.flatten || attrs.rename.is_some() || attrs.alias.is_some() || !taken(info);
+        let presence = [
+            attrs.or_kept.map(|(_, span)| span),
+            attrs.reads_null,
+            attrs.required,
+            attrs.missing.as_ref().map(|(_, span)| *span),
+            attrs.stored.filter(|_| attrs.since_format.is_some()),
+            attrs.eras.first().map(|era| era.span),
+        ]
+        .into_iter()
+        .flatten()
+        .next();
+        if named {
+            errors.push(Error::new_spanned(
+                info.ty,
+                "a tuple struct's field is the element at its place: it has no member name to \
+                 rename, alias or flatten, and no unknown members",
+            ));
+        }
+        if let Some(span) = presence {
+            errors.push(Error::new(
+                span,
+                "a tuple struct's element is there by its array's length: `or_kept`, \
+                 `reads_null`, `required`, `missing`, `since_format` and `era` are about a member",
+            ));
+        }
+        let object_keys = [
+            ("guard", attrs.guard.as_ref().map(|(_, span)| *span)),
+            ("ends", attrs.ends),
+            ("scope", attrs.scope),
+            ("if_kind", attrs.if_kind),
+            (
+                "absent_with",
+                attrs.absent_with.as_ref().map(|(_, span)| *span),
+            ),
+            ("reads_absent", attrs.reads_absent),
+            (
+                "read_beside",
+                attrs.read_beside.as_ref().map(|(_, span)| *span),
+            ),
+            ("members", attrs.members.as_ref().map(|(_, span)| *span)),
+        ];
+        for (key, span) in object_keys {
+            if let Some(span) = span {
+                errors.push(Error::new(
+                    span,
+                    format!(
+                        "a tuple struct's field is the element at its place, read by the \
+                         array: `schema::{key}` is about a member of an object, which it is not"
+                    ),
+                ));
+            }
+        }
+        if container.arity.is_some() && info.option.is_none() && attrs.default.is_none() {
+            errors.push(Error::new_spanned(
+                info.ty,
+                "under `schema::arity` an element the array lacks is absent: the field is an \
+                 `Option` or has a `default`",
+            ));
+        }
+    }
+}
+
+/// The read of a tuple struct: an array (else a wrong type, under the struct's
+/// `schema::wrong_type`), each field the element at its place, read as a member of its field
+/// is; another length a wrong type, or under `schema::arity` told after the elements and read
+/// on. A failed element fails the struct where its field does not reset; the struct's
+/// `after_read` runs on the value built.
+pub(super) fn tuple_read(
+    target: &Target,
+    container: &ContainerAttrs,
+    infos: &[FieldInfo],
+) -> TokenStream {
+    let Paths {
+        node,
+        read,
+        from_json,
+        fields: fields_trait,
+        reader,
+        expected,
+        ..
+    } = paths();
+    let from_json_impl = target.impl_flat(&from_json, &quote!(#from_json), &[], &fields_trait);
+    let count = infos.len();
+    let wrong_type = container.wrong_type.as_ref().map_or_else(
+        || quote!(::core::option::Option::None),
+        |(code, _)| quote!(::core::option::Option::Some(&#code)),
+    );
+    let (length, tell_length) = match &container.arity {
+        Some((code, _)) => (
+            quote!(let __other = __elements.len() != #count;),
+            quote! {
+                if __other && !__read.stopped() {
+                    #reader::tell_at(__node, &#code, __read);
+                }
+            },
+        ),
+        None => (
+            quote! {
+                if __elements.len() != #count {
+                    __read.wrong_type(__node);
+                    return ::core::option::Option::None;
+                }
+            },
+            TokenStream::new(),
+        ),
+    };
+    let reads = infos.iter().enumerate().map(|(index, info)| {
+        let slot = format_ident!("__s{index}");
+        let value = format_ident!("__v{index}");
+        let held = info.option.unwrap_or(info.ty);
+        let new_slot = member_rules(info).map_or_else(
+            || quote!(#reader::Slot::<#held>::new()),
+            |rules| {
+                quote! {{
+                    static __RULES: #reader::MemberRules = #rules;
+                    #reader::Slot::<#held>::ruled(&__RULES)
+                }}
+            },
+        );
+        let read_call = member_read(info, &slot);
+        let finish = if info.option.is_some() {
+            quote!(let #value = #slot.optional(__read, &mut __ok);)
+        } else if let Some(default) = &info.attrs.default {
+            let default = default.value.as_ref().map_or_else(
+                || quote!(::core::default::Default::default()),
+                |expr| super::typed(expr, info.ty),
+            );
+            quote!(let #value = #slot.or_default(__read, &mut __ok, || #default);)
+        } else {
+            quote!(let #value = #slot.element(&mut __ok);)
+        };
+        quote! {
+            let mut #slot = #new_slot;
+            if let ::core::option::Option::Some(__member) = __elements.element(#index) {
+                let __member = &__member;
+                #read_call
+            }
+            #finish
+        }
+    });
+    let build = infos.iter().enumerate().map(|(index, info)| {
+        let value = format_ident!("__v{index}");
+        if info.option.is_some() {
+            quote!(#value)
+        } else {
+            quote!(#value?)
+        }
+    });
+    let after_read = after_read(container, &quote!(__node));
+    quote! {
+        #[automatically_derived]
+        #from_json_impl {
+            const EXPECTED: ::core::option::Option<#expected> =
+                ::core::option::Option::Some(#expected::Array);
+
+            #[allow(unused_mut, reason = "generated: mutable for an `after_read` the struct may not have")]
+            fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
+                let __elements = #reader::elements(__node, __read, #wrong_type)?;
+                #length
+                let mut __ok = true;
+                #(#reads)*
+                #tell_length
+                if !__ok {
+                    return ::core::option::Option::None;
+                }
+                let mut __value = ::core::option::Option::Some(Self(#(#build),*));
+                #after_read
+                __value
             }
         }
     }
@@ -973,9 +1895,18 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         variant.fields,
         variant.unknown.as_ref(),
         &[],
+        None,
+        None,
+        None,
+        None,
     );
     quote! {
-        #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
+        #[allow(
+            unused_variables,
+            unused_mut,
+            clippy::too_many_lines,
+            reason = "generated: the variant's read binds what each kind of field may use and is as long as its fields"
+        )]
         fn #name #generics(
             __object: &#object<'_>,
             __read: &mut #read<'_>,
@@ -1195,7 +2126,11 @@ pub(super) fn tagged_read(
                 }
             }
 
-            #[allow(unused_variables, clippy::too_many_lines)]
+            #[allow(
+                unused_variables,
+                clippy::too_many_lines,
+                reason = "generated: the read takes the parameters of every `Fields` read and is as long as the variants"
+            )]
             fn read_fields(
                 __object: &#object<'_>,
                 __read: &mut #read<'_>,
@@ -1219,10 +2154,19 @@ pub(super) fn tagged_read(
 }
 
 /// The read of an externally tagged enum: a unit variant by its name, a variant with data as
-/// `{name: payload}`.
+/// `{name: payload}`. One whose every variant holds a value is also `Fields`: flattened into a
+/// struct, the variant is a member of the struct's object, the one `tag_with` names or the first
+/// the object has. The enum's `after_read` runs over the variant read, given the enum's node
+/// (flattened, its owner's object).
+#[allow(
+    clippy::too_many_lines,
+    reason = "one arm per kind of variant, read alone and flattened"
+)]
 pub(super) fn external_read(
     target: &Target,
     invalid: Option<&(syn::Expr, proc_macro2::Span)>,
+    tag_with: Option<&(syn::Expr, proc_macro2::Span)>,
+    after_read: Option<&(syn::Expr, proc_macro2::Span)>,
     variants: &[ReadVariant],
 ) -> TokenStream {
     let Paths {
@@ -1230,9 +2174,24 @@ pub(super) fn external_read(
         read,
         from_json,
         reader,
+        fields: fields_trait,
+        object,
         ..
     } = paths();
     let invalid = invalid_code(invalid);
+    // The rule over the variant just read, with the node as written.
+    let after = |at: TokenStream| {
+        after_read.map(|(after, _)| {
+            quote! {
+                if let ::core::option::Option::Some(__built) = &mut __value {
+                    (#after)(__built, #at, __read);
+                }
+            }
+        })
+    };
+    let after_alone = after(quote!(__node));
+    let after_flat = after(quote!(__object.node()));
+    let mutable = after_read.map(|_| quote!(mut));
     let fns = variants
         .iter()
         .enumerate()
@@ -1263,13 +2222,79 @@ pub(super) fn external_read(
                 _ => struct_value(index, &at),
             };
             quote!(#json => #value,)
-        });
+        })
+        .collect::<Vec<_>>();
+    // Flattened, the variant is a member of the owner's object: every variant holds a value.
+    let flattened = (!variants.is_empty()
+        && variants
+            .iter()
+            .all(|v| !matches!(payload(v), Payload::Unit)))
+    .then(|| {
+        let fields_header = target.impl_for(&fields_trait, Some(&from_json));
+        let names: Vec<&String> = variants.iter().map(|v| &v.name).collect();
+        let first = &names[0];
+        let with = tag_with.map_or_else(
+            || quote!(::core::option::Option::None),
+            |(with, _)| quote!(::core::option::Option::Some(#with)),
+        );
+        let fns = variants
+            .iter()
+            .enumerate()
+            .filter(|(_, v)| matches!(payload(v), Payload::Struct))
+            .map(|(index, v)| variant_fn(target, index, v));
+        quote! {
+            #[automatically_derived]
+            #fields_header {
+                const VARIANTS: &'static [&'static str] = &[#(#names),*];
+
+                const AT: ::core::option::Option<&'static str> =
+                    ::core::option::Option::Some(#first);
+
+                fn knows(__key: &str) -> bool {
+                    ::core::matches!(__key, #(#names)|*)
+                }
+
+                fn reads_at(__key: &str) -> bool {
+                    <Self as #fields_trait>::knows(__key)
+                }
+
+                #[allow(
+                unused_variables,
+                clippy::too_many_lines,
+                reason = "generated: the read takes the parameters of every `Fields` read and is as long as the variants"
+            )]
+                fn read_fields(
+                    __object: &#object<'_>,
+                    __read: &mut #read<'_>,
+                    __unknown: bool,
+                    __tag: ::core::option::Option<&'static str>,
+                ) -> ::core::option::Option<Self> {
+                    #(#fns)*
+                    let (__name, __payload) = #reader::variant_member(
+                        __object,
+                        __read,
+                        <Self as #fields_trait>::VARIANTS,
+                        #with,
+                    )?;
+                    let #mutable __value = match __name {
+                        #(#payload_arms)*
+                        _ => {
+                            #reader::unknown_variant(&__payload, __read, #invalid);
+                            ::core::option::Option::None
+                        }
+                    };
+                    #after_flat
+                    __value
+                }
+            }
+        }
+    });
     quote! {
         #[automatically_derived]
         #header {
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                match #reader::external(__node, __read, #invalid)? {
+                let #mutable __value = match #reader::external(__node, __read, #invalid)? {
                     #reader::External::Unit(__name) => match __name.as_str() {
                         #(#unit_arms)*
                         _ => {
@@ -1284,9 +2309,13 @@ pub(super) fn external_read(
                             ::core::option::Option::None
                         }
                     },
-                }
+                };
+                #after_alone
+                __value
             }
         }
+
+        #flattened
     }
 }
 

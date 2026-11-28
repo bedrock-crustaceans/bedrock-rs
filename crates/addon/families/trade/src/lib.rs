@@ -7,9 +7,11 @@
 //! and upgraded when they load (`history`).
 //!
 //! The cereal slice is read by the derived reader (`versioning::read_payload_with`; the types,
-//! the quantity included, derive `Schema`). The legacy slice stays the hand-written parser of
-//! `history/read.rs`: its scalar conversions, dropped trades and groups and own lines are
-//! per-member rules the derive has no key for.
+//! the quantity included, derive `Schema`). The legacy slice is the derived read of the `v0`
+//! types too (`history/read.rs`), in declaration order with the unknown members first: its
+//! `Json::Value::as*` scalar conversions are `schema::read_with` functions, the shape switches
+//! (`groups` or flat `trades`) `schema::after_read` rules, and the messages that drop a trade
+//! or a group, or reject the table, the functions that read each list.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -73,8 +75,8 @@ impl Family for TradeFamily {
         ..Envelope::DEFAULT
     };
 
-    /// The legacy slice `[0.0.0, 1.21.30)` is a hand-written parser with no cereal mask: its
-    /// `null` handling is the family's own. The game reads the cereal slice strictly, under rule
+    /// The legacy slice `[0.0.0, 1.21.30)` is vanilla's legacy parser with no cereal mask: its
+    /// `null` handling is the family's own (`history/read.rs`). The game reads the cereal slice strictly, under rule
     /// N2: an unknown member is an error there.
     fn reading(index: StructIndex, _: DocumentSource) -> Reading {
         match index {

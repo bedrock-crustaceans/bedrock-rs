@@ -55,7 +55,6 @@ use bedrock_addon_core::json::{
     EncodeError, JsonSlice, Value, WriteStyle, last_wins, probe_envelope, write_json,
 };
 use bedrock_addon_core::load::Reported;
-use bedrock_addon_core::molang::{MolangFields, MolangVisitor};
 use bedrock_addon_core::version::{FormatVersion, FormatVersionInput, PickedVersion};
 use bedrock_addon_core::versioning::{
     BETA_VERSION, BelowFloor, BetaPermission, DocumentRead, Envelope, Family, InputKind, Loaded,
@@ -237,11 +236,6 @@ impl Family for StyleFamily {
 
 impl Versioned for UiStyle {
     const VERSION: FormatVersion = BETA_VERSION;
-}
-
-/// A style has no Molang.
-impl MolangFields for UiStyle {
-    fn visit_molang(&mut self, _: &mut MolangVisitor<'_>) {}
 }
 
 impl VersionStruct for UiStyle {

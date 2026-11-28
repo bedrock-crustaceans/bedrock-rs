@@ -29,13 +29,18 @@ pub mod derived;
 mod impls;
 mod keys;
 mod leaves;
+mod members;
 
 #[cfg(test)]
 mod tests;
 
-pub use impls::{ElementFailure, MapKey, read_each, read_entries, read_iterated, read_list};
+pub use impls::{
+    ElementFailure, MapKey, read_each, read_entries, read_iterated, read_iterated_silently,
+    read_list,
+};
 pub use keys::{KeyPattern, Keys, read_keyed};
-pub use leaves::{from_value, from_value_ref, read_later};
+pub use leaves::{MolangLeaf, from_value, from_value_ref, read_later};
+pub use members::FromMembers;
 
 use crate::json::kit::{Expected, Node, Read};
 
@@ -108,6 +113,14 @@ pub trait FromJson: Sized {
     /// (vanilla's dynamic value holds a `null`).
     #[doc(hidden)]
     const HOLDS_NULL: bool = false;
+
+    /// Reads `node` as an array of exactly `N` values of the type (a `[Self; N]` member):
+    /// another length is a wrong type, each element read as the type. `Molang` reads it by the
+    /// read's own Molang leaf where it has one ([`Read::molang_leaf`]).
+    #[doc(hidden)]
+    fn array_from_json<const N: usize>(node: &Node<'_>, read: &mut Read<'_>) -> Option<[Self; N]> {
+        impls::array_by_element(node, read)
+    }
 }
 
 /// Reads a whole document (or a component) at `node` as `T`, and ends the read

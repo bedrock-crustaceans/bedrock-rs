@@ -1,16 +1,21 @@
 //! The legacy spawn condition (`conditions[]` of 1.8.0-shaped spawn rules and of spawn groups):
-//! its members as written, the game's hand-written reader (shared line for line by both
-//! families) and the writer.
+//! its members as written, read by the derived reader under the game's jsoncpp accessors
+//! (`Scalars::Accessors`, [`legacy::read`](super::legacy::read)), with a `read_with` fn for each
+//! member the game reads by a rule of its own, and the writer.
 
+use facet::Facet;
 use facet_value::{VArray, VObject};
 
 use super::codes;
-use super::read::{self, child, element, finding, wrong_type};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostics, JsonPath, Severity};
+use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp;
+use bedrock_addon_core::json::jsoncpp::accessors::{self, Integer};
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, ElementFailure, FromJson, Schema, read_list};
 use bedrock_addon_core::shared::Filter;
 use bedrock_addon_shared_shapes::BlockDescriptor;
 
@@ -24,80 +29,158 @@ pub use bedrock_addon_shared_shapes::OneOrMany;
 /// present but of a shape vanilla cannot read (a number for `minecraft:height_filter`, …) is
 /// warned, kept as written in `extra` and read as vanilla reads it;
 /// [`Condition::to_spawn_rules`] gives the values vanilla computes from the condition.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::molang_with = super::legacy::visit_condition)]
 pub struct Condition {
     /// The condition's spawn weight (JSON `minecraft:weight`).
+    #[facet(
+        rename = "minecraft:weight",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
+    #[facet(schema::invalid = codes::WEIGHT_OBJECT)]
+    #[facet(schema::read_with = object_form::<Weight>)]
     pub weight: Option<Weight>,
     /// How many of the entity's pool may exist (JSON `minecraft:density_limit`).
+    #[facet(
+        rename = "minecraft:density_limit",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
+    #[facet(schema::invalid = codes::DENSITY_OBJECT)]
+    #[facet(schema::read_with = object_form::<DensityLimit>)]
     pub density_limit: Option<DensityLimit>,
     /// The blocks the entity may spawn on (JSON `minecraft:spawns_on_block_filter`).
+    #[facet(rename = "minecraft:spawns_on_block_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told", schema::read_with = blocks)]
     pub spawns_on_block_filter: Option<OneOrMany<BlockDescriptor>>,
     /// The blocks the entity may not spawn on (JSON
     /// `minecraft:spawns_on_block_prevented_filter`).
+    #[facet(
+        rename = "minecraft:spawns_on_block_prevented_filter",
+        schema::reads_null
+    )]
+    #[facet(schema::or_kept = "told", schema::read_with = blocks)]
     pub spawns_on_block_prevented_filter: Option<OneOrMany<BlockDescriptor>>,
     /// Blocks that must be found above the spawn position (JSON
     /// `minecraft:spawns_above_block_filter`).
+    #[facet(rename = "minecraft:spawns_above_block_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told")]
     pub spawns_above_block_filter: Option<AboveBlockFilter>,
     /// How many spawn at once, and the events they get (JSON `minecraft:herd`, one object or an
     /// array).
+    #[facet(
+        rename = "minecraft:herd",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
     pub herd: Option<OneOrMany<Herd>>,
     /// Other entities spawned in the entity's place (JSON `minecraft:permute_type`, one object
     /// or an array).
+    #[facet(
+        rename = "minecraft:permute_type",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
     pub permute_type: Option<OneOrMany<Permutation>>,
     /// The light level range (JSON `minecraft:brightness_filter`).
+    #[facet(rename = "minecraft:brightness_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told", schema::invalid = codes::BRIGHTNESS_OBJECT)]
+    #[facet(schema::read_with = object_form::<BrightnessFilter>)]
     pub brightness_filter: Option<BrightnessFilter>,
     /// The height range (JSON `minecraft:height_filter`).
+    #[facet(
+        rename = "minecraft:height_filter",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
+    #[facet(schema::invalid = codes::HEIGHT_OBJECT, schema::read_with = height)]
     pub height_filter: Option<RangeFilter>,
     /// Spawns on the surface; vanilla tests only that the member exists, whatever its value
     /// (JSON `minecraft:spawns_on_surface`, the value as written).
+    #[facet(rename = "minecraft:spawns_on_surface", schema::reads_null)]
     pub spawns_on_surface: Option<Value>,
     /// Spawns underground; present = set (JSON `minecraft:spawns_underground`).
+    #[facet(rename = "minecraft:spawns_underground", schema::reads_null)]
     pub spawns_underground: Option<Value>,
     /// Spawns in water; present = set (JSON `minecraft:spawns_underwater`).
+    #[facet(rename = "minecraft:spawns_underwater", schema::reads_null)]
     pub spawns_underwater: Option<Value>,
     /// Spawns in lava; present = set (JSON `minecraft:spawns_lava`).
+    #[facet(rename = "minecraft:spawns_lava", schema::reads_null)]
     pub spawns_lava: Option<Value>,
     /// Never spawns in a bubble column; present = set (JSON
     /// `minecraft:disallow_spawns_in_bubble`).
+    #[facet(rename = "minecraft:disallow_spawns_in_bubble", schema::reads_null)]
     pub disallow_spawns_in_bubble: Option<Value>,
     /// The biomes the condition applies in; absent = every biome (JSON `minecraft:biome_filter`).
+    #[facet(
+        rename = "minecraft:biome_filter",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
+    #[facet(schema::read_with = biome_filter)]
     pub biome_filter: Option<Filter>,
     /// The world difficulty range (JSON `minecraft:difficulty_filter`).
+    #[facet(rename = "minecraft:difficulty_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told")]
     pub difficulty_filter: Option<DifficultyFilter>,
     /// The distance range from the nearest player (JSON `minecraft:distance_filter`).
+    #[facet(rename = "minecraft:distance_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told", schema::invalid = codes::DISTANCE_OBJECT)]
+    #[facet(schema::read_with = distance)]
     pub distance_filter: Option<RangeFilter>,
     /// Only with the experimental gameplay toggle; present = set (JSON
     /// `minecraft:is_experimental`).
+    #[facet(rename = "minecraft:is_experimental", schema::reads_null)]
     pub is_experimental: Option<Value>,
     /// The world age range in ticks (JSON `minecraft:world_age_filter`).
+    #[facet(rename = "minecraft:world_age_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told", schema::invalid = codes::WORLD_AGE_OBJECT)]
+    #[facet(schema::read_with = object_form::<WorldAgeFilter>)]
     pub world_age_filter: Option<WorldAgeFilter>,
     /// A delay before the spawn (JSON `minecraft:delay_filter`).
+    #[facet(
+        rename = "minecraft:delay_filter",
+        schema::reads_null,
+        schema::or_kept = "told"
+    )]
+    #[facet(schema::invalid = codes::DELAY_OBJECT)]
+    #[facet(schema::read_with = object_form::<DelayFilter>)]
     pub delay_filter: Option<DelayFilter>,
     /// A mob event that must be on (JSON `minecraft:mob_event_filter`).
+    #[facet(rename = "minecraft:mob_event_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told", schema::invalid = codes::MOB_EVENT_OBJECT)]
+    #[facet(schema::read_with = object_form::<MobEventFilter>)]
     pub mob_event_filter: Option<MobEventFilter>,
     /// Spawned entities never despawn; present = set (JSON `minecraft:is_persistent`).
+    #[facet(rename = "minecraft:is_persistent", schema::reads_null)]
     pub is_persistent: Option<Value>,
     /// Only near a village a player is in (JSON `minecraft:player_in_village_filter`).
+    #[facet(rename = "minecraft:player_in_village_filter", schema::reads_null)]
+    #[facet(schema::or_kept = "told")]
     pub player_in_village_filter: Option<VillageFilter>,
     /// Kept as written; vanilla does not read it (JSON `minecraft:spawn_event`).
+    #[facet(rename = "minecraft:spawn_event", schema::reads_null)]
     pub spawn_event: Option<Value>,
     /// Unknown members.
     pub extra: UnknownMembers,
 }
 
 /// `minecraft:weight`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Weight {
     /// The condition's weight; absent = 100, a negative value counts as 0 (JSON `default`).
     pub default: Option<i32>,
     /// The rarity; absent = 0, `null` = 5 (JSON `rarity`).
+    #[facet(schema::reads_null, schema::read_with = rarity)]
     pub rarity: Option<i32>,
     /// Unknown members.
     pub extra: UnknownMembers,
 }
 
 /// `minecraft:density_limit`: population caps, −1 for none.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct DensityLimit {
     /// The cap on the surface; absent = −1 (JSON `surface`).
     pub surface: Option<i32>,
@@ -108,9 +191,10 @@ pub struct DensityLimit {
 }
 
 /// `minecraft:spawns_above_block_filter`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct AboveBlockFilter {
     /// The blocks (JSON `blocks`).
+    #[facet(schema::reads_null, schema::or_kept = "told", schema::read_with = blocks)]
     pub blocks: Option<OneOrMany<BlockDescriptor>>,
     /// How far above; absent = 1 (JSON `distance`).
     pub distance: Option<i32>,
@@ -120,7 +204,7 @@ pub struct AboveBlockFilter {
 
 /// One entry of `minecraft:herd` (one herd). No `min_size ≤ max_size` check;
 /// a negative size wraps to a large count, as in vanilla.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Herd {
     /// The smallest herd; absent = 1 (JSON `min_size`).
     pub min_size: Option<i32>,
@@ -139,21 +223,23 @@ pub struct Herd {
 }
 
 /// One entry of `minecraft:permute_type`: an entity spawned instead of the condition's own.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct Permutation {
     /// The weight in the weighted pick; absent = 1, below 1 leaves the entity out of it (JSON
     /// `weight`).
+    #[facet(schema::read_with = permutation_weight)]
     pub weight: Option<i32>,
     /// How many are spawned regardless of the pick; absent = 0 (JSON `guaranteed_count`).
     pub guaranteed_count: Option<i32>,
     /// The entity (JSON `entity_type`).
+    #[facet(schema::read_with = entity)]
     pub entity_type: Option<EntityId>,
     /// Unknown members.
     pub extra: UnknownMembers,
 }
 
 /// `minecraft:brightness_filter`: the light level range, each end clamped to 0..=15.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct BrightnessFilter {
     /// The lowest light level; absent = 0 (JSON `min`).
     pub min: Option<i32>,
@@ -167,7 +253,7 @@ pub struct BrightnessFilter {
 
 /// `minecraft:height_filter` and `minecraft:distance_filter`: an integer range whose absent ends
 /// are 24 and 128 (vanilla's default spawn distances, for both keys); `min > max` is swapped.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct RangeFilter {
     /// The lower end; absent = 24 (JSON `min`).
     pub min: Option<i32>,
@@ -179,11 +265,13 @@ pub struct RangeFilter {
 
 /// `minecraft:difficulty_filter`: names compared case-insensitively; an unknown name takes the
 /// end's default.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct DifficultyFilter {
     /// The lowest difficulty; absent or unknown = `peaceful` (JSON `min`).
+    #[facet(schema::read_with = difficulty)]
     pub min: Option<String>,
     /// The highest difficulty; absent or unknown = `hard` (JSON `max`).
+    #[facet(schema::read_with = difficulty)]
     pub max: Option<String>,
     /// Unknown members.
     pub extra: UnknownMembers,
@@ -191,7 +279,8 @@ pub struct DifficultyFilter {
 
 /// `minecraft:world_age_filter`: a range of world ages in ticks, compared unsigned (a negative
 /// number is stored as its two's complement).
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = world_age_swapped)]
 pub struct WorldAgeFilter {
     /// The lowest age; absent = 0 (JSON `min`).
     pub min: Option<u64>,
@@ -202,22 +291,24 @@ pub struct WorldAgeFilter {
 }
 
 /// `minecraft:delay_filter`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct DelayFilter {
     /// The shortest delay; absent = 0, a negative one counts as 0 (JSON `min`).
     pub min: Option<i32>,
     /// The longest delay; absent = 0 (JSON `max`).
     pub max: Option<i32>,
     /// The entity the delay is for (JSON `identifier`).
+    #[facet(schema::guard = delay_swapped, schema::read_with = entity)]
     pub identifier: Option<EntityId>,
     /// The chance in percent; absent = 100 (JSON `spawn_chance`).
+    #[facet(schema::guard = delay_identified)]
     pub spawn_chance: Option<i32>,
     /// Unknown members.
     pub extra: UnknownMembers,
 }
 
 /// `minecraft:mob_event_filter`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 pub struct MobEventFilter {
     /// The mob event's name (JSON `event`).
     pub event: Option<String>,
@@ -226,7 +317,8 @@ pub struct MobEventFilter {
 }
 
 /// `minecraft:player_in_village_filter`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_members = village_distance)]
 pub struct VillageFilter {
     /// The distance from the village; absent = 0 with a warning (JSON `distance`).
     pub distance: Option<u32>,
@@ -284,219 +376,71 @@ pub const MIN_DEFAULT_SPAWN_DISTANCE: i32 = 24;
 /// The upper default of `height_filter` and `distance_filter`.
 pub const MAX_DEFAULT_SPAWN_DISTANCE: i32 = 128;
 
-/// What the condition reader needs besides the value.
-#[derive(Debug)]
-pub(crate) struct ReadCx<'a> {
-    /// The document's identifier, for the texts that name it.
-    pub identifier: &'a str,
-    /// The parser's profile.
-    pub profile: Profile,
-    /// Where findings go.
-    pub d: &'a mut Diagnostics,
+// ---- the members the game reads by a rule of its own ---------------------------------------
+
+/// A condition text at `node`: the legacy parsers log each at code 2, level 2 in both masks.
+fn warn(read: &mut Read<'_>, node: &Node<'_>, code: Code) {
+    let mut finding = Diagnostic::of(code)
+        .severity(Severity::Warning)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
-impl ReadCx<'_> {
-    /// A warning with vanilla's formatted text naming the identifier.
-    fn formatted(&mut self, code: &'static CodeDef<1>, at: &JsonPath) {
-        // The legacy parsers log each condition text at code 2, level 2 in both masks.
-        finding(code.with([self.identifier]), Severity::Warning, at, self.d);
-    }
-
-    /// A warning with a fixed vanilla text.
-    fn fixed(&mut self, code: &'static CodeDef<0>, at: &JsonPath) {
-        // Code 2, level 2 as above.
-        finding(code.into(), Severity::Warning, at, self.d);
-    }
-
-    /// The object-form warning of a key vanilla reads only from an object.
-    fn object_form(&mut self, code: &'static CodeDef<1>, at: &JsonPath) {
-        self.formatted(code, at);
-    }
+/// The crate's own information `code` at `node`: vanilla is silent.
+fn inform(read: &mut Read<'_>, node: &Node<'_>, code: &'static CodeDef<0>) {
+    let mut finding = Diagnostic::of(code)
+        .severity(Severity::Info)
+        .at(node.path().clone());
+    finding.location.span = node.span();
+    read.push(finding);
 }
 
-/// The members of `object` other than `known`, each an `UnrecognizedField` warning (the
-/// crate's own: vanilla's hand parser never looks at them), kept for write-back.
-pub fn unknown_members(
-    object: &VObject,
-    known: &[&str],
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> UnknownMembers {
-    members(object, known, &[], at, d)
-}
-
-/// [`unknown_members`], and the members `kept` (known members of a shape the reader could not
-/// hold, already reported) copied without a finding, in document order: write-back never drops
-/// or rewrites a member the author wrote.
-pub fn members(
-    object: &VObject,
-    known: &[&str],
-    kept: &[&str],
-    at: &JsonPath,
-    d: &mut Diagnostics,
-) -> UnknownMembers {
-    let mut extra = UnknownMembers::default();
-    for (key, value) in object {
-        if kept.contains(&key.as_str()) {
-            extra.insert(key.as_str().to_owned(), value.clone());
-        } else if !known.contains(&key.as_str()) {
-            // The crate's own information: the legacy parsers read the keys they know and never
-            // walk the members.
-            finding(
-                Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                Severity::Info,
-                &child(at, key.as_str()),
-                d,
-            );
-            extra.insert(key.as_str().to_owned(), value.clone());
+/// A member vanilla reads only from an object: another value (`null` too) is the field's
+/// object-form warning (`schema::invalid`, fed the identifier) and the member is kept as written;
+/// an object is read as `T`.
+fn object_form<T: FromJson>(node: &Node<'_>, read: &mut Read<'_>) -> Option<T> {
+    if !node.value().is_object() {
+        if let Some(code) = read.invalid_code(node) {
+            warn(read, node, code);
         }
+        return None;
     }
-    extra
+    T::from_json(node, read)
 }
 
-/// Reads one `conditions[]` element; a non-object element is an `InvalidType` warning and
-/// skipped (this crate's choice; vanilla adds a default condition).
-pub(crate) fn read_condition(
-    value: &Value,
-    at: &JsonPath,
-    cx: &mut ReadCx<'_>,
-) -> Option<Condition> {
-    let Some(object) = value.as_object() else {
-        wrong_type(at, cx.d);
-        return None;
-    };
-    let get = |key: &str| object.get(key);
-    let mut c = Condition::default();
-    let path = |key: &str| child(at, key);
-    // Keys present but of a shape the typed member cannot hold: kept as written in `extra`.
-    let mut kept: Vec<&str> = Vec::new();
-    macro_rules! member {
-        ($index:literal, $field:ident, $read:expr) => {
-            if let Some(v) = get(KEYS[$index]) {
-                c.$field = $read(v, &path(KEYS[$index]));
-                if c.$field.is_none() {
-                    kept.push(KEYS[$index]);
-                }
-            }
-        };
-    }
-    member!(0, weight, |v, at: &JsonPath| weight(v, at, cx));
-    member!(1, density_limit, |v, at: &JsonPath| density_limit(
-        v, at, cx
-    ));
-    member!(2, spawns_on_block_filter, |v, at: &JsonPath| blocks(
-        v, at, cx.d
-    ));
-    member!(3, spawns_on_block_prevented_filter, |v, at: &JsonPath| {
-        blocks(v, at, cx.d)
-    });
-    member!(
-        4,
-        spawns_above_block_filter,
-        |v, at: &JsonPath| above_block(v, at, cx.d)
-    );
-    member!(5, herd, |v, at: &JsonPath| one_or_many(v, at, cx, herd));
-    member!(6, permute_type, |v, at: &JsonPath| one_or_many(
-        v,
-        at,
-        cx,
-        permutation
-    ));
-    member!(7, brightness_filter, |v, at: &JsonPath| brightness(
-        v, at, cx
-    ));
-    member!(8, height_filter, |v, at: &JsonPath| height(v, at, cx));
-    // The flags: only the member's presence is tested, the value is never read.
-    c.spawns_on_surface = get(KEYS[9]).cloned();
-    c.spawns_underground = get(KEYS[10]).cloned();
-    c.spawns_underwater = get(KEYS[11]).cloned();
-    c.spawns_lava = get(KEYS[12]).cloned();
-    c.disallow_spawns_in_bubble = get(KEYS[13]).cloned();
-    member!(14, biome_filter, |v, at: &JsonPath| biome_filter(
-        v, at, cx.d
-    ));
-    member!(15, difficulty_filter, |v, at: &JsonPath| difficulty(
-        v, at, cx.d
-    ));
-    member!(16, distance_filter, |v, at: &JsonPath| distance(v, at, cx));
-    c.is_experimental = get(KEYS[17]).cloned();
-    member!(18, world_age_filter, |v, at: &JsonPath| world_age(
-        v, at, cx
-    ));
-    member!(19, delay_filter, |v, at: &JsonPath| delay(v, at, cx));
-    member!(20, mob_event_filter, |v, at: &JsonPath| mob_event(
-        v, at, cx
-    ));
-    c.is_persistent = get(KEYS[21]).cloned();
-    member!(22, player_in_village_filter, |v, at: &JsonPath| village(
-        v, at, cx
-    ));
-    // Not read by vanilla; kept without a finding.
-    c.spawn_event = get(KEYS[23]).cloned();
-    c.extra = members(object, KEYS, &kept, at, cx.d);
-    Some(c)
+/// `code` fed the document's identifier (the read's subject).
+fn named(read: &Read<'_>, code: &'static CodeDef<1>) -> Code {
+    code.with([read.subject_text().unwrap_or_default()])
 }
 
-fn weight(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<Weight> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::WEIGHT_OBJECT, at);
-        return None;
-    };
-    Some(Weight {
-        default: read::int(o.get("default"), &child(at, "default"), cx.d),
-        // Read only when the member exists, with a default of 5: a `null` is 5, not the 0 of
-        // an absent member. The crate tells it at the member, since a `null` is written as
-        // the 5 it is read as.
-        rarity: o.contains_key("rarity").then(|| {
-            let at = child(at, "rarity");
-            read::int(o.get("rarity"), &at, cx.d).unwrap_or_else(|| {
-                wrong_type(&at, cx.d);
-                5
-            })
-        }),
-        extra: unknown_members(o, &["default", "rarity"], at, cx.d),
-    })
+/// `rarity`: read only when the member exists, with a default of 5: a `null` is 5, not the 0 of
+/// an absent member. The accessor tells a `null` at the member, since it is written as the 5 it
+/// is read as.
+fn rarity(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
+    let rarity = i32::from_json(node, read)?;
+    Some(if node.value().is_null() { 5 } else { rarity })
 }
 
-fn density_limit(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<DensityLimit> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::DENSITY_OBJECT, at);
-        return None;
-    };
-    Some(DensityLimit {
-        surface: read::int(o.get("surface"), &child(at, "surface"), cx.d),
-        underground: read::int(o.get("underground"), &child(at, "underground"), cx.d),
-        extra: unknown_members(o, &["surface", "underground"], at, cx.d),
-    })
-}
-
-/// A block list: an empty value (`null`, `[]`, `{}`) adds
-/// nothing, an array one descriptor per element, anything else one descriptor. A descriptor that
-/// fails gets its `InvalidValue` warning and is dropped (this crate's choice; vanilla keeps an
-/// empty descriptor). `None` (the caller keeps
-/// the value as written) for `null`, `{}` and a single descriptor that fails.
-fn blocks(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<OneOrMany<BlockDescriptor>> {
+/// A block list: an empty value (`null`, `[]`, `{}`) adds nothing, an array one descriptor per
+/// element, anything else one descriptor. A descriptor that fails gets its `InvalidValue`
+/// warning and is dropped (this crate's choice; vanilla keeps an empty descriptor). `None` (the
+/// member kept as written) for `null`, `{}` and a single descriptor that fails: `null` and `{}`
+/// with no finding, as vanilla reads them.
+fn blocks(node: &Node<'_>, read: &mut Read<'_>) -> Option<OneOrMany<BlockDescriptor>> {
+    let value = node.value();
     if value.is_null() || value.as_object().is_some_and(VObject::is_empty) {
         return None;
     }
-    if let Some(array) = value.as_array() {
-        let mut list = Vec::with_capacity(array.len());
-        let mut places = Vec::with_capacity(array.len());
-        for (i, element) in array.iter().enumerate() {
-            if let Some(read) = descriptor(element, &read::element(at, i), d) {
-                list.push(read);
-                places.push(i);
-            }
-        }
-        // What is told of a descriptor from here on is at the index the file has.
-        d.left_out(at, &places);
-        return Some(OneOrMany::Many(list));
+    if value.is_array() {
+        return read_list(node, read, ElementFailure::Drop, descriptor).map(OneOrMany::Many);
     }
-    descriptor(value, at, d).map(OneOrMany::One)
+    descriptor(node, read).map(OneOrMany::One)
 }
 
 /// One descriptor and its findings; `None` for a shape vanilla's reader rejects.
-fn descriptor(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<BlockDescriptor> {
+fn descriptor(node: &Node<'_>, read: &mut Read<'_>) -> Option<BlockDescriptor> {
+    let value = node.value();
     // The JSON reader takes `tags` only as a string; any other `tags` is the shape message, not
     // a Molang reader error.
     let other_tags = value
@@ -510,303 +454,149 @@ fn descriptor(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Block
     };
     // The spawn families read under the first-run profile, whose mask tells an unknown
     // member as a warning.
-    for found in &descriptor.check(at, Severity::Warning) {
-        d.push(found.clone());
+    for found in &descriptor.check(node.path(), Severity::Warning) {
+        read.push(found.clone());
     }
     (!matches!(descriptor, BlockDescriptor::Invalid(_))).then_some(descriptor)
 }
 
-fn above_block(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<AboveBlockFilter> {
-    // Not an object: vanilla ignores it silently; the crate warns.
-    let Some(o) = value.as_object() else {
-        wrong_type(at, d);
-        return None;
-    };
-    let blocks = o
-        .get("blocks")
-        .and_then(|v| blocks(v, &child(at, "blocks"), d));
-    let kept: &[&str] = if blocks.is_none() && o.contains_key("blocks") {
-        &["blocks"]
-    } else {
-        &[]
-    };
-    Some(AboveBlockFilter {
-        blocks,
-        distance: read::int(o.get("distance"), &child(at, "distance"), d),
-        extra: members(o, &["blocks", "distance"], kept, at, d),
-    })
+/// An entity name, read as `asString` reads it.
+fn entity(node: &Node<'_>, read: &mut Read<'_>) -> Option<EntityId> {
+    String::from_json(node, read).map(EntityId::parse)
 }
 
-/// An object or an array of objects; a non-object element is an `InvalidType` warning and
-/// skipped (this crate's choice; vanilla adds a default entry), any
-/// other value an `InvalidType` warning and the key ignored (vanilla: silently).
-fn one_or_many<T>(
-    value: &Value,
-    at: &JsonPath,
-    cx: &mut ReadCx<'_>,
-    read_one: fn(&VObject, &JsonPath, &mut ReadCx<'_>) -> T,
-) -> Option<OneOrMany<T>> {
-    if let Some(array) = value.as_array() {
-        let mut list = Vec::with_capacity(array.len());
-        let mut places = Vec::with_capacity(array.len());
-        for (i, entry) in array.iter().enumerate() {
-            let at = element(at, i);
-            match entry.as_object() {
-                Some(o) => {
-                    list.push(read_one(o, &at, cx));
-                    places.push(i);
-                }
-                None => wrong_type(&at, cx.d),
-            }
-        }
-        // What is told of an entry from here on is at the index the file has.
-        cx.d.left_out(at, &places);
-        return Some(OneOrMany::Many(list));
+/// A permutation's `weight`: below 1 it leaves the entity out of the weighted pick without a
+/// word; the crate adds an information.
+fn permutation_weight(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
+    let weight = i32::from_json(node, read)?;
+    if weight < 1 {
+        inform(read, node, &core_codes::INVALID_VALUE);
     }
-    if let Some(o) = value.as_object() {
-        return Some(OneOrMany::One(read_one(o, at, cx)));
-    }
-    wrong_type(at, cx.d);
-    None
+    Some(weight)
 }
 
-fn herd(o: &VObject, at: &JsonPath, cx: &mut ReadCx<'_>) -> Herd {
-    let d = &mut *cx.d;
-    Herd {
-        min_size: read::int(o.get("min_size"), &child(at, "min_size"), d),
-        max_size: read::int(o.get("max_size"), &child(at, "max_size"), d),
-        event: read::string(o.get("event"), &child(at, "event"), d),
-        event_skip_count: read::int(o.get("event_skip_count"), &child(at, "event_skip_count"), d),
-        initial_event: read::string(o.get("initial_event"), &child(at, "initial_event"), d),
-        initial_event_count: read::int(
-            o.get("initial_event_count"),
-            &child(at, "initial_event_count"),
-            d,
-        ),
-        extra: unknown_members(
-            o,
-            &[
-                "min_size",
-                "max_size",
-                "event",
-                "event_skip_count",
-                "initial_event",
-                "initial_event_count",
-            ],
-            at,
-            d,
-        ),
-    }
-}
-
-fn permutation(o: &VObject, at: &JsonPath, cx: &mut ReadCx<'_>) -> Permutation {
-    let d = &mut *cx.d;
-    let weight = read::int(o.get("weight"), &child(at, "weight"), d);
-    // A weight below 1 is left out of the weighted pick without a word; the crate adds an
-    // information.
-    if weight.unwrap_or(1) < 1 {
-        finding(
-            Code::from(&core_codes::INVALID_VALUE),
-            Severity::Info,
-            &child(at, "weight"),
-            d,
-        );
-    }
-    Permutation {
-        weight,
-        guaranteed_count: read::int(o.get("guaranteed_count"), &child(at, "guaranteed_count"), d),
-        entity_type: read::string(o.get("entity_type"), &child(at, "entity_type"), d)
-            .map(EntityId::parse),
-        extra: unknown_members(o, &["weight", "guaranteed_count", "entity_type"], at, d),
-    }
-}
-
-fn brightness(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<BrightnessFilter> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::BRIGHTNESS_OBJECT, at);
-        return None;
-    };
-    Some(BrightnessFilter {
-        min: read::int(o.get("min"), &child(at, "min"), cx.d),
-        max: read::int(o.get("max"), &child(at, "max"), cx.d),
-        adjust_for_weather: read::boolean(
-            o.get("adjust_for_weather"),
-            &child(at, "adjust_for_weather"),
-            cx.d,
-        ),
-        extra: unknown_members(o, &["min", "max", "adjust_for_weather"], at, cx.d),
-    })
-}
-
-/// `min` / `max` of a range filter, with the swap warning.
+/// A range filter, and the swap warning `swapped` after its members.
 fn int_range(
-    o: &VObject,
-    at: &JsonPath,
-    cx: &mut ReadCx<'_>,
+    node: &Node<'_>,
+    read: &mut Read<'_>,
     swapped: &'static CodeDef<0>,
-) -> RangeFilter {
-    let range = RangeFilter {
-        min: read::int(o.get("min"), &child(at, "min"), cx.d),
-        max: read::int(o.get("max"), &child(at, "max"), cx.d),
-        extra: unknown_members(o, &["min", "max"], at, cx.d),
-    };
+) -> Option<RangeFilter> {
+    let range = object_form::<RangeFilter>(node, read)?;
     let (min, max) = range.ends();
     if min > max {
-        cx.fixed(swapped, at);
-    }
-    range
-}
-
-fn height(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFilter> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::HEIGHT_OBJECT, at);
-        return None;
-    };
-    Some(int_range(o, at, cx, &codes::HEIGHT_SWAPPED))
-}
-
-fn distance(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<RangeFilter> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::DISTANCE_OBJECT, at);
-        return None;
-    };
-    let range = int_range(o, at, cx, &codes::DISTANCE_SWAPPED);
-    // The spawn distances are clamped after the swap; the crate adds an information.
-    let (min, max) = sorted(range.ends());
-    if min < 0 || max > cx.profile.distance_cap {
-        finding(
-            Code::from(&core_codes::CLAMPED_VALUE),
-            Severity::Info,
-            at,
-            cx.d,
-        );
+        warn(read, node, Code::from(swapped));
     }
     Some(range)
 }
 
-fn world_age(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<WorldAgeFilter> {
-    let Some(o) = value.as_object() else {
-        cx.fixed(&codes::WORLD_AGE_OBJECT, at);
-        return None;
-    };
-    let filter = WorldAgeFilter {
-        min: read::int64(o.get("min"), &child(at, "min"), cx.d),
-        max: read::int64(o.get("max"), &child(at, "max"), cx.d),
-        extra: unknown_members(o, &["min", "max"], at, cx.d),
-    };
-    if filter.min.unwrap_or(0) > filter.max.unwrap_or(u64::MAX) {
-        cx.fixed(&codes::WORLD_AGE_SWAPPED, at);
+fn height(node: &Node<'_>, read: &mut Read<'_>) -> Option<RangeFilter> {
+    int_range(node, read, &codes::HEIGHT_SWAPPED)
+}
+
+/// The parser's profile, by the payload key the member lies under.
+fn profile_at(node: &Node<'_>) -> Profile {
+    let groups = node.path().segments().next()
+        == Some(bedrock_addon_core::diagnostic::JsonPathSegment::Key(
+            super::legacy::GROUPS_KEY,
+        ));
+    if groups { SPAWN_GROUPS } else { SPAWN_RULES }
+}
+
+fn distance(node: &Node<'_>, read: &mut Read<'_>) -> Option<RangeFilter> {
+    let range = int_range(node, read, &codes::DISTANCE_SWAPPED)?;
+    // The spawn distances are clamped after the swap; the crate adds an information.
+    let (min, max) = sorted(range.ends());
+    if min < 0 || max > profile_at(node).distance_cap {
+        inform(read, node, &core_codes::CLAMPED_VALUE);
     }
-    Some(filter)
+    Some(range)
 }
 
-fn delay(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<DelayFilter> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::DELAY_OBJECT, at);
-        return None;
-    };
-    let min = read::int(o.get("min"), &child(at, "min"), cx.d);
-    let max = read::int(o.get("max"), &child(at, "max"), cx.d);
-    if min.unwrap_or(0) > max.unwrap_or(0) {
-        cx.formatted(&codes::DELAY_SWAPPED, at);
+/// A difficulty name: one vanilla does not know takes the end's default silently; the crate adds
+/// an information when the name is written as a string.
+fn difficulty(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
+    let name = String::from_json(node, read)?;
+    if node.value().is_string() && super::rules::Difficulty::from_name(&name).is_none() {
+        inform(read, node, &core_codes::INVALID_ENUM_VALUE);
     }
-    let identifier = read::string(o.get("identifier"), &child(at, "identifier"), cx.d);
-    if identifier.as_deref().is_none_or(str::is_empty) {
-        cx.formatted(&codes::DELAY_WITHOUT_IDENTIFIER, at);
-    }
-    Some(DelayFilter {
-        min,
-        max,
-        identifier: identifier.map(EntityId::parse),
-        spawn_chance: read::int(o.get("spawn_chance"), &child(at, "spawn_chance"), cx.d),
-        extra: unknown_members(o, &["min", "max", "identifier", "spawn_chance"], at, cx.d),
-    })
+    Some(name)
 }
 
-fn mob_event(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<MobEventFilter> {
-    let Some(o) = value.as_object() else {
-        cx.object_form(&codes::MOB_EVENT_OBJECT, at);
-        return None;
-    };
-    Some(MobEventFilter {
-        event: read::string(o.get("event"), &child(at, "event"), cx.d),
-        extra: unknown_members(o, &["event"], at, cx.d),
-    })
-}
-
-fn village(value: &Value, at: &JsonPath, cx: &mut ReadCx<'_>) -> Option<VillageFilter> {
-    // Not an object: vanilla ignores it silently; the crate warns.
-    let Some(o) = value.as_object() else {
-        wrong_type(at, cx.d);
-        return None;
-    };
-    if o.get("distance").is_none_or(Value::is_null) {
-        cx.fixed(&codes::VILLAGE_DISTANCE_MISSING, at);
-    }
-    Some(VillageFilter {
-        distance: read::uint(o.get("distance"), &child(at, "distance"), cx.d),
-        village_border_tolerance: read::uint(
-            o.get("village_border_tolerance"),
-            &child(at, "village_border_tolerance"),
-            cx.d,
-        ),
-        extra: unknown_members(o, &["distance", "village_border_tolerance"], at, cx.d),
-    })
-}
-
-fn difficulty(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<DifficultyFilter> {
-    // Not an object: peaceful..hard without a message in vanilla; the crate warns.
-    let Some(o) = value.as_object() else {
-        wrong_type(at, d);
-        return None;
-    };
-    let mut end = |key: &str| {
-        let at = child(at, key);
-        let name = read::string(o.get(key), &at, d);
-        // A name vanilla does not know takes the end's default silently: the crate adds an
-        // information.
-        let written = o.get(key).and_then(Value::as_string).is_some();
-        if written
-            && name
-                .as_deref()
-                .and_then(super::rules::Difficulty::from_name)
-                .is_none()
-        {
-            finding(
-                Code::from(&core_codes::INVALID_ENUM_VALUE),
-                Severity::Info,
-                &at,
-                d,
-            );
-        }
-        name
-    };
-    let min = end("min");
-    let max = end("max");
-    Some(DifficultyFilter {
-        min,
-        max,
-        extra: unknown_members(o, &["min", "max"], at, d),
-    })
-}
-
-fn biome_filter(value: &Value, at: &JsonPath, d: &mut Diagnostics) -> Option<Filter> {
+/// The biome filter as the filter reader takes it: `null` adds nothing (the member kept as
+/// written, no finding); a value no filter reads is an `InvalidType` information where it fails.
+fn biome_filter(node: &Node<'_>, read: &mut Read<'_>) -> Option<Filter> {
+    let value = node.value();
     if value.is_null() {
         return None;
     }
     match Filter::try_from(value.clone()) {
         Ok(filter) => {
             // An unknown member is a warning, as at `descriptor`.
-            for found in &filter.check(at, Severity::Warning) {
-                d.push(found.clone());
+            for found in &filter.check(node.path(), Severity::Warning) {
+                read.push(found.clone());
             }
             Some(filter)
         }
         Err(error) => {
-            let path = at.join(&error.path);
-            wrong_type(&path, d);
+            read.push(
+                Diagnostic::of(&core_codes::INVALID_TYPE)
+                    .severity(Severity::Info)
+                    .at(node.path().join(&error.path)),
+            );
             None
         }
+    }
+}
+
+/// `world_age_filter.min > max`, after its members and its unknown members.
+fn world_age_swapped(filter: &mut WorldAgeFilter, node: &Node<'_>, read: &mut Read<'_>) {
+    if filter.min.unwrap_or(0) > filter.max.unwrap_or(u64::MAX) {
+        warn(read, node, Code::from(&codes::WORLD_AGE_SWAPPED));
+    }
+}
+
+/// A delay bound as the game binds it (`asInt`; absent or `null` 0).
+fn delay_bound(filter: &Node<'_>, key: &str) -> i128 {
+    match filter
+        .value()
+        .as_object()
+        .and_then(|members| members.get(key))
+    {
+        Some(value) => match accessors::as_integer(value, 32, true) {
+            Integer::Fits(bound) | Integer::Beyond(bound) | Integer::Coerced(bound) => bound,
+        },
+        None => 0,
+    }
+}
+
+/// `schema::guard` of `delay_filter.identifier`: `min > max`, told where the game's reader
+/// compares them, after binding `max`.
+fn delay_swapped(filter: &Node<'_>, read: &mut Read<'_>) -> bool {
+    if delay_bound(filter, "min") > delay_bound(filter, "max") {
+        warn(read, filter, named(read, &codes::DELAY_SWAPPED));
+    }
+    true
+}
+
+/// `schema::guard` of `delay_filter.spawn_chance`: a missing, `null` or empty `identifier`,
+/// told after binding it.
+fn delay_identified(filter: &Node<'_>, read: &mut Read<'_>) -> bool {
+    let identifier = filter
+        .value()
+        .as_object()
+        .and_then(|members| members.get("identifier"))
+        .map(|value| EntityId::parse(jsoncpp::to_text(value)));
+    if identifier.is_none_or(|identifier| identifier.as_str().is_empty()) {
+        warn(read, filter, named(read, &codes::DELAY_WITHOUT_IDENTIFIER));
+    }
+    true
+}
+
+/// `player_in_village_filter.distance` missing or `null`, after its members and before its
+/// unknown members.
+fn village_distance(filter: &mut VillageFilter, node: &Node<'_>, read: &mut Read<'_>) {
+    if filter.distance.is_none() {
+        warn(read, node, Code::from(&codes::VILLAGE_DISTANCE_MISSING));
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "bedrock_addon_shared_spawn"
-description = "What the spawn_rules and spawn_groups content families of bedrock_addon share: the 1.8.0 spawn condition and its filters, the spawn rules a condition gives, the hand-written readers, writers and texts, and the steps of loading one spawn file; sans-IO"
+description = "What the spawn_rules and spawn_groups content families of bedrock_addon share: the 1.8.0 spawn condition and its filters, the spawn rules a condition gives, the reader of the game's hand parser (an identifier-first shell over the derived reader of the types), the writers and texts, and the steps of loading one spawn file; sans-IO"
 version.workspace = true
 edition.workspace = true
 license = "Apache-2.0"
@@ -19,4 +19,5 @@ molang = ["bedrock_addon_core/molang"]
 [dependencies]
 bedrock_addon_core = { path = "../../core" }
 bedrock_addon_shared_shapes = { path = "../shapes" }
+facet = { workspace = true }
 facet-value = { workspace = true }

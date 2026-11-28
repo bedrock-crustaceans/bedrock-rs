@@ -1,17 +1,22 @@
 //! The `@minecraft/server-net` entry of `module_permissions`, which the server loads
-//! strictly: an unknown member or a wrong type fails the entry.
+//! strictly: an unknown member or a wrong type fails the entry. The entry derives its read
+//! ([`Entry`]); what fails it is gathered into the one finding the server prints.
 
 use indexmap::IndexMap;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, JsonPath, Severity};
-use bedrock_addon_core::json::{JsonSlice, Value};
+use bedrock_addon_core::diagnostic::{Diagnostics, Severity};
+use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::{self, Schema, read_document};
+use bedrock_addon_core::versioning::{NullHandling, Reading};
 
 use super::SERVER_NET_MODULE;
-use super::read::{Kind, Sink, array, kind, object, raw_value, span, string};
+use super::read::note;
 
 /// What `@minecraft/server-net` may reach for the packs of one folder.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, facet::Facet)]
+#[repr(u8)]
 pub enum ServerNet {
     /// No server-net entry: every URI is allowed.
     #[default]
@@ -48,7 +53,7 @@ impl ServerNet {
 /// "max_concurrent_requests": 1, "session_headers": {...}, "max_websocket_connections": 1,
 /// "max_websocket_payload_size": 1}`; every member optional, any other member refused. The
 /// legacy `force_https` reads as `force_tls`.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, facet::Facet)]
 #[doc(alias = "script_net_module_config")]
 pub struct NetModuleConfig {
     /// The URIs a request may go to (JSON `allowed_uris`): each a plain prefix of the request
@@ -100,13 +105,8 @@ impl NetModuleConfig {
     }
 }
 
-const ALLOWED_URIS: &str = "allowed_uris";
 const FORCE_TLS: &str = "force_tls";
 const FORCE_HTTPS: &str = "force_https";
-const MAX_BODY_BYTES: &str = "max_body_bytes";
-const MAX_CONCURRENT_REQUESTS: &str = "max_concurrent_requests";
-const SESSION_HEADERS: &str = "session_headers";
-const MAX_WEBSOCKET_CONNECTIONS: &str = "max_websocket_connections";
 pub(super) const MAX_WEBSOCKET_PAYLOAD_SIZE: &str = "max_websocket_payload_size";
 
 /// cereal's text for a member the schema lacks.
@@ -114,130 +114,117 @@ const UNKNOWN_MEMBER: &str = bedrock_addon_core::diagnostic::cereal::MEMBER_NOT_
 /// cereal's text for a wrong type and for a number out of range.
 const INVALID_NUMERIC: &str = bedrock_addon_core::diagnostic::cereal::INVALID_NUMERIC_VALUE_TEXT;
 
-/// The state of one entry's load: the errors that refuse it.
-struct Load<'s, 'd> {
-    sink: &'s mut Sink<'d>,
-    /// One line per error, as the server prints them: ` -> <member>:  <message>`.
-    errors: Vec<String>,
+/// The server's load of an entry: cereal's, strict, every failure an error and every member
+/// told where the file has it; an unknown member is told (and then made a line of the
+/// entry's error, [`load`]).
+const LOAD: Reading = Reading::OWN
+    .strict()
+    .with_null(NullHandling::Rejected)
+    .with_unknown(Severity::Error);
+
+/// The entry as the server loads it (`script_net_module_config`). The legacy `force_https`
+/// is copied over `force_tls` and removed before the load: where it stands, `force_tls` is
+/// read as written and not used (`Tls` = `Value`), else as the flag (`Tls` = `bool`).
+#[derive(facet::Facet, Schema)]
+#[facet(schema::unknown = "report")]
+struct Entry<Tls> {
+    #[facet(schema::read_with = uris)]
+    allowed_uris: Option<Vec<String>>,
+    force_tls: Option<Tls>,
+    #[facet(schema::reads_null, schema::read_with = legacy_force_tls)]
+    force_https: Option<bool>,
+    #[facet(schema::read_with = count_u32)]
+    max_body_bytes: Option<u32>,
+    #[facet(schema::read_with = count_u32)]
+    max_concurrent_requests: Option<u32>,
+    session_headers: Option<IndexMap<String, String>>,
+    #[facet(schema::read_with = count_u16)]
+    max_websocket_connections: Option<u16>,
+    #[facet(schema::read_with = count_u32)]
+    max_websocket_payload_size: Option<u32>,
 }
 
-impl Load<'_, '_> {
-    /// A member whose value refuses the entry: a finding of its own at the member, and a
-    /// line of the entry's error. `member` is the name the server reports it under.
-    fn refuse(&mut self, code: Code, member: &str, at: JsonPath, slice: JsonSlice<'_>) {
-        self.errors
-            .push(format!(" -> {member}:  {INVALID_NUMERIC}"));
-        self.sink.push(code, Severity::Error, at, span(slice));
+impl<Tls> Entry<Tls> {
+    /// The configuration, `force_tls` being `force_tls`.
+    fn config(self, force_tls: Option<bool>) -> NetModuleConfig {
+        NetModuleConfig {
+            allowed_uris: self.allowed_uris,
+            force_tls,
+            max_body_bytes: self.max_body_bytes,
+            max_concurrent_requests: self.max_concurrent_requests,
+            session_headers: self.session_headers,
+            max_websocket_connections: self.max_websocket_connections,
+            max_websocket_payload_size: self.max_websocket_payload_size,
+        }
     }
+}
 
-    fn wrong_type(&mut self, member: &str, at: JsonPath, slice: JsonSlice<'_>) {
-        self.refuse(Code::from(&core_codes::INVALID_TYPE), member, at, slice);
+/// `force_https`: told deprecated, then read as the flag.
+fn legacy_force_tls(node: &Node<'_>, read: &mut Read<'_>) -> Option<bool> {
+    note(read, node, &core_codes::DEPRECATED_MEMBER);
+    <bool as schema::FromJson>::from_json(node, read)
+}
+
+/// An unsigned integer of at most `max`.
+fn count(node: &Node<'_>, read: &mut Read<'_>, max: u64) -> Option<u64> {
+    let Some(number) = node.value().as_number() else {
+        read.wrong_type(node);
+        return None;
+    };
+    if number.is_float() {
+        // An integer too wide for 64 bits reads as the double it spells, and a number
+        // beyond every double as an infinity: a number out of range. Any other float is
+        // not an integer.
+        let wide = number.to_f64_lossy();
+        if wide.is_infinite() || (wide.fract() == 0.0 && wide.abs() >= 18_446_744_073_709_551_616.0)
+        {
+            read.refuse(node, (&core_codes::INVALID_VALUE).into());
+        } else {
+            read.wrong_type(node);
+        }
+        return None;
     }
+    let value = number.to_u64().filter(|value| *value <= max);
+    if value.is_none() {
+        read.refuse(node, (&core_codes::INVALID_VALUE).into());
+    }
+    value
+}
 
-    /// An unsigned integer of at most `max`.
-    fn unsigned(
-        &mut self,
-        member: &str,
-        at: JsonPath,
-        slice: JsonSlice<'_>,
-        max: u64,
-    ) -> Option<u64> {
-        let number = raw_value(slice);
-        let Some(number) = number.as_ref().and_then(Value::as_number) else {
-            self.wrong_type(member, at, slice);
-            return None;
+fn count_u32(node: &Node<'_>, read: &mut Read<'_>) -> Option<u32> {
+    count(node, read, u64::from(u32::MAX)).and_then(|value| u32::try_from(value).ok())
+}
+
+fn count_u16(node: &Node<'_>, read: &mut Read<'_>) -> Option<u16> {
+    count(node, read, u64::from(u16::MAX)).and_then(|value| u16::try_from(value).ok())
+}
+
+/// `allowed_uris`: an array of strings.
+fn uris(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<String>> {
+    let elements = read.array(node)?;
+    let mut uris = Vec::with_capacity(elements.len());
+    let mut failed = false;
+    for element in elements.iter() {
+        let Some(uri) = read.string(&element) else {
+            failed = true;
+            continue;
         };
-        if number.is_float() {
-            // An integer too wide for 64 bits reads as the double it spells, and a number
-            // beyond every double as an infinity: a number out of range. Any other float is
-            // not an integer.
-            let wide = number.to_f64_lossy();
-            if wide.is_infinite()
-                || (wide.fract() == 0.0 && wide.abs() >= 18_446_744_073_709_551_616.0)
-            {
-                self.refuse(Code::from(&core_codes::INVALID_VALUE), member, at, slice);
-            } else {
-                self.wrong_type(member, at, slice);
-            }
-            return None;
+        if uri.contains('*') {
+            // A literal prefix, not a wildcard.
+            note(read, &element, &core_codes::INVALID_VALUE);
         }
-        let value = number.to_u64().filter(|value| *value <= max);
-        if value.is_none() {
-            self.refuse(Code::from(&core_codes::INVALID_VALUE), member, at, slice);
+        if !is_absolute(uri) {
+            // Not checked by the server at load; such an entry admits no request (one
+            // with a capital in its scheme included).
+            note(read, &element, &core_codes::INVALID_VALUE);
         }
-        value
+        uris.push(uri.to_owned());
     }
-
-    fn boolean(&mut self, member: &str, at: JsonPath, slice: JsonSlice<'_>) -> Option<bool> {
-        match slice.text.trim() {
-            "true" if kind(slice) == Kind::Bool => Some(true),
-            "false" if kind(slice) == Kind::Bool => Some(false),
-            _ => {
-                self.wrong_type(member, at, slice);
-                None
-            }
-        }
+    if uris.is_empty() && !failed {
+        // Every request is refused.
+        note(read, node, &core_codes::NO_EFFECT);
     }
-
-    /// `allowed_uris`: an array of strings.
-    fn uris(&mut self, at: &JsonPath, slice: JsonSlice<'_>) -> Option<Vec<String>> {
-        let Some(elements) = array(slice) else {
-            self.wrong_type(ALLOWED_URIS, at.clone(), slice);
-            return None;
-        };
-        let mut uris = Vec::with_capacity(elements.len());
-        let mut failed = false;
-        for (index, raw) in elements.iter().enumerate() {
-            let slice = *raw;
-            let at = at.index(index);
-            let Some(uri) = string(slice) else {
-                self.wrong_type(ALLOWED_URIS, at, slice);
-                failed = true;
-                continue;
-            };
-            if uri.contains('*') {
-                // A literal prefix, not a wildcard.
-                self.sink.warn(
-                    Code::from(&core_codes::INVALID_VALUE),
-                    at.clone(),
-                    span(slice),
-                );
-            }
-            if !is_absolute(&uri) {
-                // Not checked by the server at load; such an entry admits no request (one
-                // with a capital in its scheme included).
-                self.sink
-                    .warn(Code::from(&core_codes::INVALID_VALUE), at, span(slice));
-            }
-            uris.push(uri);
-        }
-        if uris.is_empty() && !failed {
-            // Every request is refused.
-            self.sink
-                .info(Code::from(&core_codes::NO_EFFECT), at.clone(), span(slice));
-        }
-        (!failed).then_some(uris)
-    }
-
-    /// `session_headers`: an object of strings.
-    fn headers(&mut self, at: &JsonPath, slice: JsonSlice<'_>) -> Option<IndexMap<String, String>> {
-        let Some(members) = object(slice) else {
-            self.wrong_type(SESSION_HEADERS, at.clone(), slice);
-            return None;
-        };
-        let mut headers = IndexMap::with_capacity(members.len());
-        let mut failed = false;
-        for (name, raw) in &members {
-            let slice = *raw;
-            if let Some(header) = string(slice) {
-                headers.insert(name.clone(), header);
-            } else {
-                self.wrong_type(SESSION_HEADERS, at.child(name), slice);
-                failed = true;
-            }
-        }
-        (!failed).then_some(headers)
-    }
+    (!failed).then_some(uris)
 }
 
 /// Whether `uri` starts with `http://`, `https://`, `ws://` or `wss://`, in lower case, and
@@ -249,81 +236,73 @@ fn is_absolute(uri: &str) -> bool {
     })
 }
 
-/// Loads the entry `entry`, whose members are `members`, at the path `at`.
-pub(super) fn read(
-    entry: JsonSlice<'_>,
-    members: &IndexMap<String, JsonSlice<'_>>,
-    at: &JsonPath,
-    sink: &mut Sink<'_>,
-) -> ServerNet {
-    let mut load = Load {
-        sink,
-        errors: Vec::new(),
-    };
-    let mut config = NetModuleConfig::default();
-    // The legacy `force_https` is copied over `force_tls` and removed before the load.
-    let legacy = members.contains_key(FORCE_HTTPS);
-    for (name, raw) in members {
-        let slice = *raw;
-        let here = at.child(name);
-        match name.as_str() {
-            ALLOWED_URIS => config.allowed_uris = load.uris(&here, slice),
-            FORCE_TLS if legacy => {}
-            FORCE_TLS => config.force_tls = load.boolean(FORCE_TLS, here, slice),
-            FORCE_HTTPS => {
-                load.sink.info(
-                    Code::from(&core_codes::DEPRECATED_MEMBER),
-                    here.clone(),
-                    span(slice),
-                );
-                config.force_tls = load.boolean(FORCE_TLS, here, slice);
-            }
-            MAX_BODY_BYTES => {
-                config.max_body_bytes = load
-                    .unsigned(name, here, slice, u64::from(u32::MAX))
-                    .and_then(|value| u32::try_from(value).ok());
-            }
-            MAX_CONCURRENT_REQUESTS => {
-                config.max_concurrent_requests = load
-                    .unsigned(name, here, slice, u64::from(u32::MAX))
-                    .and_then(|value| u32::try_from(value).ok());
-            }
-            SESSION_HEADERS => config.session_headers = load.headers(&here, slice),
-            MAX_WEBSOCKET_CONNECTIONS => {
-                config.max_websocket_connections = load
-                    .unsigned(name, here, slice, u64::from(u16::MAX))
-                    .and_then(|value| u16::try_from(value).ok());
-            }
-            MAX_WEBSOCKET_PAYLOAD_SIZE => {
-                config.max_websocket_payload_size = load
-                    .unsigned(name, here, slice, u64::from(u32::MAX))
-                    .and_then(|value| u32::try_from(value).ok());
-            }
-            // An unknown member refuses the entry; the entry's error names it.
-            _ => load.errors.push(format!(" -> {name}:  {UNKNOWN_MEMBER}")),
+/// Loads the entry `entry`, an object, telling to `outer` what the load says: each failure at
+/// its member, then, when anything failed, the server's one error at the entry, a line per
+/// failure (` -> <member>:  <message>`, the member as the server names it after the rename).
+pub(super) fn load(entry: &Node<'_>, outer: &mut Read<'_>) -> ServerNet {
+    let legacy = entry
+        .value()
+        .as_object()
+        .is_some_and(|object| object.contains_key(FORCE_HTTPS));
+    let mut found = Diagnostics::default();
+    let config = {
+        let mut read = Read::new(LOAD, &mut found);
+        if legacy {
+            read_document::<Entry<Value>>(entry, &mut read).map(|entry| {
+                let force_tls = entry.force_https;
+                entry.config(force_tls)
+            })
+        } else {
+            read_document::<Entry<bool>>(entry, &mut read).map(|entry| {
+                let force_tls = entry.force_tls;
+                entry.config(force_tls)
+            })
         }
+    };
+    let mut errors = Vec::new();
+    for finding in &found {
+        let member = finding
+            .location
+            .json_path
+            .strip_prefix(entry.path())
+            .and_then(|below| below.prefix(1).last_key().map(str::to_owned))
+            .unwrap_or_default();
+        let member = if member == FORCE_HTTPS {
+            FORCE_TLS.to_owned()
+        } else {
+            member
+        };
+        if finding.is(&core_codes::UNRECOGNIZED_FIELD) {
+            // An unknown member refuses the entry; the entry's error names it.
+            errors.push(format!(" -> {member}:  {UNKNOWN_MEMBER}"));
+            continue;
+        }
+        if finding.severity == Severity::Error {
+            errors.push(format!(" -> {member}:  {INVALID_NUMERIC}"));
+        }
+        outer.push(finding.clone());
     }
-    if !load.errors.is_empty() {
+    if !errors.is_empty() {
         // "Failed to load config for %s due to error(s): %s". The server warns
         // and leaves requests unrestricted; the crate denies them.
-        let errors = load.errors.join("\n");
-        load.sink.push(
+        let errors = errors.join("\n");
+        let mut finding = bedrock_addon_core::diagnostic::Diagnostic::error(
             core_codes::NET_CONFIG_REJECTED.with([SERVER_NET_MODULE.to_owned(), errors]),
-            Severity::Error,
-            at.clone(),
-            span(entry),
-        );
+        )
+        .at(entry.path().clone());
+        finding.location.span = entry.span();
+        outer.push(finding);
         return ServerNet::Denied;
     }
+    let Some(config) = config else {
+        return ServerNet::Denied;
+    };
     if config.force_tls == Some(false) {
         // TLS is required whenever the member is present.
         let name = if legacy { FORCE_HTTPS } else { FORCE_TLS };
-        let slice = members.get(name).copied();
-        load.sink.warn(
-            Code::from(&core_codes::NO_EFFECT),
-            at.child(name),
-            slice.and_then(span),
-        );
+        if let Some(member) = outer.object(entry).and_then(|members| members.get(name)) {
+            note(outer, &member, &core_codes::NO_EFFECT);
+        }
     }
     ServerNet::Configured(config)
 }

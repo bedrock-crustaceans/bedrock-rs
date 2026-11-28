@@ -4,8 +4,10 @@
 //! spawn-rules file is read in one of two shapes, never upgraded from one to the other: the 1.8.0
 //! shape ([`StandardSpawnRules`]) always, the 1.21.60 shape ([`SimplifiedSpawnRules`]) when the
 //! Simplified Spawn Rules experiment is on and the file is 1.21.60 or newer. The simplified shape
-//! is read by core's reader (its types derive `Schema`); the 1.8.0 shape stays the hand-written
-//! parser of `bedrock_addon_shared_spawn::legacy`, which spawn groups share.
+//! is read by core's reader (its types derive `Schema`); the 1.8.0 shape is read by
+//! `bedrock_addon_shared_spawn::legacy`, which spawn groups share: the game's hand parser's
+//! identifier-first shell, then the derived reader of its types under the game's jsoncpp
+//! accessors (`Scalars::Accessors`).
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

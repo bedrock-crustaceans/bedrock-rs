@@ -449,17 +449,7 @@ impl<'d> SchemaCx<'d> {
             return;
         }
         if load.engine_version < since {
-            let key = match self.path.segments().last() {
-                Some(crate::diagnostic::JsonPathSegment::Key(key)) => key.to_owned(),
-                Some(crate::diagnostic::JsonPathSegment::Index(index)) => index.to_string(),
-                None => String::new(),
-            };
-            self.failed = true;
-            self.out.push(
-                Diagnostic::of(codes::CHILD_NOT_VALID.with([key]))
-                    .severity(Severity::Error)
-                    .at(self.path.clone()),
-            );
+            self.not_valid_here();
             return;
         }
         let field = FieldMeta {
@@ -467,5 +457,33 @@ impl<'d> SchemaCx<'d> {
             since_engine: since,
         };
         check_fields_since_engine(&[field], |_| true, &self.path, load, self.out);
+    }
+
+    /// The member at the current path is present, and the engine of the pack is `until`
+    /// (`schema::until_engine`) or newer: that engine's schema no longer has the member, so the
+    /// document fails with "member '%s' is not valid here", as below a `since_engine`. Nothing
+    /// outside the validate stage.
+    pub fn until_engine(&mut self, until: FormatVersion, present: bool) {
+        let Some(Loaded { load, .. }) = self.load else {
+            return;
+        };
+        if present && load.engine_version >= until {
+            self.not_valid_here();
+        }
+    }
+
+    /// "member '%s' is not valid here" at the current path, an error that fails the owner.
+    fn not_valid_here(&mut self) {
+        let key = match self.path.segments().last() {
+            Some(crate::diagnostic::JsonPathSegment::Key(key)) => key.to_owned(),
+            Some(crate::diagnostic::JsonPathSegment::Index(index)) => index.to_string(),
+            None => String::new(),
+        };
+        self.failed = true;
+        self.out.push(
+            Diagnostic::of(codes::CHILD_NOT_VALID.with([key]))
+                .severity(Severity::Error)
+                .at(self.path.clone()),
+        );
     }
 }

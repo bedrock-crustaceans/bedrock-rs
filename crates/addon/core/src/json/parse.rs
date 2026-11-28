@@ -5,9 +5,11 @@
 //! same refusal ([`Fault`]: the span and the words of facet-json's error) for every text it
 //! does not, and it never looks at what follows the root value (vanilla's reader stops there;
 //! [`Parsed::trailing`] says where it lies). The dialect is JSON with `//` and `/* */`
-//! comments, trailing commas, the white space of RFC 8259, strings with the escapes of
-//! RFC 8259 only, and nesting no deeper than [`MAX_JSON_DEPTH`]. A byte order mark is no white
-//! space here: blank it first (`blank_bom`).
+//! comments, trailing commas (`Options::trailing_commas`), the white space of RFC 8259, strings
+//! with the escapes of RFC 8259 only, and nesting no deeper than [`MAX_JSON_DEPTH`]. A byte
+//! order mark is no white space here: blank it first (`blank_bom`). [`parse_partial`] keeps what
+//! a text read before its first fault, as a reader that keeps its document as far as the text
+//! went (jsoncpp's) has it.
 //!
 //! # Text rewrites and what the parse does instead
 //!
@@ -85,6 +87,9 @@ pub struct Options<'a> {
     /// `//` and `/* */` comments are white space (the default); without them a `/` is a byte
     /// that starts no token, as plain JSON has it (`from_str`).
     pub comments: bool,
+    /// A comma before the `]` or `}` that ends a container is taken (the default); without
+    /// it that bracket is a fault where a value or a key belongs, as jsoncpp's reader has it.
+    pub trailing_commas: bool,
 }
 
 impl Default for Options<'_> {
@@ -92,6 +97,7 @@ impl Default for Options<'_> {
         Self {
             duplicates: Duplicates::Uniform(Winner::Keep),
             comments: true,
+            trailing_commas: true,
         }
     }
 }
@@ -133,6 +139,15 @@ impl<'a> Options<'a> {
             ..self
         }
     }
+
+    /// The same options with a comma before the end of a container refused.
+    #[must_use]
+    pub fn without_trailing_commas(self) -> Self {
+        Self {
+            trailing_commas: false,
+            ..self
+        }
+    }
 }
 
 /// A text read: its value, the spans of its parts, and what a reader may need to be told of.
@@ -150,6 +165,44 @@ pub struct Parsed<'t> {
     /// `None` when nothing follows. What
     /// [`trailing_content`](crate::json::trailing_content) says of the text.
     pub trailing: Option<Span>,
+}
+
+/// A text read as far as it goes ([`parse_partial`]).
+#[derive(Clone, Debug)]
+pub struct Partial<'t> {
+    /// What was read. Of a text with a fault: every value read before it, each container the
+    /// text broke off in closed where it broke off, and the value it was reading `null` in its
+    /// place (an array's element after `[` or a comma, an object's member once its key is read,
+    /// the root), as jsoncpp's reader leaves its document.
+    pub parsed: Parsed<'t>,
+    /// The first syntax error of the text, as [`parse`] tells it.
+    pub fault: Option<Fault>,
+    /// The path of the value the text broke off in: the `null` that stands for the value it
+    /// was reading, or the container it broke off in between two of its members or elements.
+    /// `None` when the text has no fault.
+    pub broken: Option<JsonPath>,
+}
+
+/// Reads `text` as [`parse`] does, and of a text with a syntax error keeps what was read before
+/// it ([`Partial`]): the reading of a reader that keeps its document as far as the text went.
+#[must_use]
+pub fn parse_partial<'t>(text: &'t str, options: Options<'_>) -> Partial<'t> {
+    let (mut parser, fault) = if u32::try_from(text.len()).is_err() {
+        let fault = Fault::new(0, 0, FaultKind::TextTooLong);
+        (Parser::new("", options), Some(fault))
+    } else {
+        let mut parser = Parser::new(text, options);
+        let fault = parser.run().err();
+        (parser, fault)
+    };
+    let broken = fault
+        .as_ref()
+        .map(|fault| parser.break_off(fault.span.offset as usize));
+    Partial {
+        parsed: parser.finish(0),
+        fault,
+        broken,
+    }
 }
 
 /// Reads `text`.
@@ -430,6 +483,8 @@ struct Parser<'t, 'o> {
     /// Where the last value read ends.
     end: usize,
     root: Option<Value>,
+    /// The token just read is the comma after a member or an element.
+    after_comma: bool,
 }
 
 impl<'t, 'o> Parser<'t, 'o> {
@@ -447,6 +502,7 @@ impl<'t, 'o> Parser<'t, 'o> {
             noted: false,
             end: 0,
             root: None,
+            after_comma: false,
         }
     }
 
@@ -455,6 +511,16 @@ impl<'t, 'o> Parser<'t, 'o> {
         while self.root.is_none() {
             let state = self.frames.last().map(Frame::state);
             let found = self.consume()?;
+            // A comma before the end of its container, when the options refuse one.
+            let closes = matches!(found.token.kind, Tk::ArrayEnd | Tk::ObjectEnd);
+            if std::mem::take(&mut self.after_comma) && closes && !self.options.trailing_commas {
+                let expected = if state == Some(State::Key) {
+                    "field name"
+                } else {
+                    "value"
+                };
+                return Err(self.unexpected(&found, expected));
+            }
             match state {
                 None | Some(State::Value | State::Element) => self.value_or_end(&found, state)?,
                 Some(State::Key) => self.key_or_end(&found)?,
@@ -568,13 +634,17 @@ impl<'t, 'o> Parser<'t, 'o> {
                 Ok(())
             }
             (Tk::Str { .. }, Lit::Str(name)) => {
-                self.expect_colon()?;
+                // The key is the frame's before its colon: a text that breaks off there has
+                // read the member ([`parse_partial`]).
                 if let Some(Frame::Object(frame)) = self.frames.last_mut() {
                     frame.key = Some(Key {
                         name,
                         offset: to_u32(found.token.start),
                         len: to_u32(found.token.len()),
                     });
+                }
+                self.expect_colon()?;
+                if let Some(Frame::Object(frame)) = self.frames.last_mut() {
                     frame.state = State::Value;
                 }
                 Ok(())
@@ -626,6 +696,7 @@ impl<'t, 'o> Parser<'t, 'o> {
         };
         match found.token.kind {
             Tk::Comma => {
+                self.after_comma = true;
                 let state = if in_object {
                     State::Key
                 } else {
@@ -910,6 +981,63 @@ impl<'t, 'o> Parser<'t, 'o> {
         }
     }
 
+    /// The text broke off at `at`: the value being read is `null` in its place, and every open
+    /// container is closed there; nothing after it is trailing content. The path of the value
+    /// the text broke off in ([`Partial::broken`]).
+    fn break_off(&mut self, at: usize) -> JsonPath {
+        let broken = self.open_path();
+        let reading = match self.frames.last() {
+            None => self.root.is_none(),
+            Some(Frame::Array(frame)) => frame.state == State::Element,
+            Some(Frame::Object(frame)) => frame.key.is_some(),
+        };
+        if reading {
+            self.begin();
+            let node = self.leaf(at, at, None);
+            self.complete(Value::NULL, node);
+        }
+        while let Some(frame) = self.frames.last() {
+            if matches!(frame, Frame::Object(_)) {
+                self.close_object(at);
+            } else {
+                self.close_array(at);
+            }
+        }
+        self.end = self.scanner.text().len();
+        broken
+    }
+
+    /// The path of the innermost value being read: the member or element an open container
+    /// reads, or the container itself between two of its members or elements.
+    fn open_path(&self) -> JsonPath {
+        let mut path = JsonPath::new();
+        for (depth, frame) in self.frames.iter().enumerate() {
+            match frame {
+                Frame::Object(frame) => {
+                    if let Some(key) = &frame.key {
+                        path.push(&key.name);
+                    }
+                }
+                Frame::Array(frame) => {
+                    let inner = self.frames.get(depth + 1..).unwrap_or_default();
+                    if inner.is_empty() && frame.state != State::Element {
+                        continue;
+                    }
+                    // Its elements read so far end where the next open array's begin.
+                    let end = inner
+                        .iter()
+                        .find_map(|frame| match frame {
+                            Frame::Array(array) => Some(array.first),
+                            Frame::Object(_) => None,
+                        })
+                        .unwrap_or(self.elements.len());
+                    path.push_index(end - frame.first);
+                }
+            }
+        }
+        path
+    }
+
     fn finish(self, base: usize) -> Parsed<'t> {
         let Self {
             mut scanner,
@@ -1057,5 +1185,115 @@ fn into_array(value: Value) -> VArray {
     match value.destructure() {
         Destructured::Array(array) => array,
         _ => VArray::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The partial read of `text` under the default options.
+    fn partial(text: &str) -> Partial<'_> {
+        parse_partial(text, Options::default())
+    }
+
+    fn value(text: &str) -> Value {
+        crate::json::from_str_jsonc(text).unwrap()
+    }
+
+    fn path(steps: &[&str]) -> JsonPath {
+        let mut path = JsonPath::new();
+        for step in steps {
+            match step.parse::<usize>() {
+                Ok(index) => path.push_index(index),
+                Err(_) => path.push(step),
+            }
+        }
+        path
+    }
+
+    #[test]
+    fn a_text_without_a_fault_reads_as_parse_reads_it() {
+        let read = partial(r#"{"a": [1, "b"]} "#);
+        assert_eq!(read.parsed.value, value(r#"{"a": [1, "b"]}"#));
+        assert!(read.fault.is_none());
+        assert!(read.broken.is_none());
+    }
+
+    #[test]
+    fn a_partial_parse_keeps_the_elements_before_a_syntax_error() {
+        for (text, kept, broken) in [
+            // Between two elements: the elements read stay.
+            (r#"["a", 1 2"#, r#"["a", 1]"#, path(&[])),
+            // After a comma: the element it was reading is `null`.
+            (r#"["a", "#, r#"["a", null]"#, path(&["1"])),
+            ("[", "[null]", path(&["0"])),
+            // A member once its key is read, the colon too.
+            (
+                r#"{"a": "x", "b": "#,
+                r#"{"a": "x", "b": null}"#,
+                path(&["b"]),
+            ),
+            (
+                r#"{"a": "x", "b""#,
+                r#"{"a": "x", "b": null}"#,
+                path(&["b"]),
+            ),
+            (r#"{"a": "x", "#, r#"{"a": "x"}"#, path(&[])),
+            // Each open container closed where the text broke off.
+            (
+                r#"[["a", {"p": 1, "q": tru"#,
+                r#"[["a", {"p": 1, "q": null}]]"#,
+                path(&["0", "1", "q"]),
+            ),
+            (r#"[1, {"p": "#, r#"[1, {"p": null}]"#, path(&["1", "p"])),
+            // A root that broke off is `null`.
+            ("x", "null", path(&[])),
+            ("", "null", path(&[])),
+        ] {
+            let read = partial(text);
+            assert_eq!(read.parsed.value, value(kept), "{text}");
+            assert_eq!(read.fault, parse(text, Options::default()).err(), "{text}");
+            assert_eq!(read.broken, Some(broken), "{text}");
+        }
+    }
+
+    #[test]
+    fn a_trailing_comma_is_refused_without_trailing_commas() {
+        let strict = Options::winner(Winner::Last).without_trailing_commas();
+        for text in [
+            "[1,]",
+            r#"{"a": 1,}"#,
+            r#"[{"p": [1, 2,]}]"#,
+            "[1, // c\n ]",
+        ] {
+            assert!(parse(text, Options::default()).is_ok(), "{text}");
+            let fault = parse(text, strict).expect_err(text);
+            assert!(
+                matches!(fault.kind, FaultKind::UnexpectedToken { .. }),
+                "{text}: {fault:?}"
+            );
+        }
+        for text in ["[]", "{}", "[1, 2]", r#"{"a": [], "b": {}}"#] {
+            assert!(parse(text, strict).is_ok(), "{text}");
+        }
+        // The element after the comma is the value the text broke off in.
+        let read = parse_partial(r#"["a",]"#, strict);
+        assert_eq!(read.parsed.value, value(r#"["a", null]"#));
+        assert_eq!(read.broken, Some(path(&["1"])));
+    }
+
+    #[test]
+    fn a_partial_read_has_the_spans_of_what_it_kept() {
+        let text = r#"["a", {"p": 1"#;
+        let read = partial(text);
+        let root = read.parsed.spans.root();
+        assert_eq!(root.kind(), SpanKind::Array);
+        assert_eq!(root.elements().count(), 2);
+        let at = |steps: &[&str]| read.parsed.spans.at(&path(steps));
+        assert_eq!(at(&["0"]), Some(Span { offset: 1, len: 3 }));
+        // A container the text broke off in spans to where it broke off.
+        assert_eq!(at(&["1"]), Some(Span { offset: 6, len: 7 }));
+        assert_eq!(partial("").parsed.spans.root().kind(), SpanKind::Scalar);
     }
 }

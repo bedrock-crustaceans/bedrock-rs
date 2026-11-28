@@ -371,12 +371,13 @@ fn field_infos<'a>(
 
 fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) -> TokenStream {
     let container = ContainerAttrs::read(&input.attrs, Place::Struct, errors);
-    if matches!(fields, Fields::Unnamed(_)) && !container.transparent {
-        errors.push(Error::new_spanned(
-            fields,
-            "`#[derive(Schema)]` applies to a struct with named fields or a \
-             `#[facet(transparent)]` newtype",
-        ));
+    // A tuple struct is an array, each field the element at its place.
+    let positional = matches!(fields, Fields::Unnamed(_)) && !container.transparent;
+    if !positional {
+        refuse_tuple_keys(&container, errors);
+    }
+    if positional || container.transparent {
+        refuse_object_keys(&container, errors);
     }
     let infos = field_infos(
         fields,
@@ -389,6 +390,9 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         validate_field(info, &infos, errors);
         read::validate(info, errors);
     }
+    if positional {
+        read::validate_positional(fields, &container, &infos, errors);
+    }
 
     let core = core();
     let ident = &input.ident;
@@ -396,7 +400,11 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         ident,
         generics: &input.generics,
     };
-    let from_json = read::struct_read(&target, fields, &container, &infos);
+    let from_json = if positional {
+        read::tuple_read(&target, &container, &infos)
+    } else {
+        read::struct_read(&target, fields, &container, &infos)
+    };
     let rows = infos.iter().map(|info| field_row(info));
     let checks = infos.iter().map(|info| field_check(info, &infos)).chain(
         infos
@@ -431,8 +439,16 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         // A `schema::required` option is told missing by `{}` and by the written default: the
         // reader's rule, not facet's.
         let required = infos.iter().any(|info| info.attrs.required.is_some());
-        let test = (!target.is_generic())
-            .then(|| default_test(ident, !container.transparent && !required, required));
+        // A member the object lacks is read all the same (`schema::reads_absent`): neither `{}`
+        // nor the written default need read as the default.
+        let reads_absent = infos.iter().any(|info| info.attrs.reads_absent.is_some());
+        let test = (!target.is_generic() && !reads_absent).then(|| {
+            default_test(
+                ident,
+                !container.transparent && !positional && !required,
+                required,
+            )
+        });
         let default = default_impl(&target, fields, &infos);
         quote!(#default #test)
     });
@@ -468,6 +484,60 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
         #default
         #getters
         #from_json
+    }
+}
+
+/// The refusals of a tuple struct's keys (`schema::wrong_type`, `schema::arity`) on a struct
+/// with named fields.
+fn refuse_tuple_keys(container: &ContainerAttrs, errors: &mut Vec<Error>) {
+    for (given, key) in [
+        (&container.wrong_type, "wrong_type"),
+        (&container.arity, "arity"),
+    ] {
+        if let Some((_, span)) = given {
+            errors.push(Error::new(
+                *span,
+                format!(
+                    "a struct's `schema::{key}` is a tuple struct's, an array read by position: \
+                     put it on the field it is about"
+                ),
+            ));
+        }
+    }
+}
+
+/// The refusals of the keys about a struct's object on a struct that reads none: a tuple struct
+/// (an array, each field the element at its place) and a transparent newtype (its field's
+/// value). Its read has no place to run them, so they would be dropped in silence.
+fn refuse_object_keys(container: &ContainerAttrs, errors: &mut Vec<Error>) {
+    let (keys, words): (&[&str], &str) = if container.transparent {
+        (
+            &[
+                "after_read",
+                "after_members",
+                "guard",
+                "unknown_with",
+                "quiet",
+                "unknown",
+            ],
+            "a transparent newtype reads as its field, with no object of its own",
+        )
+    } else {
+        (
+            &["after_members", "guard", "unknown_with", "quiet", "unknown"],
+            "a tuple struct is an array read by position, with no object and no unknown members",
+        )
+    };
+    for (key, span) in &container.spans {
+        if keys.contains(&key.as_str()) {
+            errors.push(Error::new(
+                *span,
+                format!(
+                    "{words}: its read has no place for `schema::{key}`, which is about a \
+                     struct's object; put it on the type that reads one"
+                ),
+            ));
+        }
     }
 }
 
@@ -576,6 +646,21 @@ fn validate_field(info: &FieldInfo, all: &[FieldInfo], errors: &mut Vec<Error>) 
         )),
         _ => {}
     }
+    if let Some(era) = attrs.eras.iter().find(|era| era.molang.is_some()) {
+        if attrs.molang_with.is_some() {
+            errors.push(Error::new(
+                era.span,
+                "an era's `molang` names the spec of the derived walk, and the field is walked \
+                 by its `schema::molang_with`",
+            ));
+        } else if ty::is_plain_value(info.ty) {
+            errors.push(Error::new(
+                era.span,
+                "an era's `molang` names the spec of a Molang field, or the default spec of a \
+                 nested walk, and this field holds a plain value",
+            ));
+        }
+    }
     for bound in &attrs.bounds {
         if let LimitDecl::Field(other) = &bound.limit {
             if *other == info.rust {
@@ -672,6 +757,10 @@ fn field_row(info: &FieldInfo) -> TokenStream {
         let v = version_option(attrs.since_engine);
         parts.push(quote!(since_engine: #v));
     }
+    if attrs.until_engine.is_some() {
+        let v = version_option(attrs.until_engine);
+        parts.push(quote!(until_engine: #v));
+    }
     if attrs.unknown.is_some() {
         let v = unknown_option(attrs.unknown.as_ref());
         parts.push(quote!(unknown: #v));
@@ -682,6 +771,12 @@ fn field_row(info: &FieldInfo) -> TokenStream {
     }
     if attrs.flatten {
         parts.push(quote!(flatten: true));
+    }
+    if let Some((names, _)) = &attrs.read_by {
+        parts.push(quote!(read_by: &[#(#names),*]));
+    }
+    if let Some((getter, _)) = &attrs.getter {
+        parts.push(quote!(getter: ::core::option::Option::Some(#getter)));
     }
     quote! {
         #core::schema::FieldRow {
@@ -1048,17 +1143,31 @@ fn field_range(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream> {
     }})
 }
 
-/// `body` at the field's path: inside `enter`/`leave`, or at the owner's for an inline field.
+/// The index of a tuple struct's field, which its path steps by in place of a key.
+fn place(info: &FieldInfo) -> Option<usize> {
+    match &info.member {
+        Member::Unnamed(index) if !info.inline => Some(index.index as usize),
+        _ => None,
+    }
+}
+
+/// `body` at the field's path: inside `enter`/`leave` (a tuple struct's field at its index),
+/// or at the owner's for an inline field.
 fn at_field(info: &FieldInfo, body: TokenStream) -> TokenStream {
     if info.inline {
-        body
-    } else {
-        let json = &info.json;
-        quote! {
-            cx.enter(#json);
-            #body
-            cx.leave();
-        }
+        return body;
+    }
+    let enter = place(info).map_or_else(
+        || {
+            let json = &info.json;
+            quote!(cx.enter(#json);)
+        },
+        |index| quote!(cx.enter_index(#index);),
+    );
+    quote! {
+        #enter
+        #body
+        cx.leave();
     }
 }
 
@@ -1108,7 +1217,8 @@ fn field_len(info: &FieldInfo) -> Option<TokenStream> {
     })
 }
 
-/// A field's own part of `check`: `since_engine` (the member the pack's engine has not got),
+/// A field's own part of `check`: `since_engine` and `until_engine` (the member the pack's
+/// engine has not got, or no longer has),
 /// its bounds (unless one names another field), its length bounds, then the walk into it, or
 /// the field's `check_with`.
 fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
@@ -1133,6 +1243,19 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
             }
         }
     });
+    let until_engine = info.attrs.until_engine.map(|_| {
+        let until = version_option(info.attrs.until_engine);
+        let present = if info.option.is_some() {
+            quote!(#access.is_some())
+        } else {
+            quote!(true)
+        };
+        quote! {
+            if let ::core::option::Option::Some(__until) = #until {
+                cx.until_engine(__until, #present);
+            }
+        }
+    });
     let walk = match &info.attrs.check_with {
         Some((with, _)) if info.option.is_some() => quote! {
             if let ::core::option::Option::Some(__value) = &mut #access {
@@ -1142,7 +1265,7 @@ fn field_check(info: &FieldInfo, all: &[FieldInfo]) -> TokenStream {
         Some((with, _)) => quote!((#with)(&mut #access, cx);),
         None => quote!(#core::schema::SchemaFields::check_fields(&mut #access, cx);),
     };
-    at_field(info, quote!(#since_engine #bounds #len #walk))
+    at_field(info, quote!(#since_engine #until_engine #bounds #len #walk))
 }
 
 /// A field's cross-field bounds, which run after every field's own check, so they compare with
@@ -1151,24 +1274,48 @@ fn field_cross_check(info: &FieldInfo, all: &[FieldInfo]) -> Option<TokenStream>
     is_cross(info).then(|| at_field(info, field_bounds(info, all)))
 }
 
-/// A field's part of the Molang walk.
+/// A field's part of the Molang walk: under the spec the first era the walk's format is in
+/// states (`schema::era(.., molang = SPEC)`), else under the field's own.
 fn field_molang(info: &FieldInfo) -> TokenStream {
     let core = core();
+    let own = info.attrs.molang.as_ref().map(|(spec, _)| spec);
+    let base = field_molang_under(info, own);
+    let eras = &info.attrs.eras;
+    if eras.iter().all(|era| era.molang.is_none()) {
+        return base;
+    }
+    let arms = eras.iter().map(|era| {
+        let walk = field_molang_under(info, era.molang.as_ref().or(own));
+        let expr = &era.era;
+        quote!(if #core::schema::VersionRange::holds(#expr, visitor.format()) { #walk } else)
+    });
+    quote!(#(#arms)* { #base })
+}
+
+/// A field's part of the Molang walk under `spec`, the field's own when `None`.
+fn field_molang_under(info: &FieldInfo, spec: Option<&syn::Expr>) -> TokenStream {
+    let core = core();
     let access = &info.access;
-    let json = &info.json;
+    // The step into the field: its key, or a tuple struct's index.
+    let json = place(info).map_or_else(
+        || {
+            let json = &info.json;
+            quote!(#core::molang::Step::Key(#json))
+        },
+        |index| quote!(#core::molang::Step::Index(#index)),
+    );
     if let Some((walk, _)) = &info.attrs.molang_with {
         return if info.inline {
             quote!((#walk)(&mut #access, visitor);)
         } else {
             quote! {
-                visitor.enter(#core::molang::Step::Key(#json));
+                visitor.enter(#json);
                 (#walk)(&mut #access, visitor);
                 visitor.leave();
             }
         };
     }
     if ty::is_molang_slot(info.ty) {
-        let spec = info.attrs.molang.as_ref().map(|(spec, _)| spec);
         return match (info.inline, spec) {
             (false, Some(spec)) => quote!(visitor.field(#json, &#spec, &mut #access);),
             (false, None) => quote!(visitor.field_default(#json, &mut #access);),
@@ -1182,10 +1329,7 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
         };
     }
     // A spec on a nested walk is that walk's default.
-    match (
-        info.inline,
-        info.attrs.molang.as_ref().map(|(spec, _)| spec),
-    ) {
+    match (info.inline, spec) {
         (true, None) => quote!(#core::molang::MolangFields::visit_molang(&mut #access, visitor);),
         (false, None) => quote!(visitor.nested(#json, &mut #access);),
         (true, Some(spec)) => quote! {
@@ -1561,11 +1705,17 @@ fn derive_tagged(
              of the game writes one",
         ));
     }
-    if let (None, Some((_, span))) = (tag, &container.tag_with) {
+    if let (None, Some((_, span))) = (tag, &container.tag_with)
+        && data
+            .variants
+            .iter()
+            .any(|v| matches!(v.fields, Fields::Unit))
+    {
         errors.push(Error::new(
             *span,
-            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`): \
-             an externally tagged one is named by its key",
+            "`schema::tag_with` names the variant of an internally tagged enum (`tag = \"..\"`), \
+             or of an externally tagged one flattened into a struct, whose every variant holds a \
+             value: a unit variant is named by its string",
         ));
     }
     read::check_tagged_variants(data, tag.is_some(), errors);
@@ -1656,7 +1806,13 @@ fn derive_tagged(
             container.after_read.as_ref(),
             &reads,
         ),
-        None => read::external_read(&target, container.invalid.as_ref(), &reads),
+        None => read::external_read(
+            &target,
+            container.invalid.as_ref(),
+            container.tag_with.as_ref(),
+            container.after_read.as_ref(),
+            &reads,
+        ),
     };
     quote!(#impls #from_json)
 }

@@ -160,6 +160,8 @@ pub struct FieldRow {
     pub since_format: Option<FormatVersion>,
     /// `schema::since_engine`.
     pub since_engine: Option<FormatVersion>,
+    /// `schema::until_engine`.
+    pub until_engine: Option<FormatVersion>,
     /// `schema::unknown`.
     pub unknown: Option<UnknownRule>,
 
@@ -167,6 +169,11 @@ pub struct FieldRow {
     pub foreign_event: bool,
     /// facet's `flatten`: the field's members are members of this struct's object.
     pub flatten: bool,
+    /// `schema::read_by`: the parts of the game that read the member, as the struct names them
+    /// (empty when it names none).
+    pub read_by: &'static [&'static str],
+    /// `schema::getter`: the getter the game reads the member with, as the struct names it.
+    pub getter: Option<&'static str>,
 }
 
 impl FieldRow {
@@ -191,9 +198,12 @@ impl FieldRow {
             max_len: None,
             since_format: None,
             since_engine: None,
+            until_engine: None,
             unknown: None,
             foreign_event: false,
             flatten: false,
+            read_by: &[],
+            getter: None,
         }
     }
 }

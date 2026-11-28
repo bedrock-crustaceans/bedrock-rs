@@ -21,3 +21,5 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 bedrock_addon_core = { path = "../../core", features = ["test-cost"] }
+# The pinned write-back (`written_pins`).
+bedrock_addon_test_support = { path = "../../test_support" }

@@ -4,8 +4,12 @@
 use facet_value::{VArray, VObject};
 
 use bedrock_addon_core::diagnostic::JsonPath;
+use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
+use bedrock_addon_core::schema::{self, Schema};
 use bedrock_addon_shared_shapes::color::hex_bytes;
+
+use crate::read;
 
 /// A form style's identifier (`description.identifier`): core's `id::kind::UiStyle`.
 pub use bedrock_addon_core::id::UiStyleId;
@@ -17,7 +21,7 @@ pub use bedrock_addon_core::id::UiStyleId;
 /// "demo:style"}, "components": {"minecraft:form_label": {"color": [255, 255, 255, 255]}}}}`.
 /// The kind is beta-only: `"beta"` is the one version with a parser, accepted from every pack
 /// without the Beta APIs toggle. Every member not listed is an error and the file is skipped.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
 #[doc(alias = "minecraft:ui-style")]
 #[doc(alias = "Style")]
 pub struct UiStyle {
@@ -28,22 +32,30 @@ pub struct UiStyle {
 }
 
 /// The `description` of a style.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 pub struct StyleDescription {
     /// The style's name (JSON `identifier`): a non-empty namespace, `:` and a non-empty name,
     /// under the namespace rule of roots and compositions.
+    #[facet(schema::read_with = read::identifier)]
     pub identifier: UiStyleId,
 }
 
 /// The `components` of a style: one entry per form component type, at
-/// least one written.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// least one written; another key is an unknown component.
+#[derive(Clone, Debug, PartialEq, facet::Facet, Schema)]
+#[facet(
+    schema::unknown = "component",
+    schema::after_read = read::some_component
+)]
 pub struct StyleComponents {
     /// `minecraft:form_panel`: "Defines styling for panel components."
+    #[facet(rename = "minecraft:form_panel")]
     pub form_panel: Option<FormPanelStyle>,
     /// `minecraft:form_label`: "Defines styling for label components."
+    #[facet(rename = "minecraft:form_label")]
     pub form_label: Option<FormLabelStyle>,
     /// `minecraft:form_textfield`: "Defines styling for text field components."
+    #[facet(rename = "minecraft:form_textfield")]
     pub form_textfield: Option<FormTextFieldStyle>,
 }
 
@@ -70,7 +82,7 @@ impl StyleComponents {
 
 /// `minecraft:form_panel`: "Defines the visual styling for panel components." Every member
 /// may be left out.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 #[doc(alias = "FormPanel")]
 pub struct FormPanelStyle {
     /// JSON `padding`: "Sets the panel padding as [top, right] or [top, right, bottom,
@@ -80,16 +92,18 @@ pub struct FormPanelStyle {
     pub image: Option<String>,
     /// JSON `image_repeat_top_bottom`: "Sets how the background image repeats along its top
     /// and bottom edges."
+    #[facet(schema::invalid = core_codes::INVALID_VALUE)]
     pub image_repeat_top_bottom: Option<BorderImageRepeat>,
     /// JSON `image_repeat_right_left`: "Sets how the background image repeats along its right
     /// and left edges."
+    #[facet(schema::invalid = core_codes::INVALID_VALUE)]
     pub image_repeat_right_left: Option<BorderImageRepeat>,
 }
 
 /// `minecraft:form_label`: "Defines the visual styling for panel text components." Both
 /// members may be left out; the client then holds their defaults
 /// ([`color`](Self::color), [`shadow`](Self::shadow)), and the write-back leaves them out.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 #[doc(alias = "FormLabel")]
 pub struct FormLabelStyle {
     /// JSON `color`: "Sets the text color."
@@ -117,7 +131,7 @@ impl FormLabelStyle {
 
 /// `minecraft:form_textfield`: "Defines the visual styling for text field components." The
 /// four colours are required, the five images may be left out.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, facet::Facet, Schema)]
 #[doc(alias = "FormTextField")]
 pub struct FormTextFieldStyle {
     /// JSON `text_color`: "Sets the entered text color."
@@ -164,7 +178,8 @@ impl FormTextFieldStyle {
 }
 
 /// A box size in texels: an array of two or four integers.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[repr(u8)]
 #[doc(alias = "BoxSize2D")]
 #[doc(alias = "BoxSize4D")]
 pub enum BoxSize {
@@ -186,9 +201,11 @@ impl BoxSize {
     }
 }
 
-/// How a border image repeats along an edge.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+/// How a border image repeats along an edge, by its JSON name, compared with case.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, facet::Facet, Schema)]
+#[facet(rename_all = "lowercase", schema::string_only)]
 #[doc(alias = "BorderImageRepeatType")]
+#[repr(u8)]
 pub enum BorderImageRepeat {
     /// `"stretch"` (0).
     Stretch,
@@ -196,29 +213,11 @@ pub enum BorderImageRepeat {
     Repeat,
 }
 
-impl BorderImageRepeat {
-    /// The JSON name.
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Stretch => "stretch",
-            Self::Repeat => "repeat",
-        }
-    }
-
-    /// The value a JSON name selects, compared with case.
-    pub fn from_name(name: &str) -> Option<Self> {
-        match name {
-            "stretch" => Some(Self::Stretch),
-            "repeat" => Some(Self::Repeat),
-            _ => None,
-        }
-    }
-}
-
 /// A colour of a style: RGBA (four integers 0–255, or `#` and eight hex digits,
 /// ARGB) or RGB (three integers, or `#` and six hex digits). Held in the form
 /// written; a hex text keeps its case.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, facet::Facet)]
+#[repr(u8)]
 #[doc(alias = "Color255RGBA")]
 #[doc(alias = "Color255RGB")]
 pub enum StyleColor {

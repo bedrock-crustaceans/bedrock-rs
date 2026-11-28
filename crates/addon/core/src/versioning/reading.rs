@@ -36,6 +36,11 @@ pub enum NullHandling {
     /// kin take the default for a `null` without a word (the sound files). The old reader had
     /// no such rule.
     AbsentSilently,
+    /// As [`AbsentSilently`](Self::AbsentSilently), and the member is kept as written beside the
+    /// typed value (its struct's unknown members, or the document's table), for write-back: a
+    /// reader that skips a `null` and keeps the file as it is (the material files, whose merge
+    /// reads a `null` as "no change").
+    AbsentKept,
     /// The framework applies no rule: the family's hand-written reader takes `null` as it
     /// does (a `FirstRun` family, a legacy slice, an MCB source).
     Own,
@@ -53,7 +58,7 @@ impl NullHandling {
         match self {
             Self::Rejected => Some(NullRule::Rejected),
             Self::Absent => Some(NullRule::Absent),
-            Self::AbsentSilently | Self::Own | Self::AsValue => None,
+            Self::AbsentSilently | Self::AbsentKept | Self::Own | Self::AsValue => None,
         }
     }
 }
@@ -98,6 +103,12 @@ pub enum MemberFailure {
     Refuse,
     /// The member takes its default and the reader tells.
     DefaultAndTell,
+    /// The member takes its default, its failure is an error and the read goes on: a game
+    /// reader that reports each member it cannot read and reads the others (the manifest's
+    /// parsers): the document is refused with every failure told, and what was read beside a
+    /// failure is what the reader held (a module whose description fails still decides the pack
+    /// type).
+    DefaultAndRefuse,
 }
 
 /// How one slice of a family reads its payload: the axes that vary between slices, each on

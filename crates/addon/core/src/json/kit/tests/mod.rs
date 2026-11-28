@@ -623,3 +623,71 @@ fn a_finding_pushed_as_it_is_counts_toward_the_failure_only_when_it_rejects() {
     assert_eq!(read.reading(), Reading::DOCUMENT);
     assert_eq!(found.len(), 3);
 }
+
+#[test]
+fn a_read_that_withholds_spans_tells_every_finding_without_one() {
+    let text = r#"{"a": 1, "b": null, "c": [true]}"#;
+    let parsed = crate::json::parse::parse(text, crate::json::parse::Options::default()).unwrap();
+    let root = Node::parsed(&parsed, JsonPath::new());
+    let read_all = |spans: SpanRule, found: &mut Diagnostics| {
+        let profile = Profile::EVERY_FAILURE
+            .with_passes(Passes::AfterRead)
+            .with_spans(spans);
+        let mut read = Read::new(Reading::NULL_ABSENT, found).profile(profile);
+        let members = read.object(&root).expect("an object");
+        let a = read.required(&members, "a").expect("written");
+        assert_eq!(read.string(&a), None);
+        // An unknown member: a finding of the pass after the read.
+        let b = members.get("b").expect("written");
+        read.unknown_by_rule(&b, UnknownRule::Report);
+        // A finding of a fork, taken into the read.
+        let c = read.required(&members, "c").expect("written");
+        let mut attempt = read.fork();
+        assert_eq!(attempt.string(&c), None);
+        read.commit(attempt);
+        read.finish();
+    };
+    let mut spanned = Diagnostics::default();
+    read_all(SpanRule::Told, &mut spanned);
+    assert_eq!(spanned.len(), 3);
+    assert!(
+        spanned.iter().all(|f| f.location.span.is_some()),
+        "{spanned:?}"
+    );
+    let mut withheld = Diagnostics::default();
+    read_all(SpanRule::Withheld, &mut withheld);
+    // The same findings, in the same order, none of them spanned.
+    let unspanned: Vec<String> = spanned
+        .iter()
+        .map(|f| format!("{:?}|{}|{}", f.severity, f.location.json_path, f.code.id()))
+        .collect();
+    let told: Vec<String> = withheld
+        .iter()
+        .map(|f| format!("{:?}|{}|{}", f.severity, f.location.json_path, f.code.id()))
+        .collect();
+    assert_eq!(told, unspanned);
+    assert!(
+        withheld.iter().all(|f| f.location.span.is_none()),
+        "a withheld read spans no finding: {withheld:?}"
+    );
+}
+
+#[test]
+fn a_read_its_reader_stops_reads_and_tells_nothing_more() {
+    let json = value(r#"{"a": "x", "b": "y"}"#);
+    let mut found = Diagnostics::default();
+    // Every failure told: the profile never stops by itself.
+    let mut read = Read::new(Reading::DOCUMENT, &mut found);
+    let members = read
+        .object(&Node::new(&json, JsonPath::new()))
+        .expect("an object");
+    let a = members.get("a").expect("written");
+    read.error(&a, Code::from(&core_codes::INVALID_VALUE));
+    assert!(!read.stopped());
+    read.stop();
+    assert!(read.stopped(), "stop ends the read");
+    let b = members.get("b").expect("written");
+    assert_eq!(read.bool(&b), None);
+    read.refuse(&b, Code::from(&core_codes::INVALID_VALUE));
+    assert_eq!(rendered(&found).len(), 1, "{:?}", rendered(&found));
+}

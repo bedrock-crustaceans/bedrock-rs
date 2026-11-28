@@ -8,3 +8,6 @@ mod chain;
 
 #[path = "render_controller/located.rs"]
 mod located;
+
+#[path = "render_controller/written.rs"]
+mod written;

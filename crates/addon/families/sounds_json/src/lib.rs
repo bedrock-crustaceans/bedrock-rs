@@ -9,14 +9,16 @@
 //! whichever form it was written, one no table sets [`SoundRange::UNSET`], a `base` chain worked
 //! out), which no longer says how the author wrote it.
 //!
-//! The read is a hand walk (`bindings.rs`, reporting through its private `Reporter`), the one
-//! sound document with no typed struct that declares it: what is typed is the resolved reading,
-//! and each step of it depends on the table above the value read (a sound's range is its
-//! table's where it sets none, in whichever form it was written; a variant key is parsed with
-//! the `__molang_version` of the entry that holds it; an event table is read in four contexts
-//! that differ in the members they know and in what a missing `events` is). A derived read
-//! has no place for that context: it would need a read scope the leaves can ask, and a
-//! flattened struct read in declaration order.
+//! The read is the derived reader of the typed tables (`bindings.rs`), as the game's jsoncpp
+//! fork reads the merged document: members asked for by name, an object's entries in key
+//! order, a value that is no object one with no members, every scalar coerced. What a value
+//! depends on above it is in the read's scope (`Read::scope`): a sound's range is its
+//! table's where it sets none (the table's `volume` and `pitch` are `schema::scope` fields), a
+//! block sound type's `base` makes its `events` optional, and the read of the stack's merge
+//! puts that in scope for the `base` chains. The four event tables are the types that hold
+//! them: a block sound type and an entity flatten a table where they declare it, and the
+//! rules a table's members cannot say alone (a missing `events`, a variant key at its entry's
+//! `__molang_version`) are `after_read` rules.
 //!
 //! [`Merged`]: bedrock_addon_core::document::Merged
 
@@ -25,7 +27,6 @@
 mod bindings;
 pub mod codes;
 mod events;
-mod report;
 
 pub use bindings::{
     BlockSounds, EntitySoundEntry, EntitySounds, EventSounds, InteractiveEntityEntry,

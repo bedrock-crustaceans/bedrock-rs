@@ -160,7 +160,9 @@ version-chain machinery; `manifest` reads and writes `manifest.json` on top of c
 reads the pack containers (zip, marketplace encryption, brarchive, MCB) over bytes; each
 content family (`families/<name>`) owns the types and rules of one kind of game file; `addon`
 composes them into packs, stacks, the link pass and the writer, and `std` drives them over the
-file system. Oracle: the game's own files. Red tests are small JSON
+file system. How a family reads its JSON (typed structs with `#[derive(Facet, Schema)]`, read
+member by member by the derived `FromJson`) and every `schema::` key are in
+`crates/addon/schema/README.md`. Oracle: the game's own files. Red tests are small JSON
 documents in the family's or `addon`'s `tests/`, asserting the typed value and the findings the
 game's content log would print; write the document back and require it to read the same. A
 family's document tests live in the family crate's `tests/`; stack, link and cross-family tests in

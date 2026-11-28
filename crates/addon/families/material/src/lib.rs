@@ -5,9 +5,15 @@
 //! controllers and particles. The server never renders; the family exists to report what a
 //! client will reject, with the client's own messages, and to supply the name index.
 //!
-//! The reader stays a hand walk over the JSON values, because the client's material reader is
-//! hand-written too (each pack's copy leniently, then the typed read with its rules): no schema
-//! stands behind it.
+//! Each pack's copy is read leniently as JSON and the copies of a file are merged as JSON, as
+//! the client merges them; the merged map is then read by the derived reader. A material's
+//! members are a private struct that derives its read (one field per spelling of a list
+//! member, gathered into `Listed`), the faces, sampler entries, vertex fields and list entries
+//! derive theirs; the client's rules are leaves (`read_with`), reads given the material
+//! (`read_beside`: a list its plain key hides, a sampler entry it skips) and rules
+//! (`after_read`, `unknown_with`). The key rules of each material are the read's format. The
+//! file's envelope (the wrapper gate, the single form, the key rules from the merge) is a
+//! function that hands each material to the read.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -56,7 +62,8 @@ use bedrock_addon_core::load::{
 };
 use bedrock_addon_core::pack_identity::{PackPath, PackRef, PackSide};
 use bytes::Bytes;
-use indexmap::{IndexMap, IndexSet};
+use facet_value::VObject;
+use indexmap::IndexMap;
 
 use file::base_name;
 use group::FileSource;
@@ -209,13 +216,11 @@ impl Content for MaterialFile {
         let mut found = Diagnostics::default();
         check_duplicates(&unwrapped.map, path.as_str(), &mut found);
         let no_rules = |_: &str| None;
-        let clamped = |inner: &JsonPath| copy.clamped.contains(&path_in_file(inner, wrapped));
         let read = read_file(
             &unwrapped.map,
             unwrapped.wrapped,
             stem,
             &no_rules,
-            &clamped,
             &mut found,
         );
         report_in_file(found, wrapped, &mut diagnostics);
@@ -263,7 +268,7 @@ impl Content for MaterialList {
             }
         };
         copy.report_clamped(&mut diagnostics);
-        let list = read_list(kind, &copy.root, &mut diagnostics);
+        let list = read_list(kind, copy.finite(), &mut diagnostics);
         span::fill_all(bytes, &mut diagnostics);
         if let Some(list) = list {
             return Ok(unversioned::document(list, origin, diagnostics));
@@ -304,8 +309,6 @@ struct FileCopy {
     origin: Origin,
     /// The copy as read and past the wrapper gate, unless it is no JSON object.
     read: Option<(RawLayer, Unwrapped)>,
-    /// Where the copy has a number past the range of a double, by its path in the file.
-    clamped: IndexSet<JsonPath>,
     /// What reading the copy found.
     findings: Diagnostics,
     /// The copy's text, for the spans of the findings the merge places in it.
@@ -364,7 +367,7 @@ fn parse_list(
         }
     };
     copy.report_clamped(&mut findings);
-    let list = read_list_placed(kind, &copy.root, &mut findings);
+    let list = read_list_placed(kind, copy.finite(), &mut findings);
     span::fill_all(&file.bytes, &mut findings);
     if let Some((list, places)) = list {
         return (Ok(unversioned::document(list, origin, findings)), places);
@@ -386,17 +389,16 @@ struct ListText {
 fn parse_copy(file: &WalkFile) -> FileCopy {
     let origin = origin_of(file);
     let mut findings = Diagnostics::default();
-    let mut clamped = IndexSet::new();
     let read = match read_copy(&file.bytes) {
-        Ok(mut copy) => {
+        Ok(copy) => {
             if let Some(root) = copy.root.as_object() {
                 let unwrapped = unwrap_copy(root.clone(), &mut findings);
                 copy.report_clamped(&mut findings);
                 let mut found = Diagnostics::default();
                 check_duplicates(&unwrapped.map, file.path.as_str(), &mut found);
                 report_in_file(found, unwrapped.wrapped.is_some(), &mut findings);
-                clamped = std::mem::take(&mut copy.clamped);
-                Some((RawLayer::new(origin.clone(), copy.root), unwrapped))
+                let layer = RawLayer::new(origin.clone(), copy.finite().clone());
+                Some((layer, unwrapped))
             } else {
                 findings.push(wrong_root());
                 None
@@ -412,7 +414,6 @@ fn parse_copy(file: &WalkFile) -> FileCopy {
     FileCopy {
         origin,
         read,
-        clamped,
         findings,
         bytes: file.bytes.clone(),
     }
@@ -532,8 +533,6 @@ fn merge_file(path: &PackPath, sources: &[&FileCopy], before: Diagnostics) -> Me
     let mut trace_writers = patch::Writers::default();
     // Per copy that was merged: where it is, and whether it is wrapped.
     let mut copies = Vec::new();
-    // Per copy that was merged: where it has a number past the doubles.
-    let mut clamped_in = Vec::new();
     let mut layers = Vec::new();
     // Per copy that was merged: its text.
     let mut texts = span::Texts::default();
@@ -546,15 +545,19 @@ fn merge_file(path: &PackPath, sources: &[&FileCopy], before: Diagnostics) -> Me
             continue;
         };
         layers.push(layer.clone());
-        for key in unwrapped.map.keys() {
+        for key in unwrapped
+            .map
+            .as_object()
+            .into_iter()
+            .flat_map(VObject::keys)
+        {
             named.insert(base_name(key.as_str()), index);
         }
         let mut rekeyed = Vec::new();
-        let copy = unwrapped.map.clone().into_value();
+        let copy = unwrapped.map.clone();
         let by = trace_writers.add(u32::try_from(copies.len()).unwrap_or(u32::MAX));
         let wrapped = unwrapped.wrapped.is_some();
         copies.push((source.origin.clone(), wrapped));
-        clamped_in.push(&source.clamped);
         let told = &mut |_: &str, upper: &str| rekeyed.push(upper.to_owned());
         let by = Trace::Whole(by);
         (merged, trace) = patch_traced(merged, trace, copy, by, told, &mut trace_writers);
@@ -567,8 +570,6 @@ fn merge_file(path: &PackPath, sources: &[&FileCopy], before: Diagnostics) -> Me
     }
     // Top first, as `Merged::layers` promises.
     layers.reverse();
-    let empty = facet_value::VObject::new();
-    let map = merged.as_object().unwrap_or(&empty);
     let wrapped_by = |index: usize| {
         let read = sources.get(index).and_then(|source| source.read.as_ref());
         read.and_then(|(_, unwrapped)| unwrapped.wrapped.clone())
@@ -589,22 +590,12 @@ fn merge_file(path: &PackPath, sources: &[&FileCopy], before: Diagnostics) -> Me
         stands_for: trace_writers,
         texts,
     };
-    // A number of the merged map was clamped when the copy that wrote it has it past the
-    // doubles.
-    let clamped = |at: &JsonPath| {
-        writers.written(at).is_some_and(|(copy, path)| {
-            clamped_in
-                .get(copy)
-                .is_some_and(|clamped| clamped.contains(&path))
-        })
-    };
     let mut found = Diagnostics::default();
     let mut read = read_file(
-        map,
+        &merged,
         top.and_then(wrapped_by),
         stem_of(path.as_str()),
         &rules,
-        &clamped,
         &mut found,
     );
     let origin_of = |index: usize| sources.get(index).map(|source| &source.origin);

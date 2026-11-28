@@ -2,7 +2,7 @@
 //!
 //! A typed document struct states its per-field facts as facet extension attributes in one
 //! namespace, `#[facet(schema::fallback = 1.0, schema::min = 0.0)]`, beside facet's own
-//! `default`, `rename_all` and `flatten`. facet's derive checks every key by name. Three keys
+//! `default`, `rename_all` and `flatten`. facet's derive checks every key by name. Four keys
 //! are stored in the `Shape`, for the reader while it reads the text; the others are
 //! compile-time only, read from the tokens by `#[derive(Schema)]`.
 //!
@@ -39,8 +39,16 @@ facet::define_attr_grammar! {
         /// on the value as the pipeline holds it, after the upgrade: below `since` on the game's
         /// own engine the member is `core/child_not_valid`, an error; in a pack whose
         /// `min_engine_version` is below it, a `FieldSinceEngine` information. The read reads
-        /// the member whatever the engine.
+        /// the member whatever the engine. On a variant of an internally tagged enum it is the
+        /// engine from which the variant's name is known, stored for the code that names the
+        /// variant (`tag_with`) and for a view of the enum.
         SinceEngine(&'static str),
+        /// `until_engine = "1.26.45"` (stored): the engine version from which the member is no
+        /// longer read, `since_engine`'s other end: from `until` on the game's own engine the
+        /// member is `core/child_not_valid`, an error, in the derived check of a validating
+        /// context. The read reads the member whatever the engine. On a variant of an
+        /// internally tagged enum, the engine from which the variant's name is gone.
+        UntilEngine(&'static str),
         /// `unknown = "keep"` (stored, on a field or a container): what an unknown member
         /// is where this struct differs from the slice's rule: `keep`, `report`, `reject`,
         /// `ignore`, `component` (a name that is no component of its object, as the game
@@ -113,15 +121,38 @@ facet::define_attr_grammar! {
         /// game's own files carry and its reader never reads. It is `unknown = "silent"` for
         /// the named members alone.
         Quiet(arbitrary),
-        /// `after_read = path` (compile-time, on a struct): a rule over the value just read,
-        /// `fn(&mut Self, &Node<'_>, &mut Read<'_>)`, called by the struct's own read after its
-        /// members and its unknown ones, with the object as written: what a member cannot say
-        /// alone (a default that follows a sibling, a member kept beside the typed one). It
-        /// tells its findings to the read and does not fail the owner; a struct that is
-        /// flattened into another is not hooked. It is `rule` at the read: `rule` judges the
-        /// typed value in the check (a `SchemaCx`, no JSON); this one runs in the read, with the
-        /// object as written, in the order the read tells and in the phase it is given.
+        /// `after_read = path` (compile-time, on a struct or a tagged enum): a rule over the
+        /// value just read, `fn(&mut Self, &Node<'_>, &mut Read<'_>)`, called by the struct's own
+        /// read after its members and its unknown ones, with the object as written: what a member
+        /// cannot say alone (a default that follows a sibling, a member kept beside the typed
+        /// one). It tells its findings to the read and does not fail the owner. On a tagged enum
+        /// (internally or externally) it runs over the variant read, given the enum's object (a
+        /// flattened enum: its owner's). It is `rule` at the read: `rule` judges the typed value
+        /// in the check (a `SchemaCx`, no JSON); this one runs in the read, with the object as
+        /// written, in the order the read tells and in the phase it is given.
         AfterRead(arbitrary),
+        /// `after_members = path` (compile-time, on a struct): `after_read` run earlier, on the
+        /// value built from the members, before the unknown members a profile tells after them
+        /// (and only when the value is built): the checks a game's reader runs as it binds the
+        /// members, which come before the crate's word on the members it never reads.
+        AfterMembers(arbitrary),
+        /// `guard = path` (compile-time, on a field or a struct): a rule of the game's reader at
+        /// its place in the read, `fn(&Node<'_>, &mut Read<'_>) -> bool` over the object as
+        /// written. On a field it runs where the read comes to the member (in a read in declared
+        /// order always, in file order where the file has it), before the member is read; on a
+        /// struct after the members, before `after_members` and the unknown ones. `false` ends
+        /// the struct's read there: what is still to come (members, `after_members`, unknown
+        /// members, missing ones) is neither read nor told and the struct fails, with what the
+        /// function told (or nothing: a value the game drops without a word). `after_read` is
+        /// the rule that cannot fail it.
+        Guard(arbitrary),
+        /// `unknown_with = path` (compile-time, on a struct): the rule each unknown member is
+        /// told and kept by, from its name, in place of the struct's `unknown` word:
+        /// `fn(&str, &Node<'_>, &mut Read<'_>) -> UnknownRule`, called where the read tells the
+        /// member. For a reader that tells only the names it picks (a spelling the game asserts
+        /// on) and keeps the others in silence; the function may tell a line of its own at the
+        /// member (a kept error for a key the game no longer reads) and return `Silent`.
+        UnknownWith(arbitrary),
         /// `trigger` (marker, on a struct): the struct is an event trigger itself (an entity's
         /// `on_*` component, `{event, filters, target}`): its trigger member is its own path,
         /// beside those of its fields.
@@ -130,20 +161,63 @@ facet::define_attr_grammar! {
         /// `FromJson`: `fn(&Node<'_>, &mut Read<'_>) -> Option<T>`, `T` the field's type (an
         /// `Option` field's inner type), called for a member that is written.
         ReadWith(arbitrary),
-        /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
+        /// `members = ["a", "b"]` (compile-time): the field is fed by these members of its
+        /// struct's object, not by one of its own name: a value the game reads from several keys
+        /// (a literal or the name of where to find it, one list under three spellings). Each is
+        /// a member of the struct, none an unknown one. The field is read once, at its place (in
+        /// file order where the file has the first of them, after the members when it has
+        /// none), whether or not any is written: `FromMembers<N>` on its type, or its
+        /// `read_with`, `fn(&Node<'_>, &[Option<Node<'_>>; N], T, &mut Read<'_>) -> Option<T>`,
+        /// `T` the field's type, given the object, each member as written and the field's
+        /// `default` (`None` for an `Option`), says what was read and how two written together
+        /// merge. A member may feed several fields; each is read where the first of its members
+        /// is.
+        Members(arbitrary),
+        /// `absent_with = path` (compile-time, an `Option` field): the field's value when the
+        /// object lacks the member (or holds a `null` the reading takes for absence),
+        /// `fn(&Node<'_>, &mut Read<'_>) -> Option<T>` given the object: what the game's reader
+        /// does with a member it does not find by what it read before (a member a pack of one
+        /// type must write, a default another member decides). It tells what it must; `None`
+        /// leaves the field absent. Asked in the member's place where the read asks for members
+        /// in declaration order, after the members where it reads them in file order.
+        AbsentWith(arbitrary),
+        /// `read_beside = path` (compile-time, a struct's field): the field's read given the
+        /// object the member is in, `fn(&Node<'_>, &Node<'_>, &mut Read<'_>) -> Option<T>`
+        /// (the member, its object, the read): `read_with` for a member whose read follows what
+        /// its siblings are (a list the game skips beside its plain spelling, a sampler's
+        /// keyword the game does not look up once its index is out of range).
+        ReadBeside(arbitrary),
+        /// `tag_with = path` (compile-time, an internally tagged enum, or an externally tagged one
+        /// whose every variant holds a value, flattened into a struct): the name of the variant
         /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
         /// at the object, tells what it refuses (the game's own words for a name that is none)
         /// and returns the variant's JSON name, or `None` once it has told. In place of the
         /// string at the tag member, for a tag the game normalises (a namespace dropped, an
         /// engine that has no such name) or words its own way. The enum may be flattened into a
-        /// struct (`flatten`), which reads the variant where it declares the enum.
+        /// struct (`flatten`), which reads the variant where it declares the enum. On an
+        /// externally tagged enum whose every variant holds a value, flattened into a struct, the
+        /// variant is a member of the struct's object, keyed by its name: the function names it,
+        /// where by default the first of those members the object has and is not `null` is the
+        /// one (every other one the object has told `core/ignored_payload` at the unknown severity
+        /// and kept; none at all the first one missing).
         TagWith(arbitrary),
         /// `required` (marker, an `Option` field): the document must write the member, though
         /// its value is optional in the type: absence is a missing required member.
         Required,
         /// `wrong_type = CODE` (compile-time, a `CodeDef<0>` by its path): the code a value of
-        /// the wrong JSON type is told under at the member, in place of the read's.
+        /// the wrong JSON type is told under at the member, in place of the read's. This key,
+        /// `missing`, `invalid` and `negative` also take a `CodeDef<1>`, fed the read's subject
+        /// (`Read::subject`: the block an entry is read for, the file a document is in); a read
+        /// that names none tells its own code there, and a code of more arguments does not
+        /// compile. On a tuple struct, the code of a value that is no array, where the member
+        /// holding it states none.
         WrongType(arbitrary),
+        /// `arity = CODE` (compile-time, a tuple struct, a `CodeDef<0>` by its path): an array of
+        /// another length than the struct's fields is told under CODE after its elements and
+        /// read on, as the game asserts and reads its first elements: an element past the
+        /// fields is not read, a missing one is absent (each field an `Option` or with a
+        /// `default`). Without it another length is a wrong type.
+        Arity(arbitrary),
         /// `missing = CODE` (compile-time): the code the member is told missing under.
         Missing(arbitrary),
         /// `invalid = CODE` (compile-time): the code a value the member's type refuses (an
@@ -175,6 +249,18 @@ facet::define_attr_grammar! {
         /// element: the game reads each element by itself and skips the one it cannot take. The
         /// file's later elements are named by the places they have in the file.
         Drop,
+        /// `ends` (marker): a member that fails to read, or a required one told missing where a
+        /// read in declared order asks for it, ends the read of its struct there: nothing after
+        /// it is read or told, its unknown members neither, and the struct fails, as a game reader
+        /// that gives up an element at its first bad member. With `or_kept`, a value of the JSON
+        /// kind the field's type takes that fails ends the read; one of another kind is kept as
+        /// written.
+        Ends,
+        /// `if_kind` (marker, an `Option` field): the member is read only when it is of the JSON
+        /// kind the field's type takes (`FromJson::EXPECTED`, `read_with` or not); of another
+        /// kind it is absent, told nothing: jsoncpp's `isArray()` / `isString()` asked before a
+        /// read, a member of another type ignored (dialogue's command lists and buttons).
+        IfKind,
         /// `reads_null` (marker, an `Option` field): a `null` member is a value like any other,
         /// read by the field's type (or `read_with`) as `Some`, where the reading's null rule
         /// would make it `None`: the game's reader asks for the member and takes what is there
@@ -182,13 +268,55 @@ facet::define_attr_grammar! {
         /// is kept as written. Without it a `null` is the reading's null rule's, whatever reads
         /// the member: a `read_with` fn never sees one.
         ReadsNull,
+        /// `scope` (marker, a field): once its member is read (or, in a read in declaration
+        /// order, found absent: the field's default), the field's value is in scope under its JSON
+        /// name for the members the struct reads after it and every read below them, until the
+        /// struct's read ends (`Read::scope`): the context the game's reader holds while it reads
+        /// on (the range of the table a sound of it starts from, the base of a block sound type).
+        Scope,
+        /// `reads_absent` (marker, a field): a member the object lacks is read all the same, as
+        /// the `null` jsoncpp's `operator[]` gives for a missing key, by the field's type (or
+        /// `read_with`) at a node that knows it is absent (`Node::is_absent`): the game reads the
+        /// member and tells what it tells of its absence. A value read is the field's; none leaves
+        /// it absent (its default, `None`, or missing where it is required). In a read in declared
+        /// order it is read where it is declared; in file order, after the members. Not beside
+        /// `absent_with` (both would read the member) or `read_beside` (whose function is not
+        /// called for an absent member).
+        ReadsAbsent,
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
         /// (with the struct's unknown members), its failure told (or not) and failing nothing.
+        /// A read that keeps the object's order (`Read::keep_in_file_order`) puts it among the
+        /// struct's own unknown members where the file has it; otherwise after them.
         OrKept(arbitrary),
         /// `foreign_event` (marker): an `EventTrigger` field whose event belongs to another
         /// entity, so it is no trigger of this one.
         ForeignEvent,
+        /// `read_by = "sprite text"` (compile-time, a field): the parts of the game that read the
+        /// member, names separated by spaces, in the field's row (`FieldRow::read_by`): for code
+        /// that asks at run time which part reads a member, as a lint of the members no part of
+        /// a control reads. It names at least one, none twice. The read does not look at it.
+        ReadBy(arbitrary),
+        /// `getter = "bool"` (compile-time, a field): the getter the game reads the member with,
+        /// by the name the family gives it, in the field's row (`FieldRow::getter`); not the
+        /// accessor the derive makes for a `fallback`. The read does not look at it.
+        Getter(arbitrary),
+        /// `era(ERA, key = value, ..)` (compile-time, a field; repeatable): keys that hold in a
+        /// document whose format version is in `ERA` (an expression of type
+        /// `schema::VersionRange`, a range of formats: `VersionRange::below(v)`,
+        /// `VersionRange::since(v)`), in place of the field's own:
+        /// one of the game's readers reads the format's documents (particle's legacy parser
+        /// below 1.20.80, its strict reader from it). The first era the format is in holds; a
+        /// read that knows no format (`Read::format`) is in none. The keys: `wrong_type`,
+        /// `missing`, `invalid` (the codes, each the reader's line, told at the code's own
+        /// severity where a field's own codes are graded by the reading; the member fails or
+        /// takes its default as the reading says). A `missing` code on a field that has a
+        /// `default` or is an `Option` is told where the member is absent, before the field
+        /// takes its default. `molang = SPEC`: the field's Molang spec in the era, for the walk
+        /// of a document of that format (`MolangVisitor::format`; a hand walk of a part of
+        /// another era's document sets it with `MolangVisitor::at_format`) and for the read of
+        /// the member (`Read::member_molang`).
+        Era(arbitrary),
         /// `order = "game"` (compile-time, a string enum): the enum states its own `ALL`, in
         /// the game's order, and the derive emits none; it checks at compile time that `ALL`
         /// names every variant once. `NAMES` and `EXPECTED` stay in declaration order.

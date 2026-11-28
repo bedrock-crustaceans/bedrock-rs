@@ -1,14 +1,15 @@
 //! Writing a render controller file back: only the members the value
 //! holds, each Molang value in the form it was read. `materials` and `part_visibility` are
-//! written one pattern per element, which keeps the order the game applies them in.
+//! written one pattern per element, which keeps the order the game applies them in; the
+//! members' values (`arrays`, `textures`, the colours, `uv_anim`) by core's generic writer.
 
 use facet_value::{VArray, VObject};
-use indexmap::IndexMap;
 
-use super::{BonePattern, RenderController, RenderControllerArrays, RenderControllerFile, Rgba};
+use super::{BonePattern, RenderController, RenderControllerFile};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Value};
 use bedrock_addon_core::molang::{Molang, MolangSource};
+use bedrock_addon_core::schema::write_value;
 
 fn molang(value: &Molang) -> Result<Value, EncodeError> {
     bedrock_addon_core::molang::write(value).map_err(|what| EncodeError::NotRepresentable {
@@ -31,10 +32,6 @@ fn material(text: &MolangSource) -> Value {
     }
 }
 
-fn sources(list: &[MolangSource]) -> Value {
-    list.iter().map(source).collect::<VArray>().into()
-}
-
 fn bones<T>(
     list: &[(BonePattern, T)],
     write: impl Fn(&T) -> Result<Value, EncodeError>,
@@ -48,58 +45,12 @@ fn bones<T>(
     Ok(array.into())
 }
 
-fn array_kind(map: &IndexMap<String, Vec<MolangSource>>) -> Value {
-    let mut object = VObject::new();
-    for (name, list) in map {
-        object.insert(name.as_str(), sources(list));
-    }
-    object.into()
-}
-
-fn arrays(arrays: &RenderControllerArrays) -> Value {
-    let mut object = VObject::new();
-    for (key, map) in [
-        ("geometries", &arrays.geometries),
-        ("materials", &arrays.materials),
-        ("textures", &arrays.textures),
-    ] {
-        // A kind without an array fails the file, so an empty map is an absent kind.
-        if !map.is_empty() {
-            object.insert(key, array_kind(map));
-        }
-    }
-    object.into()
-}
-
-fn color(color: &Rgba) -> Result<Value, EncodeError> {
-    let mut object = VObject::new();
-    for (key, channel) in [
-        ("r", &color.r),
-        ("g", &color.g),
-        ("b", &color.b),
-        ("a", &color.a),
-    ] {
-        if let Some(channel) = channel {
-            object.insert(key, molang(channel)?);
-        }
-    }
-    Ok(object.into())
-}
-
-fn pair(values: &[Molang; 2]) -> Result<Value, EncodeError> {
-    values
-        .iter()
-        .map(molang)
-        .collect::<Result<VArray, _>>()
-        .map(Value::from)
-}
-
 impl RenderController {
     /// The controller as JSON.
     pub(crate) fn to_value(&self) -> Result<Value, EncodeError> {
         let mut object = VObject::new();
         if let Some(value) = &self.arrays {
-            object.insert("arrays", arrays(value));
+            object.insert("arrays", write_value(value)?);
         }
         object.insert("geometry", source(&self.geometry));
         if !self.part_visibility.is_empty() {
@@ -111,7 +62,7 @@ impl RenderController {
         // An empty `textures` is not written: the game rejects `[]` with the whole file, and
         // without the member it drops only this controller.
         if !self.textures.is_empty() {
-            object.insert("textures", sources(&self.textures));
+            object.insert("textures", write_value(&self.textures)?);
         }
         for (key, value) in [
             ("color", &self.color),
@@ -120,14 +71,11 @@ impl RenderController {
             ("is_hurt_color", &self.is_hurt_color),
         ] {
             if let Some(value) = value {
-                object.insert(key, color(value)?);
+                object.insert(key, write_value(value)?);
             }
         }
         if let Some(uv_anim) = &self.uv_anim {
-            let mut uv = VObject::new();
-            uv.insert("offset", pair(&uv_anim.offset)?);
-            uv.insert("scale", pair(&uv_anim.scale)?);
-            object.insert("uv_anim", Value::from(uv));
+            object.insert("uv_anim", write_value(uv_anim)?);
         }
         if let Some(value) = &self.light_color_multiplier {
             object.insert("light_color_multiplier", molang(value)?);

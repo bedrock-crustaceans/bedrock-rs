@@ -4,11 +4,14 @@
 use std::collections::HashSet;
 
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, JsonPath, Phase, Severity};
+use bedrock_addon_core::diagnostic::{Code, Diagnostic, JsonPath, Phase, Severity, Span};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::kit::{Members, Node, Read};
+use bedrock_addon_core::schema::{ElementFailure, UnknownRule, read_list};
 use bedrock_addon_core::version::{FormatVersion, MinEngineVersion, SemVersion};
 
-use super::read::{Sink, below, member, path, text};
+use super::comprehensive;
+use super::read::{at, lacking, member, text};
 
 /// One `settings[]` entry: a pack setting's definition (the saved values are `pack::settings`).
 ///
@@ -140,65 +143,56 @@ const KINDS: [(&str, &[&str], &[&str]); 5] = [
     ),
 ];
 
-/// Reads a format-3 `settings` array: 1 to 50 entries, each dispatched by shape, then the
-/// semantic checks of the game's comprehensive-manifest check.
-pub(super) fn read(
-    sink: &mut Sink<'_>,
-    root: &Value,
-    min_engine: Option<&MinEngineVersion>,
-) -> Vec<Setting> {
-    const AT: &str = "settings";
-    let list = path(&[AT]);
-    let Some(value) = member(root, AT) else {
-        return Vec::new();
-    };
-    let Some(elements) = value.as_array().map(facet_value::VArray::as_slice) else {
-        sink.error(Code::from(&core_codes::INVALID_TYPE), &list);
-        return Vec::new();
-    };
+/// A format-3 `settings` array (the member's `schema::read_with`): 1 to 50 entries, each
+/// dispatched by shape, then the semantic checks of the game's comprehensive-manifest check
+/// against the engine version of the header read before it.
+pub(super) fn read(node: &Node<'_>, read: &mut Read<'_>) -> Option<Vec<Setting>> {
+    let count = read.array(node)?.len();
     // An empty list is refused with "expected array with at least 1 elements", and more than
     // 50 settings are refused before any element is read. The crate reports both as
     // `InvalidValue`.
-    if elements.is_empty() || elements.len() > MAX_SETTINGS {
-        sink.error(Code::from(&core_codes::INVALID_VALUE), &list);
-        return Vec::new();
+    if count == 0 || count > MAX_SETTINGS {
+        read.refuse(node, Code::from(&core_codes::INVALID_VALUE));
+        return None;
     }
     let mut settings = Vec::new();
-    for (index, element) in elements.iter().enumerate() {
-        if let Some(setting) = setting(sink, element, &list.index(index)) {
-            settings.push((index, setting));
-        }
-    }
-    check(sink, &settings, min_engine);
-    settings.into_iter().map(|(_, setting)| setting).collect()
+    // An entry that fits no kind is left out; the others are read on.
+    read_list(node, read, ElementFailure::Drop, |element, read| {
+        let setting = setting(element, read)?;
+        settings.push(((element.path().clone(), element.span()), setting));
+        Some(())
+    })?;
+    check(read, &settings, comprehensive::min_engine(read).as_ref());
+    Some(settings.into_iter().map(|(_, setting)| setting).collect())
 }
 
 /// One entry: the first kind (label, slider, toggle, dropdown, multiselect) whose members the
 /// object has exactly, with the right JSON types; then the member constraints.
-fn setting(sink: &mut Sink<'_>, element: &Value, at: &JsonPath) -> Option<Setting> {
-    if element.as_object().is_none() {
-        sink.error(Code::from(&core_codes::INVALID_TYPE), at);
-        return None;
-    }
-    let type_value = member(element, "type").and_then(text);
+fn setting(element: &Node<'_>, read: &mut Read<'_>) -> Option<Setting> {
+    let members = read.object(element)?;
+    let value = element.value();
+    let type_value = member(value, "type").and_then(text);
     // The variant is not tagged: the first alternative that loads without error wins, so the
     // shape is matched first and the constraints are checked after.
     let Some(setting) = KINDS
         .iter()
-        .find_map(|(kind, required, optional)| fit(element, kind, required, optional))
+        .find_map(|(kind, required, optional)| fit(value, kind, required, optional))
     else {
-        report_misfit(sink, element, at, type_value);
+        report_misfit(element, &members, read, type_value);
         return None;
     };
-    if type_value != Some(setting.type_name()) {
+    if type_value != Some(setting.type_name())
+        && let Some(type_node) = members.get("type")
+    {
         // `type` does not choose the kind. Vanilla is silent about a mismatch; the crate
         // reports an information.
-        sink.note(
-            Code::from(&core_codes::SETTING_TYPE_MISMATCH),
-            &below(at, "type"),
-        );
+        read.push(at(
+            &type_node,
+            &core_codes::SETTING_TYPE_MISMATCH,
+            Severity::Info,
+        ));
     }
-    constraints(sink, &setting, at);
+    constraints(&members, read, &setting);
     Some(setting)
 }
 
@@ -283,70 +277,80 @@ fn fit(element: &Value, kind: &str, required: &[&str], optional: &[&str]) -> Opt
     })
 }
 
-/// An entry that fits no kind: the findings of the kind its `type` names: missing
-/// members, unknown members, else a member of the wrong type. A `type` that names no kind is
-/// reported itself.
-fn report_misfit(sink: &mut Sink<'_>, element: &Value, at: &JsonPath, type_value: Option<&str>) {
+/// An entry that fits no kind: the findings of the kind its `type` names: missing members,
+/// unknown members, else a member of the wrong type. A `type` that names no kind is reported
+/// itself.
+fn report_misfit(
+    element: &Node<'_>,
+    members: &Members<'_>,
+    read: &mut Read<'_>,
+    type_value: Option<&str>,
+) {
     let named = type_value.and_then(|t| KINDS.iter().find(|(name, _, _)| *name == t));
     let Some((_, required, optional)) = named else {
-        let type_at = below(at, "type");
-        match member(element, "type") {
-            None => sink.error(Code::from(&core_codes::MISSING_REQUIRED_FIELD), &type_at),
-            Some(value) if text(value).is_some() => {
-                sink.error(Code::from(&core_codes::INVALID_ENUM_VALUE), &type_at);
+        match members.get("type") {
+            None => read.push(lacking(
+                element,
+                "type",
+                &core_codes::MISSING_REQUIRED_FIELD,
+            )),
+            Some(type_node) if type_node.value().is_string() => {
+                read.error(&type_node, Code::from(&core_codes::INVALID_ENUM_VALUE));
             }
-            Some(_) => sink.error(Code::from(&core_codes::INVALID_TYPE), &type_at),
+            Some(type_node) => read.error(&type_node, Code::from(&core_codes::INVALID_TYPE)),
         }
         return;
     };
-    let before = sink.errors();
-    for key in *required {
-        if member(element, key).is_none() {
-            sink.error(
-                Code::from(&core_codes::MISSING_REQUIRED_FIELD),
-                &below(at, key),
-            );
-        }
+    let missing: Vec<&str> = required
+        .iter()
+        .copied()
+        .filter(|key| !members.contains(key))
+        .collect();
+    for key in &missing {
+        read.push(lacking(element, key, &core_codes::MISSING_REQUIRED_FIELD));
     }
     let allowed: Vec<&str> = required.iter().chain(optional.iter()).copied().collect();
-    let _ = sink.unknown(element, at, &allowed);
-    if sink.errors() == before {
+    let unknown = members.iter().any(|(key, _)| !allowed.contains(&key));
+    read.unknown(members, &allowed, UnknownRule::Report);
+    if missing.is_empty() && !unknown {
         // Every member is there and no other: one has the wrong type.
-        sink.error(Code::from(&core_codes::INVALID_TYPE), at);
+        read.error(element, Code::from(&core_codes::INVALID_TYPE));
     }
 }
 
 /// Member constraints of the kind: `InvalidValue` errors naming the member.
-fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &JsonPath) {
-    let invalid = |sink: &mut Sink<'_>, key: &str| {
-        sink.error(Code::from(&core_codes::INVALID_VALUE), &below(at, key));
+fn constraints(members: &Members<'_>, read: &mut Read<'_>, setting: &Setting) {
+    let invalid = |read: &mut Read<'_>, key: &str| {
+        if let Some(node) = members.get(key) {
+            read.error(&node, Code::from(&core_codes::INVALID_VALUE));
+        }
     };
     if setting.name().is_some_and(|name| !namespaced(name)) {
         // "string has invalid namespace (minecraft)" / "string must be prefixed with a
         // namespace (eg. namespace:value)".
-        invalid(sink, "name");
+        invalid(read, "name");
     }
     match setting {
         Setting::Slider { step, .. } => {
             // The step must be above 0.0 (an exclusive minimum); a NaN fails it.
             if step.is_nan() || *step <= 0.0 {
-                invalid(sink, "step");
+                invalid(read, "step");
             }
         }
         Setting::Dropdown {
             options, default, ..
         } => {
-            option_constraints(sink, options, at);
+            option_constraints(members, read, options);
             if default.is_empty() {
-                invalid(sink, "default");
+                invalid(read, "default");
             }
         }
         Setting::Multiselect {
             options, defaults, ..
         } => {
-            option_constraints(sink, options, at);
+            option_constraints(members, read, options);
             if defaults.len() > MAX_DEFAULTS {
-                invalid(sink, "defaults");
+                invalid(read, "defaults");
             }
         }
         Setting::Label { .. } | Setting::Toggle { .. } => {}
@@ -354,24 +358,27 @@ fn constraints(sink: &mut Sink<'_>, setting: &Setting, at: &JsonPath) {
 }
 
 /// 2 to 20 options, none with an empty name or text.
-fn option_constraints(sink: &mut Sink<'_>, options: &[DropdownOption], at: &JsonPath) {
-    let options_at = below(at, "options");
+fn option_constraints(members: &Members<'_>, read: &mut Read<'_>, options: &[DropdownOption]) {
+    let Some(list) = members.get("options") else {
+        return;
+    };
     if !OPTIONS.contains(&options.len()) {
-        sink.error(Code::from(&core_codes::INVALID_VALUE), &options_at);
+        read.error(&list, Code::from(&core_codes::INVALID_VALUE));
     }
-    for (index, option) in options.iter().enumerate() {
-        let entry_at = options_at.index(index);
-        if option.name.is_empty() {
-            sink.error(
-                Code::from(&core_codes::INVALID_VALUE),
-                &below(&entry_at, "name"),
-            );
-        }
-        if option.text.is_empty() {
-            sink.error(
-                Code::from(&core_codes::INVALID_VALUE),
-                &below(&entry_at, "text"),
-            );
+    let Some(entries) = read.array(&list) else {
+        return;
+    };
+    for (option, entry) in options.iter().zip(entries.iter()) {
+        let Some(entry) = read.object(&entry) else {
+            continue;
+        };
+        for (key, empty) in [
+            ("name", option.name.is_empty()),
+            ("text", option.text.is_empty()),
+        ] {
+            if let Some(node) = entry.get(key).filter(|_| empty) {
+                read.error(&node, Code::from(&core_codes::INVALID_VALUE));
+            }
         }
     }
 }
@@ -397,23 +404,31 @@ fn namespaced(name: &str) -> bool {
         .any(|(i, c)| *c == ':' && i > 0 && i + 1 < chars.len())
 }
 
+/// Where an entry is in the file: its path and span.
+type Place = (JsonPath, Option<Span>);
+
 /// The checks of the game's comprehensive-manifest check and the multiselect engine gate,
 /// in vanilla's order per setting: the duplicate name, then the kind's own checks.
 fn check(
-    sink: &mut Sink<'_>,
-    settings: &[(usize, Setting)],
+    read: &mut Read<'_>,
+    settings: &[(Place, Setting)],
     min_engine: Option<&MinEngineVersion>,
 ) {
     let mut names = HashSet::new();
-    for (index, setting) in settings {
-        let at = path(&["settings"]).index(*index);
-        let fail = |sink: &mut Sink<'_>, code: bedrock_addon_core::diagnostic::Code| {
-            sink.push(code, Severity::Error, Phase::Validate, &at);
+    for ((path, span), setting) in settings {
+        let validate = |code: Code, severity: Severity| {
+            let mut finding = Diagnostic::of(code)
+                .severity(severity)
+                .phase(Phase::Validate)
+                .at(path.clone());
+            finding.location.span = *span;
+            finding
         };
+        let fail = |read: &mut Read<'_>, code: Code| read.push(validate(code, Severity::Error));
         if let Some(name) = setting.name()
             && !names.insert(name.to_owned())
         {
-            fail(sink, core_codes::DUPLICATE_PACK_SETTING_NAME.with([name]));
+            fail(read, core_codes::DUPLICATE_PACK_SETTING_NAME.with([name]));
         }
         match setting {
             Setting::Slider {
@@ -425,7 +440,7 @@ fn check(
                 ..
             } => {
                 for text in slider_texts(name, *min, *max, *step, *default) {
-                    fail(sink, text);
+                    fail(read, text);
                 }
             }
             Setting::Dropdown {
@@ -436,7 +451,7 @@ fn check(
             } => {
                 if !options.iter().any(|option| option.name == *default) {
                     fail(
-                        sink,
+                        read,
                         core_codes::DROPDOWN_DEFAULT_NOT_IN_OPTIONS.with([name, default]),
                     );
                 }
@@ -450,7 +465,7 @@ fn check(
                 for default in defaults {
                     if !options.iter().any(|option| option.name == *default) {
                         fail(
-                            sink,
+                            read,
                             core_codes::MULTISELECT_DEFAULT_NOT_IN_OPTIONS.with([name, default]),
                         );
                     }
@@ -460,12 +475,10 @@ fn check(
                 if min_engine
                     .is_none_or(|engine| engine.version < SemVersion::from(MULTISELECT_SINCE))
                 {
-                    sink.push(
+                    read.push(validate(
                         core_codes::FIELD_SINCE_ENGINE.with([MULTISELECT_SINCE.to_string()]),
                         Severity::Info,
-                        Phase::Validate,
-                        &at,
-                    );
+                    ));
                 }
             }
             Setting::Label { .. } | Setting::Toggle { .. } => {}
@@ -475,13 +488,7 @@ fn check(
 
 /// The three slider checks, in vanilla's order. Exact comparisons (`max - min` in `f32`); a NaN
 /// fails each check it takes part in.
-fn slider_texts(
-    name: &str,
-    min: f32,
-    max: f32,
-    step: f32,
-    default: f32,
-) -> Vec<bedrock_addon_core::diagnostic::Code> {
+fn slider_texts(name: &str, min: f32, max: f32, step: f32, default: f32) -> Vec<Code> {
     use std::cmp::Ordering::{Equal, Less};
     let mut texts = Vec::new();
     if min.partial_cmp(&max) != Some(Less) {

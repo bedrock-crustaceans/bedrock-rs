@@ -1,7 +1,7 @@
-//! The `schema::` keys a struct states are checked by facet's derive, and the three stored ones
-//! (`since_format`, `since_engine`, `unknown`) are read back from the `Shape` the way the
-//! reader reads them. A facet bump that changes how an extension attribute is stored fails
-//! here first.
+//! The `schema::` keys a struct states are checked by facet's derive, and the four stored ones
+//! (`since_format`, `since_engine`, `until_engine`, `unknown`) are read back from the `Shape`
+//! the way the reader reads them. A facet bump that changes how an extension attribute is
+//! stored fails here first.
 
 use bedrock_addon_core::schema;
 use facet::{Facet, Field, Shape, Type, UserType};
@@ -9,7 +9,11 @@ use facet::{Facet, Field, Shape, Type, UserType};
 #[derive(Facet)]
 #[facet(schema::unknown = "report")]
 struct Toy {
-    #[facet(schema::since_format = "1.21.60", schema::since_engine = "1.20.0")]
+    #[facet(
+        schema::since_format = "1.21.60",
+        schema::since_engine = "1.20.0",
+        schema::until_engine = "1.26.45"
+    )]
     gated: Option<i32>,
     #[facet(default = 2.0, schema::min = 0.0, schema::below = 10.0)]
     radius: f32,
@@ -48,6 +52,7 @@ fn stored(field: &Field, key: &str) -> Option<&'static str> {
 fn stored_keys_are_read_back_from_the_field() {
     assert_eq!(stored(field("gated"), "since_format"), Some("1.21.60"));
     assert_eq!(stored(field("gated"), "since_engine"), Some("1.20.0"));
+    assert_eq!(stored(field("gated"), "until_engine"), Some("1.26.45"));
     assert_eq!(stored(field("name"), "unknown"), Some("keep"));
     assert_eq!(stored(field("radius"), "since_format"), None);
 }

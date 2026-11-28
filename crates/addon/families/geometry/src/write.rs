@@ -1,5 +1,6 @@
-//! Writing geometry files back: members in declaration order, only those
-//! the value holds, the legacy side-cars as `__legacy`.
+//! Writing geometry files back: the newest shape by core's generic writer (members in
+//! declaration order, only those the value holds, the legacy side-cars as `__legacy`), the
+//! shapes older than 1.12.0 here, member by member, with the refusals of what they cannot hold.
 
 use facet_value::{VArray, VObject};
 use indexmap::IndexMap;
@@ -7,14 +8,12 @@ use indexmap::IndexMap;
 use super::history::{v0_0_0, v1_8_0};
 use super::types::LATEST;
 use super::walk::has_geometry_name;
-use super::{
-    Bone, BoneLegacy, Cube, CubeUv, Description, FaceUv, Faces, Geometry, GeometryFile,
-    GeometryLegacy, ItemDisplayTransform, ItemDisplayTransforms, Locator, PolyMesh, Polys,
-    TextureMesh,
-};
+use super::{Bone, Cube, CubeUv, Geometry, GeometryFile, Locator};
 use bedrock_addon_core::diagnostic::JsonPath;
 use bedrock_addon_core::json::{EncodeError, Unrepresentable, Value};
+use bedrock_addon_core::schema::{Writing, write_value_with};
 use bedrock_addon_core::version::{FormatVersion, known};
+use facet::Facet;
 
 type Written = Result<Value, EncodeError>;
 
@@ -183,6 +182,13 @@ fn list<T>(list: &[T], mut write: impl FnMut(&T) -> Written) -> Written {
         .map(Value::from)
 }
 
+/// `value` by core's generic writer, a whole float as an integer: every member of the newest
+/// shape, and the parts the older shapes share with it (locators, poly and texture meshes, the
+/// side-cars), are written as their types declare them.
+fn whole<'f, T: Facet<'f> + ?Sized>(value: &T) -> Written {
+    write_value_with(value, Writing::WHOLE)
+}
+
 // ---- the newest shape ------------------------------------------------------------------------
 
 /// A file of 1.12.0 or later: `format_version`, `debug`, `minecraft:geometry`.
@@ -195,7 +201,7 @@ pub(crate) fn modern(
     let mut o = Object::new();
     o.put("format_version", version(format_version));
     o.opt("debug", debug.as_ref(), boolean)?;
-    o.req("minecraft:geometry", list(geometries, geometry))?;
+    o.req("minecraft:geometry", whole(geometries))?;
     Ok(o.done())
 }
 
@@ -447,13 +453,11 @@ fn legacy_bone(b: &Bone, v1_8: bool) -> Written {
         map(locators, |l| match l {
             // The 1.8 schema declares the vector alone.
             Locator::Placed { .. } if v1_8 => Err(refused(Unrepresentable::Unsupported)),
-            other => locator(other),
+            other => whole(other),
         })
     })?;
-    o.opt("poly_mesh", b.poly_mesh.as_ref(), poly_mesh)?;
-    o.opt("texture_meshes", b.texture_meshes.as_ref(), |m| {
-        list(m, texture_mesh)
-    })?;
+    o.opt("poly_mesh", b.poly_mesh.as_ref(), whole)?;
+    o.opt("texture_meshes", b.texture_meshes.as_ref(), whole)?;
     Ok(o.done())
 }
 
@@ -493,49 +497,6 @@ fn legacy_cube(c: &Cube, v1_8: bool) -> Written {
     Ok(o.done())
 }
 
-fn geometry(g: &Geometry) -> Written {
-    let mut o = Object::new();
-    o.req("description", description(&g.description))?;
-    o.opt("cape", g.cape.as_ref(), string)?;
-    o.opt(
-        "item_display_transforms",
-        g.item_display_transforms.as_ref(),
-        transforms,
-    )?;
-    o.opt("bones", g.bones.as_ref(), |bones| list(bones, bone))?;
-    geometry_legacy(&mut o, &g.legacy)?;
-    Ok(o.done())
-}
-
-fn geometry_legacy(o: &mut Object, legacy: &GeometryLegacy) -> Result<(), EncodeError> {
-    let mut side = Object::new();
-    side.opt("parent", legacy.parent.as_ref(), string)?;
-    side.opt(
-        "preserve_model_pose",
-        legacy.preserve_model_pose.as_ref(),
-        boolean,
-    )?;
-    side.opt("debug", legacy.debug.as_ref(), boolean)?;
-    if !side.is_empty() {
-        o.put("__legacy", side.done());
-    }
-    Ok(())
-}
-
-fn description(d: &Description) -> Written {
-    let mut o = Object::new();
-    o.put("identifier", Value::from(d.identifier.as_str()));
-    bounds(
-        &mut o,
-        d.visible_bounds_width,
-        d.visible_bounds_height,
-        d.visible_bounds_offset,
-    )?;
-    o.opt("texture_width", d.texture_width.as_ref(), int)?;
-    o.opt("texture_height", d.texture_height.as_ref(), int)?;
-    Ok(o.done())
-}
-
 fn bounds(
     o: &mut Object,
     width: Option<f32>,
@@ -545,155 +506,6 @@ fn bounds(
     o.opt("visible_bounds_width", width.as_ref(), |x| float(*x))?;
     o.opt("visible_bounds_height", height.as_ref(), |x| float(*x))?;
     o.opt("visible_bounds_offset", offset.as_ref(), floats)
-}
-
-fn bone(b: &Bone) -> Written {
-    let mut o = Object::new();
-    o.put("name", Value::from(b.name.as_str()));
-    o.opt("parent", b.parent.as_ref(), string)?;
-    o.opt("pivot", b.pivot.as_ref(), floats)?;
-    o.opt("rotation", b.rotation.as_ref(), floats)?;
-    o.opt("mirror", b.mirror.as_ref(), boolean)?;
-    o.opt("inflate", b.inflate.as_ref(), |x| float(*x))?;
-    o.opt("debug", b.debug.as_ref(), boolean)?;
-    o.opt("render_group_id", b.render_group_id.as_ref(), unsigned)?;
-    o.opt("binding", b.binding.as_ref(), |m| {
-        bedrock_addon_core::molang::write(m).map_err(refused)
-    })?;
-    o.opt("cubes", b.cubes.as_ref(), |cubes| list(cubes, cube))?;
-    o.opt("locators", b.locators.as_ref(), |l| map(l, locator))?;
-    o.opt("poly_mesh", b.poly_mesh.as_ref(), poly_mesh)?;
-    o.opt("texture_meshes", b.texture_meshes.as_ref(), |m| {
-        list(m, texture_mesh)
-    })?;
-    bone_legacy(&mut o, &b.legacy)?;
-    Ok(o.done())
-}
-
-fn bone_legacy(o: &mut Object, legacy: &BoneLegacy) -> Result<(), EncodeError> {
-    let mut side = Object::new();
-    side.opt("reset", legacy.reset.as_ref(), boolean)?;
-    side.opt("never_render", legacy.never_render.as_ref(), boolean)?;
-    side.opt(
-        "bind_pose_rotation",
-        legacy.bind_pose_rotation.as_ref(),
-        floats,
-    )?;
-    if !side.is_empty() {
-        o.put("__legacy", side.done());
-    }
-    Ok(())
-}
-
-fn cube(c: &Cube) -> Written {
-    let mut o = Object::new();
-    o.opt("origin", c.origin.as_ref(), floats)?;
-    o.opt("size", c.size.as_ref(), floats)?;
-    o.opt("rotation", c.rotation.as_ref(), floats)?;
-    o.opt("pivot", c.pivot.as_ref(), floats)?;
-    o.opt("inflate", c.inflate.as_ref(), |x| float(*x))?;
-    o.opt("mirror", c.mirror.as_ref(), boolean)?;
-    o.opt("uv", c.uv.as_ref(), |uv| match uv {
-        CubeUv::Box(uv) => floats(uv),
-        CubeUv::Faces(faces) => self::faces(faces),
-    })?;
-    Ok(o.done())
-}
-
-fn faces(f: &Faces) -> Written {
-    let mut o = Object::new();
-    o.opt("north", f.north.as_ref(), face)?;
-    o.opt("south", f.south.as_ref(), face)?;
-    o.opt("east", f.east.as_ref(), face)?;
-    o.opt("west", f.west.as_ref(), face)?;
-    o.opt("up", f.up.as_ref(), face)?;
-    o.opt("down", f.down.as_ref(), face)?;
-    Ok(o.done())
-}
-
-fn face(f: &FaceUv) -> Written {
-    let mut o = Object::new();
-    o.req("uv", floats(&f.uv))?;
-    o.opt("uv_size", f.uv_size.as_ref(), floats)?;
-    o.opt("uv_rotation", f.uv_rotation.as_ref(), |turn| {
-        Ok(Value::from(i64::from(*turn)))
-    })?;
-    o.opt("material_instance", f.material_instance.as_ref(), string)?;
-    Ok(o.done())
-}
-
-fn locator(l: &Locator) -> Written {
-    match l {
-        Locator::Position(at) => floats(at),
-        Locator::Placed {
-            offset,
-            rotation,
-            ignore_inherited_scale,
-        } => {
-            let mut o = Object::new();
-            o.req("offset", floats(offset))?;
-            o.opt("rotation", rotation.as_ref(), floats)?;
-            o.opt(
-                "ignore_inherited_scale",
-                ignore_inherited_scale.as_ref(),
-                boolean,
-            )?;
-            Ok(o.done())
-        }
-    }
-}
-
-fn poly_mesh(m: &PolyMesh) -> Written {
-    let mut o = Object::new();
-    o.opt("normalized_uvs", m.normalized_uvs.as_ref(), boolean)?;
-    o.opt("positions", m.positions.as_ref(), |p| list(p, floats))?;
-    o.opt("normals", m.normals.as_ref(), |p| list(p, floats))?;
-    o.opt("uvs", m.uvs.as_ref(), |p| list(p, floats))?;
-    let polys = match &m.polys {
-        Polys::List(name) => Value::from(name.as_str()),
-        Polys::Indices(polys) => list(polys, |poly| {
-            list(poly, |vertex| {
-                Ok(Value::from(
-                    vertex
-                        .iter()
-                        .map(|index| Value::from(i64::from(*index)))
-                        .collect::<VArray>(),
-                ))
-            })
-        })?,
-    };
-    o.put("polys", polys);
-    Ok(o.done())
-}
-
-fn texture_mesh(m: &TextureMesh) -> Written {
-    let mut o = Object::new();
-    o.put("texture", Value::from(m.texture.as_str()));
-    o.opt("position", m.position.as_ref(), floats)?;
-    o.opt("local_pivot", m.local_pivot.as_ref(), floats)?;
-    o.opt("rotation", m.rotation.as_ref(), floats)?;
-    o.opt("scale", m.scale.as_ref(), floats)?;
-    o.opt("use_pixel_depth", m.use_pixel_depth.as_ref(), boolean)?;
-    Ok(o.done())
-}
-
-fn transforms(t: &ItemDisplayTransforms) -> Written {
-    let mut o = Object::new();
-    for (name, transform) in t {
-        o.req(name, self::transform(transform))?;
-    }
-    Ok(o.done())
-}
-
-fn transform(t: &ItemDisplayTransform) -> Written {
-    let mut o = Object::new();
-    o.opt("translation", t.translation.as_ref(), floats)?;
-    o.opt("rotation", t.rotation.as_ref(), floats)?;
-    o.opt("scale", t.scale.as_ref(), floats)?;
-    o.opt("rotation_pivot", t.rotation_pivot.as_ref(), floats)?;
-    o.opt("scale_pivot", t.scale_pivot.as_ref(), floats)?;
-    o.opt("fit_to_frame", t.fit_to_frame.as_ref(), boolean)?;
-    Ok(o.done())
 }
 
 // ---- the two shapes older than 1.12.0 ----------------------------------------------------------
@@ -763,7 +575,7 @@ fn old_bone(b: &v0_0_0::Bone) -> Written {
             }
         })
     })?;
-    o.opt("locators", b.locators.as_ref(), |l| map(l, locator))?;
+    o.opt("locators", b.locators.as_ref(), whole)?;
     Ok(o.done())
 }
 
@@ -786,7 +598,9 @@ impl v1_8_0::GeometryFile {
             m.opt("textureheight", g.textureheight.as_ref(), int)?;
             m.opt("cape", g.cape.as_ref(), string)?;
             m.opt("bones", g.bones.as_ref(), |bones| list(bones, bone_1_8))?;
-            geometry_legacy(&mut m, &g.legacy)?;
+            if !g.legacy.is_empty() {
+                m.req("__legacy", whole(&g.legacy))?;
+            }
             o.put(key, m.done());
         }
         Ok(o.done())
@@ -817,10 +631,8 @@ fn bone_1_8(b: &v1_8_0::Bone) -> Written {
             Ok(o.done())
         })
     })?;
-    o.opt("locators", b.locators.as_ref(), |l| map(l, locator))?;
-    o.opt("poly_mesh", b.poly_mesh.as_ref(), poly_mesh)?;
-    o.opt("texture_meshes", b.texture_meshes.as_ref(), |m| {
-        list(m, texture_mesh)
-    })?;
+    o.opt("locators", b.locators.as_ref(), whole)?;
+    o.opt("poly_mesh", b.poly_mesh.as_ref(), whole)?;
+    o.opt("texture_meshes", b.texture_meshes.as_ref(), whole)?;
     Ok(o.done())
 }

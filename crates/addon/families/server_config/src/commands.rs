@@ -1,16 +1,27 @@
-//! Reading `config/commands.json` (the server's `commands` schema): unknown members are accepted, an invalid level name refuses the whole file,
-//! and of a member written twice the first stands.
+//! Reading `config/commands.json` (the server's `commands` schema): [`CommandsConfig`]
+//! derives its read. Unknown members are accepted, an invalid level name refuses the whole
+//! file, and of a member written twice the first stands.
 
 use crate::codes;
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostics, JsonPath, Severity, Span};
-use bedrock_addon_core::json::JsonSlice;
+use bedrock_addon_core::diagnostic::{Diagnostics, JsonPath, Severity, Span};
+use bedrock_addon_core::json::Winner;
+use bedrock_addon_core::json::kit::{Node, Read};
+use bedrock_addon_core::schema::read_document;
+use bedrock_addon_core::versioning::{NullHandling, Reading};
 
-use super::read::{Sink, Twice, object, span, string, value, with_root};
-use super::{COMMANDS_FILE, CommandPermissionLevel, CommandsConfig, UnreadableFile};
+use super::read::{Sink, with_root};
+use super::{COMMANDS_FILE, CommandsConfig, UnreadableFile};
 
 const DEFAULT_PERMISSION_LEVEL: &str = "default_permission_level";
 const PERMISSION_LEVELS: &str = "permission_levels";
+
+/// The server's reading of the file: every failure an error that refuses the file, each
+/// told; an unknown member an information, kept.
+const COMMANDS: Reading = Reading::OWN
+    .strict()
+    .with_null(NullHandling::Rejected)
+    .with_unknown(Severity::Info);
 
 /// Reads `config/commands.json`; `None` when it is absent, unreadable or refused.
 pub(super) fn read(
@@ -27,50 +38,20 @@ pub(super) fn read(
         sink.unreadable(failed.kind);
         return None;
     }
-    let mut config = CommandsConfig::default();
-    let mut refused = false;
+    let file = sink.name.clone();
+    let mut config = None;
     // The names of `permission_levels` that are no command, with where each is.
     let mut unknown: Vec<(String, JsonPath, Option<Span>)> = Vec::new();
-    let parsed = with_root(bytes?, Twice::First, &mut sink, |root, sink| {
-        let at = JsonPath::new();
-        let Some(members) = object(root) else {
-            sink.push(
-                Code::from(&core_codes::INVALID_TYPE),
-                Severity::Error,
-                at,
-                span(root),
-            );
-            refused = true;
-            return;
-        };
-        for (name, raw) in &members {
-            let slice = *raw;
-            let here = at.child(name);
-            match name.as_str() {
-                DEFAULT_PERMISSION_LEVEL => match level(slice, here, true, sink) {
-                    Some(level) => config.default_permission_level = Some(level),
-                    None => refused = true,
-                },
-                PERMISSION_LEVELS => {
-                    refused |= !levels(slice, &here, sink, &mut config, &mut unknown);
-                }
-                _ => {
-                    // Accepted silently by the server.
-                    sink.info(
-                        Code::from(&core_codes::UNRECOGNIZED_FIELD),
-                        here.clone(),
-                        span(slice),
-                    );
-                    if let Some(value) = value(slice, &here, sink) {
-                        config.extra.insert(name.clone(), value);
-                    }
-                }
-            }
+    with_root(bytes?, Winner::First, &mut sink, |root, found| {
+        let mut read = Read::new(COMMANDS, found).clamp_kept();
+        config = read_document::<CommandsConfig>(root, &mut read);
+        if let Some(config) = &config {
+            unknown = unknown_commands(root, &mut read, config);
         }
+        drop(read);
+        bad_level(root, found, &file);
     });
-    if !parsed || refused {
-        return None;
-    }
+    let config = config?;
     // A level for a name the game has no command for: the server keeps it and nothing
     // reads it, so the name is told once the file is known to load.
     for (command, at, span) in unknown {
@@ -83,72 +64,51 @@ pub(super) fn read(
 /// pass uses for a command).
 const COMMAND: &str = "command";
 
-/// `permission_levels`: command name → level. False when anything in it refuses the file.
-fn levels(
-    slice: JsonSlice<'_>,
-    at: &JsonPath,
-    sink: &mut Sink<'_>,
-    config: &mut CommandsConfig,
-    unknown: &mut Vec<(String, JsonPath, Option<Span>)>,
-) -> bool {
-    let Some(members) = object(slice) else {
-        sink.push(
-            Code::from(&core_codes::INVALID_TYPE),
-            Severity::Error,
-            at.clone(),
-            span(slice),
-        );
-        return false;
+/// The keys of `permission_levels` that name no command (a name as typed, without `/`: a
+/// command's own or one of its aliases), each with where its level is.
+fn unknown_commands(
+    root: &Node<'_>,
+    read: &mut Read<'_>,
+    config: &CommandsConfig,
+) -> Vec<(String, JsonPath, Option<Span>)> {
+    let levels = read
+        .object(root)
+        .and_then(|members| members.get(PERMISSION_LEVELS))
+        .and_then(|levels| read.object(&levels));
+    let Some(levels) = levels else {
+        return Vec::new();
     };
-    let mut accepted = true;
-    config.permission_levels.reserve(members.len());
-    for (command, raw) in &members {
-        let slice = *raw;
-        match level(slice, at.child(command), false, sink) {
-            Some(level) => {
-                // A name as typed, without `/`: a command's own or one of its aliases.
-                if bedrock_addon_core::vanilla::command(command).is_none() {
-                    unknown.push((command.clone(), at.child(command), span(slice)));
-                }
-                config.permission_levels.insert(command.clone(), level);
-            }
-            None => accepted = false,
+    config
+        .permission_levels
+        .keys()
+        .filter(|command| bedrock_addon_core::vanilla::command(command).is_none())
+        .filter_map(|command| {
+            let level = levels.get(command)?;
+            Some((command.clone(), level.path().clone(), level.span()))
+        })
+        .collect()
+}
+
+/// Words a level name the root's `default_permission_level` does not know in the server's
+/// line, which names the file, the member and the value: only the root's member carries it.
+fn bad_level(root: &Node<'_>, found: &mut Diagnostics, file: &str) {
+    let at = JsonPath::new().child(DEFAULT_PERMISSION_LEVEL);
+    let name = root
+        .value()
+        .as_object()
+        .and_then(|object| object.get(DEFAULT_PERMISSION_LEVEL))
+        .and_then(|value| value.as_string())
+        .map(|name| name.as_str().to_owned());
+    let Some(name) = name else {
+        return;
+    };
+    for finding in found.iter_mut() {
+        if finding.location.json_path == at && finding.is(&core_codes::INVALID_ENUM_VALUE) {
+            finding.code = codes::BAD_LEVEL.with([
+                file.to_owned(),
+                DEFAULT_PERMISSION_LEVEL.to_owned(),
+                name.clone(),
+            ]);
         }
     }
-    accepted
-}
-
-/// The name of the root member at `at`, as the file has it: what the server's text names.
-fn member_name(at: &JsonPath) -> String {
-    at.last_key().unwrap_or_default().to_owned()
-}
-
-/// One level name. Anything else is an error that refuses the file; the server's text is
-/// known for a root member only (`root`).
-fn level(
-    slice: JsonSlice<'_>,
-    at: JsonPath,
-    root: bool,
-    sink: &mut Sink<'_>,
-) -> Option<CommandPermissionLevel> {
-    let Some(name) = string(slice) else {
-        sink.push(
-            Code::from(&core_codes::INVALID_TYPE),
-            Severity::Error,
-            at,
-            span(slice),
-        );
-        return None;
-    };
-    let level = CommandPermissionLevel::from_name(&name);
-    if level.is_none() {
-        // Only the root's member carries the server's line.
-        let code = if root {
-            codes::BAD_LEVEL.with([sink.name.clone(), member_name(&at), name])
-        } else {
-            Code::from(&core_codes::INVALID_ENUM_VALUE)
-        };
-        sink.push(code, Severity::Error, at, span(slice));
-    }
-    level
 }

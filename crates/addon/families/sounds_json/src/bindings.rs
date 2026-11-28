@@ -1,41 +1,61 @@
 //! `sounds.json`: which sound each game event plays, for the world, for blocks and for
 //! entities.
 
-use super::codes;
+#![allow(
+    clippy::unnecessary_wraps,
+    reason = "the shape of a `schema::read_with` function, which never fails here"
+)]
+
+use facet::Facet;
 use indexmap::IndexMap;
 
+use super::codes;
 use super::events::{LEGACY_AMBIENT_EVENTS, is_level_sound_event};
-use crate::report::{Reporter, check_unknown, integer, string};
 use bedrock_addon_core::diagnostic::codes as core_codes;
-use bedrock_addon_core::diagnostic::{Code, Diagnostics, Severity};
+use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
+use bedrock_addon_core::json::kit::{MemberOrder, Node, Objects, Profile, Read};
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
+use bedrock_addon_core::schema::{self, FromJson, Schema, read_document};
+use bedrock_addon_core::versioning::{NullHandling, Reading, Scalars};
+
+/// What a read of the whole stack's merge puts `true` in scope under: a block sound `base` that
+/// names no type is then vanilla's error.
+const WHOLE: &str = "whole";
 
 /// The event bindings of the resource packs, `sounds.json` (`#[doc(alias)]` `sounds.json`):
 /// which sound definition each level sound event plays.
 ///
 /// [`json`](Self::json) is the document as merged, which is what the value writes back.
 #[doc(alias = "sounds.json")]
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+// `format_version` is in vanilla's own files; nothing reads it.
+#[facet(schema::quiet = "format_version", schema::after_read = legacy_ambient)]
 #[non_exhaustive]
 pub struct SoundBindings {
     /// `individual_event_sounds`: the sounds of events that belong to no block or entity.
+    #[facet(default)]
     pub individual_event_sounds: EventSounds,
     /// `individual_named_sounds`: sounds played by name (biome ambience).
+    #[facet(default)]
     pub individual_named_sounds: NamedSounds,
     /// `block_sounds`: the sounds of each block sound type (`stone`, `wood`), as the type
     /// writes them. An event a type lacks is its `base` chain's:
     /// [`block_sound`](Self::block_sound) answers with the chain.
+    #[facet(default, schema::read_with = block_table)]
     pub block_sounds: IndexMap<String, BlockSounds>,
     /// `entity_sounds`.
+    #[facet(default)]
     pub entity_sounds: EntitySounds,
     /// `interactive_sounds`: what an entity or a block sounds like when something acts on it.
+    #[facet(default)]
     pub interactive_sounds: InteractiveSounds,
     /// The document.
+    #[facet(skip)]
     pub(crate) json: Value,
 }
-
 impl SoundBindings {
     /// The document as JSON: what the typed members were read from and what the value writes.
     pub fn json(&self) -> &Value {
@@ -91,13 +111,16 @@ impl SoundBindings {
 }
 
 /// A volume or pitch range: one of the two bounds is picked each time a sound plays.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Facet)]
 pub struct SoundRange {
     /// The lower bound.
     pub min: f32,
     /// The upper bound.
     pub max: f32,
 }
+
+bedrock_addon_core::impl_schema_leaf!(SoundRange);
+bedrock_addon_core::impl_no_molang!(SoundRange);
 
 impl SoundRange {
     /// The range of a table that sets none: −1.0 for both bounds, which the engine reads as
@@ -116,7 +139,10 @@ impl SoundRange {
 }
 
 /// One bound sound: a sound definition's event name with its volume and pitch.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// Read from a name, or from an object with `sound`, `volume` and `pitch`; a range it does not
+/// set is the one its table puts in scope.
+#[derive(Clone, Debug, PartialEq, Facet)]
 #[non_exhaustive]
 pub struct SoundRef {
     /// The sound event name in `sound_definitions.json`; `""` plays nothing.
@@ -127,62 +153,109 @@ pub struct SoundRef {
     pub pitch: SoundRange,
 }
 
-/// A table of level sound events (`individual_event_sounds`, an entity, a variant).
-#[derive(Clone, Debug, PartialEq)]
-#[non_exhaustive]
-pub struct EventSounds {
-    /// `volume`: what the table's sounds take when they set none.
-    pub volume: SoundRange,
-    /// `pitch`: what the table's sounds take when they set none.
-    pub pitch: SoundRange,
-    /// `events`: the sound of each level sound event, by its lower-cased name.
-    pub events: IndexMap<String, SoundRef>,
-}
+bedrock_addon_core::impl_schema_leaf!(SoundRef);
+bedrock_addon_core::impl_no_molang!(SoundRef);
 
-impl Default for EventSounds {
-    fn default() -> Self {
-        Self {
-            volume: SoundRange::UNSET,
-            pitch: SoundRange::UNSET,
-            events: IndexMap::new(),
+impl FromJson for SoundRef {
+    fn from_json(node: &Node<'_>, read: &mut Read<'_>) -> Option<Self> {
+        let (volume, pitch) = (table_range(read, "volume"), table_range(read, "pitch"));
+        if !node.value().is_object() {
+            // A number or array reads as `""` and a bool as its spelling (`asString`); the game
+            // says nothing, so the crate tells it as an information.
+            let sound = String::from_json(node, read)?;
+            return Some(Self {
+                sound,
+                volume,
+                pitch,
+            });
         }
+        let written = SoundObject::from_json(node, read)?;
+        Some(Self {
+            sound: written.sound,
+            volume: written.volume.unwrap_or(volume),
+            pitch: written.pitch.unwrap_or(pitch),
+        })
     }
 }
 
-/// `individual_named_sounds`.
-#[derive(Clone, Debug, PartialEq)]
+/// A sound written as an object.
+#[derive(Debug, PartialEq, Facet, Schema)]
+// `sounds` beside `sound` occurs in 88 entries of the game's own file (the `fall` events of
+// `interactive_sounds.block_sounds`); nothing reads it.
+#[facet(schema::quiet = "sounds")]
+struct SoundObject {
+    #[facet(default)]
+    sound: String,
+    #[facet(schema::read_with = own_volume)]
+    volume: Option<SoundRange>,
+    #[facet(schema::read_with = own_pitch)]
+    pitch: Option<SoundRange>,
+}
+
+/// A table of level sound events (`individual_event_sounds`, an entity, a variant). Its
+/// `volume` and `pitch` are in scope for its sounds.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = events_object)]
+#[non_exhaustive]
+pub struct EventSounds {
+    /// `volume`: what the table's sounds take when they set none.
+    #[facet(
+        default = SoundRange::UNSET,
+        schema::read_with = range_over_unset,
+        schema::scope
+    )]
+    pub volume: SoundRange,
+    /// `pitch`: what the table's sounds take when they set none.
+    #[facet(
+        default = SoundRange::UNSET,
+        schema::read_with = range_over_unset,
+        schema::scope
+    )]
+    pub pitch: SoundRange,
+    /// `events`: the sound of each level sound event, by its lower-cased name.
+    #[facet(default, schema::read_with = events)]
+    pub events: IndexMap<String, SoundRef>,
+}
+
+/// `individual_named_sounds`. Its `volume` and `pitch` are in scope for its sounds.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = sounds_object)]
 #[non_exhaustive]
 pub struct NamedSounds {
     /// `volume`.
+    #[facet(
+        default = SoundRange::UNSET,
+        schema::read_with = range_over_unset,
+        schema::scope
+    )]
     pub volume: SoundRange,
     /// `pitch`.
+    #[facet(
+        default = SoundRange::UNSET,
+        schema::read_with = range_over_unset,
+        schema::scope
+    )]
     pub pitch: SoundRange,
     /// `sounds`: the sound of each name, compared with case. The sixteen legacy ambient
     /// events of `individual_event_sounds` are also listed here under their event names
     /// unless a sound of that name exists.
+    #[facet(default)]
     pub sounds: IndexMap<String, SoundRef>,
 }
 
-impl Default for NamedSounds {
-    fn default() -> Self {
-        Self {
-            volume: SoundRange::UNSET,
-            pitch: SoundRange::UNSET,
-            sounds: IndexMap::new(),
-        }
-    }
-}
-
-/// One block sound type.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// One block sound type. Its `base` is in scope for its table, whose `events` it makes
+/// optional.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct BlockSounds {
     /// `base`: the block sound type whose events this one takes where it has none; `""` for
     /// none. After an edit of it, [`SoundBindings::resolve_block_bases`] makes the lookups
     /// follow the new chain.
+    #[facet(default, schema::read_with = silent_text, schema::scope)]
     pub base: String,
     /// The type's own table. The events of its `base` chain are not copied in: a table of
     /// many types that inherit from each other would hold every event many times over.
+    #[facet(flatten)]
     pub sounds: EventSounds,
     /// How many types of the `base` chain the type inherits from: the chain up to a base that
     /// names no type, or to the first type it passed already.
@@ -191,336 +264,388 @@ pub struct BlockSounds {
     /// again when a caller edits [`base`](Self::base) or the table's types.
     /// [`SoundBindings::resolve_block_bases`] works it out again; until then the lookups
     /// follow the chain this far and no further.
+    #[facet(skip)]
     pub(crate) inherits: usize,
 }
 
 /// `entity_sounds`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct EntitySounds {
     /// `defaults`: the sounds of an entity without an entry.
+    #[facet(default)]
     pub defaults: EventSounds,
     /// `entities`: the sounds of each entity type.
+    #[facet(default)]
     pub entities: IndexMap<String, EntitySoundEntry>,
 }
 
 /// One entity's sounds.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = entity_key)]
 #[non_exhaustive]
 pub struct EntitySoundEntry {
     /// The entity's own table.
+    #[facet(flatten)]
     pub sounds: EventSounds,
     /// `variants`: other tables, picked by a Molang key.
+    #[facet(schema::reads_null)]
     pub variants: Option<SoundVariants<EventSounds>>,
     /// `__molang_version`: the Molang version the variant key is parsed with. Vanilla writes
     /// the supplying pack's into every `entity_sounds` entry with a variant key before the
     /// packs are merged.
+    #[facet(rename = "__molang_version", schema::reads_null)]
     pub molang_version: Option<i32>,
 }
 
-/// The sound variants of an entity: a Molang key that names one entry of the map.
-#[derive(Clone, Debug, PartialEq)]
+/// The sound variants of an entity: a Molang key that names one entry of the map. Each
+/// variant's table starts from fresh ranges.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = key_and_map)]
 #[non_exhaustive]
 pub struct SoundVariants<T> {
     /// `key`: the Molang expression whose string result names the variant; `None` for the
     /// `null` a merge can leave here. Compiled for its findings only, never evaluated.
+    #[facet(schema::read_with = key_source)]
     pub key: Option<MolangSource>,
     /// `map`: the table of each variant.
+    #[facet(default)]
     pub map: IndexMap<String, T>,
 }
 
 /// `interactive_sounds`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+// `entities` is the member the game's pre-merge transform writes and nothing reads.
+#[facet(schema::quiet = "entities")]
 #[non_exhaustive]
 pub struct InteractiveSounds {
     /// `block_sounds`, read as the top-level `block_sounds` are.
+    #[facet(default, schema::read_with = block_table)]
     pub block_sounds: IndexMap<String, BlockSounds>,
     /// `entity_sounds`.
+    #[facet(default)]
     pub entity_sounds: InteractiveEntitySounds,
 }
 
 /// `interactive_sounds.entity_sounds`.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct InteractiveEntitySounds {
     /// `defaults`.
+    #[facet(default)]
     pub defaults: InteractiveEventSounds,
     /// `entities`.
+    #[facet(default)]
     pub entities: IndexMap<String, InteractiveEntityEntry>,
 }
 
-/// A table of events whose sound depends on what is acted on.
-#[derive(Clone, Debug, PartialEq)]
+/// A table of events whose sound depends on what is acted on. Its `volume` and `pitch` are in
+/// scope for its sounds.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
 #[non_exhaustive]
 pub struct InteractiveEventSounds {
     /// `volume`; 1.0 when the table sets none.
+    #[facet(default = SoundRange::ONE, schema::read_with = range_over_one, schema::scope)]
     pub volume: SoundRange,
     /// `pitch`; 1.0 when the table sets none.
+    #[facet(default = SoundRange::ONE, schema::read_with = range_over_one, schema::scope)]
     pub pitch: SoundRange,
     /// `events`: per level sound event, the sound of each surface (`default`, or a block
     /// sound type).
+    #[facet(default, schema::read_with = interactive_events)]
     pub events: IndexMap<String, IndexMap<String, SoundRef>>,
 }
 
-impl Default for InteractiveEventSounds {
-    fn default() -> Self {
-        Self {
-            volume: SoundRange::ONE,
-            pitch: SoundRange::ONE,
-            events: IndexMap::new(),
-        }
-    }
-}
-
-/// One entity of `interactive_sounds.entity_sounds.entities`.
-#[derive(Clone, Debug, Default, PartialEq)]
+/// One entity of `interactive_sounds.entity_sounds.entities`: the game reads its variants
+/// before its own table.
+#[derive(Clone, Debug, Default, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = interactive_entity_key)]
 #[non_exhaustive]
 pub struct InteractiveEntityEntry {
-    /// The entity's own table.
-    pub sounds: InteractiveEventSounds,
     /// `variants`.
+    #[facet(schema::reads_null)]
     pub variants: Option<SoundVariants<InteractiveEventSounds>>,
     /// `__molang_version` as the author wrote it; the variant key is parsed with version 0
     /// without one (vanilla never writes it into this table).
+    #[facet(rename = "__molang_version", schema::reads_null)]
     pub molang_version: Option<i32>,
+    /// The entity's own table.
+    #[facet(flatten)]
+    pub sounds: InteractiveEventSounds,
 }
 
-/// Sets `range` from `value` and says whether it did. `null` and an
-/// empty array set nothing.
-fn parse_range(value: &Value, range: &mut SoundRange, report: &mut Reporter<'_>) -> bool {
+/// `_loadSounds`: the five sections of `root`, in vanilla's order, read as the game's jsoncpp
+/// fork reads them: members asked for by name, an object iterated in key order, a value that
+/// is no object one with no members, each scalar coerced (`Scalars::Fork`) and a `null` the
+/// default, every finding in the validate phase and an unknown member an information. `whole`
+/// says the document is the merge of the whole stack, not one pack's copy.
+pub(crate) fn read_root(root: &Value, whole: bool, diagnostics: &mut Diagnostics) -> SoundBindings {
+    let reading = Reading::OWN
+        .with_scalars(Scalars::Fork)
+        .with_null(NullHandling::AbsentSilently);
+    let profile = Profile::DECLARED_ORDER
+        .with_members(MemberOrder::Named)
+        .with_objects(Objects::Fork);
+    let mut read = Read::new(reading, diagnostics)
+        .profile(profile)
+        .phase(Phase::Validate)
+        .unknown_severity(Severity::Info);
+    let node = Node::new(root, JsonPath::new());
+    let mut value: SoundBindings = read
+        .scoped(WHOLE, whole, |read| read_document(&node, read))
+        .unwrap_or_default();
+    value.json = root.clone();
+    value
+}
+
+/// The range `name` of the table the value is read in ([`Read::scope`]); unset outside one.
+fn table_range(read: &Read<'_>, name: &str) -> SoundRange {
+    read.scope::<SoundRange>(name)
+        .copied()
+        .unwrap_or(SoundRange::UNSET)
+}
+
+/// A sound's own `volume`, over its table's.
+fn own_volume(node: &Node<'_>, read: &mut Read<'_>) -> Option<SoundRange> {
+    let start = table_range(read, "volume");
+    Some(parse_range(node, start, read))
+}
+
+/// A sound's own `pitch`, over its table's.
+fn own_pitch(node: &Node<'_>, read: &mut Read<'_>) -> Option<SoundRange> {
+    let start = table_range(read, "pitch");
+    Some(parse_range(node, start, read))
+}
+
+/// A table's range, over the unset one.
+fn range_over_unset(node: &Node<'_>, read: &mut Read<'_>) -> Option<SoundRange> {
+    Some(parse_range(node, SoundRange::UNSET, read))
+}
+
+/// An interactive table's range, over 1.0.
+fn range_over_one(node: &Node<'_>, read: &mut Read<'_>) -> Option<SoundRange> {
+    Some(parse_range(node, SoundRange::ONE, read))
+}
+
+/// A range over `start`: `null` and an empty array set nothing; a number (a bool too, numeric
+/// in the game's jsoncpp variant, which the crate tells as an information) both bounds; an
+/// array its first two elements in ascending order; an object its `min` and `max` over
+/// `start`, the maximum never below the minimum; a string the numbers between `[` and `]`.
+fn parse_range(node: &Node<'_>, start: SoundRange, read: &mut Read<'_>) -> SoundRange {
+    let value = node.value();
+    let both = |bound: f32| SoundRange {
+        min: bound,
+        max: bound,
+    };
     match fork::stored(value) {
-        Stored::Null => false,
+        Stored::Null => start,
         Stored::Integer | Stored::Real | Stored::Bool => {
             if value.is_bool() {
-                // A bool is numeric in the game's jsoncpp variant; the crate reports it as an
-                // information.
-                report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
+                read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(node.path().clone()));
             }
-            let bound = fork::as_float(value, 0.0);
-            *range = SoundRange {
-                min: bound,
-                max: bound,
-            };
-            true
+            both(fork::as_float(value, 0.0))
         }
-        Stored::Array => {
-            let elements = fork::elements(value);
-            match elements.as_slice() {
-                [] => false,
-                [only] => {
-                    let bound = fork::as_float(only, 0.0);
-                    *range = SoundRange {
-                        min: bound,
-                        max: bound,
-                    };
-                    true
-                }
-                [first, second, ..] => {
-                    let (mut min, mut max) =
-                        (fork::as_float(first, 0.0), fork::as_float(second, 0.0));
-                    if max < min {
-                        std::mem::swap(&mut min, &mut max);
-                    }
-                    *range = SoundRange { min, max };
-                    true
+        Stored::Array => match fork::elements(value).as_slice() {
+            [] => start,
+            [only] => both(fork::as_float(only, 0.0)),
+            [first, second, ..] => {
+                let (a, b) = (fork::as_float(first, 0.0), fork::as_float(second, 0.0));
+                if b < a {
+                    SoundRange { min: b, max: a }
+                } else {
+                    SoundRange { min: a, max: b }
                 }
             }
-        }
+        },
         Stored::Object => {
+            let mut range = start;
             if fork::has_member(value, "min") {
                 range.min = fork::as_float(fork::member(value, "min"), 0.0);
             }
             if fork::has_member(value, "max") {
                 range.max = fork::as_float(fork::member(value, "max"), 0.0);
             }
-            // The maximum is never below the minimum.
             range.max = range.min.max(range.max);
-            true
+            range
         }
-        Stored::String => parse_range_text(fork::text(value).unwrap_or_default(), range),
+        Stored::String => parse_range_text(fork::text(value).unwrap_or_default()).unwrap_or(start),
     }
 }
 
-/// A range given as a string: the numbers between `[` and `]`, one for both
-/// bounds or two in ascending order.
-fn parse_range_text(text: &str, range: &mut SoundRange) -> bool {
+/// A range given as a string: the numbers between `[` and `]`, one for both bounds or two in
+/// ascending order.
+fn parse_range_text(text: &str) -> Option<SoundRange> {
     let inner = text.trim().trim_start_matches('[').trim_end_matches(']');
     let mut numbers = inner.split(',').map(|part| part.trim().parse::<f32>());
     match (numbers.next(), numbers.next()) {
-        (Some(Ok(only)), None) => {
-            *range = SoundRange {
-                min: only,
-                max: only,
-            };
-            true
-        }
-        (Some(Ok(a)), Some(Ok(b))) => {
-            *range = SoundRange {
-                min: a.min(b),
-                max: a.max(b),
-            };
-            true
-        }
-        _ => false,
+        (Some(Ok(only)), None) => Some(SoundRange {
+            min: only,
+            max: only,
+        }),
+        (Some(Ok(a)), Some(Ok(b))) => Some(SoundRange {
+            min: a.min(b),
+            max: a.max(b),
+        }),
+        _ => None,
     }
 }
 
-/// The `volume` and `pitch` of a table, over what it starts from.
-fn table_ranges(
-    value: &Value,
-    start: SoundRange,
-    report: &mut Reporter<'_>,
-) -> (SoundRange, SoundRange) {
-    let (mut volume, mut pitch) = (start, start);
-    report.enter("volume");
-    parse_range(fork::member(value, "volume"), &mut volume, report);
-    report.leave();
-    report.enter("pitch");
-    parse_range(fork::member(value, "pitch"), &mut pitch, report);
-    report.leave();
-    (volume, pitch)
+/// A string read by `asString` without a word (a `base`).
+fn silent_text(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
+    Some(jsoncpp::to_text(node.value()))
 }
 
-/// A sound: a name, or an object with `sound`, `volume` and `pitch`; the
-/// ranges it does not set are the table's.
-fn read_sound(
-    value: &Value,
-    volume: SoundRange,
-    pitch: SoundRange,
-    report: &mut Reporter<'_>,
-) -> SoundRef {
-    if value.is_object() {
-        // `sounds` beside `sound` occurs in 88 entries of the game's own file (the `fall` events
-        // of `interactive_sounds.block_sounds`); nothing reads it.
-        check_unknown(value, &["sound", "volume", "pitch"], &["sounds"], report);
-        let sound = string(value, "sound", report);
-        let (volume, pitch) = {
-            let (mut v, mut p) = (volume, pitch);
-            report.enter("volume");
-            parse_range(fork::member(value, "volume"), &mut v, report);
-            report.leave();
-            report.enter("pitch");
-            parse_range(fork::member(value, "pitch"), &mut p, report);
-            report.leave();
-            (v, p)
-        };
-        return SoundRef {
-            sound,
-            volume,
-            pitch,
-        };
-    }
-    if !matches!(fork::stored(value), Stored::Null | Stored::String) {
-        // A number or array reads as `""` and a bool as its spelling; the game says nothing, so
-        // the crate reports it as an information.
-        report.here(Code::from(&core_codes::INVALID_VALUE), Severity::Info);
-    }
-    SoundRef {
-        sound: fork::to_text(value),
-        volume,
-        pitch,
-    }
+/// A variant key, read by `asString` without a word, at Molang version 0 until its entity
+/// says its own ([`stamp`]).
+fn key_source(node: &Node<'_>, _: &mut Read<'_>) -> Option<MolangSource> {
+    Some(MolangSource::string(
+        jsoncpp::to_text(node.value()),
+        RawVersion(0),
+    ))
 }
 
-/// The finding of an event name vanilla does not know; the name is the
-/// lower-cased key. In an `events` table the game writes vanilla's text to the content log at
-/// the error level, drops the entry and loads the file: a kept error; `interactive_sounds`
-/// looks the name up without a word, so the finding there is an information of the crate's
-/// own.
-fn unknown_event(name: &str, logged: bool, report: &mut Reporter<'_>) {
-    if logged {
-        report.kept(codes::NOT_AN_EVENT.with([name.to_owned()]));
-    } else {
-        report.here(Code::from(&core_codes::UNKNOWN_SOUND), Severity::Info);
-    }
-}
-
-/// Reads an event table: nothing for a value that is no object; else the table's ranges and its
-/// `events`, which must be an object unless `events_optional`.
-fn read_event_sounds(
-    value: &Value,
-    events_optional: bool,
-    known: &[&str],
-    report: &mut Reporter<'_>,
-) -> EventSounds {
-    let mut table = EventSounds::default();
-    if !value.is_object() {
-        return table;
-    }
-    check_unknown(value, known, &[], report);
-    (table.volume, table.pitch) = table_ranges(value, SoundRange::UNSET, report);
-    let events = fork::member(value, "events");
-    if !events.is_object() {
-        if !events_optional {
-            // The game writes an error line to the content log; the table is skipped and the
-            // file loads: a kept error.
-            report.kept(Code::from(&codes::EXPECTED_EVENTS));
-        }
-        return table;
-    }
-    report.enter("events");
-    // Sorted key order: of two keys equal without case, the later one stands.
-    for key in fork::member_names(events) {
-        report.enter(&key);
+/// An `events` table, by the lower-cased name of each event in key order (of two keys equal
+/// without case the later stands). A name vanilla does not know (`undefined`, the enum's
+/// `Undefined`, too) is dropped with vanilla's text, which the game writes to the content log
+/// at the error level before it loads the file: a kept error.
+fn events(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, SoundRef>> {
+    let members = read.object(node)?;
+    let mut table = IndexMap::new();
+    for (key, member) in read.ordered_entries(&members) {
         let event = key.to_lowercase();
-        // `undefined` is the enum's `Undefined` value, which this lookup refuses too.
         if is_level_sound_event(&event) && event != "undefined" {
-            let sound = read_sound(
-                fork::member(events, &key),
-                table.volume,
-                table.pitch,
-                report,
-            );
-            table.events.insert(event, sound);
+            table.insert(event, SoundRef::from_json(&member, read)?);
         } else {
-            unknown_event(&event, true, report);
+            let code = codes::NOT_AN_EVENT.with([event]);
+            read.push(Diagnostic::of(code).at(member.path().clone()));
         }
-        report.leave();
     }
-    report.leave();
-    table
+    Some(table)
 }
 
-/// Reads the named sounds and the legacy ambient fallback after them.
-fn read_named_sounds(
-    value: &Value,
-    events: &EventSounds,
-    report: &mut Reporter<'_>,
-) -> NamedSounds {
-    let mut named = NamedSounds::default();
-    if value.is_object() {
-        check_unknown(value, &["volume", "pitch", "sounds"], &[], report);
-        (named.volume, named.pitch) = table_ranges(value, SoundRange::UNSET, report);
-        let sounds = fork::member(value, "sounds");
-        if sounds.is_object() {
-            report.enter("sounds");
-            for key in fork::member_names(sounds) {
-                report.enter(&key);
-                let sound = read_sound(
-                    fork::member(sounds, &key),
-                    named.volume,
-                    named.pitch,
-                    report,
-                );
-                named.sounds.insert(key.clone(), sound);
-                report.leave();
-            }
-            report.leave();
-        } else {
-            // The game writes an error line to the content log and the file loads: a kept
-            // error.
-            report.kept(Code::from(&codes::EXPECTED_SOUNDS));
+/// An interactive `events` table: per event, the sound of each surface but `""`. The game drops
+/// a name it does not know without a word here; the crate tells it as an information.
+fn interactive_events(
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) -> Option<IndexMap<String, IndexMap<String, SoundRef>>> {
+    let members = read.object(node)?;
+    let mut table = IndexMap::new();
+    for (key, member) in read.ordered_entries(&members) {
+        let event = key.to_lowercase();
+        if !is_level_sound_event(&event) {
+            read.push(Diagnostic::info(&core_codes::UNKNOWN_SOUND).at(member.path().clone()));
+            continue;
         }
+        let surfaces = read.object(&member)?;
+        let mut sounds = IndexMap::new();
+        for (surface, sound) in read.ordered_entries(&surfaces) {
+            if !surface.is_empty() {
+                sounds.insert(surface.to_owned(), SoundRef::from_json(&sound, read)?);
+            }
+        }
+        table.insert(event, sounds);
     }
+    Some(table)
+}
+
+/// A table without its `events` object, but for a block sound type's with a `base`: the game
+/// writes an error line to the content log, skips the table and loads the file, a kept error.
+fn events_object(_: &mut EventSounds, node: &Node<'_>, read: &mut Read<'_>) {
+    let based = read
+        .scope::<String>("base")
+        .is_some_and(|base| !base.is_empty());
+    if !based && node.value().is_object() && !fork::member(node.value(), "events").is_object() {
+        read.push(Diagnostic::of(&codes::EXPECTED_EVENTS).at(node.path().clone()));
+    }
+}
+
+/// `individual_named_sounds` without its `sounds` object: a content-log error, the file loads.
+fn sounds_object(_: &mut NamedSounds, node: &Node<'_>, read: &mut Read<'_>) {
+    if node.value().is_object() && !fork::member(node.value(), "sounds").is_object() {
+        read.push(Diagnostic::of(&codes::EXPECTED_SOUNDS).at(node.path().clone()));
+    }
+}
+
+/// A variant map without a key, or a key without a map: each a content-log error.
+fn key_and_map<T>(variants: &mut SoundVariants<T>, node: &Node<'_>, read: &mut Read<'_>) {
+    let code = match (&variants.key, variants.map.is_empty()) {
+        (None, false) => &codes::EXPECTED_KEY,
+        (Some(_), true) => &codes::EXPECTED_MAP,
+        _ => return,
+    };
+    read.push(Diagnostic::of(code).at(node.path().clone()));
+}
+
+/// The variant key parsed with the entry's `__molang_version` (0 without one), narrowed to a
+/// 16-bit integer as the game narrows it.
+fn stamp<T>(variants: Option<&mut SoundVariants<T>>, version: Option<i32>) {
+    if let Some(key) = variants.and_then(|variants| variants.key.as_mut()) {
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "vanilla's MolangVersion is a short"
+        )]
+        let version = RawVersion(version.unwrap_or(0) as i16);
+        *key = MolangSource::string(key.as_str().to_owned(), version);
+    }
+}
+
+/// An entity's variant key, at the entry's Molang version.
+fn entity_key(entry: &mut EntitySoundEntry, _: &Node<'_>, _: &mut Read<'_>) {
+    stamp(entry.variants.as_mut(), entry.molang_version);
+}
+
+/// An interactive entity's variant key, at the entry's Molang version; without one it is
+/// parsed with version 0, which the crate tells as an information at `variants`.
+fn interactive_entity_key(
+    entry: &mut InteractiveEntityEntry,
+    node: &Node<'_>,
+    read: &mut Read<'_>,
+) {
+    stamp(entry.variants.as_mut(), entry.molang_version);
+    let keyed = entry.variants.as_ref().is_some_and(|v| v.key.is_some());
+    if entry.molang_version.is_none() && keyed {
+        let at = node.path().child("variants");
+        read.push(Diagnostic::info(&core_codes::INVALID_VALUE).at(at));
+    }
+}
+
+/// The legacy ambient fallback: the sixteen legacy ambient events of `individual_event_sounds`
+/// are named sounds too, unless a sound of that name exists.
+fn legacy_ambient(bindings: &mut SoundBindings, _: &Node<'_>, _: &mut Read<'_>) {
+    let events = &bindings.individual_event_sounds.events;
     for event in LEGACY_AMBIENT_EVENTS {
-        if let Some(sound) = events.events.get(*event) {
-            named
+        if let Some(sound) = events.get(*event) {
+            bindings
+                .individual_named_sounds
                 .sounds
                 .entry((*event).to_owned())
                 .or_insert_with(|| sound.clone());
         }
     }
-    named
+}
+
+/// A `block_sounds` section with its bases resolved: every member is a block sound type, which
+/// takes the events of its base chain that it does not define itself (answered on lookup,
+/// [`inherited`]). In the stack's merge ([`WHOLE`]) a `base` that names no type is vanilla's
+/// error; a single pack's copy may name a type of a lower pack, so there it is no finding. A
+/// chain that returns to a type it passed is vanilla's error in both. Each is a content-log
+/// error after which the file loads: a kept error.
+fn block_table(node: &Node<'_>, read: &mut Read<'_>) -> Option<IndexMap<String, BlockSounds>> {
+    let mut blocks = IndexMap::<String, BlockSounds>::from_json(node, read)?;
+    let whole = read.scope::<bool>(WHOLE).copied().unwrap_or(true);
+    for (index, (inherits, end)) in resolve_bases(&blocks).into_iter().enumerate() {
+        blocks[index].inherits = inherits;
+        let code = match end {
+            ChainEnd::Clean => continue,
+            ChainEnd::Missing(_) if !whole => continue,
+            ChainEnd::Missing(last) => codes::UNKNOWN_BASE.with([blocks[last].base.clone()]),
+            ChainEnd::Cycle(entry) => codes::RECURSIVE_BASE.with([name_at(&blocks, entry)]),
+        };
+        let at = node.path().child(&name_at(&blocks, index)).child("base");
+        read.push(Diagnostic::of(code).at(at));
+    }
+    Some(blocks)
 }
 
 /// The sound of `event` for the type `block` of `table`: its own, else the nearest along the
@@ -620,320 +745,6 @@ fn name_at(blocks: &IndexMap<String, BlockSounds>, index: usize) -> String {
     blocks
         .get_index(index)
         .map_or_else(String::new, |(name, _)| name.clone())
-}
-
-/// Reads the block sounds and resolves their bases: every member of the section is a block
-/// sound type; a type with a `base` need not have `events`, and takes the events of its base
-/// chain that it does not define itself (answered on lookup, [`inherited`]).
-///
-/// With `whole`, the section is the merged one and a `base` that names no type is vanilla's
-/// error; a single pack's copy may name a type of a lower pack, so there it is no finding.
-fn read_block_sounds(
-    value: &Value,
-    whole: bool,
-    report: &mut Reporter<'_>,
-) -> IndexMap<String, BlockSounds> {
-    let mut blocks: IndexMap<String, BlockSounds> = IndexMap::new();
-    for name in fork::member_names(value) {
-        report.enter(&name);
-        let entry = fork::member(value, &name);
-        let base = fork::to_text(fork::member(entry, "base"));
-        let sounds = read_event_sounds(
-            entry,
-            !base.is_empty(),
-            &["base", "volume", "pitch", "events"],
-            report,
-        );
-        blocks.insert(
-            name.clone(),
-            BlockSounds {
-                base,
-                sounds,
-                inherits: 0,
-            },
-        );
-        report.leave();
-    }
-    let resolved = resolve_bases(&blocks);
-    for (index, (inherits, end)) in resolved.into_iter().enumerate() {
-        blocks[index].inherits = inherits;
-        let code = match end {
-            ChainEnd::Clean => continue,
-            ChainEnd::Missing(_) if !whole => continue,
-            ChainEnd::Missing(last) => codes::UNKNOWN_BASE.with([blocks[last].base.clone()]),
-            ChainEnd::Cycle(entry) => codes::RECURSIVE_BASE.with([name_at(&blocks, entry)]),
-        };
-        let block = name_at(&blocks, index);
-        // The game writes an error line to the content log and the file loads: a kept error.
-        report.enter(&block);
-        report.enter("base");
-        report.kept(code);
-        report.leave();
-        report.leave();
-    }
-    blocks
-}
-
-/// The `variants` of an entity entry: the map first, each variant read by `read` with fresh
-/// table defaults, then the key. `None` for an entry without a
-/// `variants` member.
-fn read_variants<T>(
-    entry: &Value,
-    read: impl Fn(&Value, &mut Reporter<'_>) -> T,
-    report: &mut Reporter<'_>,
-) -> Option<SoundVariants<T>> {
-    if !fork::has_member(entry, "variants") {
-        return None;
-    }
-    let variants = fork::member(entry, "variants");
-    report.enter("variants");
-    check_unknown(variants, &["key", "map"], &[], report);
-    let mut map = IndexMap::new();
-    let listed = fork::member(variants, "map");
-    report.enter("map");
-    if listed.is_object() {
-        for name in fork::member_names(listed) {
-            report.enter(&name);
-            map.insert(name.clone(), read(fork::member(listed, &name), report));
-            report.leave();
-        }
-    }
-    report.leave();
-    let key = fork::member(variants, "key");
-    let key = if key.is_null() {
-        if !map.is_empty() {
-            // The game writes an error line to the content log: a kept error.
-            report.kept(Code::from(&codes::EXPECTED_KEY));
-        }
-        None
-    } else {
-        if map.is_empty() {
-            // The game writes an error line to the content log: a kept error.
-            report.kept(Code::from(&codes::EXPECTED_MAP));
-        }
-        // The entry's `__molang_version` as an integer defaulting to 0, narrowed to a 16-bit
-        // integer as the game narrows it.
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "vanilla's MolangVersion is a short"
-        )]
-        let version = fork::as_int(fork::member(entry, "__molang_version"), 0) as i16;
-        Some(MolangSource::string(
-            fork::to_text(key),
-            RawVersion(version),
-        ))
-    };
-    report.leave();
-    Some(SoundVariants { key, map })
-}
-
-/// The `__molang_version` of an entity entry, when it has the member.
-fn molang_version(entry: &Value, report: &mut Reporter<'_>) -> Option<i32> {
-    fork::has_member(entry, "__molang_version")
-        .then(|| integer(entry, "__molang_version", 0, report))
-}
-
-/// The members an event table of an entity may have.
-const ENTITY_MEMBERS: &[&str] = &["volume", "pitch", "events", "variants", "__molang_version"];
-/// The members a plain event table may have.
-const TABLE_MEMBERS: &[&str] = &["volume", "pitch", "events"];
-
-/// Reads the entity sounds.
-fn read_entity_sounds(value: &Value, report: &mut Reporter<'_>) -> EntitySounds {
-    let mut out = EntitySounds::default();
-    if !value.is_object() {
-        return out;
-    }
-    check_unknown(value, &["defaults", "entities"], &[], report);
-    report.enter("defaults");
-    out.defaults = read_event_sounds(
-        fork::member(value, "defaults"),
-        false,
-        TABLE_MEMBERS,
-        report,
-    );
-    report.leave();
-    let entities = fork::member(value, "entities");
-    report.enter("entities");
-    for name in fork::member_names(entities) {
-        report.enter(&name);
-        let entry = fork::member(entities, &name);
-        out.entities.insert(
-            name.clone(),
-            EntitySoundEntry {
-                sounds: read_event_sounds(entry, false, ENTITY_MEMBERS, report),
-                variants: read_variants(
-                    entry,
-                    |variant, report| read_event_sounds(variant, false, TABLE_MEMBERS, report),
-                    report,
-                ),
-                molang_version: molang_version(entry, report),
-            },
-        );
-        report.leave();
-    }
-    report.leave();
-    out
-}
-
-/// Reads an interactive event table: nothing for a value that is no object; `events` is optional;
-/// an inner key `""` is skipped.
-fn read_interactive_events(
-    value: &Value,
-    known: &[&str],
-    report: &mut Reporter<'_>,
-) -> InteractiveEventSounds {
-    let mut table = InteractiveEventSounds::default();
-    if !value.is_object() {
-        return table;
-    }
-    check_unknown(value, known, &[], report);
-    (table.volume, table.pitch) = table_ranges(value, SoundRange::ONE, report);
-    let events = fork::member(value, "events");
-    report.enter("events");
-    for key in fork::member_names(events) {
-        report.enter(&key);
-        let event = key.to_lowercase();
-        if is_level_sound_event(&event) {
-            let surfaces = fork::member(events, &key);
-            let mut sounds = IndexMap::new();
-            for surface in fork::member_names(surfaces) {
-                if surface.is_empty() {
-                    continue;
-                }
-                report.enter(&surface);
-                let sound = read_sound(
-                    fork::member(surfaces, &surface),
-                    table.volume,
-                    table.pitch,
-                    report,
-                );
-                sounds.insert(surface.clone(), sound);
-                report.leave();
-            }
-            table.events.insert(event, sounds);
-        } else {
-            // The game drops it silently here, with no content-log line; the crate reports it.
-            unknown_event(&event, false, report);
-        }
-        report.leave();
-    }
-    report.leave();
-    table
-}
-
-/// Reads `interactive_sounds.entity_sounds`.
-fn read_interactive_entities(value: &Value, report: &mut Reporter<'_>) -> InteractiveEntitySounds {
-    let mut out = InteractiveEntitySounds::default();
-    if !value.is_object() {
-        return out;
-    }
-    check_unknown(value, &["defaults", "entities"], &[], report);
-    report.enter("defaults");
-    out.defaults = read_interactive_events(fork::member(value, "defaults"), TABLE_MEMBERS, report);
-    report.leave();
-    let entities = fork::member(value, "entities");
-    report.enter("entities");
-    for name in fork::member_names(entities) {
-        report.enter(&name);
-        let entry = fork::member(entities, &name);
-        let variants = read_variants(
-            entry,
-            |variant, report| read_interactive_events(variant, TABLE_MEMBERS, report),
-            report,
-        );
-        let version = molang_version(entry, report);
-        if version.is_none() && variants.as_ref().is_some_and(|v| v.key.is_some()) {
-            // the key is parsed with Molang version 0.
-            report.at(
-                "variants",
-                Code::from(&core_codes::INVALID_VALUE),
-                Severity::Info,
-            );
-        }
-        out.entities.insert(
-            name.clone(),
-            InteractiveEntityEntry {
-                sounds: read_interactive_events(entry, ENTITY_MEMBERS, report),
-                variants,
-                molang_version: version,
-            },
-        );
-        report.leave();
-    }
-    report.leave();
-    out
-}
-
-/// `_loadSounds`: the five sections of the document, in vanilla's order. `whole` says the
-/// document is the merge of the whole stack, not one pack's copy.
-pub(crate) fn read_root(root: &Value, whole: bool, diagnostics: &mut Diagnostics) -> SoundBindings {
-    let mut report = Reporter::new(diagnostics);
-    check_unknown(
-        root,
-        &[
-            "individual_event_sounds",
-            "individual_named_sounds",
-            "block_sounds",
-            "entity_sounds",
-            "interactive_sounds",
-        ],
-        &["format_version"],
-        &mut report,
-    );
-    report.enter("individual_event_sounds");
-    let individual_event_sounds = read_event_sounds(
-        fork::member(root, "individual_event_sounds"),
-        false,
-        TABLE_MEMBERS,
-        &mut report,
-    );
-    report.leave();
-    report.enter("individual_named_sounds");
-    let individual_named_sounds = read_named_sounds(
-        fork::member(root, "individual_named_sounds"),
-        &individual_event_sounds,
-        &mut report,
-    );
-    report.leave();
-    report.enter("block_sounds");
-    let block_sounds = read_block_sounds(fork::member(root, "block_sounds"), whole, &mut report);
-    report.leave();
-    report.enter("entity_sounds");
-    let entity_sounds = read_entity_sounds(fork::member(root, "entity_sounds"), &mut report);
-    report.leave();
-    report.enter("interactive_sounds");
-    let interactive = fork::member(root, "interactive_sounds");
-    // `entities` is the member the game's pre-merge transform writes and nothing reads.
-    check_unknown(
-        interactive,
-        &["block_sounds", "entity_sounds", "entities"],
-        &[],
-        &mut report,
-    );
-    report.enter("block_sounds");
-    let interactive_blocks = read_block_sounds(
-        fork::member(interactive, "block_sounds"),
-        whole,
-        &mut report,
-    );
-    report.leave();
-    report.enter("entity_sounds");
-    let interactive_entities =
-        read_interactive_entities(fork::member(interactive, "entity_sounds"), &mut report);
-    report.leave();
-    report.leave();
-    SoundBindings {
-        individual_event_sounds,
-        individual_named_sounds,
-        block_sounds,
-        entity_sounds,
-        interactive_sounds: InteractiveSounds {
-            block_sounds: interactive_blocks,
-            entity_sounds: interactive_entities,
-        },
-        json: root.clone(),
-    }
 }
 
 /// The pre-merge transform of one pack's copy, for each of `entity_sounds` and `interactive_sounds`

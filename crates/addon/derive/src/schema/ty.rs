@@ -58,9 +58,12 @@ pub(crate) fn map_values(ty: &Type) -> Option<&Type> {
     }
 }
 
-/// The type below every `Option`, `Vec`, `Box` and map (`IndexMap`, `HashMap`, `BTreeMap`: the
-/// value type) around it.
+/// The type below every `Option`, `Vec`, `Box`, fixed array and map (`IndexMap`, `HashMap`,
+/// `BTreeMap`: the value type) around it.
 pub(crate) fn innermost(ty: &Type) -> &Type {
+    if let Type::Array(array) = ty {
+        return innermost(&array.elem);
+    }
     match last(ty) {
         Some((name, args))
             if matches!(name.as_str(), "Option" | "Vec" | "Box") && args.len() == 1 =>

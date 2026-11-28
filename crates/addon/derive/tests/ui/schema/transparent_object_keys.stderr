@@ -1,0 +1,23 @@
+error: a transparent newtype reads as its field, with no object of its own: its read has no place for `schema::after_read`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/transparent_object_keys.rs:11:22
+   |
+11 | #[facet(transparent, schema::after_read = rule, schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                      ^^^^^^
+
+error: a transparent newtype reads as its field, with no object of its own: its read has no place for `schema::after_members`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/transparent_object_keys.rs:11:49
+   |
+11 | #[facet(transparent, schema::after_read = rule, schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                                                 ^^^^^^
+
+error: a transparent newtype reads as its field, with no object of its own: its read has no place for `schema::guard`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/transparent_object_keys.rs:11:79
+   |
+11 | #[facet(transparent, schema::after_read = rule, schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                                                                               ^^^^^^
+
+error: a transparent newtype reads as its field, with no object of its own: its read has no place for `schema::quiet`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/transparent_object_keys.rs:11:102
+   |
+11 | #[facet(transparent, schema::after_read = rule, schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                                                                                                      ^^^^^^

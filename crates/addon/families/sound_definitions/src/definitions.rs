@@ -13,6 +13,7 @@ use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::SoundEventName;
+use bedrock_addon_core::json::jsoncpp;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::json::kit::write::{self, Object};
 use bedrock_addon_core::json::kit::{Node, Present, Read, Written};
@@ -685,7 +686,7 @@ fn read_entry(node: &Node<'_>, is_3d: bool, read: &mut Read<'_>) -> Option<Sound
         Stored::Null => return None,
         Stored::String => SoundEntry {
             form: SoundEntryForm::Path,
-            name: fork::to_text(node.value()),
+            name: jsoncpp::to_text(node.value()),
             volume: 1.0,
             pitch: 1.0,
             weight: 1,

@@ -87,6 +87,9 @@ pub struct MolangField<'a> {
 pub struct MolangVisitor<'v> {
     path: JsonPath,
     default_spec: &'v MolangFieldSpec,
+    /// The format version of the document walked, for a field whose spec is an era's
+    /// (`schema::era(.., molang = SPEC)`); `None` for a walk in no era.
+    format: Option<crate::version::FormatVersion>,
     visit: &'v mut dyn FnMut(MolangField<'_>),
 }
 
@@ -95,6 +98,7 @@ impl std::fmt::Debug for MolangVisitor<'_> {
         f.debug_struct("MolangVisitor")
             .field("path", &self.path)
             .field("default_spec", self.default_spec)
+            .field("format", &self.format)
             .finish_non_exhaustive()
     }
 }
@@ -129,6 +133,13 @@ impl MolangVisitor<'_> {
         self.default_spec
     }
 
+    /// The format version of the document walked ([`visit_fields_at`]), which chooses the spec
+    /// of a field an era states one for (`schema::era(.., molang = SPEC)`); `None` for a walk
+    /// in no era.
+    pub fn format(&self) -> Option<crate::version::FormatVersion> {
+        self.format
+    }
+
     /// The member or element `step`, which holds Molang fields of its own.
     pub fn nested<'s, T: MolangFields + ?Sized>(
         &mut self,
@@ -160,10 +171,29 @@ impl MolangVisitor<'_> {
         let mut under = MolangVisitor {
             path: std::mem::take(&mut self.path),
             default_spec: spec,
+            format: self.format,
             visit: &mut *self.visit,
         };
         walk(&mut under);
         self.path = under.path;
+    }
+
+    /// Runs `walk` at the current path as a walk of a document of `format`: a hand walk of a
+    /// document that holds a part of another era's (particle's legacy components), whose fields
+    /// take the specs that era states (`schema::era(.., molang = SPEC)`).
+    pub fn at_format(
+        &mut self,
+        format: Option<crate::version::FormatVersion>,
+        walk: impl FnOnce(&mut MolangVisitor<'_>),
+    ) {
+        let mut at = MolangVisitor {
+            path: std::mem::take(&mut self.path),
+            default_spec: self.default_spec,
+            format,
+            visit: &mut *self.visit,
+        };
+        walk(&mut at);
+        self.path = at.path;
     }
 
     /// Hands one value at the current path to the walk's callback; for [`MolangSlot`] impls.
@@ -232,6 +262,17 @@ impl<T: MolangSlot> MolangSlot for Option<T> {
 
 /// Each element is a field of its own, at its index.
 impl<T: MolangSlot> MolangSlot for Vec<T> {
+    fn visit_slot(&mut self, spec: &MolangFieldSpec, visitor: &mut MolangVisitor<'_>) {
+        for (index, slot) in self.iter_mut().enumerate() {
+            visitor.enter(Step::Index(index));
+            slot.visit_slot(spec, visitor);
+            visitor.leave();
+        }
+    }
+}
+
+/// Each element is a field of its own, at its index (`[Molang; 3]`, a vector).
+impl<T: MolangSlot, const N: usize> MolangSlot for [T; N] {
     fn visit_slot(&mut self, spec: &MolangFieldSpec, visitor: &mut MolangVisitor<'_>) {
         for (index, slot) in self.iter_mut().enumerate() {
             visitor.enter(Step::Index(index));
@@ -366,6 +407,26 @@ pub fn visit_fields_under<T: MolangFields + ?Sized>(
     let mut visitor = MolangVisitor {
         path: base.clone(),
         default_spec,
+        format: None,
+        visit: &mut visit,
+    };
+    document.visit_molang(&mut visitor);
+}
+
+/// [`visit_fields`] of a document of `format`: a field whose spec an era states
+/// (`schema::era(ERA, molang = SPEC)`) takes that era's where `format` is in it.
+// hidden: Molang pass machinery of the crate family, outside SemVer
+#[doc(hidden)]
+pub fn visit_fields_at<T: MolangFields + ?Sized>(
+    document: &mut T,
+    base: &JsonPath,
+    format: Option<crate::version::FormatVersion>,
+    mut visit: impl FnMut(MolangField<'_>),
+) {
+    let mut visitor = MolangVisitor {
+        path: base.clone(),
+        default_spec: &MolangFieldSpec::DEFAULT,
+        format,
         visit: &mut visit,
     };
     document.visit_molang(&mut visitor);
