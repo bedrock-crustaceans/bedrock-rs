@@ -1,5 +1,5 @@
 //! Where the derived structs of a particle document meet the hand reader: the two eras as the
-//! schema reader's [`schema::Era`]s, the reading of each, particle's own read of Molang (the
+//! schema reader's [`schema::VersionRange`]s, the reading of each, particle's own read of Molang (the
 //! read's [`MolangLeaf`]), and the bridges a struct read by the derive and a value read by hand
 //! cross into each other with.
 
@@ -24,9 +24,9 @@ use crate::codes;
 use crate::read::{CEREAL, Era, KEPT, Node, Opt, Reader, Writer};
 
 /// The documents the legacy parser reads: below 1.20.80.
-pub(crate) const LEGACY: schema::Era = schema::Era::below(CEREAL);
+pub(crate) const LEGACY: schema::VersionRange = schema::VersionRange::below(CEREAL);
 /// The documents the 1.20.80 reader reads.
-pub(crate) const STRICT: schema::Era = schema::Era::since(CEREAL);
+pub(crate) const STRICT: schema::VersionRange = schema::VersionRange::since(CEREAL);
 
 /// The Molang spec of a legacy field whose default is `default`: a value that does not compile
 /// becomes that constant (the parser's lines are kept errors and the effect loads).

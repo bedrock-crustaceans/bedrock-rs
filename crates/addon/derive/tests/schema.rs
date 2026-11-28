@@ -1785,32 +1785,37 @@ pub enum Retiring {
 
 #[test]
 fn a_variant_s_engines_are_read_back_from_the_shape() {
-    use bedrock_addon_core::schema::EngineWindow;
+    use bedrock_addon_core::schema::VersionRange;
     let Type::User(UserType::Enum(en)) = Retiring::SHAPE.ty else {
         panic!("an enum");
     };
-    let windows: Vec<EngineWindow> = en
+    let windows: Vec<VersionRange> = en
         .variants
         .iter()
-        .map(|variant| EngineWindow::of(variant.attributes))
+        .map(|variant| VersionRange::engines(variant.attributes))
         .collect();
     let v = FormatVersion::new(1, 26, 45);
     assert_eq!(
         windows,
         [
-            EngineWindow {
+            VersionRange {
                 since: None,
                 until: Some(v)
             },
-            EngineWindow {
+            VersionRange {
                 since: Some(v),
                 until: None
             },
-            EngineWindow::default(),
+            VersionRange::default(),
         ]
     );
     let below = FormatVersion::new(1, 26, 44);
-    let admitted = |engine| windows.iter().map(|w| w.admits(engine)).collect::<Vec<_>>();
+    let admitted = |engine| {
+        windows
+            .iter()
+            .map(|w| w.holds(Some(engine)))
+            .collect::<Vec<_>>()
+    };
     assert_eq!(admitted(below), [true, false, true]);
     assert_eq!(admitted(v), [false, true, true]);
 }

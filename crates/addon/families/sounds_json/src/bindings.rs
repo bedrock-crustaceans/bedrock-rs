@@ -14,6 +14,7 @@ use super::events::{LEGACY_AMBIENT_EVENTS, is_level_sound_event};
 use bedrock_addon_core::diagnostic::codes as core_codes;
 use bedrock_addon_core::diagnostic::{Diagnostic, Diagnostics, JsonPath, Phase, Severity};
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp;
 use bedrock_addon_core::json::jsoncpp::fork::{self, Stored};
 use bedrock_addon_core::json::kit::{MemberOrder, Node, Objects, Profile, Read};
 use bedrock_addon_core::molang::{MolangSource, RawVersion};
@@ -491,14 +492,14 @@ fn parse_range_text(text: &str) -> Option<SoundRange> {
 
 /// A string read by `asString` without a word (a `base`).
 fn silent_text(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
-    Some(fork::to_text(node.value()))
+    Some(jsoncpp::to_text(node.value()))
 }
 
 /// A variant key, read by `asString` without a word, at Molang version 0 until its entity
 /// says its own ([`stamp`]).
 fn key_source(node: &Node<'_>, _: &mut Read<'_>) -> Option<MolangSource> {
     Some(MolangSource::string(
-        fork::to_text(node.value()),
+        jsoncpp::to_text(node.value()),
         RawVersion(0),
     ))
 }

@@ -121,14 +121,15 @@ facet::define_attr_grammar! {
         /// game's own files carry and its reader never reads. It is `unknown = "silent"` for
         /// the named members alone.
         Quiet(arbitrary),
-        /// `after_read = path` (compile-time, on a struct): a rule over the value just read,
-        /// `fn(&mut Self, &Node<'_>, &mut Read<'_>)`, called by the struct's own read after its
-        /// members and its unknown ones, with the object as written: what a member cannot say
-        /// alone (a default that follows a sibling, a member kept beside the typed one). It
-        /// tells its findings to the read and does not fail the owner; a struct that is
-        /// flattened into another is not hooked. It is `rule` at the read: `rule` judges the
-        /// typed value in the check (a `SchemaCx`, no JSON); this one runs in the read, with the
-        /// object as written, in the order the read tells and in the phase it is given.
+        /// `after_read = path` (compile-time, on a struct or a tagged enum): a rule over the
+        /// value just read, `fn(&mut Self, &Node<'_>, &mut Read<'_>)`, called by the struct's own
+        /// read after its members and its unknown ones, with the object as written: what a member
+        /// cannot say alone (a default that follows a sibling, a member kept beside the typed
+        /// one). It tells its findings to the read and does not fail the owner. On a tagged enum
+        /// (internally or externally) it runs over the variant read, given the enum's object (a
+        /// flattened enum: its owner's). It is `rule` at the read: `rule` judges the typed value
+        /// in the check (a `SchemaCx`, no JSON); this one runs in the read, with the object as
+        /// written, in the order the read tells and in the phase it is given.
         AfterRead(arbitrary),
         /// `after_members = path` (compile-time, on a struct): `after_read` run earlier, on the
         /// value built from the members, before the unknown members a profile tells after them
@@ -186,7 +187,8 @@ facet::define_attr_grammar! {
         /// its siblings are (a list the game skips beside its plain spelling, a sampler's
         /// keyword the game does not look up once its index is out of range).
         ReadBeside(arbitrary),
-        /// `tag_with = path` (compile-time, an internally tagged enum): the name of the variant
+        /// `tag_with = path` (compile-time, an internally tagged enum, or an externally tagged one
+        /// whose every variant holds a value, flattened into a struct): the name of the variant
         /// is the function's, `fn(&Node<'_>, &mut Read<'_>) -> Option<&'static str>`, which looks
         /// at the object, tells what it refuses (the game's own words for a name that is none)
         /// and returns the variant's JSON name, or `None` once it has told. In place of the
@@ -277,7 +279,9 @@ facet::define_attr_grammar! {
         /// `read_with`) at a node that knows it is absent (`Node::is_absent`): the game reads the
         /// member and tells what it tells of its absence. A value read is the field's; none leaves
         /// it absent (its default, `None`, or missing where it is required). In a read in declared
-        /// order it is read where it is declared; in file order, after the members.
+        /// order it is read where it is declared; in file order, after the members. Not beside
+        /// `absent_with` (both would read the member) or `read_beside` (whose function is not
+        /// called for an absent member).
         ReadsAbsent,
         /// `or_kept = "told"` or `"silent"` (compile-time, an `Option` field): a value that
         /// fails to read leaves the field `None` and is kept as written beside the typed value
@@ -298,8 +302,9 @@ facet::define_attr_grammar! {
         /// accessor the derive makes for a `fallback`. The read does not look at it.
         Getter(arbitrary),
         /// `era(ERA, key = value, ..)` (compile-time, a field; repeatable): keys that hold in a
-        /// document whose format version is in `ERA` (an expression of type `schema::Era`, a
-        /// range of formats: `Era::below(v)`, `Era::since(v)`), in place of the field's own:
+        /// document whose format version is in `ERA` (an expression of type
+        /// `schema::VersionRange`, a range of formats: `VersionRange::below(v)`,
+        /// `VersionRange::since(v)`), in place of the field's own:
         /// one of the game's readers reads the format's documents (particle's legacy parser
         /// below 1.20.80, its strict reader from it). The first era the format is in holds; a
         /// read that knows no format (`Read::format`) is in none. The keys: `wrong_type`,

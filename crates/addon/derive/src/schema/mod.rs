@@ -376,6 +376,9 @@ fn derive_struct(input: &DeriveInput, fields: &Fields, errors: &mut Vec<Error>) 
     if !positional {
         refuse_tuple_keys(&container, errors);
     }
+    if positional || container.transparent {
+        refuse_object_keys(&container, errors);
+    }
     let infos = field_infos(
         fields,
         &container,
@@ -497,6 +500,41 @@ fn refuse_tuple_keys(container: &ContainerAttrs, errors: &mut Vec<Error>) {
                 format!(
                     "a struct's `schema::{key}` is a tuple struct's, an array read by position: \
                      put it on the field it is about"
+                ),
+            ));
+        }
+    }
+}
+
+/// The refusals of the keys about a struct's object on a struct that reads none: a tuple struct
+/// (an array, each field the element at its place) and a transparent newtype (its field's
+/// value). Its read has no place to run them, so they would be dropped in silence.
+fn refuse_object_keys(container: &ContainerAttrs, errors: &mut Vec<Error>) {
+    let (keys, words): (&[&str], &str) = if container.transparent {
+        (
+            &[
+                "after_read",
+                "after_members",
+                "guard",
+                "unknown_with",
+                "quiet",
+                "unknown",
+            ],
+            "a transparent newtype reads as its field, with no object of its own",
+        )
+    } else {
+        (
+            &["after_members", "guard", "unknown_with", "quiet", "unknown"],
+            "a tuple struct is an array read by position, with no object and no unknown members",
+        )
+    };
+    for (key, span) in &container.spans {
+        if keys.contains(&key.as_str()) {
+            errors.push(Error::new(
+                *span,
+                format!(
+                    "{words}: its read has no place for `schema::{key}`, which is about a \
+                     struct's object; put it on the type that reads one"
                 ),
             ));
         }
@@ -1249,7 +1287,7 @@ fn field_molang(info: &FieldInfo) -> TokenStream {
     let arms = eras.iter().map(|era| {
         let walk = field_molang_under(info, era.molang.as_ref().or(own));
         let expr = &era.era;
-        quote!(if #core::schema::Era::holds(#expr, visitor.format()) { #walk } else)
+        quote!(if #core::schema::VersionRange::holds(#expr, visitor.format()) { #walk } else)
     });
     quote!(#(#arms)* { #base })
 }
@@ -1772,6 +1810,7 @@ fn derive_tagged(
             &target,
             container.invalid.as_ref(),
             container.tag_with.as_ref(),
+            container.after_read.as_ref(),
             &reads,
         ),
     };

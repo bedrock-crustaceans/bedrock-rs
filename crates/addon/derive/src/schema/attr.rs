@@ -163,7 +163,8 @@ pub(crate) struct DefaultDecl {
 }
 
 /// One `schema::era(ERA, key = value, ..)` on a field: the keys that hold in a document whose
-/// format is in `era` (an expression of type `schema::Era`), in place of the field's own.
+/// format is in `era` (an expression of type `schema::VersionRange`), in place of the field's
+/// own.
 pub(crate) struct EraDecl {
     pub era: Expr,
     pub wrong_type: Option<Expr>,
@@ -188,8 +189,8 @@ const ERA_KEYS: &[&str] = &["wrong_type", "missing", "invalid", "molang"];
 /// Reads `schema::era(ERA, key = value, ..)`: the era's expression, then its keys.
 fn era_decl(outer: &Entry) -> Result<EraDecl> {
     let span = outer.span;
-    let usage = "`schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then \
-                 `wrong_type`, `missing`, `invalid` or `molang`";
+    let usage = "`schema::era` is `schema::era(ERA, key = value, ..)`: a \
+                 `schema::VersionRange`, then `wrong_type`, `missing`, `invalid` or `molang`";
     let Some(tokens) = outer.value.clone() else {
         return Err(Error::new(span, usage));
     };
@@ -271,8 +272,9 @@ pub(crate) struct FieldAttrs {
     pub molang_with: Option<(Expr, Span)>,
     /// `schema::read_with = path`: the field's read, `fn(&Node, &mut Read) -> Option<T>`.
     pub read_with: Option<(Expr, Span)>,
-    /// `schema::absent_with = path`: the field's value when the object lacks the member,
-    /// `fn(&Node, &mut Read) -> Option<T>` given the object.
+    /// `schema::absent_with = path`: the field's value when the object lacks the member (or holds
+    /// a `null` the reading takes for absence), `fn(&Node, &mut Read) -> Option<T>` given the
+    /// object.
     pub absent_with: Option<(Expr, Span)>,
     /// `schema::read_beside = path`: the field's read given its object,
     /// `fn(&Node, &Node, &mut Read) -> Option<T>`.
@@ -348,7 +350,8 @@ pub(crate) struct ContainerAttrs {
     pub string_only: bool,
     /// `schema::rule = path`: a rule across the fields of the struct.
     pub rule: Option<(Expr, Span)>,
-    /// `schema::after_read = path`: a rule over the value the read has just built.
+    /// `schema::after_read = path`: a rule over the value the read has just built (a struct's, or
+    /// the variant a tagged enum read, internally or externally).
     pub after_read: Option<(Expr, Span)>,
     /// `schema::after_members = path`: a rule over the value built from the members, before the
     /// unknown members told after them.
@@ -366,7 +369,8 @@ pub(crate) struct ContainerAttrs {
     pub molang_with: Option<(Expr, Span)>,
     /// `schema::invalid = CODE` on an enum with data: the code of a value that names no variant.
     pub invalid: Option<(Expr, Span)>,
-    /// `schema::tag_with = path` on an internally tagged enum: the function that names the
+    /// `schema::tag_with = path` on an internally tagged enum, or on an externally tagged one
+    /// whose every variant holds a value (flattened into a struct): the function that names the
     /// variant of an object.
     pub tag_with: Option<(Expr, Span)>,
     /// `schema::wrong_type = CODE` on a tuple struct: the code of a value that is no array.
@@ -376,6 +380,9 @@ pub(crate) struct ContainerAttrs {
     /// `schema::guard = path` on a struct: a rule run after the members, before
     /// `after_members` and the unknown ones; `false` ends the read.
     pub guard: Option<(Expr, Span)>,
+    /// Each `schema::` key written on the container, with its span: for the refusals of a key
+    /// the container's kind of read has no place for.
+    pub spans: Vec<(String, Span)>,
 }
 
 /// The keys of a field, the keys of a string enum's container, and the one key of both.
@@ -1013,6 +1020,9 @@ impl ContainerAttrs {
                     _ => {}
                 }
                 continue;
+            }
+            if let Some(key) = entry.schema_key() {
+                out.spans.push((key, entry.span));
             }
             let result: Result<()> = match entry.schema_key().as_deref() {
                 Some("unknown") => unknown_word(entry).map(|word| {

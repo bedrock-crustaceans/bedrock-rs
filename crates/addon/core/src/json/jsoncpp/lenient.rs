@@ -172,23 +172,6 @@ pub fn as_bool(value: Option<&Value>, default: bool) -> bool {
     }
 }
 
-/// `Json::Value::asString("")`: a string is itself; a bool is `"true"` or `"false"`; `null`,
-/// a number, an array or an object is `""`.
-pub fn to_text(value: Option<&Value>) -> String {
-    match value {
-        Some(value) if value.is_string() => value
-            .as_string()
-            .map(|text| text.as_str().to_owned())
-            .unwrap_or_default(),
-        Some(value) => match value.as_bool() {
-            Some(true) => "true".to_owned(),
-            Some(false) => "false".to_owned(),
-            None => String::new(),
-        },
-        None => String::new(),
-    }
-}
-
 /// `Json::Value::empty()`: `null`, an empty array or an empty object. A string, even `""`, is
 /// never empty.
 pub fn is_empty(value: Option<&Value>) -> bool {
@@ -306,14 +289,6 @@ mod tests {
         assert!(as_bool(Some(&value("[0]")), false));
         assert!(!as_bool(Some(&value("{}")), true));
         assert!(as_bool(None, true));
-    }
-
-    #[test]
-    fn to_text_spells_bools_and_empties_the_rest() {
-        assert_eq!(to_text(Some(&value("true"))), "true");
-        assert_eq!(to_text(Some(&value("5"))), "");
-        assert_eq!(to_text(Some(&value("\"x\""))), "x");
-        assert_eq!(to_text(None), "");
     }
 
     #[test]

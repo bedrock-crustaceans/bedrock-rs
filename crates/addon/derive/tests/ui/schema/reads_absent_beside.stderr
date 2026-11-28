@@ -1,0 +1,11 @@
+error: `schema::reads_absent` reads an absent member by the field's `read_with` or its type: a `read_beside` field's function is not called for it
+  --> tests/ui/schema/reads_absent_beside.rs:14:13
+   |
+14 |     #[facet(schema::reads_absent, schema::read_beside = beside)]
+   |             ^^^^^^
+
+error: `schema::reads_absent` and `schema::absent_with` both give the value of a member the object lacks: keep one
+  --> tests/ui/schema/reads_absent_beside.rs:16:13
+   |
+16 |     #[facet(schema::reads_absent, schema::absent_with = absent)]
+   |             ^^^^^^

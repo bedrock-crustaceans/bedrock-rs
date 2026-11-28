@@ -1,10 +1,10 @@
-error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then `wrong_type`, `missing`, `invalid` or `molang`
+error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::VersionRange`, then `wrong_type`, `missing`, `invalid` or `molang`
   --> tests/ui/schema/era.rs:19:30
    |
 19 |     #[facet(schema::era(OLD, colour = LINE))]
    |                              ^^^^^^
 
-error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::Era`, then `wrong_type`, `missing`, `invalid` or `molang`
+error: `schema::era` is `schema::era(ERA, key = value, ..)`: a `schema::VersionRange`, then `wrong_type`, `missing`, `invalid` or `molang`
   --> tests/ui/schema/era.rs:21:13
    |
 21 |     #[facet(schema::era(OLD))]

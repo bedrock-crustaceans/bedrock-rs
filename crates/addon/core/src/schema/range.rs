@@ -1,36 +1,41 @@
-//! [`Era`]: a range of format versions, the documents one of the game's readers reads, which a
-//! field's `schema::era(ERA, ..)` keys hold in.
+//! [`VersionRange`]: a half-open range of versions: the format versions one of the game's
+//! readers reads (a field's `schema::era(RANGE, ..)` keys hold in it), or the engines a member or
+//! a variant is of (`schema::since_engine`, `schema::until_engine`).
 
 use crate::version::FormatVersion;
 
-/// A range of format versions: the documents one of the game's readers reads (particle's legacy
-/// parser below 1.20.80, its strict reader from it). A field's `schema::era(ERA, key = value, ..)`
-/// keys hold in a document whose format is in the range, in place of the field's own: its codes
-/// (`wrong_type`, `missing`, `invalid`), told at their own severity, and its Molang
-/// spec (`molang`). The read asks the format it knows
-/// ([`Read::known_format`](crate::json::kit::Read::known_format)), the Molang walk the one it is
-/// given ([`MolangVisitor::format`](crate::molang::MolangVisitor::format)); a read or a walk that
-/// knows none is in no era.
+/// A half-open range of versions, `since` included and `until` not.
+///
+/// Two keys take one. A field's `schema::era(RANGE, key = value, ..)` keys hold in a document
+/// whose FORMAT version is in the range (particle's legacy parser below 1.20.80, its strict
+/// reader from it), in place of the field's own: its codes (`wrong_type`, `missing`,
+/// `invalid`), told at their own severity, and its Molang spec (`molang`). The read asks the
+/// format it knows ([`Read::known_format`](crate::json::kit::Read::known_format)), the Molang
+/// walk the one it is given ([`MolangVisitor::format`](crate::molang::MolangVisitor::format)); a
+/// read or a walk that knows none is in no range. And the ENGINES a field or a variant of a
+/// tagged enum is of, as the `Shape` stores its `schema::since_engine` and
+/// `schema::until_engine` ([`engines`](Self::engines)), for code that looks a member or a
+/// variant up by engine (a `tag_with` function, a view of an enum).
 ///
 /// ```
-/// use bedrock_addon_core::schema::Era;
+/// use bedrock_addon_core::schema::VersionRange;
 /// use bedrock_addon_core::version::FormatVersion;
 /// const CEREAL: FormatVersion = FormatVersion::new(1, 20, 80);
-/// const LEGACY: Era = Era::below(CEREAL);
+/// const LEGACY: VersionRange = VersionRange::below(CEREAL);
 /// assert!(LEGACY.holds(Some(FormatVersion::new(1, 10, 0))));
 /// assert!(!LEGACY.holds(Some(CEREAL)));
-/// assert!(Era::since(CEREAL).holds(Some(CEREAL)));
+/// assert!(VersionRange::since(CEREAL).holds(Some(CEREAL)));
 /// assert!(!LEGACY.holds(None));
 /// ```
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct Era {
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct VersionRange {
     /// The first version of the range, `None` for no lower end.
     pub since: Option<FormatVersion>,
     /// The first version past the range, `None` for no upper end.
     pub until: Option<FormatVersion>,
 }
 
-impl Era {
+impl VersionRange {
     /// The documents below `version`.
     #[must_use]
     pub const fn below(version: FormatVersion) -> Self {
@@ -58,12 +63,29 @@ impl Era {
         }
     }
 
-    /// Whether a document of `format` is in the era; one of no known format is in none.
+    /// The engines `attrs` state (a field's or a variant's attributes, `schema::since_engine`
+    /// and `schema::until_engine` as the `Shape` stores them); open at an end they do not state.
     #[must_use]
-    pub fn holds(self, format: Option<FormatVersion>) -> bool {
-        format.is_some_and(|format| {
-            self.since.is_none_or(|since| format >= since)
-                && self.until.is_none_or(|until| format < until)
+    pub fn engines(attrs: &[facet::Attr]) -> Self {
+        let stored = |key: &str| {
+            attrs
+                .iter()
+                .find(|attr| attr.ns() == Some("schema") && attr.key() == key)
+                .and_then(|attr| attr.get_as::<&'static str>())
+                .and_then(|text| crate::version::FormatVersionInput::parse(text)?.version)
+        };
+        Self {
+            since: stored("since_engine"),
+            until: stored("until_engine"),
+        }
+    }
+
+    /// Whether `version` is in the range; no known version is in none.
+    #[must_use]
+    pub fn holds(self, version: Option<FormatVersion>) -> bool {
+        version.is_some_and(|version| {
+            self.since.is_none_or(|since| version >= since)
+                && self.until.is_none_or(|until| version < until)
         })
     }
 }
@@ -72,7 +94,7 @@ impl Era {
 mod tests {
     use facet::Facet;
 
-    use super::Era;
+    use super::VersionRange;
     use crate::diagnostic::{Class, CodeDef, Diagnostics, JsonPath, Kind};
     use crate::json::kit::{Node, Profile, Read};
     use crate::json::{JsonSlice, parse};
@@ -81,7 +103,7 @@ mod tests {
     use crate::versioning::{MemberFailure, NullHandling, Reading};
 
     const STRICT: FormatVersion = FormatVersion::new(1, 20, 80);
-    const OLD: Era = Era::below(STRICT);
+    const OLD: VersionRange = VersionRange::below(STRICT);
 
     static OLD_WRONG: CodeDef<0> = CodeDef::new(
         "test/old_wrong",

@@ -14,7 +14,8 @@ use bedrock_addon_core::document::{
     UnknownMembers, unversioned,
 };
 use bedrock_addon_core::id::AtlasKey;
-use bedrock_addon_core::json::jsoncpp::lenient::{as_int, read_lenient, to_text};
+use bedrock_addon_core::json::jsoncpp::lenient::{as_int, read_lenient};
+use bedrock_addon_core::json::jsoncpp::to_text;
 use bedrock_addon_core::json::kit::{Node, Profile, Read, UnknownAt};
 use bedrock_addon_core::json::{EncodeError, Value, WriteStyle, write_json};
 use bedrock_addon_core::load::LoadContext;
@@ -193,7 +194,7 @@ impl Merge for Flipbooks {
 /// The merge key of a raw entry, as the game's merge reads it.
 fn raw_key(entry: &VObject) -> FlipbookKey {
     FlipbookKey {
-        tile: to_text(entry.get("atlas_tile")),
+        tile: entry.get("atlas_tile").map_or_else(String::new, to_text),
         index: as_int(entry.get("atlas_index"), 0),
         variant: as_int(entry.get("atlas_tile_variant"), 0),
     }

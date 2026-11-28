@@ -191,6 +191,7 @@ pub(super) fn validate(info: &FieldInfo, errors: &mut Vec<Error>) {
     validate_keys(info, errors);
     validate_members(info, errors);
     validate_option_keys(info, errors);
+    validate_reads_absent(info, errors);
     validate_eras(info, errors);
     let ruled = [
         &attrs.wrong_type,
@@ -297,6 +298,30 @@ fn validate_option_keys(info: &FieldInfo, errors: &mut Vec<Error>) {
         errors.push(Error::new(
             span,
             "`schema::or_kept` leaves the field `None` where its value fails: an `Option` field",
+        ));
+    }
+}
+
+/// The refusals of `schema::reads_absent` beside the other reads of an absent member: with
+/// `read_beside` (the absent member would be read by the type, not by the function) and with
+/// `absent_with` (both would read it).
+fn validate_reads_absent(info: &FieldInfo, errors: &mut Vec<Error>) {
+    let attrs = &info.attrs;
+    let Some(span) = attrs.reads_absent else {
+        return;
+    };
+    if attrs.read_beside.is_some() {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_absent` reads an absent member by the field's `read_with` or its \
+             type: a `read_beside` field's function is not called for it",
+        ));
+    }
+    if attrs.absent_with.is_some() {
+        errors.push(Error::new(
+            span,
+            "`schema::reads_absent` and `schema::absent_with` both give the value of a member \
+             the object lacks: keep one",
         ));
     }
 }
@@ -869,7 +894,7 @@ fn era_slot(info: &FieldInfo, held: &syn::Type, base: Option<&TokenStream>) -> T
                 };
             };
             let arm = quote! {
-                if #core::schema::Era::holds(#expr, __format) {
+                if #core::schema::VersionRange::holds(#expr, __format) {
                     ::core::option::Option::Some(&#name)
                 } else
             };
@@ -1188,6 +1213,22 @@ fn fields_body(
     } else {
         (quote!(), quote!())
     };
+    // Once a guard or a member that `ends` the read gave the struct up, nothing more of it is
+    // read or told: no flattened struct, no field fed by several members, no `absent_with`.
+    let left_off = match (abandoned.is_empty(), guarded) {
+        (true, false) => None,
+        (false, false) => Some(quote!(__abandoned)),
+        (true, true) => Some(quote!(__guarded.get())),
+        (false, true) => Some(quote!(__abandoned || __guarded.get())),
+    };
+    let read_no_more = left_off.map(|left_off| {
+        quote! {
+            if #left_off {
+                #scope_reset
+                return ::core::option::Option::None;
+            }
+        }
+    });
     let ending = match after_members {
         None => quote! {
             #guard_after
@@ -1198,6 +1239,7 @@ fn fields_body(
             let mut __ok = __object.settle(__read);
             #abandon
             #guard_end
+            #read_no_more
             #(#flattened)*
             #(#finishes)*
             // What the fields put in scope is for the members of this object alone.
@@ -1211,7 +1253,8 @@ fn fields_body(
         },
         Some(rule) => {
             // The value is built and its rule run before the unknown members told after the
-            // members, which the value's own field then takes.
+            // members, which the value's own field then takes, all of them in the order of the
+            // object where the read keeps them so.
             let (later_decl, later_arg, later_take) = match extra_member(infos) {
                 Some(member) => {
                     let core = core();
@@ -1226,6 +1269,7 @@ fn fields_body(
                                         ::core::clone::Clone::clone(__value),
                                     )
                                 }));
+                                __object.in_file_order(__read, &mut __built.#member);
                             }
                         },
                     )
@@ -1248,6 +1292,7 @@ fn fields_body(
                 let mut __ok = __object.settle(__read);
                 #abandon
                 #guard_end
+                #read_no_more
                 #(#flattened)*
                 #(#finishes)*
                 // What the fields put in scope is for the members of this object alone.
@@ -1393,7 +1438,7 @@ fn member_engines(infos: &[FieldInfo<'_>]) -> Vec<TokenStream> {
             );
             let names = std::iter::once(&info.json).chain(info.attrs.alias.as_ref());
             quote! {
-                #((#names, #core::schema::EngineWindow { since: #since, until: #until })),*
+                #((#names, #core::schema::VersionRange { since: #since, until: #until })),*
             }
         })
         .collect()
@@ -1559,7 +1604,12 @@ pub(super) fn struct_read(
 
             #knows_given
 
-            #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
+            #[allow(
+                unused_variables,
+                unused_mut,
+                clippy::too_many_lines,
+                reason = "generated: the read binds what each kind of field may use and is as long as the struct's fields"
+            )]
             fn read_fields(
                 __object: &#object<'_>,
                 __read: &mut #read<'_>,
@@ -1620,6 +1670,33 @@ pub(super) fn validate_positional(
                 "a tuple struct's element is there by its array's length: `or_kept`, \
                  `reads_null`, `required`, `missing`, `since_format` and `era` are about a member",
             ));
+        }
+        let object_keys = [
+            ("guard", attrs.guard.as_ref().map(|(_, span)| *span)),
+            ("ends", attrs.ends),
+            ("scope", attrs.scope),
+            ("if_kind", attrs.if_kind),
+            (
+                "absent_with",
+                attrs.absent_with.as_ref().map(|(_, span)| *span),
+            ),
+            ("reads_absent", attrs.reads_absent),
+            (
+                "read_beside",
+                attrs.read_beside.as_ref().map(|(_, span)| *span),
+            ),
+            ("members", attrs.members.as_ref().map(|(_, span)| *span)),
+        ];
+        for (key, span) in object_keys {
+            if let Some(span) = span {
+                errors.push(Error::new(
+                    span,
+                    format!(
+                        "a tuple struct's field is the element at its place, read by the \
+                         array: `schema::{key}` is about a member of an object, which it is not"
+                    ),
+                ));
+            }
         }
         if container.arity.is_some() && info.option.is_none() && attrs.default.is_none() {
             errors.push(Error::new_spanned(
@@ -1724,7 +1801,7 @@ pub(super) fn tuple_read(
             const EXPECTED: ::core::option::Option<#expected> =
                 ::core::option::Option::Some(#expected::Array);
 
-            #[allow(unused_mut)]
+            #[allow(unused_mut, reason = "generated: mutable for an `after_read` the struct may not have")]
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 let __elements = #reader::elements(__node, __read, #wrong_type)?;
                 #length
@@ -1824,7 +1901,12 @@ fn variant_fn(target: &Target, index: usize, variant: &ReadVariant) -> TokenStre
         None,
     );
     quote! {
-        #[allow(unused_variables, unused_mut, clippy::too_many_lines)]
+        #[allow(
+            unused_variables,
+            unused_mut,
+            clippy::too_many_lines,
+            reason = "generated: the variant's read binds what each kind of field may use and is as long as its fields"
+        )]
         fn #name #generics(
             __object: &#object<'_>,
             __read: &mut #read<'_>,
@@ -2044,7 +2126,11 @@ pub(super) fn tagged_read(
                 }
             }
 
-            #[allow(unused_variables, clippy::too_many_lines)]
+            #[allow(
+                unused_variables,
+                clippy::too_many_lines,
+                reason = "generated: the read takes the parameters of every `Fields` read and is as long as the variants"
+            )]
             fn read_fields(
                 __object: &#object<'_>,
                 __read: &mut #read<'_>,
@@ -2070,7 +2156,8 @@ pub(super) fn tagged_read(
 /// The read of an externally tagged enum: a unit variant by its name, a variant with data as
 /// `{name: payload}`. One whose every variant holds a value is also `Fields`: flattened into a
 /// struct, the variant is a member of the struct's object, the one `tag_with` names or the first
-/// the object has.
+/// the object has. The enum's `after_read` runs over the variant read, given the enum's node
+/// (flattened, its owner's object).
 #[allow(
     clippy::too_many_lines,
     reason = "one arm per kind of variant, read alone and flattened"
@@ -2079,6 +2166,7 @@ pub(super) fn external_read(
     target: &Target,
     invalid: Option<&(syn::Expr, proc_macro2::Span)>,
     tag_with: Option<&(syn::Expr, proc_macro2::Span)>,
+    after_read: Option<&(syn::Expr, proc_macro2::Span)>,
     variants: &[ReadVariant],
 ) -> TokenStream {
     let Paths {
@@ -2091,6 +2179,19 @@ pub(super) fn external_read(
         ..
     } = paths();
     let invalid = invalid_code(invalid);
+    // The rule over the variant just read, with the node as written.
+    let after = |at: TokenStream| {
+        after_read.map(|(after, _)| {
+            quote! {
+                if let ::core::option::Option::Some(__built) = &mut __value {
+                    (#after)(__built, #at, __read);
+                }
+            }
+        })
+    };
+    let after_alone = after(quote!(__node));
+    let after_flat = after(quote!(__object.node()));
+    let mutable = after_read.map(|_| quote!(mut));
     let fns = variants
         .iter()
         .enumerate()
@@ -2157,7 +2258,11 @@ pub(super) fn external_read(
                     <Self as #fields_trait>::knows(__key)
                 }
 
-                #[allow(unused_variables, clippy::too_many_lines)]
+                #[allow(
+                unused_variables,
+                clippy::too_many_lines,
+                reason = "generated: the read takes the parameters of every `Fields` read and is as long as the variants"
+            )]
                 fn read_fields(
                     __object: &#object<'_>,
                     __read: &mut #read<'_>,
@@ -2171,13 +2276,15 @@ pub(super) fn external_read(
                         <Self as #fields_trait>::VARIANTS,
                         #with,
                     )?;
-                    match __name {
+                    let #mutable __value = match __name {
                         #(#payload_arms)*
                         _ => {
                             #reader::unknown_variant(&__payload, __read, #invalid);
                             ::core::option::Option::None
                         }
-                    }
+                    };
+                    #after_flat
+                    __value
                 }
             }
         }
@@ -2187,7 +2294,7 @@ pub(super) fn external_read(
         #header {
             fn from_json(__node: &#node<'_>, __read: &mut #read<'_>) -> ::core::option::Option<Self> {
                 #(#fns)*
-                match #reader::external(__node, __read, #invalid)? {
+                let #mutable __value = match #reader::external(__node, __read, #invalid)? {
                     #reader::External::Unit(__name) => match __name.as_str() {
                         #(#unit_arms)*
                         _ => {
@@ -2202,7 +2309,9 @@ pub(super) fn external_read(
                             ::core::option::Option::None
                         }
                     },
-                }
+                };
+                #after_alone
+                __value
             }
         }
 

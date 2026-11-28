@@ -42,6 +42,19 @@ pub fn member<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
         .filter(|member| !member.is_null())
 }
 
+/// `Json::Value::asString()`: a string is itself; a bool is `"true"` or `"false"`; `null`, a
+/// number, an array or an object is `""`. The same in each of the readers here (the sound
+/// files' fork, the texture files' lenient reader, the fixed-path files).
+pub fn to_text(value: &Value) -> String {
+    if let Some(text) = value.as_string() {
+        text.as_str().to_owned()
+    } else if let Some(flag) = value.as_bool() {
+        flag.to_string()
+    } else {
+        String::new()
+    }
+}
+
 /// The number of a value, as a float.
 pub fn number(value: &Value) -> Option<f64> {
     value.as_number().map(facet_value::VNumber::to_f64_lossy)
@@ -75,6 +88,20 @@ pub fn read(bytes: &[u8]) -> Result<Value, ReadError> {
 mod tests {
     use super::*;
     use std::error::Error;
+
+    fn value(text: &str) -> Value {
+        crate::json::from_str_jsonc(text).unwrap()
+    }
+
+    #[test]
+    fn to_text_spells_bools_and_empties_the_rest() {
+        assert_eq!(to_text(&value("\"a\"")), "a");
+        assert_eq!(to_text(&value("true")), "true");
+        assert_eq!(to_text(&value("false")), "false");
+        assert_eq!(to_text(&value("5")), "");
+        assert_eq!(to_text(&value("null")), "");
+        assert_eq!(to_text(&value("[\"a\"]")), "");
+    }
 
     #[test]
     fn read_names_each_failure_with_its_variant() {

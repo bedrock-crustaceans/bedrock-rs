@@ -326,7 +326,7 @@ pub struct Declared<'a, K> {
     pub gates: &'a [(&'a str, FormatVersion)],
     /// The names of an engine's members, with their engines: no members of a read that gates
     /// by an engine outside them ([`Read::engine`]).
-    pub engines: &'a [(&'a str, crate::schema::EngineWindow)],
+    pub engines: &'a [(&'a str, crate::schema::VersionRange)],
     /// Whether a key names a member of the struct (or of one it flattens).
     pub knows: K,
     /// The tag member of an internally tagged enum's variant.
@@ -346,7 +346,7 @@ impl<'a, K: Fn(&str) -> bool> Declared<'a, K> {
         let engine = read.gating_engine().is_some_and(|engine| {
             self.engines
                 .iter()
-                .any(|(gated, window)| *gated == name && !window.admits(engine))
+                .any(|(gated, window)| *gated == name && !window.holds(Some(engine)))
         });
         format || engine
     }

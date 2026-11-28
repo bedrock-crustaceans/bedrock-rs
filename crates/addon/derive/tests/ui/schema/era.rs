@@ -1,10 +1,10 @@
 use bedrock_addon_core::diagnostic::{Class, CodeDef, Kind};
 use bedrock_addon_core::document::UnknownMembers;
-use bedrock_addon_core::schema::{self, Era, Schema};
+use bedrock_addon_core::schema::{self, Schema, VersionRange};
 use bedrock_addon_core::version::FormatVersion;
 use facet::Facet;
 
-const OLD: Era = Era::below(FormatVersion::new(1, 20, 80));
+const OLD: VersionRange = VersionRange::below(FormatVersion::new(1, 20, 80));
 static LINE: CodeDef<0> = CodeDef::new("test/line", Kind::InvalidValue, Class::KeptError, "line");
 
 #[derive(Facet, Schema)]

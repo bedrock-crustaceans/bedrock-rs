@@ -16,7 +16,8 @@ use bedrock_addon_core::diagnostic::{Code, Diagnostic, Diagnostics, JsonPath, Ph
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::AtlasKey;
 use bedrock_addon_core::json::Value;
-use bedrock_addon_core::json::jsoncpp::lenient::{as_float, is_empty, strtouint32_hex, to_text};
+use bedrock_addon_core::json::jsoncpp::lenient::{as_float, is_empty, strtouint32_hex};
+use bedrock_addon_core::json::jsoncpp::to_text;
 use bedrock_addon_core::json::kit::{Node, Profile, Read, Recovery, UnknownAt};
 use bedrock_addon_core::schema::{FromJson, UnknownRule, read_document, read_entries};
 use bedrock_addon_core::versioning::{MemberFailure, NullHandling, Reading, Scalars};
@@ -43,7 +44,7 @@ pub(super) fn read_atlas(
         );
         return None;
     };
-    let texture_name = to_text(Some(name));
+    let texture_name = to_text(name);
     let at = JsonPath::new().child("texture_name");
     if texture_name.is_empty() {
         // The game raises a debug assert here; a release build goes on, so this is an
@@ -115,7 +116,7 @@ pub(super) fn mip_levels(node: &Node<'_>, read: &mut Read<'_>) -> Option<i32> {
     reason = "the signature of a `read_with` fn"
 )]
 pub(super) fn silent_text(node: &Node<'_>, _: &mut Read<'_>) -> Option<String> {
-    Some(to_text(Some(node.value())))
+    Some(to_text(node.value()))
 }
 
 /// `texture_data`: an object of tiles; the game takes no tile of another value.

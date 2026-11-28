@@ -4,6 +4,10 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 
 **This crate is an implementation detail.** Its one user-facing path is `bedrock_addon_core::schema`, which re-exports it: a file that uses the attributes writes `use bedrock_addon_core::schema;`, and a module that can see another item named `schema` cannot use them. The crate is a leaf of its own because facet's grammar macro exports its dispatcher with `#[macro_export]`, which places it at a crate root.
 
+## Reading a family's JSON
+
+A family declares its document as structs and enums with `#[derive(Facet, Schema)]` and `schema::` keys; the derive writes each type's `FromJson`, which reads it member by member, tells every finding to the `Read` (graded by its `Reading`, ordered by its `Profile`) and recovers per member. The entry points are `versioning::read_payload` / `read_payload_with` (a versioned payload), `versioning::read_component` / `read_component_with` (a component), `schema::read_document` (a root under a `Read` the family builds) and `schema::read_value` (a value alone). Hand code takes three shapes only: a leaf's `FromJson` impl, a field's `read_with` (or `read_beside`) function, and a rule (`rule`, `check_with`, `after_read`, `after_members`, `guard`); a key the derive cannot honour where it is written is a compile error. `crates/addon/core/src/schema/from_json/tests.rs` has the reader's unit tests, one per behaviour; `src/lib.rs` here has each key's grammar line.
+
 ## Keys
 
 | Key | Value | Kind | Read by |
@@ -23,12 +27,21 @@ The `schema::` attribute grammar of the `bedrock_addon` crate family. A typed do
 | `molang` | a `MolangFieldSpec` path | compile-time | `#[derive(Schema)]` |
 | `molang_with` | a function path | compile-time | `#[derive(Schema)]` |
 | `read_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` | compile-time | `#[derive(Schema)]`: the field's read in place of its type's `FromJson` |
-| `absent_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` given the object | compile-time | `#[derive(Schema)]`: an `Option` field's value when the object lacks the member (asked in its place in a declared-order read, after the members in a file-order one) |
+| `absent_with` | a function path, `fn(&Node, &mut Read) -> Option<T>` given the object | compile-time | `#[derive(Schema)]`: an `Option` field's value when the object lacks the member, or holds a `null` the reading takes for absence (asked in its place in a declared-order read, after the members in a file-order one) |
+| `reads_absent` | (marker) | stored as `()` | `#[derive(Schema)]` on a field: a member the object lacks is read all the same, by the field's type or `read_with`, at a node that knows it is absent (`Node::is_absent`), as jsoncpp's `operator[]` gives `null`; where it is declared in a declared-order read, after the members in a file-order one. Not beside `absent_with` or `read_beside` |
+| `read_beside` | a function path, `fn(&Node, &Node, &mut Read) -> Option<T>` (the member, its object, the read) | compile-time | `#[derive(Schema)]` on a struct's field: `read_with` for a member whose read follows its siblings |
+| `members` | `["a", "b"]`, member names | compile-time | `#[derive(Schema)]` on a field with a `default` or an `Option`: the field is fed by these members of its object (its type's `FromMembers`, or its `read_with`), read once, where the first of them is |
+| `scope` | (marker) | stored as `()` | `#[derive(Schema)]` on a field: once read (or found absent in a declared-order read), its value is in scope under its JSON name for the rest of the struct's read (`Read::scope`) |
+| `ends` | (marker) | stored as `()` | `#[derive(Schema)]` on a field: a member that fails, or a required one told missing where a declared-order read asks for it, ends its struct's read there; the struct fails and nothing after it is read or told |
+| `era` | `era(RANGE, wrong_type = CODE, missing = CODE, invalid = CODE, molang = SPEC)`, `RANGE` a `schema::VersionRange` of format versions; repeatable | compile-time | `#[derive(Schema)]` on a field: the codes and Molang spec that hold in a document whose format is in the range, in place of the field's own |
 | `check_with` | a function path, `fn(&mut T, &mut SchemaCx)` | compile-time | `#[derive(Schema)]`: the field's check |
 | `rule` | a function path, `fn(&mut Self, &mut SchemaCx)` | compile-time | `#[derive(Schema)]` on a struct: a rule across its fields at the check |
-| `after_read` | a function path, `fn(&mut Self, &Node, &mut Read)` | compile-time | `#[derive(Schema)]` on a struct: a rule at the read, with the object as written |
+| `after_members` | a function path, `fn(&mut Self, &Node, &mut Read)` | compile-time | `#[derive(Schema)]` on a struct with an object: `after_read` run on the value the members built, before the unknown members a profile tells after them |
+| `unknown_with` | a function path, `fn(&str, &Node, &mut Read) -> UnknownRule` | compile-time | `#[derive(Schema)]` on a struct with an object: the rule each unknown member is told and kept by, from its name, in place of `unknown` |
+| `after_read` | a function path, `fn(&mut Self, &Node, &mut Read)` | compile-time | `#[derive(Schema)]` on a struct or a tagged enum (internally or externally): a rule at the read, with the object as written |
 | `guard` | a function path, `fn(&Node, &mut Read) -> bool` | compile-time | `#[derive(Schema)]` on a field (before the member is read) or a struct (after the members, before the unknown ones): `false` ends the struct's read there |
-| `tag_with` | a function path | compile-time | `#[derive(Schema)]` on an internally tagged enum: names the variant |
+| `tag_with` | a function path, `fn(&Node, &mut Read) -> Option<&'static str>` | compile-time | `#[derive(Schema)]` on an internally tagged enum, or on an externally tagged one whose every variant holds a value (flattened into a struct, the variant a member of the struct's object): names the variant |
+| `arity` | a `CodeDef<0>` path | compile-time | `#[derive(Schema)]` on a tuple struct: an array of another length is told under the code after its elements and read on (else it is a wrong type) |
 | `trigger` | (marker) | stored as `()` | `#[derive(Schema)]` on a struct: it is an event trigger itself |
 | `foreign_event` | (marker) | stored as `()` | `#[derive(Schema)]` |
 | `required` | (marker) | stored as `()` | `#[derive(Schema)]` on an `Option` field |

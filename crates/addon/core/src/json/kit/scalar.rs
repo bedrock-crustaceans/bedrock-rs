@@ -7,6 +7,7 @@ use std::borrow::Cow;
 use super::{Expected, Node, Pass, Read};
 use crate::diagnostic::codes as core_codes;
 use crate::diagnostic::{Code, CodeDef, Diagnostic, DiagnosticDetail, JsonPath, Severity};
+use crate::json::jsoncpp;
 use crate::json::jsoncpp::accessors::{self, Integer};
 use crate::json::jsoncpp::fork::{self, Stored};
 use crate::json::jsoncpp::lenient;
@@ -243,7 +244,7 @@ impl Read<'_> {
                 matches!(fork::stored(value), Stored::Null | Stored::Integer),
             ),
             Declared::Text => (
-                Scalar::Text(Cow::Owned(fork::to_text(value))),
+                Scalar::Text(Cow::Owned(jsoncpp::to_text(value))),
                 matches!(fork::stored(value), Stored::Null | Stored::String),
             ),
         };
@@ -273,7 +274,7 @@ impl Read<'_> {
                 !node.value.is_null() && !lenient::int_is_coerced(node.value),
             ),
             Declared::Text => (
-                Scalar::Text(Cow::Owned(lenient::to_text(value))),
+                Scalar::Text(Cow::Owned(jsoncpp::to_text(node.value))),
                 node.value.is_string(),
             ),
         };
@@ -317,7 +318,7 @@ impl Read<'_> {
                 Integer::Coerced(read) => (integer(read), other_type),
             },
             Declared::Text => (
-                Scalar::Text(Cow::Owned(lenient::to_text(Some(value)))),
+                Scalar::Text(Cow::Owned(jsoncpp::to_text(value))),
                 other_type.filter(|_| !value.is_string()),
             ),
         };

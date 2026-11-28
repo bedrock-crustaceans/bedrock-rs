@@ -5,7 +5,7 @@
 
 use super::Component;
 use super::component::Bound;
-use bedrock_addon_core::schema::EngineWindow;
+use bedrock_addon_core::schema::VersionRange;
 use bedrock_addon_core::version::FormatVersion;
 use bedrock_addon_core::version::known;
 use facet::{Shape, Type, UserType};
@@ -213,7 +213,7 @@ impl Catalogue {
     pub fn rule(self, component: Component) -> Option<ControlRule> {
         let variant = Bound::variant(component)?;
         let engine = self.engine();
-        if !EngineWindow::of(variant.attributes).admits(engine) {
+        if !VersionRange::engines(variant.attributes).holds(Some(engine)) {
             return None;
         }
         let Type::User(UserType::Struct(members)) = variant.data.fields.first()?.shape().ty else {
@@ -221,7 +221,7 @@ impl Catalogue {
         };
         let member = |name: &str| members.fields.iter().find(|field| field.name == name);
         let attribs = match member("attribs") {
-            Some(field) if EngineWindow::of(field.attributes).admits(engine) => {
+            Some(field) if VersionRange::engines(field.attributes).holds(Some(engine)) => {
                 if field.has_attr(Some("schema"), "required") {
                     Binding::Required
                 } else {

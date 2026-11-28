@@ -736,6 +736,47 @@ fn a_flattened_external_enum_takes_the_variant_its_function_names() {
     assert_eq!(told, ["Error root test/stage_kind"]);
 }
 
+/// A rule over the variant of an external enum just read, with the node as written: a ball that
+/// writes no radius is told.
+fn ball_rule(cargo: &mut Rolled, node: &Node<'_>, read: &mut Read<'_>) {
+    if matches!(cargo, Rolled::Ball { radius: None }) {
+        read.push(crate::diagnostic::Diagnostic::of(&STAGE_WEIGHT).at(node.path().clone()));
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_read = ball_rule)]
+#[repr(u8)]
+enum Rolled {
+    #[facet(rename = "x:box")]
+    Box(Lamp),
+    #[facet(rename = "x:ball")]
+    Ball { radius: Option<u8> },
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Rolling {
+    #[facet(flatten)]
+    cargo: Rolled,
+    after: Option<u8>,
+}
+
+/// An external enum's `after_read` runs over the variant it read, read alone (given its node)
+/// and flattened (given its owner's object); not over a variant that failed.
+#[test]
+fn an_external_enum_s_rule_runs_over_the_variant_it_read() {
+    let (cargo, told) = door::<Rolled>(r#"{"x:ball": {}}"#);
+    assert_eq!(cargo, Some(Rolled::Ball { radius: None }));
+    assert_eq!(told, ["Warning root test/stage_weight"]);
+    assert!(door::<Rolled>(r#"{"x:ball": {"radius": 1}}"#).1.is_empty());
+    let (_, told) = door::<Rolled>(r#"{"x:box": {}}"#);
+    assert_eq!(told, ["Error root/x:box/level core/missing_required_field"]);
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (rolling, told) = read_as::<Rolling>(r#"{"x:ball": {}, "after": 1}"#, lenient(), declared);
+    assert_eq!(rolling.map(|rolling| rolling.after), Some(Some(1)));
+    assert_eq!(told, ["Warning root test/stage_weight"]);
+}
+
 /// A mood the game reads whether the member is written or not: absent, it is `calm`, told.
 fn mood(node: &Node<'_>, read: &mut Read<'_>) -> Option<String> {
     if node.is_absent() {
@@ -1600,6 +1641,82 @@ struct Ended {
     extra: crate::document::UnknownMembers,
 }
 
+/// A struct flattened into the ones below, which tells its required member missing.
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct Required {
+    need: u8,
+}
+
+/// A `schema::members` read that tells a finding wherever it is called.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "the signature a `schema::members` read has"
+)]
+fn told_members(
+    object: &Node<'_>,
+    _: &[Option<Node<'_>>; 1],
+    default: u8,
+    read: &mut Read<'_>,
+) -> Option<u8> {
+    read.push(
+        crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::INVALID_VALUE)
+            .severity(crate::diagnostic::Severity::Info)
+            .at(object.path().child("m")),
+    );
+    Some(default)
+}
+
+/// An `absent_with` read that tells a finding wherever it is called.
+fn told_absent(object: &Node<'_>, read: &mut Read<'_>) -> Option<u8> {
+    read.push(
+        crate::diagnostic::Diagnostic::of(&crate::diagnostic::codes::MISSING_PROPERTY)
+            .severity(crate::diagnostic::Severity::Info)
+            .at(object.path().child("a")),
+    );
+    None
+}
+
+fn never(_: &Node<'_>, _: &mut Read<'_>) -> bool {
+    false
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::guard = never)]
+struct GuardedRest {
+    #[facet(flatten)]
+    needs: Required,
+    #[facet(schema::members = ["m"], schema::read_with = told_members, default = 0)]
+    m: u8,
+    #[facet(schema::absent_with = told_absent)]
+    a: Option<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+struct EndedRest {
+    #[facet(schema::ends)]
+    first: String,
+    #[facet(flatten)]
+    needs: Required,
+    #[facet(schema::members = ["m"], schema::read_with = told_members, default = 0)]
+    m: u8,
+    #[facet(schema::absent_with = told_absent)]
+    a: Option<u8>,
+}
+
+/// Once a struct guard says `false` or a member that `ends` the read ended it, nothing more of
+/// the struct is read or told: no flattened struct, no field fed by `schema::members`, no
+/// `absent_with` read.
+#[test]
+fn nothing_of_a_struct_is_read_after_its_read_ended() {
+    let (value, told) = read_as::<GuardedRest>("{}", lenient().strict(), Profile::EVERY_FAILURE);
+    assert_eq!(value, None);
+    assert_eq!(told, Vec::<String>::new());
+    let declared = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    let (value, told) = read_as::<EndedRest>("{}", lenient().strict(), declared);
+    assert_eq!(value, None);
+    assert_eq!(told, ["Info root/first core/missing_required_field"]);
+}
+
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]
 struct KeptOrEnded {
     #[facet(schema::or_kept = "told", schema::ends)]
@@ -1891,6 +2008,37 @@ fn a_member_kept_as_written_takes_its_place_among_the_unknown_members() {
     let value = Kept::from_json(&Node::new(&json, JsonPath::new()), &mut read).expect("read");
     let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
     assert_eq!(kept, ["size", "zz", "shade", "aa"]);
+}
+
+#[derive(Clone, Debug, PartialEq, Facet, Schema)]
+#[facet(schema::after_members = kept_rule)]
+struct KeptRuled {
+    #[facet(schema::or_kept = "told")]
+    size: Option<u8>,
+    #[facet(schema::or_kept = "silent")]
+    shade: Option<u8>,
+    extra: crate::document::UnknownMembers,
+}
+
+fn kept_rule(_: &mut KeptRuled, _: &Node<'_>, _: &mut Read<'_>) {}
+
+/// A struct with a rule after its members keeps in file order too: what its fields could not
+/// read among its unknown members, those told with the members and those told after the rule.
+#[test]
+fn a_struct_with_a_rule_after_its_members_keeps_in_file_order() {
+    let json: Value =
+        from_str_jsonc(r#"{"size": "big", "zz": 1, "shade": "dark", "aa": 2}"#).unwrap();
+    let last = Profile::DECLARED_ORDER.with_unknown(crate::json::kit::UnknownAt::Last);
+    for profile in [Profile::EVERY_FAILURE, last] {
+        let mut found = Diagnostics::default();
+        let mut read = Read::new(Reading::DOCUMENT, &mut found)
+            .profile(profile)
+            .keep_in_file_order();
+        let node = Node::new(&json, JsonPath::new());
+        let value = KeptRuled::from_json(&node, &mut read).expect("read");
+        let kept: Vec<&str> = value.extra.iter().map(|(key, _)| key).collect();
+        assert_eq!(kept, ["size", "zz", "shade", "aa"], "{profile:?}");
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Facet, Schema)]

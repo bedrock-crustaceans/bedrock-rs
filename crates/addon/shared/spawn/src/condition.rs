@@ -12,8 +12,8 @@ use bedrock_addon_core::diagnostic::{Code, CodeDef, Diagnostic, Severity};
 use bedrock_addon_core::document::UnknownMembers;
 use bedrock_addon_core::id::EntityId;
 use bedrock_addon_core::json::Value;
+use bedrock_addon_core::json::jsoncpp;
 use bedrock_addon_core::json::jsoncpp::accessors::{self, Integer};
-use bedrock_addon_core::json::jsoncpp::lenient;
 use bedrock_addon_core::json::kit::{Node, Read};
 use bedrock_addon_core::schema::{self, ElementFailure, FromJson, Schema, read_list};
 use bedrock_addon_core::shared::Filter;
@@ -585,7 +585,7 @@ fn delay_identified(filter: &Node<'_>, read: &mut Read<'_>) -> bool {
         .value()
         .as_object()
         .and_then(|members| members.get("identifier"))
-        .map(|value| EntityId::parse(lenient::to_text(Some(value))));
+        .map(|value| EntityId::parse(jsoncpp::to_text(value)));
     if identifier.is_none_or(|identifier| identifier.as_str().is_empty()) {
         warn(read, filter, named(read, &codes::DELAY_WITHOUT_IDENTIFIER));
     }

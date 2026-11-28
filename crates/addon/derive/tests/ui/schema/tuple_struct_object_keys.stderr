@@ -1,0 +1,65 @@
+error: a tuple struct is an array read by position, with no object and no unknown members: its read has no place for `schema::after_members`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/tuple_struct_object_keys.rs:17:9
+   |
+17 | #[facet(schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |         ^^^^^^
+
+error: a tuple struct is an array read by position, with no object and no unknown members: its read has no place for `schema::guard`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/tuple_struct_object_keys.rs:17:39
+   |
+17 | #[facet(schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                                       ^^^^^^
+
+error: a tuple struct is an array read by position, with no object and no unknown members: its read has no place for `schema::quiet`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/tuple_struct_object_keys.rs:17:62
+   |
+17 | #[facet(schema::after_members = rule, schema::guard = guard, schema::quiet = "a")]
+   |                                                              ^^^^^^
+
+error: a tuple struct is an array read by position, with no object and no unknown members: its read has no place for `schema::unknown`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/tuple_struct_object_keys.rs:18:9
+   |
+18 | #[facet(schema::unknown = "silent", schema::unknown_with = unknown)]
+   |         ^^^^^^
+
+error: a tuple struct is an array read by position, with no object and no unknown members: its read has no place for `schema::unknown_with`, which is about a struct's object; put it on the type that reads one
+  --> tests/ui/schema/tuple_struct_object_keys.rs:18:37
+   |
+18 | #[facet(schema::unknown = "silent", schema::unknown_with = unknown)]
+   |                                     ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::guard` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:23:13
+   |
+23 |     #[facet(schema::guard = guard)] i32,
+   |             ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::ends` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:24:13
+   |
+24 |     #[facet(schema::ends)] i32,
+   |             ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::scope` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:25:13
+   |
+25 |     #[facet(schema::scope)] i32,
+   |             ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::if_kind` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:26:13
+   |
+26 |     #[facet(schema::if_kind)] Option<i32>,
+   |             ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::reads_absent` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:27:13
+   |
+27 |     #[facet(schema::reads_absent)] Option<i32>,
+   |             ^^^^^^
+
+error: a tuple struct's field is the element at its place, read by the array: `schema::absent_with` is about a member of an object, which it is not
+  --> tests/ui/schema/tuple_struct_object_keys.rs:28:13
+   |
+28 |     #[facet(schema::absent_with = absent)] Option<i32>,
+   |             ^^^^^^

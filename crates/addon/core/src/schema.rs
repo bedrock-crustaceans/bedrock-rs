@@ -15,11 +15,11 @@
 mod component;
 mod cx;
 mod default;
-mod era;
 mod from_json;
 mod goal;
 mod grading;
 mod molang_leaves;
+mod range;
 mod rows;
 mod sides;
 mod walk;
@@ -58,7 +58,7 @@ pub use component::{
     shorthand_shape,
 };
 pub use cx::{BoundRules, SchemaCx, TreeWording, Verdict};
-pub use era::Era;
+pub use range::VersionRange;
 // hidden: emitted by the schema derive
 pub use from_json::FromMembers;
 #[doc(hidden)]
@@ -79,7 +79,7 @@ pub use goal::int_fallback;
 pub use goal::GoalVisitor;
 pub use goal::{GoalMeta, VersionedParseFn};
 pub use grading::{Grading, grade};
-pub use rows::{Bound, BoundOp, EngineWindow, FieldKind, FieldRow, Limit, Lit, UnknownRule};
+pub use rows::{Bound, BoundOp, FieldKind, FieldRow, Limit, Lit, UnknownRule};
 // hidden: schema support the families' hand-written rows name; API not yet reviewed
 #[doc(hidden)]
 pub use sides::{Found, Side, Sides};
