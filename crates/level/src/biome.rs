@@ -378,7 +378,10 @@ impl Biomes3d {
             match indices {
                 IndicesType::Data(array) => {
                     let len = reader.read_u32::<LittleEndian>()?;
-                    let mut palette = Vec::with_capacity(len as usize);
+                    // The length comes from the input; reserve no more than a storage can use.
+                    let mut palette = Vec::with_capacity(
+                        (len as usize).min(crate::subchunk::MAX_PALETTE_RESERVE),
+                    );
                     for _ in 0..len {
                         palette.push(reader.read_u32::<LittleEndian>()?);
                     }

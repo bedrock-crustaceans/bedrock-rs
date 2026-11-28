@@ -773,8 +773,9 @@ impl Layer {
                 (vec![entry], vec![order])
             } else {
                 let len = reader.read_u32::<LittleEndian>()? as usize;
-                let mut palette = Vec::with_capacity(len);
-                let mut entry_order = Vec::with_capacity(len);
+                // The length comes from the input; reserve no more than a layer can use.
+                let mut palette = Vec::with_capacity(len.min(MAX_PALETTE_RESERVE));
+                let mut entry_order = Vec::with_capacity(len.min(MAX_PALETTE_RESERVE));
 
                 for _ in 0..len {
                     let (entry, order) = read_palette_entry(reader)?;
@@ -884,6 +885,19 @@ where
 mod palette_tests {
     use super::*;
     use crate::Greedy;
+
+    /// A palette length of `u32::MAX` with no entries after it is an error at the end of the
+    /// input. The reader used to reserve room for every claimed entry first, hundreds of GB,
+    /// and the process aborted instead.
+    #[test]
+    fn palette_length_beyond_the_input_is_an_error_not_an_allocation() {
+        let mut bytes = vec![SubChunkVersion::Legacy.raw(), 1 << 1];
+        bytes.extend(std::iter::repeat_n(0u8, 128 * 4));
+        bytes.extend(u32::MAX.to_le_bytes());
+
+        let result = SubChunk::from_disk::<Greedy, _>(&mut Cursor::new(bytes.as_slice()));
+        assert!(result.is_err(), "read as {result:?}");
+    }
 
     /// Builds a one-layer legacy subchunk whose 4096 indices are all zero and
     /// whose palette is the single entry `palette_entry`.
@@ -1321,6 +1335,11 @@ mod palette_tests {
         assert_eq!(palette[1].legacy_val(), Some(4));
     }
 }
+
+/// The most palette entries a layer or biome reader reserves room for up front: a 16x16x16
+/// storage cannot use more distinct values. A longer palette still reads, it just grows as it
+/// goes.
+pub(crate) const MAX_PALETTE_RESERVE: usize = 16 * 16 * 16;
 
 /// Converts coordinates to offsets into the block palette indices.
 ///
