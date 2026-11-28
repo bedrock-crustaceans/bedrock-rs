@@ -50,16 +50,17 @@ alongside each vendored file instead of trusting the file's own content for eith
 
 ## Pinned subset, not the full ladder
 
-As of the pin date in `manifest.json`, 26 stable (non-`-preview`) tags carry the dump,
-`v1.20.10.1` through `v1.26.40.05`. This manifest pins six of them, spread across that range,
+As of the pin date in `manifest.json`, 28 stable (non-`-preview`) tags carry the dump,
+`v1.20.10.1` through `v1.26.60.5`. This manifest pins eight of them, spread across that range,
 to keep the generated tree a reviewable size while still exercising the generator against real
 data end to end: `v1.20.10.1` (the floor), `v1.21.0.3`, `v1.21.60.10`, `v1.21.130.3`,
-`v1.26.0.2`, `v1.26.40.05` (the tip at pin time). Extending coverage to the rest of the ladder
-is adding entries to `manifest.json` with the same fields and re-running
+`v1.26.0.2`, `v1.26.40.05`, `v1.26.50.4`, `v1.26.60.5` (the tip at pin time). Only stable tags
+are pinned: the `v1.26.70.*` tags are previews and are left out. Extending coverage to the rest
+of the ladder is adding entries to `manifest.json` with the same fields and re-running
 `cargo xtask generate-palette`; nothing about the generator is specific to which versions are
 present.
 
-One finding from the six that are pinned: `v1.21.130.3` and `v1.26.0.2` are byte-identical
+One finding from the pinned tags: `v1.21.130.3` and `v1.26.0.2` are byte-identical
 (same git blob, same sha256) despite the jump in version numbering between them -- no block
 changed between those two releases. That is corroborating evidence, not an assumption, for
 generated Rust being the right shape here: most of the table does not change release to
@@ -67,9 +68,9 @@ release, which is exactly what makes per-version diffs worth keeping readable.
 
 ## Biome dump coverage
 
-Surveyed separately from the block dump, at the same six tags this manifest already pins for
-`mojang-blocks.json`, via the GitHub API tree listing for `metadata/vanilladata_modules` at
-each tag:
+Surveyed separately from the block dump, at the tags this manifest pins for
+`mojang-blocks.json` (the first six via the GitHub API tree listing for
+`metadata/vanilladata_modules` at each tag, `v1.26.50.4` and `v1.26.60.5` by fetching the file):
 
 - `v1.20.10.1`: no `mojang-biomes.json` at all -- the directory only carries
   `mojang-blocks.json`, `mojang-dimensions.json`, `mojang-effects.json`,
@@ -80,9 +81,11 @@ each tag:
   `name` (e.g. `{"id": 48, "name": "minecraft:bamboo_jungle"}`). `v1.21.130.3` and `v1.26.0.2`
   are byte-identical, the same pairing already noted above for the block dump at those two
   tags.
+- `v1.26.50.4`, `v1.26.60.5`: numeric ids as well. `v1.26.50.4` is byte-identical to
+  `v1.26.40.05`; `v1.26.60.5` adds `minecraft:ice_caves` (90 entries).
 
-Consequence: `ContentProvider::biome_name` resolves a numeric id to a name, so only the three
-tags whose dump carries a numeric id are useful input, and only those three are vendored
+Consequence: `ContentProvider::biome_name` resolves a numeric id to a name, so only the five
+tags whose dump carries a numeric id are useful input, and only those five are vendored
 (`manifest.json`'s `biome_entries`). The two name-only tags are recorded here as a fact about
 upstream coverage, not vendored, since there is nothing an id-keyed table could be built from
 in them.

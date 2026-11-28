@@ -41,11 +41,24 @@
       "game_version": [1, 26, 40],
       "file": "v1.26.40.05/mojang-blocks.json",
       "sha256": "f361039eecafd437727a837aba7261b8346241ab60709024f453cdecce7515ff",
-      "note": "Latest stable tag as of the pin date below; byte-identical to the repository's main branch at the same date."
+      "note": "Latest stable tag when this entry was pinned (2026-08-17); byte-identical to the repository's main branch at the same date."
+    },
+    {
+      "tag": "v1.26.50.4",
+      "game_version": [1, 26, 50],
+      "file": "v1.26.50.4/mojang-blocks.json",
+      "sha256": "044d494af33347eb1f0e76bab64ce04f44261ec3dac7d1938549a41cf0a770ba"
+    },
+    {
+      "tag": "v1.26.60.5",
+      "game_version": [1, 26, 60],
+      "file": "v1.26.60.5/mojang-blocks.json",
+      "sha256": "1e693c37f0d024ff9d9298e80b108d3809d8144ec4116a36212caf8b63eae2e4",
+      "note": "Latest stable tag as of 2026-11-27. The v1.26.70.* tags are previews and are not pinned."
     }
   ],
-  "pinned_date": "2026-08-17",
-  "coverage_note": "This is a representative subset of the stable (non -preview) tags that carry the dump, not the full ladder. bedrock-samples has published the dump on every stable tag from v1.20.10.1 through the current release (26 stable tags as surveyed on the pin date); adding the rest is a matter of extending this manifest with the same fields and re-running `cargo xtask generate-palette` -- the generator does not special-case which versions are present.",
+  "pinned_date": "2026-11-27",
+  "coverage_note": "This is a representative subset of the stable (non -preview) tags that carry the dump, not the full ladder. bedrock-samples has published the dump on every stable tag from v1.20.10.1 through the current release (28 stable tags as surveyed on the pin date); adding the rest is a matter of extending this manifest with the same fields and re-running `cargo xtask generate-palette` -- the generator does not special-case which versions are present.",
   "biome_comment": "Provenance for the vendored biome dumps, surveyed separately from the block dumps above because their coverage differs: `mojang-biomes.json` does not exist at all at v1.20.10.1 (first appears at v1.21.0.3), and even once present it carries no numeric `id` field until v1.21.130.3 -- confirmed directly against the upstream tag trees on the survey date below, not assumed. Only the tags that carry a numeric id are pinned here, since a name-only dump cannot answer the id-to-name lookup `ContentProvider::biome_name` needs. Re-pin the same way as the block entries: re-fetch the named tag and confirm the sha256 still matches.",
   "biome_source_path": "metadata/vanilladata_modules/mojang-biomes.json",
   "biome_survey_date": "2026-09-16",
@@ -70,7 +83,21 @@
       "game_version": [1, 26, 40],
       "file": "v1.26.40.05/mojang-biomes.json",
       "sha256": "d0b49b0e9c89aa50936e7daa467f4b07daa04c38e267c8506a9ea92ff941b567",
-      "note": "Latest pinned tag; adds several biome ids beyond v1.26.0.2 (89 entries vs. 87)."
+      "note": "Adds several biome ids beyond v1.26.0.2 (89 entries vs. 87)."
+    },
+    {
+      "tag": "v1.26.50.4",
+      "game_version": [1, 26, 50],
+      "file": "v1.26.50.4/mojang-biomes.json",
+      "sha256": "d0b49b0e9c89aa50936e7daa467f4b07daa04c38e267c8506a9ea92ff941b567",
+      "note": "Byte-identical to v1.26.40.05's dump -- no biome-table change shipped between them."
+    },
+    {
+      "tag": "v1.26.60.5",
+      "game_version": [1, 26, 60],
+      "file": "v1.26.60.5/mojang-biomes.json",
+      "sha256": "02e4ee700ce476745ae27d4d0b1042caff6c94f634889a2a011993cde77d966c",
+      "note": "Latest pinned tag."
     }
   ]
 }

@@ -2,17 +2,23 @@
 pub mod biome_v1_21_130;
 pub mod biome_v1_26_0;
 pub mod biome_v1_26_40;
+pub mod biome_v1_26_50;
+pub mod biome_v1_26_60;
 pub mod diff_v1_20_10_to_v1_21_0;
 pub mod diff_v1_21_0_to_v1_21_60;
 pub mod diff_v1_21_130_to_v1_26_0;
 pub mod diff_v1_21_60_to_v1_21_130;
 pub mod diff_v1_26_0_to_v1_26_40;
+pub mod diff_v1_26_40_to_v1_26_50;
+pub mod diff_v1_26_50_to_v1_26_60;
 pub mod v1_20_10;
 pub mod v1_21_0;
 pub mod v1_21_130;
 pub mod v1_21_60;
 pub mod v1_26_0;
 pub mod v1_26_40;
+pub mod v1_26_50;
+pub mod v1_26_60;
 /// Every generated per-version palette, oldest game version first.
 pub static PALETTES: &[crate::palette::VersionPalette] = &[
     v1_20_10::PALETTE,
@@ -21,6 +27,8 @@ pub static PALETTES: &[crate::palette::VersionPalette] = &[
     v1_21_130::PALETTE,
     v1_26_0::PALETTE,
     v1_26_40::PALETTE,
+    v1_26_50::PALETTE,
+    v1_26_60::PALETTE,
 ];
 /// Every generated adjacent-pair diff, oldest-to-newest -- `DIFFS[i]` is the diff
 /// from `PALETTES[i]` to `PALETTES[i + 1]`.
@@ -30,6 +38,8 @@ pub static DIFFS: &[crate::diff::VersionDiff] = &[
     diff_v1_21_60_to_v1_21_130::DIFF,
     diff_v1_21_130_to_v1_26_0::DIFF,
     diff_v1_26_0_to_v1_26_40::DIFF,
+    diff_v1_26_40_to_v1_26_50::DIFF,
+    diff_v1_26_50_to_v1_26_60::DIFF,
 ];
 /// Every generated per-version biome id->name table, oldest game version first
 /// among whichever pinned tags carry a numeric-id biome dump.
@@ -37,4 +47,6 @@ pub static BIOMES: &[crate::biome::VersionBiomes] = &[
     biome_v1_21_130::BIOMES,
     biome_v1_26_0::BIOMES,
     biome_v1_26_40::BIOMES,
+    biome_v1_26_50::BIOMES,
+    biome_v1_26_60::BIOMES,
 ];
